@@ -535,6 +535,14 @@ ciamBindingRole: canary-client
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /prod/canary-client
 
+dn: cn=secret-canary-bind,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-bind
+ciamBindingRole: canary-bind
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/canary-bind
+
 dn: cn=key-disk,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamKeyRef
@@ -680,6 +688,27 @@ ciamInterval: 5m
 ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:sso-login
 ciamRealizes: sso-login
 ciamStorageRef: s3://example-aero-ciam-prod-canaries/sso-login
+
+dn: cn=portal-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: portal-sso
+ciamBindingRole: canary-portal-sso
+ciamInterval: 10m
+ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:portal-sso
+ciamRealizes: portal-sso
+ciamStorageRef: s3://example-aero-ciam-prod-canaries/portal-sso
+
+dn: cn=directory-bind,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: directory-bind
+ciamBindingRole: canary-directory-bind
+ciamInterval: 5m
+ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:directory-bi
+ nd
+ciamRealizes: directory-bind
+ciamStorageRef: s3://example-aero-ciam-prod-canaries/directory-bind
 
 dn: cn=audit-archive,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

@@ -14,6 +14,12 @@ data "azurerm_subnet" "snet_aks" {
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_subnet" "snet_checks" {
+  name                 = "snet-checks"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
 data "azurerm_subnet" "snet_db" {
   name                 = "snet-db"
   virtual_network_name = "vnet-ciam-prod"
@@ -66,6 +72,21 @@ resource "azurerm_network_security_rule" "fw_admin" {
 }
 
 # NOTE: firewall rule `fw-apps-public` reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
+
+resource "azurerm_network_security_rule" "fw_checks_ds" {
+  name                        = "fw-checks-ds"
+  description                 = "fw-checks-ds"
+  priority                    = 210
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["1636"]
+  source_address_prefixes     = ["10.60.20.0/27"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.ds.name
+}
 
 resource "azurerm_network_security_rule" "fw_customer_portal" {
   name                        = "fw-customer-portal"
@@ -1738,7 +1759,228 @@ resource "azurerm_monitor_metric_alert" "ds_replication_lag" {
   }
 }
 
-# NOTE: canary sso-login: not rendered: a standard web test sends one request and can't read credentials when it runs: an oidc-token check would hold its secret in the test
+resource "azurerm_application_insights_standard_web_test" "portal_sso" {
+  name                    = "portal-sso"
+  resource_group_name     = data.azurerm_resource_group.main.name
+  location                = data.azurerm_resource_group.main.location
+  application_insights_id = var.application_insights_id
+  geo_locations           = ["us-va-ash-azr", "us-il-ch1-azr", "us-tx-sn1-azr", "us-ca-sjc-azr", "us-fl-mia-edge"]
+  frequency               = 600
+  timeout                 = 30
+  enabled                 = true
+  retry_enabled           = true
+  request {
+    url       = "https://sso.example-aero.test/idp/startSSO.ping?PartnerSpId=https%3A%2F%2Fportal.example-aero.test%2Fsaml%2Fsp"
+    http_verb = "GET"
+  }
+  validation_rules {
+    expected_status_code = 200
+    ssl_check_enabled    = true
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "portal-sso"
+    BindingRole = "canary-portal-sso"
+  }
+}
+
+variable "application_insights_id" {
+  description = "The workspace-based Application Insights resource the availability tests belong to"
+  type        = string
+}
+
+resource "azurerm_container_app_job" "directory_bind" {
+  name                         = "directory-bind"
+  resource_group_name          = data.azurerm_resource_group.main.name
+  location                     = data.azurerm_resource_group.main.location
+  container_app_environment_id = azurerm_container_app_environment.checks.id
+  workload_profile_name        = "Consumption"
+  replica_timeout_in_seconds   = 120
+  replica_retry_limit          = 0
+  schedule_trigger_config {
+    cron_expression          = "*/5 * * * *"
+    parallelism              = 1
+    replica_completion_count = 1
+  }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.checks.id]
+  }
+  secret {
+    name  = "appinsights"
+    value = var.application_insights_connection_string
+  }
+  secret {
+    name                = "credentials"
+    key_vault_secret_id = "${data.azurerm_key_vault.kv_ciam_prod.vault_uri}secrets/canary-bind"
+    identity            = azurerm_user_assigned_identity.checks.id
+  }
+  template {
+    container {
+      name    = "check"
+      image   = "mcr.microsoft.com/azurelinux/base/python:3.12"
+      cpu     = 0.25
+      memory  = "0.5Gi"
+      command = ["python3", "-c", "import os; exec(os.environ['CHECK_SCRIPT'])"]
+      env {
+        name  = "CHECK_SCRIPT"
+        value = file("${path.module}/checks/directory-bind/check.py")
+      }
+      env {
+        name  = "CHECK_LOCATION"
+        value = data.azurerm_resource_group.main.location
+      }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.checks.client_id
+      }
+      env {
+        name        = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        secret_name = "appinsights"
+      }
+      env {
+        name        = "CHECK_CREDENTIALS"
+        secret_name = "credentials"
+      }
+    }
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "directory-bind"
+    BindingRole = "canary-directory-bind"
+  }
+  depends_on = [azurerm_role_assignment.checks_publisher, azurerm_role_assignment.checks_kv_ciam_prod_canary_bind]
+}
+
+resource "azurerm_container_app_job" "sso_login" {
+  name                         = "sso-login"
+  resource_group_name          = data.azurerm_resource_group.main.name
+  location                     = data.azurerm_resource_group.main.location
+  container_app_environment_id = azurerm_container_app_environment.checks.id
+  workload_profile_name        = "Consumption"
+  replica_timeout_in_seconds   = 120
+  replica_retry_limit          = 0
+  schedule_trigger_config {
+    cron_expression          = "*/5 * * * *"
+    parallelism              = 1
+    replica_completion_count = 1
+  }
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.checks.id]
+  }
+  secret {
+    name  = "appinsights"
+    value = var.application_insights_connection_string
+  }
+  secret {
+    name                = "credentials"
+    key_vault_secret_id = "${data.azurerm_key_vault.kv_ciam_prod.vault_uri}secrets/canary-client"
+    identity            = azurerm_user_assigned_identity.checks.id
+  }
+  template {
+    container {
+      name    = "check"
+      image   = "mcr.microsoft.com/azurelinux/base/python:3.12"
+      cpu     = 0.25
+      memory  = "0.5Gi"
+      command = ["python3", "-c", "import os; exec(os.environ['CHECK_SCRIPT'])"]
+      env {
+        name  = "CHECK_SCRIPT"
+        value = file("${path.module}/checks/sso-login/check.py")
+      }
+      env {
+        name  = "CHECK_LOCATION"
+        value = data.azurerm_resource_group.main.location
+      }
+      env {
+        name  = "AZURE_CLIENT_ID"
+        value = azurerm_user_assigned_identity.checks.client_id
+      }
+      env {
+        name        = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+        secret_name = "appinsights"
+      }
+      env {
+        name        = "CHECK_CREDENTIALS"
+        secret_name = "credentials"
+      }
+    }
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "sso-login"
+    BindingRole = "canary-sso-login"
+  }
+  depends_on = [azurerm_role_assignment.checks_publisher, azurerm_role_assignment.checks_kv_ciam_prod_canary_client]
+}
+
+# Subnet snet-checks must be delegated to Microsoft.App/environments (the network's keeper delegates it) and hold nothing else
+
+resource "azurerm_container_app_environment" "checks" {
+  name                           = "cae-ciam-prod-checks"
+  resource_group_name            = data.azurerm_resource_group.main.name
+  location                       = data.azurerm_resource_group.main.location
+  infrastructure_subnet_id       = data.azurerm_subnet.snet_checks.id
+  internal_load_balancer_enabled = true
+  workload_profile {
+    name                  = "Consumption"
+    workload_profile_type = "Consumption"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+data "azurerm_key_vault" "kv_ciam_prod" {
+  name                = "kv-ciam-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
+resource "azurerm_user_assigned_identity" "checks" {
+  name                = "id-ciam-prod-checks"
+  resource_group_name = data.azurerm_resource_group.main.name
+  location            = data.azurerm_resource_group.main.location
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_role_assignment" "checks_publisher" {
+  scope                = var.application_insights_id
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_user_assigned_identity.checks.principal_id
+}
+
+resource "azurerm_role_assignment" "checks_kv_ciam_prod_canary_bind" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/canary-bind"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.checks.principal_id
+}
+
+resource "azurerm_role_assignment" "checks_kv_ciam_prod_canary_client" {
+  scope                = "${data.azurerm_key_vault.kv_ciam_prod.id}/secrets/canary-client"
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.checks.principal_id
+}
+
+variable "application_insights_connection_string" {
+  description = "The connection string of the Application Insights resource the scripted checks report to (the one application_insights_id names)"
+  type        = string
+  sensitive   = true
+}
 
 resource "azurerm_security_center_subscription_pricing" "arm" {
   tier          = "Standard"
@@ -1910,11 +2152,6 @@ resource "azurerm_security_center_automation" "defender_vulnerability_export" {
   }
 }
 
-data "azurerm_key_vault" "kv_ciam_prod" {
-  name                = "kv-ciam-prod"
-  resource_group_name = data.azurerm_resource_group.main.name
-}
-
 data "azurerm_key_vault_secrets" "kv_ciam_prod" {
   # names only: no secret value enters Terraform state
   key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
@@ -1930,6 +2167,10 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
     postcondition {
       condition     = contains(self.names, "am-keystore")
       error_message = "Key Vault kv-ciam-prod has no secret am-keystore (role am-keystore)"
+    }
+    postcondition {
+      condition     = contains(self.names, "canary-bind")
+      error_message = "Key Vault kv-ciam-prod has no secret canary-bind (role canary-bind)"
     }
     postcondition {
       condition     = contains(self.names, "canary-client")

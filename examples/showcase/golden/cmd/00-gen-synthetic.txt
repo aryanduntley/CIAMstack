@@ -1,2 +1,2 @@
-wrote 759 entries in 34 files to data/
+wrote 774 entries in 34 files to data/
 exit 0

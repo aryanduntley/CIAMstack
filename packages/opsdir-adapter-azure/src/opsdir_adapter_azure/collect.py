@@ -13,12 +13,13 @@ groups, PostgreSQL and MySQL parameters, backup policies and instances, federate
 topics and Event Hubs per namespace, email domains per Communication Services email service: the namespaces and email
 services themselves only the collector reads, _work/); AKS clusters (az aks list holds every node pool), Event Grid
 topics; then monitoring: metric and log query alerts, action groups, Log Analytics workspaces, Application Insights
-standard web tests, the subscription's policy exemptions and Defender for Cloud alert suppression rules; Defender for
-Cloud's plans, the machines' vulnerability assessment setting (az rest: no az command reads it; none set leaves its file
-out), continuous exports, and the consumption budgets of the subscription and the resource group (az rest: az
-consumption is in preview). VPN connections, action groups (their receivers: webhook and Logic App URLs can carry
-tokens), web tests (their request headers) and continuous exports (an Event Hub's connection string, a Logic App's URI)
-are projected to what the importer reads, so those are never fetched; Key Vault secrets are listed by name only, never
+standard web tests, Container Apps jobs (the scripted checks), the subscription's policy exemptions and Defender for
+Cloud alert suppression rules; Defender for Cloud's plans, the machines' vulnerability assessment setting (az rest:
+no az command reads it; none set leaves its file out), continuous exports, and the consumption budgets of the
+subscription and the resource group (az rest: az consumption is in preview). VPN connections, action groups (their
+receivers: webhook and Logic App URLs can carry tokens), web tests (their request headers), Container Apps jobs (their
+environment variables and secrets) and continuous exports (an Event Hub's connection string, a Logic App's URI) are
+projected to what the importer reads, so those are never fetched; Key Vault secrets are listed by name only, never
 shown.
 
 Terraform state: (a) by default the state blob a collection source names (ciamCollectionSource, importer
@@ -51,6 +52,9 @@ VA_API, BUDGETS_API = "2023-05-01", "2026-06-01"
 WEB_TEST_PROJECTION = ("[].{id: id, name: name, type: type, tags: tags, kind: kind, frequency: frequency, "
                        "timeout: timeout, enabled: enabled, locations: locations, "
                        "request: request && {requestUrl: request.requestUrl}}")
+# a job's schedule and tags only: its containers' environment variables and its secrets' references stay unread
+JOB_PROJECTION = ("[].{id: id, name: name, type: type, tags: tags, "
+                  "cronExpression: properties.configuration.scheduleTriggerConfig.cronExpression}")
 
 
 def _az(*args, query=None, absent=()):
@@ -137,6 +141,7 @@ def _listings(m, rg, vnet):
         ("action-groups.json", _az("monitor", "action-group", "list", *g, query=ACTION_GROUP_PROJECTION)),
         ("workspaces.json", _az("monitor", "log-analytics", "workspace", "list", *g)),
         ("web-tests.json", _az("monitor", "app-insights", "web-test", "list", *g, query=WEB_TEST_PROJECTION)),
+        ("container-app-jobs.json", _az("containerapp", "job", "list", *g, query=JOB_PROJECTION)),
         ("policy-exemptions.json", _az("policy", "exemption", "list")),
         ("suppression-rules.json", _az("security", "alerts-suppression-rule", "list")),
         ("security-pricings.json", _az("security", "pricing", "list")),

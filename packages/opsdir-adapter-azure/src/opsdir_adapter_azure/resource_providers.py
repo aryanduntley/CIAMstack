@@ -13,6 +13,7 @@ NAMESPACES = (
     ("azurerm_bastion_host", "Microsoft.Network"),
     ("azurerm_cdn_frontdoor_", "Microsoft.Cdn"),
     ("azurerm_consumption_budget_", "Microsoft.Consumption"),
+    ("azurerm_container_app_", "Microsoft.App"),
     ("azurerm_data_protection_", "Microsoft.DataProtection"),
     ("azurerm_disk_encryption_set", "Microsoft.Compute"),
     ("azurerm_dns_", "Microsoft.Network"),

@@ -16,12 +16,15 @@ from opsdir_format_terraform.hcl import Block, ref, tf_block
 from .names import label
 
 GOOGLE_VERSION = "~> 8.6"           # validated against hashicorp/google 8.6.0
+ARCHIVE_VERSION = "~> 2.8"          # validated against hashicorp/archive 2.8.1 (the current release, 2026-10-14)
 
 
-def required_providers():
-    """The terraform block of a Google Cloud root: the google provider."""
+def required_providers(archive=False):
+    """The terraform block of a Google Cloud root: the google provider, and archive when the root packages function
+    source."""
     return tf_block("terraform", [], [("required_providers", Block((
-        ("google", {"source": "hashicorp/google", "version": GOOGLE_VERSION}),)))])
+        ("google", {"source": "hashicorp/google", "version": GOOGLE_VERSION}),
+        *((("archive", {"source": "hashicorp/archive", "version": ARCHIVE_VERSION}),) if archive else ()))))])
 
 
 def project_id(m):

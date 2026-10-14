@@ -72,7 +72,7 @@ def test_rules_and_balancer_parts_are_inline_and_lookups_existing(translated):
     _, _, _, t = translated[0]
     resources = {r.symbol: r for x in t.templates.values() for r in x.resources}
     nsg = resources["network_security_group_ds"]
-    assert [rule["name"] for rule in nsg.properties["securityRules"]][:2] == ["fw-admin", "fw-customer-portal"]
+    assert [rule["name"] for rule in nsg.properties["securityRules"]][:2] == ["fw-admin", "fw-checks-ds"]
     lb = resources["lb_svc_ldaps"]
     assert {"frontendIPConfigurations", "backendAddressPools", "probes", "loadBalancingRules"} <= set(lb.properties)
     assert "Microsoft.Network/loadBalancers/backendAddressPools" not in {r.type for r in resources.values()}
@@ -91,9 +91,13 @@ def test_kept_resources_say_why(translated):
     assert key not in why or why[key].startswith(
         "part of azurerm_data_protection_backup_vault.ciam_backups natively, but waits for "
         "azurerm_role_assignment.ciam_backups_cmk, which reads it: a cycle there")
-    assert {a.split(".")[0] for a in why} <= {"azurerm_data_protection_backup_vault_customer_managed_key",
-        "azurerm_subnet_route_table_association", "azurerm_subnet_network_security_group_association",
-        "azuread_conditional_access_policy", "azapi_data_plane_resource", "data"}
+    jobs = [a for a in why if a.startswith("azurerm_container_app_job.")]       # the scripted checks (check_jobs)
+    assert jobs and all(why[a].startswith("its check script is read from a file beside the root") for a in jobs)
+    assert why["azurerm_role_assignment.checks_publisher"].startswith("what names its ARM deployment scope")
+    assert {a.split(".")[0] for a in why if a != "azurerm_role_assignment.checks_publisher"} <= {
+        "azurerm_data_protection_backup_vault_customer_managed_key", "azurerm_subnet_route_table_association",
+        "azurerm_subnet_network_security_group_association", "azuread_conditional_access_policy",
+        "azapi_data_plane_resource", "azurerm_container_app_job", "data"}
 
 
 def test_role_assignments_scope_what_they_grant_and_name_built_in_roles(translated):

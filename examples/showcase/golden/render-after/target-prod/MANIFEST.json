@@ -538,6 +538,16 @@
       "format": "xml",
       "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
+    "terraform/checks/directory-bind/check.py": {
+      "scope": "environment-specific",
+      "format": "python",
+      "sha256": "b6f2c1d241153c20cda3a572bf66339f419856a5514c6ed1016c5792e1d5db72"
+    },
+    "terraform/checks/sso-login/check.py": {
+      "scope": "environment-specific",
+      "format": "python",
+      "sha256": "f165365f5a4ada243635be3221f1269f49932d7c21c8f029582cf45ea7f82bcb"
+    },
     "terraform/landing-zone/main.tf": {
       "scope": "landing-zone",
       "format": "hcl",
@@ -561,12 +571,12 @@
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "3646fc395473cae1f80a0757d4a197fb1b68875f4ad203f0e33a675d105ddbbc"
+      "sha256": "27e3da8a632311a2a4a8e49c1b4819c078f79954e07b2cbd3060c6862a59ee58"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "0f0ed0cb6b995d85fccf0eb39044df8baab0bc534a1d0e21ee2df419ad89b0dd"
+      "sha256": "601d48ecef502f86148278c358a1be9817660a9769ada152b22493d5cfa129c8"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

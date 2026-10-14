@@ -1,10 +1,12 @@
 """Google Cloud's health-check probe sources for its load balancers (docs.cloud.google.com,
-load-balancing/docs/health-check-concepts). A firewall rule admitting them belongs to a load balancer, not to the
-record's firewall rules: the renderer adds one per service and the importers leave them out."""
+load-balancing/docs/health-check-concepts), and Cloud Monitoring's private uptime checkers (monitoring/uptime-checks/
+private-checks). A firewall rule admitting them belongs to a load balancer or a check, not to the record's firewall
+rules: the renderer adds one per service and the importers leave them out."""
 
 _PROBES = {"INTERNAL": ("35.191.0.0/16",),
            "EXTERNAL": ("35.191.0.0/16", "209.85.152.0/22", "209.85.204.0/22"),
            "MANAGED": ("35.191.0.0/16", "130.211.0.0/22")}       # application (proxy) load balancers
+PRIVATE_CHECKERS = ("35.199.192.0/19",)                          # private uptime checks (VPC_CHECKERS)
 
 
 def probe_ranges(scheme):
@@ -14,6 +16,6 @@ def probe_ranges(scheme):
 
 
 def is_probe_rule(source_ranges):
-    """Whether a rule's sources are all probe ranges."""
+    """Whether a rule's sources are all probe ranges (health checks' or private uptime checkers')."""
     sources = set(source_ranges or ())
-    return bool(sources) and sources <= {r for ranges in _PROBES.values() for r in ranges}
+    return bool(sources) and sources <= {r for ranges in (*_PROBES.values(), PRIVATE_CHECKERS) for r in ranges}

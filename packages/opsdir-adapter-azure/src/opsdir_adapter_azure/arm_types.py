@@ -19,6 +19,7 @@ COMPUTE, DISKS, STORAGE, POSTGRES, BACKUP = "2026-04-01", "2025-01-02", "2025-06
 CDN, FD_WAF, DNS, PRIVATE_DNS = "2026-07-01", "2026-04-01", "2018-05-01", "2024-06-01"
 MYSQL, TM, WEBTESTS, EXEMPTIONS = "2024-12-30", "2026-09-01", "2022-06-15", "2026-01-01-preview"
 AUTOSCALE = "2022-10-01"        # the newest autoscalesettings version the Bicep type index has (probed 2026-10-12)
+APP = "2026-07-01"              # Microsoft.App: the newest version the Bicep 0.48.1 type index has (probed 2026-10-14)
 # Types ARM has no form for: they stay in the Terraform root beside the templates (research 2595).
 NO_NATIVE = frozenset({"azapi_data_plane_resource", "azuread_conditional_access_policy"})
 _SUBNET = ("a property of the landing zone's subnet: ARM sets it only by re-declaring the whole subnet, which the "
@@ -37,6 +38,11 @@ KEPT = {
     # organization-wide Defender (5.7b): the management group's part, in the landing zone keeper's root
     "azurerm_management_group_policy_assignment": _MANAGEMENT_GROUP,
     "azurerm_management_group_policy_remediation": _MANAGEMENT_GROUP,
+    # the scripted checks' jobs (check_jobs): each runs its script read from a file beside the root (file()), which a
+    # template has no way to read; the environment, identity and grants they use are written natively
+    "azurerm_container_app_job": ("its check script is read from a file beside the root (file()), which a template "
+                                  "has no form for: the job is applied after the template, with the environment, "
+                                  "identity and grants it reads"),
     "azurerm_storage_object_replication": (
         "ARM sets object replication on the destination account first, in that account's resource group, and the "
         "source's policy takes the id it returns; the destination is an input the record holds no group for"),
@@ -1168,6 +1174,23 @@ def _web_test(f, cx):
                     f"{c.where}.validation_rules")})})}
 
 
+# ------------------------------------------------------------------ scripted checks (Container Apps)
+
+_VNET = {"infrastructure_subnet_id": "infrastructureSubnetId", "internal_load_balancer_enabled": "internal"}
+
+
+def _app_environment(f, cx):
+    """A Container Apps environment with workload profiles, in a virtual network when it names an infrastructure
+    subnet (internal: no public address)."""
+    vnet = {form: cx.value(f[k]) for k, form in _VNET.items() if k in f}
+    return {**obj({k: v for k, v in own(f).items() if k not in _VNET}, cx, {
+        **BASE, "zone_redundancy_enabled": "zoneRedundant", "public_network_access": "publicNetworkAccess",
+        "workload_profile": Nest("workloadProfiles", {"name": "name", "workload_profile_type": "workloadProfileType",
+                                                      "minimum_count": "minimumCount",
+                                                      "maximum_count": "maximumCount"}, True)}),
+            **({"vnetConfiguration": vnet} if vnet else {})}
+
+
 TYPES = {
     "azurerm_network_security_group": Native(Arm("Microsoft.Network/networkSecurityGroups", NETWORK), BASE,
                                              {"id": "id", "name": "name"}, "name", "map"),
@@ -1477,7 +1500,9 @@ TYPES = {
     "azurerm_nat_gateway_public_ip_prefix_association": Native(None, merge=Merge(
         "nat_gateway_id", lambda props, f, cx: {**props, "publicIpPrefixes": [
             *props.get("publicIpPrefixes", []), {"id": cx.value(f["public_ip_prefix_id"])}]})),
-    # availability tests, policy exemptions
+    # availability tests, the scripted checks' environment, policy exemptions
+    "azurerm_container_app_environment": Native(Arm("Microsoft.App/managedEnvironments", APP), _app_environment,
+                                                {"id": "id"}, "name", "map"),
     "azurerm_application_insights_standard_web_test": Native(Arm("Microsoft.Insights/webtests", WEBTESTS), _web_test,
                                                              {"id": "id"}, "name", "map"),
     "azurerm_subscription_policy_exemption": Native(Arm("Microsoft.Authorization/policyExemptions", EXEMPTIONS,

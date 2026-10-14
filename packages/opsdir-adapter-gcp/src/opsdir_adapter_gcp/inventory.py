@@ -25,7 +25,8 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
   google_storage_bucket                       -> storage gs://<bucket>, with its versioning, retention policy, key,
                                                  lifecycle and public access prevention (storage.py)
   google_cloudfunctions2_function,            -> job bindings: runtime, and the schedules of the Cloud Scheduler jobs
-    google_cloudfunctions_function,              whose target names them
+    google_cloudfunctions_function,              whose target names them; not a synthetic monitor's function (label
+                                                 realizes: its uptime check is the canary binding)
     google_cloud_run_v2_job,
     google_cloudbuild_trigger
   google_compute_(region_)instance_group_     -> compute group: the role its template's labels name, size (autoscaler
@@ -42,7 +43,8 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
                                                  see audit.py
   google_monitoring_alert_policy              -> alarm: the metric its first condition filters on, the channels it
                                                  notifies, the alert rule it realizes (label realizes)
-  google_monitoring_uptime_check_config       -> synthetic check: its period, the canary it realizes
+  google_monitoring_uptime_check_config       -> synthetic check: its period, the canary it realizes; a synthetic
+                                                 monitor's also where its function's source is (ciamStorageRef gs://)
   google_sql_database_instance               -> database (kind database, ciamDatabase): engine, version, edition,
                                                  DNS name, tier, disk, zone, availability, TLS, backups, flags,
                                                  deletion protection, its key as a role; never its root password:
@@ -303,7 +305,7 @@ def _jobs(found):
     return tuple(resource("job", resource_id(a.get("id")), {"ciamRuntime": _runtime(a),
                                                             "ciamSchedule": schedules(a.get("name"))},
                           name=a.get("name"), role=_role(a), tags=_state_labels(a))
-                 for t in JOB_TYPES for a in of_types(found, t) if a.get("id"))
+                 for t in JOB_TYPES for a in of_types(found, t) if a.get("id") and not _tags(a).get("Realizes"))
 
 
 def _compute(found):
@@ -403,13 +405,28 @@ def _alarms(found):
     return tuple(alarm(a) for a in of_types(found, "google_monitoring_alert_policy") if a.get("name") or a.get("id"))
 
 
+def _source_location(function):
+    """Where a synthetic monitor's function's source is, as the record holds it (gs://bucket[/prefix]), else None."""
+    source = first_block(first_block(first_block(function.get("build_config")).get("source")).get("storage_source"))
+    bucket, folder = source.get("bucket"), (source.get("object") or "").rpartition("/")[0]
+    return f"gs://{bucket}/{folder}" if bucket and folder else f"gs://{bucket}" if bucket else None
+
+
 def _canaries(found):
+    """Uptime checks and synthetic monitors: how often each runs, the canary it realizes, where a monitor's function's
+    source is."""
+    functions = {k: f for f in of_types(found, "google_cloudfunctions2_function")
+                 for k in (resource_id(f.get("id")), f.get("name")) if k}
+
     def canary(a):
         role, realizes = realization_roles(_tags(a), "canary")
         period = int(str(a.get("period") or "0s").rstrip("s") or 0)
+        monitor = first_block(first_block(a.get("synthetic_monitor")).get("cloud_function_v2")).get("name")
+        function = functions.get(resource_id(monitor)) if monitor else None
         return resource("canary", resource_id(a.get("name") or a.get("id")), {
-            "ciamInterval": duration_text(period), "ciamRealizes": realizes}, name=a.get("display_name"), role=role,
-            tags=_state_labels(a))
+            "ciamInterval": duration_text(period), "ciamRealizes": realizes,
+            "ciamStorageRef": _source_location(function) if function else None}, name=a.get("display_name"),
+            role=role, tags=_state_labels(a))
     return tuple(canary(a) for a in of_types(found, "google_monitoring_uptime_check_config")
                  if a.get("name") or a.get("id"))
 

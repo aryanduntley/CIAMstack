@@ -46,6 +46,8 @@ state_names.reader_names), managed resources and data sources:
     alert_v2                                     it realizes (tag Realizes)
   azurerm_application_insights_standard_     -> synthetic check (kind canary, ciamCanaryBinding): its frequency as an
     web_test                                     interval, the canary it realizes (tag Realizes)
+  azurerm_container_app_job                   -> scripted synthetic check (kind canary, ciamCanaryBinding), a job
+                                                 tagged Realizes only: its schedule as an interval (check_jobs)
   azurerm_postgresql_flexible_server,        -> database (kind database, ciamDatabase): engine, version, endpoint,
     azurerm_mysql_flexible_server (+ their       SKU, storage, zone, availability, TLS, backups, parameters, deletion
     _configuration, azurerm_management_lock)     protection (a lock), its subnet and key as roles; never its password:
@@ -89,6 +91,7 @@ from .budgets import budget_resources
 from .discovery import discovery_resources
 from .security import is_incident_alert, security_notices, security_resources
 from .suppressions import suppression_resources
+from .check_jobs import cron_seconds
 
 PROVIDER = "azure"
 
@@ -537,14 +540,24 @@ def _alarms(found):
                  if a.get("id") and not is_incident_alert(a))
 
 
+def _schedule(job):
+    """A Container Apps job's schedule in seconds (its cron expression), else None."""
+    config = (job.get("schedule_trigger_config") or [{}])[0] or {}
+    return cron_seconds(config.get("cron_expression"))
+
+
 def _canaries(found):
-    """Application Insights standard web tests: how often each runs, the canary it realizes."""
-    def canary(a):
+    """Application Insights standard web tests and the scripted checks' Container Apps jobs (those tagged Realizes):
+    how often each runs, the canary it realizes."""
+    def canary(a, seconds):
         role, realizes = realization_roles(_tags(a), "canary")
-        return resource("canary", a.get("id"), {"ciamInterval": duration_text(a.get("frequency")),
+        return resource("canary", a.get("id"), {"ciamInterval": duration_text(seconds),
                                                 "ciamRealizes": realizes}, name=a.get("name"), role=role,
                         tags=_tags(a))
-    return tuple(canary(a) for a in of_types(found, "azurerm_application_insights_standard_web_test") if a.get("id"))
+    return (*(canary(a, a.get("frequency")) for a in of_types(found, "azurerm_application_insights_standard_web_test")
+              if a.get("id")),
+            *(canary(a, _schedule(a)) for a in of_types(found, "azurerm_container_app_job")
+              if a.get("id") and _tags(a).get("Realizes")))
 
 
 def _streams(found):

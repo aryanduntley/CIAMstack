@@ -1,5 +1,6 @@
 """Application Insights standard web tests rendered from the record: a GET of the health or login page from the
-cloud's own test locations, named as the canary binding; an oidc-token check or an internal service is named."""
+cloud's own test locations, named as the canary binding; an oidc-token check is left to the scripted checks
+(check_jobs)."""
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
 from opsdir_format_terraform.hcl import as_text
@@ -34,9 +35,7 @@ def test_a_health_check_runs_from_the_clouds_test_locations():
     assert 'url       = "https://sso.example.test/pf/heartbeat.ping"' in text
     assert "expected_status_code = 200" in text and 'Realizes    = "sso-alive"' in text
     assert out[-1].startswith('variable "application_insights_id"')
-    assert [x for x in out if x.startswith("#")] == [
-        "# NOTE: canary sso-token: not rendered: a standard web test sends one request and can't read credentials "
-        "when it runs: an oidc-token check would hold its secret in the test"]
+    assert [x for x in out if x.startswith("#")] == [] and "sso-token" not in text      # a Container Apps job
 
 
 def test_azure_government_tests_from_its_own_locations():

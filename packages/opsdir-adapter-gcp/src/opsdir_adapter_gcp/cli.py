@@ -219,6 +219,12 @@ def _items(texts):
              *(f"{t} ({n}): Cloud Asset Inventory assets of a type not read" for t, n in sorted(by_type.items()))))
 
 
+def _synthetic_monitor(d):
+    """An uptime check's synthetic monitor (the function it runs) as the google provider holds it, or []."""
+    name = ((d.get("syntheticMonitor") or {}).get("cloudFunctionV2") or {}).get("name")
+    return [{"cloud_function_v2": [{"name": name}]}] if name else []
+
+
 def _of(items, kind):
     return [(d, p) for k, d, p in items if k == kind]
 
@@ -387,10 +393,14 @@ def _automation(items):
 
     def function(d):
         if d.get("buildConfig") or d.get("environment") == "GEN_2":
+            build = d.get("buildConfig") or {}
+            storage = (build.get("source") or {}).get("storageSource") or {}
             return ("google_cloudfunctions2_function", {"id": d.get("name"), "name": _last(d.get("name")),
                                                         "labels": d.get("labels") or {},
-                                                        "build_config": [{"runtime": (d.get("buildConfig") or {})
-                                                                          .get("runtime")}]})
+                                                        "build_config": [{"runtime": build.get("runtime"), "source": [
+                                                            {"storage_source": [{"bucket": storage.get("bucket"),
+                                                                                 "object": storage.get("object")}]}]
+                                                            if storage else []}]})
         return ("google_cloudfunctions_function", {"id": d.get("name"), "name": _last(d.get("name")),
                                                    "labels": d.get("labels") or {}, "runtime": d.get("runtime")})
 
@@ -455,9 +465,9 @@ def _monitoring(items):
                 "conditions": [condition(c) for c in d.get("conditions") or ()],
                 "notification_channels": d.get("notificationChannels") or [], "user_labels": d.get("userLabels") or {}})
               for d, _ in _of(items, "alert-policy")),
-            *(("google_monitoring_uptime_check_config", {"name": d.get("name"), "display_name": d.get("displayName"),
-                                                         "period": d.get("period"),
-                                                         "user_labels": d.get("userLabels") or {}})
+            *(("google_monitoring_uptime_check_config", {
+                "name": d.get("name"), "display_name": d.get("displayName"), "period": d.get("period"),
+                "user_labels": d.get("userLabels") or {}, "synthetic_monitor": _synthetic_monitor(d)})
               for d, _ in _of(items, "uptime-check"))]
 
 

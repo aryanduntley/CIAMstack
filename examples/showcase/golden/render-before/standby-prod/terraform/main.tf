@@ -2385,7 +2385,11 @@ resource "google_monitoring_alert_policy" "ds_replication_lag" {
   }
 }
 
-# NOTE: canary sso-login: not rendered: an uptime check could only hold an oidc-token check's client secret in its configuration
+# NOTE: canary portal-sso: not rendered: the environment is an Assured Workloads workload (FEDRAMP_MODERATE), where Google supports neither uptime checks nor synthetic monitors (their requests may come from any uptime region)
+
+# NOTE: canary directory-bind: not rendered: the environment is an Assured Workloads workload (FEDRAMP_MODERATE), where Google supports neither uptime checks nor synthetic monitors (their requests may come from any uptime region)
+
+# NOTE: canary sso-login: not rendered: the environment is an Assured Workloads workload (FEDRAMP_MODERATE), where Google supports neither uptime checks nor synthetic monitors (their requests may come from any uptime region)
 
 # assets: Cloud Asset Inventory keeps 35 days of resource history itself
 
@@ -2574,6 +2578,12 @@ data "google_secret_manager_secret" "am_ds_bind_password" {
 data "google_secret_manager_secret" "am_keystore" {
   # metadata only: no secret version (value) enters Terraform state
   secret_id = "am-keystore"
+  project   = "example-aero-ciam-standby"
+}
+
+data "google_secret_manager_secret" "canary_bind" {
+  # metadata only: no secret version (value) enters Terraform state
+  secret_id = "canary-bind"
   project   = "example-aero-ciam-standby"
 }
 

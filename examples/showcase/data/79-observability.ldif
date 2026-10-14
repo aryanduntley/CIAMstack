@@ -82,3 +82,27 @@ ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
 ciamInterval: 5m
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamUsesRole: canary-client
+
+dn: cn=portal-sso,ou=canaries,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCanary
+cn: portal-sso
+ciamCanaryFlow: saml-sso
+ciamCheckedService: pf-sso-service
+ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
+ciamInterval: 10m
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamStartsFrom: cn=customer-portal,ou=integrations,dc=ciam-ops
+
+dn: cn=directory-bind,ou=canaries,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCanary
+cn: directory-bind
+ciamCanaryFlow: ldap-bind
+ciamCheckedService: ds-ldaps-service
+ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
+ciamInterval: 5m
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamUsesRole: canary-bind

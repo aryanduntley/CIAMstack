@@ -1,7 +1,9 @@
 """Observability fixture data (79-observability): what the platform is watched for, where its logs go and for how
-long, and the synthetic sign-in that checks it works. Each environment's alert channels, log destinations, the alarms
-and checks its cloud runs, and its control-plane audit trail with the object store that keeps its records, are
-bindings (MONITORING below, used by infrastructure: SOURCE / TARGET / STANDBY).
+long, and the synthetic checks that it works: a client-credentials token from PingFederate (sso-login), a SAML
+sign-in started for the customer portal (portal-sso: the IdP's start reaches the sign-in page), and an LDAPS bind to
+the internal directory service as the check's own account (directory-bind). Each environment's alert channels, log
+destinations, the alarms and checks its cloud runs, and its control-plane audit trail with the object store that keeps
+its records, are bindings (MONITORING below, used by infrastructure: SOURCE / TARGET / STANDBY).
 
 The audit trails: the source's CloudTrail (management events and S3 data writes, every region, log file validation)
 into a bucket under Object Lock in compliance mode; the target's Activity Log export (a subscription diagnostic
@@ -18,6 +20,8 @@ Planted for the planner to find:
 """
 from .common import RB, R, ou, owner, spec
 
+PORTAL = f"cn=customer-portal,ou=integrations,{R}"
+
 FILE = "79-observability"
 RULES, ROUTES, CANARIES = f"ou=alert-rules,{R}", f"ou=log-routes,{R}", f"ou=canaries,{R}"
 AWS_ACCOUNT = "arn:aws:{}:us-east-1:111122223333:{}"
@@ -25,6 +29,8 @@ AZ_INSIGHTS = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
                "Microsoft.Insights/{}")
 AZ_WORKSPACES = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
                  "Microsoft.OperationalInsights/workspaces/{}")
+AZ_JOBS = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/"
+           "Microsoft.App/jobs/{}")
 
 
 def entries():
@@ -49,7 +55,15 @@ def entries():
             spec(FILE, f"cn=sso-login,{CANARIES}", ["top", "ciamObject", "ciamCanary"], cn="sso-login",
                  ciamCheckedService="pf-sso-service", ciamCanaryFlow="oidc-token", ciamInterval="5m",
                  ciamUsesRole="canary-client", ciamFeedsAlert=f"cn=login-failures,{RULES}",
-                 ciamOwner=owner("ciam-platform")))
+                 ciamOwner=owner("ciam-platform")),
+            spec(FILE, f"cn=portal-sso,{CANARIES}", ["top", "ciamObject", "ciamCanary"], cn="portal-sso",
+                 ciamCheckedService="pf-sso-service", ciamCanaryFlow="saml-sso", ciamStartsFrom=PORTAL,
+                 ciamInterval="10m", ciamFeedsAlert=f"cn=login-failures,{RULES}", ciamOwner=owner("ciam-platform")),
+            spec(FILE, f"cn=directory-bind,{CANARIES}", ["top", "ciamObject", "ciamCanary"], cn="directory-bind",
+                 ciamCheckedService="ds-ldaps-service", ciamCanaryFlow="ldap-bind", ciamInterval="5m",
+                 ciamUsesRole="canary-bind", ciamOwner=owner("ciam-platform"),
+                 # sign-ins bind to the directory (PingFederate's and PingAM's stores): a failed bind is a failed login
+                 ciamFeedsAlert=f"cn=login-failures,{RULES}"))
 
 
 GCP_PROJECT = "projects/example-aero-ciam-standby"
@@ -88,6 +102,14 @@ MONITORING = {
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
          {"ciamProviderRef": _aws("synthetics", "canary:sso-login"), "ciamRealizes": "sso-login",
           "ciamInterval": "5m", "ciamStorageRef": "s3://example-aero-ciam-prod-canaries/sso-login"}),
+        ("ciamCanaryBinding", "portal-sso", "canary-portal-sso",
+         {"ciamProviderRef": _aws("synthetics", "canary:portal-sso"), "ciamRealizes": "portal-sso",
+          "ciamInterval": "10m", "ciamStorageRef": "s3://example-aero-ciam-prod-canaries/portal-sso"}),
+        # the internal directory's check runs in the VPC, from the first subnet role the firewall admits to it on its
+        # port (record order: IDM's, which fw-idm-sync admits)
+        ("ciamCanaryBinding", "directory-bind", "canary-directory-bind",
+         {"ciamProviderRef": _aws("synthetics", "canary:directory-bind"), "ciamRealizes": "directory-bind",
+          "ciamInterval": "5m", "ciamStorageRef": "s3://example-aero-ciam-prod-canaries/directory-bind"}),
         ("ciamObjectStore", "audit-archive", "audit-archive",
          {"ciamStorageRef": f"s3://{CLOUDTRAIL_BUCKET}", "ciamProviderRef": f"arn:aws:s3:::{CLOUDTRAIL_BUCKET}",
           "ciamStorageVersioning": "TRUE", "ciamStorageImmutability": "compliance", "ciamStorageLockDays": "400"}),
@@ -111,9 +133,16 @@ MONITORING = {
         ("ciamAlarmBinding", "pf-login-failures", "alarm-login-failures",
          {"ciamProviderRef": AZ_INSIGHTS.format("scheduledQueryRules/pf-login-failures"),
           "ciamRealizes": "login-failures", "ciamMetric": "log query"}),
+        # the token and bind checks are Container Apps jobs (a standard web test can't read a secret or bind); the
+        # SAML sign-in's GET a standard web test
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
-         {"ciamProviderRef": AZ_INSIGHTS.format("webtests/sso-login"), "ciamRealizes": "sso-login",
-          "ciamInterval": "5m"}),
+         {"ciamProviderRef": AZ_JOBS.format("sso-login"), "ciamRealizes": "sso-login", "ciamInterval": "5m"}),
+        ("ciamCanaryBinding", "portal-sso", "canary-portal-sso",
+         {"ciamProviderRef": AZ_INSIGHTS.format("webtests/portal-sso"), "ciamRealizes": "portal-sso",
+          "ciamInterval": "10m"}),
+        ("ciamCanaryBinding", "directory-bind", "canary-directory-bind",
+         {"ciamProviderRef": AZ_JOBS.format("directory-bind"), "ciamRealizes": "directory-bind",
+          "ciamInterval": "5m", "ciamSubnetRole": "subnet-checks"}),
         # planted: an unlocked immutability policy (governance), and control-plane activity only
         ("ciamObjectStore", "activity-logs", "audit-archive",
          {"ciamStorageRef": "azblob://stciamprodaudit/insights-activity-logs",
@@ -139,8 +168,16 @@ MONITORING = {
         ("ciamAlarmBinding", "pf-login-failures", "alarm-login-failures",
          {"ciamProviderRef": f"{GCP_PROJECT}/alertPolicies/2002", "ciamRealizes": "login-failures",
           "ciamMetric": "log query", "ciamNotifies": f"{GCP_PROJECT}/notificationChannels/1001"}),
+        # the standby is an Assured Workloads workload (FedRAMP Moderate): Google supports neither uptime checks nor
+        # synthetic monitors there, so its render names each check it can't run
         ("ciamCanaryBinding", "sso-login", "canary-sso-login",
          {"ciamProviderRef": f"{GCP_PROJECT}/uptimeCheckConfigs/sso-login", "ciamRealizes": "sso-login",
+          "ciamInterval": "5m"}),
+        ("ciamCanaryBinding", "portal-sso", "canary-portal-sso",
+         {"ciamProviderRef": f"{GCP_PROJECT}/uptimeCheckConfigs/portal-sso", "ciamRealizes": "portal-sso",
+          "ciamInterval": "10m"}),
+        ("ciamCanaryBinding", "directory-bind", "canary-directory-bind",
+         {"ciamProviderRef": f"{GCP_PROJECT}/uptimeCheckConfigs/directory-bind", "ciamRealizes": "directory-bind",
           "ciamInterval": "5m"}),
         ("ciamObjectStore", "audit-archive", "audit-archive",
          {"ciamStorageRef": "gs://example-aero-ciam-standby-audit",

@@ -192,7 +192,8 @@ def _aws_monitoring():
                 "tags": {"Realizes": a["ciamRealizes"]}})
               for cn, _, a in by_class["ciamAlarmBinding"]),
             *(_res("managed", "aws_synthetics_canary", cn, {
-                "arn": a["ciamProviderRef"], "name": cn, "schedule": [{"expression": "rate(5 minutes)"}],
+                "arn": a["ciamProviderRef"], "name": cn,
+                "schedule": [{"expression": f"rate({a['ciamInterval'].rstrip('m')} minutes)"}],
                 "artifact_s3_location": f"{a['ciamStorageRef']}/", "tags": {"Realizes": a["ciamRealizes"]}})
               for cn, _, a in by_class["ciamCanaryBinding"]),
             _res("managed", "aws_cloudwatch_metric_alarm", "ds-cpu-high", {      # someone added it in the console

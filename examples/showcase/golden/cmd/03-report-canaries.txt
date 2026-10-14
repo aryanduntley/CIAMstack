@@ -1,5 +1,7 @@
-canary     flow        checks          every  credentials    fires
----------  ----------  --------------  -----  -------------  --------------
-sso-login  oidc-token  pf-sso-service  5m     canary-client  login-failures
-(1 rows)
+canary          flow        checks            every  credentials    fires
+--------------  ----------  ----------------  -----  -------------  --------------
+directory-bind  ldap-bind   ds-ldaps-service  5m     canary-bind    login-failures
+portal-sso      saml-sso    pf-sso-service    10m                   login-failures
+sso-login       oidc-token  pf-sso-service    5m     canary-client  login-failures
+(3 rows)
 exit 0

@@ -278,6 +278,14 @@ ciamBindingRole: canary-client
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/canary-client
 
+dn: cn=secret-canary-bind,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-bind
+ciamBindingRole: canary-bind
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/canary-bind
+
 dn: cn=backup,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupTarget

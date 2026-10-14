@@ -3,25 +3,97 @@
 # Do not edit. Change the operations directory (under an approved change) and re-render.
 import base64
 import json
+import socket
+import ssl
 import urllib.parse
 import urllib.request
+
+TIMEOUT = 10
+
+
+def get(url):
+    """GET the URL, redirects followed: urllib raises on an answer of 400 or more."""
+    with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=TIMEOUT) as response:
+        return f"HTTP {response.status}"
+
+
+def token(url, creds):
+    """A client-credentials grant at the token endpoint must return an access token."""
+    basic = base64.b64encode(f"{creds['client_id']}:{creds['client_secret']}".encode()).decode()
+    request = urllib.request.Request(url, data=urllib.parse.urlencode({"grant_type": "client_credentials"}).encode(),
+                                     method="POST", headers={"Authorization": f"Basic {basic}",
+                                                             "Content-Type": "application/x-www-form-urlencoded"})
+    with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+        if not json.loads(response.read()).get("access_token"):
+            raise Exception(f"{url}: no access_token in the answer")
+        return f"HTTP {response.status}, access token issued"
+
+
+def _element(tag, body):
+    """A BER element: its tag, its definite length, its body."""
+    size = len(body).to_bytes((len(body).bit_length() + 7) // 8 or 1, "big")
+    return bytes([tag]) + (size if len(body) < 128 else bytes([0x80 | len(size)]) + size) + body
+
+
+def _read(stream, count):
+    data = b""
+    while len(data) < count:
+        chunk = stream.recv(count - len(data))
+        if not chunk:
+            raise Exception("the connection closed before the bind response")
+        data += chunk
+    return data
+
+
+def _response(stream):
+    """The body of the LDAPMessage the server answers with."""
+    _, first = _read(stream, 2)
+    size = int.from_bytes(_read(stream, first & 0x7F), "big") if first & 0x80 else first
+    return _read(stream, size)
+
+
+def _parts(body):
+    """The (tag, body) elements a constructed element holds."""
+    at, parts = 0, []
+    while at < len(body):
+        first = body[at + 1]
+        width = first & 0x7F if first & 0x80 else 0
+        size = int.from_bytes(body[at + 2:at + 2 + width], "big") if width else first
+        start = at + 2 + width
+        parts.append((body[at], body[start:start + size]))
+        at = start + size
+    return parts
+
+
+def ldap_bind(url, creds):
+    """An LDAP simple bind over TLS must succeed (result code 0); anonymous without creds."""
+    dn, password = (creds["bind_dn"], creds["password"]) if creds else ("", "")
+    bind = _element(0x60, _element(0x02, b"\x03") + _element(0x04, dn.encode()) + _element(0x80, password.encode()))
+    where = urllib.parse.urlsplit(url)
+    with socket.create_connection((where.hostname, where.port), timeout=TIMEOUT) as raw:
+        with ssl.create_default_context().wrap_socket(raw, server_hostname=where.hostname) as stream:
+            stream.sendall(_element(0x30, _element(0x02, b"\x01") + bind))
+            (_, _), (op, result) = _parts(_response(stream))[:2]
+    code = _parts(result)[0][1][0] if op == 0x61 else None
+    if code != 0:
+        raise Exception(f"{url}: the bind failed (result code {code})")
+    return f"bound as {dn or 'anonymous'}"
+
+
+def probe(flow, url, creds):
+    """The check a flow makes: what to log when it passes; raises when it fails."""
+    return token(url, creds) if flow == "oidc-token" else ldap_bind(url, creds) if flow == "ldap-bind" else get(url)
 
 import boto3
 from aws_synthetics.common import synthetics_logger as logger
 
+FLOW = 'oidc-token'
 URL = 'https://sso.example-aero.test/as/token.oauth2'
-# the client's credentials, read when the canary runs: {"client_id", "client_secret"}
 SECRET_ID = 'arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-client'
 
 
 def handler(event, context):
-    """oidc-token check: a client-credentials grant at the token endpoint must return an access token."""
-    creds = json.loads(boto3.client("secretsmanager").get_secret_value(SecretId=SECRET_ID)["SecretString"])
-    basic = base64.b64encode(f"{creds['client_id']}:{creds['client_secret']}".encode()).decode()
-    request = urllib.request.Request(URL, data=urllib.parse.urlencode({"grant_type": "client_credentials"}).encode(),
-                                     method="POST", headers={"Authorization": f"Basic {basic}",
-                                                              "Content-Type": "application/x-www-form-urlencoded"})
-    with urllib.request.urlopen(request, timeout=10) as response:
-        if not json.loads(response.read()).get("access_token"):
-            raise Exception(f"{URL}: no access_token in the answer")
-        logger.info(f"{URL}: HTTP {response.status}, access token issued")
+    """oidc-token check of URL: the probe raises when it fails, failing the canary."""
+    creds = (json.loads(boto3.client("secretsmanager").get_secret_value(SecretId=SECRET_ID)["SecretString"])
+             if SECRET_ID else None)
+    logger.info(f"{URL}: {probe(FLOW, URL, creds)}")

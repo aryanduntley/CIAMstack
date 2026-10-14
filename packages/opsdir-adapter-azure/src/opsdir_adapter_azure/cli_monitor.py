@@ -8,6 +8,7 @@ incident routes). Pure.
   az monitor action-group list                  Microsoft.Insights/actionGroups
   az monitor log-analytics workspace list       Microsoft.OperationalInsights/workspaces
   az monitor app-insights web-test list         Microsoft.Insights/webtests (standard tests)
+  az containerapp job list                      Microsoft.App/jobs (the scripted checks' jobs: their schedule)
   az policy exemption list                      Microsoft.Authorization/policyExemptions
   az security alerts-suppression-rule list      Microsoft.Security/alertsSuppressionRules (as the azapi resource the
                                                 render writes: azurerm has none)
@@ -23,9 +24,10 @@ QUERY_ALERTS = "microsoft.insights/scheduledqueryrules"
 ACTION_GROUPS = "microsoft.insights/actiongroups"
 WORKSPACES = "microsoft.operationalinsights/workspaces"
 WEB_TESTS = "microsoft.insights/webtests"
+JOBS = "microsoft.app/jobs"
 EXEMPTIONS = "microsoft.authorization/policyexemptions"
 SUPPRESSION_RULES = ALERT_RULES.lower()
-READ = (METRIC_ALERTS, QUERY_ALERTS, ACTION_GROUPS, WORKSPACES, WEB_TESTS, EXEMPTIONS, SUPPRESSION_RULES)
+READ = (METRIC_ALERTS, QUERY_ALERTS, ACTION_GROUPS, WORKSPACES, WEB_TESTS, JOBS, EXEMPTIONS, SUPPRESSION_RULES)
 _RULE_FIELDS = ("alertType", "state", "reason", "comment", "expirationDateUtc", "suppressionAlertsScope")
 
 
@@ -87,6 +89,17 @@ def _suppression_rule(r):
             "body": {"properties": {k: props[k] for k in _RULE_FIELDS if props.get(k) is not None}}}
 
 
+def _job(j):
+    """A Container Apps job: its cron expression, flattened by the collector's projection or nested as the CLI and
+    an ARM template hold it (properties.configuration.scheduleTriggerConfig)."""
+    props = arm_field(j, "properties") or {}
+    trigger = arm_field(arm_field(props, "configuration") or arm_field(j, "configuration") or {},
+                        "scheduleTriggerConfig") or {}
+    expression = arm_field(j, "cronExpression") or arm_field(trigger, "cronExpression")
+    return {"id": j.get("id"), "name": j.get("name"), "tags": j.get("tags") or {},
+            "schedule_trigger_config": [{"cron_expression": expression}] if expression else []}
+
+
 def monitor_items(items):
     """(azurerm/azapi type, attributes) pairs of the monitoring and suppression items among (kind, item) pairs."""
     return [*(("azurerm_monitor_metric_alert", _metric_alert(a)) for a in _of(items, METRIC_ALERTS)),
@@ -99,5 +112,6 @@ def monitor_items(items):
               for w in _of(items, WORKSPACES)),
             *(("azurerm_application_insights_standard_web_test", _web_test(t)) for t in _of(items, WEB_TESTS)
               if str(arm_field(t, "kind") or "standard").lower() == "standard"),
+            *(("azurerm_container_app_job", _job(j)) for j in _of(items, JOBS)),
             *(("azurerm_subscription_policy_exemption", _exemption(e)) for e in _of(items, EXEMPTIONS)),
             *(("azapi_resource", _suppression_rule(r)) for r in _of(items, SUPPRESSION_RULES))]

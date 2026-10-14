@@ -2030,7 +2030,7 @@ resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
 
 resource "aws_cloudtrail" "cloudtrail" {
   # data-write events: database pf-grants has none (queries aren't API calls CloudTrail records)
-  # data-write events: reading the 23 secrets is a Secrets Manager management event, recorded with control-plane
+  # data-write events: reading the 24 secrets is a Secrets Manager management event, recorded with control-plane
   name                          = "ciam-prod"
   s3_bucket_name                = "example-aero-ciam-prod-cloudtrail"
   is_multi_region_trail         = true
@@ -2118,6 +2118,56 @@ resource "aws_cloudwatch_metric_alarm" "ds_replication_lag" {
   }
 }
 
+data "archive_file" "canary_directory_bind" {
+  type        = "zip"
+  source_dir  = "${path.module}/canaries/directory-bind"
+  output_path = "${path.module}/.build/canary-directory-bind.zip"
+}
+
+resource "aws_synthetics_canary" "directory_bind" {
+  name                 = "directory-bind"
+  runtime_version      = "syn-python-selenium-12.0"
+  handler              = "canary.handler"
+  zip_file             = data.archive_file.canary_directory_bind.output_path
+  artifact_s3_location = "s3://example-aero-ciam-prod-canaries/directory-bind/"
+  execution_role_arn   = aws_iam_role.canaries.arn
+  start_canary         = true
+  schedule {
+    expression = "rate(5 minutes)"
+  }
+  vpc_config {
+    subnet_ids         = [data.aws_subnet.subnet_idm_a.id]
+    security_group_ids = [aws_security_group.canaries.id]
+  }
+  tags = {
+    Realizes    = "directory-bind"
+    BindingRole = "canary-directory-bind"
+  }
+}
+
+data "archive_file" "canary_portal_sso" {
+  type        = "zip"
+  source_dir  = "${path.module}/canaries/portal-sso"
+  output_path = "${path.module}/.build/canary-portal-sso.zip"
+}
+
+resource "aws_synthetics_canary" "portal_sso" {
+  name                 = "portal-sso"
+  runtime_version      = "syn-python-selenium-12.0"
+  handler              = "canary.handler"
+  zip_file             = data.archive_file.canary_portal_sso.output_path
+  artifact_s3_location = "s3://example-aero-ciam-prod-canaries/portal-sso/"
+  execution_role_arn   = aws_iam_role.canaries.arn
+  start_canary         = true
+  schedule {
+    expression = "rate(10 minutes)"
+  }
+  tags = {
+    Realizes    = "portal-sso"
+    BindingRole = "canary-portal-sso"
+  }
+}
+
 data "archive_file" "canary_sso_login" {
   type        = "zip"
   source_dir  = "${path.module}/canaries/sso-login"
@@ -2149,7 +2199,34 @@ resource "aws_iam_role" "canaries" {
 resource "aws_iam_role_policy" "canaries" {
   name   = "synthetics"
   role   = aws_iam_role.canaries.id
-  policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:PutObject\",\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::example-aero-ciam-prod-canaries/sso-login/*\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::example-aero-ciam-prod-canaries\"]},{\"Effect\":\"Allow\",\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\",\"logs:CreateLogGroup\"],\"Resource\":[\"arn:aws:logs:*:*:log-group:/aws/lambda/cwsyn-sso-login-*\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:ListAllMyBuckets\",\"xray:PutTraceSegments\"],\"Resource\":[\"*\"]},{\"Effect\":\"Allow\",\"Action\":\"cloudwatch:PutMetricData\",\"Resource\":\"*\",\"Condition\":{\"StringEquals\":{\"cloudwatch:namespace\":\"CloudWatchSynthetics\"}}},{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-client\"]}]}"
+  policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:PutObject\",\"s3:GetObject\"],\"Resource\":[\"arn:aws:s3:::example-aero-ciam-prod-canaries/directory-bind/*\",\"arn:aws:s3:::example-aero-ciam-prod-canaries/portal-sso/*\",\"arn:aws:s3:::example-aero-ciam-prod-canaries/sso-login/*\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:GetBucketLocation\"],\"Resource\":[\"arn:aws:s3:::example-aero-ciam-prod-canaries\"]},{\"Effect\":\"Allow\",\"Action\":[\"logs:CreateLogStream\",\"logs:PutLogEvents\",\"logs:CreateLogGroup\"],\"Resource\":[\"arn:aws:logs:*:*:log-group:/aws/lambda/cwsyn-directory-bind-*\",\"arn:aws:logs:*:*:log-group:/aws/lambda/cwsyn-portal-sso-*\",\"arn:aws:logs:*:*:log-group:/aws/lambda/cwsyn-sso-login-*\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:ListAllMyBuckets\",\"xray:PutTraceSegments\"],\"Resource\":[\"*\"]},{\"Effect\":\"Allow\",\"Action\":\"cloudwatch:PutMetricData\",\"Resource\":\"*\",\"Condition\":{\"StringEquals\":{\"cloudwatch:namespace\":\"CloudWatchSynthetics\"}}},{\"Effect\":\"Allow\",\"Action\":[\"ec2:CreateNetworkInterface\",\"ec2:DescribeNetworkInterfaces\",\"ec2:DeleteNetworkInterface\"],\"Resource\":[\"*\"]},{\"Effect\":\"Allow\",\"Action\":[\"secretsmanager:GetSecretValue\"],\"Resource\":[\"arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-bind\",\"arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-client\"]}]}"
+}
+
+resource "aws_security_group" "canaries" {
+  name        = "ciam-prod-canaries"
+  description = "CIAM synthetic checks in the VPC (source/prod)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_vpc_security_group_egress_rule" "canaries_0_1636" {
+  security_group_id = aws_security_group.canaries.id
+  cidr_ipv4         = "10.20.1.100/32"
+  from_port         = 1636
+  to_port           = 1636
+  ip_protocol       = "tcp"
+  description       = "checked services"
+}
+
+resource "aws_vpc_security_group_egress_rule" "canaries_1_443" {
+  security_group_id = aws_security_group.canaries.id
+  cidr_ipv4         = "0.0.0.0/0"
+  from_port         = 443
+  to_port           = 443
+  ip_protocol       = "tcp"
+  description       = "AWS APIs"
 }
 
 data "aws_partition" "current" {
@@ -2523,6 +2600,10 @@ data "aws_secretsmanager_secret" "am_ds_bind_password" {
 
 data "aws_secretsmanager_secret" "am_keystore" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/am-keystore"
+}
+
+data "aws_secretsmanager_secret" "canary_bind" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-bind"
 }
 
 data "aws_secretsmanager_secret" "canary_client" {

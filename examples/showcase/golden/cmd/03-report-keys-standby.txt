@@ -4,6 +4,7 @@ am-admin-password          password       am-admin-password          gcp-sm    g
 am-ds-bind-password        password       am-ds-bind-password        gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-ds-bind-passwor                                                       ok
 am-keystore                keystore       am-keystore                gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/am-keystore                                                              carried over from source/prod
 bigip-hq-login             password       bigip-hq-login                                                                                                                                                    not used here: nothing here requires it
+canary-bind                password       canary-bind                gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/canary-bind                                                              ok
 canary-client              client-secret  canary-client              gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/canary-client                                                            ok
 dc-hq-login                password       dc-hq-login                                                                                                                                                       not used here: nothing here requires it
 disk-encryption            symmetric-key  disk-encryption            gcp-kms   gcp-kms://projects/example-aero-ciam-standby/locations/us-central1/key  hsm         yes                                      ok
@@ -28,5 +29,5 @@ pf-smtp-password           password       pf-smtp-password           gcp-sm    g
 sso-tls-certificate        private-key    sso-tls-certificate        gcp-cert  gcp-cert://projects/example-aero-ciam-standby/locations/us-central1/ce                                                       ok
 sso-tls-keystore           keystore       sso-tls-keystore           gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keystore                                                         ok
 sso-tls-keystore-password  password       sso-tls-keystore-password  gcp-sm    gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keystore-p                                                       ok
-(28 rows)
+(29 rows)
 exit 0

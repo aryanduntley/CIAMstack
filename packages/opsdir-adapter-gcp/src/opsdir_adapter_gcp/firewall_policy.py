@@ -21,9 +21,10 @@ from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 
 POLICY = "network_policy"
 TAG_KEY = "server_role"
-# priorities above the record's rules (at most 65535): what a load balancer needs admitted (health-check probes, an
-# application load balancer's proxies), then the egress allowlist, then the deny
-ADMITS = {"health_checks": (70000, "Google Cloud health checks for"), "proxies": (75000, "Load balancer proxies for")}
+# priorities above the record's rules (at most 65535): what a load balancer or a check needs admitted (health-check
+# probes, private uptime checkers, an application load balancer's proxies), then the egress allowlist, then the deny
+ADMITS = {"health_checks": (70000, "Google Cloud health checks for"),
+          "uptime_checkers": (72500, "Private uptime checkers for"), "proxies": (75000, "Load balancer proxies for")}
 EGRESS, DENY = 80000, 2147483000
 ORDER = {"policy-first": "BEFORE_CLASSIC_FIREWALL", "rules-first": "AFTER_CLASSIC_FIREWALL"}
 
@@ -142,7 +143,8 @@ def ingress_rules(m):
 
 def health_check_rule(m, svc, n, ranges, port, kind="health_checks"):
     """The policy rule admitting what a service's load balancer needs to its servers on its port: Google Cloud's
-    health-check probes, or (kind proxies) an application load balancer's proxies."""
+    health-check probes, (kind uptime_checkers) the private uptime checkers, or (kind proxies) an application load
+    balancer's proxies."""
     services = of_class(m, "ciamServiceName")
     base, what = ADMITS[kind]
     prio = base + next(i for i, s in enumerate(services) if s.dn == svc.dn)

@@ -18,7 +18,7 @@ from opsdir.domains.edge.gateways import role_gateway
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.governance.keepers import keeper
 from opsdir.domains.edge.resolve import inspected, service_edge
-from opsdir_format_terraform.hcl import (Block, blocks_of, comment, ref, tf_block,
+from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref, tf_block,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
 from .databases import render_databases
@@ -28,6 +28,7 @@ from .container_logs import container_log_notes, render_container_logs
 from .log_collection import agent_hosts, log_collection_notes, render_log_collection
 from .observability import render_alerts, render_workspaces
 from .canaries import render_tests
+from .check_jobs import render_jobs
 from .budgets import budget_inputs, render_budgets
 from .quotas import quota_request_notes
 from .suppressions import azapi_provider, render_suppressions, uses_azapi
@@ -42,8 +43,8 @@ from .compute_groups import render_groups
 from .frontdoor import endpoint, front_door
 from .identities import LOC, RG, aks_data, identity, scope_data, vm_identity
 from .ingress import gateway_front
-from .landing import landing_parts, placed_roots
-from opsdir_format_terraform.placing import MAIN, PROVIDERS
+from .landing import STACK, landing_parts, placed_roots
+from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
 from .network import render_network
 from .plumbing import network_data
@@ -253,6 +254,7 @@ def render_files(m, services):
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
     agents = frozenset(agent_hosts(m, services)) if services else frozenset()
     containers, container_files = render_container_logs(m, services) if services else ((), {})
+    jobs, scripts = render_jobs(m, endpoints)
     out = (*network_data(m), *_security_groups(m), *aks_data(identities),
            *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_server(m, s, des, identities, agents) for s in m.servers),
@@ -264,7 +266,7 @@ def render_files(m, services):
            *(render_log_collection(m, services) + log_collection_notes(m, services) if services else ()),
            *containers, *(container_log_notes(m, services) if services else ()),
            *render_alerts(m),
-           *render_tests(m, endpoints),
+           *render_tests(m, endpoints), *jobs,
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *quota_request_notes(m),
            *_key_vault_secrets(m), *scope_data(m, identities))
@@ -286,7 +288,10 @@ def render_files(m, services):
     roots = placed_roots(m, ((PROVIDERS, providers), (MAIN, out), *landing), landing_dns, lambda name: (
         header(m, WHAT, HCL) + unbound_comments(m.unbound) + notes + "\n" if name == MAIN else
         header(m, "Providers and inputs", HCL)))
-    return roots if scope_folder(m) is not None else {**roots, **container_files}     # a slice: its root only
+    carried = carried_files(roots, scripts, STACK)
+    if scope_folder(m) is not None:                 # a slice: its root and the files it reads
+        return {**roots, **carried}
+    return {**roots, **container_files, **scripts, **carried}
 
 
 WHAT = "Azure infrastructure for the CIAM platform"
@@ -303,10 +308,13 @@ DEFAULT_TARGETS = tuple(t[0] for t in TARGETS if len(t) < 3)
 def render(m, services, targets=DEFAULT_TARGETS):
     """Adapter render: environment m's Azure files as text in the render targets chosen: Terraform (terraform/),
     and/or Bicep (bicep/) and ARM JSON (arm/) translated from it (arm_types); the files that are neither (Kubernetes
-    configuration) either way. Each Terraform file written once from its TfFile."""
+    configuration) either way, and the files a Terraform root beside the templates reads (the check scripts:
+    placing.carried_files). Each Terraform file written once from its TfFile."""
     files = render_files(m, services)
     terraform = {p: v for p, v in files.items() if p.startswith("terraform/")}
     native = arm_files(m, files, WHAT, tuple(t for t in (BICEP, ARM_JSON) if t in targets)) \
         if BICEP in targets or ARM_JSON in targets else {}
+    beside = carried_files({p: v for p, v in native.items() if isinstance(v, TfFile)},
+                           {p: v for p, v in terraform.items() if isinstance(v, str)}, STACK)
     return written({**{p: v for p, v in files.items() if p not in terraform},
-                    **(terraform if TERRAFORM in targets else {}), **native})
+                    **(terraform if TERRAFORM in targets else {}), **native, **beside})

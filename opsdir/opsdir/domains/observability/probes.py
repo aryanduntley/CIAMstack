@@ -1,7 +1,8 @@
-"""The requests a scripted synthetic check makes, as the Python source a cloud's check script carries (AWS CloudWatch
-Synthetics canaries, Azure Functions): cloud-neutral, standard library only. Each cloud's script adds how it reads its
-credentials when it runs and how it reports; probe(flow, url, creds) does the request and returns what to log, raising
-on failure. Pure (text).
+"""The requests a scripted synthetic check makes, as the source a cloud's check script carries: Python (PYTHON_PROBES:
+AWS CloudWatch Synthetics canaries, Azure Container Apps jobs) and Node.js (NODE_PROBES, a CommonJS module: Google Cloud
+synthetic monitors), cloud-neutral, standard library only, the same checks in both. Each cloud's script adds how it
+reads its credentials when it runs and how it reports; probe(flow, url, creds) does the request and returns what to
+log, raising (Node.js: rejecting) on failure. Pure (text).
 
 - health, login-page, saml-sso: GET the URL, redirects followed; an answer of 400 or more fails.
 - oidc-token: a client-credentials grant at the token endpoint (HTTP Basic with creds' client_id and client_secret);
@@ -93,4 +94,125 @@ def ldap_bind(url, creds):
 def probe(flow, url, creds):
     """The check a flow makes: what to log when it passes; raises when it fails."""
     return token(url, creds) if flow == "oidc-token" else ldap_bind(url, creds) if flow == "ldap-bind" else get(url)
+'''
+
+
+NODE_PROBES = r'''"use strict";
+const https = require("https");
+const tls = require("tls");
+
+const TIMEOUT = 10000;
+const REDIRECTS = 5;
+
+function request(url, options, body) {
+  // One HTTPS request: resolves {status, headers, body}.
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, {timeout: TIMEOUT, ...options}, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => resolve({status: res.statusCode, headers: res.headers,
+                                   body: Buffer.concat(chunks).toString()}));
+    });
+    req.on("timeout", () => req.destroy(new Error(`${url}: no answer in ${TIMEOUT / 1000}s`)));
+    req.on("error", reject);
+    req.end(body);
+  });
+}
+
+async function get(url, left = REDIRECTS) {
+  // GET the URL, redirects followed: an answer of 400 or more fails.
+  const res = await request(url, {method: "GET"});
+  if (res.status >= 300 && res.status < 400 && res.headers.location && left > 0) {
+    return get(new URL(res.headers.location, url).toString(), left - 1);
+  }
+  if (res.status >= 400) {
+    throw new Error(`${url}: HTTP ${res.status}`);
+  }
+  return `HTTP ${res.status}`;
+}
+
+async function token(url, creds) {
+  // A client-credentials grant at the token endpoint must return an access token.
+  const basic = Buffer.from(`${creds.client_id}:${creds.client_secret}`).toString("base64");
+  const res = await request(url, {method: "POST", headers: {"Authorization": `Basic ${basic}`,
+                                                            "Content-Type": "application/x-www-form-urlencoded"}},
+                            "grant_type=client_credentials");
+  if (res.status >= 400) {
+    throw new Error(`${url}: HTTP ${res.status}`);
+  }
+  if (!JSON.parse(res.body).access_token) {
+    throw new Error(`${url}: no access_token in the answer`);
+  }
+  return `HTTP ${res.status}, access token issued`;
+}
+
+function element(tag, body) {
+  // A BER element: its tag, its definite length, its body.
+  let size = [];
+  for (let n = body.length; n > 0; n = Math.floor(n / 256)) {
+    size.unshift(n % 256);
+  }
+  size = size.length ? size : [0];
+  const length = body.length < 128 ? [body.length] : [0x80 | size.length, ...size];
+  return Buffer.concat([Buffer.from([tag, ...length]), body]);
+}
+
+function parts(body) {
+  // The [tag, body] elements a constructed element holds.
+  const found = [];
+  for (let at = 0; at < body.length;) {
+    const first = body[at + 1];
+    const width = first & 0x80 ? first & 0x7f : 0;
+    const size = width ? body.subarray(at + 2, at + 2 + width).reduce((a, b) => a * 256 + b, 0) : first;
+    const start = at + 2 + width;
+    found.push([body[at], body.subarray(start, start + size)]);
+    at = start + size;
+  }
+  return found;
+}
+
+function bindRequest(dn, password) {
+  const bind = element(0x60, Buffer.concat([element(0x02, Buffer.from([3])), element(0x04, Buffer.from(dn)),
+                                            element(0x80, Buffer.from(password))]));
+  return element(0x30, Buffer.concat([element(0x02, Buffer.from([1])), bind]));
+}
+
+function bindResult(message) {
+  // The result code of a bindResponse LDAPMessage, or null.
+  const [, [op, result]] = parts(parts(message)[0][1]);
+  return op === 0x61 ? parts(result)[0][1][0] : null;
+}
+
+function ldapBind(url, creds) {
+  // An LDAP simple bind over TLS must succeed (result code 0); anonymous without creds.
+  const [dn, password] = creds ? [creds.bind_dn, creds.password] : ["", ""];
+  const where = new URL(url);
+  return new Promise((resolve, reject) => {
+    let data = Buffer.alloc(0);
+    const socket = tls.connect({host: where.hostname, port: Number(where.port), servername: where.hostname,
+                                timeout: TIMEOUT}, () => socket.write(bindRequest(dn, password)));
+    socket.on("data", (chunk) => {
+      data = Buffer.concat([data, chunk]);
+      const first = data[1];
+      const width = first & 0x80 ? first & 0x7f : 0;
+      const size = width ? data.subarray(2, 2 + width).reduce((a, b) => a * 256 + b, 0) : first;
+      if (data.length >= 2 + width + size) {
+        socket.end();
+        const code = bindResult(data.subarray(0, 2 + width + size));
+        code === 0 ? resolve(`bound as ${dn || "anonymous"}`)
+                   : reject(new Error(`${url}: the bind failed (result code ${code})`));
+      }
+    });
+    socket.on("timeout", () => socket.destroy(new Error(`${url}: no answer in ${TIMEOUT / 1000}s`)));
+    socket.on("error", reject);
+    socket.on("end", () => reject(new Error("the connection closed before the bind response")));
+  });
+}
+
+async function probe(flow, url, creds) {
+  // The check a flow makes: what to log when it passes; rejects when it fails.
+  return flow === "oidc-token" ? token(url, creds) : flow === "ldap-bind" ? ldapBind(url, creds) : get(url);
+}
+
+module.exports = {probe, get, token, ldapBind, element, parts, bindRequest, bindResult};
 '''

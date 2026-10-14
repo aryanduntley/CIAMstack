@@ -806,6 +806,20 @@ ciamReviewedOn: 20260301000000Z
 ciamRunbookRef: cn=WI-CIAM-012,ou=runbooks,dc=ciam-ops
 ciamUsesRole: ds-root-password
 
+dn: cn=canary-bind,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: canary-bind
+ciamBindingRole: canary-bind
+ciamContinuity: per-environment
+ciamCredentialType: password
+ciamExportable: TRUE
+ciamKeyUsage: authentication
+ciamMaterialFormat: text
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationDays: 90
+ciamUsedIn: cn=directory-bind,ou=canaries,dc=ciam-ops
+
 dn: cn=canary-client,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -1593,6 +1607,18 @@ ciamNotAfter: 20270630000000Z
 ciamNotBefore: 20250630000000Z
 ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
 ciamSubject: CN=Example Aero Security Operations, OU=ECA, O=Example Aero
+
+dn: cn=directory-bind,ou=canaries,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCanary
+cn: directory-bind
+ciamCanaryFlow: ldap-bind
+ciamCheckedService: ds-ldaps-service
+ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
+ciamInterval: 5m
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamUsesRole: canary-bind
 
 dn: cn=directory-data,ou=recovery,dc=ciam-ops
 objectClass: top
@@ -3432,6 +3458,18 @@ ciamRiskRating: moderate
 ciamScheduledCompletion: 20261215000000Z
 ciamWeakness: PingDS's LDAPS runs on a JSSE provider that isn't FIPS 140 valid
  ated
+
+dn: cn=portal-sso,ou=canaries,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCanary
+cn: portal-sso
+ciamCanaryFlow: saml-sso
+ciamCheckedService: pf-sso-service
+ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
+ciamInterval: 10m
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamStartsFrom: cn=customer-portal,ou=integrations,dc=ciam-ops
 
 dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -7660,6 +7698,38 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: directory
 
+dn: cn=directory-bind,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: directory-bind
+ciamBindingRole: canary-directory-bind
+ciamInterval: 5m
+ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:directory-bi
+ nd
+ciamRealizes: directory-bind
+ciamStorageRef: s3://example-aero-ciam-prod-canaries/directory-bind
+
+dn: cn=directory-bind,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: directory-bind
+ciamBindingRole: canary-directory-bind
+ciamInterval: 5m
+ciamProviderRef: projects/example-aero-ciam-standby/uptimeCheckConfigs/directo
+ ry-bind
+ciamRealizes: directory-bind
+
+dn: cn=directory-bind,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: directory-bind
+ciamBindingRole: canary-directory-bind
+ciamInterval: 5m
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.App/jobs/directory-bind
+ciamRealizes: directory-bind
+ciamSubnetRole: subnet-checks
+
 dn: cn=dns,ou=stack,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -8035,6 +8105,17 @@ ciamProtocol: tcp
 ciamRulePriority: 180
 ciamSourceCidr: 0.0.0.0/0
 ciamTargetRole: ig
+
+dn: cn=fw-checks-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-checks-ds
+ciamBindingRole: fw-checks-ds
+ciamPort: 1636
+ciamProtocol: tcp
+ciamRulePriority: 210
+ciamSourceCidr: 10.60.20.0/27
+ciamTargetRole: ds
 
 dn: cn=fw-customer-portal,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -9690,6 +9771,36 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: platform
 
+dn: cn=portal-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: portal-sso
+ciamBindingRole: canary-portal-sso
+ciamInterval: 10m
+ciamProviderRef: arn:aws:synthetics:us-east-1:111122223333:canary:portal-sso
+ciamRealizes: portal-sso
+ciamStorageRef: s3://example-aero-ciam-prod-canaries/portal-sso
+
+dn: cn=portal-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: portal-sso
+ciamBindingRole: canary-portal-sso
+ciamInterval: 10m
+ciamProviderRef: projects/example-aero-ciam-standby/uptimeCheckConfigs/portal-
+ sso
+ciamRealizes: portal-sso
+
+dn: cn=portal-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamCanaryBinding
+cn: portal-sso
+ciamBindingRole: canary-portal-sso
+ciamInterval: 10m
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/webtests/portal-sso
+ciamRealizes: portal-sso
+
 dn: cn=provider,ou=stack,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamStackComponent
@@ -10080,6 +10191,36 @@ cn: secret-am-keystore
 ciamBindingRole: am-keystore
 ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
  /stage/am-keystore
+
+dn: cn=secret-canary-bind,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-bind
+ciamBindingRole: canary-bind
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/canary-bind
+
+dn: cn=secret-canary-bind,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-bind
+ciamBindingRole: canary-bind
+ciamRefUri: gcp-sm://projects/example-aero-ciam-standby/secrets/canary-bind
+
+dn: cn=secret-canary-bind,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-bind
+ciamBindingRole: canary-bind
+ciamRefUri: azkv://kv-ciam-prod/canary-bind
+
+dn: cn=secret-canary-bind,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: secret-canary-bind
+ciamBindingRole: canary-bind
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /stage/canary-bind
 
 dn: cn=secret-canary-client,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -10992,6 +11133,14 @@ ciamBindingRole: subnet-am
 ciamCidr: 10.60.3.0/24
 ciamProviderRef: vnet-ciam-prod/snet-am
 
+dn: cn=snet-checks,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSubnetBinding
+cn: snet-checks
+ciamBindingRole: subnet-checks
+ciamCidr: 10.60.20.0/27
+ciamProviderRef: vnet-ciam-prod/snet-checks
+
 dn: cn=snet-db,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSubnetBinding
@@ -11105,7 +11254,7 @@ cn: sso-login
 ciamBindingRole: canary-sso-login
 ciamInterval: 5m
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
- roups/rg-ciam-prod/providers/Microsoft.Insights/webtests/sso-login
+ roups/rg-ciam-prod/providers/Microsoft.App/jobs/sso-login
 ciamRealizes: sso-login
 
 dn: cn=subnet-am,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops

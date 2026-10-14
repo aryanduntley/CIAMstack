@@ -4,6 +4,7 @@ am-admin-password          password       am-admin-password          azkv       
 am-ds-bind-password        password       am-ds-bind-password        azkv       azkv://kv-ciam-prod/am-ds-bind-password                                                                                                                              ok
 am-keystore                keystore       am-keystore                azkv       azkv://kv-ciam-prod/am-keystore                                                                                                                                      carried over from source/prod
 bigip-hq-login             password       bigip-hq-login                                                                                                                                                                                             not used here: nothing here requires it
+canary-bind                password       canary-bind                azkv       azkv://kv-ciam-prod/canary-bind                                                                                                                                      ok
 canary-client              client-secret  canary-client              azkv       azkv://kv-ciam-prod/canary-client                                                                                                                                    ok
 dc-hq-login                password       dc-hq-login                                                                                                                                                                                                not used here: nothing here requires it
 disk-encryption            symmetric-key  disk-encryption            azkv-key   azkv-key://kv-ciam-prod/keys/disk-cmk          software                                      /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-  HSM required, the store protects it in software
@@ -31,5 +32,5 @@ sso-tls-keystore-password  password       sso-tls-keystore-password  azkv       
 -                                         internal-ca-certificate    azkv-cert  azkv-cert://kv-ciam-prod/ciam-internal-ca                                                                                                                            undocumented: no credential describes this role
 -                                         ciam-edge-tls-cert         azkv       azkv://kv-ciam-prod/ciam-edge-tls-cert                                                                                                                               undocumented: no credential describes this role
 -                                         ciam-edge-tls-key          azkv       azkv://kv-ciam-prod/ciam-edge-tls-key                                                                                                                                undocumented: no credential describes this role
-(31 rows)
+(32 rows)
 exit 0

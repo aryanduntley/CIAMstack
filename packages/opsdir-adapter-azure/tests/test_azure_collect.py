@@ -14,8 +14,9 @@ from opsdir.core.directory import make_entry
 from opsdir.core.environment import env_model
 from opsdir_adapter_azure.adapter import ADAPTER
 from opsdir_adapter_azure.cli import cli_resources, read_cli_inventory
-from opsdir_adapter_azure.collect import (ACTION_GROUP_PROJECTION, AUTOMATION_PROJECTION, COLLECTORS, VPN_PROJECTION,
-                                          WEB_TEST_PROJECTION, identity_check, inventory_steps, state_steps)
+from opsdir_adapter_azure.collect import (ACTION_GROUP_PROJECTION, AUTOMATION_PROJECTION, COLLECTORS, JOB_PROJECTION,
+                                          VPN_PROJECTION, WEB_TEST_PROJECTION, identity_check, inventory_steps,
+                                          state_steps)
 
 # the CLI reader's own fixtures (its record and the outputs saved by hand), loaded by path: one source of truth
 _SPEC = importlib.util.spec_from_file_location("azure_cli_fixtures",
@@ -45,7 +46,8 @@ OPERATIONS = {
     "dataprotection backup-instance list", "lock list", "identity list", "identity federated-credential list",
     "role assignment list", "role definition list", "rest", "keyvault list", "keyvault show", "policy assignment list",
     "network bastion list", "monitor metrics alert list", "monitor scheduled-query list", "monitor action-group list",
-    "monitor log-analytics workspace list", "monitor app-insights web-test list", "policy exemption list",
+    "monitor log-analytics workspace list", "monitor app-insights web-test list", "containerapp job list",
+    "policy exemption list",
     "security alerts-suppression-rule list", "security pricing list", "security automation list",
     "aks list", "servicebus namespace list", "servicebus queue list", "servicebus topic list",
     "eventhubs namespace list", "eventhubs eventhub list", "eventgrid topic list", "communication email list",
@@ -175,7 +177,11 @@ def test_exactly_the_reviewed_operations_and_never_a_secret():
     c = collect("azure/cli-inventory", COLLECTORS[0], m.d, m, _run)
     ran = [shlex.split(x.provenance) for x in c.calls]
     assert {_words(a) for a in ran} <= OPERATIONS
-    assert not [a for a in ran for word in NEVER if word in " ".join(a)]
+    # the command and its flags never name a secret; a projection is one of the reviewed ones below
+    assert not [a for a in ran for word in NEVER
+                if word in " ".join(x for i, x in enumerate(a) if i == 0 or a[i - 1] != "--query")]
+    assert {a[a.index("--query") + 1] for a in ran if "--query" in a} <= {
+        VPN_PROJECTION, ACTION_GROUP_PROJECTION, WEB_TEST_PROJECTION, JOB_PROJECTION, AUTOMATION_PROJECTION}
     assert all(a[0] == "az" and a[-2:] == ["-o", "json"] for a in ran)
     assert ["az", "network", "vnet", "list", "-g", "rg-ciam-prod"] == ran[0][:6]
     assert {a[a.index("--vault-name") + 1] for a in ran if "--vault-name" in a} == {"kv-ciam-prod"}
@@ -186,6 +192,8 @@ def test_exactly_the_reviewed_operations_and_never_a_secret():
                                                                       "monitor app-insights web-test list"))
     assert groups[groups.index("--query") + 1] == ACTION_GROUP_PROJECTION       # receivers' URLs never fetched
     assert tests[tests.index("--query") + 1] == WEB_TEST_PROJECTION             # request headers never fetched
+    jobs = next(a for a in ran if _words(a) == "containerapp job list")
+    assert jobs[jobs.index("--query") + 1] == JOB_PROJECTION                    # env variables, secrets never fetched
     exports = next(a for a in ran if _words(a) == "security automation list")
     assert exports[exports.index("--query") + 1] == AUTOMATION_PROJECTION       # no connection string or URI
     rest = [a for a in ran if _words(a) == "rest"]

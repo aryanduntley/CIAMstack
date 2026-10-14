@@ -47,6 +47,7 @@ from opsdir_adapter_gcp.audit import render_trails
 from opsdir_adapter_gcp.log_sinks import log_sink_notes, render_log_sinks
 from opsdir_adapter_gcp.observability import render_buckets, render_policies
 from opsdir_adapter_gcp.canaries import render_checks
+from opsdir_adapter_gcp.synthetic_monitors import render_monitors
 from opsdir_adapter_gcp.discovery import render_discovery
 from opsdir_adapter_gcp.security import render_security
 from opsdir_adapter_gcp.suppressions import render_suppressions
@@ -269,10 +270,11 @@ def _references(m):
 
 def render_files(m, services):
     """{path: TfFile | text} of environment m's Google Cloud render: the Terraform roots as data (main, providers,
-    the landing zone's roots), the workflow and evaluation files they come with as text."""
+    the landing zone's roots), the workflow, synthetic monitor source and evaluation files they come with as text."""
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     kms, identities = secret(m, "disk-encryption"), workload_identities(m, ACCESS)
     discovery, workflows = render_discovery(m)
+    monitors, sources = render_monitors(m, endpoints)
     out = (*network_data(m), *_firewall(m), *chain.from_iterable(identity(m, w) for w in identities),
            *chain.from_iterable(_instance(m, s, kms, identities) for s in m.servers),
            *render_groups(m, kms, identities, _ports(m, endpoints)),
@@ -282,12 +284,12 @@ def render_files(m, services):
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *forwarding_zones(m), *render_trails(m), *render_buckets(m),
            *(render_log_sinks(m, services) + log_sink_notes(m, services) if services else ()), *render_policies(m),
-           *render_checks(m, endpoints), *render_security(m),
+           *render_checks(m, endpoints), *monitors, *render_security(m),
            *discovery, *render_suppressions(m),
            *render_quota_requests(m), *budget_notes(m),
            *_references(m))
     providers = (
-        required_providers(),
+        required_providers(archive=bool(sources)),
         provider_block(m, ("project", ref("var.project_id")), ("region", REGION)),
         project_variable(m),
         tf_block("variable", ["region"], [("type", ref("string")), ("default", one(m.cloud, "ciamRegion"))]))
@@ -295,10 +297,10 @@ def render_files(m, services):
     roots = placed_roots(m, ((PROVIDERS, providers), (MAIN, out), *landing), landing_dns, lambda name: (
         header(m, "Google Cloud infrastructure for the CIAM platform", HCL) + unbound_comments(m.unbound)
         if name == MAIN else header(m, "Providers and inputs", HCL)))
-    carried = carried_files(roots, workflows, STACK)
+    carried = carried_files(roots, {**workflows, **sources}, STACK)
     if scope_folder(m) is not None:                 # a slice: its root and the files it reads, nothing of the stack's
         return {**roots, **carried}
-    return {**roots, **workflows, **carried, **evaluation_files(m, ACCESS, "Google Cloud")}
+    return {**roots, **workflows, **sources, **carried, **evaluation_files(m, ACCESS, "Google Cloud")}
 
 
 def render(m, services):

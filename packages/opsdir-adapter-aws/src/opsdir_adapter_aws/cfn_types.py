@@ -1072,7 +1072,8 @@ def _canary(f, cx):
         "zip_file": None,
         "schedule": Nest("Schedule", {"expression": "Expression",
                                       "duration_in_seconds": _as_string("DurationInSeconds")}),
-        "vpc_config": Nest("VpcConfig", {"subnet_ids": "SubnetIds", "security_group_ids": "SecurityGroupIds"}),
+        # AWS::Synthetics::Canary spells it VPCConfig (Lambda's is VpcConfig): cfn-lint's bundled schema
+        "vpc_config": Nest("VPCConfig", {"subnet_ids": "SubnetIds", "security_group_ids": "SecurityGroupIds"}),
         "run_config": Nest("RunConfig", {"timeout_in_seconds": "TimeoutInSeconds", "memory_in_mb": "MemoryInMB",
                                          "active_tracing": "ActiveTracing",
                                          "environment_variables": "EnvironmentVariables"})})

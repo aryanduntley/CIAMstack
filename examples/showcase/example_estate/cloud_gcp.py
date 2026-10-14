@@ -271,10 +271,27 @@ def _gcp_monitoring():
             return _asset("monitoring.googleapis.com/AlertPolicy", {
                 "name": ref, "displayName": ref.rsplit("/", 1)[1], "conditions": [condition],
                 "notificationChannels": [attrs["ciamNotifies"]], "userLabels": {"realizes": attrs["ciamRealizes"]}})
-        return _asset("monitoring.googleapis.com/UptimeCheckConfig", {
-            "name": ref, "displayName": "sso-login", "period": "300s",
-            "userLabels": {"realizes": attrs["ciamRealizes"]}})
-    return [asset(oc, attrs) for oc, _, _, attrs in MONITORING["standby"]]
+        return _check(ref, attrs)
+    return [x for oc, _, _, attrs in MONITORING["standby"]
+            for x in (asset(oc, attrs) if oc == "ciamCanaryBinding" else (asset(oc, attrs),))]
+
+
+def _check(ref, attrs):
+    """A canary binding's uptime check, every 5 or 10 minutes as its interval says; a synthetic monitor's (a binding
+    recording where its function's source is) with its Cloud Run function, built from that bucket."""
+    name = ref.rsplit("/", 1)[1]
+    minutes = int(attrs["ciamInterval"].rstrip("m"))
+    function = f"{PROJECT}/locations/us-central1/functions/{name}"
+    bucket, _, folder = attrs.get("ciamStorageRef", "gs://")[len("gs://"):].partition("/")
+    monitor = ({"syntheticMonitor": {"cloudFunctionV2": {"name": function}}},) if bucket else ()
+    return (_asset("monitoring.googleapis.com/UptimeCheckConfig", {
+                "name": ref, "displayName": name, "period": f"{minutes * 60}s",
+                "userLabels": {"realizes": attrs["ciamRealizes"]}, **(monitor[0] if monitor else {})}),
+            *((_asset("cloudfunctions.googleapis.com/Function", {
+                "name": function, "environment": "GEN_2", "labels": {"realizes": attrs["ciamRealizes"]},
+                "buildConfig": {"runtime": "nodejs24", "entryPoint": "SyntheticFunction", "source": {
+                    "storageSource": {"bucket": bucket, "object": f"{folder}/check-{name}.zip"}}}}),)
+              if bucket else ()))
 
 
 def _gcp_databases(p):

@@ -22,7 +22,7 @@ SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password"
                 "am-ds-bind-password", "idm-admin-password", "idm-keystore", "idm-ds-bind-password",
                 "idm-hrdb-password", "ig-keystore", "pf-ds-bind-password", "pf-grants-db-password", "pf-smtp-password",
                 "pf-captcha-secret", "pf-corp-ad-bind-password", "pf-signing-key-password", "sso-tls-keystore-password",
-                "canary-client")
+                "canary-client", "canary-bind")
 # The source estates (production, stage, the lab) run the versions they were built with; the target and the standby,
 # new builds, the current releases: the migration upgrades each product within the adapters' ranges
 DS_V, PF_V, AM_V, IDM_V, IG_V = ("PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 7.5.1", "PingIDM 7.5.0",
@@ -156,7 +156,9 @@ TARGET = MappingProxyType({
                 ("snet-idm", "subnet-idm", "vnet-ciam-prod/snet-idm", "10.60.6.0/24", None),
                 ("snet-ig", "subnet-ig", "vnet-ciam-prod/snet-ig", "10.60.10.0/24", None),
                 ("snet-db", "subnet-db", "vnet-ciam-prod/snet-db", "10.60.8.0/24", None),     # Flexible Server's
-                ("snet-aks", "subnet-aks", "vnet-ciam-prod/snet-aks", "10.60.12.0/22", None)],   # the AKS nodes'
+                ("snet-aks", "subnet-aks", "vnet-ciam-prod/snet-aks", "10.60.12.0/22", None),    # the AKS nodes'
+                # the scripted checks' Container Apps environment (a /27 delegated to it, holding nothing else)
+                ("snet-checks", "subnet-checks", "vnet-ciam-prod/snet-checks", "10.60.20.0/27", None)],
 
     "services": [("svc-ldaps", "ds-ldaps-service", "ldap.id.cloud.example-aero.test", "id.cloud.example-aero.test",
                   None, "ds", [1636], "10.60.1.100", None, None),     # no certificate covers this (planted) name
@@ -179,7 +181,9 @@ TARGET = MappingProxyType({
            ("fw-apps-public", "fw-apps-public", ["0.0.0.0/0"], [443], "ig", None, None),
            # the PingFederate nodes' cluster traffic (JGroups bind and failure-detection ports), engines and console
            ("fw-pf-cluster", "fw-pf-cluster", ["10.60.2.0/24"], [7600, 7700], "pf-engine", None, None),
-           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.60.2.0/24"], [7600, 7700], "pf-admin", None, None)],
+           ("fw-pf-cluster-admin", "fw-pf-cluster-admin", ["10.60.2.0/24"], [7600, 7700], "pf-admin", None, None),
+           # the scripted checks (their Container Apps environment) bind to the directory
+           ("fw-checks-ds", "fw-checks-ds", ["10.60.20.0/27"], [1636], "ds", None, None)],
     "egress": ("natgw-ciam-prod", "203.0.113.200/32"),
     "time": (["ptp:/dev/ptp_hyperv"], "ptp"),          # the Azure host's clock, as chrony reads it on Linux VMs
     "secret": lambda role: f"azkv://kv-ciam-prod/{role}",

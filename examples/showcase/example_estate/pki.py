@@ -128,6 +128,9 @@ CREDENTIALS = (
     # the OAuth client the synthetic sign-in check uses (a JSON secret holding client_id and client_secret)
     ("canary-client", "client-secret", None, None, ["authentication"], "text", None, "TRUE", 90, "per-environment",
      None, f"cn=sso-login,{CANARIES}", None),
+    # the directory account the LDAP bind check signs in as (a JSON secret holding bind_dn and password)
+    ("canary-bind", "password", None, None, ["authentication"], "text", None, "TRUE", 90, "per-environment",
+     None, f"cn=directory-bind,{CANARIES}", None),
     # the logins the lab's appliance add-ons sign in with (the network team's service accounts, held in CyberArk)
     ("bigip-hq-login", "password", None, None, ["administration"], "text", None, "TRUE", 90, "per-environment",
      None, None, None),

@@ -44,6 +44,7 @@ REALIZES = MappingProxyType({
     "azurerm_network_watcher_flow_log": "ciamFlowLog", "azurerm_web_application_firewall_policy": "ciamEdgeService",
     "azurerm_monitor_action_group": "ciamAlertChannel", "azurerm_consumption_budget_subscription": "ciamBudget",
     "azurerm_application_insights_standard_web_test": "ciamCanaryBinding",
+    "azurerm_container_app_job": "ciamCanaryBinding",
     "azurerm_linux_virtual_machine_scale_set": "ciamComputeGroup"})
 # The ARM resource type of an azurerm type in its resource provider (resource_providers.namespace_of)
 ARM_TYPES = MappingProxyType({
@@ -62,6 +63,7 @@ ARM_TYPES = MappingProxyType({
     "azurerm_monitor_metric_alert": "metricAlerts", "azurerm_monitor_data_collection_rule": "dataCollectionRules",
     "azurerm_monitor_data_collection_endpoint": "dataCollectionEndpoints", "azurerm_application_insights": "components",
     "azurerm_application_insights_standard_web_test": "webTests",
+    "azurerm_container_app_job": "jobs", "azurerm_container_app_environment": "managedEnvironments",
     "azurerm_data_protection_backup_vault": "backupVaults", "azurerm_security_center_automation": "automations",
     "azurerm_linux_virtual_machine_scale_set": "virtualMachineScaleSets",
     "azurerm_monitor_autoscale_setting": "autoscalesettings"})

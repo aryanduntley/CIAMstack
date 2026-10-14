@@ -239,6 +239,7 @@ Record changes these findings can make (`opsdir fix show FROM TO KEY`; propose o
 - New in target/prod: `ciam-edge-tls-key`.
 - New in target/prod: `cross-cloud-replication`.
 - New in target/prod: `egress-proxy`.
+- New in target/prod: `fw-checks-ds`.
 - New in target/prod: `idm-workload`.
 - New in target/prod: `ig-workload`.
 - New in target/prod: `internal-ca-certificate`.
@@ -246,6 +247,7 @@ Record changes these findings can make (`opsdir fix show FROM TO KEY`; propose o
 - New in target/prod: `pf-admin-workload`.
 - New in target/prod: `pf-engine-workload`.
 - New in target/prod: `subnet-aks`.
+- New in target/prod: `subnet-checks`.
 - New in target/prod: `subnet-db`.
 - New in target/prod: `subnet-edge`.
 - The AM journey is complete (every node leads to one of its own, or ends the journey).
@@ -301,7 +303,7 @@ Record changes these findings can make (`opsdir fix show FROM TO KEY`; propose o
 
 ## What the target renders to
 
-`opsdir render target/prod` produces 79 files from the same databases: Terraform for the target cloud, ForgeOps Helm values (identity-platform, ping-gateway), a Kustomize overlay and, on request, the products' config profiles for the workloads run on Kubernetes, Kubernetes namespaces, service accounts, network policies and secret delivery, ping-devops Helm values and, on request, a server profile for the PingFederate admin and engine run on Kubernetes, Prometheus alerting rules from the record's alert rules, and the play placing them, per-server DS setup scripts that join the existing deployment, PingFederate's configuration for each environment as Admin API requests checked against its version's spec, as Terraform for its provider or, on request, as a bulk import document, and cluster discovery, gateway routes to each environment's applications, IDM connector configuration for each environment, and the environment-neutral PingAM/DS/PingFederate/PingIDM configuration.
+`opsdir render target/prod` produces 81 files from the same databases: Terraform for the target cloud, ForgeOps Helm values (identity-platform, ping-gateway), a Kustomize overlay and, on request, the products' config profiles for the workloads run on Kubernetes, Kubernetes namespaces, service accounts, network policies and secret delivery, ping-devops Helm values and, on request, a server profile for the PingFederate admin and engine run on Kubernetes, Prometheus alerting rules from the record's alert rules, and the play placing them, per-server DS setup scripts that join the existing deployment, PingFederate's configuration for each environment as Admin API requests checked against its version's spec, as Terraform for its provider or, on request, as a bulk import document, and cluster discovery, gateway routes to each environment's applications, IDM connector configuration for each environment, and the environment-neutral PingAM/DS/PingFederate/PingIDM configuration.
 
 
 (written to <OUT>/plan-before/PLAN.md and 6 request drafts in <OUT>/plan-before/requests/)

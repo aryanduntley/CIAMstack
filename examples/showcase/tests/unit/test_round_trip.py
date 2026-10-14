@@ -88,6 +88,7 @@ NATIVE_GAPS = {
     ('target/prod', 'native only', 'modify', 'identity-ci', ('ciamGrant',)),
     ('target/prod', 'native only', 'modify', 'identity-ds', ('ciamGrant',)),
     ('target/prod', 'native only', 'unreported', 'snet-aks', ()),
+    ('target/prod', 'native only', 'unreported', 'snet-checks', ()),
     ('target/prod', 'native only', 'unreported', 'snet-edge', ()),
     ('target/prod', 'terraform only', 'modify', 'identity-ci', ('ciamGrant', 'ciamIdentityClientId')),
     ('target/prod', 'terraform only', 'modify', 'identity-ds', ('ciamGrant', 'ciamIdentityClientId')),

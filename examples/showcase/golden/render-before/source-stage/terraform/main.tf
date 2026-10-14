@@ -1365,6 +1365,10 @@ resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
 
 # Alarm ds-replication-lag (alert rule replication-lag): kept by source/prod (this environment inherits it), not rendered here
 
+# Canary directory-bind (directory-bind): kept by source/prod (this environment inherits it), not rendered here
+
+# Canary portal-sso (portal-sso): kept by source/prod (this environment inherits it), not rendered here
+
 # Canary sso-login (sso-login): kept by source/prod (this environment inherits it), not rendered here
 
 data "aws_secretsmanager_secret" "am_admin_password" {
@@ -1377,6 +1381,10 @@ data "aws_secretsmanager_secret" "am_ds_bind_password" {
 
 data "aws_secretsmanager_secret" "am_keystore" {
   arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/am-keystore"
+}
+
+data "aws_secretsmanager_secret" "canary_bind" {
+  arn = "arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/canary-bind"
 }
 
 data "aws_secretsmanager_secret" "canary_client" {
