@@ -2,7 +2,8 @@
 # Download the third-party tools the tests use on rendered output into tools/ at the repository root. That folder is
 # gitignored and holds nothing else: delete it to remove them. Idempotent: what is already there is kept.
 #   opsdir/scripts/fetch-tools.sh
-# Terraform: the release zip, checked against HashiCorp's SHA256SUMS, whose signature is checked against HashiCorp's
+# Terraform and the Vault CLI (opsdir-adapter-hashicorp-vault's inventory collector, marker `vault`): each release
+# zip checked against HashiCorp's SHA256SUMS, whose signature is checked against HashiCorp's
 # release key (fingerprint pinned below) in a keyring inside tools/, never the user's.
 # Helm, Kustomize, kubeconform (Kubernetes output, opsdir/scripts/validate-kubernetes.sh) and Prometheus's promtool
 # (rule files): each release archive checked
@@ -23,6 +24,7 @@ set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 TOOLS=$ROOT/tools
 TF_VERSION=1.16.5
+VAULT_VERSION=2.2.0               # 2026-10-15 (the current release); its dev server proves the KV metadata collector
 HASHICORP_KEY=C874011F0AB405110D02105534365D9472D7468F    # https://www.hashicorp.com/security (release signing key)
 HELM_VERSION=4.3.0                # 2026-09-09; ForgeOps 2026.3 works with Helm 3 or 4 and recommends the latest
 KUSTOMIZE_VERSION=5.8.3           # 2026-10-08 (no functional change from 5.8.2)
@@ -48,31 +50,38 @@ os=$(uname -s | tr '[:upper:]' '[:lower:]')
 case "$(uname -m)" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
 mkdir -p "$TOOLS/bin" "$TOOLS/terraform-plugins"
 
-terraform_fetch() {
-  local zip=terraform_${TF_VERSION}_${os}_${arch}.zip url=https://releases.hashicorp.com/terraform/$TF_VERSION
-  local work=$TOOLS/downloads/terraform-$TF_VERSION
+# A HashiCorp release binary into tools/bin, its SHA256SUMS signature and checksum verified: hashicorp_fetch <product> <version>
+hashicorp_fetch() {
+  local product=$1 version=$2
+  local zip=${product}_${version}_${os}_${arch}.zip url=https://releases.hashicorp.com/$product/$version
+  local work=$TOOLS/downloads/$product-$version
   mkdir -p "$work" && chmod 700 "$TOOLS/downloads"
   (cd "$work" &&
-   curl -fsSLO "$url/$zip" && curl -fsSLO "$url/terraform_${TF_VERSION}_SHA256SUMS" &&
-   curl -fsSLO "$url/terraform_${TF_VERSION}_SHA256SUMS.sig" &&
+   curl -fsSLO "$url/$zip" && curl -fsSLO "$url/${product}_${version}_SHA256SUMS" &&
+   curl -fsSLO "$url/${product}_${version}_SHA256SUMS.sig" &&
    curl -fsSL https://www.hashicorp.com/.well-known/pgp-key.txt -o hashicorp.asc)
   local gnupg=$work/gnupg
   mkdir -p "$gnupg" && chmod 700 "$gnupg"
   gpg --homedir "$gnupg" --quiet --import "$work/hashicorp.asc" 2>/dev/null
   gpg --homedir "$gnupg" --quiet --with-colons --fingerprint | grep -q "^fpr:::::::::$HASHICORP_KEY:" ||
     { echo "HashiCorp's key doesn't have the pinned fingerprint $HASHICORP_KEY" >&2; exit 1; }
-  gpg --homedir "$gnupg" --quiet --verify "$work/terraform_${TF_VERSION}_SHA256SUMS.sig" \
-    "$work/terraform_${TF_VERSION}_SHA256SUMS" 2>/dev/null || { echo "SHA256SUMS signature doesn't verify" >&2; exit 1; }
-  (cd "$work" && grep " $zip\$" "terraform_${TF_VERSION}_SHA256SUMS" | sha256sum -c --quiet -) ||
+  gpg --homedir "$gnupg" --quiet --verify "$work/${product}_${version}_SHA256SUMS.sig" \
+    "$work/${product}_${version}_SHA256SUMS" 2>/dev/null || { echo "SHA256SUMS signature doesn't verify" >&2; exit 1; }
+  (cd "$work" && grep " $zip\$" "${product}_${version}_SHA256SUMS" | sha256sum -c --quiet -) ||
     { echo "$zip doesn't match its checksum" >&2; exit 1; }
-  unzip -oq "$work/$zip" terraform -d "$TOOLS/bin"
+  unzip -oq "$work/$zip" "$product" -d "$TOOLS/bin"
   rm -rf "$work"
 }
 
 if [ -x "$TOOLS/bin/terraform" ] && "$TOOLS/bin/terraform" version | grep -q "^Terraform v$TF_VERSION\$"; then
   echo "terraform $TF_VERSION: already in tools/bin"
 else
-  terraform_fetch && echo "terraform $TF_VERSION: tools/bin/terraform (verified)"
+  hashicorp_fetch terraform "$TF_VERSION" && echo "terraform $TF_VERSION: tools/bin/terraform (verified)"
+fi
+if [ -x "$TOOLS/bin/vault" ] && "$TOOLS/bin/vault" version | grep -q "^Vault v$VAULT_VERSION "; then
+  echo "vault $VAULT_VERSION: already in tools/bin"
+else
+  hashicorp_fetch vault "$VAULT_VERSION" && echo "vault $VAULT_VERSION: tools/bin/vault (verified)"
 fi
 
 # The pinned SHA-256 of a release archive for this OS/arch: pinned_sha <tool>
