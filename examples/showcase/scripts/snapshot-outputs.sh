@@ -140,6 +140,9 @@ cap 08-firewall-drift-lab od import --dry-run --at 20260923090000Z panos/running
 cap 08-apply-chg-2048 od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
   panos/running-config exports/panos
 cap 08-report-firewall-running od report firewall-running
+cap 08-apply-chg-2055 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif
+cap 08-apply-chg-2056 od import --change CHG-2056 --at 20260923090000Z servicenow/change-requests exports/servicenow
+cap 08-report-tickets od report tickets
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

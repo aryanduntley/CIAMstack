@@ -1,2 +1,2 @@
-loaded 802 entries from 37 files; 519 DN references verified
+loaded 804 entries from 37 files; 519 DN references verified
 exit 0

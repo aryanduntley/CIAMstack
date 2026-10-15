@@ -1,0 +1,59 @@
+# CHG-2055 (approved): the change records name the ServiceNow tickets their change management tracks them by
+# (ciamTicketRef servicenow:<number>, the operator's link), and the estate setting names the instance's change models
+# on ServiceNow's standard state model (as GET /api/sn_chg_rest/change/model lists them: the Normal model's sys_id;
+# the old "Legacy change" model isn't, so its tickets' states stay as ServiceNow gives them). Nothing here is ticket
+# evidence: CHG-2056 reads the tickets into ou=tickets, and no ticket ever changes a change record's status.
+dn: ou=settings,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: organizationalUnit
+ou: settings
+description: Estate settings the platform's managers give a value
+
+dn: cn=servicenow-standard-state-models,ou=settings,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEstateSetting
+cn: servicenow-standard-state-models
+ciamEstateValue: 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+
+dn: cn=CHG-0931,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0029931
+
+dn: cn=CHG-2001,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030101
+
+dn: cn=CHG-2003,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030103
+
+dn: cn=CHG-2004,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030104
+
+dn: cn=CHG-2005,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030105
+
+dn: cn=CHG-2006,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030106
+
+dn: cn=CHG-2007,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030107
+
+dn: cn=CHG-2008,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030108

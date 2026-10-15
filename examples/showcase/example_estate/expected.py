@@ -116,6 +116,14 @@ EXPECTED = MappingProxyType({
          "cyberark://ciam-ops/CIAM-TARGET/ds-root-password), but CIAM-TARGET's inventory",
          "the target's PAM copy of the directory root password was vaulted under another name: the safe, listed "
          "whole, has no `ds-root-password`, so rotating the password wouldn't update it", None, "CHG-2047"),
+        # ITSM ticket evidence (CHG-2056 reads the ServiceNow tickets CHG-2055 links): the record approves changes
+        # ITSM rejected or cancelled
+        ("B60", "Change tickets", "ITSM says its ticket servicenow:CHG0030104 (read 2026-09-23) was **rejected**",
+         "the record approves CHG-2004 (the partner realm's PingAM import), but the CAB rejected its ticket", None,
+         "CHG-2056"),
+        ("B61", "Change tickets", "ITSM says its ticket servicenow:CHG0030108 (read 2026-09-23) was **cancelled**",
+         "the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled", None,
+         "CHG-2056"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -468,6 +476,22 @@ EXPECTED = MappingProxyType({
         ("A145", "Allowlist", "`hq-apps-egress-to-ldaps`",
          "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds "
          "the target's, which the running-config import records", "CHG-2048"),
+        # ITSM ticket evidence (CHG-2056): drift between the record and the ServiceNow tickets
+        ("A171", "Change tickets", "the approval of its ticket servicenow:CHG0030103 (read 2026-09-23) is requested",
+         "the record approves CHG-2003, but its ticket still waits for one CAB member (one approver approved: not the "
+         "change's approval)", None, "CHG-2056"),
+        ("A172", "Change tickets", "ITSM says its ticket servicenow:CHG0030105 (read 2026-09-23) is closed",
+         "CHG-2005's ticket closed successful, while the record still has the change approved, not applied", None,
+         "CHG-2056"),
+        ("A173", "Change tickets", "Change `CHG-2006` (Record the production directory servers' configuration "
+         "(config.ldif exports)) is planned for 2026-09-20 in the record",
+         "the record plans CHG-2006 for 2026-09-20; its ticket's window is 2026-09-27 to 2026-09-28", None,
+         "CHG-2056"),
+        ("A174", "Change tickets", "ITSM says the work on its ticket servicenow:CHG0029931 (read 2026-09-23) ran",
+         "CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; "
+         "its legacy change model's state is kept native)", None, "CHG-2056"),
+        ("A175", "Change tickets", "names ticket servicenow:CHG0030107, but no import has read it",
+         "CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed", None, "CHG-2056"),
     ],
 })
 

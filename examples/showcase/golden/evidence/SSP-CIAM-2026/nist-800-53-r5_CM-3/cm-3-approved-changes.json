@@ -275,6 +275,18 @@
       "Read the lab's firewall rules back from the HQ Panorama's running configuration (keep the record's admin range: the next push restores it)",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2055,ou=changes,dc=ciam-ops",
+      "Link the recorded changes to their ServiceNow tickets; name the instance's change models on the standard state model",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2056,ou=changes,dc=ciam-ops",
+      "Read the linked ServiceNow tickets as evidence (state, approval, planned and actual windows)",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

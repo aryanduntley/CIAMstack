@@ -54,6 +54,7 @@ It is built for the ForgeRock/Ping stack on AWS, Azure and Google Cloud today, a
 | When was each part of the record last read back from the live system? | `opsdir report imports` |
 | What doesn't anyone know yet, and who must answer it? | `opsdir report unknowns` (the unknowns register: each question, its owner, whether a move waits for it, what it concerns, raised and needed by, open / overdue / answered, the answer). `opsdir plan` blocks on an open blocking question that concerns the source or the target, gives the other open ones as actions dated by when the answer is needed (else the cutover), and lists the answered ones as in place |
 | Does every secret reference point at something its store still holds, and which vaulted accounts does nothing reference? | `opsdir report secret-inventory` (each `cyberark://` and `vault://` reference against its store's inventory, metadata only: present, deleted, confirmed missing, listing incomplete, refused, not inventoried; rotation against `ciamRotationDays` only from a timestamp that means rotation, the CPM's status; then the objects nothing references). `opsdir plan` blocks on a target reference confirmed missing or deleted and gives the rest as actions |
+| Do the change records agree with the ITSM tickets they are tracked by? | `opsdir report tickets` (each change record linked to its ticket, `ciamTicketRef servicenow:<number>`: the record's status and planned day against what ITSM says, read as evidence by an ITSM add-on such as `opsdir-adapter-servicenow`: the ticket's state, overall approval, planned and actual windows, and the drift: in step, not imported, rejected, cancelled, unapproved, closed while pending, still live though rejected, planned on another day, worked outside its window). `opsdir plan` blocks on a change the record approves that ITSM says was rejected or cancelled and gives the rest as actions; a ticket never approves anything in opsdir |
 | How did each live collection last end, and why did a failed one fail? | `opsdir report collections` |
 | How big is the user data, which password schemes does it hold, how many accounts are idle? | `opsdir report data-profile`, `opsdir report data-profile-attributes` |
 | Which files copy this server's hostname (or any value), on which lines? | `opsdir report census [<DN>]` |
@@ -107,6 +108,9 @@ Adapters are separate installable packages. Installing one registers it with the
 - `opsdir-adapter-hashicorp-vault`: `vault://` references, resolved with the Vault CLI.
 - `opsdir-adapter-kubernetes`: `k8s-secret://` references, resolved with `kubectl`; also **imports Kubernetes manifests** as workloads (below).
 - `opsdir-adapter-cyberark`: `cyberark://` references, resolved with the Credential Provider SDK.
+
+**IT service management** (read-only: ticket evidence, never an approval)
+- `opsdir-adapter-servicenow`: **imports the ServiceNow change tickets** the record's change records name (Table API answers or JSON list exports of `change_request` and `sysapproval_approver`, or collected read-only from the instance) as evidence the planner compares with the record.
 
 **Hosts, clusters and CI** (what runs beyond the products)
 - `opsdir-adapter-linux`: **imports Linux servers' own files**: their crontabs and systemd timers as jobs, and each server role's host baseline (OS, Java runtime and the certificates its truststore adds, limits, kernel settings, FIPS and SELinux modes, agents, service units, names pinned in `/etc/hosts`).

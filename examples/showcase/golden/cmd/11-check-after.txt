@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 45   expected now 19   detected 19   missed 0   unexpected 0
+  blockers planted 47   expected now 21   detected 21   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -27,7 +27,9 @@ Expected findings check (after changes)
            B33  cleared by CHG-2029: production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation → gone
            B44  cleared by CHG-2044: nobody knows yet whether Skyline Air accepts the target's new signing certificate without re-onboarding: an open question the move waits for, owned by the partner → gone
            B47  raised by CHG-2047: the target's PAM copy of the directory root password was vaulted under another name: the safe, listed whole, has no `ds-root-password`, so rotating the password wouldn't update it → reported
-  actions  planted 145   expected now 115   detected 115   missed 0   unexpected 0
+           B60  raised by CHG-2056: the record approves CHG-2004 (the partner realm's PingAM import), but the CAB rejected its ticket → reported
+           B61  raised by CHG-2056: the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled → reported
+  actions  planted 150   expected now 120   detected 120   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -68,6 +70,11 @@ Expected findings check (after changes)
            A136 raised by CHG-2033: the target's corporate-AD forwarder runs on the organization's own DNS servers: whoever keeps them sets the forwarding up by hand (a render note) → reported
            A137 raised by CHG-2028: the target's vCPU increase is decided as a request, which azurerm can't file: someone files it through the Quota API or a support request (a render note) → reported
            A160 raised by CHG-2047: the account the target's root password copy was vaulted as: nothing references it → reported
+           A171 raised by CHG-2056: the record approves CHG-2003, but its ticket still waits for one CAB member (one approver approved: not the change's approval) → reported
+           A172 raised by CHG-2056: CHG-2005's ticket closed successful, while the record still has the change approved, not applied → reported
+           A173 raised by CHG-2056: the record plans CHG-2006 for 2026-09-20; its ticket's window is 2026-09-27 to 2026-09-28 → reported
+           A174 raised by CHG-2056: CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state is kept native) → reported
+           A175 raised by CHG-2056: CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

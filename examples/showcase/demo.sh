@@ -244,6 +244,11 @@ od import --dry-run --at 20260923090000Z panos/running-config exports/panos
 od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
   panos/running-config exports/panos
 od report firewall-running
+echo "-- the change records name their ServiceNow tickets (CHG-2055), and the tickets are read as evidence (CHG-2056:"
+echo "   change_request and its approval records, as the Table API answers): what ITSM says against the record"
+od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif
+od import --change CHG-2056 --at 20260923090000Z servicenow/change-requests exports/servicenow
+od report tickets
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

@@ -73,7 +73,10 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2046", EvidenceStep("SSP-CIAM-2026")),
             ("CHG-2047", ImportStep("cyberark/accounts", SHOWCASE / "exports" / "cyberark", "20260923090000Z")),
             ("CHG-2048", ImportStep("panos/running-config", SHOWCASE / "exports" / "panos", "20260923090000Z",
-                                    keep=(FIREWALL_ADMIN,))))
+                                    keep=(FIREWALL_ADMIN,))),
+            ("CHG-2055", SHOWCASE / "changes" / "CHG-2055-ticket-links.ldif"),
+            ("CHG-2056", ImportStep("servicenow/change-requests", SHOWCASE / "exports" / "servicenow",
+                                    "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

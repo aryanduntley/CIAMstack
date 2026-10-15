@@ -71,6 +71,8 @@ dc=ciam-ops
 ├── ou=unknowns                             ciamUnknown: an open question, who must answer it, whether a move waits
 ├── ou=secret-inventory                     ciamSecretInventory, ciamSecretObject: what each secret store container holds,
 │                                           metadata only (never a value), reconciled with the record's references
+├── ou=tickets                              ciamTicket (under ou=<add-on>): an ITSM ticket a change record names, as last
+│                                           read: evidence compared with the record, never an approval
 ├── ou=applications                         ciamApplication: the entries an application is made of
 └── ou=owners                               ciamParty: teams, partners, vendors, the operator
 ```
@@ -111,6 +113,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certifica
 | Which work instructions are stale? | `opsdir report stale`: runbooks whose dependencies changed after they were last validated |
 | What doesn't anyone know yet, and who must answer it? | `opsdir report unknowns`: each question in the unknowns register with its owner, whether a move waits for it, what it concerns, when it was raised and is needed, open / overdue / answered and the answer. The planner counts the ones concerning the source or the target: an open blocking one is a blocker, another open one an action dated by when the answer is needed (else the cutover), an answered one in place |
 | Does every secret reference point at something its store still holds, and which vaulted accounts does nothing reference? | `opsdir report secret-inventory` (each `cyberark://` and `vault://` reference against its store's inventory, metadata only: present, deleted, confirmed missing, listing incomplete, refused, not inventoried; rotation against `ciamRotationDays` only from a timestamp that means rotation, the CPM's status; then the objects nothing references). `opsdir plan` blocks on a target reference confirmed missing or deleted and gives the rest as actions |
+| Do the change records agree with the ITSM tickets they are tracked by? | `opsdir report tickets` (each change record linked to its ticket, `ciamTicketRef servicenow:<number>`: the record's status and planned day against what ITSM says, read as evidence by an ITSM add-on such as `opsdir-adapter-servicenow`: the ticket's state, overall approval, planned and actual windows, and the drift: in step, not imported, rejected, cancelled, unapproved, closed while pending, still live though rejected, planned on another day, worked outside its window). `opsdir plan` blocks on a change the record approves that ITSM says was rejected or cancelled and gives the rest as actions; a ticket never approves anything in opsdir |
 | What does nobody own? | `opsdir report unowned` |
 | How does an environment differ from the one it overlays? | `opsdir report overrides` |
 | Do the firewalls run the rules the record holds? | `opsdir import --dry-run panos/running-config DIR` (a Panorama's or firewall's running configuration: conflicts, missing and unrecorded rules), then `opsdir report firewall-running`: each rule as last read back (committed, deployed, disabled, missing; what it runs that the record doesn't) and each firewall's rules the record doesn't hold |

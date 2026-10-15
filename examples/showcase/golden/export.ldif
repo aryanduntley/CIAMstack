@@ -312,12 +312,23 @@ objectClass: top
 objectClass: organizationalUnit
 ou: secret-inventory
 
+dn: ou=settings,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: settings
+description: Estate settings the platform's managers give a value
+
 dn: ou=tag-policy,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: tag-policy
 description: Tag policy: the tags every rendered resource carries and where th
  eir values come from
+
+dn: ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: tickets
 
 dn: ou=unknowns,dc=ciam-ops
 objectClass: top
@@ -1006,6 +1017,7 @@ cn: CHG-0931
 ciamApprovedBy: CAB 2026-06-11
 ciamChangeStatus: applied
 ciamPlannedAt: 20260614000000Z
+ciamTicketRef: servicenow:CHG0029931
 ciamTitle: Reconfigure mail index (equality only)
 
 dn: cn=CHG-2001,ou=changes,dc=ciam-ops
@@ -1015,6 +1027,7 @@ cn: CHG-2001
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
+ciamTicketRef: servicenow:CHG0030101
 ciamTitle: Add NSG rule for the MRO batch export in the target environment
 
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
@@ -1031,6 +1044,7 @@ cn: CHG-2003
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
+ciamTicketRef: servicenow:CHG0030103
 ciamTitle: Restore the stable LDAPS service name in the target environment
 
 dn: cn=CHG-2004,ou=changes,dc=ciam-ops
@@ -1040,6 +1054,7 @@ cn: CHG-2004
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260922000000Z
+ciamTicketRef: servicenow:CHG0030104
 ciamTitle: Import the partner realm's PingAM configuration (Amster export)
 
 dn: cn=CHG-2005,ou=changes,dc=ciam-ops
@@ -1049,6 +1064,7 @@ cn: CHG-2005
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
+ciamTicketRef: servicenow:CHG0030105
 ciamTitle: Name the secrets the IDM connectors and PingFederate data stores us
  e (credential roles)
 
@@ -1059,6 +1075,7 @@ cn: CHG-2006
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260920000000Z
+ciamTicketRef: servicenow:CHG0030106
 ciamTitle: Record the production directory servers' configuration (config.ldif
   exports)
 
@@ -1069,6 +1086,7 @@ cn: CHG-2007
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260923000000Z
+ciamTicketRef: servicenow:CHG0030107
 ciamTitle: Record the directory's consumers from the production access logs
 
 dn: cn=CHG-2008,ou=changes,dc=ciam-ops
@@ -1078,6 +1096,7 @@ cn: CHG-2008
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260923000000Z
+ciamTicketRef: servicenow:CHG0030108
 ciamTitle: Import PingFederate's configuration (Admin API bulk export)
 
 dn: cn=CHG-2009,ou=changes,dc=ciam-ops
@@ -1458,6 +1477,26 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's firewall rules back from the HQ Panorama's running c
  onfiguration (keep the record's admin range: the next push restores it)
+
+dn: cn=CHG-2055,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2055
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Link the recorded changes to their ServiceNow tickets; name the ins
+ tance's change models on the standard state model
+
+dn: cn=CHG-2056,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2056
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the linked ServiceNow tickets as evidence (state, approval, pl
+ anned and actual windows)
 
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
@@ -3911,6 +3950,29 @@ ciamOwnerKind: team
 mail: soc@example-aero.test
 telephoneNumber: +1 202 555 0100
 
+dn: cn=servicenow-standard-state-models,ou=settings,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEstateSetting
+cn: servicenow-standard-state-models
+ciamEstateValue: 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+
+dn: cn=servicenow.change-requests.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: servicenow.change-requests.shared
+ciamChangeRef: cn=CHG-2056,ou=changes,dc=ciam-ops
+ciamImportScope: cn=CHG0029931,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030101,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030103,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030104,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030105,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: servicenow/change-requests
+
 dn: cn=sign-on-edge,ou=edge-policies,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -4657,6 +4719,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: schedules
 
+dn: ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: servicenow
+
 dn: ou=settings,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -5118,6 +5185,178 @@ cn: centralus
 ciamGeography: United States
 ciamRegionName: Central US
 ciamRegionStatus: available
+
+dn: cn=CHG0029931,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0029931
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677770931
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677770931
+ciamTicketApproval: approved
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70811 updated 20260611
+ 150000Z
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f
+ciamTicketFact: close_code successful
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: cmdb_ci 3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
+ciamTicketNativeState: 3 Closed
+ciamTicketPlannedEnd: 20260614030000Z
+ciamTicketPlannedStart: 20260614010000Z
+ciamTicketWorkEnd: 20260614034000Z
+ciamTicketWorkStart: 20260614003000Z
+ciamTitle: Reconfigure mail index (equality only)
+
+dn: cn=CHG0030101,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0030101
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677772001
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677772001
+ciamTicketApproval: approved
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70811 updated 20260918
+ 150000Z
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70812 updated 20260918
+ 150500Z
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
+ciamTicketNativeState: -2 Scheduled
+ciamTicketPlannedEnd: 20260924060000Z
+ciamTicketPlannedStart: 20260924020000Z
+ciamTicketState: scheduled
+ciamTitle: Add NSG rule for the MRO batch export (target)
+
+dn: cn=CHG0030103,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0030103
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677772003
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677772003
+ciamTicketApproval: requested
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70811 updated 20260918
+ 150000Z
+ciamTicketApprover: requested 2a3b4c5d6e7f8091a2b3c4d5e6f70812 updated 2026091
+ 8140000Z
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
+ciamTicketNativeState: -3 Authorize
+ciamTicketPlannedEnd: 20260924060000Z
+ciamTicketPlannedStart: 20260924020000Z
+ciamTicketState: authorize
+ciamTitle: Restore the stable LDAPS service name (target)
+
+dn: cn=CHG0030104,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0030104
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677772004
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677772004
+ciamTicketApproval: rejected
+ciamTicketApprover: rejected 2a3b4c5d6e7f8091a2b3c4d5e6f70812 updated 20260918
+ 151000Z
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
+ciamTicketNativeState: -3 Authorize
+ciamTicketPlannedEnd: 20260922040000Z
+ciamTicketPlannedStart: 20260922020000Z
+ciamTicketState: authorize
+ciamTitle: Import the partner realm's PingAM configuration
+
+dn: cn=CHG0030105,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0030105
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677772005
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677772005
+ciamTicketApproval: approved
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70811 updated 20260918
+ 150000Z
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+ciamTicketFact: close_code successful
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
+ciamTicketNativeState: 3 Closed
+ciamTicketPlannedEnd: 20260924060000Z
+ciamTicketPlannedStart: 20260924020000Z
+ciamTicketState: closed
+ciamTicketWorkEnd: 20260924024000Z
+ciamTicketWorkStart: 20260924021000Z
+ciamTitle: Name the IDM and PingFederate credential roles
+
+dn: cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0030106
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677772006
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677772006
+ciamTicketApproval: approved
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70811 updated 20260918
+ 150000Z
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: cmdb_ci 3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
+ciamTicketNativeState: -2 Scheduled
+ciamTicketPlannedEnd: 20260928060000Z
+ciamTicketPlannedStart: 20260927020000Z
+ciamTicketState: scheduled
+ciamTitle: Record the production directory servers' configuration
+
+dn: cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0030108
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677772008
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677772008
+ciamTicketApproval: approved
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70811 updated 20260918
+ 150000Z
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
+ciamTicketNativeState: 4 Canceled
+ciamTicketPlannedEnd: 20260923060000Z
+ciamTicketPlannedStart: 20260923020000Z
+ciamTicketState: cancelled
+ciamTitle: Import PingFederate's configuration (bulk export)
 
 dn: cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 objectClass: top

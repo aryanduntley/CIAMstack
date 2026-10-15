@@ -1,0 +1,11 @@
+CHG-2055: add ou=settings,dc=ciam-ops
+CHG-2055: add cn=servicenow-standard-state-models,ou=settings,dc=ciam-ops
+CHG-2055: modify cn=CHG-0931,ou=changes,dc=ciam-ops
+CHG-2055: modify cn=CHG-2001,ou=changes,dc=ciam-ops
+CHG-2055: modify cn=CHG-2003,ou=changes,dc=ciam-ops
+CHG-2055: modify cn=CHG-2004,ou=changes,dc=ciam-ops
+CHG-2055: modify cn=CHG-2005,ou=changes,dc=ciam-ops
+CHG-2055: modify cn=CHG-2006,ou=changes,dc=ciam-ops
+CHG-2055: modify cn=CHG-2007,ou=changes,dc=ciam-ops
+CHG-2055: modify cn=CHG-2008,ou=changes,dc=ciam-ops
+exit 0

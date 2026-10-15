@@ -107,14 +107,43 @@ ATTRIBUTES = (
     AttributeDef(670, 'ciamApplicationPart', 'dn', 'meta', False,
                  'An entry that is part of the application (an integration, a directory consumer, an external '
                  'service, a canary, a job): the views and dependency graph of the application start from its parts'),
+    # ITSM ticket evidence (milestone 6.2f): the operator's link from a change to its ticket, and what an ITSM add-on's
+    # importer read of the ticket (ciamTicket under ou=tickets), evidence only: never an approval opsdir acts on
+    AttributeDef(740, 'ciamTicketRef', 'string', 'meta', True,
+                 'The ITSM ticket a change record is tracked by, as <adapter>:<number> (servicenow:CHG0030101): the '
+                 'operator\'s link; what the ticket says is read into its own entry under ou=tickets, never here'),
+    AttributeDef(741, 'ciamTicketState', 'enum:new|assess|authorize|scheduled|implement|review|closed|cancelled',
+                 'meta', True,
+                 'A ticket\'s lifecycle state in neutral terms, as its add-on maps the system\'s own (absent: the '
+                 'mapping doesn\'t know the ticket\'s state model; ciamTicketNativeState holds what the system said)'),
+    AttributeDef(742, 'ciamTicketApproval', 'enum:not-requested|requested|approved|rejected', 'meta', True,
+                 'The ticket\'s overall approval as its system reports it: evidence, never an approval of the '
+                 'record\'s change'),
+    AttributeDef(743, 'ciamTicketNativeState', 'string', 'meta', True,
+                 'The ticket\'s state as its system gives it (its raw code, then its label when the export has one)'),
+    AttributeDef(744, 'ciamTicketPlannedStart', 'time', 'meta', True,
+                 'When the ticket plans the work to start'),
+    AttributeDef(745, 'ciamTicketPlannedEnd', 'time', 'meta', True,
+                 'When the ticket plans the work to end'),
+    AttributeDef(746, 'ciamTicketWorkStart', 'time', 'meta', True,
+                 'When the ticket says the work actually started'),
+    AttributeDef(747, 'ciamTicketWorkEnd', 'time', 'meta', True,
+                 'When the ticket says the work actually ended'),
+    AttributeDef(748, 'ciamTicketApprover', 'string', 'meta', False,
+                 'One approval record of the ticket, as detail only: "<state> <approver id> updated <time>" (the '
+                 'system\'s identifiers, never names; the update time is not when it was approved)'),
+    AttributeDef(749, 'ciamTicketFact', 'string', 'meta', False,
+                 'Another field of the ticket as its system gave it: "<field> <raw value>" (type, model, close code, '
+                 'assignment group, configuration item, requester, correlation, last update)'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
              ('ciamVersion', 'ciamAppliesTo', 'ciamDocUrl'),
              'Work instruction'),
     ClassDef(30, 'ciamChange', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamChangeStatus'),
-             ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords'),
-             'Change record (mirrored from ITSM; a proposed one may carry the records it applies)'),
+             ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords', 'ciamTicketRef'),
+             'Change record (mirrored from ITSM; a proposed one may carry the records it applies, and names the '
+             'ticket it is tracked by)'),
     ClassDef(31, 'ciamIncident', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamOpenedAt'),
              ('ciamSeverity', 'ciamInvolved', 'ciamRootCause'),
              'Incident / postmortem'),
@@ -153,6 +182,15 @@ CLASSES = (
              'An application as the business knows it, grouping the entries it is made of (ciamApplicationPart) and '
              'the binding roles it uses in each environment (ciamUsesRole): what an application view and its '
              'dependency graph show together; nothing is grouped unless recorded here'),
+    ClassDef(156, 'ciamTicket', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImportedAt'),
+             ('ciamTitle', 'ciamProviderRef', 'ciamDocUrl', 'ciamTicketState', 'ciamTicketApproval',
+              'ciamTicketNativeState', 'ciamTicketPlannedStart', 'ciamTicketPlannedEnd', 'ciamTicketWorkStart',
+              'ciamTicketWorkEnd', 'ciamTicketApprover', 'ciamTicketFact'),
+             'An ITSM ticket a change record names (ciamTicketRef), as its add-on\'s importer last read it (under '
+             'cn=<number>,ou=<adapter>,ou=tickets; ciamImportedAt: when the export was taken): its state, overall '
+             'approval, planned and actual windows, approval records and other fields, with the system\'s own '
+             'identifier (ciamProviderRef) and address (ciamDocUrl). Evidence compared with the record, never an '
+             'approval opsdir acts on'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

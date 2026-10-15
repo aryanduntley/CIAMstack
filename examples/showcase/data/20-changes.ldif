@@ -462,6 +462,26 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's firewall rules back from the HQ Panorama's running c
  onfiguration (keep the record's admin range: the next push restores it)
 
+dn: cn=CHG-2055,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2055
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Link the recorded changes to their ServiceNow tickets; name the ins
+ tance's change models on the standard state model
+
+dn: cn=CHG-2056,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2056
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the linked ServiceNow tickets as evidence (state, approval, pl
+ anned and actual windows)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

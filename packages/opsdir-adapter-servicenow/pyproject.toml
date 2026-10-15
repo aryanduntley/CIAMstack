@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-servicenow"
+version = "0.1.0"
+description = "opsdir ITSM add-on for ServiceNow: the change tickets the record's changes name, read as evidence."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+servicenow = "opsdir_adapter_servicenow.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]
