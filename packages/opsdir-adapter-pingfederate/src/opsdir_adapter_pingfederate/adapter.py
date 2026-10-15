@@ -12,7 +12,7 @@ from .importer import BULK
 from .listeners import listeners
 from .logs import LOGS
 from .proxy import proxy_settings
-from .naming import SERVER_ROLES
+from .naming import DISCOVERY_ROLE, SERVER_ROLES
 from .nodes import NODE_FILES
 from .render import ENDPOINTS, PROFILE, TARGETS, render_env, render_neutral
 from .schema import FRAGMENT
@@ -47,6 +47,7 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                            ("pingfederate/cluster/*.properties", "java-properties"),
                            *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingFederate", ">=11,<14"),),
+                  roles=(("server", SERVER_ROLES), ("cluster-discovery", (DISCOVERY_ROLE,))),
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES, CLUSTER), profile_terms=None,
                   access=None, endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS,

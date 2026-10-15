@@ -50,3 +50,49 @@ def test_installed_core_registers_its_domains():
     assert [d.name for d in DOMAINS] == ["infrastructure", "directory", "federation", "pki", "governance",
                                          "configuration", "automation", "compute", "messaging", "custom",
                                          "observability", "access", "edge", "network", "data", "recovery", "estate"]
+
+
+# ------------------------------------------------------------------ product roles and kits' logs (U.14 task 515)
+def test_product_roles_by_product_name_and_kind():
+    from opsdir.core.environment import EnvModel, product_roles, roles_for, with_product_roles
+    am = adapter("am", "product")._replace(products=(("PingAM", ">=7"), ("ForgeRock AM", ">=7")),
+                                           roles=(("server", ("am",)), ("keystore", ("am-keystore",))))
+    found = product_roles((adapter("cloud", "provider"), am))
+    assert found == (("PingAM", "server", "am"), ("PingAM", "keystore", "am-keystore"),
+                     ("ForgeRock AM", "server", "am"), ("ForgeRock AM", "keystore", "am-keystore"))
+    m = with_product_roles(EnvModel(*(None,) * 14), found)
+    assert roles_for(m, "ForgeRock AM", "keystore") == ("am-keystore",)
+    assert roles_for(m, "PingIDM", "server") == () and EnvModel(*(None,) * 14).product_roles == ()
+
+
+def test_the_installed_products_declare_their_roles_by_known_kinds():
+    from opsdir.connectors.registry import ADAPTERS
+    from opsdir.core.contract import ROLE_KINDS
+    from opsdir.core.environment import product_roles
+    declared = product_roles(ADAPTERS)
+    assert {k for _, k, _ in declared} <= set(ROLE_KINDS)
+    assert {(p, k) for p, k, _ in declared} >= {("PingAM", "server"), ("PingAM", "keystore"), ("PingIDM", "keystore"),
+                                                ("PingDS", "service"), ("PingFederate", "cluster-discovery")}
+
+
+def test_a_kits_callable_logs_resolve_once_over_the_others_static_ones():
+    from opsdir.connectors.registry import ADAPTERS, resolved_logs
+    from opsdir.core.contract import LogSource
+    product = adapter("prod", "product")._replace(products=(("Prod", ">=1"),), roles=(("server", ("web",)),),
+                                                  logs=(LogSource("web", "servers", "log/a.log", "text", "access"),))
+    kit = adapter("kit", "platform")._replace(logs=lambda sources, roles: tuple(
+        s._replace(on="kubernetes", path=None) for s in sources if (s.server_role and ("Prod", "server", s.server_role)
+                                                                     in roles)))
+    resolved = {a.name: a.logs for a in resolved_logs((product, kit))}
+    assert resolved == {"prod": product.logs, "kit": (LogSource("web", "kubernetes", None, "text", "access"),)}
+    assert all(not callable(a.logs) for a in ADAPTERS)
+
+
+def test_the_stack_check_gives_a_plain_model_the_adapters_product_roles():
+    from opsdir.connectors.stack import declared_adapters
+    from opsdir.core.environment import EnvModel, roles_for
+    seen = []
+    kit = adapter("kit", "platform")._replace(applies=lambda m: seen.append(roles_for(m, "Prod", "server")) or True)
+    product = adapter("prod", "product")._replace(products=(("Prod", ">=1"),), roles=(("server", ("web",)),))
+    plain = EnvModel(*(None,) * 6, (), (), (), (), (), (), (), None)
+    assert declared_adapters(plain, (product, kit)) == (product, kit) and seen == [("web",)]

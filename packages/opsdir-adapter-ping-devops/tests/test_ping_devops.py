@@ -12,7 +12,6 @@ import yaml
 from opsdir.connectors.registry import core_fragments, services
 from opsdir.core.contract import K8sIdentity, PlanContext, Route
 from opsdir.core.directory import one
-from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
@@ -24,10 +23,11 @@ from opsdir_adapter_ping_devops.helm import render
 from opsdir_adapter_ping_devops.listeners import listeners
 from opsdir_adapter_ping_devops.products import applies, placements, unplaced
 from opsdir_adapter_ping_devops.routes import routes
+from opsdir_adapter_pingfederate.adapter import ADAPTER as PINGFEDERATE
 from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
 from mini_estate import FAKE
-from support import build_directory
+from support import build_directory, installed_model
 
 ALPHA = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -67,12 +67,12 @@ BASE = (
              f"pingfedDiscoveryProtocol: DNS_PING\nciamFqdn: {QUERY}\n"))
 CLOUD = FAKE._replace(workload_identity=lambda m, b: K8sIdentity(
     (("cloud.example.test/identity", one(b, "ciamProviderRef")),), (("cloud.example.test/use", "true"),)))
-INSTALLED = (CLOUD, KUBERNETES, ADAPTER)
+INSTALLED = (CLOUD, KUBERNETES, ADAPTER, PINGFEDERATE)     # PingFederate declares the log files the sidecars tail
 
 
 def model(*extra, base=BASE):
     d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *base, *extra)))))
-    return env_model(d, "alpha/prod")
+    return installed_model(d, "alpha/prod")
 
 
 def _values(m):
@@ -90,7 +90,7 @@ def _actions(m):
 
 def test_it_renders_only_where_pingfederate_runs_on_kubernetes():
     assert applies(model())
-    assert not applies(env_model(build_directory(REGISTRY, tuple(parse(mini_estate.LDIF))), "alpha/prod"))
+    assert not applies(installed_model(build_directory(REGISTRY, tuple(parse(mini_estate.LDIF))), "alpha/prod"))
     (p,) = placements(model())
     assert p.namespace == "identity" and [x for x, _ in p.placed] == ["pingfederate-admin", "pingfederate-engine"]
 
@@ -240,7 +240,8 @@ def _routed():
 
 
 def test_each_log_file_a_route_picks_is_its_own_sidecars_output():
-    from opsdir_adapter_ping_devops.logs import LOGS
+    from opsdir.connectors.registry import ADAPTERS
+    LOGS = next(a for a in ADAPTERS if a.name == "ping-devops").logs     # resolved over PingFederate's declarations
     assert [(s.server_role, s.container, s.kind) for s in LOGS if s.container is None] == [
         ("pf-engine", None, "error"), ("pf-admin", None, "error")]       # server.log and init.log, as the image tails
     assert "pf-log-server" not in {s.container for s in LOGS}

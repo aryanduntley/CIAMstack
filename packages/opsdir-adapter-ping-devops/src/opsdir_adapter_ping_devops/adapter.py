@@ -4,7 +4,7 @@ from opsdir.core.contract import Adapter
 from .checks import check_ping_devops
 from .helm import render
 from .listeners import listeners
-from .logs import LOGS
+from .logs import kit_logs
 from .profiles import render_profiles
 from .products import applies, deploys
 from .release import SERVER_PROFILE
@@ -29,5 +29,5 @@ ADAPTER = Adapter(name="ping-devops", kind="platform", applies=applies, required
                           "and engine run on Kubernetes",
                   neutral_label=None, vocabulary={}, schema=None, formats=FORMATS, products=(),
                   secret_patterns=(), importers=(), profile_terms=None, access=None, render_targets=TARGETS,
-                  listeners=listeners, routes=routes, logs=LOGS, render_profiles=render_profiles,
+                  listeners=listeners, routes=routes, logs=kit_logs, render_profiles=render_profiles,
                   mounts_secrets=deploys)

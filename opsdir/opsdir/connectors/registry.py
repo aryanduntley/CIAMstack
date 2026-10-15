@@ -13,7 +13,7 @@ from pathlib import Path
 
 from ..core.contract import Adapter, Domain, Format, SecretPattern, Services
 from ..core.directory import get, rdn_value, subtree
-from ..core.environment import env_model, with_required_roles
+from ..core.environment import env_model, product_roles, with_product_roles, with_required_roles
 from ..core.inventory import imports
 from ..core.naming import branch
 from ..core.secrets import CORE_OWNER, CORE_PATTERNS, dialect_problems
@@ -70,6 +70,14 @@ def ordered_adapters(adapters):
     return tuple(sorted(adapters, key=lambda a: (KIND_ORDER.index(a.kind), a.name)))
 
 
+def resolved_logs(adapters):
+    """The adapters with each callable Adapter.logs (a kit's: (installed adapters' static LogSources, their product
+    roles) -> LogSources) replaced by what it gives over the others' static LogSources and core.environment
+    product_roles: ADAPTERS holds static LogSources only."""
+    static, roles = tuple(s for a in adapters if not callable(a.logs) for s in a.logs), product_roles(adapters)
+    return tuple(a._replace(logs=tuple(a.logs(static, roles))) if callable(a.logs) else a for a in adapters)
+
+
 def discover(group):
     """Effect: (entry-point name, loaded object, distribution version) for every registration in a group."""
     return tuple((ep.name, ep.load(), ep.dist.version if ep.dist else None) for ep in entry_points(group=group))
@@ -77,7 +85,7 @@ def discover(group):
 
 DOMAINS = ordered_domains(registered(DOMAIN_GROUP, Domain, discover(DOMAIN_GROUP)))
 _ADAPTERS_FOUND = discover(ADAPTER_GROUP)
-ADAPTERS = ordered_adapters(registered(ADAPTER_GROUP, Adapter, _ADAPTERS_FOUND))
+ADAPTERS = resolved_logs(ordered_adapters(registered(ADAPTER_GROUP, Adapter, _ADAPTERS_FOUND)))
 ADAPTER_VERSIONS = versions(_ADAPTERS_FOUND)
 FORMATS = tuple(sorted(registered(FORMAT_GROUP, Format, discover(FORMAT_GROUP)), key=lambda f: f.name))
 if not DOMAINS:
@@ -174,8 +182,9 @@ def environment_specs(d):
 
 
 def environment(d, spec, installed=ADAPTERS):
-    """(EnvModel with its required roles resolved, the installed adapters that apply to it)."""
-    m = env_model(d, spec)
+    """(EnvModel with its required roles resolved and the installed adapters' product roles (core.environment
+    roles_for), the installed adapters that apply to it)."""
+    m = with_product_roles(env_model(d, spec), product_roles(installed))
     adapters = applicable(m, installed)
     return with_required_roles(m, required_roles(adapters)), adapters
 
@@ -267,8 +276,10 @@ def mounts_secrets_of(m, w, installed=ADAPTERS):
 
 
 def services(installed=ADAPTERS, targets=None):
-    """What connectors provide to adapters while rendering, resolved against the installed adapters; targets: the
-    render targets chosen in this render ({adapter name: targets}; none outside a render)."""
+    """What connectors provide to adapters while rendering, resolved against the installed adapters (their callable
+    logs resolved: resolved_logs); targets: the render targets chosen in this render ({adapter name: targets}; none
+    outside a render)."""
+    installed = resolved_logs(installed)
     return Services(secret_command=partial(secret_command, installed=installed),
                     endpoints=tuple(e for a in installed for e in a.endpoints),
                     listeners=partial(listeners_of, installed=installed),
@@ -282,7 +293,8 @@ def services(installed=ADAPTERS, targets=None):
                     logs=partial(logs_of, installed=installed),
                     host_files=partial(host_files_of, installed=installed),
                     render_targets=partial(chosen_for, dict(targets or {})),
-                    mounts_secrets=partial(mounts_secrets_of, installed=installed))
+                    mounts_secrets=partial(mounts_secrets_of, installed=installed),
+                    installed_logs=tuple(s for a in installed for s in a.logs))
 
 
 def product_of(adapter):

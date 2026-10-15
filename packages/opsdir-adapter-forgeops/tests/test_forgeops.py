@@ -13,7 +13,6 @@ import yaml
 from opsdir.connectors.registry import services
 from opsdir.core.contract import K8sIdentity, PlanContext
 from opsdir.core.directory import one
-from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir_adapter_forgeops import release
@@ -28,7 +27,7 @@ from opsdir_adapter_forgeops.routes import routes
 from opsdir_adapter_kubernetes.adapter import ADAPTER as KUBERNETES
 import mini_estate
 from mini_estate import FAKE
-from support import REGISTRY, build_directory
+from support import REGISTRY, build_directory, installed_model
 
 ALPHA = "env=prod,cloud=alpha,ou=environments,dc=ciam-ops"
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -79,7 +78,7 @@ INSTALLED = (CLOUD, KUBERNETES, ADAPTER)
 
 def model(*extra):
     d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *BASE, *extra)))))
-    return env_model(d, "alpha/prod")
+    return installed_model(d, "alpha/prod")
 
 
 def _doc(files, path):
@@ -90,7 +89,7 @@ def _doc(files, path):
 
 def test_it_renders_only_where_forgeops_runs_workloads():
     assert applies(model())
-    assert not applies(env_model(build_directory(REGISTRY, tuple(parse(mini_estate.LDIF))), "alpha/prod"))
+    assert not applies(installed_model(build_directory(REGISTRY, tuple(parse(mini_estate.LDIF))), "alpha/prod"))
 
 
 def test_components_come_with_the_workloads_they_serve():
@@ -244,7 +243,7 @@ def test_the_planner_names_a_ds_layout_split_between_the_cluster_and_servers():
 def test_the_planner_names_a_second_service_account():
     text = "\n".join((mini_estate.LDIF, *(b.replace("ciamServiceAccount: identity\n", "") if "cn: idm\n" in b else b
                                           for b in BASE)))
-    m = env_model(build_directory(REGISTRY, tuple(parse(text))), "alpha/prod")
+    m = installed_model(build_directory(REGISTRY, tuple(parse(text))), "alpha/prod")
     actions = [a[1] for a in check_forgeops(_context(m)).actions]
     assert any("one service account" in a and "(identity, idm)" in a for a in actions)
 
@@ -318,7 +317,7 @@ def _with_idm_admin_ui(version):
     base = tuple(b.replace(idm, f"{idm}ciamContainerImage: idm-admin-ui=registry.example.test/ciam/idm-admin-ui:"
                                 f"{version}\nciamProductVersion: PingIDM {version}\n") for b in BASE)
     d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *base)))))
-    return env_model(d, "alpha/prod")
+    return installed_model(d, "alpha/prod")
 
 
 def test_idms_admin_ui_pod_is_on_for_idm_8_1_when_the_record_names_its_image():
@@ -356,7 +355,7 @@ def _mapped(*extra):
                  .replace("ciamContainerImage: main=", f"ciamContainerImage: idm-custom={IDM_CONFIG_IMAGE}\n"
                           "ciamContainerImage: main=") for b in BASE)
     d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *base, *extra)))))
-    return env_model(d, "alpha/prod")
+    return installed_model(d, "alpha/prod")
 
 
 def test_config_profiles_build_each_product_s_files_with_secrets_as_tokens():
@@ -416,7 +415,7 @@ def _keystore_mapped(*extra):
                            "ciamWorkloadSecret: am-env-secrets/AM_ENCRYPTION_KEY <- am-encryption\n"
                            "ciamWorkloadSecret: keystore/keystore.jceks <- am-keystore\n") for b in BASE)
     d = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *base, *extra)))))
-    return env_model(d, "alpha/prod")
+    return installed_model(d, "alpha/prod")
 
 
 def test_the_release_generates_the_keystore_unless_the_record_delivers_it():

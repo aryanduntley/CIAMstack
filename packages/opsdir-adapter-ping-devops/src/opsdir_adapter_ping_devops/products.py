@@ -7,17 +7,11 @@ of each product there; the chart runs one of each per release, so any further on
 What each product runs comes from its workload's binding (opsdir-adapter-kubernetes kits): image, replicas, cpu and
 memory, storage. An image the record doesn't name is UNBOUND:ping-devops-<product>-image.
 """
-from collections import namedtuple
-
 from opsdir.core.directory import one
-from opsdir.core.environment import UNBOUND
 from opsdir.domains.compute.workloads import workload_secrets
-from opsdir_adapter_kubernetes.kits import image_named, only_image
+from opsdir_adapter_kubernetes.kits import Placement, kit_image, workload_of
 from opsdir_adapter_kubernetes.render import namespace_of, on_kubernetes
 from .release import PRODUCTS, file_path, product_of
-
-# One namespace's PingFederate: placed ((product name, workload), ...) in the chart's product order.
-Placement = namedtuple("Placement", ("namespace", "placed"))
 
 
 def _ours(m):
@@ -26,7 +20,8 @@ def _ours(m):
 
 
 def placements(m):
-    """Per namespace (in the order workloads name them), the first workload of each product the chart deploys."""
+    """Per namespace (in the order workloads name them), the first workload of each product the chart deploys, in the
+    chart's product order (kubernetes kits.Placement)."""
     ours = _ours(m)
     spaces = dict.fromkeys(ns for ns, _, _ in ours)
     first = lambda ns, name: next((w for n, x, w in ours if n == ns and x == name), None)
@@ -41,18 +36,10 @@ def unplaced(m):
                  if any(n == ns and x == name for n, x, _ in ours[:i]))
 
 
-def workload_of(p, name):
-    """The workload a placement runs as a product, or None."""
-    return next((w for x, w in p.placed if x == name), None)
-
-
 def image_of(m, p, name):
-    """The image a product runs: the first of its container names the placement's workload bindings record (its own
-    workload's first), else its own workload's only image, else UNBOUND:ping-devops-<product>-image."""
-    own = workload_of(p, name)
-    containers = next(x.containers for x in PRODUCTS if x.name == name)
-    found = image_named(m, [own, *(w for _, w in p.placed)], containers) or only_image(m, own)
-    return found or f"{UNBOUND}ping-devops-{name}-image"
+    """The image a product runs (kubernetes kits.kit_image over its container names); UNBOUND:ping-devops-<product>-
+    image when the record names none."""
+    return kit_image(m, p, name, next(x.containers for x in PRODUCTS if x.name == name), "ping-devops")
 
 
 def secret_keys(w):

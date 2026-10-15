@@ -14,7 +14,8 @@ from .signals import SIGNALS
 from .versions import VERSION_CHANGES
 
 PRODUCTS = ("PingIDM", "ForgeRock IDM")
-REQUIRED_ROLES = ("subnet-idm", "idm-admin-password", "idm-keystore")
+KEYSTORE_ROLE = "idm-keystore"         # the secret role holding IDM's keystore (Adapter.roles, kind keystore)
+REQUIRED_ROLES = ("subnet-idm", "idm-admin-password", KEYSTORE_ROLE)
 
 
 def applies(m):
@@ -29,6 +30,7 @@ ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_role
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=FORMATS,
                   products=(("PingIDM", ">=7,<9"), ("ForgeRock IDM", ">=7,<8")),
+                  roles=(("server", SERVER_ROLES), ("keystore", (KEYSTORE_ROLE,))),
                   secret_patterns=(), importers=(IDM_PROJECT,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,

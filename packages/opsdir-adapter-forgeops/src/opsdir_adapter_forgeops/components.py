@@ -11,40 +11,37 @@ component's container names), replicas, cpu and memory, DS storage. What the rec
 base's default, except images: ForgeOps' own are for development and testing only, so an image the record doesn't
 name is UNBOUND:forgeops-<component>-image.
 """
-from collections import namedtuple
-
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import UNBOUND, one_role
+from opsdir.core.environment import UNBOUND, one_role, roles_for
 from opsdir.core.profiles import SLOT_PREFIX
 from opsdir.core.versions import holds
 from opsdir.domains.compute.workloads import recorded_versions, workload_secrets
 from opsdir.domains.infrastructure.external import role_hosts
-from opsdir_adapter_kubernetes.kits import (image_named, image_of_mark, only_image, pod_labels_of, replicas_of,
-                                             resources_of, storage_of, workload_marks)
+from opsdir_adapter_kubernetes.kits import (Placement, image_named, image_of_mark, kit_image, pod_labels_of,
+                                             replicas_of, resources_of, storage_of, workload_marks, workload_of)
 from opsdir_adapter_kubernetes.names import CONTAINER_NAMES
 from opsdir_adapter_kubernetes.render import ROLE_LABEL, namespace_of, on_kubernetes, service_account_of
-from .release import (AMSTER_ENV_SECRET, COMPANION_IMAGES, COMPANION_ROLES, COMPONENTS, CONFIG_INIT, DS_LDAPS_PORT,
-                      IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS, KEYSTORE_KEY, KEYSTORE_SECRET, PROFILE_BUILDS,
-                      ROLE_COMPONENTS, UIS, component)
+from .release import (AMSTER_ENV_SECRET, COMPANION_IMAGES, COMPANION_PRODUCTS, COMPONENTS, CONFIG_INIT,
+                      DS_LDAPS_PORT, IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS, KEYSTORE_KEY, KEYSTORE_SECRET,
+                      PRODUCT_COMPONENTS, PROFILE_BUILDS, UIS, component)
 
-DS_SERVICE_ROLE = "ds-ldaps-service"
 DS_STORES = ("ds-idrepo", "ds-cts")
 
-# One namespace's ForgeOps: placed ((component name, workload), ...), on (component names, in release order).
-Placement = namedtuple("Placement", ("namespace", "placed", "on"))
 
-
-def components_of(w):
-    """The ForgeOps components a workload runs as: by its role (am, idm, ig), a ds workload by its name (ds-idrepo,
-    ds-cts); () when ForgeOps doesn't run it."""
-    found = ROLE_COMPONENTS.get(one(w, "ciamTargetRole"), ())
+def components_of(m, w):
+    """The ForgeOps components a workload runs as: by its role, a server role of a product ForgeOps deploys
+    (release.PRODUCT_COMPONENTS; the roles its adapter declares in environment m), a DS workload by its name
+    (ds-idrepo, ds-cts); () when ForgeOps doesn't run it."""
+    role = one(w, "ciamTargetRole")
+    found = next((c for product, c in PRODUCT_COMPONENTS if role in roles_for(m, product, "server")), ())
     return tuple(c for c in found if len(found) == 1 or c == rdn_value(w))
 
 
 def unplaced(m):
     """Workloads environment m runs on Kubernetes whose role ForgeOps serves but which it can't place (a ds workload
     not named ds-idrepo or ds-cts)."""
-    return tuple(w for w in on_kubernetes(m) if one(w, "ciamTargetRole") in ROLE_COMPONENTS and not components_of(w))
+    served = {r for product, _ in PRODUCT_COMPONENTS for r in roles_for(m, product, "server")}
+    return tuple(w for w in on_kubernetes(m) if one(w, "ciamTargetRole") in served and not components_of(m, w))
 
 
 def idm_admin_ui(m, ws):
@@ -66,8 +63,8 @@ def _with_companions(names, admin_ui=False):
 
 def placements(m):
     """Per namespace (in the order workloads name them), the workloads environment m runs with ForgeOps and every
-    component that is on."""
-    placed = [(namespace_of(w), c, w) for w in on_kubernetes(m) for c in components_of(w)]
+    component that is on, in release order (kubernetes kits.Placement)."""
+    placed = [(namespace_of(w), c, w) for w in on_kubernetes(m) for c in components_of(m, w)]
     spaces = dict.fromkeys(ns for ns, _, _ in placed)
     return tuple(Placement(ns, tuple((c, w) for n, c, w in placed if n == ns),
                            _with_companions((c for n, c, _ in placed if n == ns),
@@ -75,18 +72,10 @@ def placements(m):
                  for ns in spaces)
 
 
-def workload_of(p, name):
-    """The workload a placement runs as a component, or None (a component that comes with others)."""
-    return next((w for c, w in p.placed if c == name), None)
-
-
 def image_of(m, p, name):
-    """The image a component runs: the first of its container names the placement's workload bindings name (its own
-    workload's first), else its own workload's only image, else UNBOUND:forgeops-<component>-image."""
-    own = workload_of(p, name)
-    ws = [*([own] if own is not None else []), *(w for _, w in p.placed)]
-    found = image_named(m, ws, component(name).containers) or (only_image(m, own) if own is not None else None)
-    return found or f"{UNBOUND}forgeops-{name}-image"
+    """The image a component runs (kubernetes kits.kit_image over its container names); UNBOUND:forgeops-<component>-
+    image when the record names none."""
+    return kit_image(m, p, name, component(name).containers, "forgeops")
 
 
 def replicas(m, p, name):
@@ -106,12 +95,13 @@ def storage(m, p, name):
 
 def ds_servers(m, p, name):
     """host:port of a DS store (ds-idrepo or ds-cts): its pods when it runs here (ForgeOps' service names), else the
-    environment's ds-ldaps-service (its port, else LDAPS 1636), else UNBOUND:ds-ldaps-service."""
+    environment's DS service name (PingDS's service role, ds-ldaps-service: its port, else LDAPS 1636), else
+    UNBOUND:<that role>."""
     if name in p.on:
         return [f"{name}-{i}.{name}:{DS_LDAPS_PORT}" for i in range(replicas(m, p, name) or 1)]
-    service = one_role(m, DS_SERVICE_ROLE)
-    return list(role_hosts(m, DS_SERVICE_ROLE, (one(service, "ciamPort") if service is not None else None)
-                           or DS_LDAPS_PORT))
+    role = next(iter(roles_for(m, "PingDS", "service")), "PingDS-service")
+    service = one_role(m, role)
+    return list(role_hosts(m, role, (one(service, "ciamPort") if service is not None else None) or DS_LDAPS_PORT))
 
 
 def external_ds(p):
@@ -155,10 +145,11 @@ def ingress_hosts(p, names, what):
 
 def pod_labels(m, services, p, name):
     """The labels a component's pods carry: opsdir.io/role (what the kubernetes adapter's network policies select)
-    and the pod labels its cloud's workload identity needs; a component without a workload, the role it comes with
-    (release.COMPANION_ROLES; {} for none)."""
+    and the pod labels its cloud's workload identity needs; a component without a workload, the server role of the
+    product it comes with (release.COMPANION_PRODUCTS; {} for none)."""
     w = workload_of(p, name)
-    lead = dict(COMPANION_ROLES).get(name)
+    product = dict(COMPANION_PRODUCTS).get(name)
+    lead = next(iter(roles_for(m, product, "server")), None) if product else None
     return pod_labels_of(m, services, w) if w is not None else {ROLE_LABEL: lead} if lead else {}
 
 

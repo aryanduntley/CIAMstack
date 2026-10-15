@@ -15,11 +15,11 @@ and the DS AM uses for its stores.
 from opsdir.core.formats import YAML
 from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
-from opsdir_adapter_kubernetes.kits import split_image
+from opsdir_adapter_kubernetes.kits import split_image, workload_of
 from opsdir_adapter_kubernetes.render import service_account_of
 from .routes import gateway_fronted
 from .components import (config_image, ds_servers, idm_ds_env, image_of, ingress_hosts, keystore_from_record,
-                         pod_annotations, pod_labels, profile_env, replicas, resources, storage, workload_of)
+                         pod_annotations, pod_labels, profile_env, replicas, resources, storage)
 from .release import COMPONENTS, IDENTITY_PLATFORM, KUSTOMIZE, TOOLING_IMAGES, VERSION
 
 KUSTOMIZATION = {"apiVersion": "kustomize.config.k8s.io/v1beta1", "kind": "Kustomization"}

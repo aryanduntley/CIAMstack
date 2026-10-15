@@ -6,9 +6,10 @@ retired) give way to the cluster's in-cluster gateway when the record has one in
 them as HTTPRoutes.
 """
 from opsdir.core.contract import Route
+from opsdir.core.environment import roles_for
 from opsdir.domains.edge.gateways import role_gateway
 from .components import placements
-from .release import CHART_ROLES, ROUTES, TAKEN_ROUTES
+from .release import CHART_PRODUCTS, ROUTES, TAKEN_ROUTES
 
 
 def routes(m):
@@ -24,4 +25,5 @@ def routes(m):
 def gateway_fronted(m, chart):
     """Whether a cluster gateway in environment m fronts a role a chart's Ingresses serve: its Ingresses are then
     off."""
-    return any(role_gateway(m, role) is not None for c, roles in CHART_ROLES if c == chart for role in roles)
+    return any(role_gateway(m, role) is not None for c, products in CHART_PRODUCTS if c == chart
+               for product in products for role in roles_for(m, product, "server"))

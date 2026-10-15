@@ -1,5 +1,6 @@
 """PingDS (ForgeRock DS lineage) adapter: applies to environments whose servers run PingDS."""
 from opsdir.core.contract import Adapter
+from opsdir.domains.directory.naming import DIRECTORY_SERVER_ROLE
 from opsdir_base_ds.config import FORMATS as LINEAGE_FORMATS
 from opsdir_base_ds.collect import PINGDS_FLAGS, config_collectors
 from opsdir_base_ds.importers import READS_BACK, importers
@@ -12,7 +13,8 @@ from .replication import check_replication
 from .signals import SIGNALS
 from .versions import VERSION_CHANGES
 
-REQUIRED_ROLES = ("subnet-ds", "ds-ldaps-service", "backup-target", "ds-deployment-id", "ds-deployment-password",
+SERVICE_ROLE = "ds-ldaps-service"      # the service name clients reach DS by (Adapter.roles, kind service)
+REQUIRED_ROLES = ("subnet-ds", SERVICE_ROLE, "backup-target", "ds-deployment-id", "ds-deployment-password",
                   "ds-root-password", "ds-tls-keystore")
 
 
@@ -27,6 +29,7 @@ ADAPTER = Adapter(name="pingds", kind="product", applies=applies, required_roles
                   vocabulary={}, schema=None,
                   formats=(*LINEAGE_FORMATS, ("ds/setup-*.sh", "shell")),
                   products=(("PingDS", ">=7.2,<9"),),
+                  roles=(("server", (DIRECTORY_SERVER_ROLE,)), ("service", (SERVICE_ROLE,))),
                   secret_patterns=(), importers=importers(PINGDS), profile_terms=TERMS, access=None,
                   listeners=ds_listeners, collectors=config_collectors("pingds", PINGDS_FLAGS),
                   signals=SIGNALS, logs=LOGS,

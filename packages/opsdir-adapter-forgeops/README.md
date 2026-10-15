@@ -8,7 +8,7 @@ opsdir adapter for ForgeOps, Ping Identity's deployment kit for PingAM, PingIDM,
 
 The adapter is kind `platform`. An environment that declares a stack renders it only when the stack names it (`forgeops`); one that declares none renders it when it runs such a workload.
 
-**Depends on** `opsdir` and `opsdir-adapter-kubernetes`. That adapter renders what surrounds the workloads: the namespace, service accounts with their cloud identities, network policies, Secret delivery and the HTTPRoutes of a cluster gateway; this one uses its helpers for images, replicas, resources, storage, pod labels and marks (`kits.py`). Render both. Deploying the output needs a ForgeOps 2026.3.2 checkout, and Helm or Kustomize; the `kubernetes` tests also need helm, kustomize and kubeconform (`opsdir/scripts/fetch-tools.sh`).
+**Depends on** `opsdir` and `opsdir-adapter-kubernetes`. The products it deploys are named by product (PingAM, PingIDM, PingGateway, PingDS: `release.PRODUCT_COMPONENTS`, `COMPANION_PRODUCTS`, `CHART_PRODUCTS`, `KEYSTORE_PRODUCTS`), and their roles (server roles, AM's and IDM's keystore, DS's service name) come from their installed adapters' declarations (`Adapter.roles`, `opsdir.core.environment.roles_for`), never from an import: install those adapters too. That adapter renders what surrounds the workloads: the namespace, service accounts with their cloud identities, network policies, Secret delivery and the HTTPRoutes of a cluster gateway; this one uses its helpers for placements, images, replicas, resources, storage, pod labels, marks and listeners (`kits.py`). Render both. Deploying the output needs a ForgeOps 2026.3.2 checkout, and Helm or Kustomize; the `kubernetes` tests also need helm, kustomize and kubeconform (`opsdir/scripts/fetch-tools.sh`).
 
 ## What it renders
 
@@ -149,6 +149,7 @@ With none of these it says so (every Secret recorded or made, its own images). I
 - **No PingDS config profile** (deferred): ForgeOps' DS image takes custom schema and `ldif-ext/<backend>/` LDIF rather than a profile; the record's schema render is the full schema, not only its custom part, and loading it as custom schema could clash with what DS ships; the DIT maps into a backend only where the base DNs match ForgeOps'; `dsconfig.batch` and `acis.ldif` have no hook short of a custom `ds-setup.sh`. To do: render only the record's custom schema, choose the backend by base DN, verify against a live PingDS (milestone 7.2/31).
 - **AM's file-based configuration** isn't profiled: the record's AM configuration goes through Amster.
 - idm-admin-ui isn't rendered by the Kustomize target (not in the bases).
+- **Product roles come from the installed product adapters**: a product whose adapter isn't installed has no server roles here, so ForgeOps places none of its workloads (and DS on servers is `UNBOUND:PingDS-service` without the PingDS adapter). The container ports, routes and log sources (`POD_PORTS`, `ROUTES`, `logs.py`) still name the products' server roles (`am`, `idm`, `ig`, `ds`).
 
 ## Tests
 

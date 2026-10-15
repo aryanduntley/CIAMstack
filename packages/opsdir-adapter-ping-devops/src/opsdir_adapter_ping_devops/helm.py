@@ -20,13 +20,13 @@ from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
 from opsdir.domains.compute.workloads import profile_repo, workload_binding
 from opsdir_adapter_kubernetes.kits import chart_image, pod_labels_of, replicas_of, resources_of, storage_of, \
-    workload_marks
+    workload_marks, workload_of
 from opsdir_adapter_kubernetes.names import DERIVED
 from opsdir_adapter_kubernetes.render import MOUNTS, class_mount, mounted_classes, service_account_of
 from .discovery import recorded_query
 from .log_sidecars import picked, product_logs, shared_logs
 from .routes import gateway_fronted
-from .products import image_of, placements, secret_keys, workload_of
+from .products import image_of, placements, secret_keys
 from .release import (CHART, DNS_QUERY, EULA, PRODUCTS, PROFILE_BRANCH, PROFILE_PATH, PROFILE_URL, RELEASE,
                       REPOSITORY, VERSION)
 
@@ -60,13 +60,13 @@ def _workload(m, services, w, sidecars=()):
     return {"labels": pod_labels_of(m, services, w), "annotations": marks, **stateful}
 
 
-def _logs(m, p, product):
+def _logs(m, services, p, product):
     """(image, the log sidecars its role's routes pick, whether it is a StatefulSet) of a product run here, or None."""
     w = workload_of(p, product.name)
     if w is None:
         return None
     repository, tag = chart_image(image_of(m, p, product.name))
-    return f"{repository}:{tag}", picked(m, product.role), bool(_claim(m, w))
+    return f"{repository}:{tag}", picked(m, services, product.role), bool(_claim(m, w))
 
 
 def _ingress(m, w):
@@ -108,7 +108,7 @@ def product_values(m, services, p, product):
         return {"enabled": False}
     repository, tag = chart_image(image_of(m, p, product.name))
     container, files, ingress, envs = _container(m, w), _secret_volumes(w), _ingress(m, w), profile_envs(m, w)
-    _, found, stateful = _logs(m, p, product)
+    _, found, stateful = _logs(m, services, p, product)
     logs, secrets = product_logs(found, stateful), secret_mounts(m, services, w)
     mounts = [*logs.get("volumeMounts", ()), *secrets.get("volumeMounts", ())]      # the sidecars' and the classes'
     return {"enabled": True, "image": {"repositoryFqn": repository, "tag": tag},
@@ -126,7 +126,7 @@ def chart_values(m, services, p):
     query = recorded_query(m)
     return {"global": {"envs": {EULA: "YES", **({DNS_QUERY: query} if query else {})}},
             **{x.name: product_values(m, services, p, x) for x in PRODUCTS},
-            **shared_logs(tuple(found for found in (_logs(m, p, x) for x in PRODUCTS) if found))}
+            **shared_logs(tuple(found for found in (_logs(m, services, p, x) for x in PRODUCTS) if found))}
 
 
 def install_command(namespace):

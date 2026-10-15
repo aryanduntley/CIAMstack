@@ -11,9 +11,9 @@ import re
 
 from opsdir.core.directory import rdn_value
 from opsdir.core.findings import findings, responsible
-from opsdir_adapter_kubernetes.kits import replicas_of
+from opsdir_adapter_kubernetes.kits import replicas_of, workload_of
 from .discovery import discovery_gap
-from .products import placements, secret_keys, unplaced, workload_of
+from .products import placements, secret_keys, unplaced
 from .profiles import delivered
 from .release import ADMIN_PASSWORD, CHART, DEVOPS_KEYS, LICENSE_KEY, SERVER_PROFILE
 

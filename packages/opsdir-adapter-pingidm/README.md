@@ -2,7 +2,7 @@
 
 opsdir adapter for PingIDM (ForgeRock IDM): an IDM deployment's managed objects, connectors, sync mappings and schedules, rendered from the record as IDM's `conf/` files (connectors per environment), read back from an IDM project directory, and collected over IDM's REST API.
 
-**Applies to** environments where PingIDM or ForgeRock IDM runs: a server, or a Kubernetes workload's binding, whose `ciamProductVersion` starts with `PingIDM` or `ForgeRock IDM` (`runs_product`). Supported: PingIDM `>=7,<9`, ForgeRock IDM `>=7,<8`. A product adapter: it defines the server role `idm`.
+**Applies to** environments where PingIDM or ForgeRock IDM runs: a server, or a Kubernetes workload's binding, whose `ciamProductVersion` starts with `PingIDM` or `ForgeRock IDM` (`runs_product`). Supported: PingIDM `>=7,<9`, ForgeRock IDM `>=7,<8`. A product adapter: it defines the server role `idm` and declares its roles for the kits that deploy it, which find them by product (`Adapter.roles`: server `idm`, keystore `idm-keystore`).
 
 **Depends on** `opsdir` only. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingidm`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 

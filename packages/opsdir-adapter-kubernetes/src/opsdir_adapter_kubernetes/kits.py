@@ -4,8 +4,16 @@ it deploys read back as the record's workloads (workloads.py). Shared by the kit
 charts' and bases' terms. Pure.
 
 What the record doesn't hold is None or left out, so the kit's own default stays.
+
+Kits also share how they place what an environment runs: per namespace a Placement, the workload each of their
+components or products runs as (workload_of), its image (kit_image) and the ports their pods listen on
+(kit_listeners).
 """
+from collections import namedtuple
+
+from opsdir.core.contract import Listener
 from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.environment import UNBOUND
 from opsdir.domains.compute.workloads import workload_binding
 from .names import CLUSTER_ROLE, IDENTITY_ROLE, IMAGE_OF, WORKLOAD_NAME, WORKLOAD_ROLE
 from .render import ROLE_LABEL, identity_binding
@@ -28,6 +36,35 @@ def only_image(m, w):
     """A workload's image when its binding records exactly one, else None."""
     found = container_images(workload_binding(m, w))
     return found[0][1] if len(found) == 1 else None
+
+
+# One namespace of what a kit runs: placed ((component or product name, workload), ...), on (every name that is on,
+# parts that come with others among them, such as ForgeOps' companions; () for a kit without such parts).
+Placement = namedtuple("Placement", ("namespace", "placed", "on"), defaults=((),))
+
+
+def workload_of(p, name):
+    """The workload a placement runs as a component or product, or None (a component that comes with others)."""
+    return next((w for x, w in p.placed if x == name), None)
+
+
+def kit_image(m, p, name, containers, kit):
+    """The image a component or product of placement p runs: the first of its container names the placement's
+    workload bindings record (its own workload's first), else its own workload's only image, else
+    UNBOUND:<kit>-<name>-image."""
+    own = workload_of(p, name)
+    ws = [*([own] if own is not None else []), *(w for _, w in p.placed)]
+    found = image_named(m, ws, containers) or (only_image(m, own) if own is not None else None)
+    return found or f"{UNBOUND}{kit}-{name}-image"
+
+
+def kit_listeners(placements, pod_ports):
+    """The Listeners of the server roles a kit's placements run: its pods' ports (pod_ports: ((role, port, purpose,
+    peers), ...)), declared on="kubernetes" so the network policies admit them to the role's pods instead of the
+    product's own and the firewall checks leave them out."""
+    roles = dict.fromkeys(one(w, "ciamTargetRole") for p in placements for _, w in p.placed)
+    return tuple(Listener(role, port, "tcp", purpose, peers, "kubernetes")
+                 for role, port, purpose, peers in pod_ports if role in roles)
 
 
 def split_image(ref):
