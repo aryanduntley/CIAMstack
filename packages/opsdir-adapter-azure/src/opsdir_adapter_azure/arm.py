@@ -85,6 +85,7 @@ _TOKEN = re.compile(r"\s*(?:(\d+)|'((?:[^']|'')*)'|([A-Za-z_][A-Za-z0-9_]*)|(\S)
 _CALL = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*\(")
 _GUIDS = uuid.UUID("2d1f6c0a-6b1e-4a43-9d2e-7c3f1b5a8e90")      # guid()'s stand-in namespace
 IDENTITIES = "microsoft.managedidentity/userassignedidentities"
+DEPLOYMENTS = "microsoft.resources/deployments"
 
 
 # ------------------------------------------------------------------ expressions
@@ -306,12 +307,47 @@ def _vault_item(r, rid):
               if isinstance(props.get("rotationPolicy"), dict) else [])]
 
 
+def _parameters(declared, given, base):
+    """A deployment's parameter values: given (else declared defaults), secure ones never."""
+    secure = {k for k, v in declared.items() if str((v or {}).get("type", "")).lower().startswith("secure")}
+    defaults = {k: evaluate((v or {}).get("defaultValue", _UNKNOWN), base) for k, v in declared.items()}
+    return {k: _UNKNOWN if k in secure else given.get(k, defaults.get(k, _UNKNOWN)) for k in {*declared, *given}}
+
+
+def _nested(r, ctx):
+    """(template, context) of a nested deployment with its own expression scope (a Bicep module: its template inline,
+    its parameters and the subscription and resource group it deploys into evaluated where it is declared), else
+    None."""
+    props = r.get("properties") if isinstance(r.get("properties"), dict) else {}
+    if str(r.get("type", "")).lower() != DEPLOYMENTS or not isinstance(props.get("template"), dict) or \
+            (props.get("expressionEvaluationOptions") or {}).get("scope") != "inner":
+        return None
+    template = props["template"]
+    where = {k: _known(evaluate(r[k], ctx)) if k in r else ctx[c] for k, c in (("subscriptionId", "subscription"),
+                                                                              ("resourceGroup", "group"))}
+    base = {"subscription": where["subscriptionId"] if isinstance(where["subscriptionId"], str) else None,
+            "group": where["resourceGroup"] if isinstance(where["resourceGroup"], str) else None, "scope": None,
+            "location": None, "variables": template.get("variables") or {}, "parameters": {}}
+    given = {k: evaluate((v or {}).get("value", _UNKNOWN), ctx) for k, v in (props.get("parameters") or {}).items()}
+    return template, {**base, "parameters": _parameters(template.get("parameters") or {}, given, base)}
+
+
 def _items(template, ctx, produced):
     """(kind, item) of each resource the deployment declares (and, when known, produced), in the CLI's shape; counts
     of resources not deployed and not produced; Counter of types not read. Without a deployment, disk encryption sets
-    are skipped: their ID (a key's ciamProviderRef) would carry placeholders."""
-    found = [x for r in _top(template) if not r.get("existing")
-             for x in _expand(_known(evaluate(_without_secret_values(r), ctx)))]
+    are skipped: their ID (a key's ciamProviderRef) would carry placeholders. A nested deployment with its own
+    expression scope (a module) is read as its own template where it deploys (_nested)."""
+    tops = [r for r in _top(template) if not r.get("existing")]
+    nested = [n for r in tops for n in (_nested(r, ctx),) if n]
+    inner = [_items(t, c, produced) for t, c in nested]
+    own = _own_items([r for r in tops if _nested(r, ctx) is None], ctx, produced)
+    return ([*own[0], *(i for x in inner for i in x[0])], own[1] + sum(x[1] for x in inner),
+            own[2] + sum(x[2] for x in inner), sum((x[3] for x in inner), own[3]))
+
+
+def _own_items(tops, ctx, produced):
+    """_items of a template's own (not nested) resources."""
+    found = [x for r in tops for x in _expand(_known(evaluate(_without_secret_values(r), ctx)))]
     kept = [r for r in found if r.get("condition", True) is not False and isinstance(r.get("name"), str)
             and isinstance(r.get("type"), str) and "None" not in r["name"].split("/")]
     ids = [(r, _id_in(ctx, r["type"], r["name"].split("/"))) for r in kept]
@@ -352,8 +388,6 @@ def _context(folder):
     """What a deployment's expressions can know: subscription, resource group, parameters, variables."""
     template, deployment = folder["template"], folder.get("deployment") or {}
     rid = deployment.get("id", "")
-    declared = template.get("parameters") or {}
-    secure = {k for k, v in declared.items() if str((v or {}).get("type", "")).lower().startswith("secure")}
     given = {**{k: (v or {}).get("value", _UNKNOWN) for k, v in ((folder.get("parameters") or {}).get("parameters")
                                                                   or {}).items()},
              **{k: (v or {}).get("value", _UNKNOWN) for k, v in
@@ -363,9 +397,7 @@ def _context(folder):
             "scope": rid[:at] if at >= 0 else None,
             "location": (folder.get("group") or {}).get("location"),
             "variables": template.get("variables") or {}, "parameters": {}}
-    defaults = {k: evaluate((v or {}).get("defaultValue", _UNKNOWN), base) for k, v in declared.items()}
-    return {**base, "parameters": {k: _UNKNOWN if k in secure else given.get(k, defaults.get(k, _UNKNOWN))
-                                   for k in {*declared, *given}}}
+    return {**base, "parameters": _parameters(template.get("parameters") or {}, given, base)}
 
 
 def deployment_outputs(folder):

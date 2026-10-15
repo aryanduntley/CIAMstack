@@ -10,11 +10,13 @@ it applies to. A child is named format('{0}/{1}', parent, child). A runtime prop
 An interpolation is format() with literal braces doubled. Each resource depends on the template resources its name,
 parent, scope, fields, properties and explicit depends_on refer to, sorted by symbol (as Bicep orders them). A literal
 string ARM would read as an expression (starting with '[' and ending with ']') is escaped ('[['). Template comments are
-the Bicep file's only: JSON has none (the MANIFEST records the file as generated).
+the Bicep file's only: JSON has none (the MANIFEST records the file as generated). A module is a nested deployment
+(Microsoft.Resources/deployments, inner expression scope, its template inline, its parameters given as values) after
+the template's resources; what depends on it names it by extensionResourceId on the group it deploys into.
 """
 from opsdir.core.jsondata import indented
-from .template import (Call, Field, Interp, Member, Param, Prop, ResourceId, ResourceName, indexed, is_expression,
-                       name_segments)
+from .template import (Call, Field, Index, Interp, Member, Param, Prop, ResourceId, ResourceName, indexed,
+                       is_expression, is_module, name_segments)
 
 SCHEMAS = {"resourceGroup": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
            "subscription": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
@@ -24,6 +26,8 @@ SCHEMAS = {"resourceGroup": "https://schema.management.azure.com/schemas/2019-04
 ID_FUNCTIONS = {"resourceGroup": "resourceId", "subscription": "subscriptionResourceId",
                 "managementGroup": "managementGroupResourceId", "tenant": "tenantResourceId"}
 GROUP_ID = "format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, %s)"
+MODULE_GROUP_ID = "format('/subscriptions/{0}/resourceGroups/{1}', %s, %s)"
+DEPLOYMENTS = ("Microsoft.Resources/deployments", "2025-04-01")      # what bicep build (0.48) writes a module as
 
 
 def _literal(s):
@@ -38,6 +42,9 @@ def _existing_group(index, r):
 
 
 def _id(index, scope, r):
+    if is_module(r):
+        group = MODULE_GROUP_ID % (arm_expr(index, scope, r.subscription), arm_expr(index, scope, r.resource_group))
+        return f"extensionResourceId({group}, {_literal(DEPLOYMENTS[0])}, {arm_expr(index, scope, r.name)})"
     args = ", ".join((_literal(r.type), *(arm_expr(index, scope, s) for s in name_segments(index, r))))
     group = _existing_group(index, r)
     if r.scope:
@@ -87,6 +94,8 @@ def arm_expr(index, scope, v):
             return arm_expr(index, scope, Prop(v.symbol, v.path[len("properties."):]))
         r = index[v.symbol]
         return f"reference({_id(index, scope, r)}, {_literal(r.api_version)}, 'full').{v.path}"
+    if isinstance(v, Index):
+        return f"{arm_expr(index, scope, v.value)}[{arm_expr(index, scope, v.index)}]"
     if isinstance(v, (list, tuple)):
         return "createArray(" + ", ".join(arm_expr(index, scope, x) for x in v) + ")"
     if isinstance(v, dict):
@@ -132,6 +141,8 @@ def referenced(v):
         return tuple(s for p in v.parts for s in referenced(p))
     if isinstance(v, Member):
         return referenced(v.value)
+    if isinstance(v, Index):
+        return (*referenced(v.value), *referenced(v.index))
     if isinstance(v, dict):
         return tuple(s for k, x in v.items() for s in (*referenced(k), *referenced(x)))
     if isinstance(v, (list, tuple)) and not is_expression(v):
@@ -140,12 +151,15 @@ def referenced(v):
 
 
 def dependencies(index, r):
-    """The template resources a resource must follow, as Bicep infers them from its declaration: those its name,
-    parent, scope, fields, properties and explicit depends_on refer to; deployed ones only, never itself, sorted by
-    symbol (Bicep's order)."""
-    mentioned = (*referenced(r.name), *((r.parent,) if r.parent else ()), *((r.scope,) if r.scope else ()),
-                 *referenced(r.fields), *referenced(r.properties), *r.depends_on)
-    return tuple(sorted(s for s in set(mentioned) if s != r.symbol and not index[s].existing))
+    """The template resources (and modules) a resource or module must follow, as Bicep infers them from its
+    declaration: those its name, parent, scope, fields, properties (a module's scope and params) and explicit
+    depends_on refer to; deployed ones only, never itself, sorted by symbol (Bicep's order)."""
+    mentioned = (*referenced(r.name), *r.depends_on, *(
+        (*referenced(r.subscription), *referenced(r.resource_group), *referenced(r.params)) if is_module(r) else
+        (*((r.parent,) if r.parent else ()), *((r.scope,) if r.scope else ()), *referenced(r.fields),
+         *referenced(r.properties))))
+    return tuple(sorted(s for s in set(mentioned)
+                        if s != r.symbol and (is_module(index[s]) or not index[s].existing)))
 
 
 def _name(index, scope, r):
@@ -166,6 +180,18 @@ def _resource(index, scope, r):
             **({"dependsOn": ["[" + _id(index, scope, index[s]) + "]" for s in after]} if after else {})}
 
 
+def _module(index, scope, m):
+    """A module as the nested deployment bicep build compiles it to."""
+    after = dependencies(index, m)
+    return {"type": DEPLOYMENTS[0], "apiVersion": DEPLOYMENTS[1], "name": arm_value(index, scope, m.name),
+            "subscriptionId": arm_value(index, scope, m.subscription),
+            "resourceGroup": arm_value(index, scope, m.resource_group),
+            "properties": {"expressionEvaluationOptions": {"scope": "inner"}, "mode": "Incremental",
+                           "parameters": {k: {"value": arm_value(index, scope, v)} for k, v in m.params.items()},
+                           "template": template_doc(m.template)},
+            **({"dependsOn": ["[" + _id(index, scope, index[s]) + "]" for s in after]} if after else {})}
+
+
 def _parameter(index, scope, p):
     kind = {"string": "securestring", "object": "secureObject"}.get(p.type, p.type) if p.secure else p.type
     return {"type": kind, **({"defaultValue": arm_value(index, scope, p.default)} if p.default is not None else {}),
@@ -180,7 +206,8 @@ def template_doc(t):
     return {"$schema": SCHEMAS[t.scope], "contentVersion": "1.0.0.0",
             **({"metadata": {"description": t.description}} if t.description else {}),
             **({"parameters": {p.name: _parameter(index, t.scope, p) for p in t.parameters}} if t.parameters else {}),
-            "resources": [_resource(index, t.scope, r) for r in t.resources if not r.existing],
+            "resources": [*(_resource(index, t.scope, r) for r in t.resources if not r.existing),
+                          *(_module(index, t.scope, m) for m in t.modules)],
             **({"outputs": {o.name: {"type": o.type, "value": arm_value(index, t.scope, o.value)}
                             for o in t.outputs}} if t.outputs else {})}
 

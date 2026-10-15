@@ -53,9 +53,10 @@ def test_a_template_per_deployment_scope_holds_its_placed_resources(translated):
         for directory, places in t.placements.items():
             for a, p in places.items():
                 if p.kind == "template":
-                    template = next(x for (d, _), x in t.templates.items()
-                                    if d == directory and as_bicep(x) and p.detail in {r.symbol for r in x.resources})
-                    assert not next(r for r in template.resources if r.symbol == p.detail).existing, (spec, a)
+                    template = next(x for (d, _), x in t.templates.items() if d == directory and as_bicep(x) and
+                                    p.detail in {r.symbol for r in (*x.resources, *x.modules)})
+                    assert any(m.symbol == p.detail for m in template.modules) or \
+                        not next(r for r in template.resources if r.symbol == p.detail).existing, (spec, a)
                 elif p.kind == "merged":
                     assert places[p.detail].kind == "template", (spec, a)
                 else:
@@ -91,17 +92,26 @@ def test_kept_resources_say_why(translated):
     assert key not in why or why[key].startswith(
         "part of azurerm_data_protection_backup_vault.ciam_backups natively, but waits for "
         "azurerm_role_assignment.ciam_backups_cmk, which reads it: a cycle there")
-    jobs = [a for a in why if a.startswith("azurerm_container_app_job.")]       # the scripted checks (check_jobs)
-    assert jobs and all(why[a] == f"waits for azurerm_role_assignment.check_{a.split('.')[1]}_publisher (depends_on), "
-                        "which stays Terraform, applied after the template" for a in jobs)     # its grants, below
-    publishers = [a for a in why if a.startswith("azurerm_role_assignment.check_") and a.endswith("_publisher")]
-    pulls = [a for a in why if a.startswith("azurerm_role_assignment.check_") and a.endswith("_pull")]
-    assert len(publishers) == len(pulls) == len(jobs)                   # each job's own identity's grants
-    assert all(why[a].startswith("what names its ARM deployment scope") for a in (*publishers, *pulls))
-    assert {a.split(".")[0] for a in why if a not in (*publishers, *pulls)} <= {
+    assert not any(a.startswith(("azurerm_container_app_job.", "azurerm_role_assignment.check_")) for a in why)
+    assert {a.split(".")[0] for a in why} <= {
         "azurerm_data_protection_backup_vault_customer_managed_key", "azurerm_subnet_route_table_association",
         "azurerm_subnet_network_security_group_association", "azuread_conditional_access_policy",
-        "azapi_data_plane_resource", "azurerm_container_app_job", "data"}
+        "azapi_data_plane_resource", "data"}
+
+
+def test_the_check_jobs_and_their_input_scoped_grants_are_native(translated):
+    """The scripted checks' jobs are template resources; each one's grants on the Application Insights resource and
+    its registry (inputs naming them by ID) are modules at the group the ID names, of one shared template per role and
+    target type, which the job waits for."""
+    _, _, _, t = translated[0]
+    templates = tuple(t.templates.values())
+    jobs = [r for x in templates for r in x.resources if r.type == "Microsoft.App/jobs"]
+    modules = [m for x in templates for m in x.modules]
+    assert jobs and len(modules) == 2 * len(jobs)                        # each job's publisher and pull grant
+    assert {m.file for m in modules} == {"role-assignments-components", "role-assignments-registries"}
+    for job in jobs:
+        n = job.symbol[len("container_app_job_"):]
+        assert {f"role_assignment_check_{n}_publisher", f"role_assignment_check_{n}_pull"} <= set(job.depends_on)
 
 
 def test_role_assignments_scope_what_they_grant_and_name_built_in_roles(translated):

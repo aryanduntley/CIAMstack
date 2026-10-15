@@ -6,6 +6,7 @@ kept in Terraform for a stated reason. API versions are the latest stable ones i
 converters.
 """
 import re
+from types import MappingProxyType
 
 from opsdir_format_arm.template import Call, Interp, Member, ResourceId
 from opsdir_format_terraform.native import Computed, Custom, FromBlock, Merge, Native, Nest, obj, one, own
@@ -20,6 +21,19 @@ CDN, FD_WAF, DNS, PRIVATE_DNS = "2026-07-01", "2026-04-01", "2018-05-01", "2024-
 MYSQL, TM, WEBTESTS, EXEMPTIONS = "2024-12-30", "2026-09-01", "2022-06-15", "2026-01-01-preview"
 AUTOSCALE = "2022-10-01"        # the newest autoscalesettings version the Bicep type index has (probed 2026-10-12)
 APP = "2026-07-01"              # Microsoft.App: the newest version the Bicep 0.48.1 type index has (probed 2026-10-14)
+# Container registries, Application Insights components: the newest stable versions the Bicep 0.48.1 type index has
+# (probed 2026-10-15; components has no other stable one)
+REGISTRY, COMPONENTS = "2025-11-01", "2020-02-02"
+# Inputs naming a resource by its ID (the root's variables), by name pattern -> (its ARM type, API version): an
+# extension resource scoped by one (a check job's grant on the Application Insights resource or a registry) is
+# deployed in a module at the group the ID names (arm_render); an input not listed keeps it Terraform (UNPLACED).
+INPUT_SCOPES = MappingProxyType({r"application_insights_id": ("Microsoft.Insights/components", COMPONENTS),
+                                 r"registry_[a-z0-9_]+_id": ("Microsoft.ContainerRegistry/registries", REGISTRY)})
+
+
+def input_type(name):
+    """The ARM type of the resource an input names by its ID (INPUT_SCOPES), else None."""
+    return next((t for pattern, (t, _) in INPUT_SCOPES.items() if re.fullmatch(pattern, name)), None)
 # Types ARM has no form for: they stay in the Terraform root beside the templates (research 2595).
 NO_NATIVE = frozenset({"azapi_data_plane_resource", "azuread_conditional_access_policy"})
 _SUBNET = ("a property of the landing zone's subnet: ARM sets it only by re-declaring the whole subnet, which the "
@@ -45,6 +59,7 @@ KEPT = {
 # Built-in role definitions by name -> their GUIDs: Microsoft's built-in roles page; "built-in roles have the same role
 # ID across clouds" (Azure role definitions page). Research 2612.
 ROLES = {
+    "AcrPull": "7f951dda-4ed3-4680-a7ca-43fe172d538d",     # built-in roles page, Containers (checked 2026-10-15)
     "Azure Event Hubs Data Owner": "f526a384-b230-433a-b45c-95f59c4a2dec",
     "Azure Event Hubs Data Sender": "2b629674-e913-4c01-ae53-ef4638d8f975",
     "Azure Service Bus Data Owner": "090c5cfd-751d-490a-894a-3ce6f1109419",
@@ -1594,9 +1609,9 @@ APIS = {**{n.type.type: n.type.api_version for n in TYPES.values()
 def arm_files(m, files, what, targets):
     """{path: TfFile | text} of environment m's ARM templates from its Azure Terraform render, for the targets
     (bicep, arm)."""
-    return translated(m, files, TYPES, NO_NATIVE, DATA, what, targets, KEPT, APIS)
+    return translated(m, files, TYPES, NO_NATIVE, DATA, what, targets, KEPT, APIS, INPUT_SCOPES)
 
 
 def arm_translation(m, files, what):
     """The arm_render.Translation of environment m's Azure Terraform render by this table."""
-    return translation(m, files, TYPES, NO_NATIVE, DATA, what, KEPT, APIS)
+    return translation(m, files, TYPES, NO_NATIVE, DATA, what, KEPT, APIS, INPUT_SCOPES)

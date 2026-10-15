@@ -8,20 +8,29 @@ Lookups become existing resources (a key vault, a subnet of its network) read by
 deployment's own resource group and subscription are resourceGroup() and subscription(); an ephemeral secret becomes a
 secure parameter the deployment fills from Key Vault. A child resource names its parent by id or name in Terraform:
 here it is the parent's child (parent:), the parent a template resource, an existing lookup, or an existing resource
-read from a literal ARM id. Anything the table doesn't know is refused, by name. Pure.
+read from a literal ARM id. Anything the table doesn't know is refused, by name.
+
+An extension resource scoped by an input naming a resource by its ID (input_scopes: a check job's grant on the
+Application Insights resource or a registry it is given) is deployed in a module, in the template of the resource it
+grants to (the first template resource it reads): the module deploys at the group the ID names (resourceGroup of its
+subscription and group segments) and holds the resource on that ID's resource (existing, by the name segment); what
+the resource reads of the template is the module's parameters, so equal ones share one module file. Pure.
 """
 import json
 import posixpath
 import re
 from collections import namedtuple
 from functools import reduce
+from types import MappingProxyType
 
 from opsdir.core.manifest import header
 from opsdir_format_arm.arm_json import as_arm_json
-from opsdir_format_arm.bicep import as_bicep
+from opsdir_format_arm.arm_json import referenced
+from opsdir_format_arm.bicep import as_bicep, module_files
 from opsdir_format_arm.format import ARM_FORMAT, BICEP_FORMAT
-from opsdir_format_arm.template import (ArmOutput, ArmParameter, ArmResource, ArmTemplate, Call, Field, Interp, Member,
-                                        Param, Prop, ResourceId, ResourceName, is_expression, symbol)
+from opsdir_format_arm.template import (ArmModule, ArmOutput, ArmParameter, ArmResource, ArmTemplate, Call, Field,
+                                        Index, Interp, Member, Param, Prop, ResourceId, ResourceName, is_expression,
+                                        symbol)
 from opsdir_format_terraform import native
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import TfBlock, TfFile
@@ -29,7 +38,7 @@ from opsdir_format_terraform.native import (Cx, Forms, Layout, Placement, Table,
                                             group_refs, leading, obj, own, placements, placements_document,
                                             read_root, resolver)
 from opsdir_format_terraform.translate import (address, no_native_note, output_variable, ref_address, ref_text, roots,
-                                               template_parts)
+                                               template_parts, value_refs)
 
 LANGUAGE = "ARM"
 # Why a resource whose deployment scope (resource group) isn't known statically stays Terraform (Layout.unplaced)
@@ -176,10 +185,33 @@ def named(v, by_address, placed_group, seen=()):
         if parent_ref is not None else None
 
 
-def _group(b, types, by_address, placed_group, seen=()):
+def input_scope(v, input_scopes):
+    """(the input's name, its resource's ARM type, API version) when a value is one input naming a resource by its ID
+    (input_scopes: {name pattern: (ARM type, API version)}), else None."""
+    r = _single_ref(v)
+    found = next((t for pattern, t in input_scopes.items() if re.fullmatch(pattern, r.name)), None) \
+        if r is not None and r.kind == "var" else None
+    return (r.name, *found) if found else None
+
+
+def _input_scoped(b, arm, input_scopes):
+    """The input_scope of an extension resource's target, else None."""
+    return input_scope(fields(b.body).get(arm.extends), input_scopes) if arm is not None and arm.extends else None
+
+
+def _grantee_group(b, arm, by_address, placed_group, seen):
+    """The scope of the first template resource an input-scoped extension resource reads (its principal's identity,
+    say), its depends_on and target aside: the template its module is deployed from; None when it reads none."""
+    reads = (r for k, v in b.body if k not in ("depends_on", arm.extends) for r in value_refs(v)
+             if r.kind == "resource" and ref_address(r) in by_address and ref_address(r) not in seen)
+    return next((g for r in reads for g in (placed_group(by_address[ref_address(r)], (*seen, address(b))),)
+                 if g is not None), None)
+
+
+def _group(b, types, by_address, placed_group, seen=(), input_scopes=MappingProxyType({})):
     """A resource's deployment scope: the scope its type always deploys at; ('resourceGroup', its group's key) by its
-    resource_group_name; else the scope of what its parent attribute or (an extension resource) its target names;
-    None when unknown statically."""
+    resource_group_name; an input-scoped extension resource's grantee's (_grantee_group); else the scope of what its
+    parent attribute or (an extension resource) its target names; None when unknown statically."""
     f = fields(b.body)
     row = types.get(b.labels[0])
     arm = row.type if row is not None and isinstance(row.type, Arm) else None
@@ -188,6 +220,8 @@ def _group(b, types, by_address, placed_group, seen=()):
     if "resource_group_name" in f and arm is not None:
         key = _rg_key(f["resource_group_name"], by_address)
         return ("resourceGroup", key) if key is not None else None
+    if _input_scoped(b, arm, input_scopes):
+        return _grantee_group(b, arm, by_address, placed_group, seen)
     v = f.get(arm.parent.attribute) if arm and arm.parent else f.get(arm.extends) if arm and arm.extends else None
     found = named(v, by_address, placed_group, seen) if v is not None else None
     return found[0] if found else None
@@ -197,12 +231,12 @@ def _short(type_):
     return type_.split("_", 1)[1] if "_" in type_ else type_
 
 
-def _layout_of(types):
+def _layout_of(types, input_scopes):
     def layout_of(items):
         by_address = {address(b): b for b in items if isinstance(b, TfBlock) and address(b)}
 
         def group(b, seen=()):
-            return _group(b, types, by_address, group, seen)
+            return _group(b, types, by_address, group, seen, input_scopes)
         return Layout(group, lambda key: None, lambda type_, name: symbol(_short(type_), name),
                       lambda b: UNPLACED if group(b) is None else None)
     return layout_of
@@ -525,15 +559,88 @@ def _resource(p, root, members, cx, notes_above, apis, ids):
              *(d for _, ds in expansions for d in ds)))
 
 
-def _resources(root, members, cx, notes_above, apis):
+_CONTEXT = ("resourceGroup", "subscription", "deployment", "tenant", "managementGroup")
+
+
+def _outer(v):
+    """Whether a value reads the template a module is deployed from (its resources, parameters or deployment
+    context): what the module takes as a parameter."""
+    if isinstance(v, Call) and v.function in _CONTEXT:
+        return True
+    if isinstance(v, (Call, Interp, Member, Index)):
+        return any(_outer(x) for x in (v.args if isinstance(v, Call) else v.parts if isinstance(v, Interp) else
+                                       (v.value,) if isinstance(v, Member) else (v.value, v.index)))
+    if isinstance(v, dict):
+        return any(_outer(k) or _outer(x) for k, x in v.items())
+    if isinstance(v, (list, tuple)) and not is_expression(v):
+        return any(_outer(x) for x in v)
+    return bool(referenced(v)) or bool(_params(v))
+
+
+def _lifted(v, path):
+    """(v with each value that reads the outer template a parameter of the module, named by its key path; {parameter:
+    the outer value})."""
+    whole = is_expression(v) or (isinstance(v, dict) and any(_outer(k) for k in v))   # an expression key: all of it
+    if whole and _outer(v):
+        name = "_".join(path)
+        return Param(name), {name: v}
+    if isinstance(v, dict):
+        parts = {k: _lifted(x, (*path, str(k))) for k, x in v.items()}
+        return {k: x for k, (x, _) in parts.items()}, {n: o for _, (_, g) in parts.items() for n, o in g.items()}
+    if isinstance(v, (list, tuple)) and not is_expression(v):
+        parts = [_lifted(x, (*path, str(i))) for i, x in enumerate(v)]
+        return [x for x, _ in parts], {n: o for _, given in parts for n, o in given.items()}
+    return v, {}
+
+
+def _kebab(type_):
+    return re.sub(r"(?<!^)(?=[A-Z])", "-", type_.split("/")[-1]).lower()
+
+
+def _module(p, root, members, cx, notes_above, ids, scoped):
+    """(the ArmModule deploying input-scoped extension resource p at the group its input's ID names: the resource on
+    that ID's resource (existing, by its name segment), what it reads of the template its parameters; what it reads
+    that the template declares)."""
+    variable, target_type, target_api = scoped
+    b = root.by_address[p.address]
+    f = fields(b.body)
+    arm = _concrete(p.native.type, f)
+    field_values, props, declared = _body(p, root, cx)
+    name, name_declared = _declarations(arm.name.value if isinstance(arm.name, Fixed) else
+                                        arm.name(f, cx._replace(where=p.address)) if callable(arm.name) else
+                                        cx.value(f[arm.name]))
+    (inner_name, inner_fields, inner_props), given = (
+        lambda parts: (tuple(x for x, _ in parts), {n: o for _, g in parts for n, o in g.items()}))(
+        (_lifted(name, ("name",)), _lifted(field_values, ()), _lifted(props, ())))
+    part = lambda i: Index(Call("split", (Param(variable), "/")), i)                       # noqa: E731
+    template = ArmTemplate("resourceGroup", None, (
+        ArmResource("target", target_type, target_api, Param("targetName"), existing=True),
+        ArmResource(symbol(_kebab(arm.type)), arm.type, arm.api_version, inner_name, None, inner_fields,
+                    inner_props or None, scope="target")),
+        tuple(ArmParameter(n, "string") for n in (*given, "targetName")))
+    notes = (*notes_above.get(p.address, ()), *comments(b.body))
+    return ArmModule(p.id, p.id[:64], template, part(2), part(4), {**given, "targetName": part(8)},
+                     f"{_kebab(arm.type)}-{_kebab(target_type)}", depends(root, p, ids),
+                     "; ".join(notes) or None), (*declared, *name_declared)
+
+
+def _resources(root, members, cx, notes_above, apis, input_scopes):
     """(the ArmResources of a scope's template: each standalone member (a child under its parent) with what merges
-    into it, and what it expands into; what they read that the template declares, in order)."""
+    into it, and what it expands into; what they read that the template declares, in order; the ArmModules of its
+    input-scoped extension resources)."""
     ids = {p.id for p in members}
-    built = tuple(_resource(p, root, members, cx, notes_above, apis, ids) for p in members if p.target is None)
-    return tuple(r for rs, _ in built for r in rs), tuple(d for _, ds in built for d in ds)
+    scoped = {p.address: _input_scoped(root.by_address[p.address], p.native.type, input_scopes) for p in members
+              if p.target is None and isinstance(p.native.type, Arm)}
+    built = tuple(_resource(p, root, members, cx, notes_above, apis, ids) for p in members
+                  if p.target is None and not scoped.get(p.address))
+    modules = tuple(_module(p, root, members, cx, notes_above, ids, scoped[p.address]) for p in members
+                    if p.target is None and scoped.get(p.address))
+    return (tuple(r for rs, _ in built for r in rs), (*(d for _, ds in built for d in ds),
+                                                       *(d for _, ds in modules for d in ds)),
+            tuple(mod for mod, _ in modules))
 
 
-def _scope_template(m, root, key, table, what, apis, main):
+def _scope_template(m, root, key, table, what, apis, main, input_scopes):
     """The ArmTemplate of one deployment scope of the root."""
     members = tuple(p for p in root.placed.values() if p.group == key)
     rg = key[1] if key[0] == "resourceGroup" else None
@@ -543,7 +650,7 @@ def _scope_template(m, root, key, table, what, apis, main):
             lambda name: Param(name), lambda alias: None, "", LANGUAGE)
     notes_above, loose = leading(root.split.native)
     refs = group_refs(root, members, table.data)
-    resources, declared = _resources(root, members, cx, notes_above, apis)
+    resources, declared, modules = _resources(root, members, cx, notes_above, apis, input_scopes)
     written = tuple((o, *_declarations(o.value)) for o in _outputs(root, key, members, resolve, table.data))
     outputs = tuple(o._replace(value=v) for o, v, _ in written)
     declarations = (*declared, *(d for _, _, ds in written for d in ds))
@@ -555,11 +662,11 @@ def _scope_template(m, root, key, table, what, apis, main):
     existing = tuple({r.symbol: r for e in declarations if isinstance(e, Existing)
                       for r in _existing_resources(e, rg)}.values())
     secure = tuple(e for e in declarations if isinstance(e, ArmParameter))
-    used = _params((*existing, *resources)) | _params(tuple(o.value for o in outputs))
+    used = _params((*existing, *resources, *modules)) | _params(tuple(o.value for o in outputs))
     parameters = tuple({p.name: p for p in (*variables, *cross, *secure) if p.name in used}.values())
     where = f"resource group {template_name(key)}" if key[0] == "resourceGroup" else f"the {key[0]}"
     return ArmTemplate(key[0], f"{what} ({m.label}): the Terraform root {root.directory} as ARM, {where}",
-                       (*existing, *resources), parameters, outputs, tuple(loose) if main else ())
+                       (*existing, *resources), parameters, outputs, tuple(loose) if main else (), modules)
 
 
 def _params(v):
@@ -569,6 +676,10 @@ def _params(v):
         return frozenset((v.name,))
     if isinstance(v, ArmResource):
         return _params((v.name, v.fields, v.properties))
+    if isinstance(v, ArmModule):
+        return _params((v.name, v.subscription, v.resource_group, v.params))
+    if isinstance(v, Index):
+        return _params((v.value, v.index))
     if isinstance(v, (Interp, Call)):
         return _params(v.parts if isinstance(v, Interp) else v.args)
     if isinstance(v, Member):
@@ -600,7 +711,7 @@ def native_directory(directory, target):
 Translation = namedtuple("Translation", ("templates", "side", "placements"))
 
 
-def _root_translation(m, root, table, what, apis):
+def _root_translation(m, root, table, what, apis, input_scopes):
     unknown = sorted(p.address for p in root.placed.values() if p.group is None)
     if unknown:
         raise SystemExit(f"{', '.join(unknown)}: the deployment scope (resource group) isn't known statically: what "
@@ -608,36 +719,57 @@ def _root_translation(m, root, table, what, apis):
     keys = sorted(dict.fromkeys(p.group for p in root.placed.values()), key=lambda k: str(k))
     counts = {k: sum(p.group == k for p in root.placed.values()) for k in keys}
     main = max(keys, key=lambda k: (counts[k], k[0] == "resourceGroup")) if keys else None   # the root's notes' home
-    templates = {(root.directory, k): _scope_template(m, root, k, table, what, apis, k == main) for k in keys}
+    templates = {(root.directory, k): _scope_template(m, root, k, table, what, apis, k == main, input_scopes)
+                 for k in keys}
     side = (no_native_note(root.split, "Azure Resource Manager", root.reasons), root.split.side) \
         if root.split.side else None
     return templates, side, placements(root, {k: template_name(k) for k in keys}, "terraform/main.tf")
 
 
-def translation(m, files, types, no_native, data, what, kept=None, apis=None):
+def translation(m, files, types, no_native, data, what, kept=None, apis=None, input_scopes=None):
     """The ARM Translation of environment m's Azure Terraform render by a table: per root, one template per
     deployment scope, the side Terraform root (with each kept resource's reason) and where each resource went; apis:
-    {ARM type: API version} of the existing resources read by literal id or by name."""
+    {ARM type: API version} of the existing resources read by literal id or by name; input_scopes: {input name
+    pattern: (ARM type, API version)} of the inputs naming a resource by its ID (input_scope)."""
     table = Table(types, no_native, data, lambda type_, region: False, kept or {})
-    parts = {d: _root_translation(m, read_root(d, rf, table, LANGUAGE, _layout_of(types)), table, what, apis or {})
+    scopes = input_scopes or MappingProxyType({})
+    parts = {d: _root_translation(m, read_root(d, rf, table, LANGUAGE, _layout_of(types, scopes)), table, what,
+                                  apis or {}, scopes)
              for d, rf in roots(files).items()}
     return Translation({k: v for t, _, _ in parts.values() for k, v in t.items()},
                        {d: s for d, (_, s, _) in parts.items() if s is not None},
                        {d: p for d, (_, _, p) in parts.items()})
 
 
-def translated(m, files, types, no_native, data, what, targets, kept=None, apis=None):
+def _bicep_modules(m, what, templates):
+    """({module symbol: path its module statement names}, {path: text}) of the module files of one root's templates
+    (bicep/<rest>/modules/, each distinct template once, for all its templates together)."""
+    stems, texts = module_files(tuple(mod for t in templates.values() for mod in t.modules))
+    return ({sym: f"./modules/{stem}.bicep" for sym, stem in stems.items()},
+            {f"modules/{stem}.bicep": header(m, f"{what}: ARM (module {stem}.bicep)", BICEP_FORMAT) + text
+             for stem, text in texts.items()})
+
+
+def translated(m, files, types, no_native, data, what, targets, kept=None, apis=None, input_scopes=None):
     """{path: TfFile | text} of environment m's ARM templates for each target asked (bicep: .bicep files under bicep/,
-    arm: ARM JSON under arm/), each with its side Terraform root and its placements.json (where each Terraform
-    resource went, the files named as that target writes them)."""
-    t = translation(m, files, types, no_native, data, what, kept, apis)
-    writers = {"bicep": (".bicep", BICEP_FORMAT, as_bicep), "arm": (".json", ARM_FORMAT, as_arm_json)}
+    with their modules' files under modules/ beside them; arm: ARM JSON under arm/, modules inline), each with its side
+    Terraform root and its placements.json (where each Terraform resource went, the files named as that target writes
+    them)."""
+    t = translation(m, files, types, no_native, data, what, kept, apis, input_scopes)
+    by_root = {d: {k: x for (d2, k), x in t.templates.items() if d2 == d}
+               for d in dict.fromkeys(d for d, _ in t.templates)}
+    modules = {d: _bicep_modules(m, what, ts) for d, ts in by_root.items()}
+    writers = {"bicep": (".bicep", BICEP_FORMAT, lambda x, d: as_bicep(x, lambda mod: modules[d][0][mod.symbol])),
+               "arm": (".json", ARM_FORMAT, lambda x, d: as_arm_json(x))}
     out = {}
     for target in targets:
         ext, fmt, write = writers[target]
+        if target == "bicep":
+            out.update({posixpath.join(native_directory(d, target), p): text for d, (_, files_) in modules.items()
+                        for p, text in files_.items()})
         for (directory, key), template in t.templates.items():
             path = posixpath.join(native_directory(directory, target), template_name(key) + ext)
-            out[path] = header(m, f"{what}: ARM ({posixpath.basename(path)})", fmt) + write(template)
+            out[path] = header(m, f"{what}: ARM ({posixpath.basename(path)})", fmt) + write(template, directory)
         for directory, (head, items) in t.side.items():
             out[posixpath.join(native_directory(directory, target), "terraform", "main.tf")] = \
                 TfFile(header(m, f"{what}: what ARM has no form for", HCL) + head, items)

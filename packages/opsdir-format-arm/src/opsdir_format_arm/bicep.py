@@ -2,14 +2,19 @@
 resources (existing ones read, a child under parent:, an extension resource with scope:), outputs, and // comments.
 `bicep build` of it gives the template the ARM JSON writer gives. Pure.
 
-Objects and arrays are written one entry per line, two spaces deep, as `bicep format` lays them out. A string is a
+A module is a `module` of its template's own Bicep file (bicep_files: under modules/ beside the template, one file per
+distinct template). Objects and arrays are written one entry per line, two spaces deep, as `bicep format` lays them
+out. A string is a
 single-quoted Bicep string ('\\', '\\'', the line breaks and '${' escaped); an interpolation is one string with its
 expressions in ${...}. A key that isn't an identifier is quoted.
 """
+import posixpath
 import re
 from collections import namedtuple
+from functools import reduce
 
-from .template import Call, Field, Interp, Member, Param, Prop, ResourceId, ResourceName, indexed, is_expression
+from .template import (Call, Field, Index, Interp, Member, Param, Prop, ResourceId, ResourceName, indexed,
+                       is_expression)
 
 # A bare symbol the writer puts after parent:, scope: and in dependsOn (written as it is; never a value of the model)
 _Symbol = namedtuple("_Symbol", ("name",))
@@ -59,6 +64,8 @@ def bicep_expr(v):
         return f"{bicep_expr(v.value)}.{v.path}"
     if isinstance(v, Field):
         return f"{v.symbol}.{v.path}"
+    if isinstance(v, Index):
+        return f"{bicep_expr(v.value)}[{bicep_expr(v.index)}]"
     raise TypeError(f"not a Bicep expression: {v!r}")
 
 
@@ -107,13 +114,47 @@ def _symbolic(v, indent):
     return bicep_value(v, indent)
 
 
-def as_bicep(t):
-    """A template as a Bicep file (sections a blank line apart, a final newline)."""
+def _module(m, path):
+    body = {"name": m.name, "scope": Call("resourceGroup", (m.subscription, m.resource_group)),
+            **({"params": m.params} if m.params else {}),
+            **({"dependsOn": [_Symbol(s) for s in m.depends_on]} if m.depends_on else {})}
+    lines = "".join(f"  {_key(k)}: {_symbolic(x, 1)}\n" for k, x in body.items())
+    return "\n".join((*(f"// {c}" for c in (m.comment.split("\n") if m.comment else ())),
+                      f"module {m.symbol} {bicep_string(path)} = " + "{\n" + lines + "}"))
+
+
+def as_bicep(t, module_path=lambda m: f"./modules/{m.file}.bicep"):
+    """A template as a Bicep file (sections a blank line apart, a final newline); module_path(module) -> the path its
+    module statement names (relative to the file)."""
     indexed(t)
     sections = (*(("\n".join(f"// {c}" for c in t.comments),) if t.comments else ()),
                 *((f"targetScope = {bicep_string(t.scope)}",) if t.scope != "resourceGroup" else ()),
                 *((f"metadata description = {bicep_string(t.description)}",) if t.description else ()),
                 *(_parameter(p) for p in t.parameters),
                 *(_resource(r) for r in t.resources),
+                *(_module(m, module_path(m)) for m in t.modules),
                 *(f"output {o.name} {o.type} = {bicep_value(o.value)}" for o in t.outputs))
     return "\n\n".join(sections) + "\n"
+
+
+def module_files(modules):
+    """{module symbol: file stem} and {file stem: Bicep text} of modules' templates: one file per distinct template,
+    named by its module's file (a later different template of the same name numbered -2, -3, ...)."""
+    def place(acc, m):
+        stems, texts = acc
+        text = as_bicep(m.template)
+        same = next((stem for stem, t in texts.items() if t == text), None)
+        if same:
+            return {**stems, m.symbol: same}, texts
+        stem = next(x for x in (m.file, *(f"{m.file}-{i}" for i in range(2, 1000))) if x not in texts)
+        return {**stems, m.symbol: stem}, {**texts, stem: text}
+    return reduce(place, modules, ({}, {}))
+
+
+def bicep_files(t, path):
+    """{path: Bicep text} of a template written at path: the template, and its modules' templates under modules/
+    beside it (each distinct one once)."""
+    stems, texts = module_files(t.modules)
+    folder = posixpath.dirname(path)
+    return {path: as_bicep(t, lambda m: f"./modules/{stems[m.symbol]}.bicep"),
+            **{posixpath.join(folder, "modules", f"{stem}.bicep"): text for stem, text in texts.items()}}
