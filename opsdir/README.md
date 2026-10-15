@@ -343,6 +343,9 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | A product's config file kept as captured settings | `opsdir.domains.configuration.record`: `captured_file(fmt, prefix, folder, path, text, patterns, role)` |
    | Cloud inventory: resources, role tags, role map, layout | `opsdir.core.inventory`: `resource`, `tagged_role(tags)`, `of_types(found, *types)`, `layout_import`, `read_together`, `merge_reads` |
    | CI pipelines as jobs | `opsdir.domains.automation.pipelines`: `FoundPipeline`, `ReadRepository` (a repository the import read, for removing what it no longer defines), `pipeline_groups(d, pipelines, read)` (groups and removal notices), `gone_pipelines`, `environment_name` |
+   | A planner check's findings, with its one line saying all it looked at holds when nothing is a blocker or an action | `opsdir.core.findings`: `all_clear(parts, ok_line)`, `each_checked(items, judge, ok_line)` (no findings when there are no items) |
+   | Who keeps an entry the stack doesn't (the party `ciamManagedBy` names) | `opsdir.domains.governance.keepers`: `managed_by(d, e)` (the party entry or `None`), `managed_by_name(d, e, default)` (its name as reports show it); `keeper(m, e)` for where its keeper's root is |
+   | How long a destination keeps what it is sent, and a report's yes/no | `opsdir.domains.observability.retention`: `retention_days(b)`, `longest_retention(days)`, `INDEFINITE` (forever), `yes_no(e, attr)` |
 
    Anything two packages would write alike belongs in the core (or an `opsdir-base-*` library), public and tested. Module-level tables are read-only (`MappingProxyType`, tuples, `frozenset`).
 
