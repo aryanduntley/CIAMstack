@@ -304,6 +304,13 @@
       "match": "target/prod: interconnect `link-source`: site-to-site VPN (landing-zone managed): what kind of link it is isn't recorded",
       "planted": "the target's cross-cloud replication link to the source records no kind of link (ciamLinkKind) and doesn't exist yet: the landing zone can't render it (a render note)",
       "cleared_by": null
+    },
+    {
+      "id": "B44",
+      "area": "Unknowns",
+      "match": "Open question `q-skyline-signing` (target/prod)",
+      "planted": "nobody knows yet whether Skyline Air accepts the target's new signing certificate without re-onboarding: an open question the move waits for, owned by the partner",
+      "cleared_by": "CHG-2044"
     }
   ],
   "actions": [
@@ -1277,6 +1284,13 @@
       "planted": "the target's vCPU increase is decided as a request, which azurerm can't file: someone files it through the Quota API or a support request (a render note)",
       "cleared_by": null,
       "raised_by": "CHG-2028"
+    },
+    {
+      "id": "A138",
+      "area": "Unknowns",
+      "match": "Open question `q-tech-pubs-sso` (the estate)",
+      "planted": "whether the technical publications portal keeps its own login page is an open question for the estate, needed before the cutover",
+      "cleared_by": null
     }
   ]
 }

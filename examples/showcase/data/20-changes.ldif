@@ -423,6 +423,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Build the target's product configuration into its deployment: confi
  g profiles and PingFederate's server profile
 
+dn: cn=CHG-2044,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2044
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record Skyline Air's answer on the target's signing certificate (un
+ known q-skyline-signing)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

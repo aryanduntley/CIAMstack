@@ -1,0 +1,14 @@
+# CHG-2044 (approved): the unknowns register held a question the move waits for: whether Skyline Air accepts the
+# target's new SAML signing certificate without re-onboarding the federation (q-skyline-signing, blocking). Skyline
+# Air's identity operations team answered: it imports the new certificate from the target's metadata, so the
+# federation carries over. The answer is recorded on the question, which the plan then lists as answered.
+dn: cn=q-skyline-signing,ou=unknowns,dc=ciam-ops
+changetype: modify
+add: ciamAnswer
+ciamAnswer: Yes: Skyline Air imports the new certificate from the target's metadata, no re-onboarding
+-
+add: ciamAnsweredAt
+ciamAnsweredAt: 20260922000000Z
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2044,ou=changes,dc=ciam-ops

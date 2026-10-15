@@ -485,7 +485,7 @@ Result: "change this hostname" becomes a query that lists every file and every p
 | HTML templates, scripts, dashboards | Free-form | hash, owner, string-census hits |
 | HSM-resident keys | Non-exportable by design | ref + a rotation plan as a change |
 | Partners' own systems | Not ours | what they pin, contact, lead time, drafted request |
-| Tribal knowledge | Not written down | an `ou=unknowns` list: questions with owners, closed when answered |
+| Tribal knowledge | Not written down | the unknowns register (`ou=unknowns`, `ciamUnknown`: question, owner, blocking, what it concerns, needed by, answer): `opsdir report unknowns`, and the planner's verdict counts the open ones |
 
 ---
 

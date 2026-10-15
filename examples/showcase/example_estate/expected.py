@@ -108,6 +108,9 @@ EXPECTED = MappingProxyType({
         ("B43", "Network", "target/prod: interconnect `link-source`: site-to-site VPN (landing-zone managed): what "
          "kind of link it is isn't recorded", "the target's cross-cloud replication link to the source records no "
          "kind of link (ciamLinkKind) and doesn't exist yet: the landing zone can't render it (a render note)", None),
+        ("B44", "Unknowns", "Open question `q-skyline-signing` (target/prod)",
+         "nobody knows yet whether Skyline Air accepts the target's new signing certificate without re-onboarding: "
+         "an open question the move waits for, owned by the partner", "CHG-2044"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -437,6 +440,9 @@ EXPECTED = MappingProxyType({
         ("A137", "Quotas", "target/prod: quota request (vcpus): raise it to 96",
          "the target's vCPU increase is decided as a request, which azurerm can't file: someone files it through the "
          "Quota API or a support request (a render note)", None, "CHG-2028"),
+        ("A138", "Unknowns", "Open question `q-tech-pubs-sso` (the estate)",
+         "whether the technical publications portal keeps its own login page is an open question for the estate, "
+         "needed before the cutover", None),
     ],
 })
 

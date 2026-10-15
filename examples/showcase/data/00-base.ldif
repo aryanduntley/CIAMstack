@@ -88,6 +88,13 @@ objectClass: organizationalUnit
 ou: incidents
 description: Incidents and postmortems
 
+dn: ou=unknowns,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: unknowns
+description: The unknowns register: questions the record can't answer yet, eac
+ h with who must answer it
+
 dn: ou=restore-tests,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
