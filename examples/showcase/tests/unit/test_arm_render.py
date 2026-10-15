@@ -92,7 +92,8 @@ def test_kept_resources_say_why(translated):
         "part of azurerm_data_protection_backup_vault.ciam_backups natively, but waits for "
         "azurerm_role_assignment.ciam_backups_cmk, which reads it: a cycle there")
     jobs = [a for a in why if a.startswith("azurerm_container_app_job.")]       # the scripted checks (check_jobs)
-    assert jobs and all(why[a].startswith("no ARM form is written for the check jobs yet") for a in jobs)
+    assert jobs and all(why[a] == f"waits for azurerm_role_assignment.check_{a.split('.')[1]}_publisher (depends_on), "
+                        "which stays Terraform, applied after the template" for a in jobs)     # its grants, below
     publishers = [a for a in why if a.startswith("azurerm_role_assignment.check_") and a.endswith("_publisher")]
     pulls = [a for a in why if a.startswith("azurerm_role_assignment.check_") and a.endswith("_pull")]
     assert len(publishers) == len(pulls) == len(jobs)                   # each job's own identity's grants

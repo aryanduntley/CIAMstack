@@ -9,6 +9,8 @@ import io
 import json
 import urllib.request
 
+import pytest
+
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
 from opsdir_format_terraform.hcl import as_text
@@ -237,8 +239,9 @@ def test_a_job_reads_back_as_the_canary_binding_it_realizes_with_its_image_from_
               "properties": {"configuration": {"scheduleTriggerConfig": {"cronExpression": "*/10 * * * *"},
                                                "registries": [{"server": "crciam.azurecr.io", "identity": "x"}]},
                              "template": {"containers": [{"name": "check", "image": IMAGE}]}}}
-    cli = [p for item in (flat, nested) for p in monitor_items([("microsoft.app/jobs", item)])]
-    assert cli == [state, state]
+    merged = {**{k: v for k, v in nested.items() if k != "properties"}, **nested["properties"]}   # the ARM reader's
+    cli = [p for item in (flat, nested, merged) for p in monitor_items([("microsoft.app/jobs", item)])]
+    assert cli == [state, state, state]
     canaries = [r for r in pairs_resources([state, other])[0] if r.kind == "canary"]
     assert [(r.ref, r.attrs, r.role) for r in canaries] == [
         (job_id, {"ciamInterval": ("10m",), "ciamRealizes": ("sso-token",),
@@ -247,18 +250,33 @@ def test_a_job_reads_back_as_the_canary_binding_it_realizes_with_its_image_from_
     assert "ciamContainerImage" not in [r for r in pairs_resources([script_form])[0] if r.kind == "canary"][0].attrs
 
 
-def test_as_bicep_the_environment_is_native_and_the_jobs_stay_terraform(monkeypatch):
+def _root(m, waits=True):
+    """{path: TfFile | text} of environment m's check jobs in a Terraform root (with the lookups they read); waits:
+    False drops the jobs' depends_on on their grants, as if every grant were native."""
+    from opsdir_format_terraform.hcl import TfBlock, TfFile, ref, tf_block
+    hcl, files = render_jobs(m, ENDPOINTS)
+    hcl = hcl if waits else tuple(
+        b._replace(body=tuple(kv for kv in b.body if kv[0] != "depends_on"))
+        if isinstance(b, TfBlock) and tuple(b.labels[:1]) == ("azurerm_container_app_job",) else b for b in hcl)
+    return {"terraform/main.tf": TfFile("", (
+        tf_block("data", ["azurerm_resource_group", "main"], [("name", "rg-a")]),
+        tf_block("data", ["azurerm_subnet", "subnet_web"], [
+            ("name", "snet-web"), ("virtual_network_name", "vnet-a"),
+            ("resource_group_name", ref("data.azurerm_resource_group.main.name"))]), *hcl)), **files}
+
+
+def _native(monkeypatch, targets=("bicep",), waits=True):
+    """The ARM render (targets) of the check jobs' root (_root)."""
     from types import SimpleNamespace
-    from opsdir_format_terraform.hcl import TfFile, ref, tf_block
     import opsdir_adapter_azure.terraform as terraform
     stub = SimpleNamespace(dn="env=prod,cloud=alpha,ou=environments,dc=ciam-ops", label="alpha/prod")
-    hcl, files = render_jobs(_model((*BINDINGS, *INTERNAL), (*TREE, *LDAP)), ENDPOINTS)
-    root = TfFile("", (tf_block("data", ["azurerm_resource_group", "main"], [("name", "rg-a")]),
-                       tf_block("data", ["azurerm_subnet", "subnet_web"], [
-                           ("name", "snet-web"), ("virtual_network_name", "vnet-a"),
-                           ("resource_group_name", ref("data.azurerm_resource_group.main.name"))]), *hcl))
-    monkeypatch.setattr(terraform, "render_files", lambda m, services: {"terraform/main.tf": root, **files})
-    out = terraform.render(stub, None, ("bicep",))
+    root = _root(_model((*BINDINGS, *INTERNAL), (*TREE, *LDAP)), waits)
+    monkeypatch.setattr(terraform, "render_files", lambda m, services: root)
+    return terraform.render(stub, None, targets)
+
+
+def test_as_bicep_the_environment_is_native_and_the_jobs_stay_terraform(monkeypatch):
+    out = _native(monkeypatch)
     assert "terraform/main.tf" not in out
     template = out["bicep/rg-a.bicep"]
     assert ("resource container_app_environment_checks_subnet_web 'Microsoft.App/managedEnvironments@2026-07-01' = {"
@@ -266,10 +284,71 @@ def test_as_bicep_the_environment_is_native_and_the_jobs_stay_terraform(monkeypa
     assert "infrastructureSubnetId: subnets_snet_web.id\n      internal: true" in template
     assert "'4633458b-17de-408a-b874-0445c86b69e6')" in template                 # Key Vault Secrets User
     side = out["bicep/terraform/main.tf"]
-    assert "#   azurerm_container_app_job.token_check: no ARM form is written for the check jobs yet" in side
+    assert ("#   azurerm_container_app_job.token_check: waits for azurerm_role_assignment.check_token_check_publisher "
+            "(depends_on), which stays Terraform, applied after the template") in side      # its input-scoped grants
     assert "container_app_environment_id = var.azurerm_container_app_environment_checks_subnet_web_id" in side
     assert "depends_on = [azurerm_role_assignment.check_token_check_publisher" in side   # the template's grants
     assert {p for p in out if p.endswith("check.py")} == {"images/ciam-check/check.py"}   # nothing read beside it
+
+
+def test_a_job_s_native_form_and_its_arm_read_back(monkeypatch):
+    """With nothing making it wait, a job is Microsoft.App/jobs (image delivery): its identity, schedule, secrets (a
+    value, a Key Vault secret read with its identity), registry and container; read back from the template it is the
+    canary binding the Terraform state gives."""
+    from opsdir_adapter_azure.arm import arm_resources
+    from opsdir_adapter_azure.rendered_state import rendered_deployments
+    template = _native(monkeypatch, waits=False)["bicep/rg-a.bicep"]
+    job = template[template.index("resource container_app_job_token_check 'Microsoft.App/jobs@2026-07-01' = {"):]
+    job = job[:job.index("\n}\n")]
+    for part in ("triggerType: 'Schedule'", "replicaTimeout: 120", "cronExpression: '*/10 * * * *'",
+                 "keyVaultUrl: '${vaults_kv_ciam.properties.vaultUri}secrets/canary-client'",
+                 "identity: user_assigned_identity_check_token_check.id", "server: 'crciam.azurecr.io'",
+                 "cpu: json('0.25')", "secretRef: 'appinsights'", f"image: '{IMAGE}'"):
+        assert part in job, part
+    from opsdir_format_terraform.hcl import written
+    from opsdir_adapter_azure.inventory import pairs_resources, state_pairs
+    from opsdir_adapter_azure.rendered_state import rendered_states
+    model_ = _model((*BINDINGS, *INTERNAL), (*TREE, *LDAP))
+    arm = _native(monkeypatch, ("arm",), waits=False)
+    texts = {f"alpha/prod/{p[len('arm/'):]}": t for p, t in arm.items() if p.startswith("arm/")}
+    by_arm = arm_resources({p[len("alpha/prod/"):]: t for p, t in rendered_deployments(
+        texts, model_.d, "alpha/prod").items()})[0]
+    tf = {"alpha/prod/main.tf": written({"main.tf": _root(model_, waits=False)["terraform/main.tf"]})["main.tf"]}
+    by_terraform = pairs_resources([p for state in rendered_states(tf, model_.d, "alpha/prod").values()
+                                    for p in state_pairs(state)[0]])[0]
+
+    def canaries(resources):
+        return {r.name: dict(r.attrs) for r in resources if r.kind == "canary"}
+    assert canaries(by_arm) == canaries(by_terraform)
+    assert canaries(by_arm)["token-check"]["ciamContainerImage"] == (f"check={IMAGE}",)
+
+
+@pytest.mark.bicep
+def test_a_job_s_native_form_builds_to_its_arm_json_and_lints_clean(monkeypatch, tmp_path):
+    """The native form (nothing making the jobs wait) checked by the pinned Bicep CLI (tools/bin/bicep; skipped
+    without it): it builds to the ARM JSON rendered beside it, and lints without an error."""
+    import subprocess
+    from pathlib import Path
+    bicep = Path(__file__).resolve().parents[3] / "tools" / "bin" / "bicep"
+    if not bicep.exists():
+        pytest.skip("no tools/bin/bicep (opsdir/scripts/fetch-tools.sh)")
+    out = _native(monkeypatch, ("bicep", "arm"), waits=False)
+    path = tmp_path / "rg-a.bicep"
+    path.write_text(out["bicep/rg-a.bicep"])
+    built = subprocess.run([str(bicep), "build", str(path), "--stdout"], capture_output=True, text=True)
+    assert built.returncode == 0, built.stderr
+    doc = json.loads(built.stdout)
+    doc["metadata"].pop("_generator")
+    assert {k: v for k, v in doc.items() if k != "metadata" or v} == json.loads(out["arm/rg-a.json"])
+    lint = subprocess.run([str(bicep), "lint", str(path)], capture_output=True, text=True)
+    assert lint.returncode == 0 and " Error " not in lint.stderr, lint.stderr
+
+
+def test_in_the_script_form_a_job_stays_terraform_for_its_file(monkeypatch):
+    monkeypatch.setattr(check_jobs, "delivery", lambda m: "script")
+    side = _native(monkeypatch, waits=False)["bicep/terraform/main.tf"]
+    assert ("#   azurerm_container_app_job.token_check: in the script form the check job reads its runner from a file "
+            "beside the root (file())") in side
 
 
 def test_the_jobs_notes_are_written_as_their_comments():

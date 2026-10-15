@@ -38,13 +38,6 @@ KEPT = {
     # organization-wide Defender (5.7b): the management group's part, in the landing zone keeper's root
     "azurerm_management_group_policy_assignment": _MANAGEMENT_GROUP,
     "azurerm_management_group_policy_remediation": _MANAGEMENT_GROUP,
-    # the scripted checks' jobs (check_jobs): no ARM form is written for them yet (and in the script form each reads
-    # its runner from a file beside the root, file(), which a template can't); the environment, identities and grants
-    # they use are written natively
-    "azurerm_container_app_job": ("no ARM form is written for the check jobs yet (in the script form each also reads "
-                                  "its runner from a file beside the root, file(), which a template has no form for): "
-                                  "the job is applied after the template, with the environment, identity and grants it "
-                                  "reads"),
     "azurerm_storage_object_replication": (
         "ARM sets object replication on the destination account first, in that account's resource group, and the "
         "source's policy takes the id it returns; the destination is an input the record holds no group for"),
@@ -1193,6 +1186,67 @@ def _app_environment(f, cx):
             **({"vnetConfiguration": vnet} if vnet else {})}
 
 
+# A scheduled job's container sizes are decimals, which Bicep writes only through json()
+def _decimal(v):
+    return Call("json", (str(v),)) if isinstance(v, float) else v
+
+
+def _job_env(e, cx):
+    """A job container's environment variable: a value, or a reference to one of the job's secrets."""
+    return {"name": cx.value(e["name"]),
+            **({"secretRef": cx.value(e["secret_name"])} if "secret_name" in e else {"value": cx.value(e["value"])})}
+
+
+def _job_secret(s, cx):
+    """A job's secret: a value (a secure parameter), or a Key Vault secret read with a user-assigned identity."""
+    return {"name": cx.value(s["name"]), **({"keyVaultUrl": cx.value(s["key_vault_secret_id"]),
+                                            "identity": cx.value(s["identity"])} if "key_vault_secret_id" in s else
+                                           {"value": cx.value(s["value"])})}
+
+
+def _job_container(c, cx):
+    return {"name": cx.value(c["name"]), "image": cx.value(c["image"]),
+            **({"command": cx.value(c["command"])} if "command" in c else {}),
+            "resources": {"cpu": _decimal(cx.value(c["cpu"])), "memory": cx.value(c["memory"])},
+            **({"env": [_job_env(e, cx) for e in c["env"]]} if c.get("env") else {})}
+
+
+def _app_job(f, cx):
+    """A scheduled Container Apps job (the scripted checks, check_jobs: image delivery): its environment and workload
+    profile, user-assigned identity, schedule, secrets (a value, or a Key Vault secret read with the identity), the
+    registries it pulls from with that identity, and its containers."""
+    trigger = f["schedule_trigger_config"][0]
+    config = {"triggerType": "Schedule",
+              **({"replicaTimeout": cx.value(f["replica_timeout_in_seconds"])}
+                 if "replica_timeout_in_seconds" in f else {}),
+              **({"replicaRetryLimit": cx.value(f["replica_retry_limit"])} if "replica_retry_limit" in f else {}),
+              "scheduleTriggerConfig": obj(trigger, cx, {"cron_expression": "cronExpression",
+                                                         "parallelism": "parallelism",
+                                                         "replica_completion_count": "replicaCompletionCount"},
+                                           f"{cx.where}.schedule_trigger_config"),
+              **({"secrets": [_job_secret(x, cx) for x in f["secret"]]} if f.get("secret") else {}),
+              **({"registries": [{"server": cx.value(r["server"]), "identity": cx.value(r["identity"])}
+                                 for r in f["registry"]]} if f.get("registry") else {})}
+    unknown = sorted(set(own(f)) - {"name", "resource_group_name", "location", "container_app_environment_id",
+                                    "workload_profile_name", "replica_timeout_in_seconds", "replica_retry_limit",
+                                    "schedule_trigger_config", "identity", "secret", "registry", "template"})
+    if unknown:
+        raise SystemExit(f"{cx.where}: no ARM form for {', '.join(unknown)}")
+    return {"location": cx.value(f["location"]), **_identity(f["identity"], cx),
+            "environmentId": cx.value(f["container_app_environment_id"]),
+            **({"workloadProfileName": cx.value(f["workload_profile_name"])} if "workload_profile_name" in f else {}),
+            "configuration": config,
+            "template": {"containers": [_job_container(c, cx) for c in f["template"][0]["container"]]}}
+
+
+def _script_job(f, block):
+    """Why a check job stays Terraform: in the script form (no registry) it reads its runner from a file beside the
+    root (file()), which a template has no form for; else None."""
+    return None if f.get("registry") else (
+        "in the script form the check job reads its runner from a file beside the root (file()), which a template "
+        "has no form for: it is applied after the template, with the environment, identity and grants it reads")
+
+
 TYPES = {
     "azurerm_network_security_group": Native(Arm("Microsoft.Network/networkSecurityGroups", NETWORK), BASE,
                                              {"id": "id", "name": "name"}, "name", "map"),
@@ -1505,6 +1559,8 @@ TYPES = {
     # availability tests, the scripted checks' environment, policy exemptions
     "azurerm_container_app_environment": Native(Arm("Microsoft.App/managedEnvironments", APP), _app_environment,
                                                 {"id": "id"}, "name", "map"),
+    "azurerm_container_app_job": Native(Arm("Microsoft.App/jobs", APP), _app_job, {"id": "id"}, "name", "map",
+                                        keep=_script_job),
     "azurerm_application_insights_standard_web_test": Native(Arm("Microsoft.Insights/webtests", WEBTESTS), _web_test,
                                                              {"id": "id"}, "name", "map"),
     "azurerm_subscription_policy_exemption": Native(Arm("Microsoft.Authorization/policyExemptions", EXEMPTIONS,
