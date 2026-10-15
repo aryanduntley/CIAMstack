@@ -13,7 +13,8 @@ from pathlib import Path
 
 from ..core.contract import Adapter, Domain, Format, SecretPattern, Services
 from ..core.directory import get, rdn_value, subtree
-from ..core.environment import env_model, product_roles, with_product_roles, with_required_roles
+from ..core.environment import (env_model, product_roles, with_cluster_discovery, with_product_roles,
+                                with_required_roles)
 from ..core.inventory import imports
 from ..core.naming import branch
 from ..core.secrets import CORE_OWNER, CORE_PATTERNS, dialect_problems
@@ -182,11 +183,12 @@ def environment_specs(d):
 
 
 def environment(d, spec, installed=ADAPTERS):
-    """(EnvModel with its required roles resolved and the installed adapters' product roles (core.environment
-    roles_for), the installed adapters that apply to it)."""
+    """(EnvModel with its required roles resolved, the installed adapters' product roles (core.environment
+    roles_for) and what its kits answer for cluster discovery (discovery_answers), the installed adapters that apply
+    to it)."""
     m = with_product_roles(env_model(d, spec), product_roles(installed))
     adapters = applicable(m, installed)
-    return with_required_roles(m, required_roles(adapters)), adapters
+    return with_cluster_discovery(with_required_roles(m, required_roles(adapters)), adapters), adapters
 
 
 def ref_schemes(installed=ADAPTERS):

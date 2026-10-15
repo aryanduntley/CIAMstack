@@ -4,15 +4,14 @@ What the rendered values can't settle on their own, as actions: a PingFederate w
 (a license file key, or Ping's DevOps credentials for its license server), an admin console with no
 PING_IDENTITY_PASSWORD recorded (the image's default is published), more than one admin console replica, engines
 with no admin console in their namespace (the chart clusters them through it), workloads beyond the one per
-product the chart runs, a cluster discovery the record doesn't bind as DNS_PING through the chart's cluster service
-(with the fix binding it), and a rendered server profile's secret variable the record doesn't deliver.
+product the chart runs, and a rendered server profile's secret variable the record doesn't deliver. Whether the record
+binds the cluster discovery the chart answers is PingFederate's own check (discovery.cluster_discovery declares it).
 """
 import re
 
 from opsdir.core.directory import rdn_value
 from opsdir.core.findings import findings, responsible
 from opsdir_adapter_kubernetes.kits import replicas_of, workload_of
-from .discovery import discovery_gap
 from .products import placements, secret_keys, unplaced
 from .profiles import delivered
 from .release import ADMIN_PASSWORD, CHART, DEVOPS_KEYS, LICENSE_KEY, SERVER_PROFILE
@@ -58,8 +57,8 @@ def unmapped_variables(p, files):
 
 def check_ping_devops(ctx):
     """Actions on the target: PingFederate licenses, the admin password, admin console replicas, engines without
-    their admin console, workloads beyond one per product, cluster discovery (with its fix), a server profile's
-    secret variables the record doesn't deliver."""
+    their admin console, workloads beyond one per product, a server profile's secret variables the record doesn't
+    deliver."""
     m = ctx.dst
     spaces = placements(m)
     if not spaces:
@@ -72,8 +71,6 @@ def check_ping_devops(ctx):
              *(f"PingFederate's server profile in {m.label} (namespace `{p.namespace}`) substitutes `{v}`, which the "
                f"record doesn't deliver: record ciamWorkloadSecret `<secret>/{v} <- <role>` on its workloads (the "
                f"profile's README names the role)." for p in spaces for v in unmapped_variables(p, ctx.dst_files)))
-    gaps = tuple(g for p in spaces for g in (discovery_gap(m, p),) if g is not None)
-    actions = tuple((AREA, t, owner, None) for t in (*texts, *(t for t, _ in gaps)))
-    ok = () if actions else (f"PingFederate on Kubernetes in {m.label} has its licenses, admin password and cluster "
-                             "discovery recorded.",)
-    return findings(actions=actions, ok=ok, fixes=tuple(f for _, f in gaps))
+    actions = tuple((AREA, t, owner, None) for t in texts)
+    ok = () if actions else (f"PingFederate on Kubernetes in {m.label} has its licenses and admin password recorded.",)
+    return findings(actions=actions, ok=ok)

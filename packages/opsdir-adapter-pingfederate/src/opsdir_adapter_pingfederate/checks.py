@@ -5,11 +5,13 @@ withheld secrets come from a credential role the target binds. An OAuth client l
 needs PingFederate 13.1 or later in the target (before it, a client takes one), and so does an SMTP relay its
 notification publishers sign in to with OAuth. From 13.1.3 a JDBC store outside the documented drivers and their URL
 schemes is an action (the Admin API restricts them). An SMTP relay or CAPTCHA service whose credential role
-isn't the role of the plugin instance it stands for is an action, fixed by setting it (as a re-import would)."""
+isn't the role of the plugin instance it stands for is an action, fixed by setting it (as a re-import would). Where a
+deployment kit deploys PingFederate, a cluster discovery the record doesn't bind as the DNS name the kit's chart answers
+is an action, with the fix binding it (check_kit_discovery)."""
 
 from opsdir.core.contract import RoleUse
 from opsdir.core.directory import children, one, rdn_value, values
-from opsdir.core.environment import bound_nowhere, one_role
+from opsdir.core.environment import bound_nowhere, discovery_answers, one_role
 from opsdir.core.findings import Fix, each_checked, findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from opsdir.domains.federation.services import identity_services, integrations_served
@@ -18,9 +20,9 @@ from opsdir.domains.pki.credentials import credential_role_fix
 from .connections import MULTI_AUTH
 from .messaging import SMTP_OAUTH, is_smtp, relay_of, served_service, service_role_records
 from .datastores import JDBC_VALIDATED, jdbc_driver_problem, store_hosts
-from .discovery import CHOICES, RENDERED, binding_protocol, clustered, discovery_fix, lacks, where
+from .discovery import CHOICES, RENDERED, binding_protocol, clustered, discovery_fix, discovery_gap, lacks, where
 from .generic import held_resources, resource_label
-from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES, SERVER_ROLES
+from .naming import DATA_STORES, DEFAULT_POLICY, DISCOVERY_ROLE, FRAGMENTS, OIDC_POLICIES, PRODUCT, SERVER_ROLES
 from .oauth import oidc_policy_refs
 from .objects import NOT_RECORDED, claim_fix, missing, why_unresolved
 from .plugins import KINDS, plugin_refs
@@ -234,6 +236,20 @@ def check_cluster(ctx):
     return merge_findings([_discovery(ctx, nodes, src, dst, owner),
                            *(_credentials(ctx, n, f"PingFederate node `{rdn_value(n)}`",
                                           responsible(ctx.d, n, ctx.dst.env)) for n in nodes)])
+
+
+def check_kit_discovery(ctx):
+    """Actions on the target, each with the fix binding it: where a deployment kit deploys PingFederate
+    (core.environment.discovery_answers), the namespaces whose chart answers a DNS name the record's cluster discovery
+    doesn't have the nodes query by DNS_PING; fine when it does in every one."""
+    m = ctx.dst
+    answers = discovery_answers(m, PRODUCT)
+    gaps = tuple(g for a in answers for g in (discovery_gap(m, a),) if g is not None)
+    owner = responsible(ctx.d, m.env)
+    ok = () if gaps else tuple(f"PingFederate's cluster discovery in {m.label} (namespace `{a.namespace}`) is what the "
+                               f"{a.kit} chart answers: DNS_PING through `{a.name}`." for a in answers)
+    return findings(actions=tuple(("PingFederate on Kubernetes", t, owner, None) for t, _ in gaps), ok=ok,
+                    fixes=tuple(f for _, f in gaps))
 
 
 def credential_roles(m):

@@ -30,9 +30,11 @@ EnvModel = NamedTuple("EnvModel", [("d", Directory), ("dn", str), ("env", Entry)
                                    ("overrides", tuple),        # ciamOverride entries that apply to it
                                    ("lineage", tuple),          # the environment, then its bases (overlays)
                                    ("scope", Optional[Scope]),  # what a render writes of it (None: all of it)
-                                   ("product_roles", tuple)])   # ((product, kind, role), ...) the installed
+                                   ("product_roles", tuple),    # ((product, kind, role), ...) the installed
                                                                 # adapters declare (with_product_roles)
-EnvModel.__new__.__defaults__ = (None, ())
+                                   ("cluster_discovery", tuple)])   # DiscoveryAnswers: what the kits rendering it
+                                                                    # answer (with_cluster_discovery)
+EnvModel.__new__.__defaults__ = (None, (), ())
 
 
 def env_dn(spec):
@@ -106,6 +108,21 @@ def with_product_roles(m, product_roles):
     """The same environment, carrying the roles the installed product adapters declare ((product, kind, role), ...:
     connectors.registry.product_roles), so a kit finds a product's roles by product (roles_for)."""
     return m._replace(product_roles=tuple(product_roles))
+
+
+def with_cluster_discovery(m, adapters):
+    """The same environment, carrying what the deployment kits among the adapters rendering it answer for their
+    products' cluster discovery (Adapter.cluster_discovery: contract.DiscoveryAnswers, asked of the environment as it
+    sees the record), so a product's own check compares its discovery binding with them (discovery_answers)."""
+    seen = as_seen(m)
+    return m._replace(cluster_discovery=tuple(x for a in adapters if a.cluster_discovery is not None
+                                              for x in a.cluster_discovery(seen)))
+
+
+def discovery_answers(m, product):
+    """The DiscoveryAnswers the kits rendering environment m give for a product's cluster discovery
+    (with_cluster_discovery), in their order; () when none deploys it."""
+    return tuple(a for a in m.cluster_discovery if a.product == product)
 
 
 def roles_for(m, product, kind):
