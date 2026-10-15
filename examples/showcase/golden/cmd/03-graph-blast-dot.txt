@@ -1,0 +1,11 @@
+digraph "skyline-air-idp-signing" {
+  node [shape=box];
+  "cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops" [label="WI-CIAM-001\nciamRunbook"];
+  "cn=skyline-air-federation,ou=integrations,dc=ciam-ops" [label="skyline-air-federation\nciamIntegration"];
+  "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops" [label="skyline-air-idp-signing\nciamCertificate", style=bold];
+  "cn=skyline-air-partner,ou=applications,dc=ciam-ops" [label="skyline-air-partner\nciamApplication"];
+  "cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops" -> "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops" [label="ciamAppliesTo"];
+  "cn=skyline-air-federation,ou=integrations,dc=ciam-ops" -> "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops" [label="ciamUsesCertificate"];
+  "cn=skyline-air-partner,ou=applications,dc=ciam-ops" -> "cn=skyline-air-federation,ou=integrations,dc=ciam-ops" [label="ciamApplicationPart"];
+}
+exit 0

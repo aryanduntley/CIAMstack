@@ -16,6 +16,12 @@ objectClass: top
 objectClass: organizationalUnit
 ou: alert-rules
 
+dn: ou=applications,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: applications
+description: Applications grouping the entries they are made of
+
 dn: ou=assessments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -1446,6 +1452,19 @@ cn: cost-center
 ciamTagKey: CostCenter
 ciamTagSource: cost-center
 description: Every rendered resource carries CostCenter
+
+dn: cn=customer-portal,ou=applications,dc=ciam-ops
+objectClass: top
+objectClass: ciamApplication
+cn: customer-portal
+ciamApplicationPart: cn=customer-portal,ou=integrations,dc=ciam-ops
+ciamApplicationPart: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+ciamApplicationPart: cn=portal-sso,ou=canaries,dc=ciam-ops
+ciamCriticality: high
+ciamOwner: cn=customer-portal-team,ou=owners,dc=ciam-ops
+ciamUsesRole: ds-ldaps-service
+description: Customer Parts Portal: customers order parts and track repairs (S
+ AML SSO, writes profile attributes over LDAPS)
 
 dn: cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -3751,6 +3770,17 @@ ciamRecordedCidr: 203.0.113.10/32
 ciamRefersToRole: pf-egress
 ciamRequestStatus: to-request
 
+dn: cn=skyline-air-partner,ou=applications,dc=ciam-ops
+objectClass: top
+objectClass: ciamApplication
+cn: skyline-air-partner
+ciamApplicationPart: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
+ciamApplicationPart: cn=skyline-air-ingress,ou=external-allowlists,dc=ciam-ops
+ciamCriticality: high
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: Skyline Air partner access: Skyline Air staff sign in with their 
+ own identity provider
+
 dn: cn=sn,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -3924,6 +3954,20 @@ ciamChangeRef: cn=CHG-2032,ou=changes,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRiskAuthority: cn=authorizing-official,ou=owners,dc=ciam-ops
 ciamSspRef: SSP-CIAM-2026 v3.2 (synthetic)
+
+dn: cn=supplier-portal,ou=applications,dc=ciam-ops
+objectClass: top
+objectClass: ciamApplication
+cn: supplier-portal
+ciamApplicationPart: cn=supplier-portal,ou=integrations,dc=ciam-ops
+ciamApplicationPart: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
+ciamApplicationPart: cn=supplier-portal-egress-sg,ou=external-allowlists,dc=ci
+ am-ops
+ciamCriticality: medium
+ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
+ciamUsesRole: ds-ldaps-service
+description: Supplier Portal: suppliers' quotes and deliveries (OIDC sign-in, 
+ reads the directory over LDAPS from the supplier network)
 
 dn: cn=supplier-portal,ou=integrations,dc=ciam-ops
 objectClass: top

@@ -1,0 +1,18 @@
+customer-portal (ciamApplication, customer-portal-team)
+  -> customer-portal (ciamIntegration, customer-portal-team) [ciamApplicationPart]
+    -> customer-portal-sp-signing (ciamCertificate, customer-portal-team) [ciamUsesCertificate]
+    -> pf-signing-2025 (ciamCertificate, ciam-platform) [ciamUsesCertificate]
+    -> sso (ciamIdentityService, ciam-platform) [ciamServedBy]
+    -> sso-tls-2026 (ciamCertificate, ciam-platform) [ciamUsesCertificate]
+  -> customer-portal-svc (ciamConsumer, customer-portal-team) [ciamApplicationPart]
+    -> challengeAnswer (ciamUserAttribute) [ciamAttrRead]
+    -> companyId (ciamUserAttribute) [ciamAttrRead]
+    -> mail (ciamUserAttribute) [ciamAttrRead]
+    -> registrationStatus (ciamUserAttribute) [ciamAttrRead]
+    -> telephoneNumber (ciamUserAttribute) [ciamAttrRead]
+  -> portal-sso (ciamCanary, ciam-platform) [ciamApplicationPart]
+    -> customer-portal (ciamIntegration, customer-portal-team) [ciamStartsFrom] (above)
+    -> login-failures (ciamAlertRule, ciam-platform) [ciamFeedsAlert]
+    -> pf-sso-service (role) [ciamCheckedService]
+  -> ds-ldaps-service (role) [ciamUsesRole]
+exit 0

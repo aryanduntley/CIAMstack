@@ -1,0 +1,69 @@
+customer-portal (cn=customer-portal,ou=applications,dc=ciam-ops), in target/prod
+parts: cn=customer-portal,ou=integrations,dc=ciam-ops, cn=customer-portal-svc,ou=consumers,dc=ciam-ops, cn=portal-sso,ou=canaries,dc=ciam-ops
+roles: ds-ldaps-service
+
+identity
+environment  kind                 name             detail                                                owner                 evidence
+-----------  -------------------  ---------------  ----------------------------------------------------  --------------------  ----------------------------------------------
+             ciamApplication      customer-portal  ciamCriticality=high, ciamUsesRole=ds-ldaps-service   customer-portal-team  cn=customer-portal,ou=applications,dc=ciam-ops
+             ciamIdentityService  sso              Single sign-on for customers, suppliers and partners  ciam-platform         cn=sso,ou=identity-services,dc=ciam-ops
+             ciamIntegration      customer-portal  ciamProtocolType=saml2-sp, ciamServedBy=sso           customer-portal-team  cn=customer-portal,ou=integrations,dc=ciam-ops
+(3 rows)
+
+directory
+environment  kind          name                 detail                                                                  owner                 evidence
+-----------  ------------  -------------------  ----------------------------------------------------------------------  --------------------  -----------------------------------------------
+             ciamAci       aci-portal-write     ciamAciRight=read, ciamAciRight=search, ciamAciRight=write, ciamAciTar  customer-portal-team  cn=aci-portal-write,ou=acis,dc=ciam-ops
+             ciamConsumer  customer-portal-svc  ciamBindDn=uid=portal-svc,ou=service-accounts,dc=partners,dc=example-a  customer-portal-team  cn=customer-portal-svc,ou=consumers,dc=ciam-ops
+(2 rows)
+
+edge and service names
+environment  kind             name       detail                                                                  owner  evidence
+-----------  ---------------  ---------  ----------------------------------------------------------------------  -----  ----------------------------------------------------------------------
+target/prod  ciamServiceName  svc-ldaps  ciamFqdn=ldap.id.cloud.example-aero.test, ciamPort=1636, ciamTargetRol         cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+target/prod  ciamServiceName  svc-sso    ciamFqdn=sso.example-aero.test, ciamPort=443, ciamTargetRole=pf-engine         cn=svc-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(2 rows)
+
+secrets and keys
+environment  kind            name                     detail                                           owner          evidence
+-----------  --------------  -----------------------  -----------------------------------------------  -------------  ----------------------------------------------------------------------
+             ciamCredential  pf-signing-key                                                            ciam-platform  cn=pf-signing-key,ou=credentials,dc=ciam-ops
+             ciamCredential  sso-tls-keystore                                                          ciam-platform  cn=sso-tls-keystore,ou=credentials,dc=ciam-ops
+target/prod  ciamSecretRef   secret-pf-signing-key    ciamRefUri=azkv://kv-ciam-prod/pf-signing-key                   cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+target/prod  ciamSecretRef   secret-sso-tls-keystore  ciamRefUri=azkv://kv-ciam-prod/sso-tls-keystore                 cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(4 rows)
+
+certificates
+environment  kind             name                        detail                         owner                 evidence
+-----------  ---------------  --------------------------  -----------------------------  --------------------  ---------------------------------------------------------
+             ciamCertificate  customer-portal-sp-signing  expires 2027-03-01 (159 days)  customer-portal-team  cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
+             ciamCertificate  pf-signing-2025             expires 2027-06-30 (280 days)  ciam-platform         cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+             ciamCertificate  sso-tls-2026                expires 2027-02-10 (140 days)  ciam-platform         cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+(3 rows)
+
+network
+environment  kind                   name                    detail                                                                  owner          evidence
+-----------  ---------------------  ----------------------  ----------------------------------------------------------------------  -------------  ----------------------------------------------------------------------
+             ciamExternalAllowlist  customer-portal-egress  ciamRefersToRole=ds-ldaps-service, ciamAllowlistDirection=consumer-egr  ciam-platform  cn=customer-portal-egress,ou=external-allowlists,dc=ciam-ops
+target/prod  ciamFirewallRule       fw-customer-portal      ciamSourceCidr=10.30.8.0/24, ciamTargetRole=ds, ciamPort=1636, ciamPro                 cn=fw-customer-portal,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(2 rows)
+
+monitoring
+environment  kind               name               detail                                                                  owner          evidence
+-----------  -----------------  -----------------  ----------------------------------------------------------------------  -------------  ----------------------------------------------------------------------
+target/prod  ciamAlarmBinding   pf-login-failures  ciamRealizes=login-failures                                                            cn=pf-login-failures,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+             ciamAlertRule      login-failures                                                                             ciam-platform  cn=login-failures,ou=alert-rules,dc=ciam-ops
+             ciamCanary         portal-sso         ciamCanaryFlow=saml-sso, ciamCheckedService=pf-sso-service, ciamInterv  ciam-platform  cn=portal-sso,ou=canaries,dc=ciam-ops
+target/prod  ciamCanaryBinding  portal-sso         ciamRealizes=portal-sso                                                                cn=portal-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(4 rows)
+
+changes and incidents
+(none)
+
+owners
+environment  kind  name                  detail                                                                  owner  evidence
+-----------  ----  --------------------  ----------------------------------------------------------------------  -----  ---------------------------------------------
+             team  ciam-platform         owns 9: WI-CIAM-010, customer-portal-egress, login-failures, pf-signin         cn=ciam-platform,ou=owners,dc=ciam-ops
+             team  customer-portal-team  owns 4: aci-portal-write, customer-portal, customer-portal-sp-signing,         cn=customer-portal-team,ou=owners,dc=ciam-ops
+(2 rows)
+exit 0

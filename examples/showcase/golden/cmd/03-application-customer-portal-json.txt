@@ -1,0 +1,420 @@
+{
+  "environment": null,
+  "name": "customer-portal",
+  "parts": [
+    "cn=customer-portal,ou=integrations,dc=ciam-ops",
+    "cn=customer-portal-svc,ou=consumers,dc=ciam-ops",
+    "cn=portal-sso,ou=canaries,dc=ciam-ops"
+  ],
+  "roles": [
+    "ds-ldaps-service"
+  ],
+  "root": "cn=customer-portal,ou=applications,dc=ciam-ops",
+  "sections": [
+    {
+      "name": "identity",
+      "rows": [
+        {
+          "detail": "ciamCriticality=high, ciamUsesRole=ds-ldaps-service",
+          "environment": "",
+          "evidence": "cn=customer-portal,ou=applications,dc=ciam-ops",
+          "kind": "ciamApplication",
+          "name": "customer-portal",
+          "owner": "customer-portal-team"
+        },
+        {
+          "detail": "Single sign-on for customers, suppliers and partners",
+          "environment": "",
+          "evidence": "cn=sso,ou=identity-services,dc=ciam-ops",
+          "kind": "ciamIdentityService",
+          "name": "sso",
+          "owner": "ciam-platform"
+        },
+        {
+          "detail": "ciamProtocolType=saml2-sp, ciamServedBy=sso",
+          "environment": "",
+          "evidence": "cn=customer-portal,ou=integrations,dc=ciam-ops",
+          "kind": "ciamIntegration",
+          "name": "customer-portal",
+          "owner": "customer-portal-team"
+        }
+      ]
+    },
+    {
+      "name": "directory",
+      "rows": [
+        {
+          "detail": "ciamAciRight=read, ciamAciRight=search, ciamAciRight=write, ciamAciTargetAttr=mail, ciamAciTargetAttr=registrationStatus, ciamAciTargetAttr=telephoneNumber, ciamAciTargetAttr=challengeAnswer",
+          "environment": "",
+          "evidence": "cn=aci-portal-write,ou=acis,dc=ciam-ops",
+          "kind": "ciamAci",
+          "name": "aci-portal-write",
+          "owner": "customer-portal-team"
+        },
+        {
+          "detail": "ciamBindDn=uid=portal-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test",
+          "environment": "",
+          "evidence": "cn=customer-portal-svc,ou=consumers,dc=ciam-ops",
+          "kind": "ciamConsumer",
+          "name": "customer-portal-svc",
+          "owner": "customer-portal-team"
+        }
+      ]
+    },
+    {
+      "name": "edge and service names",
+      "rows": [
+        {
+          "detail": "ciamFqdn=ldap.lab.example-aero.test, ciamPort=1636, ciamTargetRole=ds",
+          "environment": "hq/lab",
+          "evidence": "cn=svc-ldaps,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-ldaps",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=ldap.id.example-aero.test, ciamPort=1636, ciamTargetRole=ds",
+          "environment": "source/prod",
+          "evidence": "cn=svc-ldaps,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-ldaps",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=ldap.stage.id.example-aero.test, ciamPort=1636, ciamTargetRole=ds",
+          "environment": "source/stage",
+          "evidence": "cn=svc-ldaps,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-ldaps",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=ldap.id.example-aero.test, ciamPort=1636, ciamTargetRole=ds",
+          "environment": "standby/prod",
+          "evidence": "cn=svc-ldaps,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-ldaps",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=ldap.id.cloud.example-aero.test, ciamPort=1636, ciamTargetRole=ds",
+          "environment": "target/prod",
+          "evidence": "cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-ldaps",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=sso.lab.example-aero.test, ciamPort=443, ciamTargetRole=pf-engine",
+          "environment": "hq/lab",
+          "evidence": "cn=svc-sso,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-sso",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=sso.example-aero.test, ciamPort=443, ciamTargetRole=pf-engine",
+          "environment": "source/prod",
+          "evidence": "cn=svc-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-sso",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=sso.stage.example-aero.test, ciamPort=443, ciamTargetRole=pf-engine",
+          "environment": "source/stage",
+          "evidence": "cn=svc-sso,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-sso",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=sso.example-aero.test, ciamPort=443, ciamTargetRole=pf-engine",
+          "environment": "standby/prod",
+          "evidence": "cn=svc-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-sso",
+          "owner": ""
+        },
+        {
+          "detail": "ciamFqdn=sso.example-aero.test, ciamPort=443, ciamTargetRole=pf-engine",
+          "environment": "target/prod",
+          "evidence": "cn=svc-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "kind": "ciamServiceName",
+          "name": "svc-sso",
+          "owner": ""
+        }
+      ]
+    },
+    {
+      "name": "secrets and keys",
+      "rows": [
+        {
+          "detail": "",
+          "environment": "",
+          "evidence": "cn=pf-signing-key,ou=credentials,dc=ciam-ops",
+          "kind": "ciamCredential",
+          "name": "pf-signing-key",
+          "owner": "ciam-platform"
+        },
+        {
+          "detail": "",
+          "environment": "",
+          "evidence": "cn=sso-tls-keystore,ou=credentials,dc=ciam-ops",
+          "kind": "ciamCredential",
+          "name": "sso-tls-keystore",
+          "owner": "ciam-platform"
+        },
+        {
+          "detail": "ciamRefUri=cyberark://ciam-lab/CIAM-Lab/pf-signing-key",
+          "environment": "hq/lab",
+          "evidence": "cn=secret-pf-signing-key,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-pf-signing-key",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/pf-signing-key",
+          "environment": "source/prod",
+          "evidence": "cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-pf-signing-key",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/pf-signing-key",
+          "environment": "source/stage",
+          "evidence": "cn=secret-pf-signing-key,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-pf-signing-key",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=gcp-sm://projects/example-aero-ciam-standby/secrets/pf-signing-key",
+          "environment": "standby/prod",
+          "evidence": "cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-pf-signing-key",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=azkv://kv-ciam-prod/pf-signing-key",
+          "environment": "target/prod",
+          "evidence": "cn=secret-pf-signing-key,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-pf-signing-key",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=cyberark://ciam-lab/CIAM-Lab/sso-tls-keystore",
+          "environment": "hq/lab",
+          "evidence": "cn=secret-sso-tls-keystore,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-sso-tls-keystore",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/sso-tls-keystore",
+          "environment": "source/prod",
+          "evidence": "cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-sso-tls-keystore",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/stage/sso-tls-keystore",
+          "environment": "source/stage",
+          "evidence": "cn=secret-sso-tls-keystore,ou=bindings,env=stage,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-sso-tls-keystore",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=gcp-sm://projects/example-aero-ciam-standby/secrets/sso-tls-keystore",
+          "environment": "standby/prod",
+          "evidence": "cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-sso-tls-keystore",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRefUri=azkv://kv-ciam-prod/sso-tls-keystore",
+          "environment": "target/prod",
+          "evidence": "cn=secret-sso-tls-keystore,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "kind": "ciamSecretRef",
+          "name": "secret-sso-tls-keystore",
+          "owner": ""
+        }
+      ]
+    },
+    {
+      "name": "certificates",
+      "rows": [
+        {
+          "detail": "expires 2027-03-01 (159 days)",
+          "environment": "",
+          "evidence": "cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops",
+          "kind": "ciamCertificate",
+          "name": "customer-portal-sp-signing",
+          "owner": "customer-portal-team"
+        },
+        {
+          "detail": "expires 2027-06-30 (280 days)",
+          "environment": "",
+          "evidence": "cn=pf-signing-2025,ou=certificates,dc=ciam-ops",
+          "kind": "ciamCertificate",
+          "name": "pf-signing-2025",
+          "owner": "ciam-platform"
+        },
+        {
+          "detail": "expires 2027-02-10 (140 days)",
+          "environment": "",
+          "evidence": "cn=sso-tls-2026,ou=certificates,dc=ciam-ops",
+          "kind": "ciamCertificate",
+          "name": "sso-tls-2026",
+          "owner": "ciam-platform"
+        }
+      ]
+    },
+    {
+      "name": "network",
+      "rows": [
+        {
+          "detail": "ciamRefersToRole=ds-ldaps-service, ciamAllowlistDirection=consumer-egress",
+          "environment": "",
+          "evidence": "cn=customer-portal-egress,ou=external-allowlists,dc=ciam-ops",
+          "kind": "ciamExternalAllowlist",
+          "name": "customer-portal-egress",
+          "owner": "ciam-platform"
+        },
+        {
+          "detail": "ciamSourceCidr=10.30.8.0/24, ciamTargetRole=ds, ciamPort=1636, ciamProtocol=tcp",
+          "environment": "source/prod",
+          "evidence": "cn=fw-customer-portal,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamFirewallRule",
+          "name": "fw-customer-portal",
+          "owner": ""
+        },
+        {
+          "detail": "ciamSourceCidr=10.30.8.0/24, ciamTargetRole=ds, ciamPort=1636, ciamProtocol=tcp",
+          "environment": "standby/prod",
+          "evidence": "cn=fw-customer-portal,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+          "kind": "ciamFirewallRule",
+          "name": "fw-customer-portal",
+          "owner": ""
+        },
+        {
+          "detail": "ciamSourceCidr=10.30.8.0/24, ciamTargetRole=ds, ciamPort=1636, ciamProtocol=tcp",
+          "environment": "target/prod",
+          "evidence": "cn=fw-customer-portal,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "kind": "ciamFirewallRule",
+          "name": "fw-customer-portal",
+          "owner": ""
+        }
+      ]
+    },
+    {
+      "name": "monitoring",
+      "rows": [
+        {
+          "detail": "ciamRealizes=login-failures",
+          "environment": "source/prod",
+          "evidence": "cn=pf-login-failures,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamAlarmBinding",
+          "name": "pf-login-failures",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRealizes=login-failures",
+          "environment": "standby/prod",
+          "evidence": "cn=pf-login-failures,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+          "kind": "ciamAlarmBinding",
+          "name": "pf-login-failures",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRealizes=login-failures",
+          "environment": "target/prod",
+          "evidence": "cn=pf-login-failures,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "kind": "ciamAlarmBinding",
+          "name": "pf-login-failures",
+          "owner": ""
+        },
+        {
+          "detail": "",
+          "environment": "",
+          "evidence": "cn=login-failures,ou=alert-rules,dc=ciam-ops",
+          "kind": "ciamAlertRule",
+          "name": "login-failures",
+          "owner": "ciam-platform"
+        },
+        {
+          "detail": "ciamCanaryFlow=saml-sso, ciamCheckedService=pf-sso-service, ciamInterval=10m",
+          "environment": "",
+          "evidence": "cn=portal-sso,ou=canaries,dc=ciam-ops",
+          "kind": "ciamCanary",
+          "name": "portal-sso",
+          "owner": "ciam-platform"
+        },
+        {
+          "detail": "ciamRealizes=portal-sso",
+          "environment": "source/prod",
+          "evidence": "cn=portal-sso,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+          "kind": "ciamCanaryBinding",
+          "name": "portal-sso",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRealizes=portal-sso",
+          "environment": "standby/prod",
+          "evidence": "cn=portal-sso,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+          "kind": "ciamCanaryBinding",
+          "name": "portal-sso",
+          "owner": ""
+        },
+        {
+          "detail": "ciamRealizes=portal-sso",
+          "environment": "target/prod",
+          "evidence": "cn=portal-sso,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "kind": "ciamCanaryBinding",
+          "name": "portal-sso",
+          "owner": ""
+        }
+      ]
+    },
+    {
+      "name": "changes and incidents",
+      "rows": []
+    },
+    {
+      "name": "owners",
+      "rows": [
+        {
+          "detail": "owns 9: WI-CIAM-010, customer-portal-egress, login-failures, pf-signing-2025, pf-signing-key, portal-sso, sso, sso-tls-2026, sso-tls-keystore",
+          "environment": "",
+          "evidence": "cn=ciam-platform,ou=owners,dc=ciam-ops",
+          "kind": "team",
+          "name": "ciam-platform",
+          "owner": ""
+        },
+        {
+          "detail": "owns 4: aci-portal-write, customer-portal, customer-portal-sp-signing, customer-portal-svc",
+          "environment": "",
+          "evidence": "cn=customer-portal-team,ou=owners,dc=ciam-ops",
+          "kind": "team",
+          "name": "customer-portal-team",
+          "owner": ""
+        },
+        {
+          "detail": "owns 1: fw-policy",
+          "environment": "",
+          "evidence": "cn=network-security,ou=owners,dc=ciam-ops",
+          "kind": "team",
+          "name": "network-security",
+          "owner": ""
+        }
+      ]
+    }
+  ]
+}
+exit 0

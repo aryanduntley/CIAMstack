@@ -2,5 +2,6 @@ depth  dependent                                              via               
 -----  -----------------------------------------------------  -------------------  -------------------------
 1      cn=skyline-air-federation,ou=integrations,dc=ciam-ops  ciamUsesCertificate  ciam-platform,skyline-air
 1      cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops                 ciamAppliesTo        ciam-platform
-(2 rows)
+2      cn=skyline-air-partner,ou=applications,dc=ciam-ops     ciamApplicationPart  ciam-platform
+(3 rows)
 exit 0
