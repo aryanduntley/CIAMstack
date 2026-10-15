@@ -18,7 +18,8 @@
             "10.80.1.100"
           ],
           "virtualPort": 1636,
-          "pool": "pool_1636"
+          "pool": "pool_1636",
+          "persistenceMethods": []
         },
         "pool_1636": {
           "class": "Pool",

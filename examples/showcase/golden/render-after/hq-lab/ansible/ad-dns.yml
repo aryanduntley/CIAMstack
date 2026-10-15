@@ -24,8 +24,8 @@
     ciam_dns_zones:
       - zone: lab.example-aero.test
         managed:
-          - A ldap
-          - A sso
+          - A ldap 10.80.1.100
+          - A sso 10.80.4.100
   tasks:
     - name: DNS records
       ansible.windows.win_dns_record:
@@ -61,18 +61,36 @@
           param([string]$Zone, [string]$Ledger, [string[]]$Managed, [string]$Server)
           $where = @{ ZoneName = $Zone }
           if ($Server) { $where.ComputerName = $Server }
+          $data = @{ A = 'IPv4Address'; AAAA = 'IPv6Address'; CNAME = 'HostNameAlias'; NS = 'NameServer';
+              PTR = 'PtrDomainName'; SRV = 'DomainName'; TXT = 'DescriptiveText' }
+          function Get-Digest([string]$Text) {
+              $sha = [System.Security.Cryptography.SHA256]::Create()
+              $hex = -join ($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Text)) | ForEach-Object { $_.ToString('x2') })
+              'sha256:' + $hex.Substring(0, 16)
+          }
           $old = @(Get-DnsServerResourceRecord @where -Name $Ledger -RRType Txt -ErrorAction SilentlyContinue |
               ForEach-Object { $_.RecordData.DescriptiveText })
           $stale = @($old | Where-Object { $_ -and $Managed -notcontains $_ })
+          $removed = @()
+          $left = @()
           foreach ($entry in $stale) {
-              $type, $name = $entry -split ' ', 2
-              if ($PSCmdlet.ShouldProcess("$type $name in $Zone", 'Remove')) {
-                  Get-DnsServerResourceRecord @where -Name $name -RRType $type -ErrorAction SilentlyContinue |
-                      Remove-DnsServerResourceRecord @where -Force
+              $type, $name, $value = $entry -split ' ', 3
+              if (-not $value -or -not $data.ContainsKey($type)) { $left += $entry; continue }
+              if ($type -in 'CNAME', 'NS', 'PTR', 'SRV' -and $value -notlike 'sha256:*' -and $value -notlike '*.') {
+                  $value = "$value."
               }
-              $Ansible.Changed = $true
+              $mine = @(Get-DnsServerResourceRecord @where -Name $name -RRType $type -ErrorAction SilentlyContinue |
+                  Where-Object { $text = $_.RecordData.($data[$type]).ToString()
+                                 $text -eq $value -or (Get-Digest $text) -eq $value })
+              foreach ($record in $mine) {
+                  if ($PSCmdlet.ShouldProcess("$type $name $value in $Zone", 'Remove')) {
+                      $record | Remove-DnsServerResourceRecord @where -Force
+                  }
+                  $Ansible.Changed = $true
+              }
+              $removed += $entry
           }
-          $Ansible.Result = @{ removed = $stale }
+          $Ansible.Result = @{ removed = $removed; left = $left }
         parameters:
           Zone: "{{ item.zone }}"
           Ledger: "{{ ciam_dns_ledger }}"

@@ -2160,8 +2160,10 @@ objectClass: ciamObject
 objectClass: ciamJob
 cn: github-actions-ciam-ops-directory-backup
 ciamChangeRef: cn=CHG-2011,ou=changes,dc=ciam-ops
+ciamCiSystem: github-actions
 ciamDeploysTo: prod
 ciamJobKind: pipeline
+ciamJobName: Directory backup (Example Aero, synthetic)
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRepoPath: .github/workflows/directory-backup.yml
 ciamRepoUrl: https://github.com/example-aero/ciam-ops
