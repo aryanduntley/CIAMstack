@@ -462,6 +462,26 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's firewall rules back from the HQ Panorama's running c
  onfiguration (keep the record's admin range: the next push restores it)
 
+dn: cn=CHG-2050,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2050
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the AD CS issuing CA's issued-certificate inventory (metadat
+ a only), its revocation endpoints and the forest's certificate templates
+
+dn: cn=CHG-2051,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2051
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the issuing CA's own certificate and owner, and who renews t
+ he CIAM templates' certificates
+
 dn: cn=CHG-2055,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

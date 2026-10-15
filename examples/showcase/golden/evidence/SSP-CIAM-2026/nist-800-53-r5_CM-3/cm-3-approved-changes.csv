@@ -44,5 +44,7 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2046,ou=changes,dc=ciam-ops",Take SSP-CIAM-2026's evidence package and record it on the boundary,CAB 2026-09-18,approved
 "cn=CHG-2047,ou=changes,dc=ciam-ops",Record the CyberArk safes' account inventory (metadata only) the references are reconciled with,CAB 2026-09-18,approved
 "cn=CHG-2048,ou=changes,dc=ciam-ops",Read the lab's firewall rules back from the HQ Panorama's running configuration (keep the record's admin range: the next push restores it),CAB 2026-09-18,approved
+"cn=CHG-2050,ou=changes,dc=ciam-ops","Record the AD CS issuing CA's issued-certificate inventory (metadata only), its revocation endpoints and the forest's certificate templates",CAB 2026-09-18,approved
+"cn=CHG-2051,ou=changes,dc=ciam-ops","Record the issuing CA's own certificate and owner, and who renews the CIAM templates' certificates",CAB 2026-09-18,approved
 "cn=CHG-2055,ou=changes,dc=ciam-ops",Link the recorded changes to their ServiceNow tickets; name the instance's change models on the standard state model,CAB 2026-09-18,approved
 "cn=CHG-2056,ou=changes,dc=ciam-ops","Read the linked ServiceNow tickets as evidence (state, approval, planned and actual windows)",CAB 2026-09-18,approved

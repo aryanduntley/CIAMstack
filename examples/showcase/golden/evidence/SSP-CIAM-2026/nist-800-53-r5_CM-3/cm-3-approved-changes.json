@@ -277,6 +277,18 @@
       "approved"
     ],
     [
+      "cn=CHG-2050,ou=changes,dc=ciam-ops",
+      "Record the AD CS issuing CA's issued-certificate inventory (metadata only), its revocation endpoints and the forest's certificate templates",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2051,ou=changes,dc=ciam-ops",
+      "Record the issuing CA's own certificate and owner, and who renews the CIAM templates' certificates",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
       "cn=CHG-2055,ou=changes,dc=ciam-ops",
       "Link the recorded changes to their ServiceNow tickets; name the instance's change models on the standard state model",
       "CAB 2026-09-18",

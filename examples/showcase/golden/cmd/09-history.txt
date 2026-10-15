@@ -475,6 +475,32 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2048  update  cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2048  insert  cn=panos.running-config.hq.lab,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2048  insert  cn=panos.running-config.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=User,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=1050,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=1100,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=1187,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=1290,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=1305,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=1306,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=1342,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=ca-issuers-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=crl-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=crl-2,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=delta-crl-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=ocsp-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2050  insert  cn=adcs.inventory.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2051  insert  cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2051  update  cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2051  update  cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2051  update  cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2051  update  cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops
 <TIMESTAMP>          CHG-2055  insert  ou=settings,dc=ciam-ops
 <TIMESTAMP>          CHG-2055  insert  cn=servicenow-standard-state-models,ou=settings,dc=ciam-ops
 <TIMESTAMP>          CHG-2055  update  cn=CHG-0931,ou=changes,dc=ciam-ops
@@ -495,4 +521,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2056  insert  cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2056  insert  cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2056  insert  cn=servicenow.change-requests.shared,ou=imports,dc=ciam-ops
-(495 rows)
+(521 rows)

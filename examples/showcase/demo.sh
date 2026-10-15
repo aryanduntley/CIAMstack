@@ -244,6 +244,12 @@ od import --dry-run --at 20260923090000Z panos/running-config exports/panos
 od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
   panos/running-config exports/panos
 od report firewall-running
+echo "-- the AD CS issuing CA's issued-certificate inventory (metadata only, from the shipped exporter's JSON), its"
+echo "   revocation endpoints and the forest's templates: the directory's LDAPS certificate was revoked as superseded"
+od import --change CHG-2050 --at 20260923090000Z adcs/inventory exports/adcs
+od modify --change CHG-2051 changes/CHG-2051-issuing-ca-and-template-owners.ldif
+od report certificate-authorities
+od report issued-certificates
 echo "-- the change records name their ServiceNow tickets (CHG-2055), and the tickets are read as evidence (CHG-2056:"
 echo "   change_request and its approval records, as the Table API answers): what ITSM says against the record"
 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif

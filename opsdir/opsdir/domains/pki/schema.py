@@ -12,6 +12,14 @@ A secret store's inventory (ou=secret-inventory) is what the store said it holds
 it: per container (a PAM safe, a key/value mount) when it was listed and whether completely, and each object found with
 its state and what the store says of its rotation. The record's references are reconciled with it (inventory.py);
 nothing an inventory observes is written onto the bindings themselves.
+
+Certification authorities (ou=certificate-authorities) are the CAs the estate's certificates come from, as their
+importers read them, with what the operator adds: the CA's own certificates in the record (the hierarchy runs
+certificate by certificate: ciamIssuedBy), the templates it issues from and the revocation endpoints it puts in
+the certificates it issues (CRL distribution points, delta CRLs, OCSP, CA issuers), its children. Certificate templates
+(ou=certificate-templates) are what a CA may issue, with who renews what they issue. A CA's issued-certificate
+inventory (ou=issued-certificates) is what its database said it issued, metadata only, never a key: the record's
+certificates are reconciled with it (issued.py), and nothing it observes is written onto them.
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -133,6 +141,40 @@ ATTRIBUTES = (
                  'When the store last verified that the object still works where it is used'),
     AttributeDef(699, 'ciamManualReason', 'string', 'observed', True,
                  "Why the store doesn't manage the object's rotation, as the store records it"),
+    # ------------------------------------------------------------------ certification authorities and templates
+    AttributeDef(720, 'ciamCaCertificate', 'dn', 'meta', False,
+                 "A certification authority's own certificates in the record (ou=certificates): the one it signs "
+                 "with, and those it renewed"),
+    AttributeDef(721, 'ciamIssuedBy', 'dn', 'meta', True,
+                 'The certificate of the CA that issued this one (ou=certificates): the CA hierarchy, link by link'),
+    AttributeDef(722, 'ciamTemplateName', 'string', 'observed', False,
+                 'The certificate templates a CA issues from; on an issued certificate, the one it was issued from '
+                 '(its name when the template is known, else the value the CA recorded)'),
+    AttributeDef(723, 'ciamTemplateOid', 'string', 'observed', True,
+                 "A certificate template's own OID (not its extended key usages)"),
+    AttributeDef(724, 'ciamMaxValidityDays', 'int', 'observed', True,
+                 'The longest validity a certificate template issues, in days', (("X-MIN", "1"),)),
+    AttributeDef(725, 'ciamExtendedKeyUsage', 'string', 'observed', False,
+                 'The extended key usages a certificate template issues, as OIDs'),
+    AttributeDef(726, 'ciamRenewalOwner', 'dn', 'meta', True,
+                 "Who renews the certificates a template issues that the record holds no certificate for (a party "
+                 "under ou=owners); a recorded certificate's own owner renews it"),
+    AttributeDef(727, 'ciamRevocationKind', 'enum:crl|delta-crl|ocsp|ca-issuers', 'observed', True,
+                 'What a revocation endpoint serves: a CRL distribution point, a delta CRL (freshest CRL), an OCSP '
+                 "responder, or the CA's own certificate (authority information access, CA issuers)"),
+    AttributeDef(728, 'ciamEndpointUrl', 'string', 'observed', True,
+                 'Where a revocation endpoint is reached, as its CA writes it into the certificates it issues (a '
+                 "URL; the CA's template when its variables couldn't all be filled)"),
+    # ------------------------------------------------------------------ issued-certificate inventories (observed)
+    AttributeDef(729, 'ciamSerialNumber', 'string', 'meta', True,
+                 "A certificate's serial number, as hex"),
+    AttributeDef(730, 'ciamRequester', 'string', 'observed', True,
+                 'Who requested an issued certificate, as its CA records it (an account name)'),
+    AttributeDef(731, 'ciamRevokedAt', 'time', 'observed', True,
+                 'When an issued certificate\'s revocation takes effect (it may be back- or future-dated)'),
+    AttributeDef(732, 'ciamRevocationReason', 'string', 'observed', True,
+                 'Why an issued certificate was revoked: the RFC 5280 reason (keyCompromise, superseded, ...), or the '
+                 "CA's value as it is when it is no RFC 5280 reason; present on every revoked certificate"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -150,7 +192,7 @@ CLASSES = (
     ClassDef(28, 'ciamCertificate', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamFingerprint', 'ciamNotAfter', 'ciamCertPurpose'),
              ('ciamSubject', 'ciamIssuer', 'ciamNotBefore', 'ciamSubjectAltName', 'ciamKeyRole', 'ciamPartnerContact',
-              'ciamRotationRunbook', 'ciamCertificatePem'),
+              'ciamRotationRunbook', 'ciamCertificatePem', 'ciamIssuedBy', 'ciamSerialNumber'),
              'Certificate (public facts only)'),
     ClassDef(42, 'ciamCredential', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamBindingRole', 'ciamCredentialType', 'ciamContinuity'),
@@ -173,6 +215,28 @@ CLASSES = (
              "An object a secret store inventory found in its container (cn: its name or path), metadata only, "
              "never its value: its state and what the store says of its rotation (ciamLastRotated only from a "
              "timestamp that means rotation)"),
+    ClassDef(151, 'ciamCertAuthority', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamProviderRef', 'ciamCaCertificate', 'ciamTemplateName'),
+             "A certification authority (cn: its name; ciamProviderRef: how its product names it, an AD CS CA's "
+             "HOST\\CA): its own certificates in the record, the templates it issues from, and its revocation "
+             "endpoints as children"),
+    ClassDef(152, 'ciamCertTemplate', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamTemplateOid', 'ciamMaxValidityDays', 'ciamExtendedKeyUsage', 'ciamCertPurpose', 'ciamRenewalOwner'),
+             'A certificate template CAs issue from (cn: its name; description: its display name): what it issues, '
+             'and who renews what it issues that the record holds no certificate for'),
+    ClassDef(153, 'ciamRevocationEndpoint', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamRevocationKind', 'ciamEndpointUrl'),
+             (),
+             'Where the certificates a CA issues say to check their revocation or find their issuer (a child of the '
+             'ciamCertAuthority; cn: <kind>-<n>)'),
+    ClassDef(154, 'ciamCertInventory', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamInventoryAt', 'ciamInventoryState'),
+             ('ciamInventoryProblem', 'ciamProviderRef'),
+             "The last inventory of one CA's issued certificates (cn: the CA's name; under ou=issued-certificates), "
+             "metadata only: when it was taken, whether it is complete, and the certificates found as its children"),
+    ClassDef(155, 'ciamIssuedCertificate', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamSerialNumber', 'ciamFingerprint', 'ciamSubject', 'ciamNotBefore', 'ciamNotAfter', 'ciamTemplateName',
+              'ciamRequester', 'ciamRevokedAt', 'ciamRevocationReason'),
+             "A certificate a CA's inventory says it issued (cn: its request id), metadata only, never a key: serial, "
+             "SHA-256 fingerprint, subject, validity, template, requester and, once revoked, when and why"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

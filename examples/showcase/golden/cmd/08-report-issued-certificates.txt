@@ -1,0 +1,10 @@
+certificate    authority                  request  serial                                  template         requester               not after   state      renewal owner  detail
+-------------  -------------------------  -------  --------------------------------------  ---------------  ----------------------  ----------  ---------  -------------  ----------------------------------------------------------------------
+ds-ldaps-2026  Example Aero Issuing CA 2  1187     1a000004a35f8e61c2b07d940000000004a3    CIAM-WebServer   CORP\svc-ciam-pki       2026-12-20  revoked    ciam-platform  superseded, effective 2026-09-15; renewed as request 1342 (until 2027-09-15)
+               Example Aero Issuing CA 2  1100     1a0000044c7d1e20f9a83b51000000000044c   User             CORP\jlee               2027-02-02  untracked
+               Example Aero Issuing CA 2  1290     1a0000050ab3c4d5e6f708190000000000050a  CIAM-WebServer   CORP\adm-tmorgan        2026-10-10  untracked  ciam-platform
+               Example Aero Issuing CA 2  1305     1a00000519c2f4a6b8d0e3720000000000519   CIAM-ClientAuth  CORP\svc-mro-export     2027-03-01  untracked
+               Example Aero Issuing CA 2  1306     1a0000051ad3e5b7c9e1f4830000000000051a  CIAM-ClientAuth  CORP\svc-supplier-sync  2027-04-01  untracked
+               Example Aero Issuing CA 2  1342     1a0000053e8f1a2b3c4d5e6f0000000000053e  CIAM-WebServer   CORP\svc-ciam-pki       2027-09-15  untracked  ciam-platform
+(6 rows)
+exit 0

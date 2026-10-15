@@ -321,6 +321,14 @@
       "raised_by": "CHG-2047"
     },
     {
+      "id": "B55",
+      "area": "Certificate",
+      "match": "Certificate `ds-ldaps-2026` was revoked by Example Aero Issuing CA 2 (request 1187: superseded, effective 2026-09-15)",
+      "planted": "the PKI team renewed the directory's LDAPS certificate (request 1342) and revoked the old one, which the record and its servers still use: clients checking revocation refuse it",
+      "cleared_by": null,
+      "raised_by": "CHG-2050"
+    },
+    {
       "id": "B60",
       "area": "Change tickets",
       "match": "ITSM says its ticket servicenow:CHG0030104 (read 2026-09-23) was **rejected**",
@@ -1366,6 +1374,22 @@
       "match": "`hq-apps-egress-to-ldaps`",
       "planted": "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds the target's, which the running-config import records",
       "cleared_by": "CHG-2048"
+    },
+    {
+      "id": "A161",
+      "area": "Certificate",
+      "match": "Example Aero Issuing CA 2 issued 2 active certificate(s) from template `CIAM-WebServer` the record holds none of",
+      "planted": "a hand-issued test certificate expiring 2026-10-10 and the LDAPS renewal: CHG-2051 makes the platform team their renewal owner",
+      "cleared_by": null,
+      "raised_by": "CHG-2050"
+    },
+    {
+      "id": "A162",
+      "area": "Certificate",
+      "match": "Example Aero Issuing CA 2 issued 2 active certificate(s) from template `CIAM-ClientAuth` the record holds none of",
+      "planted": "the client certificates of the MRO export and the supplier sync: CHG-2051 records the template's purpose, but nobody to renew them",
+      "cleared_by": null,
+      "raised_by": "CHG-2051"
     },
     {
       "id": "A171",

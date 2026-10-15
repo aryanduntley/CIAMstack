@@ -1,0 +1,6 @@
+CHG-2051: add cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+CHG-2051: modify cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+CHG-2051: modify cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+CHG-2051: modify cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
+CHG-2051: modify cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops
+exit 0

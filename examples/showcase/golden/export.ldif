@@ -63,6 +63,16 @@ objectClass: top
 objectClass: organizationalUnit
 ou: census
 
+dn: ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: certificate-authorities
+
+dn: ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: certificate-templates
+
 dn: ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -199,6 +209,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: integrations
 description: Federation integrations (SAML / OIDC) and their claim maps
+
+dn: ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: issued-certificates
 
 dn: ou=jobs,dc=ciam-ops
 objectClass: top
@@ -542,6 +557,20 @@ ciamAciTargetDn: ou=people,dc=partners,dc=example-aero,dc=test
 ciamJustification: Supplier portal account lookup
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 ciamReviewedOn: 20260302000000Z
+
+dn: cn=adcs.inventory.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: adcs.inventory.shared
+ciamChangeRef: cn=CHG-2050,ou=changes,dc=ciam-ops
+ciamImportScope: ou=certificate-templates,dc=ciam-ops
+ciamImportScope: cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ci
+ am-ops
+ciamImportScope: cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-o
+ ps
+ciamImportedAt: 20260923090000Z
+ciamImporter: adcs/inventory
 
 dn: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
 objectClass: top
@@ -1478,6 +1507,26 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's firewall rules back from the HQ Panorama's running c
  onfiguration (keep the record's admin range: the next push restores it)
 
+dn: cn=CHG-2050,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2050
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the AD CS issuing CA's issued-certificate inventory (metadat
+ a only), its revocation endpoints and the forest's certificate templates
+
+dn: cn=CHG-2051,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2051
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the issuing CA's own certificate and owner, and who renews t
+ he CIAM templates' certificates
+
 dn: cn=CHG-2055,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -1510,6 +1559,19 @@ ciamIdentityRole: identity-admins
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPrincipalKind: operator
 ciamReviewedOn: 20250630000000Z
+
+dn: cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: CIAM-ClientAuth
+ciamCertPurpose: client-auth
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.2
+ciamMaxValidityDays: 365
+ciamTemplateOid: 1.3.6.1.4.1.311.21.8.7638725.13898300.1985460.3383425.7519116
+ .119.4211002.9871201
+description: CIAM Client Authentication
 
 dn: cn=ciam-internal-ca,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -1556,6 +1618,19 @@ ciamCostCenter: CC-1001
 ciamDisplayName: CIAM platform team
 ciamOwnerKind: team
 mail: ciam-platform@example-aero.test
+
+dn: cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: CIAM-WebServer
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.1
+ciamMaxValidityDays: 365
+ciamRenewalOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamTemplateOid: 1.3.6.1.4.1.311.21.8.7638725.13898300.1985460.3383425.7519116
+ .119.4211001.1522731
+description: CIAM Web Server
 
 dn: cn=client-address-login,ou=header-contracts,dc=ciam-ops
 objectClass: top
@@ -1989,8 +2064,10 @@ objectClass: top
 objectClass: ciamCertificate
 cn: ds-ldaps-2026
 ciamCertPurpose: tls-server
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
 ciamFingerprint: 8D:76:2E:86:EE:A1:F8:54:86:9E:8E:48:3E:9A:7A:0E:F2:48:91:B3:F
  4:F2:4A:B4:E4:E9:FD:21:11:0A:7E:C8
+ciamIssuedBy: cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
 ciamIssuer: CN=Example Aero Issuing CA 2
 ciamKeyRole: ds-tls-keystore
 ciamNotAfter: 20261220000000Z
@@ -2107,6 +2184,28 @@ ciamTagKey: Environment
 ciamTagSource: environment
 description: Every rendered resource carries Environment
 
+dn: cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertAuthority
+cn: Example Aero Issuing CA 2
+ciamCaCertificate: cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamProviderRef: PKI-ISS-02\Example Aero Issuing CA 2
+ciamTemplateName: CIAM-WebServer
+ciamTemplateName: CIAM-ClientAuth
+ciamTemplateName: User
+
+dn: cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertInventory
+cn: Example Aero Issuing CA 2
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
+ciamProviderRef: PKI-ISS-02\Example Aero Issuing CA 2
+
 dn: cn=example-aero,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
@@ -2130,6 +2229,21 @@ ciamNotAfter: 20450303000000Z
 ciamNotBefore: 20250303000000Z
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamSubject: CN=Example Aero Root CA
+
+dn: cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-issuing-ca-2
+ciamCertPurpose: ca
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+ciamFingerprint: F5:DB:C6:98:C9:CA:75:19:CB:5F:70:6E:6D:B4:4E:DF:AD:73:C7:D3:5
+ C:A3:96:EF:3C:D5:A8:88:CF:64:3F:B7
+ciamIssuedBy: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
+ciamIssuer: CN=Example Aero Root CA
+ciamNotAfter: 20350310000000Z
+ciamNotBefore: 20250310000000Z
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamSubject: CN=Example Aero Issuing CA 2
 
 dn: cn=exampleAeroPerson,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -4467,6 +4581,19 @@ ciamChangeRef: cn=CHG-2023,ou=changes,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: Identity data stays in the United States
 
+dn: cn=User,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: User
+ciamExtendedKeyUsage: 1.3.6.1.4.1.311.10.3.4
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.4
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.2
+ciamMaxValidityDays: 365
+ciamTemplateOid: 1.3.6.1.4.1.311.21.8.7638725.13898300.1985460.3383425.7519116
+ .119.1.1
+description: User
+
 dn: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
 objectClass: top
 objectClass: ciamRunbook
@@ -4754,6 +4881,106 @@ ciamLineNumber: 5
 ciamLineNumber: 6
 ciamOccurrenceOf: cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 ciamOccurringAttr: ciamBaseDn
+
+dn: cn=1050,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1050
+ciamFingerprint: 32:F5:1C:23:B3:93:1C:75:AD:3B:92:04:26:DA:F2:A7:07:56:8B:54:0
+ B:E1:0A:F0:E4:4F:72:E5:70:2F:A5:38
+ciamNotAfter: 20251220000000Z
+ciamNotBefore: 20241220000000Z
+ciamRequester: CORP\svc-ciam-pki
+ciamSerialNumber: 1a0000041a2b6c9e04d1f3a2000000000041a
+ciamSubject: CN=ldap.id.example-aero.test
+ciamTemplateName: CIAM-WebServer
+
+dn: cn=1100,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1100
+ciamFingerprint: 39:6D:3A:7B:45:A4:A3:F6:E1:10:CF:BF:6C:2A:AA:F7:DA:96:23:B5:B
+ D:F1:EE:BE:70:42:C9:89:39:07:F4:52
+ciamNotAfter: 20270202081500Z
+ciamNotBefore: 20260202081500Z
+ciamRequester: CORP\jlee
+ciamSerialNumber: 1a0000044c7d1e20f9a83b51000000000044c
+ciamSubject: CN=Jordan Lee, OU=Users, DC=corp, DC=example-aero, DC=test
+ciamTemplateName: User
+
+dn: cn=1187,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1187
+ciamFingerprint: 8D:76:2E:86:EE:A1:F8:54:86:9E:8E:48:3E:9A:7A:0E:F2:48:91:B3:F
+ 4:F2:4A:B4:E4:E9:FD:21:11:0A:7E:C8
+ciamNotAfter: 20261220000000Z
+ciamNotBefore: 20251220000000Z
+ciamRequester: CORP\svc-ciam-pki
+ciamRevocationReason: superseded
+ciamRevokedAt: 20260915140000Z
+ciamSerialNumber: 1a000004a35f8e61c2b07d940000000004a3
+ciamSubject: CN=ldap.id.example-aero.test
+ciamTemplateName: CIAM-WebServer
+
+dn: cn=1290,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1290
+ciamFingerprint: B9:6E:8E:A9:9C:2E:0F:E4:B1:8B:44:EE:76:3B:77:35:C2:C6:1E:98:6
+ B:E6:58:C0:AE:D7:68:D9:FD:DF:39:FB
+ciamNotAfter: 20261010152241Z
+ciamNotBefore: 20251010152241Z
+ciamRequester: CORP\adm-tmorgan
+ciamSerialNumber: 1a0000050ab3c4d5e6f708190000000000050a
+ciamSubject: CN=ciam-test.id.example-aero.test
+ciamTemplateName: CIAM-WebServer
+
+dn: cn=1305,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1305
+ciamFingerprint: 4A:28:C8:3A:38:57:C8:E8:6B:10:A1:DF:D7:08:A8:C7:B8:54:45:64:2
+ C:2E:6B:F6:36:A7:4A:4E:26:2A:42:BB
+ciamNotAfter: 20270301100000Z
+ciamNotBefore: 20260301100000Z
+ciamRequester: CORP\svc-mro-export
+ciamSerialNumber: 1a00000519c2f4a6b8d0e3720000000000519
+ciamSubject: CN=svc-mro-export
+ciamTemplateName: CIAM-ClientAuth
+
+dn: cn=1306,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1306
+ciamFingerprint: 94:FB:99:23:FE:AD:E6:71:A2:DD:44:95:5B:98:88:BC:2A:66:93:CC:6
+ 6:7B:2C:21:44:FE:79:4D:29:59:56:8B
+ciamNotAfter: 20270401100000Z
+ciamNotBefore: 20260401100000Z
+ciamRequester: CORP\svc-supplier-sync
+ciamSerialNumber: 1a0000051ad3e5b7c9e1f4830000000000051a
+ciamSubject: CN=svc-supplier-sync
+ciamTemplateName: CIAM-ClientAuth
+
+dn: cn=1342,cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1342
+ciamFingerprint: FF:42:39:C1:D9:BE:47:35:5A:6D:85:B9:63:46:66:36:44:44:19:2D:1
+ 3:FC:58:C7:A8:5C:25:AF:91:25:CA:FB
+ciamNotAfter: 20270915134000Z
+ciamNotBefore: 20260915134000Z
+ciamRequester: CORP\svc-ciam-pki
+ciamSerialNumber: 1a0000053e8f1a2b3c4d5e6f0000000000053e
+ciamSubject: CN=ldap.id.example-aero.test
+ciamTemplateName: CIAM-WebServer
 
 dn: cn=1910dfbfcde4e9ce,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
@@ -5170,6 +5397,17 @@ cn: ca-central-1
 ciamCloudEnvironment: public
 ciamRegionStatus: available
 
+dn: cn=ca-issuers-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: ca-issuers-1
+ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/pki-iss-02.corp.examp
+ le-aero.test_Example Aero Issuing CA 2%4.crt
+ciamRevocationKind: ca-issuers
+description: the CA's template: http://pki.example-aero.test/CertEnroll/%1_%3%
+ 4.crt
+
 dn: cn=canadacentral,cn=azure,ou=regions,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloudRegion
@@ -5414,6 +5652,26 @@ ciamQuotaKind: vcpus
 ciamQuotaUsage: 12
 ciamQuotaValue: 72
 
+dn: cn=crl-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: crl-1
+ciamEndpointUrl: ldap:///CN=%7,CN=PKI-ISS-02,CN=CDP,CN=Public Key Services,CN=
+ Services,%6%10
+ciamRevocationKind: crl
+description: the CA's template: ldap:///CN=%7%8,CN=%2,CN=CDP,CN=Public Key Ser
+ vices,CN=Services,%6%10
+
+dn: cn=crl-2,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: crl-2
+ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/Example Aero Issuing 
+ CA 2.crl
+ciamRevocationKind: crl
+
 dn: cn=d3463ecca0c1772f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
 objectClass: ciamOccurrence
@@ -5518,6 +5776,15 @@ pingfedPluginType: com.pingidentity.pf.access.token.management.plugins.JwtBear
  erAccessTokenManagementPlugin
 pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+
+dn: cn=delta-crl-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: delta-crl-1
+ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/Example Aero Issuing 
+ CA 2+.crl
+ciamRevocationKind: delta-crl
 
 dn: cn=e0930981c2c28daf,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
@@ -5845,6 +6112,14 @@ pingfedScope: profile
 pingfedScope: offline_access
 pingfedScope: reports.read
 pingfedSourceVersion: 12.1.4.0
+
+dn: cn=ocsp-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: ocsp-1
+ciamEndpointUrl: http://ocsp.example-aero.test/ocsp
+ciamRevocationKind: ocsp
 
 dn: cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
 objectClass: top

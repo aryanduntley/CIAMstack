@@ -138,6 +138,40 @@ requested, or never), **closed-pending** (ITSM closed it while the record has it
 nothing while the record holds no ticket) blocks on rejected and cancelled and gives the rest as actions for the
 change's owner (else the operator); no fix is offered: a change's status is a person's.
 
+### Certification authorities and issued certificates
+
+The CAs the record's certificates come from are `ciamCertAuthority` entries under `ou=certificate-authorities` (cn: the
+CA's name; `ciamProviderRef` how its product names it, an AD CS CA's `HOST\CA`; `ciamTemplateName` the templates it
+issues from; `ciamCaCertificate`, the operator's, its own certificates in `ou=certificates`), each with its
+revocation endpoints as children (`ciamRevocationEndpoint`: `ciamRevocationKind` crl, delta-crl, ocsp or ca-issuers,
+`ciamEndpointUrl`, the CA's own template in `description` when a variable couldn't be filled). The hierarchy runs
+certificate by certificate: `ciamIssuedBy` names the certificate of the CA that issued one. Templates are
+`ciamCertTemplate` under `ou=certificate-templates` (display name in `description`, `ciamTemplateOid`,
+`ciamMaxValidityDays`, `ciamExtendedKeyUsage`; the operator's `ciamCertPurpose` and `ciamRenewalOwner`: who renews
+what the template issues that the record holds no certificate for). What a CA's database says it issued is observed
+metadata, never a key, under `ou=issued-certificates`: per CA a `ciamCertInventory` (`ciamInventoryAt`,
+`ciamInventoryState`, `ciamInventoryProblem`) and a `ciamIssuedCertificate` per issued or revoked certificate (cn: the
+request id; `ciamSerialNumber`, `ciamFingerprint`, `ciamSubject`, validity, `ciamTemplateName`, `ciamRequester`; once
+revoked `ciamRevokedAt`, the effective time, and `ciamRevocationReason`, the RFC 5280 name or the CA's value). The PKI
+adapters' importers write them (`adcs/inventory`); nothing is written onto the record's certificates.
+
+A record certificate's CA is the one listing its `ciamIssuedBy` certificate as its own, else the one whose own
+certificate's subject is its `ciamIssuer`, else the one its issuer's CN names; it is found in the inventories by
+SHA-256 fingerprint, else by serial number, else by subject and validity, and is **present**, **revoked**,
+**revocation-scheduled** (effective after the day evaluated), **superseded** (its CA issued its subject a newer
+certificate from the same template), **confirmed-missing**, **inventory-incomplete**, **inaccessible** or
+**not-inventoried**; a certificate no CA is found for (public, self-signed) isn't judged. Every active certificate an
+inventory holds that no record certificate matches is **untracked**. `opsdir report certificate-authorities` lists each
+CA (its configuration string, who issued its own certificates, templates, endpoints, last inventory, owners); `opsdir
+report issued-certificates` each judged record certificate and then every untracked one, with its renewal owner (the
+record certificate's owners, else the template's `ciamRenewalOwner`). `opsdir plan` checks the whole estate (area
+`Certificate`; nothing when the record holds no CA inventory): a revoked certificate the record still uses is a
+blocker; one revoked but unused, revoked from a later date (an action due that day), superseded, confirmed missing or
+not confirmable is an action; so is each (CA, template) whose active certificates the record holds none of, for the
+templates the record cares about (a renewal owner or a purpose recorded, or a record certificate issued from it),
+owned by the renewal owner and due when the first expires; and each inventoried CA that publishes no CRL or OCSP
+endpoint.
+
 ### Who keeps what, and where it renders
 
 Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what
@@ -410,7 +444,7 @@ Dependencies point one way. Adapter packages depend on the core, never the rever
 
 An adapter is one cloud provider, product or secret store. It lives in its own installable package:
 
-1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `platform` (a container platform such as Kubernetes), `product`, `host`, `delivery`, `secret-store`, `compliance` or `itsm` (an IT service management system whose change tickets are read as evidence)), `applies(m)` decided from directory data only (or `None` for a generic adapter of a standard, which every compliant server would match: it renders only where an environment's stack declares it), the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
+1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `platform` (a container platform such as Kubernetes), `product`, `host`, `delivery`, `secret-store`, `pki` (a certification authority's records, such as AD CS), `compliance` or `itsm` (an IT service management system whose change tickets are read as evidence)), `applies(m)` decided from directory data only (or `None` for a generic adapter of a standard, which every compliant server would match: it renders only where an environment's stack declares it), the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
 2. Its `pyproject.toml` depends on `opsdir` and registers it:
 
    ```toml

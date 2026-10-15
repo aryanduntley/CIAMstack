@@ -1,0 +1,6 @@
+templates: 3 template(s)
+crl endpoint ldap:///CN=%7,CN=PKI-ISS-02,CN=CDP,CN=Public Key Services,CN=Services,%6%10: %7, %6, %10 not filled (kept with the CA's template)
+ca-issuers endpoint http://pki.example-aero.test/CertEnroll/pki-iss-02.corp.example-aero.test_Example Aero Issuing CA 2%4.crt: %4 not filled (kept with the CA's template)
+Example Aero Issuing CA 2: 7 certificate(s), 5 endpoint(s), complete
+CHG-2050: 21 change(s) applied, the import run among them
+exit 0
