@@ -56,6 +56,18 @@ renders one; every target is rendered by default except those an adapter offers 
 `terraform-imports`, import blocks adopting an existing PingFederate's objects), and MANIFEST.json records the targets chosen. An adapter or
 target the environment doesn't have is refused, naming those it has. Plans and migrations render every target.
 
+### Open questions (the unknowns register)
+
+What nobody can answer from the record yet is recorded as a question under `ou=unknowns` (`ciamUnknown`, the
+governance domain): `ciamQuestion`, `ciamOwner` the party who must answer it, `ciamBlocking` whether a move waits for
+it, `ciamConcerns` the environments (or entries inside them) it concerns (none: the estate), `ciamRaisedAt`,
+`ciamNeededBy`, and once answered `ciamAnswer` and `ciamAnsweredAt`. Like any entry it is written under an approved
+change. `opsdir report unknowns` lists them (open, overdue past their needed-by date, answered). `opsdir plan` counts
+the ones concerning the source or the target (area `Unknowns`): an open blocking question is a blocker, so the plan
+can't be READY; another open one is an action for its owner, dated by `ciamNeededBy` (else the planned cutover); an
+answered one is listed as in place. No fix is offered (an answer is a person's), and an approved risk exception
+accepts these findings like any other.
+
 ### Who keeps what, and where it renders
 
 Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what

@@ -85,6 +85,23 @@ ATTRIBUTES = (
     AttributeDef(607, 'ciamCollectedEnvironment', 'extdn', 'meta', True,
                  'The environment a collection attempt read (absent: estate-wide, provider data such as regions and '
                  'quotas); a DN, not a reference, like an import run\'s scopes'),
+    # the unknowns register (milestone 6.3): questions nobody can answer from the record yet, with an owner
+    AttributeDef(661, 'ciamQuestion', 'string', 'meta', True,
+                 'What isn\'t known: the question someone must answer'),
+    AttributeDef(662, 'ciamBlocking', 'bool', 'meta', True,
+                 'Whether a move may not proceed without the answer: TRUE, the planner blocks while it is open; '
+                 'absent or FALSE, an open question is an action'),
+    AttributeDef(663, 'ciamConcerns', 'dn', 'meta', False,
+                 'The environments (or entries inside them) a question concerns; none: the whole estate. A DN, not '
+                 'a reference'),
+    AttributeDef(664, 'ciamRaisedAt', 'time', 'meta', True,
+                 'When the question was asked'),
+    AttributeDef(665, 'ciamNeededBy', 'time', 'meta', True,
+                 'When the answer is needed: the planner dates the open question by it (else the planned cutover)'),
+    AttributeDef(666, 'ciamAnswer', 'string', 'meta', True,
+                 'The answer: a question that has one is answered'),
+    AttributeDef(667, 'ciamAnsweredAt', 'time', 'meta', True,
+                 'When the question was answered'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -121,6 +138,11 @@ CLASSES = (
              '(or estate-wide), recorded under the change it ran with (ciamChangeRef) whatever the outcome: '
              'complete, or incomplete or skipped with its problems and the calls it made, so a failed collection '
              'stays visible after the run'),
+    ClassDef(137, 'ciamUnknown', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamQuestion', 'ciamOwner'),
+             ('ciamBlocking', 'ciamConcerns', 'ciamRaisedAt', 'ciamNeededBy', 'ciamAnswer', 'ciamAnsweredAt'),
+             'A question the record can\'t answer yet (under ou=unknowns): what isn\'t known, the party who must '
+             'answer it (ciamOwner), whether a move waits for it, what it concerns, when it was raised and is '
+             'needed, and its answer once given; the planner counts the open ones'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

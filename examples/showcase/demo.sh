@@ -113,6 +113,7 @@ od import --dry-run azure/cli-inventory exports/cloud
 echo "-- the warm standby, from a Cloud Asset Inventory export and gcloud (project numbers read as its ID)"
 od import --dry-run gcp/cli-inventory exports/cloud
 echo "-- stale work instructions";           od report stale
+echo "-- the unknowns register: open questions and who must answer them"; od report unknowns
 echo "-- unowned";                           od report unowned
 
 step "6. Guardrails: these writes must be REJECTED"
@@ -219,6 +220,8 @@ od modify --change CHG-2042 changes/CHG-2042-standby-itar-data.ldif
 echo "-- the target builds its products' configuration into its deployment: ForgeOps config profiles, PingFederate's"
 echo "   server profile (fetched from the platform's profile repository); secrets only as variables from Secret keys"
 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
+echo "-- Skyline Air answers the question the move waited for (unknown q-skyline-signing)"
+od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

@@ -48,6 +48,7 @@ It is built for the ForgeRock/Ping stack on AWS, Azure and Google Cloud today, a
 | Which managed databases does the platform run on, and are they as available, encrypted, protected and backed up in every environment? | `opsdir report databases` |
 | Are the backup buckets versioned, locked, encrypted, private and copied elsewhere in every environment? | `opsdir report object-stores` |
 | When was each part of the record last read back from the live system? | `opsdir report imports` |
+| What doesn't anyone know yet, and who must answer it? | `opsdir report unknowns` (the unknowns register: each question, its owner, whether a move waits for it, what it concerns, raised and needed by, open / overdue / answered, the answer). `opsdir plan` blocks on an open blocking question that concerns the source or the target, gives the other open ones as actions dated by when the answer is needed (else the cutover), and lists the answered ones as in place |
 | How did each live collection last end, and why did a failed one fail? | `opsdir report collections` |
 | How big is the user data, which password schemes does it hold, how many accounts are idle? | `opsdir report data-profile`, `opsdir report data-profile-attributes` |
 | Which files copy this server's hostname (or any value), on which lines? | `opsdir report census [<DN>]` |

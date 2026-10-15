@@ -15,6 +15,7 @@ GENERATED = ("ds-config", "ds-access-logs", "cloud", "ds-data", "regions", "quot
 def specs():
     """Every entry spec, in the order entries appear within their data files."""
     return (*base.entries(), *custom.definitions(), *governance.owners(), *estate.entries(), *governance.changes(),
+            *governance.unknowns(),
             *directory.user_attributes(), *directory.user_classes(), *directory.declared_config(),
             *infrastructure.environments(), *compute.workloads(), *directory.consumers(), *directory.acis(),
             *governance.runbooks(), *pki.certificates(), *pki.credentials(),

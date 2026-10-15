@@ -68,6 +68,7 @@ dc=ciam-ops
 ├── ou=config-files, ou=bundles             files held setting by setting; code and templates by repo path + hash
 ├── ou=custom-schema                        ciamFieldDefinition, ciamRecordTypeDefinition: operator-defined
 ├── ou=runbooks, ou=changes, ou=incidents   ciamRunbook, ciamChange, ciamIncident
+├── ou=unknowns                             ciamUnknown: an open question, who must answer it, whether a move waits
 └── ou=owners                               ciamParty: teams, partners, vendors, the operator
 ```
 
@@ -105,6 +106,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certifica
 | What drifted from the declared configuration? | `opsdir report drift`: declared vs the latest observed snapshot, normalized |
 | Which applications use the directory, and what should be checked about each? | `opsdir report consumers`: owner, criticality, migration status, TLS, unindexed searches, last seen and reviewed, and what to check (no owner, plain text, high-PII attributes read, no ACI, not seen lately, review due) |
 | Which work instructions are stale? | `opsdir report stale`: runbooks whose dependencies changed after they were last validated |
+| What doesn't anyone know yet, and who must answer it? | `opsdir report unknowns`: each question in the unknowns register with its owner, whether a move waits for it, what it concerns, when it was raised and is needed, open / overdue / answered and the answer. The planner counts the ones concerning the source or the target: an open blocking one is a blocker, another open one an action dated by when the answer is needed (else the cutover), an answered one in place |
 | What does nobody own? | `opsdir report unowned` |
 | How does an environment differ from the one it overlays? | `opsdir report overrides` |
 | Which files copy a value of the record, on which lines? | `opsdir census PATH` records it; `opsdir report census [DN]` lists it, and `blast-radius` includes the files |

@@ -3067,6 +3067,37 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.660 NAME 'ciamCiSystem' DESC 'The CI
   repositories no longer define' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
  .1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' 
  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.661 NAME 'ciamQuestion' DESC 'What i
+ sn\27t known: the question someone must answer' EQUALITY caseIgnoreMatch SY
+ NTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALU
+ E-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.662 NAME 'ciamBlocking' DESC 'Whethe
+ r a move may not proceed without the answer: TRUE, the planner blocks while
+  it is open; absent or FALSE, an open question is an action' EQUALITY boole
+ anMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'met
+ a' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.663 NAME 'ciamConcerns' DESC 'The en
+ vironments (or entries inside them) a question concerns; none: the whole es
+ tate. A DN, not a reference' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1
+ .4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.664 NAME 'ciamRaisedAt' DESC 'When t
+ he question was asked' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.665 NAME 'ciamNeededBy' DESC 'When t
+ he answer is needed: the planner dates the open question by it (else the pl
+ anned cutover)' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'ops
+ dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.666 NAME 'ciamAnswer' DESC 'The answ
+ er: a question that has one is answered' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 
+ 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.667 NAME 'ciamAnsweredAt' DESC 'When
+  the question was answered' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.
+ 1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X
+ -ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3835,3 +3866,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.136 NAME 'ciamProviderControl' DESC '
  res (a deployment of the framework lists every one)' SUP ciamObject STRUCTU
  RAL MUST ( cn $ ciamProviderRef $ ciamRevision ) MAY ( ciamEnforcementMode 
  $ ciamControlParameter ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.137 NAME 'ciamUnknown' DESC 'A questi
+ on the record can\27t answer yet (under ou=unknowns): what isn\27t known, t
+ he party who must answer it (ciamOwner), whether a move waits for it, what 
+ it concerns, when it was raised and is needed, and its answer once given; t
+ he planner counts the open ones' SUP ciamObject STRUCTURAL MUST ( cn $ ciam
+ Question $ ciamOwner ) MAY ( ciamBlocking $ ciamConcerns $ ciamRaisedAt $ c
+ iamNeededBy $ ciamAnswer $ ciamAnsweredAt ) X-ORIGIN 'opsdir' )

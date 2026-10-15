@@ -1,6 +1,6 @@
-"""Governance fixture data: owners (10-owners), change records (20-changes), work instructions
-(65-runbooks) and incidents (85-incidents)."""
-from .common import AWS, CERTS, CHG, DECL, INC, INTS, OWN, RB, R, owner, spec, t
+"""Governance fixture data: owners (10-owners), change records (20-changes), the unknowns register (23-unknowns),
+work instructions (65-runbooks) and incidents (85-incidents)."""
+from .common import AWS, AZ, CERTS, CHG, DECL, INC, INTS, OWN, RB, R, owner, spec, t
 from .estate import COST_CENTERS
 
 PARTIES = (      # cn, kind, mail, contact url, display name
@@ -112,6 +112,8 @@ CHANGES = (
      "package)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2043", "Build the target's product configuration into its deployment: config profiles and PingFederate's "
      "server profile", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2044", "Record Skyline Air's answer on the target's signing certificate (unknown q-skyline-signing)",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (
@@ -168,6 +170,27 @@ def restore_tests():
                       ciamRestoreMinutes=minutes, ciamRunbookRef=f"cn=WI-CIAM-015,{RB}", description=what,
                       ciamOwner=owner("ciam-platform"))
                  for cn, on, env, role, src, level, result, minutes, what in RESTORE_TESTS)
+
+
+# The unknowns register (ou=unknowns): what nobody can answer from the record yet, owned by who must answer it.
+# q-skyline-signing blocks the move until Skyline Air answers (CHG-2044 records its answer); q-tech-pubs-sso is open
+# for the whole estate, needed before the cutover; q-mro-export-window was answered for the source.
+UNKNOWNS = (     # cn, question, owner, blocking, concerns, raised, needed by, answer, answered
+    ("q-skyline-signing", "Does Skyline Air accept the target's new SAML signing certificate without re-onboarding "
+     "the federation?", "skyline-air", True, AZ, "2026-09-10", None, None, None),
+    ("q-tech-pubs-sso", "Does the technical publications portal keep its own login page after the move, or switch to "
+     "the platform's sign-on?", "tech-pubs-team", False, None, "2026-09-12", "2026-12-01", None, None),
+    ("q-mro-export-window", "When may the MRO batch export pause during the cutover?", "mro-analytics-team", False,
+     AWS, "2026-09-02", None, "Any weekend night: the next run catches up", "2026-09-08"),
+)
+
+
+def unknowns():
+    return tuple(spec("23-unknowns", f"cn={cn},ou=unknowns,{R}", ["top", "ciamUnknown"], cn=cn, ciamQuestion=question,
+                      ciamOwner=owner(party), ciamBlocking="TRUE" if blocks else None, ciamConcerns=concerns,
+                      ciamRaisedAt=t(raised), ciamNeededBy=t(needed) if needed else None, ciamAnswer=answer,
+                      ciamAnsweredAt=t(answered) if answered else None)
+                 for cn, question, party, blocks, concerns, raised, needed, answer, answered in UNKNOWNS)
 
 
 def incidents():
