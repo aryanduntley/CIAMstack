@@ -100,7 +100,7 @@ def test_the_probe_rule_follows_the_model(network):
     network(ciamFirewallModel="policy")
     m = _m()
     svc = next(b for b in m.bindings if b.dn.startswith("cn=svc-sso,"))
-    out = as_text(terraform._health_check_rule(m, svc, "svc_sso", "ciam-prod-svc-sso", "INTERNAL", "443"))
+    out = as_text(edge._health_check_rule(m, svc, "svc_sso", "ciam-prod-svc-sso", "INTERNAL", "443"))
     assert out == as_text(health_check_rule(m, svc, "svc_sso", probe_ranges("INTERNAL"), "443"))
     assert 'resource "google_compute_network_firewall_policy_rule" "svc_sso_health_checks"' in out
     assert "priority        = 70000" in out and "name = google_tags_tag_value.web.id" in out

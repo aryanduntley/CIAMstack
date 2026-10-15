@@ -13,7 +13,7 @@ from opsdir.core.contract import Endpoint, PlanContext
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.edge.dns import check_dns, dns_rows, lower_by
-from opsdir.domains.edge.gateways import fronted_services, role_gateway
+from opsdir.domains.edge.gateways import front_choice, fronted_services, role_gateway
 from opsdir.domains.edge.headers import check_headers, header_rows
 from opsdir.domains.edge.kubernetes import check_unrendered, unrendered_edges
 from opsdir.domains.edge.naming import EDGE_FACT, EDGE_POLICIES, HEADER_CONTRACTS, RATE_LIMIT, WAF_EXCLUSION
@@ -426,6 +426,31 @@ def test_a_service_names_edge_isnt_rendered_for_a_role_only_on_kubernetes():
         "record), and the record doesn't say what fronts the cluster's ingress (its cluster has no gateway). Record "
         "the cluster's gateway (ciamClusterGateway), or run the role on servers there.")
     assert f.actions == () and check_unrendered(_ctx(_record())).blockers == ()
+
+
+def test_what_fronts_a_service_name_is_decided_once_for_every_cloud():
+    """A note when nothing is rendered (a role only on Kubernetes without a gateway; an exposure not recorded), the
+    cluster's gateway when it has one, else the role's servers and their subnets in order."""
+    from opsdir.core.environment import servers_with_role, subnet_of
+    from opsdir.domains.edge.exposure import exposure_unknown
+    gw = _binding(BETA, "gw", "ciamClusterGateway", "k8s-gateway", ciamClusterRole="k8s", ciamNamespace="edge")
+    unknown = _binding(ALPHA, "svc-x", "ciamServiceName", "x-service", ciamFqdn="x.example.test", ciamPort="443",
+                       ciamTargetRole="web")
+    on_servers = _binding(ALPHA, "svc-gw", "ciamServiceName", "gw-service", ciamFqdn="gw.example.test",
+                          ciamPort="443", ciamTargetRole="gw", ciamFrontendIp="10.1.9.20")
+    without, with_gateway = _ctx(_on_kubernetes(unknown, on_servers)), _ctx(_on_kubernetes(unknown, gw))
+
+    def svc(m, cn):
+        return next(b for b in m.bindings if b.dn.startswith(f"cn={cn},"))
+    kind, text = front_choice(without.dst, svc(without.dst, "svc-web"))
+    assert kind == "note" and "`svc-web` (web.example.test)" in text and "only on Kubernetes" in text
+    assert front_choice(with_gateway.dst, svc(with_gateway.dst, "svc-web")) == (
+        "gateway", role_gateway(with_gateway.dst, "web"))
+    x = svc(without.src, "svc-x")
+    assert front_choice(without.src, x) == ("note", exposure_unknown(x))
+    targets = servers_with_role(without.src, "gw")
+    assert targets and front_choice(without.src, svc(without.src, "svc-gw")) == (
+        "servers", targets, tuple(subnet_of(without.src, t) for t in targets))
 
 
 def test_a_cluster_gateway_fronts_the_service_names_of_roles_only_on_kubernetes():

@@ -6,20 +6,20 @@ Azure Monitor Agent from here (log_collection.agent_hosts) also gets a system-as
 from itertools import chain
 
 from opsdir.core.directory import follow, one, rdn_value, values
-from opsdir.core.environment import UNBOUND, by_role, of_class, one_role, recorded, servers_with_role, subnet_of
-from opsdir.domains.compute.hosts import group_subnets, own_groups, run_roles
+from opsdir.core.environment import by_role, of_class, one_role, recorded, subnet_of
+from opsdir.domains.compute.hosts import run_roles
 from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.core.notes import note_comment
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.domains.infrastructure.firewall import priority_note, priority_notes, rule_priorities, rule_purpose
 from opsdir.domains.access.workloads import identity_notes, identity_of, workload_identities
-from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
-from opsdir.domains.edge.gateways import role_gateway
+from opsdir.domains.edge.exposure import service_exposure
+from opsdir.domains.edge.gateways import front_choice
 from opsdir.domains.edge.kubernetes import kubernetes_notes
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.governance.keepers import keeper
-from opsdir.domains.edge.resolve import inspected, inspection_note, inspection_notes, service_edge
+from opsdir.domains.edge.resolve import inspection_notes, service_edge
 from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref, tf_block,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
@@ -39,9 +39,9 @@ from .purview import purview_inputs, render_purview, renders as purview_renders
 from .security import render_security, security_notes
 from .backups import backup_notes, render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes, volume_notes
-from .dns import (FORWARDING_RULESET, forwarder_notes, forwarding_rules, public_ip_name, records, service_record,
+from .dns import (FORWARDING_RULESET, forwarder_notes, forwarding_rules, records, service_record,
                   unrecorded_answer)
-from .edge import EDGE_SUBNET, ddos_note, gateway_service, servers_backend
+from .edge import EDGE_SUBNET, gateway_service, network_lb, servers_backend
 from .compute_groups import group_notes, render_groups
 from .frontdoor import endpoint, front_door, frontdoor_notes
 from .identities import LOC, RG, aks_data, identity, scope_data, vm_identity
@@ -125,68 +125,18 @@ def _server(m, s, des, identities=(), agents=frozenset()):
             *server_volumes(m, s))
 
 
-def _frontend(m, svc, n, ip, internal, subnets):
-    """(data sources needed, frontend_ip_configuration body); an internal one sits in the first of its targets'
-    subnets (its servers', then its compute groups')."""
-    if internal:
-        subnet = ref(f"data.azurerm_subnet.{tf_name(rdn_value(subnets[0]))}.id") if subnets else \
-            f"{UNBOUND}{one(svc, 'ciamTargetRole')}-subnet"
-        return (), (("name", "frontend"), ("zones", ["1", "2", "3"]), ("subnet_id", subnet),
-                    *((("private_ip_address_allocation", "Static"), ("private_ip_address", ip)) if ip else
-                      (("private_ip_address_allocation", "Dynamic"),)))
-    return ((tf_block("data", ["azurerm_public_ip", n], [("name", public_ip_name(svc)),
-                                                       ("resource_group_name", RG)]),),
-            (("name", "frontend"), ("public_ip_address_id", ref(f"data.azurerm_public_ip.{n}.id"))))
-
-
-def _probe_body(spec):
-    """The probe's protocol and settings from a service's traffic policy (a TCP connect without one)."""
-    h = spec.health if spec is not None else None
-    if h is None or h.protocol == "tcp":
-        return (("protocol", "Tcp"),) + ((("interval_in_seconds", h.interval),) if h and h.interval else ())
-    return (("protocol", h.protocol.capitalize()), ("request_path", h.path or "/"),
-            *((("interval_in_seconds", h.interval),) if h.interval else ()),
-            *((("number_of_probes", h.unhealthy),) if h.unhealthy else ()))
-
-
-def _probed(spec, port):
-    """The port a probe checks: the product's own health port (an admin port) when it declares one, else the rule's."""
-    return spec.health.port if spec is not None and spec.health.port else port
-
-
-def _lb_port(n, port, spec=None):
-    rule = (*((("idle_timeout_in_minutes", min(30, max(4, -(-spec.idle_timeout // 60)))),)
-              if spec is not None and spec.idle_timeout else ()),
-            *((("load_distribution", "SourceIP"),) if spec is not None and spec.stickiness == "source-ip" else ()))
-    return (tf_block("resource", ["azurerm_lb_probe", f"{n}_{port}"], [
-                ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")),
-                *_probe_body(spec)[:1], ("port", int(_probed(spec, port))), *_probe_body(spec)[1:]]),
-            tf_block("resource", ["azurerm_lb_rule", f"{n}_{port}"], [
-                ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")), ("protocol", "Tcp"),
-                ("frontend_port", int(port)), ("backend_port", int(port)),
-                ("frontend_ip_configuration_name", "frontend"),
-                ("backend_address_pool_ids", [ref(f"azurerm_lb_backend_address_pool.{n}.id")]),
-                ("probe_id", ref(f"azurerm_lb_probe.{n}_{port}.id")), *rule]))
-
-
 def _service(m, svc, endpoints=()):
     """A stable service name: load balancer, backend pool, probes and rules per port (an Application Gateway when its
     traffic policy terminates TLS at the edge; opsdir_adapter_azure.edge), and its DNS record; for a role run only on
     Kubernetes, the Application Gateway before its cluster's gateway (opsdir_adapter_azure.ingress), else a note; a
-    note when its exposure is unknown (core edge.exposure)."""
-    role = one(svc, "ciamTargetRole")
-    gw = role_gateway(m, role) if only_on_kubernetes(m, role) else None
-    if only_on_kubernetes(m, role) and gw is None:
-        return (comment(note_comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
-                                                     role, svc.dn))),)
-    if service_exposure(svc) is None:
-        return (comment(exposure_unknown(svc)),)
-    if gw is not None:
-        return gateway_front(m, svc, gw, endpoints)
+    note when its exposure is unknown (the core's edge.gateways.front_choice)."""
+    kind, *chosen = front_choice(m, svc)
+    if kind == "note":
+        return (comment(chosen[0]),)
+    if kind == "gateway":
+        return gateway_front(m, svc, chosen[0], endpoints)
+    targets, subnets = chosen
     n = tf_name(rdn_value(svc))
-    ip = one(svc, "ciamFrontendIp")
-    internal = is_internal(svc)
-    targets = servers_with_role(m, role)
     spec = service_edge(m, svc, endpoints)
     cdn = spec is not None and spec.cdn
     layer7 = spec is not None and spec.layer7
@@ -194,23 +144,7 @@ def _service(m, svc, endpoints=()):
     record = service_record(m.d, m, svc, n, endpoint(n) if cdn else None, unrecorded_answer(svc, n, layer7))
     if layer7:
         return (*gateway_service(m, svc, spec, servers_backend(targets)), *fronted, *record)
-    data, fe = _frontend(m, svc, n, ip, internal, (*(subnet_of(m, t) for t in targets),
-                                                    *(s for g in own_groups(m, role) for s in group_subnets(m, g))))
-    blind = (comment(note_comment(inspection_note(m, svc, spec))),) \
-        if spec is not None and inspected(spec) and not cdn else ()
-    return (*data, *blind, *(ddos_note(spec) if spec is not None else ()),
-            tf_block("resource", ["azurerm_lb", n], [
-                ("name", f"lb-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("location", LOC),
-                ("resource_group_name", RG), ("sku", "Standard"), ("frontend_ip_configuration", Block(fe)),
-                ("tags", tagged(m, {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"}))]),
-            tf_block("resource", ["azurerm_lb_backend_address_pool", n], [
-                ("name", "servers"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id"))]),
-            *(tf_block("resource", ["azurerm_network_interface_backend_address_pool_association",
-                                    f"{n}_{tf_name(rdn_value(t))}"], [
-                   ("network_interface_id", ref(f"azurerm_network_interface.{tf_name(rdn_value(t))}.id")),
-                   ("ip_configuration_name", "primary"),
-                   ("backend_address_pool_id", ref(f"azurerm_lb_backend_address_pool.{n}.id"))]) for t in targets),
-            *chain.from_iterable(_lb_port(n, port, spec) for port in values(svc, "ciamPort")), *fronted, *record)
+    return (*network_lb(m, svc, spec, targets, subnets), *fronted, *record)
 
 
 def _pools(m, endpoints):

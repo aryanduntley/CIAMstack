@@ -4,8 +4,8 @@ policy's probe, affinity, timeout and draining; a WAF policy with custom rules f
 aimed at the products' endpoints, the Default Rule Set and exclusions. Without the subnet, nothing but a comment."""
 from opsdir.domains.edge.resolve import Health, RateLimit, tls_level, tls_policy
 from opsdir_format_terraform.hcl import as_text
-from opsdir_adapter_azure.edge import TLS_POLICIES, ddos_note, gateway_service, rate, servers_backend, waf_policy
-from opsdir_adapter_azure.terraform import _lb_port
+from opsdir_adapter_azure.edge import (TLS_POLICIES, _lb_port, ddos_note, gateway_service, rate, servers_backend,
+                                      waf_policy)
 from edge_fixtures import environment, server, service, spec, subnet
 
 EDGE = subnet("subnet-edge", "subnet-edge", "10.60.250.0/24")

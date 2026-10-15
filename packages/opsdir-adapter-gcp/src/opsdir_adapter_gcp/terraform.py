@@ -15,28 +15,27 @@ the bucket, the topic; log writes on the project, the narrowest Google Cloud all
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import of_class, one_role, recorded, secret, servers_with_role, subnet_of
-from opsdir.domains.compute.hosts import group_subnets, own_groups
+from opsdir.core.environment import of_class, one_role, recorded, secret, subnet_of
+from opsdir.domains.compute.hosts import own_groups
 from opsdir.domains.compute.workloads import cluster_subnets, kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.core.notes import note_comment
 from opsdir.domains.infrastructure.firewall import priority_note, priority_notes, rule_priorities, rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_notes, identity_of, workload_identities
-from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
-from opsdir.domains.edge.gateways import role_gateway
+from opsdir.domains.edge.exposure import is_internal, service_exposure
+from opsdir.domains.edge.gateways import front_choice
 from opsdir.domains.edge.kubernetes import kubernetes_notes
-from opsdir.domains.edge.resolve import (inspected, inspection_note, inspection_notes, rendered_edges,
+from opsdir.domains.edge.resolve import (inspected, inspection_notes, rendered_edges,
                                         service_edge)
 from opsdir.domains.network.stack import firewall_model
 from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.databases import database_notes, render_databases
 from opsdir_adapter_gcp.storage import kept_buckets, render_object_stores
 from opsdir_adapter_gcp.dns import failover_notes, forwarder_notes, forwarding_zones, records, service_record
-from opsdir_adapter_gcp.edge import (alb_rendered, application_lb, category_notes, network_ddos, private_cdn_note,
-                                     servers_backend)
+from opsdir_adapter_gcp.edge import (alb_rendered, application_lb, category_notes, network_lb,
+                                     private_cdn_note, servers_backend)
 from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall, policy_notes
-from opsdir_adapter_gcp.health_checks import probe_ranges
 from opsdir_adapter_gcp.identities import identity, project_of
 from opsdir_adapter_gcp.ingress import gateway_front, gateway_negs
 from opsdir_adapter_gcp.landing import STACK, landing_parts, placed_roots
@@ -138,68 +137,31 @@ def _frontend(svc, n, ip, internal):
             ref(f"data.google_compute_address.{n}.address"))
 
 
-def _health_check_rule(m, svc, n, name, scheme, port):
-    """The firewall rule admitting Google Cloud's health-check probes to the service's servers on its checked port:
-    part of the load balancer, not one of the record's rules (the importers leave it out). A policy rule under the
-    policy model."""
-    if firewall_model(m) == "policy":
-        return health_check_rule(m, svc, n, probe_ranges(scheme), port)
-    return tf_block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
-        ("name", f"{name}-health-checks"), ("description", f"Google Cloud health checks for {rdn_value(svc)}"),
-        ("network", NETWORK), ("direction", "INGRESS"),
-        ("allow", Block((("protocol", "tcp"), ("ports", [port])))),
-        ("source_ranges", list(probe_ranges(scheme))), ("target_tags", [_tag(m, one(svc, "ciamTargetRole"))])])
-
-
-def _checked(spec, port):
-    """The port a health check probes: the product's own health port (an admin port) when it declares one, else the
-    service's first."""
-    return str(spec.health.port) if spec is not None and spec.health.port else port
-
-
-def _l4_tuning(spec):
-    """(health check body, backend service settings) from a passthrough service's traffic policy."""
-    if spec is None:
-        return None, ()
-    h = spec.health
-    check = (*((("check_interval_sec", h.interval),) if h.interval else ()),
-             *((("healthy_threshold", h.healthy),) if h.healthy else ()),
-             *((("unhealthy_threshold", h.unhealthy),) if h.unhealthy else ()))
-    kind = ((f"{h.protocol}_health_check", ((("request_path", h.path or "/"),))),) if h.protocol != "tcp" else ()
-    affinity = (("session_affinity", "CLIENT_IP"),) if spec.stickiness == "source-ip" else ()
-    drain = (("connection_draining_timeout_sec", spec.drain),) if spec.drain is not None else ()
-    return (check, kind), (*affinity, *drain)
-
-
 def _service(m, svc, endpoints=()):
     """A stable service name: a passthrough network load balancer over the role's servers (zonal instance groups,
     a regional backend service with a TCP health check and the firewall rule its probes need, a forwarding rule) and
     its Cloud DNS record. An EXTERNAL backend service names its port (port_name, each group's named_port) and scales
     its backends' capacity; INTERNAL takes neither. A forwarding rule takes at most five ports, else all ports. For a
     role run only on Kubernetes, the Application Load Balancer before its cluster's gateway
-    (opsdir_adapter_gcp.ingress), else a note; a note when its exposure is unknown (core edge.exposure). Without a
-    recorded address Google Cloud assigns one."""
+    (opsdir_adapter_gcp.ingress), else a note; a note when its exposure is unknown (the core's
+    edge.gateways.front_choice). Without a recorded address Google Cloud assigns one. The passthrough balancer is
+    opsdir_adapter_gcp.edge.network_lb."""
     n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
     ip, ports = one(svc, "ciamFrontendIp"), values(svc, "ciamPort")
     target = one(svc, "ciamTargetRole")
-    gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
-    if only_on_kubernetes(m, target) and gw is None:
-        return (comment(note_comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
-                                                     target, svc.dn))),)
-    if service_exposure(svc) is None:
-        return (comment(exposure_unknown(svc)),)
+    kind, *chosen = front_choice(m, svc)
+    if kind == "note":
+        return (comment(chosen[0]),)
     internal = is_internal(svc)
-    if gw is not None:
+    if kind == "gateway":
         subnets = cluster_subnets(m, target)
         subnetwork = f"data.google_compute_subnetwork.{tf_name(rdn_value(subnets[0]))}.self_link" if subnets else None
         placement = (("subnetwork", ref(subnetwork)),) if internal and subnetwork else ()
-        return gateway_front(m, svc, gw, endpoints, _frontend(svc, n, ip, internal), placement)
-    scheme = "INTERNAL" if internal else "EXTERNAL"
-    targets = servers_with_role(m, one(svc, "ciamTargetRole"))
+        return gateway_front(m, svc, chosen[0], endpoints, _frontend(svc, n, ip, internal), placement)
+    targets, subnets = chosen
     groups_ = own_groups(m, target)
     managed = tuple(ref(f"google_compute_region_instance_group_manager.{tf_name(rdn_value(g))}.instance_group")
                     for g in groups_)
-    subnets = (*(subnet_of(m, t) for t in targets), *(s for g in groups_ for s in group_subnets(m, g)))
     data, address = _frontend(svc, n, ip, internal)
     spec = service_edge(m, svc, endpoints)
     cdn = spec is not None and spec.cdn
@@ -219,32 +181,9 @@ def _service(m, svc, endpoints=()):
                                          servers_backend(m, svc, tuple(f"{n}_{tf_name(z)}" for z in _zones(targets)),
                                                          managed),
                                          (data, address), placement[1:], admit), *record)
-    (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
-    health = kind[0] if kind else ("tcp_health_check", ())
-    blind = (comment(note_comment(inspection_note(m, svc, spec))),) \
-        if spec is not None and inspected(spec) else ()
-    capacity = () if internal else (("capacity_scaler", 1.0),)
-    forwarded = ((("ports", ports),) if len(ports) <= 5 else
-                 (("#", "more than five ports: all are forwarded; the firewall rules admit only the service's"),
-                  ("all_ports", True)))
-    return (*data, *blind, *groups,
-            tf_block("resource", ["google_compute_region_health_check", n], [
-                ("name", name), ("region", REGION), *(check or ()),
-                (health[0], Block((("port", int(_checked(spec, ports[0]))), *health[1])))]),
-            _health_check_rule(m, svc, n, name, scheme, _checked(spec, ports[0])),
-            tf_block("resource", ["google_compute_region_backend_service", n], [
-                ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("protocol", "TCP"),
-                *((("port_name", "ciam"),) if not internal else ()),
-                ("health_checks", [ref(f"google_compute_region_health_check.{n}.id")]), *tuning,
-                *(("backend", Block((("group", group), ("balancing_mode", "CONNECTION"), *capacity)))
-                  for group in (*(ref(f"google_compute_instance_group.{n}_{tf_name(zone)}.self_link")
-                                  for zone in _zones(targets)), *managed))]),
-            tf_block("resource", ["google_compute_forwarding_rule", n], [
-                ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
-                *forwarded, *((("ip_address", address),) if address else ()),
-                ("backend_service", ref(f"google_compute_region_backend_service.{n}.id")), *placement,
-                ("labels", {"service": _label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})]),
-            *(network_ddos(m, n, spec) if spec is not None and not internal else ()), *record)
+    return (*network_lb(m, svc, spec, groups, (*(ref(f"google_compute_instance_group.{n}_{tf_name(zone)}.self_link")
+                                                 for zone in _zones(targets)), *managed),
+                        (data, address), placement), *record)
 
 
 def _ports(m, endpoints):

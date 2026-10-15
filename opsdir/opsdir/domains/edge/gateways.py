@@ -4,13 +4,17 @@ service name's policies as for servers) reaches the gateway, which routes to the
 gateway fronts follows from the record: a service name's role runs only on Kubernetes, in a cluster with a gateway.
 Every cloud and the planner read this one answer. The CAs a gateway trusts (ciamTrustsCertificate) are what its
 internal certificate chains to and what it checks its TLS backends against: their recorded PEMs make the backend CA
-bundle; a trusted CA with no PEM is the planner's action. Pure.
+bundle; a trusted CA with no PEM is the planner's action. What fronts a service name (front_choice: a note, its
+cluster's gateway, or its role's servers) is decided here once for every cloud. Pure.
 """
 from ...core.directory import get, one, rdn_of, rdn_value, values
-from ...core.environment import of_class
+from ...core.environment import of_class, servers_with_role, subnet_of
 from ...core.findings import findings, responsible
-from ..compute.workloads import only_on_kubernetes, role_clusters
+from ...core.notes import note_comment
+from ..compute.hosts import group_subnets, own_groups
+from ..compute.workloads import kubernetes_note, only_on_kubernetes, role_clusters
 from ..pki.pem import certificate_pem
+from .exposure import exposure_unknown, service_exposure
 
 GATEWAY_HTTP, GATEWAY_HTTPS = 80, 443          # the gateway's listeners: HTTP behind a terminating front, else HTTPS
 
@@ -24,6 +28,25 @@ def cluster_gateway(m, cluster):
 def role_gateway(m, role):
     """The gateway of the first cluster environment m runs a server role in that has one, or None."""
     return next((g for c in role_clusters(m, role) for g in (cluster_gateway(m, c),) if g is not None), None)
+
+
+def front_choice(m, svc):
+    """What a cloud fronts a service name of environment m with: ('note', text) when it renders none (its role runs
+    only on Kubernetes in a cluster without a gateway: the planner's note; its exposure isn't recorded), ('gateway',
+    the cluster's gateway binding) for a role run only on Kubernetes in a cluster with one, else ('servers', the role's
+    servers, their subnets then its compute groups', in that order, repeats kept: each cloud places its balancer)."""
+    role = one(svc, "ciamTargetRole")
+    gw = role_gateway(m, role) if only_on_kubernetes(m, role) else None
+    if only_on_kubernetes(m, role) and gw is None:
+        return "note", note_comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
+                                                    role, svc.dn))
+    if service_exposure(svc) is None:
+        return "note", exposure_unknown(svc)
+    if gw is not None:
+        return "gateway", gw
+    targets = servers_with_role(m, role)
+    return "servers", targets, (*(subnet_of(m, t) for t in targets),
+                                *(s for g in own_groups(m, role) for s in group_subnets(m, g)))
 
 
 def fronted_services(m):

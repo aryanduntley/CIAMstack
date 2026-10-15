@@ -1,12 +1,11 @@
 """AWS adapter: render an environment's infrastructure bindings as Terraform (hashicorp/aws 6.x). Each workload
 principal its servers run as gets an IAM role EC2 may assume, a least-privilege policy from its permissions (the AWS
 permission table, opsdir_adapter_aws.access) and an instance profile on those servers."""
-import ipaddress
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import of_class, one_role, recorded, secret, servers_with_role, subnet_of
-from opsdir.domains.compute.hosts import group_subnets, own_groups, run_roles
+from opsdir.core.environment import of_class, one_role, recorded, secret, subnet_of
+from opsdir.domains.compute.hosts import run_roles
 from opsdir.domains.compute.workloads import kubernetes_note, only_on_kubernetes
 from opsdir.core.manifest import header
 from opsdir.core.notes import note_comment
@@ -14,13 +13,13 @@ from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir.domains.infrastructure.firewall import rule_purpose
 from opsdir.domains.access.evaluations import evaluation_files
 from opsdir.domains.access.workloads import identity_notes, identity_of, workload_identities
-from opsdir.domains.edge.exposure import exposure_unknown, is_internal, service_exposure
-from opsdir.domains.edge.gateways import role_gateway
+from opsdir.domains.edge.exposure import service_exposure
+from opsdir.domains.edge.gateways import front_choice
 from opsdir.domains.edge.kubernetes import kubernetes_notes
 from opsdir.domains.edge.records import forwarders
-from opsdir.domains.edge.resolve import (inspected, inspection_note, inspection_notes, rendered_edges,
+from opsdir.domains.edge.resolve import (inspected, inspection_notes, rendered_edges,
                                         service_edge)
-from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_name, unbound_comments, written
+from opsdir_format_terraform.hcl import comment, ref, tf_block, tf_name, unbound_comments, written
 from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
 from .access import ACCESS
@@ -37,8 +36,7 @@ from .quotas import render_quota_requests
 from .cdn import fronted, govcloud_note
 from .cfn_types import cloudformation_files
 from .dns import RESOLVER_ENDPOINT, forwarder_notes, records, resolver_rules, service_record
-from .edge import (US_EAST_1, alb_service, health_check, probe_ingress, servers_backend, shield, shield_note,
-                   stickiness, takeover_note)
+from .edge import (US_EAST_1, alb_service, network_lb, servers_backend, shield_note, takeover_note)
 from .fluent_bit import fluent_bit_clusters, fluent_bit_notes, render_fluent_bit
 from .identities import EC2_TRUST, eks_cluster_data, identity_clusters, notes, pod_trust, role
 from .ingress import gateway_front
@@ -111,67 +109,22 @@ def _instance(m, s, kms, identities=()):
                   "Product": one(s, "ciamProductVersion", ""), "ManagedBy": "opsdir"})])
 
 
-def _subnet_mapping(svc, ip, internal, i, sub):
-    in_subnet = internal and bool(ip) and ipaddress.ip_address(ip) in ipaddress.ip_network(one(sub, "ciamCidr"))
-    eip = not internal and i == 0 and one(svc, "ciamProviderRef")
-    return ("subnet_mapping", Block((("subnet_id", ref(f"data.aws_subnet.{tf_name(rdn_value(sub))}.id")),
-                                     *((("private_ipv4_address", ip),) if in_subnet else ()),
-                                     *((("allocation_id", one(svc, "ciamProviderRef")),) if eip else ()))))
-
-
-def _listener(m, n, svc, port, targets, spec=None):
-    tuning = ((*((("deregistration_delay", spec.drain),) if spec.drain is not None else ()),
-               health_check(spec, False), *stickiness(spec, False)) if spec
-              else (("health_check", Block((("protocol", "TCP"),))),))
-    return (tf_block("resource", ["aws_lb_target_group", f"{n}_{port}"], [
-                ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}-{port}"), ("port", int(port)),
-                ("protocol", "TCP"), ("vpc_id", ref("data.aws_vpc.main.id")), ("target_type", "instance"),
-                *tuning]),
-            *(tf_block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
-                ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")),
-                ("target_id", ref(f"aws_instance.{tf_name(rdn_value(t))}.id")), ("port", int(port))])
-              for t in targets),
-            tf_block("resource", ["aws_lb_listener", f"{n}_{port}"], [
-                ("load_balancer_arn", ref(f"aws_lb.{n}.arn")), ("port", int(port)), ("protocol", "TCP"),
-                ("default_action", Block((("type", "forward"),
-                                          ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")))))]))
-
-
 def _service(m, svc, endpoints=()):
     """A stable service name: a network load balancer with listeners per port (an application load balancer when its
     traffic policy terminates TLS at the edge; opsdir_adapter_aws.edge), and its DNS record; for a role run only on
     Kubernetes, the ALB before its cluster's gateway (opsdir_adapter_aws.ingress), else a note; a note when its
-    exposure is unknown (core edge.exposure)."""
-    target = one(svc, "ciamTargetRole")
-    gw = role_gateway(m, target) if only_on_kubernetes(m, target) else None
-    if only_on_kubernetes(m, target) and gw is None:
-        return (comment(note_comment(kubernetes_note(m, f"service name `{rdn_value(svc)}` ({one(svc, 'ciamFqdn')})",
-                                                     target, svc.dn))),)
-    if service_exposure(svc) is None:
-        return (comment(exposure_unknown(svc)),)
-    if gw is not None:
-        return gateway_front(m, svc, gw, endpoints)
+    exposure is unknown (the core's edge.gateways.front_choice)."""
+    kind, *chosen = front_choice(m, svc)
+    if kind == "note":
+        return (comment(chosen[0]),)
+    if kind == "gateway":
+        return gateway_front(m, svc, chosen[0], endpoints)
+    targets, found = chosen
     n = tf_name(rdn_value(svc))
-    ip = one(svc, "ciamFrontendIp")
-    internal = is_internal(svc)
-    targets = servers_with_role(m, one(svc, "ciamTargetRole"))
-    subnets = sorted({rdn_value(s): s for s in (*(subnet_of(m, t) for t in targets),
-                                                 *(s for g in own_groups(m, one(svc, "ciamTargetRole"))
-                                                   for s in group_subnets(m, g)))}.items())
+    subnets = tuple(sub for _, sub in sorted({rdn_value(s): s for s in found}.items()))
     spec = service_edge(m, svc, endpoints)
-    if spec is not None and spec.layer7:
-        balancer = alb_service(m, svc, spec, servers_backend(svc, targets), tuple(sub for _, sub in subnets))
-    else:
-        mappings = tuple(_subnet_mapping(svc, ip, internal, i, sub) for i, (_, sub) in enumerate(subnets))
-        blind = (("#", note_comment(inspection_note(m, svc, spec))),) \
-            if spec is not None and inspected(spec) and not spec.cdn else ()
-        balancer = (tf_block("resource", ["aws_lb", n], [
-                        *blind, ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", internal),
-                        ("load_balancer_type", "network"), *mappings,
-                        ("tags", {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})]),
-                    *chain.from_iterable(_listener(m, n, svc, port, targets, spec) for port in values(svc, "ciamPort")),
-                    *probe_ingress(m, n, one(svc, "ciamTargetRole"), spec, tuple(values(svc, "ciamPort"))),
-                    *(shield(n, spec, f"aws_lb.{n}.arn") if spec is not None and not spec.cdn else ()))
+    balancer = alb_service(m, svc, spec, servers_backend(svc, targets), subnets) \
+        if spec is not None and spec.layer7 else network_lb(m, svc, spec, targets, subnets)
     cdn = spec is not None and spec.cdn
     return (*balancer, *(fronted(m, svc, spec, n) if cdn else service_record(m.d, m, svc, n)))
 
