@@ -3,7 +3,8 @@ environment runs, whose signal a product rendering it declares as Prometheus met
 alerting rule (domains/observability/signals.promql: the signal's expression compared with the threshold in its
 unit), held for the rule's evaluation period. Grouped by the role of the channel that delivers them (ciamAlertRole):
 Alertmanager routes them by their labels (severity, team, ciam_rule, environment), which stays the operators'. A rule
-on a role the environment doesn't run isn't its concern; one no product here declares the signal of, or whose
+on a role the environment doesn't run isn't its concern, nor one a SIEM detection of the environment realizes (its
+SIEM evaluates it: domains/observability/siem.detection_for); one no product here declares the signal of, or whose
 threshold can't be read in the signal's unit, is named, not rendered: a render note (flow 43), a plain note when no
 product declares its signal (a cloud alarm may realize it; the planner's signal check raises a rule nothing
 evaluates), a blocker when its signal is declared but the rule can't be written in it and no cloud alarm with a metric
@@ -12,6 +13,7 @@ from opsdir.core.directory import follow_all, one, rdn_value
 from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.workloads import runs_here
 from opsdir.domains.observability.alerts import alert_rules
+from opsdir.domains.observability.siem import detection_for
 from opsdir.domains.observability.signals import alarm_for, product_signal, promql
 
 GROUP_PREFIX = "ciam-"
@@ -40,9 +42,9 @@ def _alert(m, r, signal, expr):
 
 def _skipped(m, r, signals):
     """(alert, None) of a rule rendered here, (None, its render note) of one named instead, or (None, None) of a rule
-    on a role environment m doesn't run."""
+    on a role environment m doesn't run or that a SIEM detection of m realizes."""
     role = one(r, "ciamTargetRole")
-    if role and not runs_here(m, role):
+    if (role and not runs_here(m, role)) or detection_for(m, rdn_value(r)) is not None:
         return None, None
     signal, subject = product_signal(m, signals, r), f"alert rule {rdn_value(r)}"
     if signal is None:

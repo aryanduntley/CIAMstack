@@ -3,7 +3,7 @@
   "counts": {
     "blocker": 2,
     "action": 5,
-    "note": 12,
+    "note": 11,
     "to_review": 0
   },
   "notes": [
@@ -24,7 +24,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2012
+          "line": 2018
         }
       ]
     },
@@ -87,7 +87,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2341
+          "line": 2347
         }
       ]
     },
@@ -128,7 +128,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2316
+          "line": 2322
         }
       ]
     },
@@ -148,7 +148,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2907
+          "line": 2913
         }
       ]
     },
@@ -156,7 +156,7 @@
       "area": "Logs",
       "severity": "note",
       "subject": "log destination siem",
-      "text": "keeps logs 365 days in all on the tables opsdir renders for its routes (Ciam<route>_CL); its other tables (Sentinel's own, the containers' ContainerLogV2) keep the workspace's retention unless set by hand",
+      "text": "keeps logs 365 days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's retention unless set by hand",
       "how": [
         "Set the total retention of the workspace's other tables that must keep logs as long, by hand"
       ],
@@ -168,7 +168,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2062
+          "line": 2068
         }
       ]
     },
@@ -186,7 +186,7 @@
       "places": [
         {
           "path": "prometheus/rules/ciam.rules.yml",
-          "line": 5
+          "line": 4
         }
       ]
     },
@@ -206,7 +206,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2343
+          "line": 2349
         }
       ]
     },
@@ -226,7 +226,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2345
+          "line": 2351
         }
       ]
     },
@@ -353,24 +353,6 @@
         {
           "path": "terraform/landing-zone/network-security/network.tf",
           "line": 53
-        }
-      ]
-    },
-    {
-      "area": "Monitoring",
-      "severity": "note",
-      "subject": "alert rule admin-login-failures",
-      "text": "no product rendering target/prod declares signal `admin-login-failures` for role `pf-admin`: not rendered",
-      "how": [],
-      "entry": "cn=admin-login-failures,ou=alert-rules,dc=ciam-ops",
-      "scope": "target/prod",
-      "owners": [
-        "security-operations"
-      ],
-      "places": [
-        {
-          "path": "prometheus/rules/ciam.rules.yml",
-          "line": 4
         }
       ]
     }

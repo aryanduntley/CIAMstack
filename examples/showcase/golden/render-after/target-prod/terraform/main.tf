@@ -2009,6 +2009,12 @@ resource "azurerm_monitor_data_collection_rule_association" "logs_security_event
   data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_security_events_aks.id
 }
 
+resource "azurerm_log_analytics_workspace_table" "siem_containerlogv2" {
+  name                    = "ContainerLogV2"
+  workspace_id            = azurerm_log_analytics_workspace.siem.id
+  total_retention_in_days = 365
+}
+
 # NOTE: alert rule login-failures: not rendered: its alarm is a log query alert and the record holds no query
 
 resource "azurerm_monitor_metric_alert" "ds_replication_lag" {
@@ -2059,7 +2065,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "pf_admin_login_failures" {
   enabled                    = true
 }
 
-# NOTE: log destination siem: keeps logs 365 days in all on the tables opsdir renders for its routes (Ciam<route>_CL); its other tables (Sentinel's own, the containers' ContainerLogV2) keep the workspace's retention unless set by hand
+# NOTE: log destination siem: keeps logs 365 days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's retention unless set by hand
 
 resource "azurerm_application_insights_standard_web_test" "portal_sso" {
   name                    = "portal-sso"

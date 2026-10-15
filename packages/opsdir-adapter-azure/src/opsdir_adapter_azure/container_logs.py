@@ -13,6 +13,10 @@ main source) and, when the route takes only some of a source's lines, of the rou
 LogMessage); and its association to the cluster (its ciamProviderRef). kubernetes/azure-monitor/<cluster>/
 container-azm-ms-agentconfig.yaml: the agent's ConfigMap in kube-system turning on high-scale logging, multitenancy
 and pod metadata (with labels). It replaces a ConfigMap of that name: merge it with one the cluster already has.
+The containers' lines land in the workspace's ContainerLogV2 table, not a custom one: per workspace this environment
+keeps whose container routes' destination records a total retention (ciamTotalRetentionDays),
+azurerm_log_analytics_workspace_table ContainerLogV2 keeps them that long in all (log_collection.total_retention; the
+longest of the destinations sharing the workspace), its analytics retention left to the workspace.
 learn.microsoft.com/azure/azure-monitor/containers/container-insights-multitenant, .../container-insights-high-scale,
 .../container-insights-logs-schema, aka.ms/aks-enable-monitoring-multitenancy-onboarding-template-file (research
 notes 2352, 2354).
@@ -31,17 +35,19 @@ from opsdir.core.manifest import header
 from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.workloads import role_clusters, role_namespaces
 from opsdir.domains.observability.logs import log_routes
+from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, own_shipments, shipments
 from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
 from .kql import field_of, kept, literal
-from .log_collection import WORKSPACE_HOW
+from .log_collection import WORKSPACE_HOW, total_retention
 from .observability import workspace_id
 
 ENDPOINT, RULE, ASSOCIATION = ("azurerm_monitor_data_collection_endpoint", "azurerm_monitor_data_collection_rule",
                                "azurerm_monitor_data_collection_rule_association")
 EXTENSION, STREAM = "ContainerLogV2Extension", "Microsoft-ContainerLogV2-HighScale"
+TABLE, CONTAINER_TABLE = "azurerm_log_analytics_workspace_table", "ContainerLogV2"
 ROLE_LABEL = "opsdir.io/role"
 LIMIT = 30                                          # ContainerLogV2Extension rules per cluster
 CONFIG_MAP = {"apiVersion": "v1", "kind": "ConfigMap",
@@ -129,13 +135,31 @@ def _rule(m, cluster, route, found, sources):
                 ("data_collection_rule_id", ref(f"{RULE}.{n}.id"))]))
 
 
+def _total_days(dest):
+    days = int(one(dest, "ciamTotalRetentionDays"))
+    return float("inf") if days == 0 else days
+
+
+def container_tables(m, services):
+    """HCL of the ContainerLogV2 table of each workspace environment m keeps whose container routes' destination
+    records a total retention: kept that long in all (the longest of the destinations naming the same workspace
+    ID)."""
+    dests = tuple({x.destination.dn: x.destination for x in container_shipments(m, services)
+                   if keeper_of(m, x.destination) is None
+                   and one(x.destination, "ciamTotalRetentionDays") is not None}.values())
+    workspaces = dict.fromkeys(one(d, "ciamProviderRef") for d in dests)
+    longest = tuple(max((d for d in dests if one(d, "ciamProviderRef") == w), key=_total_days) for w in workspaces)
+    return tuple(tf_block("resource", [TABLE, tf_name(f"{rdn_value(d)}_{CONTAINER_TABLE}")], [
+        ("name", CONTAINER_TABLE), ("workspace_id", workspace_id(m, d)), *total_retention(d)]) for d in longest)
+
+
 def render_container_logs(m, services):
     """(HCL blocks, {path: text}) of environment m's container log routes: per cluster its endpoint, rules and
-    associations, and the agent's ConfigMap."""
+    associations, the ContainerLogV2 tables' total retention, and the agent's ConfigMap."""
     found, sources = cluster_routes(m, services), services.logs(m)
     clusters = {c.dn: c for c, _, _ in found}.values()
     return ((*(_endpoint(m, c) for c in clusters),
-             *(b for c, r, xs in found for b in _rule(m, c, r, xs, sources))),
+             *(b for c, r, xs in found for b in _rule(m, c, r, xs, sources)), *container_tables(m, services)),
             {f"kubernetes/azure-monitor/{rdn_value(c)}/container-azm-ms-agentconfig.yaml":
              header(m, "Container insights agent settings: high-scale logging, multitenancy, pod labels (merge with "
                        "an existing container-azm-ms-agentconfig)", YAML) + dump(CONFIG_MAP) for c in clusters})

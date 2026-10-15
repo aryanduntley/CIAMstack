@@ -2,20 +2,21 @@
 whose ciamProviderRef is a Log Analytics workspace ID is a workspace with Sentinel on it. Pure.
 
 The workspace itself is rendered as any other (observability.render_workspaces: its analytics retention), the log
-routes ship to it as to any workspace (log_collection, container_logs), and a route's custom table keeps its logs as
-long in all as the destination says (ciamTotalRetentionDays, log_collection). Here: Sentinel turned on for the
-workspace (azurerm_sentinel_log_analytics_workspace_onboarding, where this environment renders the workspace), and
-each alert rule a detection realizes on it (alarms.detection_specs) as a scheduled analytics rule
+routes ship to it as to any workspace (log_collection, container_logs), and a route's custom table (log_collection) or
+the containers' ContainerLogV2 table (container_logs) keeps its logs as long in all as the destination says
+(ciamTotalRetentionDays). Here: Sentinel turned on for the workspace
+(azurerm_sentinel_log_analytics_workspace_onboarding, where this environment renders the workspace), and each alert
+rule a detection realizes on it (alarms.detection_specs) as a scheduled analytics rule
 (azurerm_sentinel_alert_rule_scheduled): the detection's KQL (ciamMetric) counted per window, compared with the rule's
-threshold, firing when every window of the rule's evaluation period breaches (alarms.detection_condition), run as
-often as that period (5 minutes at least), over it; its severity from ciamSeverity (sev0 and sev1 High, sev2 Medium,
-sev3 Low, sev4 Informational; Medium when none); its description naming the rule (siem.described), which the
-importers read back. Microsoft documents the rule fields (query, query_frequency, query_period, severity,
-trigger_operator, trigger_threshold) for the alertRules API 2025-09-01 (research on milestone 104).
+threshold, firing when every window of the rule's evaluation period breaches (alarms.detection_condition), run as often
+as that period (5 minutes at least), over it; its severity from ciamSeverity (sev0 and sev1 High, sev2 Medium, sev3
+Low, sev4 Informational; Medium when none); its description naming the rule (siem.described), which the importers read
+back. Microsoft documents the rule fields (query, query_frequency, query_period, severity, trigger_operator,
+trigger_threshold) for the alertRules API 2025-09-01 (research on milestone 104).
 
 Named instead, each a render note written as its comment: a detection not rendered (alarms.alarm_note: no search
 recorded; a condition Sentinel can't count; a period shorter than 5 minutes), the total retention of the workspace's
-other tables (Sentinel's own, the containers'), which are set by hand, and in Azure Government what Microsoft doesn't
+other tables (Sentinel's own), which are set by hand, and in Azure Government what Microsoft doesn't
 state is available there (the Tables API's total retention, Sentinel's data lake tiers).
 
 Read back (sentinel_resources, with the inventory): a workspace is a SIEM index when the source holds its Sentinel
@@ -129,8 +130,9 @@ def sentinel_notes(m):
     return (*(alarm_note(m, s) if s.why else alarm_note(m, s, _why(s))
               for s in sentinel_detections(m) if _why(s) is not None),
             *(note("Logs", "note", f"log destination {rdn_value(b)}", f"keeps logs {one(b, 'ciamTotalRetentionDays')} "
-                   "days in all on the tables opsdir renders for its routes (Ciam<route>_CL); its other tables "
-                   "(Sentinel's own, the containers' ContainerLogV2) keep the workspace's retention unless set by hand",
+                   "days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and "
+                   "ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's "
+                   "retention unless set by hand",
                    ("Set the total retention of the workspace's other tables that must keep logs as long, by hand",),
                    b.dn, m.label)
               for b in kept if one(b, "ciamTotalRetentionDays") is not None),

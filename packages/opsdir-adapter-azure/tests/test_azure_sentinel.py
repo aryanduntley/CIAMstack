@@ -98,9 +98,8 @@ def test_the_query_counts_events_per_window_and_reads_back_as_written():
 def test_what_sentinel_leaves_to_a_person_is_named():
     texts = [(n.severity, note_comment(n)) for n in sentinel_notes(_beta())]
     assert ("note", "NOTE: log destination siem: keeps logs 365 days in all on the tables opsdir renders for its "
-            "routes "
-            "(Ciam<route>_CL); its other tables (Sentinel's own, the containers' ContainerLogV2) keep the workspace's "
-            "retention unless set by hand") in texts
+            "routes (their Ciam<route>_CL tables, and ContainerLogV2 for containers' logs); its other tables "
+            "(Sentinel's own) keep the workspace's retention unless set by hand") in texts
     assert [s for s, t in texts if "too-fast" in t] == ["blocker"]
 
 

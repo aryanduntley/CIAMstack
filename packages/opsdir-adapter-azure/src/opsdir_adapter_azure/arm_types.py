@@ -1475,6 +1475,11 @@ TYPES = {
             "total_retention_in_days": "totalRetentionInDays",
             "column": Custom(lambda v, c: {"schema": {"name": c.value(f["name"]), "columns": [
                 {"name": c.value(x["name"]), "type": c.value(x["type"])} for x in v]}})}), {"id": "id"}, "name"),
+    "azurerm_log_analytics_workspace_table": Native(Arm(
+        "Microsoft.OperationalInsights/workspaces/tables", OPINSIGHTS,
+        Parent("workspace_id", "Microsoft.OperationalInsights/workspaces"), fields=()), {
+        "name": None, "workspace_id": None, "plan": "plan", "retention_in_days": "retentionInDays",
+        "total_retention_in_days": "totalRetentionInDays"}, {"id": "id"}, "name"),
     "azurerm_monitor_data_collection_rule": Native(Arm("Microsoft.Insights/dataCollectionRules", INSIGHTS), _dcr,
                                                    {"id": "id", "immutable_id": "immutableId"}, "name", "map"),
     "azurerm_monitor_data_collection_rule_association": Native(Arm(

@@ -80,3 +80,31 @@ def _comments(notes):
     """The comments render_files writes for notes (flow 43)."""
     from opsdir.core.notes import note_comment
     return tuple(f"# {note_comment(n)}" for n in notes)
+
+
+def _tables(*dests):
+    bindings = (*BINDINGS[:2], *dests)
+    _, alpha, _ = model(alpha=bindings, tree=TREE)
+    blocks, _ = as_text(render_container_logs(alpha, services()._replace(logs=lambda m: (AM, TAIL))))
+    return [b for b in blocks if b.startswith('resource "azurerm_log_analytics_workspace_table"')]
+
+
+def test_containerlogv2_keeps_logs_as_long_in_all_as_the_destination_records():
+    audit = entry(ALPHA, "audit", "ciamLogDestination", ciamBindingRole="audit-logs", ciamDestinationKind="workspace",
+                  ciamProviderRef=WS.format("audit"), ciamTotalRetentionDays="400")
+    ops = entry(ALPHA, "ops", "ciamLogDestination", ciamBindingRole="ops-logs", ciamDestinationKind="workspace",
+                ciamProviderRef=WS.format("ops"))
+    (table,) = _tables(audit, ops)                       # ops records no total: its table is the workspace's
+    assert 'name                    = "ContainerLogV2"' in table
+    assert "workspace_id            = azurerm_log_analytics_workspace.audit.id" in table
+    assert "total_retention_in_days = 400" in table
+
+
+def test_routes_sharing_a_workspace_set_its_containerlogv2_once_to_the_longest():
+    shared = WS.format("shared")
+    audit = entry(ALPHA, "audit", "ciamLogDestination", ciamBindingRole="audit-logs", ciamDestinationKind="workspace",
+                  ciamProviderRef=shared, ciamTotalRetentionDays="400")
+    ops = entry(ALPHA, "ops", "ciamLogDestination", ciamBindingRole="ops-logs", ciamDestinationKind="workspace",
+                ciamProviderRef=shared, ciamTotalRetentionDays="0")
+    (table,) = _tables(audit, ops)                       # 0 = indefinitely: the longest a table keeps
+    assert "total_retention_in_days = 4383" in table

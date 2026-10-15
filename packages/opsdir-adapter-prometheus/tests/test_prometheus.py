@@ -81,6 +81,16 @@ def test_rules_are_grouped_by_their_channel_and_read_in_the_signals_unit():
     assert [n.severity for n in skipped] == ["note", "blocker"]           # no cloud alarm realizes heap-in-ms
 
 
+
+def test_a_rule_a_siem_detection_realizes_here_is_the_siems_not_prometheus():
+    siem = entry(ALPHA, "siem", "ciamLogDestination", ciamBindingRole="siem", ciamDestinationKind="siem-index",
+                 ciamProviderRef="ciam_security")
+    detection = entry(ALPHA, "det-disk", "ciamAlarmBinding", ciamBindingRole="alarm-disk-low",
+                      ciamRealizes="disk-low", ciamMetric="index=ciam_security disk", ciamLogDestinationRole="siem")
+    m, _ = _env(siem, detection)
+    _, skipped = rule_set(m, SIGNALS)
+    assert [n.subject for n in skipped] == ["alert rule heap-in-ms"]      # disk-low: its SIEM evaluates it
+
 def test_the_rule_file_names_what_it_leaves_out_and_the_play_writes_it_on_the_monitoring_servers():
     m, _ = _env(MONITOR)
     files = render(m, SERVICES)
