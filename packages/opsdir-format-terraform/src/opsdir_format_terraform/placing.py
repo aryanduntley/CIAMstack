@@ -3,16 +3,25 @@ one file name, all one root before placement. Each block is placed by its origin
 translate.partition into the roots a place function gives. Each root's items are regrouped into the files they came
 from: a variable or output the partition adds goes in providers.tf. The aliased providers and required providers a
 root doesn't use are left out. The roots named(root) says belong to a named keeper (asked, not rendered) are left out
-and their resources listed. A format library: who keeps what, and so where a block goes, is the caller's.
+and their resources listed. place_roots is the format alone: who keeps what, and so where a block goes, is the
+caller's. The keeper_* functions compose it with the core's keepers (governance.keepers) for the cloud renderers: an
+environment's roots by who keeps what, their files' headers, and what a keeper keeps of the network plumbing.
 """
 import posixpath
 import re
 from typing import NamedTuple
 
-from .hcl import ANCHOR, Block, TfBlock, TfFile
+from opsdir.core.directory import is_kind
+from opsdir.core.manifest import header
+from opsdir.domains.governance.keepers import (SLICE, asked_lines, in_scope, named_keeper, placement, root_keeper,
+                                             scope_title, source_label)
+from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE
+from .format import FORMAT as HCL
+from .hcl import ANCHOR, Block, TfBlock, TfFile, comment, distinct, from_entry
 from .translate import _import_target, _reads, address, partition, ref_address
 
 PROVIDERS = "providers.tf"
+STACK = "terraform"           # the stack's own root
 # a path a root reads beside its own .tf files (a source_dir, a file() argument)
 _MODULE_PATH = re.compile(r"\$\{path\.module\}/([\w./-]+)")
 MAIN = "main.tf"
@@ -23,6 +32,10 @@ _SHARED = ("data", "ephemeral", "variable", "provider", "terraform")
 # ...)} of the roots left out, the resources each holds and the entry each renders; inputs, outputs: {root: (TfRef,
 # ...)} (translate.Partition), the rendered and named roots alike; order: every root, each after the roots it reads
 Placed = NamedTuple("Placed", [("files", dict), ("named", dict), ("inputs", dict), ("outputs", dict), ("order", tuple)])
+# What a cloud renders of a plumbing binding, or of all a keeper keeps. blocks: what the binding renders; variables:
+# inputs only its keeper knows; shared: data sources and resources rendered once in the root, however many bindings
+# use them
+Rendered = NamedTuple("Rendered", [("blocks", tuple), ("variables", tuple), ("shared", tuple)])
 
 
 def _key(b):
@@ -167,3 +180,64 @@ def carried_files(roots, files, default):
               for s in _strings(x.body) for rel in _MODULE_PATH.findall(s)}
     return {f"{root}/{p[len(default) + 1:]}": text for root, rel in sorted(wanted) for p, text in files.items()
             if p == f"{default}/{rel}" or p.startswith(f"{default}/{rel}/")}
+
+
+def keeper_head(m, root, name, keeper, cloud):
+    """The header of file name in a keeper's root (keeper: who keeps it; root: the landing zone's or another
+    party's; cloud: the cloud's name as the headers write it)."""
+    if name == PROVIDERS:
+        return header(m, "Providers and inputs (landing zone)", HCL)
+    if name == NETWORK_FILE:
+        what = (f"{cloud} network kept by {keeper} for the CIAM platform: applied by them, not by the platform's "
+                "pipeline")
+    elif root == LANDING_ZONE:
+        what = (f"{cloud} landing zone for the CIAM platform, kept by {keeper}: applied by the landing zone, not by "
+                "the platform's pipeline")
+    else:
+        what = (f"{cloud} infrastructure kept by {keeper} for the CIAM platform: applied by them, not by the "
+                "platform's pipeline")
+    return header(m, what, HCL)
+
+
+def keeper_placed(m, parts, landing_dns, adjust=lambda root, items: items):
+    """Placed of environment m's render parts by who keeps what (governance.keepers.placement; landing_dns: the
+    landing zone's entries): the stack's root, each keeper's, a named keeper's left out; adjust as place_roots."""
+    return place_roots(parts, placement(m, landing_dns), STACK, named=named_keeper, adjust=adjust, label=source_label)
+
+
+def keeper_roots(m, parts, landing_dns, stack_head, cloud, adjust=lambda root, items: items,
+                 providers=lambda placed: lambda root, items: items):
+    """{path: TfFile} of environment m's Terraform roots: its render parts placed by who keeps what (keeper_placed):
+    the stack's root (stack_head(file name): its files' headers), a slice's, each keeper's that takes generated
+    infrastructure (keeper_head; cloud: the cloud's name as the headers write it), and in the stack's main.tf a
+    comment for each entry asked of a keeper instead. adjust(root, items): as place_roots; providers(placed): a
+    function (root, items) giving each root's providers.tf items as the cloud writes them."""
+    placed = keeper_placed(m, parts, landing_dns, adjust)
+    written = providers(placed)
+
+    def head(root, name, files):
+        if root == STACK:
+            return stack_head(name)
+        if root == SLICE:
+            return header(m, "Providers and inputs (a slice)" if name == PROVIDERS else
+                          f"{cloud} infrastructure for the CIAM platform, {scope_title(m)}: a slice rendered on "
+                          "request, applied after the roots it reads", HCL)
+        return keeper_head(m, root, name, root_keeper(m, (b.origin for items in files.values() for b in items
+                                                          if isinstance(b, TfBlock)), landing_dns), cloud)
+    notes = tuple(comment(line) for line in asked_lines(m, placed.named))
+    return {f"{root}/{name}": TfFile(head(root, name, files), (
+        *(written(root, items) if name == PROVIDERS else items), *(notes if (root, name) == (STACK, MAIN) else ())))
+        for root, files in placed.files.items() if in_scope(m, root) for name, items in files.items()}
+
+
+def keeper_rendered(m, keeper, renderers, data):
+    """Rendered of what a keeper keeps of environment m's plumbing (opsdir.domains.network.plumbing.Keeper): data (the
+    cloud's network data sources) and what bindings share first, inputs unique by name; each binding's blocks stamped
+    with its entry, what they share with the keeper's first (hcl.from_entry: the render places them in its root).
+    renderers: ((object class, fn(m, binding, the keeper's DNs) -> Rendered), ...), the first whose class a binding
+    has renders it."""
+    here = {b.dn for b in keeper.bindings}
+    parts = tuple((b, next(fn for oc, fn in renderers if is_kind(m.d, b, oc))(m, b, here)) for b in keeper.bindings)
+    return Rendered(tuple(x for b, p in parts for x in from_entry(b.dn, p.blocks)),
+                    distinct(tuple(v for _, p in parts for v in p.variables)),
+                    (*data, *from_entry(keeper.bindings[0].dn, distinct(tuple(x for _, p in parts for x in p.shared)))))

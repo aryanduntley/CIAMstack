@@ -41,3 +41,11 @@ def folders(files, roots):
 def by_folder(files):
     """{top folder: {path within it: text}}: one folder per server, repository, ...; files at the top are left out."""
     return folders(files, sorted({p.split("/", 1)[0] for p in files if "/" in p}))
+
+
+def env_relative(m, files):
+    """files ({path: text}) with environment m's <cloud>/<env>/ folder (m.label) taken off the paths inside it, other
+    paths kept as they are (unlike under, which leaves them out): what a collector's steps name when they read the
+    outputs of earlier rounds, the environment's and its own work files alike."""
+    base = f"{m.label}/"
+    return {(p[len(base):] if p.startswith(base) else p): t for p, t in files.items()}

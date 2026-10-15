@@ -69,13 +69,15 @@ their roles come from the environment's role map (roles.json, opsdir.core.invent
 named in the notices.
 """
 from collections import Counter
+from functools import partial
 
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, read_together,
                                    realization_roles, resource, tagged_role)
 from opsdir.core.sources import json_document
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
-from opsdir_format_terraform.state import read_state
+from opsdir_format_terraform.state import (state_pairs as terraform_state_pairs,
+                                           state_resources as terraform_state_resources)
 from .state_names import reader_names
 from .arm_ids import arm_segment, subnet_ref
 from .network_inventory import network_resources
@@ -597,24 +599,11 @@ def pairs_resources(pairs):
              *geo_backup_notices(pairs), *security_notices(pairs)))
 
 
-def state_pairs(text):
-    """((Terraform resource type, attributes) pairs, notices) of an Azure Terraform state: its resource instances
-    under the names the readers take, the secret-bearing and unmodeled types named (pairs_resources doesn't read
-    them)."""
-    found, problem = read_state(text)
-    if problem:
-        return (), (problem,)
-    pairs = tuple((r.type, reader_names(r.type, r.attributes)) for r in found)
-    skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    return pairs, tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
-                        for t, n in sorted(skipped.items()))
-
-
-def state_resources(text):
-    """(resources, notices) of an Azure Terraform state."""
-    pairs, skipped = state_pairs(text)
-    resources, notices = pairs_resources(list(pairs))
-    return resources, (*skipped, *notices)
+# ((Terraform resource type, attributes) pairs, notices) of an Azure Terraform state, under the names the readers
+# take, and its (resources, notices) (the skipped types named first)
+state_pairs = partial(terraform_state_pairs, skipped=SKIPPED, names=reader_names)
+state_resources = partial(terraform_state_resources, skipped=SKIPPED, read_pairs=pairs_resources,
+                          names=reader_names, skipped_first=True)
 
 
 def read_terraform_state(files, d, patterns, at=None):

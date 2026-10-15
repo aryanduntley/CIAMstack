@@ -31,7 +31,8 @@ import json
 from opsdir.core.contract import Collector, Command
 from opsdir.core.directory import one, values
 from opsdir.core.environment import of_class, one_role
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.core.sources import env_relative
+from opsdir_format_terraform.state import state_steps as terraform_state_steps
 from .account import subscription_id
 from .storage import container_of
 
@@ -238,11 +239,6 @@ def _in_env(m, pairs):
     return tuple((p if p.startswith(WORK) else f"{m.label}/{p}", c) for p, c in pairs)
 
 
-def _local(m, done):
-    base = f"{m.label}/"
-    return {(p[len(base):] if p.startswith(base) else p): t for p, t in done.items()}
-
-
 def inventory_steps(d, m, done, options):
     """The cli-inventory calls still to make (core.contract Collector.steps): the listings, then their items."""
     rg = resource_group(m)
@@ -250,21 +246,22 @@ def inventory_steps(d, m, done, options):
         return ()
     net = one_role(m, "network")
     vnet = one(net, "ciamProviderRef") if net is not None else None
-    return _in_env(m, (*_listings(m, rg, vnet), *_details(m, rg, _local(m, done))))
+    return _in_env(m, (*_listings(m, rg, vnet), *_details(m, rg, env_relative(m, done))))
+
+
+def _blob(loc):
+    """The az call downloading the blob of an azblob://<account>/<container>/<blob> location, or None."""
+    account, _, rest = loc[len("azblob://"):].partition("/")
+    container, _, blob = rest.partition("/")
+    return Command(("az", "storage", "blob", "download", "--account-name", account, "--container-name",
+                    container, "--name", blob, "--auth-mode", "login", "-o", "none")) \
+        if account and container and blob else None
 
 
 def state_steps(d, m, done, options):
-    """The terraform-state calls: `terraform state pull` in --terraform-dir, else each collection source's blob."""
-    if options.get("terraform_dir"):
-        return ((f"{m.label}/terraform.tfstate",
-                 Command(("terraform", f"-chdir={options['terraform_dir']}", "state", "pull"))),)
-    return tuple((f"{m.label}/{blob.rsplit('/', 1)[-1] or 'terraform.tfstate'}",
-                  Command(("az", "storage", "blob", "download", "--account-name", account, "--container-name",
-                           container, "--name", blob, "--auth-mode", "login", "-o", "none")))
-                 for s in collection_sources(m, "azure/terraform-state") for loc in s.locations
-                 if loc.startswith("azblob://")
-                 for account, _, rest in (loc[len("azblob://"):].partition("/"),)
-                 for container, _, blob in (rest.partition("/"),) if account and container and blob)
+    """The terraform-state calls (opsdir_format_terraform.state.state_steps): `terraform state pull` in
+    --terraform-dir, else each collection source's blob."""
+    return terraform_state_steps(m, "azure/terraform-state", "azblob://", _blob, options)
 
 
 def identity_check(d, m):

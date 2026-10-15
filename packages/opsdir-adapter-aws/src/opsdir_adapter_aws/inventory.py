@@ -66,13 +66,14 @@ alarm's or synthetic check's, else alarm-<Realizes> or canary-<Realizes>.
 """
 import re
 from collections import Counter
-from functools import reduce
+from functools import partial, reduce
 
 from opsdir.core.contract import Importer
 from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, read_together,
                                    realization_roles, resource, tagged_role)
 from opsdir.domains.messaging.dns import dmarc_policy, spf_authorizes
-from opsdir_format_terraform.state import blocks, read_state
+from opsdir_format_terraform.state import (blocks, state_pairs as terraform_state_pairs,
+                                           state_resources as terraform_state_resources)
 from .network_inventory import endpoint_security_groups, network_resources
 from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_facts, lb_security_groups,
                              service_dns)
@@ -511,23 +512,9 @@ def pairs_resources(pairs):
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))
 
 
-def state_pairs(text):
-    """((Terraform resource type, attributes) pairs, notices) of an AWS Terraform state: its resource instances, the
-    secret-bearing and unmodeled types named (pairs_resources doesn't read them)."""
-    found, problem = read_state(text)
-    if problem:
-        return (), (problem,)
-    pairs = tuple((r.type, r.attributes) for r in found)
-    skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    return pairs, tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
-                        for t, n in sorted(skipped.items()))
-
-
-def state_resources(text):
-    """(resources, notices) of an AWS Terraform state."""
-    pairs, skipped = state_pairs(text)
-    resources, notices = pairs_resources(list(pairs))
-    return resources, (*notices, *skipped)
+# ((Terraform resource type, attributes) pairs, notices) of an AWS Terraform state, and its (resources, notices)
+state_pairs = partial(terraform_state_pairs, skipped=SKIPPED)
+state_resources = partial(terraform_state_resources, skipped=SKIPPED, read_pairs=pairs_resources)
 
 
 # ------------------------------------------------------------------ the importer

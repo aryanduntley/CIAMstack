@@ -24,7 +24,6 @@ Tags Role (and opsdir's mark), read back by the importers. What it leaves out or
 (core.notes, flow 43) written as its comment, enumerated the way the keepers' roots are walked (plumbing_notes). Pure.
 """
 import ipaddress
-from typing import NamedTuple
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role
@@ -35,7 +34,8 @@ from opsdir.domains.network.plumbing import (adopted, cross_cloud_peering_note, 
                                              route_target, subnet_wide_note)
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
-from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, from_entry, ref, tf_block, tf_import,
+from opsdir_format_terraform.placing import Rendered, keeper_rendered
+from opsdir_format_terraform.hcl import (Block, blocks_of, comment, ref, tf_block, tf_import,
                                          tf_name)
 from .arm_ids import arm_segment
 from .identities import LOC, RG
@@ -43,9 +43,6 @@ from .network import application_rules, binding_tags, endpoint_notes, firewall_n
 from .account import tagged
 
 VNET = "data.azurerm_virtual_network.main"
-# blocks: what the binding renders; variables: inputs only its keeper knows; shared: data sources and resources
-# rendered once in the root, however many bindings use them
-Rendered = NamedTuple("Rendered", [("blocks", tuple), ("variables", tuple), ("shared", tuple)])
 # the next hop each kind of route target is in Azure (VirtualAppliance needs its address)
 NEXT_HOPS = {"internet": "Internet", "local": "VnetLocal", "none": "None", "vpn": "VirtualNetworkGateway",
              "transit": "VirtualNetworkGateway", "firewall": "VirtualAppliance", "appliance": "VirtualAppliance"}
@@ -490,9 +487,4 @@ def render_plumbing(m, keeper):
     """Rendered of what a keeper keeps of environment m's plumbing (opsdir.domains.network.plumbing.Keeper): the
     resource group, VNet and subnet data sources and what bindings share first, inputs unique by name; each binding's
     blocks stamped with its entry, what they share with the keeper's first (hcl.from_entry)."""
-    here = {b.dn for b in keeper.bindings}
-    parts = tuple((b, next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here)) for b in keeper.bindings)
-    return Rendered(tuple(x for b, p in parts for x in from_entry(b.dn, p.blocks)),
-                    distinct(tuple(v for _, p in parts for v in p.variables)),
-                    (*network_data(m), *from_entry(keeper.bindings[0].dn,
-                                                   distinct(tuple(x for _, p in parts for x in p.shared)))))
+    return keeper_rendered(m, keeper, RENDERERS, network_data(m))

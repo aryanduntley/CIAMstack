@@ -335,6 +335,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    |---|---|
    | Parse an imported file without raising (a file that isn't the format is named, not an error) | `opsdir.core.sources`: `json_document(text, kind)`, `parsed(loader, text, errors, kind)` for any other parser (a YAML loader: the core depends on none) |
    | An import's files by folder (one per server, repository, project) | `opsdir.core.sources`: `by_folder(files)`, `folders(files, roots)`, `under(files, root)` |
+   | A collector's earlier outputs as its steps name them (the environment's `<cloud>/<env>/` folder taken off, its own work files kept) | `opsdir.core.sources`: `env_relative(m, files)` |
    | A container entry, a DN's RDN value, a DN at or below a base | `opsdir.core.directory`: `ou_entry(dn)`, `rdn_of(dn)`, `within(dn, base)` |
    | Times as the record holds them (GeneralizedTime, UTC) | `opsdir.core.directory`: `gtime(datetime)`, `gtime_of_iso(text)` |
    | JSON written as files, JSON an attribute holds, values that may be secret | `opsdir.core.jsondata`: `indented`, `canonical`, `held_json(entry, attr)`, `without_secrets`, `with_values`, `rendered_in_place` |
