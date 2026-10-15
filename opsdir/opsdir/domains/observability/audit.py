@@ -19,16 +19,16 @@ from ...core.environment import env_model, of_class, one_role
 from ...core.findings import findings, responsible
 from ...core.naming import branch
 from ..data.kept import lock_rank
-from ..governance.keepers import managed_by_name
 from ..data.naming import IMMUTABILITY
+from ..governance.keepers import managed_by_name
 from .naming import AUDIT_EVENTS, AUDIT_ROLE
+from .retention import INDEFINITE, longest_retention, retention_days, yes_no
 
 AREA = "Audit"
 TRAIL = "ciamAuditTrail"
 # What a trail recording data events logs when it names no resources: the environment's own data resources (decision
 # 2777): object stores, databases, secrets
 DATA_CLASSES = ("ciamObjectStore", "ciamDatabase", "ciamSecretRef")
-INDEFINITE = 0                     # ciamRetentionDays of a destination that never expires records
 AUDIT_HEADERS = ("environment", "audit trail", "scope", "records", "all regions", "integrity", "kept in",
                  "keep (days)", "kept by")
 # Integrity grades: neither; an unlocked (governance) immutable store; cryptographic validation or a locked
@@ -89,22 +89,12 @@ def integrity(m, trail):
     return PROTECTED if one(trail, "ciamIntegrityValidation") == "TRUE" else store_protection(m, trail)
 
 
-def _days(b):
-    v = one(b, "ciamRetentionDays") if b is not None else None
-    return int(v) if v is not None else None
-
-
-def _longest(days):
-    known = [d for d in days if d is not None]
-    return INDEFINITE if INDEFINITE in known else max(known) if known else None
-
-
 def coverage(m, trails):
     """The Coverage of environment m's trails taken together."""
     return Coverage(tuple(e for e in AUDIT_EVENTS if any(e in values(t, "ciamAuditEvents") for t in trails)),
                     any(one(t, "ciamAllRegions") == "TRUE" for t in trails),
                     max((integrity(m, t) for t in trails), default=UNPROTECTED),
-                    _longest([_days(trail_destination(m, t)) for t in trails]))
+                    longest_retention([retention_days(trail_destination(m, t)) for t in trails]))
 
 
 def _shorter(have, need):
@@ -168,18 +158,13 @@ def check_audit(ctx):
                     (f"Control-plane audit trail recorded in {ctx.dst.label} ({len(dst)}).",))
 
 
-def _yes(trail, attr):
-    v = one(trail, attr)
-    return "yes" if v == "TRUE" else "no" if v == "FALSE" else ""
-
-
 def _integrity(m, trail):
     """The report's integrity: validated, locked or unlocked immutable store, no, or '' (not recorded)."""
     if one(trail, "ciamIntegrityValidation") == "TRUE":
         return "validated"
     grade = integrity(m, trail)
     return "locked immutable store" if grade == PROTECTED else "unlocked immutable store" if grade == UNLOCKED \
-        else _yes(trail, "ciamIntegrityValidation")
+        else yes_no(trail, "ciamIntegrityValidation")
 
 
 def audit_rows(d, dn=None):
@@ -188,7 +173,7 @@ def audit_rows(d, dn=None):
     unless ciamManagedBy names someone)."""
     models = [env_model(d, e.dn) for e in subtree(d, branch("environments"), "ciamEnvironment")]
     return [(m.label, rdn_value(t), one(t, "ciamAuditScope"), ", ".join(values(t, "ciamAuditEvents")),
-             _yes(t, "ciamAllRegions"), _integrity(m, t), one(t, "ciamLogDestinationRole", ""),
+             yes_no(t, "ciamAllRegions"), _integrity(m, t), one(t, "ciamLogDestinationRole", ""),
              "" if days is None else "forever" if days == INDEFINITE else str(days),
              managed_by_name(m.d, t, "platform"))
-            for m in models for t in audit_trails(m) for days in (_days(trail_destination(m, t)),)]
+            for m in models for t in audit_trails(m) for days in (retention_days(trail_destination(m, t)),)]
