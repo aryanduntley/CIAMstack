@@ -16,14 +16,11 @@ Pure.
 import posixpath
 
 from opsdir.core.directory import rdn_value
-from opsdir.core.manifest import header
 from opsdir.domains.access.workloads import landing_identities
-from opsdir.domains.governance.keepers import (LANDING, SLICE, asked_lines, in_scope, named_keeper, placement,
-                                             root_keeper, scope_title, source_label)
-from opsdir.domains.network.plumbing import LANDING_ZONE, NETWORK_FILE, keepers
-from opsdir_format_terraform.format import FORMAT as HCL
-from opsdir_format_terraform.hcl import Block, TfBlock, TfFile, blocks_of, comment, from_entry, ref, tf_block, tf_name
-from opsdir_format_terraform.placing import MAIN, PROVIDERS, place_roots
+from opsdir.domains.governance.keepers import (LANDING)
+from opsdir.domains.network.plumbing import NETWORK_FILE, keepers
+from opsdir_format_terraform.hcl import Block, TfBlock, blocks_of, from_entry, ref, tf_block, tf_name
+from opsdir_format_terraform.placing import MAIN, PROVIDERS, STACK, keeper_roots
 from opsdir_format_terraform.translate import ref_address, value_refs
 from .boundary import render_workload
 from .access import ACCESS
@@ -35,7 +32,7 @@ from opsdir.domains.estate.budgets import budgets
 from .budgets import BUDGET, billing_account, budget_provider_settings, render_budgets
 
 POOL = "ci"
-STACK = "terraform"           # the stack's own root
+CLOUD = "Google Cloud"        # the cloud as the keepers' roots' headers name it
 
 
 def _id(text, limit=32):
@@ -106,23 +103,6 @@ def landing_parts(m, guardrails=render_guardrails, plumbing=render_plumbing):
     return parts, frozenset((*(b.dn for k in found for b in k.bindings), *(b.dn for b in budgets(m))))
 
 
-def keeper_head(m, root, name, keeper):
-    """The header of file name in a keeper's root (keeper: who keeps it; root: the landing zone's or another
-    party's)."""
-    if name == PROVIDERS:
-        return header(m, "Providers and inputs (landing zone)", HCL)
-    if name == NETWORK_FILE:
-        what = (f"Google Cloud network kept by {keeper} for the CIAM platform: applied by them, not by the platform's "
-                "pipeline")
-    elif root == LANDING_ZONE:
-        what = (f"Google Cloud landing zone for the CIAM platform, kept by {keeper}: applied by the landing zone, not "
-                "by the platform's pipeline")
-    else:
-        what = (f"Google Cloud infrastructure kept by {keeper} for the CIAM platform: applied by them, not by the "
-                "platform's pipeline")
-    return header(m, what, HCL)
-
-
 def _keeper_providers(m):
     """adjust(root, items) of the placement: a keeper's root takes the Google provider in the environment's project
     without the stack's region input (with the Budget API's quota project in the landing zone's root, which keeps the
@@ -147,26 +127,9 @@ def _is(x, kind, label):
 
 
 def placed_roots(m, parts, landing_dns, stack_head):
-    """{path: TfFile} of environment m's Terraform roots: its render parts placed by who keeps what
-    (governance.keepers.placement, opsdir_format_terraform.placing): the stack's root (stack_head(file name): its
-    files' headers), each keeper's that takes generated infrastructure (_keeper_providers), and in the stack's main.tf
-    a comment for each entry asked of a keeper instead."""
-    placed = place_roots(parts, placement(m, landing_dns), STACK, named=named_keeper, adjust=_keeper_providers(m),
-                         label=source_label)
-
-    def head(root, name, files):
-        if root == STACK:
-            return stack_head(name)
-        if root == SLICE:
-            return header(m, "Providers and inputs (a slice)" if name == PROVIDERS else
-                          f"Google Cloud infrastructure for the CIAM platform, {scope_title(m)}: a slice rendered on "
-                          "request, applied after the roots it reads", HCL)
-        return keeper_head(m, root, name, root_keeper(m, (b.origin for items in files.values() for b in items
-                                                          if isinstance(b, TfBlock)), landing_dns))
-    notes = tuple(comment(line) for line in asked_lines(m, placed.named))
-    return {f"{root}/{name}": TfFile(head(root, name, files),
-                                     (*items, *(notes if (root, name) == (STACK, MAIN) else ())))
-            for root, files in placed.files.items() if in_scope(m, root) for name, items in files.items()}
+    """{path: TfFile} of environment m's Terraform roots (opsdir_format_terraform.placing.keeper_roots): a keeper's
+    root takes the Google provider in the environment's project (_keeper_providers)."""
+    return keeper_roots(m, parts, landing_dns, stack_head, CLOUD, adjust=_keeper_providers(m))
 
 
 def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing):

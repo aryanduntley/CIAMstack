@@ -51,8 +51,10 @@ import re
 from opsdir.core.contract import Collector, Command
 from opsdir.core.directory import one, values
 from opsdir.core.environment import of_class, one_role
+from opsdir.core.sources import env_relative
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.governance.collection import collection_sources
+from opsdir_format_terraform.state import state_steps as terraform_state_steps
 from .account import account_id, govcloud, partition, standard_account
 from .cli_budgets import budget_folder
 from .cli_compute import launch_template_ref
@@ -424,12 +426,6 @@ def _in_env(m, pairs):
     return tuple((p if p.startswith(WORK) else f"{m.label}/{p}", c) for p, c in pairs)
 
 
-def _local(m, done):
-    """done with the environment's folder taken off its paths (what the steps name)."""
-    base = f"{m.label}/"
-    return {(p[len(base):] if p.startswith(base) else p): t for p, t in done.items()}
-
-
 def org_profiles(m):
     """The AWS CLI profiles environment m's aws/cli-inventory collection sources name (aws-profile://<profile>): one for
     the organization's policies, and in GovCloud one for the budgets in the standard account; which is which is told
@@ -559,20 +555,16 @@ def inventory_steps(d, m, done, options):
     vpc = _vpc(m)
     if vpc is None:
         return ()
-    local = _local(m, done)
+    local = env_relative(m, done)
     return _in_env(m, (*_listings(m, vpc), *_details(m, local),
                        *(() if govcloud(m) else _budget_steps(m, local, account_id(m))),
                        *_profile_steps(m, local)))
 
 
 def state_steps(d, m, done, options):
-    """The terraform-state calls: `terraform state pull` in --terraform-dir, else each collection source's object."""
-    if options.get("terraform_dir"):
-        return ((f"{m.label}/terraform.tfstate",
-                 Command(("terraform", f"-chdir={options['terraform_dir']}", "state", "pull"))),)
-    return tuple((f"{m.label}/{loc.rsplit('/', 1)[-1] or 'terraform.tfstate'}", _aws(m, "s3", "cp", loc, "-"))
-                 for s in collection_sources(m, "aws/terraform-state") for loc in s.locations
-                 if loc.startswith("s3://"))
+    """The terraform-state calls (opsdir_format_terraform.state.state_steps): `terraform state pull` in
+    --terraform-dir, else each collection source's object."""
+    return terraform_state_steps(m, "aws/terraform-state", "s3://", lambda loc: _aws(m, "s3", "cp", loc, "-"), options)
 
 
 def stack_of(ref):
@@ -623,7 +615,7 @@ def _named_stacks(m):
 
 def stack_steps(d, m, done, options):
     """The cloudformation calls still to make: each named stack's three, then each nested stack's."""
-    local = _local(m, done)
+    local = env_relative(m, done)
     return _in_env(m, tuple(c for folder, stack, region in _with_nested(local, _named_stacks(m))
                             for c in _stack_calls(m, folder, stack, region)))
 

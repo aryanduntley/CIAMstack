@@ -59,6 +59,7 @@ cluster's bindingrole or role, else cluster; an alarm's or check's, else alarm-<
 """
 import re
 from collections import Counter
+from functools import partial
 
 from opsdir.core.contract import Importer
 from opsdir_adapter_gcp.edge_inventory import (FORWARDING, backend_of, dns_resources, edge_services, ref_key,
@@ -66,7 +67,8 @@ from opsdir_adapter_gcp.edge_inventory import (FORWARDING, backend_of, dns_resou
 from opsdir_adapter_gcp.health_checks import is_probe_rule
 from opsdir.core.inventory import (cluster_role, compute_roles, duration_text, layout_import, of_types, read_together,
                                    realization_roles, resource, tagged_role)
-from opsdir_format_terraform.state import blocks, first_block, read_state
+from opsdir_format_terraform.state import (blocks, first_block, state_pairs as terraform_state_pairs,
+                                           state_resources as terraform_state_resources)
 from .audit import trail_resources
 from .budgets import budget_resources
 from .discovery import discovery_resources
@@ -78,7 +80,7 @@ from .storage import object_store_resources
 from .backups import backup_resources
 from .volumes import volume_resources
 from .iam import iam_resources
-from .names import name_parts, resource_id, state_labels
+from .names import resource_id, state_labels
 from .network_inventory import google_apis_endpoint, network_resources
 
 PROVIDER = "gcp"
@@ -453,23 +455,9 @@ def pairs_resources(pairs):
              *workload_notices(pairs)))
 
 
-def state_pairs(text):
-    """((Terraform resource type, attributes) pairs, notices) of a Google Cloud Terraform state: its resource
-    instances, the secret-bearing and unmodeled types named (pairs_resources doesn't read them)."""
-    found, problem = read_state(text)
-    if problem:
-        return (), (problem,)
-    pairs = tuple((r.type, r.attributes) for r in found)
-    skipped = Counter(t for t, _ in pairs if t in SKIPPED)
-    return pairs, tuple(f"{t} ({n}): not read (holds secret values, or isn't modeled yet)"
-                        for t, n in sorted(skipped.items()))
-
-
-def state_resources(text):
-    """(resources, notices) of a Google Cloud Terraform state."""
-    pairs, skipped = state_pairs(text)
-    resources, notices = pairs_resources(list(pairs))
-    return resources, (*notices, *skipped)
+# ((Terraform resource type, attributes) pairs, notices) of a Google Cloud Terraform state, and its (resources, notices)
+state_pairs = partial(terraform_state_pairs, skipped=SKIPPED)
+state_resources = partial(terraform_state_resources, skipped=SKIPPED, read_pairs=pairs_resources)
 
 
 # ------------------------------------------------------------------ the importer

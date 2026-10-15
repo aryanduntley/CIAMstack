@@ -4,7 +4,7 @@ Terraform for opsdir adapters: HCL written as data and laid out like `terraform 
 
 **Applies to** no environment by itself: it is not an adapter. It registers the `hcl` format with opsdir (entry point `opsdir.formats`: `hcl`, "HashiCorp Configuration Language (Terraform)", media type `text/x-hcl`, extensions `.tf` and `.hcl`, comments `#`), so adapters declare their `.tf` files as `hcl` and the MANIFEST records it. Used by opsdir-adapter-aws, -azure and -gcp (cloud Terraform, its read-back and placement; the AWS CloudFormation and Azure Bicep/ARM translations) and opsdir-adapter-pingfederate (its Terraform target).
 
-**Depends on** `opsdir` only (the core's `Format` contract, directory helpers). No Terraform binary: what it writes is checked with Terraform by the adapters' `terraform` tests.
+**Depends on** `opsdir` only (the core's `Format` and `Command` contract, directory helpers; for the keepers' roots the governance domain's `keepers` and the network domain's plumbing names, for the state collection steps the governance domain's collection sources). No Terraform binary: what it writes is checked with Terraform by the adapters' `terraform` tests.
 
 ## What it writes (`hcl.py`)
 
@@ -32,7 +32,11 @@ What a renderer asks of items is asked of the data, never of text: `blocks_of(it
 
 ### Terraform state (`state.py`)
 
-`read_state(text)` gives `(state resources, problem)`: every resource instance of a format version 4 state (`terraform state pull`, a backend's file) as `StateResource(mode, type, name, attributes)`, with what the state marks sensitive (`sensitive_attributes`) dropped before anything reads it; no resources and a problem (`not JSON`, `not a Terraform state (format version 4)`) otherwise. `blocks(v)` and `first_block(v)` read a nested block as the state writes it (a list of objects). The cloud adapters' state importers read through it.
+`read_state(text)` gives `(state resources, problem)`: every resource instance of a format version 4 state (`terraform state pull`, a backend's file) as `StateResource(mode, type, name, attributes)`, with what the state marks sensitive (`sensitive_attributes`) dropped before anything reads it; no resources and a problem (`not JSON`, `not a Terraform state (format version 4)`) otherwise. `blocks(v)` and `first_block(v)` read a nested block as the state writes it (a list of objects). The cloud adapters' state importers read through it, and share:
+
+- `state_pairs(text, skipped, names)`: `((type, attributes) pairs, notices)` of a state, the attributes under the names the cloud's readers take (`names(type, attributes)`, Azure's `reader_names`), each type in `skipped` (secret-bearing or unmodeled) named with its count: `<type> (<n>): not read (holds secret values, or isn't modeled yet)`.
+- `state_resources(text, skipped, read_pairs, names, skipped_first)`: `(resources, notices)`, the pairs read by the cloud's `read_pairs` (its `pairs_resources`), the skipped types' notices after the reader's (before them with `skipped_first`, as Azure writes them).
+- `state_steps(m, importer, scheme, fetch, options)`: an environment's terraform-state collection steps, `terraform state pull` in the `terraform_dir` option when given, else for each location of the importer's collection sources starting with `scheme`, `fetch(location)` (a `Command`, or `None` for one it can't read), saved as `<cloud>/<env>/<the location's last segment, else terraform.tfstate>`. Each cloud's collector binds its importer, scheme and fetch command (`s3://`, `azblob://`, `gs://`).
 
 ### Which binding a block realizes (`realized.py`)
 
@@ -53,6 +57,9 @@ A render is placed in several roots by who keeps what it renders (milestone 5.7;
 - **Placing.** `placing.place_roots(parts, place, default, named, adjust, sensitive, label)` places an environment's Terraform render: its parts `(file name, items)` merged (blocks shared between files written once), partitioned by origin, and each root regrouped into the files its blocks came from (a data source beside its first reader, the added inputs and outputs in `providers.tf`). Roots that `named(root)` says are only asked of their keeper are left out, and their resources are listed with their origins. `adjust(root, items)` lets a cloud adapter fix a root's provider configuration, and providers no block uses afterwards are dropped. The result is a `Placed` (files, named, inputs, outputs, order).
 - **Carried files.** `placing.carried_files(roots, files, default)` copies the files a root other than the default reads beside it (`${path.module}/<rel>`: a canary's or function's source folder, a workflow's `file()`) from the default root to that root.
 
+- **The keepers' roots.** `place_roots` itself knows no keepers; the `keeper_*` functions compose it with the core's `governance.keepers` for the cloud adapters. `keeper_placed(m, parts, landing_dns, adjust)` places an environment's render by who keeps what (the stack's root `terraform`, `STACK`; each keeper's; a named keeper's left out). `keeper_roots(m, parts, landing_dns, stack_head, cloud, adjust, providers)` gives the roots' files (`{path: TfFile}`): the stack's under `stack_head(file name)`, a slice's and each keeper's under headers naming the cloud and who keeps them (`keeper_head(m, root, name, keeper, cloud)`), each `providers.tf` as the cloud writes it (`providers(placed)(root, items)`: Azure's registrations and subscription input), and in the stack's `main.tf` a comment per entry asked of a keeper instead. Only the roots the render's scope writes.
+- **A keeper's network plumbing.** `keeper_rendered(m, keeper, renderers, data)` gathers what a keeper keeps (`network.plumbing.Keeper`) from its bindings, each rendered by the first of `renderers` (`(object class, fn(m, binding, the keeper's DNs) -> Rendered)`) whose class it has: a `Rendered(blocks, variables, shared)`, each binding's blocks stamped with its entry, inputs once, and `data` (the cloud's network data sources) then the shared blocks once.
+
 The AWS, Azure and Google Cloud adapters render through it, so every kind someone else may keep lands in its keeper's root the same way on each cloud.
 
 ## Translating a root into another IaC language (`translate.py`, `native.py`)
@@ -72,11 +79,12 @@ from opsdir_format_terraform.hcl import TfFile, comment, hcl_file, tf_block, tf_
 from opsdir_format_terraform.hcl import as_text, blocks_of, distinct, mentions
 from opsdir_format_terraform.hcl import ANCHOR, from_entry
 from opsdir_format_terraform.hcl_reader import read_hcl, value_of
-from opsdir_format_terraform.state import read_state
+from opsdir_format_terraform.state import read_state, state_pairs, state_resources, state_steps
 from opsdir_format_terraform.state_builder import tf_state, root_states
 from opsdir_format_terraform.realized import realized
 from opsdir_format_terraform.translate import partition, split_root
-from opsdir_format_terraform.placing import carried_files, place_roots
+from opsdir_format_terraform.placing import carried_files, place_roots, STACK
+from opsdir_format_terraform.placing import keeper_head, keeper_placed, keeper_roots, Rendered, keeper_rendered
 ```
 
 ## References, vocabulary and schema
@@ -94,7 +102,8 @@ None: no reference schemes, vocabulary, schema, secret patterns, importers or pl
 
 - `tests/test_hcl.py`: names, expressions, unsupported values refused, `=` aligned like `terraform fmt`, the `hcl` format registered, data values escaped and nested data blocks laid out like `terraform fmt`.
 - `tests/test_hcl_reader.py`: what `block` writes reads back as its data and writes again unchanged; a file as its comments and blocks in order; values; a `for` expression (one or two variables, with a condition) as one raw expression, not a list, written back unchanged; brackets in strings and comments; what it can't read is an error, naming the line it is on (in objects, nested blocks and objects within them; the unbalanced bracket's own line); `value_of` counting lines from its own text; a file written from its items reads back as them; text is never an item.
-- `tests/test_state.py`: resource instances read without their sensitive attributes; what isn't a version 4 state refused.
+- `tests/test_state.py`: resource instances read without their sensitive attributes; what isn't a version 4 state refused; a state's pairs with the types not read named and the readers' names, its resources with the skipped types' notices after or first; the collection steps pulling, or fetching each source location (one it can't read, or of another scheme, left out).
+- `tests/test_keeper_roots.py`: the stack and the landing zone each in their root with their headers and the cloud's `providers.tf`; a keeper's root taking the adjusted providers; a keeper's headers naming the cloud and the keeper; what a keeper keeps gathered from its bindings.
 - `tests/test_state_builder.py`: configured attributes as the state keeps them; a nested block named like a meta-argument; counts, templates, variables and providers; what the provider assigns from the caller; what can't be evaluated left out and named; root states taking the operator's inputs and another root's outputs through a chain; a root given as `TfFile`s.
 - `tests/test_partition.py`: unstamped items one root unchanged; each resource in its entry's root with its imports, comments, providers and data; cross-root values as inputs and outputs, sensitive on both sides; a providers-only root left out; roots reading each other, one address in two roots and an input named like a variable refused; stamping; anchors; carried files.
 - `tests/test_translate.py`: references parsed from expressions, strings and values; addresses; roots in path order; a root written whole, resources with no native form kept in a Terraform root reading the templates' outputs, a native resource reading one that stays unresolved.

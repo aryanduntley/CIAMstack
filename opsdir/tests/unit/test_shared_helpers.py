@@ -8,7 +8,7 @@ from opsdir.core.directory import gtime, gtime_of_iso, make_entry, one, ou_entry
 from opsdir.core.formats import JSON
 from opsdir.core.inventory import of_types, tagged_role
 from opsdir.core.jsondata import held_json, indented
-from opsdir.core.sources import by_folder, folders, json_document, json_records, parsed, under
+from opsdir.core.sources import by_folder, env_relative, folders, json_document, json_records, parsed, under
 from opsdir.domains.automation.pipelines import environment_name
 from opsdir.domains.configuration.naming import file_dn
 from opsdir.domains.configuration.record import captured_file
@@ -43,6 +43,14 @@ def test_files_grouped_by_folder():
     assert by_folder(FILES) == {"web-1": {"etc/crontab": "a", "etc/cron.d/x": "b"}, "web-2": {"etc/crontab": "c"}}
     assert list(folders(FILES, ("web-2", "web-1"))) == ["web-2", "web-1"]
     assert folders(FILES, ("web-1/etc",))["web-1/etc"] == {"crontab": "a", "cron.d/x": "b"}
+
+
+def test_an_environments_files_relative_to_its_folder_the_rest_kept():
+    from types import SimpleNamespace
+    files = {"main/prod/vms.json": "a", "main/prod/x/disks.json": "b", "_work/list.json": "c",
+             "main/stage/vms.json": "d"}
+    assert env_relative(SimpleNamespace(label="main/prod"), files) == {
+        "vms.json": "a", "x/disks.json": "b", "_work/list.json": "c", "main/stage/vms.json": "d"}
 
 
 def test_ou_entry_is_named_by_its_rdn():

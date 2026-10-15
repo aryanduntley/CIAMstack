@@ -29,7 +29,8 @@ import json
 from opsdir.core.contract import Collector, Command
 from opsdir.core.directory import one, values
 from opsdir.core.environment import one_role
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.core.sources import env_relative
+from opsdir_format_terraform.state import state_steps as terraform_state_steps
 from .budgets import billing_account
 from .account import project_id
 from .cli import METADATA
@@ -183,29 +184,20 @@ def _in_env(m, pairs):
     return tuple((p if p.startswith(WORK) else f"{m.label}/{p}", c) for p, c in pairs)
 
 
-def _local(m, done):
-    base = f"{m.label}/"
-    return {(p[len(base):] if p.startswith(base) else p): t for p, t in done.items()}
-
-
 def inventory_steps(d, m, done, options):
     """The cli-inventory calls still to make (core.contract Collector.steps): the listings, then their items."""
     p = project_id(m)
     if not p:
         return ()
     host = host_project(m)
-    return _in_env(m, (*_listings(m, p, host), *_details(m, p, host, _local(m, done))))
+    return _in_env(m, (*_listings(m, p, host), *_details(m, p, host, env_relative(m, done))))
 
 
 def state_steps(d, m, done, options):
-    """The terraform-state calls: `terraform state pull` in --terraform-dir, else each collection source's object."""
-    if options.get("terraform_dir"):
-        return ((f"{m.label}/terraform.tfstate",
-                 Command(("terraform", f"-chdir={options['terraform_dir']}", "state", "pull"))),)
-    return tuple((f"{m.label}/{loc.rsplit('/', 1)[-1] or 'terraform.tfstate'}",
-                  Command(("gcloud", "storage", "cat", loc)))
-                 for s in collection_sources(m, "gcp/terraform-state") for loc in s.locations
-                 if loc.startswith("gs://"))
+    """The terraform-state calls (opsdir_format_terraform.state.state_steps): `terraform state pull` in
+    --terraform-dir, else each collection source's object."""
+    return terraform_state_steps(m, "gcp/terraform-state", "gs://",
+                                 lambda loc: Command(("gcloud", "storage", "cat", loc)), options)
 
 
 def identity_check(d, m):

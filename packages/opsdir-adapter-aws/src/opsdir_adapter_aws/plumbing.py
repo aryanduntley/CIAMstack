@@ -18,7 +18,6 @@ Tags Name and Role, read back by the importers. What it leaves out or to a perso
 43) written as its comment, enumerated the way the keepers' roots are walked (plumbing_notes). Pure.
 """
 import ipaddress
-from typing import NamedTuple
 
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role
@@ -30,14 +29,12 @@ from opsdir.domains.network.plumbing import (adopted, cross_cloud_peering_note, 
 from opsdir.domains.network.ports import acl_rules
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
-from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, from_entry, ref, tf_block, tf_import,
+from opsdir_format_terraform.placing import Rendered, keeper_rendered
+from opsdir_format_terraform.hcl import (Block, blocks_of, comment, ref, tf_block, tf_import,
                                          tf_name)
 from .network import binding_tags, domain_rules, endpoint_notes, firewall_notes, private_endpoint
 
 VPC = "data.aws_vpc.main.id"
-# blocks: what the binding renders; variables: inputs only its keeper knows; shared: data sources and resources
-# rendered once in the root, however many bindings use them
-Rendered = NamedTuple("Rendered", [("blocks", tuple), ("variables", tuple), ("shared", tuple)])
 # the route attribute each kind of target goes in
 TARGETS = {"internet": "gateway_id", "vpn": "gateway_id", "egress-only": "egress_only_gateway_id",
            "nat": "nat_gateway_id", "transit": "transit_gateway_id", "peering": "vpc_peering_connection_id",
@@ -415,9 +412,4 @@ def render_plumbing(m, keeper):
     """Rendered of what a keeper keeps of environment m's plumbing (opsdir.domains.network.plumbing.Keeper): the
     VPC and subnet data sources and what bindings share first, inputs unique by name; each binding's blocks stamped
     with its entry, what they share with the keeper's first (hcl.from_entry: the render places them in its root)."""
-    here = {b.dn for b in keeper.bindings}
-    parts = tuple((b, next(fn for oc, fn in RENDERERS if is_kind(m.d, b, oc))(m, b, here)) for b in keeper.bindings)
-    return Rendered(tuple(x for b, p in parts for x in from_entry(b.dn, p.blocks)),
-                    distinct(tuple(v for _, p in parts for v in p.variables)),
-                    (*network_data(m), *from_entry(keeper.bindings[0].dn,
-                                                   distinct(tuple(x for _, p in parts for x in p.shared)))))
+    return keeper_rendered(m, keeper, RENDERERS, network_data(m))
