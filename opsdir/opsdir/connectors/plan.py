@@ -17,6 +17,7 @@ from ..core.changeset import set_values
 from ..core.contract import PlanContext
 from .access import access_check
 from .edge import edge_check
+from .evidence import evidence_check
 from .network import network_check
 from .observability import log_collection_check, signal_check
 from .proxies import proxy_check
@@ -228,6 +229,7 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requ
                         run_check(access_check(src_adapters, adapters), ctx),
                         run_check(edge_check(src_adapters, adapters), ctx),
                         run_check(network_check(src_adapters, adapters), ctx),
+                        run_check(evidence_check(), ctx),
                         run_check(signal_check(adapters), ctx),
                         run_check(log_collection_check(adapters), ctx),
                         run_check(proxy_check(adapters), ctx),

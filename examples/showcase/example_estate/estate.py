@@ -67,7 +67,14 @@ account each cloud's environments run in (as the exports show them).
                don't list (an action, a blocker once CHG-2029 holds the target to DFARS), and once CHG-2015 gives it
                a DNS Private Resolver forwarder, that isn't listed either (a blocker); CHG-2033 moves the forwarder to
                the landing zone's DNS servers (virtual machines, in scope) and approves exception EXC-2026-04 for the
-               reset mail (it carries no CUI): shown as accepted
+               reset mail (it carries no CUI): shown as accepted. Azure also leaves AC-2, AU-2, AU-11, CM-3, IA-2
+               and SC-13 to the customer (or shares them), each with how the platform meets it
+  evidence     which record queries show the controls the target's authorization leaves to the platform met
+               (26-evidence): AC-2 by the principals and access-paths reports, SC-12/SC-13 by credentials and the
+               target's keys, AU-2/AU-11 by audit-trails and log-routes, CM-3 by the change history and a search of the
+               approved changes. Planted: IA-2 has no query (an action); access-paths and audit-trails differ between
+               the source and the target, so AC-2's, AU-2's and AU-11's evidence is collected again after the cutover
+               (actions); CHG-2046 takes SSP-CIAM-2026's package and records it on the boundary
   budgets      what each environment may spend: the source 25000 USD a month (alerts at 80% and 100% spent and 100%
                forecast to its paging channel; AWS Budgets in its Terraform state), the standby 12000 USD on the
                billing account its cloud names (rendered in its landing zone). Planted: the target has no budget (a
@@ -224,7 +231,7 @@ def entries():
                             "and-cyber-incident-reporting", ciamRequiredAuthorization="fedramp-moderate",
                  description="DFARS 252.204-7012: rapidly report cyber incidents (72 hours from discovery) on DIBNet "
                              "(synthetic contract number)"),
-            *compliance(), *authorizations())
+            *compliance(), *authorizations(), *evidence())
 
 
 AO = f"cn=authorizing-official,{OWN}"
@@ -437,7 +444,49 @@ def authorizations():
                  cn="azure-sc-12", ciamAuthorizationRef=AUTHORIZED["target"], ciamControlRef=SC12,
                  ciamResponsibility="customer",
                  ciamCustomerAction="establish and manage the keys of customer-managed encryption (Key Vault)",
-                 ciamOwner=owner))
+                 ciamOwner=owner),
+            *(spec("18-authorizations", f"cn=azure-{cn},ou=responsibilities,{R}", ["top", "ciamControlResponsibility"],
+                   cn=f"azure-{cn}", ciamAuthorizationRef=AUTHORIZED["target"], ciamControlRef=f"{NIST}:{control}",
+                   ciamResponsibility=who, ciamImplementation=how, ciamOwner=owner)
+              for cn, control, who, how in AZURE_CUSTOMER))
+
+
+NIST = "nist-800-53-r5"
+# what Azure leaves to the platform (customer) or shares with it, and how the platform meets it: (cn, control,
+# responsibility, implementation)
+AZURE_CUSTOMER = (
+    ("ac-2", "AC-2", "customer", "operator access paths and cloud principals recorded and reviewed in the record"),
+    ("au-2", "AU-2", "shared", "the subscription's activity log and the workloads' audit events routed to the "
+                               "security workspace"),
+    ("au-11", "AU-11", "customer", "audit records kept 2557 days in the security workspace"),
+    ("cm-3", "CM-3", "customer", "every change to the record under an approved change (CAB)"),
+    ("ia-2", "IA-2", "customer", "operators sign in through Entra ID with phishing-resistant MFA"),
+    ("sc-13", "SC-13", "shared", "FIPS-validated modules of Key Vault Premium (HSM-backed keys)"))
+EVIDENCE_QUERIES = f"ou=evidence-queries,{R}"
+# (cn, controls, source, DN it runs on, cadence in days, keeper); planted: no query evidences IA-2
+QUERIES = (
+    ("ac-2-principals", ("AC-2",), "principals", None, 30, "ciam-platform"),
+    ("ac-2-access-paths", ("AC-2",), "access-paths", None, 30, "ciam-platform"),
+    ("sc-12-credentials", ("SC-12", "SC-13"), "credentials", None, 90, "ciam-platform"),
+    ("sc-12-keys", ("SC-12", "SC-13"), "keys", AZ, 90, "ciam-platform"),
+    ("au-2-audit-trails", ("AU-2", "AU-11"), "audit-trails", None, 30, "security-operations"),
+    ("au-2-log-routes", ("AU-2", "AU-11"), "log-routes", None, 30, "security-operations"),
+    ("cm-3-history", ("CM-3",), "history", None, 90, "ciam-platform"))
+
+
+def evidence():
+    """The evidence queries (26-evidence)."""
+    return (*(spec("26-evidence", f"cn={cn},{EVIDENCE_QUERIES}", ["top", "ciamEvidenceQuery"], cn=cn,
+                   ciamControlRef=[f"{NIST}:{c}" for c in controls], ciamEvidenceSource=source, ciamEvidenceDn=dn,
+                   ciamEvidenceCadenceDays=days, ciamManagedBy=f"cn={keeper},{OWN}", ciamOwner=f"cn={keeper},{OWN}")
+              for cn, controls, source, dn, days, keeper in QUERIES),
+            spec("26-evidence", f"cn=cm-3-approved-changes,{EVIDENCE_QUERIES}", ["top", "ciamEvidenceQuery"],
+                 cn="cm-3-approved-changes", ciamControlRef=f"{NIST}:CM-3", ciamEvidenceSource="search",
+                 ciamEvidenceDn=f"ou=changes,{R}", ciamEvidenceFilter="(ciamChangeStatus=approved)",
+                 ciamEvidenceAttribute=["ciamTitle", "ciamApprovedBy", "ciamChangeStatus"],
+                 ciamEvidenceCadenceDays=90, ciamManagedBy=f"cn=ciam-platform,{OWN}",
+                 ciamOwner=f"cn=ciam-platform,{OWN}",
+                 description="The approved changes and who approved them"))
 
 
 def cpo_exports():

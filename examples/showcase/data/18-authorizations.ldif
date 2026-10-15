@@ -131,3 +131,67 @@ ciamCustomerAction: establish and manage the keys of customer-managed encrypti
  on (Key Vault)
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamResponsibility: customer
+
+dn: cn=azure-ac-2,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-ac-2
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:AC-2
+ciamImplementation: operator access paths and cloud principals recorded and re
+ viewed in the record
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
+dn: cn=azure-au-2,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-au-2
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:AU-2
+ciamImplementation: the subscription's activity log and the workloads' audit e
+ vents routed to the security workspace
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: shared
+
+dn: cn=azure-au-11,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-au-11
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:AU-11
+ciamImplementation: audit records kept 2557 days in the security workspace
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
+dn: cn=azure-cm-3,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-cm-3
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:CM-3
+ciamImplementation: every change to the record under an approved change (CAB)
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
+dn: cn=azure-ia-2,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-ia-2
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:IA-2
+ciamImplementation: operators sign in through Entra ID with phishing-resistant
+  MFA
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
+dn: cn=azure-sc-13,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-sc-13
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:SC-13
+ciamImplementation: FIPS-validated modules of Key Vault Premium (HSM-backed ke
+ ys)
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: shared

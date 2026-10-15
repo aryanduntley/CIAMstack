@@ -229,6 +229,11 @@ echo "   server profile (fetched from the platform's profile repository); secret
 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
 echo "-- Skyline Air answers the question the move waited for (unknown q-skyline-signing)"
 od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
+echo "-- compliance evidence: SSP-CIAM-2026's package (each control the target's authorization leaves to the platform,"
+echo "   the record queries that show it met), recorded on the boundary under CHG-2046"
+rm -rf out/evidence-SSP-CIAM-2026
+od evidence --boundary SSP-CIAM-2026 --change CHG-2046 -o out/evidence-SSP-CIAM-2026
+od report evidence
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

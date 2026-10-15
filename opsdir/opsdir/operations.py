@@ -10,7 +10,7 @@ import datetime as dt
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
-from .connectors import fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
+from .connectors import evidence as evidencemod, fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
 from .connectors.render import environment_notes, render_env
 from .connectors.application import application_view
@@ -21,6 +21,7 @@ from .core import search as ldap_search
 from .core.environment import ENVIRONMENT, env_model
 from .core.notes import parsed
 from .core.interchange.export import export_text
+from .domains.estate.evidence import boundary_named, run_records
 from .domains.governance.attempts import attempt_records
 from .domains.governance.authorization import Area, allow_all, refusal
 from .domains.governance.naming import APPLICATIONS
@@ -41,6 +42,8 @@ Migrated = NamedTuple("Migrated", [("run", object), ("files", dict)])       # ru
 Applied = NamedTuple("Applied", [("change_id", str), ("lines", tuple)])      # one line per applied change record
 Preview = NamedTuple("Preview", [("name", str), ("changes", tuple), ("notices", tuple)])  # a write, not applied
 Rebuilt = NamedTuple("Rebuilt", [("name", str), ("repo_path", str), ("text", str)])
+Evidence = NamedTuple("Evidence", [("boundary", str), ("files", dict), ("applied", object)])
+# files: {path: text}, the package and its MANIFEST.json; applied: the run recorded (Applied), or None when not asked
 WorkspaceState = NamedTuple("WorkspaceState", [("base", object), ("changes", tuple), ("live_changed", bool)])
 
 
@@ -142,6 +145,22 @@ def summary(conn, as_of, src=None, dst=None):
 def export(conn, base):
     """Effect (reads the record): entries under base as LDIF, for review."""
     return export_text(db.load_directory(conn), base)
+
+
+def evidence(conn, boundary, as_of, controls=(), change_id=None, kept_at=None):
+    """Effect (reads the record): a system boundary's evidence package as of a day (connectors.evidence): per control
+    its queries' outputs and MANIFEST.json; only these controls when named. Under an approved change the run is
+    recorded on the boundary (when, each file's SHA-256, the queries, where it is kept: kept_at); without one nothing is
+    written. ValueError for an unknown boundary or a query naming no report."""
+    d = db.load_directory(conn)
+    b = boundary_named(d, boundary)
+    if b is None:
+        raise ValueError(f"no system boundary {boundary}")
+    p = evidencemod.evidence_package(conn, d, b, tuple(controls), as_of)
+    files = {**p.files, "MANIFEST.json": p.manifest}
+    applied = modify(conn, run_records(d, b, as_of, files, p.plan, change_id, kept_at), change_id) \
+        if change_id else None
+    return Evidence(b.dn, files, applied)
 
 
 # ------------------------------------------------------------------ authorization

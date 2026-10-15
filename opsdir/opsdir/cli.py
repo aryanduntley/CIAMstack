@@ -67,6 +67,10 @@
                                        terms operators define, ...) occur in files: each file and line, secret
                                        material flagged by line, never stored; --replace: PATH is the whole census
                                        (recorded files not under it are removed)
+  opsdir evidence --boundary B [--control C]... [-o dir] [--change CHG-…] [--kept-at URL]
+                                       a system boundary's evidence package as of --as-of: per control its evidence
+                                       queries' outputs (CSV, JSON) and MANIFEST.json; --change: record the run on the
+                                       boundary (--kept-at: where the package is kept)
   opsdir export [-b base]              dump entries as LDIF (for Git review)
   opsdir history [DN]                  change history
   opsdir application DN|NAME [--env CLOUD/ENV] [--format text|json]
@@ -197,6 +201,11 @@ SUBCOMMANDS = (
                                      "help": "what one of the estate's attributes means (last-login=lastLoginTime, "
                                              "pending=registrationStatus=pending, kba=challengeAnswer, ...)"}),
                       (("-o", "--out"), {"help": "write the profile here (default: standard output)"}))),
+    ("evidence", ((("--boundary",), {"required": True, "help": "the system boundary (its cn or DN)"}),
+                  (("--control",), {"action": "append", "default": [], "metavar": "C",
+                                    "help": "only this control (framework:control; repeat for several)"}),
+                  (("-o", "--out"), {}), (("--change",), {"help": "record the run under this approved change"}),
+                  (("--kept-at",), {"metavar": "URL", "help": "where the package is kept (recorded with the run)"}))),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
     ("application", ((("dn",), {"metavar": "DN|NAME"}), (("--env",), {"metavar": "CLOUD/ENV"}),
@@ -740,6 +749,17 @@ def _cmd_export(conn, a, as_of):
     return ops.export(conn, a.base)
 
 
+def _cmd_evidence(conn, a, as_of):
+    try:
+        r = ops.evidence(conn, a.boundary, as_of, a.control, a.change, a.kept_at)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    out = write_tree(a.out or pathlib.Path("out") / f"evidence-{a.boundary.split(',')[0].split('=')[-1]}", r.files)
+    return "\n".join((f"evidence of {r.boundary} as of {as_of}: {len(r.files) - 1} files and MANIFEST.json → {out}",
+                      *((f"{r.applied.change_id}: {line}" for line in r.applied.lines) if r.applied else
+                        ("not recorded (no --change)",))))
+
+
 def _cmd_history(conn, a, as_of):
     r = ops.history(conn, a.dn)
     return format_table(r.rows, r.headers)
@@ -801,8 +821,8 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
                              "migrate": _cmd_migrate, "fix": _cmd_fix, "modify": _cmd_modify, "export": _cmd_export,
                              "history": _cmd_history, "application": _cmd_application, "graph": _cmd_graph,
-                             "summary": _cmd_summary, "capture": _cmd_capture, "import": _cmd_import,
-                             "collect": _cmd_collect, "file": _cmd_file,
+                             "summary": _cmd_summary, "evidence": _cmd_evidence, "capture": _cmd_capture,
+                             "import": _cmd_import, "collect": _cmd_collect, "file": _cmd_file,
                              "prerequisites": _cmd_prerequisites,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
                              "setting": _cmd_setting,

@@ -443,6 +443,21 @@ EXPECTED = MappingProxyType({
         ("A138", "Unknowns", "Open question `q-tech-pubs-sso` (the estate)",
          "whether the technical publications portal keeps its own login page is an open question for the estate, "
          "needed before the cutover", None),
+        # compliance evidence (6.2a): the controls Azure leaves to the platform, the record queries that show them met
+        ("A140", "Evidence", "Control `nist-800-53-r5:IA-2` is the operator's (customer) under `F1209051525`",
+         "no evidence query shows IA-2 (identification and authentication) met on the target", None),
+        ("A141", "Evidence", "Control `nist-800-53-r5:AC-2`: its evidence changes in target/prod",
+         "the target's access paths differ from production's: AC-2's evidence is collected again after the cutover",
+         None),
+        ("A142", "Evidence", "Control `nist-800-53-r5:AU-2`: its evidence changes in target/prod",
+         "the target's audit trails differ from production's: AU-2's evidence is collected again after the cutover",
+         None),
+        ("A143", "Evidence", "Control `nist-800-53-r5:AU-11`: its evidence changes in target/prod",
+         "the target's audit trails differ from production's: AU-11's evidence is collected again after the cutover",
+         None),
+        ("A144", "Evidence", "Boundary `SSP-CIAM-2026` (target/prod is inside it) has no recorded evidence package",
+         "once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded", "CHG-2046",
+         "CHG-2032"),
     ],
 })
 

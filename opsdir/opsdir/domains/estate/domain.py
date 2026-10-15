@@ -8,12 +8,14 @@ from the provider) and the budgets its spending is held to; the incident reporti
 to, the findings its security services send to the incident process and the incidents that fall under an obligation; the
 plan of action and milestones, the exceptions a risk authority approved (and the planner findings they accept), the
 compliance assessments, and the clouds' suppressions of findings that carry exceptions out; the cloud authorizations the
-environments rely on, the operator's system boundaries and who meets each control under an authorization; the regulated
+environments rely on, the operator's system boundaries and who meets each control under an authorization; which record
+queries evidence which controls and each boundary's last evidence package (estate.evidence); the regulated
 data each environment holds (ITAR, EAR, CJIS, HIPAA, IRS 1075), carried from source to target, where the cloud adapters
 say their provider may hold it. Vendor-neutral: the cloud adapters render and read what it records."""
 from ...core.contract import Domain, ImportKind, directory_report
 from .budgets import BUDGET_HEADERS, budget_role, budget_rows, check_budgets
 from .checks import check_fips, check_regions, check_residency, check_tags
+from .evidence import EVIDENCE_HEADERS, evidence_rows
 from .discovery import DISCOVERY_HEADERS, check_discovery, discovery_role, discovery_rows
 from .authorizations import (AUTHORIZATION_HEADERS, RESPONSIBILITY_HEADERS, authorization_rows, check_authorization,
                              check_regulated_data, responsibility_rows)
@@ -45,6 +47,7 @@ DOMAIN = Domain(name="estate", schema=FRAGMENT, required_roles=(), sql=(),
                          "assessments": directory_report(ASSESSMENT_HEADERS, assessment_rows),
                          "authorizations": directory_report(AUTHORIZATION_HEADERS, authorization_rows, dated=True),
                          "responsibilities": directory_report(RESPONSIBILITY_HEADERS, responsibility_rows),
+                         "evidence": directory_report(EVIDENCE_HEADERS, evidence_rows, dated=True),
                          "regulated-data": directory_report(REGULATED_HEADERS, regulated_rows)},
                 checks=(check_tags, check_regions, check_residency, check_fips, check_security, check_discovery,
                         check_quotas,

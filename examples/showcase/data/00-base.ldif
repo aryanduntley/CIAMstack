@@ -177,6 +177,13 @@ ou: responsibilities
 description: Who meets each control under a cloud authorization (its responsib
  ility matrix)
 
+dn: ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: evidence-queries
+description: Which record queries show which controls met (a system boundary's
+  evidence package)
+
 dn: ou=custom-schema,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
