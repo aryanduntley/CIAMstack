@@ -36,6 +36,13 @@ KUBECTL_VERSION=1.37.1            # the stable release (dl.k8s.io/release/stable
 CFN_LINT_VERSION=1.57.2           # 2026-10-06 (Python 3.10-3.14)
 AS3_SCHEMA=3.54.0-6               # F5 AS3 LTS JSON schema (opsdir-adapter-f5's declarations)
 AS3_SHA256=9bef9d9e8f2fc6e52eef7491683f09dbacd572d87018b68c49013f9857d38fd3
+OSCAL_VERSION=1.2.3               # 2026-08-07: NIST OSCAL JSON schemas (opsdir-format-oscal's documents)
+OSCAL_SHA256="complete:384324105c7a817af0f65b120a963146caa0e0d55d969cf0daf60e063b87a206
+poam:f4fd94487408a9589954b5b92d88965c984d4f79b85365cc574b860898759437
+ssp:99b1bee2df5604a7d4f1faeab43148e0bd4c4a1f513cd0d2d0c7896aa216a1e7
+assessment-results:4034e2032332dbf597e59e0646ec16c2c31df992962490371e91f47b219ff42c
+catalog:ab95836e9e8dfeb6fde80007f6cc76fa3192f595d427c751a3f3923c3f474fc2
+profile:7c5ff5a92683b6a80ce6a3474dea04e0ea8680a4ecb60702ffa08ebfc677e6cb"
 
 os=$(uname -s | tr '[:upper:]' '[:lower:]')
 case "$(uname -m)" in x86_64|amd64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) echo "unsupported: $(uname -m)" >&2; exit 1 ;; esac
@@ -185,6 +192,18 @@ if ! { [ -f "$schema" ] && echo "$AS3_SHA256  $schema" | sha256sum -c --quiet - 
   echo "$AS3_SHA256  $schema" | sha256sum -c --quiet - || { rm -f "$schema"; echo "AS3 schema doesn't match its checksum" >&2; exit 1; }
 fi
 echo "AS3 schema $AS3_SCHEMA: tools/ansible (verified)"
+
+# OSCAL JSON schemas (draft-07), one per model plus the complete one, each SHA-256 pinned
+OSCAL=$TOOLS/oscal/$OSCAL_VERSION
+mkdir -p "$OSCAL"
+while IFS=: read -r model sha; do
+  schema=$OSCAL/oscal_${model}_schema.json
+  if ! { [ -f "$schema" ] && echo "$sha  $schema" | sha256sum -c --quiet - 2>/dev/null; }; then
+    curl -fsSL "https://github.com/usnistgov/OSCAL/releases/download/v$OSCAL_VERSION/oscal_${model}_schema.json" -o "$schema"
+    echo "$sha  $schema" | sha256sum -c --quiet - || { rm -f "$schema"; echo "OSCAL $model schema doesn't match its checksum" >&2; exit 1; }
+  fi
+done <<< "$OSCAL_SHA256"
+echo "OSCAL $OSCAL_VERSION schemas: tools/oscal/$OSCAL_VERSION (verified)"
 
 # cfn-lint: a venv of its own, run without the caller's PYTHONPATH
 CFN=$TOOLS/cfn-lint
