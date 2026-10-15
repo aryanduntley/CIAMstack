@@ -5,7 +5,7 @@ the target's by role. A move keeps every role the source backs up backed up in t
 copied to another region (protection.compare_protection), into a vault locked, keyed and restorable as well. Pure."""
 from ...core.changeset import add_values
 from ...core.directory import is_kind, one, rdn_value, subtree, values
-from ...core.environment import environment_of, of_class, one_role
+from ...core.environment import environment_of, of_class, one_role, role_named
 from ...core.findings import Fix, bindings_container, findings, merge_findings, responsible, templated_entry
 from ...core.naming import branch, env_label
 from ..compute.hosts import runs_role
@@ -35,8 +35,7 @@ def protected_roles(m):
 
 def plan_vault(m, p):
     """The backup vault environment m binds for a plan's ciamBackupVaultRole, or None."""
-    role = one(p, "ciamBackupVaultRole")
-    v = one_role(m, role) if role else None
+    v = role_named(m, p, "ciamBackupVaultRole")
     return v if v is not None and is_kind(m.d, v, VAULT) else None
 
 

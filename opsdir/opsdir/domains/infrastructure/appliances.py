@@ -6,7 +6,7 @@ admits it on. Pure."""
 import ipaddress
 
 from ...core.directory import one, rdn_value, values
-from ...core.environment import of_class, one_role
+from ...core.environment import of_class, role_named
 from ...core.findings import findings, responsible
 from ..pki.credentials import role_uses
 
@@ -21,8 +21,7 @@ def appliances(m, stack_role):
 def login_secret(m, appliance):
     """The reference (ciamRefUri) of the secret an appliance's login signs in with (its ciamLoginSecretRole as
     environment m binds it), or None."""
-    role = one(appliance, "ciamLoginSecretRole")
-    b = one_role(m, role) if role else None
+    b = role_named(m, appliance, "ciamLoginSecretRole")
     return one(b, "ciamRefUri") if b is not None else None
 
 

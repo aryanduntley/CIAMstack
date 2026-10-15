@@ -8,7 +8,7 @@ never stored. Pure."""
 from typing import NamedTuple
 
 from ...core.directory import one, rdn_value, values
-from ...core.environment import of_class, one_role, servers_with_role
+from ...core.environment import of_class, role_named, servers_with_role
 from ..pki.credentials import role_uses
 
 SOURCE = "ciamCollectionSource"
@@ -20,8 +20,8 @@ Source = NamedTuple("Source", [("name", str), ("importer", str), ("locations", t
                                ("login", object), ("ca", object), ("problems", tuple), ("scheme", str)])
 
 
-def _ref(m, role):
-    b = one_role(m, role) if role else None
+def _ref(m, s, attr):
+    b = role_named(m, s, attr)
     return one(b, "ciamRefUri") if b is not None else None
 
 
@@ -37,7 +37,7 @@ def _locations(m, s):
 def resolve_source(m, s):
     """The Source collection source binding s of environment m resolves to."""
     cred_role, ca_role = one(s, "ciamCredentialRole"), one(s, "ciamCaRole")
-    credential, ca, where = _ref(m, cred_role), _ref(m, ca_role), _locations(m, s)
+    credential, ca, where = _ref(m, s, "ciamCredentialRole"), _ref(m, s, "ciamCaRole"), _locations(m, s)
     problems = (*(("no location: ciamSourceRef, or ciamTargetRole and ciamPort naming servers with host names",)
                   if not where else ()),
                 *((f"role `{cred_role}` (its credential) isn't bound in {m.label}",) if cred_role and not credential

@@ -5,7 +5,7 @@ snapshotted as often and as long, and copied to another region where the source 
 adapters share: a role's volumes, a volume's key and snapshot policy. Pure."""
 from ...core.changeset import set_values
 from ...core.directory import is_kind, make_entry, one, rdn_value, subtree, values
-from ...core.environment import bound_nowhere, environment_of, of_class, one_role
+from ...core.environment import bound_nowhere, environment_of, of_class, role_named
 from ...core.findings import (Fix, bindings_container, choice_fix, findings, merge_findings, responsible,
                               templated_entry)
 from ...core.naming import branch, env_label
@@ -50,8 +50,7 @@ def is_encrypted(v):
 def volume_policy(m, v):
     """What environment m binds for a volume's ciamSnapshotPolicyRole (a snapshot policy, or a backup plan where the
     environment snapshots disks with a backup service), or None."""
-    role = one(v, "ciamSnapshotPolicyRole")
-    p = one_role(m, role) if role else None
+    p = role_named(m, v, "ciamSnapshotPolicyRole")
     return p if p is not None and (is_kind(m.d, p, POLICY) or is_kind(m.d, p, PLAN)) else None
 
 

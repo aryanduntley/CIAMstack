@@ -15,7 +15,7 @@ purged."""
 from collections import namedtuple
 
 from ...core.directory import one, rdn_value, subtree, values
-from ...core.environment import env_model, of_class, one_role
+from ...core.environment import env_model, of_class, one_role, role_named
 from ...core.findings import findings, responsible
 from ...core.naming import branch
 from ..data.kept import lock_rank
@@ -52,8 +52,7 @@ def audit_role(resource, roles):
 
 def trail_destination(m, trail):
     """The binding of environment m that keeps an audit trail's records (its ciamLogDestinationRole), or None."""
-    role = one(trail, "ciamLogDestinationRole")
-    return one_role(m, role) if role else None
+    return role_named(m, trail, "ciamLogDestinationRole")
 
 
 def data_resources(m, trail):
@@ -70,8 +69,7 @@ def data_resources(m, trail):
 
 def trail_stream(m, trail):
     """The binding of environment m an audit trail also streams its records to (its ciamAuditStreamRole), or None."""
-    role = one(trail, "ciamAuditStreamRole")
-    return one_role(m, role) if role else None
+    return role_named(m, trail, "ciamAuditStreamRole")
 
 
 def store_protection(m, trail):

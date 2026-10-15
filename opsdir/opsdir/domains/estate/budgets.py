@@ -5,7 +5,7 @@ ciamBillingAccountRef says where billing is managed, which is where budgets live
 target without a budget while the source has one is an action (its spending would go unwatched); a target budget
 alerting a role it doesn't bind is a blocker (its alerts would reach no one). Pure."""
 from ...core.directory import one, rdn_value, subtree, values
-from ...core.environment import env_model, of_class, one_role
+from ...core.environment import env_model, of_class, role_named
 from ...core.findings import findings, responsible
 from ...core.naming import branch
 from ..governance.keepers import managed_by_name
@@ -29,8 +29,7 @@ def budget_role(resource, roles):
 
 def budget_channel(m, b):
     """The binding of environment m a budget alerts (its ciamAlertRole), or None."""
-    role = one(b, "ciamAlertRole")
-    return one_role(m, role) if role else None
+    return role_named(m, b, "ciamAlertRole")
 
 
 def currency(b):
