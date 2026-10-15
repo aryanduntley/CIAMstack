@@ -186,7 +186,7 @@ def apply_approved(conn, changes=APPROVED):
             ops.evidence(conn, source.boundary, AS_OF, change_id=change_id)
         elif isinstance(source, ImportStep):
             ops.apply_import(conn, ops.preview_import(conn, source.spec, export_files(source.root),
-                                                      import_time(source.at)), change_id)
+                                                      import_time(source.at)), change_id, source.take, source.keep)
         else:
             db.apply_changes(conn, source, change_id)
 
