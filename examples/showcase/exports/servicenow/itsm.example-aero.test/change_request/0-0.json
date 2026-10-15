@@ -1,0 +1,522 @@
+{
+ "result": [
+  {
+   "approval": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "assignment_group": {
+    "display_value": "CIAM Change Advisory Board",
+    "value": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+   },
+   "chg_model": {
+    "display_value": "Legacy change",
+    "value": "0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f"
+   },
+   "close_code": {
+    "display_value": "Successful",
+    "value": "successful"
+   },
+   "cmdb_ci": {
+    "display_value": "ciam-directory",
+    "value": "3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e"
+   },
+   "correlation_display": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_id": {
+    "display_value": "",
+    "value": ""
+   },
+   "end_date": {
+    "display_value": "06/13/2026 23:00:00",
+    "value": "2026-06-14 03:00:00"
+   },
+   "number": {
+    "display_value": "CHG0029931",
+    "value": "CHG0029931"
+   },
+   "requested_by": {
+    "display_value": "CIAM platform requester",
+    "value": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+   },
+   "short_description": {
+    "display_value": "Reconfigure mail index (equality only)",
+    "value": "Reconfigure mail index (equality only)"
+   },
+   "start_date": {
+    "display_value": "06/13/2026 21:00:00",
+    "value": "2026-06-14 01:00:00"
+   },
+   "state": {
+    "display_value": "Closed",
+    "value": "3"
+   },
+   "sys_id": {
+    "display_value": "11112222333344445555666677770931",
+    "value": "11112222333344445555666677770931"
+   },
+   "sys_updated_on": {
+    "display_value": "09/22/2026 12:00:00",
+    "value": "2026-09-22 16:00:00"
+   },
+   "type": {
+    "display_value": "Normal",
+    "value": "normal"
+   },
+   "work_end": {
+    "display_value": "06/13/2026 23:40:00",
+    "value": "2026-06-14 03:40:00"
+   },
+   "work_start": {
+    "display_value": "06/13/2026 20:30:00",
+    "value": "2026-06-14 00:30:00"
+   }
+  },
+  {
+   "approval": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "assignment_group": {
+    "display_value": "CIAM Change Advisory Board",
+    "value": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+   },
+   "chg_model": {
+    "display_value": "Normal",
+    "value": "7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b"
+   },
+   "close_code": {
+    "display_value": "",
+    "value": ""
+   },
+   "cmdb_ci": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_display": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_id": {
+    "display_value": "",
+    "value": ""
+   },
+   "end_date": {
+    "display_value": "09/24/2026 02:00:00",
+    "value": "2026-09-24 06:00:00"
+   },
+   "number": {
+    "display_value": "CHG0030101",
+    "value": "CHG0030101"
+   },
+   "requested_by": {
+    "display_value": "CIAM platform requester",
+    "value": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+   },
+   "short_description": {
+    "display_value": "Add NSG rule for the MRO batch export (target)",
+    "value": "Add NSG rule for the MRO batch export (target)"
+   },
+   "start_date": {
+    "display_value": "09/23/2026 22:00:00",
+    "value": "2026-09-24 02:00:00"
+   },
+   "state": {
+    "display_value": "Scheduled",
+    "value": "-2"
+   },
+   "sys_id": {
+    "display_value": "11112222333344445555666677772001",
+    "value": "11112222333344445555666677772001"
+   },
+   "sys_updated_on": {
+    "display_value": "09/22/2026 12:00:00",
+    "value": "2026-09-22 16:00:00"
+   },
+   "type": {
+    "display_value": "Normal",
+    "value": "normal"
+   },
+   "work_end": {
+    "display_value": "",
+    "value": ""
+   },
+   "work_start": {
+    "display_value": "",
+    "value": ""
+   }
+  },
+  {
+   "approval": {
+    "display_value": "Requested",
+    "value": "requested"
+   },
+   "assignment_group": {
+    "display_value": "CIAM Change Advisory Board",
+    "value": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+   },
+   "chg_model": {
+    "display_value": "Normal",
+    "value": "7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b"
+   },
+   "close_code": {
+    "display_value": "",
+    "value": ""
+   },
+   "cmdb_ci": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_display": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_id": {
+    "display_value": "",
+    "value": ""
+   },
+   "end_date": {
+    "display_value": "09/24/2026 02:00:00",
+    "value": "2026-09-24 06:00:00"
+   },
+   "number": {
+    "display_value": "CHG0030103",
+    "value": "CHG0030103"
+   },
+   "requested_by": {
+    "display_value": "CIAM platform requester",
+    "value": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+   },
+   "short_description": {
+    "display_value": "Restore the stable LDAPS service name (target)",
+    "value": "Restore the stable LDAPS service name (target)"
+   },
+   "start_date": {
+    "display_value": "09/23/2026 22:00:00",
+    "value": "2026-09-24 02:00:00"
+   },
+   "state": {
+    "display_value": "Authorize",
+    "value": "-3"
+   },
+   "sys_id": {
+    "display_value": "11112222333344445555666677772003",
+    "value": "11112222333344445555666677772003"
+   },
+   "sys_updated_on": {
+    "display_value": "09/22/2026 12:00:00",
+    "value": "2026-09-22 16:00:00"
+   },
+   "type": {
+    "display_value": "Normal",
+    "value": "normal"
+   },
+   "work_end": {
+    "display_value": "",
+    "value": ""
+   },
+   "work_start": {
+    "display_value": "",
+    "value": ""
+   }
+  },
+  {
+   "approval": {
+    "display_value": "Rejected",
+    "value": "rejected"
+   },
+   "assignment_group": {
+    "display_value": "CIAM Change Advisory Board",
+    "value": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+   },
+   "chg_model": {
+    "display_value": "Normal",
+    "value": "7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b"
+   },
+   "close_code": {
+    "display_value": "",
+    "value": ""
+   },
+   "cmdb_ci": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_display": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_id": {
+    "display_value": "",
+    "value": ""
+   },
+   "end_date": {
+    "display_value": "09/22/2026 00:00:00",
+    "value": "2026-09-22 04:00:00"
+   },
+   "number": {
+    "display_value": "CHG0030104",
+    "value": "CHG0030104"
+   },
+   "requested_by": {
+    "display_value": "CIAM platform requester",
+    "value": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+   },
+   "short_description": {
+    "display_value": "Import the partner realm's PingAM configuration",
+    "value": "Import the partner realm's PingAM configuration"
+   },
+   "start_date": {
+    "display_value": "09/21/2026 22:00:00",
+    "value": "2026-09-22 02:00:00"
+   },
+   "state": {
+    "display_value": "Authorize",
+    "value": "-3"
+   },
+   "sys_id": {
+    "display_value": "11112222333344445555666677772004",
+    "value": "11112222333344445555666677772004"
+   },
+   "sys_updated_on": {
+    "display_value": "09/22/2026 12:00:00",
+    "value": "2026-09-22 16:00:00"
+   },
+   "type": {
+    "display_value": "Normal",
+    "value": "normal"
+   },
+   "work_end": {
+    "display_value": "",
+    "value": ""
+   },
+   "work_start": {
+    "display_value": "",
+    "value": ""
+   }
+  },
+  {
+   "approval": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "assignment_group": {
+    "display_value": "CIAM Change Advisory Board",
+    "value": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+   },
+   "chg_model": {
+    "display_value": "Normal",
+    "value": "7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b"
+   },
+   "close_code": {
+    "display_value": "Successful",
+    "value": "successful"
+   },
+   "cmdb_ci": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_display": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_id": {
+    "display_value": "",
+    "value": ""
+   },
+   "end_date": {
+    "display_value": "09/24/2026 02:00:00",
+    "value": "2026-09-24 06:00:00"
+   },
+   "number": {
+    "display_value": "CHG0030105",
+    "value": "CHG0030105"
+   },
+   "requested_by": {
+    "display_value": "CIAM platform requester",
+    "value": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+   },
+   "short_description": {
+    "display_value": "Name the IDM and PingFederate credential roles",
+    "value": "Name the IDM and PingFederate credential roles"
+   },
+   "start_date": {
+    "display_value": "09/23/2026 22:00:00",
+    "value": "2026-09-24 02:00:00"
+   },
+   "state": {
+    "display_value": "Closed",
+    "value": "3"
+   },
+   "sys_id": {
+    "display_value": "11112222333344445555666677772005",
+    "value": "11112222333344445555666677772005"
+   },
+   "sys_updated_on": {
+    "display_value": "09/22/2026 12:00:00",
+    "value": "2026-09-22 16:00:00"
+   },
+   "type": {
+    "display_value": "Normal",
+    "value": "normal"
+   },
+   "work_end": {
+    "display_value": "09/23/2026 22:40:00",
+    "value": "2026-09-24 02:40:00"
+   },
+   "work_start": {
+    "display_value": "09/23/2026 22:10:00",
+    "value": "2026-09-24 02:10:00"
+   }
+  },
+  {
+   "approval": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "assignment_group": {
+    "display_value": "CIAM Change Advisory Board",
+    "value": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+   },
+   "chg_model": {
+    "display_value": "Normal",
+    "value": "7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b"
+   },
+   "close_code": {
+    "display_value": "",
+    "value": ""
+   },
+   "cmdb_ci": {
+    "display_value": "ciam-directory",
+    "value": "3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e"
+   },
+   "correlation_display": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_id": {
+    "display_value": "",
+    "value": ""
+   },
+   "end_date": {
+    "display_value": "09/28/2026 02:00:00",
+    "value": "2026-09-28 06:00:00"
+   },
+   "number": {
+    "display_value": "CHG0030106",
+    "value": "CHG0030106"
+   },
+   "requested_by": {
+    "display_value": "CIAM platform requester",
+    "value": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+   },
+   "short_description": {
+    "display_value": "Record the production directory servers' configuration",
+    "value": "Record the production directory servers' configuration"
+   },
+   "start_date": {
+    "display_value": "09/26/2026 22:00:00",
+    "value": "2026-09-27 02:00:00"
+   },
+   "state": {
+    "display_value": "Scheduled",
+    "value": "-2"
+   },
+   "sys_id": {
+    "display_value": "11112222333344445555666677772006",
+    "value": "11112222333344445555666677772006"
+   },
+   "sys_updated_on": {
+    "display_value": "09/22/2026 12:00:00",
+    "value": "2026-09-22 16:00:00"
+   },
+   "type": {
+    "display_value": "Normal",
+    "value": "normal"
+   },
+   "work_end": {
+    "display_value": "",
+    "value": ""
+   },
+   "work_start": {
+    "display_value": "",
+    "value": ""
+   }
+  },
+  {
+   "approval": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "assignment_group": {
+    "display_value": "CIAM Change Advisory Board",
+    "value": "5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b"
+   },
+   "chg_model": {
+    "display_value": "Normal",
+    "value": "7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b"
+   },
+   "close_code": {
+    "display_value": "",
+    "value": ""
+   },
+   "cmdb_ci": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_display": {
+    "display_value": "",
+    "value": ""
+   },
+   "correlation_id": {
+    "display_value": "",
+    "value": ""
+   },
+   "end_date": {
+    "display_value": "09/23/2026 02:00:00",
+    "value": "2026-09-23 06:00:00"
+   },
+   "number": {
+    "display_value": "CHG0030108",
+    "value": "CHG0030108"
+   },
+   "requested_by": {
+    "display_value": "CIAM platform requester",
+    "value": "9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d"
+   },
+   "short_description": {
+    "display_value": "Import PingFederate's configuration (bulk export)",
+    "value": "Import PingFederate's configuration (bulk export)"
+   },
+   "start_date": {
+    "display_value": "09/22/2026 22:00:00",
+    "value": "2026-09-23 02:00:00"
+   },
+   "state": {
+    "display_value": "Canceled",
+    "value": "4"
+   },
+   "sys_id": {
+    "display_value": "11112222333344445555666677772008",
+    "value": "11112222333344445555666677772008"
+   },
+   "sys_updated_on": {
+    "display_value": "09/22/2026 12:00:00",
+    "value": "2026-09-22 16:00:00"
+   },
+   "type": {
+    "display_value": "Normal",
+    "value": "normal"
+   },
+   "work_end": {
+    "display_value": "",
+    "value": ""
+   },
+   "work_start": {
+    "display_value": "",
+    "value": ""
+   }
+  }
+ ]
+}

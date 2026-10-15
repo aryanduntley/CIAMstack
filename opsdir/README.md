@@ -118,6 +118,26 @@ collect; so are rotation overdue, a failed rotation, a binding saying its store 
 store doesn't manage it, and the objects in the target's containers nothing references (one action per container);
 a container whose inventory can't show rotation (Vault KV metadata) is said once.
 
+### ITSM tickets (change evidence)
+
+A change record names the ITSM ticket its change management tracks it by: `ciamTicketRef` `<add-on>:<number>`
+(`servicenow:CHG0030101`), the operator's link. An ITSM add-on's importer (`servicenow/change-requests`, and its
+read-only collector) reads the linked tickets into their own entries, `ciamTicket` at `cn=<number>,ou=<add-on>,
+ou=tickets` (the governance domain): the state in neutral terms (`ciamTicketState`, only when the add-on knows the
+ticket's state model; `ciamTicketNativeState` keeps what the system said), the overall approval (`ciamTicketApproval`),
+the planned and actual windows, each approval record as detail only (`ciamTicketApprover`, identifiers, never names),
+other fields raw (`ciamTicketFact`), the system's id (`ciamProviderRef`) and address (`ciamDocUrl`). All of it is
+EVIDENCE: nothing is written under `ou=changes`, a ticket never changes a change's status or approver, and the store's
+rule that every write needs an approved change record is untouched (a ticket can't authorize anything). Each import
+replaces only the tickets it read; a linked ticket the export lacks is never removed. `opsdir report tickets` lists
+every linked change with its drift: **in-step**, **not-imported** (while tickets of the same system were read),
+**rejected** or **cancelled** (ITSM says so while the record approves the change), **unapproved** (approval still
+requested, or never), **closed-pending** (ITSM closed it while the record has it proposed or approved),
+**live-but-rejected**, **window-differs** (the record's planned UTC day is outside the ticket's planned window) and
+**outside-window** (ITSM's own work times outside its planned window, exact). `opsdir plan` (area `Change tickets`;
+nothing while the record holds no ticket) blocks on rejected and cancelled and gives the rest as actions for the
+change's owner (else the operator); no fix is offered: a change's status is a person's.
+
 ### Who keeps what, and where it renders
 
 Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what
@@ -390,7 +410,7 @@ Dependencies point one way. Adapter packages depend on the core, never the rever
 
 An adapter is one cloud provider, product or secret store. It lives in its own installable package:
 
-1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `platform` (a container platform such as Kubernetes), `product`, `host`, `delivery`, `secret-store` or `compliance`), `applies(m)` decided from directory data only (or `None` for a generic adapter of a standard, which every compliant server would match: it renders only where an environment's stack declares it), the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
+1. A module that defines `ADAPTER = Adapter(...)` (`opsdir.core.contract`): its name and kind (`provider`, `platform` (a container platform such as Kubernetes), `product`, `host`, `delivery`, `secret-store`, `compliance` or `itsm` (an IT service management system whose change tickets are read as evidence)), `applies(m)` decided from directory data only (or `None` for a generic adapter of a standard, which every compliant server would match: it renders only where an environment's stack declares it), the roles it requires, its renderers (environment-neutral and environment-specific), its planner checks, the reference schemes it owns and their resolvers, how its outputs are described, and the `vocab` values it defines.
 2. Its `pyproject.toml` depends on `opsdir` and registers it:
 
    ```toml

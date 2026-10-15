@@ -1,0 +1,202 @@
+{
+ "result": [
+  {
+   "approver": {
+    "display_value": "CAB member 1",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70811"
+   },
+   "state": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000000931",
+    "value": "aaaa0000000000000000000000000931"
+   },
+   "sys_updated_on": {
+    "display_value": "06/11/2026 11:00:00",
+    "value": "2026-06-11 15:00:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677770931"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 1",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70811"
+   },
+   "state": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000002001",
+    "value": "aaaa0000000000000000000000002001"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 11:00:00",
+    "value": "2026-09-18 15:00:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772001"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 2",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70812"
+   },
+   "state": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000012001",
+    "value": "aaaa0000000000000000000000012001"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 11:05:00",
+    "value": "2026-09-18 15:05:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772001"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 1",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70811"
+   },
+   "state": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000002003",
+    "value": "aaaa0000000000000000000000002003"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 11:00:00",
+    "value": "2026-09-18 15:00:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772003"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 2",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70812"
+   },
+   "state": {
+    "display_value": "Requested",
+    "value": "requested"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000012003",
+    "value": "aaaa0000000000000000000000012003"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 10:00:00",
+    "value": "2026-09-18 14:00:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772003"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 2",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70812"
+   },
+   "state": {
+    "display_value": "Rejected",
+    "value": "rejected"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000002004",
+    "value": "aaaa0000000000000000000000002004"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 11:10:00",
+    "value": "2026-09-18 15:10:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772004"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 1",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70811"
+   },
+   "state": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000002005",
+    "value": "aaaa0000000000000000000000002005"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 11:00:00",
+    "value": "2026-09-18 15:00:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772005"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 1",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70811"
+   },
+   "state": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000002006",
+    "value": "aaaa0000000000000000000000002006"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 11:00:00",
+    "value": "2026-09-18 15:00:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772006"
+   }
+  },
+  {
+   "approver": {
+    "display_value": "CAB member 1",
+    "value": "2a3b4c5d6e7f8091a2b3c4d5e6f70811"
+   },
+   "state": {
+    "display_value": "Approved",
+    "value": "approved"
+   },
+   "sys_id": {
+    "display_value": "aaaa0000000000000000000000002008",
+    "value": "aaaa0000000000000000000000002008"
+   },
+   "sys_updated_on": {
+    "display_value": "09/18/2026 11:00:00",
+    "value": "2026-09-18 15:00:00"
+   },
+   "sysapproval": {
+    "display_value": "",
+    "value": "11112222333344445555666677772008"
+   }
+  }
+ ]
+}

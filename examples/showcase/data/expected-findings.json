@@ -319,6 +319,22 @@
       "planted": "the target's PAM copy of the directory root password was vaulted under another name: the safe, listed whole, has no `ds-root-password`, so rotating the password wouldn't update it",
       "cleared_by": null,
       "raised_by": "CHG-2047"
+    },
+    {
+      "id": "B60",
+      "area": "Change tickets",
+      "match": "ITSM says its ticket servicenow:CHG0030104 (read 2026-09-23) was **rejected**",
+      "planted": "the record approves CHG-2004 (the partner realm's PingAM import), but the CAB rejected its ticket",
+      "cleared_by": null,
+      "raised_by": "CHG-2056"
+    },
+    {
+      "id": "B61",
+      "area": "Change tickets",
+      "match": "ITSM says its ticket servicenow:CHG0030108 (read 2026-09-23) was **cancelled**",
+      "planted": "the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled",
+      "cleared_by": null,
+      "raised_by": "CHG-2056"
     }
   ],
   "actions": [
@@ -1350,6 +1366,46 @@
       "match": "`hq-apps-egress-to-ldaps`",
       "planted": "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds the target's, which the running-config import records",
       "cleared_by": "CHG-2048"
+    },
+    {
+      "id": "A171",
+      "area": "Change tickets",
+      "match": "the approval of its ticket servicenow:CHG0030103 (read 2026-09-23) is requested",
+      "planted": "the record approves CHG-2003, but its ticket still waits for one CAB member (one approver approved: not the change's approval)",
+      "cleared_by": null,
+      "raised_by": "CHG-2056"
+    },
+    {
+      "id": "A172",
+      "area": "Change tickets",
+      "match": "ITSM says its ticket servicenow:CHG0030105 (read 2026-09-23) is closed",
+      "planted": "CHG-2005's ticket closed successful, while the record still has the change approved, not applied",
+      "cleared_by": null,
+      "raised_by": "CHG-2056"
+    },
+    {
+      "id": "A173",
+      "area": "Change tickets",
+      "match": "Change `CHG-2006` (Record the production directory servers' configuration (config.ldif exports)) is planned for 2026-09-20 in the record",
+      "planted": "the record plans CHG-2006 for 2026-09-20; its ticket's window is 2026-09-27 to 2026-09-28",
+      "cleared_by": null,
+      "raised_by": "CHG-2056"
+    },
+    {
+      "id": "A174",
+      "area": "Change tickets",
+      "match": "ITSM says the work on its ticket servicenow:CHG0029931 (read 2026-09-23) ran",
+      "planted": "CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state is kept native)",
+      "cleared_by": null,
+      "raised_by": "CHG-2056"
+    },
+    {
+      "id": "A175",
+      "area": "Change tickets",
+      "match": "names ticket servicenow:CHG0030107, but no import has read it",
+      "planted": "CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed",
+      "cleared_by": null,
+      "raised_by": "CHG-2056"
     }
   ]
 }
