@@ -119,12 +119,14 @@ def _standing(ctx, auth, owner):
               if status == "equivalent" and not values(auth, "ciamEvidenceRef") else ())]
 
 
-def _boundary_dns(d, env_dn):
+def boundaries_holding(d, env_dn):
+    """The system boundaries (ciamSystemBoundary) an environment (its DN) is inside."""
     return [b for b in subtree(d, SUFFIX, BOUNDARY)
             if any(norm_dn(r) == norm_dn(env_dn) for r in values(b, "ciamAffectedEnvironment"))]
 
 
-def _responsibilities(d, auth):
+def responsibilities_under(d, auth):
+    """The control responsibilities (ciamControlResponsibility) recorded under an authorization (none for None)."""
     return [r for r in subtree(d, SUFFIX, RESPONSIBILITY) if auth is not None
             and norm_dn(one(r, "ciamAuthorizationRef") or "") == norm_dn(auth.dn)]
 
@@ -139,13 +141,13 @@ def _met(d, r):
 def _crm_delta(ctx, src_auth, dst_auth, owner):
     """Blockers for controls the target's authorization leaves to the customer that the source's covered and nothing
     meets."""
-    covered = {c for r in _responsibilities(ctx.d, src_auth) if one(r, "ciamResponsibility") in COVERED
+    covered = {c for r in responsibilities_under(ctx.d, src_auth) if one(r, "ciamResponsibility") in COVERED
                for c in values(r, "ciamControlRef")}
     return [(AREA, f"{', '.join(values(r, 'ciamControlRef'))} is the customer's under `{rdn_value(dst_auth)}` and was "
                    f"covered by `{rdn_value(src_auth)}`: "
                    f"{one(r, 'ciamCustomerAction') or 'the customer must meet it'}. Record how it is met "
                    "(ciamImplementation), or an exception or POA&M item.", owner)
-            for r in _responsibilities(ctx.d, dst_auth) if one(r, "ciamResponsibility") == "customer"
+            for r in responsibilities_under(ctx.d, dst_auth) if one(r, "ciamResponsibility") == "customer"
             and set(values(r, "ciamControlRef")) & covered and _met(ctx.d, r) is None]
 
 
@@ -180,9 +182,10 @@ def check_authorization(ctx):
                      f"boundary and {ctx.dst.label} doesn't record it (ciamConfigurationMet).", owner, ctx.cutover)
               for c in unmet]
     outside = [(AREA, f"{ctx.src.label} is inside system boundary "
-                      f"{', '.join(f'`{rdn_value(b)}`' for b in _boundary_dns(ctx.d, ctx.src.dn))} and {ctx.dst.label} "
-                      "in none: update the system security plan to cover the target.", owner, ctx.cutover)] \
-        if _boundary_dns(ctx.d, ctx.src.dn) and not _boundary_dns(ctx.d, ctx.dst.dn) else []
+                      f"{', '.join(f'`{rdn_value(b)}`' for b in boundaries_holding(ctx.d, ctx.src.dn))} and "
+                      f"{ctx.dst.label} in none: update the system security plan to cover the target.", owner,
+                ctx.cutover)] \
+        if boundaries_holding(ctx.d, ctx.src.dn) and not boundaries_holding(ctx.d, ctx.dst.dn) else []
     crm = _crm_delta(ctx, src_auth, dst_auth, owner) if src_auth is not None and dst_auth is not None else []
     blockers, actions = [*missing, *standing, *crm], [*stale, *config, *outside]
     return findings(blockers=blockers, actions=actions,

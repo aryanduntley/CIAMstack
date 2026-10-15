@@ -12,7 +12,10 @@ from opsdir import operations as ops
 from opsdir.cli import import_time, read_texts
 from opsdir.connectors.capture import census_changes
 from opsdir.connectors import importing
+from opsdir.connectors.evidence import assemble_package, directory_output
+from opsdir.connectors.reports import HISTORY_HEADERS, catalogue
 from opsdir.core.directory import norm_dn
+from opsdir.domains.estate.evidence import boundary_named, run_records
 from opsdir.store import postgres as db
 from opsdir.store.postgres import read_ldif_files
 from support import build_directory, schema_for
@@ -24,10 +27,12 @@ SCRIPTS = SHOWCASE / "scripts"
 # An approved change made by an import (the record's region catalog fetched from a provider): the importer, the export
 # directory, when it was taken.
 ImportStep = NamedTuple("ImportStep", [("spec", str), ("root", pathlib.Path), ("at", str)])
+# An approved change that records a system boundary's evidence package (`opsdir evidence --change`): the boundary.
+EvidenceStep = NamedTuple("EvidenceStep", [("boundary", str)])
 REGIONS = SHOWCASE / "exports" / "regions"
 QUOTAS = SHOWCASE / "exports" / "quotas"
 FRAMEWORKS = SHOWCASE / "exports" / "frameworks"
-# the approved changes the showcase applies, in order: (change id, LDIF file or ImportStep)
+# the approved changes the showcase applies, in order: (change id, LDIF file, ImportStep or EvidenceStep)
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
             ("CHG-2005", SHOWCASE / "changes" / "CHG-2005-credential-roles.ldif"),
@@ -61,7 +66,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2041", ImportStep("gcp/frameworks", FRAMEWORKS / "gcp", "20260923090000Z")),
             ("CHG-2042", SHOWCASE / "changes" / "CHG-2042-standby-itar-data.ldif"),
             ("CHG-2043", SHOWCASE / "changes" / "CHG-2043-target-profiles.ldif"),
-            ("CHG-2044", SHOWCASE / "changes" / "CHG-2044-skyline-signing-answer.ldif"))
+            ("CHG-2044", SHOWCASE / "changes" / "CHG-2044-skyline-signing-answer.ldif"),
+            ("CHG-2046", EvidenceStep("SSP-CIAM-2026")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),
@@ -125,10 +131,13 @@ def import_exports(conn):
 
 
 def _changed(schema, records, done, changes):
-    """Effect (reads files): done followed by the change records of changes ((change id, LDIF file or ImportStep),
-    ...) in order, each import planned against the estate as the changes before it leave it."""
+    """Effect (reads files): done followed by the change records of changes ((change id, LDIF file, ImportStep or
+    EvidenceStep), ...) in order, each import and evidence run made in the estate as the changes before it leave
+    it."""
     def step(so_far, change):
         change_id, source = change
+        if isinstance(source, EvidenceStep):
+            return (*so_far, *evidence_records(build_directory(schema, records, so_far), source.boundary, change_id))
         if not isinstance(source, ImportStep):
             return (*so_far, *read_ldif_files([source]))
         d = build_directory(schema, records, so_far)
@@ -137,9 +146,19 @@ def _changed(schema, records, done, changes):
     return reduce(step, changes, tuple(done))
 
 
+def evidence_records(d, boundary, change_id):
+    """The records of a boundary's evidence run as the demo takes it (`opsdir evidence --change`), in memory: the
+    directory answers every query but the change history, the store's (its times are masked in golden, and the run's
+    hashes: scripts/mask-evidence.py)."""
+    b, reports = boundary_named(d, boundary), catalogue()
+    p = assemble_package(d, b, (), AS_OF, lambda q: directory_output(d, q, AS_OF, reports) or (HISTORY_HEADERS, ()),
+                         None, reports)
+    return run_records(d, b, AS_OF, {**p.files, "MANIFEST.json": p.manifest}, p.plan, change_id)
+
+
 def fixture_directory(changes=()):
     """Effect (reads files): the example estate as a Directory, as the demo builds it: loaded, the product exports
-    imported (IMPORTS), then after (change id, LDIF file or ImportStep) changes."""
+    imported (IMPORTS), then after (change id, LDIF file, ImportStep or EvidenceStep) changes."""
     records = read_ldif_files(sorted(DATA.glob("*.ldif")))
     schema = schema_for(records)
     return build_directory(schema, records, _changed(schema, records, import_records(schema, records), changes))
@@ -157,7 +176,9 @@ def approved_records():
 def apply_approved(conn, changes=APPROVED):
     """Effect: apply the approved changes to a store as the demo does: an LDIF file's records, or an import."""
     for change_id, source in changes:
-        if isinstance(source, ImportStep):
+        if isinstance(source, EvidenceStep):
+            ops.evidence(conn, source.boundary, AS_OF, change_id=change_id)
+        elif isinstance(source, ImportStep):
             ops.apply_import(conn, ops.preview_import(conn, source.spec, export_files(source.root),
                                                       import_time(source.at)), change_id)
         else:

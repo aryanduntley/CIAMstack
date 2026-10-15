@@ -356,6 +356,24 @@ ATTRIBUTES = (
                  "A data type of the organization's own a data discovery service looks for, as `name: regular "
                  "expression` (CUI markings, employee or contract numbers); the clouds' built-in detectors are theirs",
                  (("X-PATTERN", CUSTOM_IDENTIFIER),)),
+    AttributeDef(680, 'ciamEvidenceSource', 'string', 'meta', True,
+                 "What an evidence query runs: a report of the catalogue (`opsdir report` names it: principals, "
+                 "audit-trails, ...), `history` (the record's change history) or `search` (an LDAP search)"),
+    AttributeDef(681, 'ciamEvidenceDn', 'string', 'meta', True,
+                 "The DN an evidence query runs on: the report's DN argument, the entry whose history it is, or the "
+                 "search's base (none: the whole record)"),
+    AttributeDef(682, 'ciamEvidenceFilter', 'string', 'meta', True,
+                 "The LDAP filter of an evidence query's search (RFC 4515)"),
+    AttributeDef(683, 'ciamEvidenceAttribute', 'string', 'meta', False,
+                 "An attribute an evidence query's search shows (its columns, after the entry's DN)"),
+    AttributeDef(684, 'ciamEvidenceCadenceDays', 'int', 'meta', True,
+                 "How often an evidence query's evidence must be collected again, in days", (("X-MIN", "1"),)),
+    AttributeDef(685, 'ciamEvidenceAt', 'time', 'meta', True,
+                 "When an evidence package was taken (the day the record was evaluated as of)"),
+    AttributeDef(686, 'ciamEvidenceOutput', 'string', 'meta', False,
+                 "A file of an evidence package and the SHA-256 of its content, as `<path> <sha256>`"),
+    AttributeDef(687, 'ciamEvidenceQueryRef', 'dn', 'meta', False,
+                 "An evidence query an evidence package ran"),
     AttributeDef(595, 'ciamRescanDays', 'int', 'intent', True,
                  "How often a data discovery service examines its stores again, in days (1 daily, 7 weekly, 30 "
                  "monthly)", (("X-MIN", "1"),)),
@@ -518,6 +536,15 @@ CLASSES = (
              "A data discovery service an environment runs (Amazon Macie, Defender for Cloud's sensitive data "
              "discovery, Sensitive Data Protection): the stores it examines, the organization's own data types it "
              "looks for, how often, where its findings go and where it keeps its results"),
+    ClassDef(143, 'ciamEvidenceQuery', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamControlRef', 'ciamEvidenceSource'),
+             ('ciamEvidenceDn', 'ciamEvidenceFilter', 'ciamEvidenceAttribute', 'ciamEvidenceCadenceDays',
+              'ciamManagedBy'),
+             "What evidences controls from the record (under ou=evidence-queries): the controls, the report, change "
+             "history or LDAP search that shows them met, how often its evidence is collected and who keeps it"),
+    ClassDef(144, 'ciamEvidenceRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamEvidenceAt', 'ciamEvidenceOutput'),
+             ('ciamEvidenceQueryRef', 'ciamEvidenceRef'),
+             "A system boundary's last evidence package (cn=evidence under the boundary): when it was taken, its "
+             "files and their hashes, the queries it ran, where it is kept and the change it was recorded under"),
     ClassDef(126, 'ciamControlResponsibility', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamAuthorizationRef', 'ciamControlRef', 'ciamResponsibility'),
              ('ciamCustomerAction', 'ciamImplementation', 'ciamExceptionRef', 'ciamPoamRef', 'ciamEvidenceRef'),

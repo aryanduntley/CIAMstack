@@ -1291,6 +1291,42 @@
       "match": "Open question `q-tech-pubs-sso` (the estate)",
       "planted": "whether the technical publications portal keeps its own login page is an open question for the estate, needed before the cutover",
       "cleared_by": null
+    },
+    {
+      "id": "A140",
+      "area": "Evidence",
+      "match": "Control `nist-800-53-r5:IA-2` is the operator's (customer) under `F1209051525`",
+      "planted": "no evidence query shows IA-2 (identification and authentication) met on the target",
+      "cleared_by": null
+    },
+    {
+      "id": "A141",
+      "area": "Evidence",
+      "match": "Control `nist-800-53-r5:AC-2`: its evidence changes in target/prod",
+      "planted": "the target's access paths differ from production's: AC-2's evidence is collected again after the cutover",
+      "cleared_by": null
+    },
+    {
+      "id": "A142",
+      "area": "Evidence",
+      "match": "Control `nist-800-53-r5:AU-2`: its evidence changes in target/prod",
+      "planted": "the target's audit trails differ from production's: AU-2's evidence is collected again after the cutover",
+      "cleared_by": null
+    },
+    {
+      "id": "A143",
+      "area": "Evidence",
+      "match": "Control `nist-800-53-r5:AU-11`: its evidence changes in target/prod",
+      "planted": "the target's audit trails differ from production's: AU-11's evidence is collected again after the cutover",
+      "cleared_by": null
+    },
+    {
+      "id": "A144",
+      "area": "Evidence",
+      "match": "Boundary `SSP-CIAM-2026` (target/prod is inside it) has no recorded evidence package",
+      "planted": "once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded",
+      "cleared_by": "CHG-2046",
+      "raised_by": "CHG-2032"
     }
   ]
 }

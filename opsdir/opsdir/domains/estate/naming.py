@@ -110,6 +110,10 @@ SUPPRESSION_PREFIX = "exc-"   # a cloud suppression is named after the exception
 AUTHORIZATIONS = branch("authorizations")   # the cloud offerings' authorizations (ciamCloudAuthorization)
 BOUNDARIES = branch("boundaries")           # the operator's system boundaries (ciamSystemBoundary): its SSPs
 RESPONSIBILITIES = branch("responsibilities")   # who meets each control under an authorization (its CRM)
+EVIDENCE_QUERIES = branch("evidence-queries")   # which record queries evidence which controls (ciamEvidenceQuery)
+# what an evidence query runs besides a catalogue report: the record's change history, or an LDAP search
+EVIDENCE_HISTORY, EVIDENCE_SEARCH = "history", "search"
+EVIDENCE_RUN = "evidence"                   # the cn of a boundary's evidence run (cn=evidence,<boundary DN>)
 # an authorization's level, by program: FedRAMP's baselines (Class B, C, D) and the DoD SRG impact levels; a requirement
 # is met by the same program at the same or a higher level
 AUTHORIZATION_LEVELS = (("fedramp", ("fedramp-low", "fedramp-moderate", "fedramp-high")),

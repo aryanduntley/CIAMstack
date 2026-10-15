@@ -9,7 +9,7 @@ from opsdir.connectors.render import render_env
 from opsdir.core.environment import ENVIRONMENT
 from opsdir.core.naming import SUFFIX
 from opsdir.domains.directory.drift import DRIFT_HEADERS, drift
-from showcase_support import APPROVED, DATA, GOLDEN, cmd_output
+from showcase_support import APPROVED, DATA, GOLDEN, cmd_output, load_script
 from support import read_tree
 
 SRC, DST = "source/prod", "target/prod"
@@ -58,4 +58,6 @@ def test_search_ldif_matches_golden(estate):
 
 
 def test_export_after_changes_matches_golden(estate):
-    assert export_text(estate["after"], SUFFIX) + "\n" == (GOLDEN / "export.ldif").read_text()
+    # the evidence run's hashes masked, as the snapshot masks them (the store's history is in its package)
+    mask = load_script("mask-evidence.py")
+    assert mask.masked_export(export_text(estate["after"], SUFFIX) + "\n") == (GOLDEN / "export.ldif").read_text()

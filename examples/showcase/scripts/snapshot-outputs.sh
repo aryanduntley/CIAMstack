@@ -3,8 +3,8 @@
 #   OPSDIR_DSN=... scripts/snapshot-outputs.sh OUTDIR
 #   diff -r golden OUTDIR
 # Regenerates data/ and the core's published schema in place, then DROPS and reloads the opsdir schema in OPSDIR_DSN.
-# Paths under OUTDIR, history timestamps and internal row ids are masked so snapshots taken anywhere
-# compare equal.
+# Paths under OUTDIR, history timestamps (also in the evidence package and the hashes that cover them:
+# scripts/mask-evidence.py) and internal row ids are masked so snapshots taken anywhere compare equal.
 set -uo pipefail
 cd "$(dirname "$0")/.."                          # the showcase
 CORE=$(cd ../../opsdir && pwd)                   # the opsdir core: its venv, schema and gen-schema.py
@@ -54,7 +54,7 @@ cap 02-data-profile od data-profile --env source/prod --at 20260920030000Z --ter
 cap 02-import-data-profile od import --change CHG-2014 --at 20260920030000Z ldap/data-profile "$OUT/data-profile"
 cap 02-census od census --change CHG-2009 exports/census
 cap 02-check od check
-for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams data-profile data-profile-attributes alerts log-routes canaries monitors audit-trails security-services quotas budgets incident-reporting reportable-incidents poam exceptions assessments authorizations responsibilities imports unknowns user-schema databases object-stores volumes backups restore-tests settings recovery standbys failover-drills tags routes private-endpoints endpoint-services egress-sites dns edge-policies edge-services header-contracts identities principals guardrails access-paths workloads; do cap "03-report-$r" od report "$r"; done
+for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams data-profile data-profile-attributes alerts log-routes canaries monitors audit-trails security-services quotas budgets incident-reporting reportable-incidents poam exceptions assessments authorizations responsibilities evidence imports unknowns user-schema databases object-stores volumes backups restore-tests settings recovery standbys failover-drills tags routes private-endpoints endpoint-services egress-sites dns edge-policies edge-services header-contracts identities principals guardrails access-paths workloads; do cap "03-report-$r" od report "$r"; done
 # the stale report dates a dependency's change from history: a change this run imports is dated the day it runs
 sed -i -e "s/$(date +%F)/<RUN-DATE>/g" -e "s/$(date -u +%F)/<RUN-DATE>/g" "$OUT/cmd/03-report-stale.txt"
 cap 03-cloud-drift-source od import --dry-run aws/terraform-state exports/cloud
@@ -127,6 +127,8 @@ cap 08-apply-chg-2041 od import --change CHG-2041 --at 20260923090000Z gcp/frame
 cap 08-apply-chg-2042 od modify --change CHG-2042 changes/CHG-2042-standby-itar-data.ldif
 cap 08-apply-chg-2043 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
 cap 08-apply-chg-2044 od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
+cap 08-apply-chg-2046 od evidence --boundary SSP-CIAM-2026 --change CHG-2046 -o "$OUT/evidence/SSP-CIAM-2026"
+cap 08-report-evidence od report evidence
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
@@ -156,5 +158,6 @@ cap 10-report-jobs-after od report jobs
 cap 11-plan-after  od plan source/prod target/prod -o "$OUT/plan-after"
 cap 11-check-after "$PY" scripts/check-findings.py after
 od export > "$OUT/export.ldif" 2>&1
+"$PY" scripts/mask-evidence.py "$OUT/evidence/SSP-CIAM-2026" "$OUT/export.ldif"
 
 echo "snapshot written to $OUT"

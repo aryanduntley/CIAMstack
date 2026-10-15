@@ -3098,6 +3098,41 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.667 NAME 'ciamAnsweredAt' DESC 'When
   the question was answered' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.
  1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X
  -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.680 NAME 'ciamEvidenceSource' DESC '
+ What an evidence query runs: a report of the catalogue (`opsdir report` nam
+ es it: principals, audit-trails, ...), `history` (the record\27s change his
+ tory) or `search` (an LDAP search)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1
+ .4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'stri
+ ng' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.681 NAME 'ciamEvidenceDn' DESC 'The 
+ DN an evidence query runs on: the report\27s DN argument, the entry whose h
+ istory it is, or the search\27s base (none: the whole record)' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.682 NAME 'ciamEvidenceFilter' DESC '
+ The LDAP filter of an evidence query\27s search (RFC 4515)' EQUALITY caseIg
+ noreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY '
+ meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.683 NAME 'ciamEvidenceAttribute' DES
+ C 'An attribute an evidence query\27s search shows (its columns, after the 
+ entry\27s DN)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.684 NAME 'ciamEvidenceCadenceDays' D
+ ESC 'How often an evidence query\27s evidence must be collected again, in d
+ ays' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALU
+ E X-PORTABILITY 'meta' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.685 NAME 'ciamEvidenceAt' DESC 'When
+  an evidence package was taken (the day the record was evaluated as of)' EQ
+ UALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VAL
+ UE X-PORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.686 NAME 'ciamEvidenceOutput' DESC '
+ A file of an evidence package and the SHA-256 of its content, as `<path> <s
+ ha256>`' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.687 NAME 'ciamEvidenceQueryRef' DESC
+  'An evidence query an evidence package ran' EQUALITY distinguishedNameMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'd
+ n' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3873,3 +3908,16 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.137 NAME 'ciamUnknown' DESC 'A questi
  he planner counts the open ones' SUP ciamObject STRUCTURAL MUST ( cn $ ciam
  Question $ ciamOwner ) MAY ( ciamBlocking $ ciamConcerns $ ciamRaisedAt $ c
  iamNeededBy $ ciamAnswer $ ciamAnsweredAt ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.143 NAME 'ciamEvidenceQuery' DESC 'Wh
+ at evidences controls from the record (under ou=evidence-queries): the cont
+ rols, the report, change history or LDAP search that shows them met, how of
+ ten its evidence is collected and who keeps it' SUP ciamObject STRUCTURAL M
+ UST ( cn $ ciamControlRef $ ciamEvidenceSource ) MAY ( ciamEvidenceDn $ cia
+ mEvidenceFilter $ ciamEvidenceAttribute $ ciamEvidenceCadenceDays $ ciamMan
+ agedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.144 NAME 'ciamEvidenceRun' DESC 'A sy
+ stem boundary\27s last evidence package (cn=evidence under the boundary): w
+ hen it was taken, its files and their hashes, the queries it ran, where it 
+ is kept and the change it was recorded under' SUP ciamObject STRUCTURAL MUS
+ T ( cn $ ciamEvidenceAt $ ciamEvidenceOutput ) MAY ( ciamEvidenceQueryRef $
+  ciamEvidenceRef ) X-ORIGIN 'opsdir' )

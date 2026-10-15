@@ -46,6 +46,8 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh migrate SRC DST [-o DIR] [--as REQUESTER]  # check both stacks, plan, render the target; exit 1 unless ready
 ./opsdir.sh export [-b BASE]          # entries as LDIF (for review)
 ./opsdir.sh history [DN]              # governed changes
+./opsdir.sh evidence --boundary B [--control C]... [-o DIR] [--change CHG-…] [--kept-at URL]
+                                      # a system boundary's compliance evidence package, as of --as-of (below)
 ./opsdir.sh workspace create|status|diff|cutover     # migration workspaces (below)
 ./opsdir.sh --workspace COMMAND …     # any command against the workspace instead of the live record
 ```
@@ -67,6 +69,27 @@ the ones concerning the source or the target (area `Unknowns`): an open blocking
 can't be READY; another open one is an action for its owner, dated by `ciamNeededBy` (else the planned cutover); an
 answered one is listed as in place. No fix is offered (an answer is a person's), and an approved risk exception
 accepts these findings like any other.
+
+### Compliance evidence
+
+Which record queries show which controls met is recorded under `ou=evidence-queries` (`ciamEvidenceQuery`, the estate
+domain): `ciamControlRef` the controls (framework:control), `ciamEvidenceSource` what it runs (a report of `opsdir
+report`, `history` for the change history, or `search` for an LDAP search: `ciamEvidenceFilter` and the
+`ciamEvidenceAttribute`s it shows), `ciamEvidenceDn` the DN it runs on (the report's DN argument, the entry whose
+history it is, the search's base), `ciamEvidenceCadenceDays` how often it is collected again and `ciamManagedBy` who
+keeps it. `opsdir evidence --boundary B` writes a system boundary's package as of `--as-of`: for each control that the
+authorizations its environments rely on leave to the operator (customer or shared, `ciamControlResponsibility`) and a
+query names (`--control` narrows), a `<framework>_<control>/` folder with each query's output as CSV and JSON, and
+`MANIFEST.json` (the boundary, the day, the history point: the last governed change and how many history entries there
+are, and each file's SHA-256). A report with an `environment` column is cut to the boundary's environments; secret
+values are never in the record, so never in a package. With `--change` the run is recorded on the boundary
+(`ciamEvidenceRun`, `cn=evidence,<boundary>`: when, each file and its hash, the queries, `--kept-at` where the package
+is kept); without it nothing is written. `opsdir report evidence` lists every control and query, when each boundary
+last collected it, and whether it is due. `opsdir plan` (area `Evidence`) finds, for the target: a customer or shared
+control under its authorization that no query shows met (an action), a query naming no report (a blocker), a boundary
+it is inside with no package or one older than its queries' smallest cadence (an action), and a control whose evidence
+differs between source and target (a report with an `environment` column, the source's rows against the target's: an
+action to collect it again after the cutover); the queries it can't compare are listed once as not compared.
 
 ### Who keeps what, and where it renders
 
@@ -366,6 +389,8 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | CI pipelines as jobs | `opsdir.domains.automation.pipelines`: `FoundPipeline`, `ReadRepository` (a repository the import read, for removing what it no longer defines), `pipeline_groups(d, pipelines, read)` (groups and removal notices), `gone_pipelines`, `environment_name` |
    | A planner check's findings, with its one line saying all it looked at holds when nothing is a blocker or an action | `opsdir.core.findings`: `all_clear(parts, ok_line)`, `each_checked(items, judge, ok_line)` (no findings when there are no items) |
    | The binding of the role an entry's attribute names (where findings or results go, the channel a budget alerts, a backup vault, a snapshot policy, a login secret) | `opsdir.core.environment.role_named(m, entry, "ciamFindingsRole")`: the environment's binding of that role, or `None` when the entry names none or the environment binds none |
+   | The system boundaries an environment is inside; the control responsibilities recorded under an authorization | `opsdir.domains.estate.authorizations`: `boundaries_holding(d, env_dn)`, `responsibilities_under(d, auth)` |
+   | The controls the operator must show met under the authorizations environments rely on; a table as evidence (cut to environments, CSV, JSON) and a text's SHA-256 | `opsdir.domains.estate.evidence`: `controls_covered(d, env_dns)`, `scoped_rows(headers, rows, labels)`, `table_csv(headers, rows)`, `table_json(headers, rows)`, `sha256(text)` |
    | Who keeps an entry the stack doesn't (the party `ciamManagedBy` names) | `opsdir.domains.governance.keepers`: `managed_by(d, e)` (the party entry or `None`), `managed_by_name(d, e, default)` (its name as reports show it); `keeper(m, e)` for where its keeper's root is |
    | How long a destination keeps what it is sent, and a report's yes/no | `opsdir.domains.observability.retention`: `retention_days(b)`, `longest_retention(days)`, `INDEFINITE` (forever), `yes_no(e, attr)` |
 
