@@ -2,7 +2,7 @@
 
 opsdir adapter for PingDS (ForgeRock Directory Services): the directory domain rendered as PingDS artifacts (the standard schema and tree LDIF, a `dsconfig` batch, ACI LDIF, per-server setup scripts that join the existing replication deployment), replication-continuity checks, and the servers' configuration, access logs and its own render read back. A thin product adapter on `opsdir-base-ds`, which holds everything the DS lineage shares; this package supplies PingDS's data (`render.PINGDS`), its setup script, its join check, logs, signals and version changes.
 
-**Applies to** environments where PingDS runs: a server, or a Kubernetes workload's binding, whose `ciamProductVersion` starts with `PingDS` (`opsdir_base_ds.product.runs`). Supported: PingDS `>=7.2,<9` (DS 7.2 renamed the setup options rendered here, `--deploymentId`). Its directory servers are the domain's server role `ds`.
+**Applies to** environments where PingDS runs: a server, or a Kubernetes workload's binding, whose `ciamProductVersion` starts with `PingDS` (`opsdir_base_ds.product.runs`). Supported: PingDS `>=7.2,<9` (DS 7.2 renamed the setup options rendered here, `--deploymentId`). Its directory servers are the domain's server role `ds`; it declares its roles for the kits that deploy it, which find them by product (`Adapter.roles`: server `ds`, service `ds-ldaps-service`).
 
 **Depends on** `opsdir` and `opsdir-base-ds` (and through it `opsdir-adapter-ldap`, the standard LDAP files). The setup scripts run PingDS's own `setup`; collection runs PingDS's `ldapsearch`. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pingds`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 

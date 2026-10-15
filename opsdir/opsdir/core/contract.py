@@ -166,13 +166,14 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # LogSources they declare; host_files(m): the HostFiles they render for m's servers; render_targets(adapter name): the
 # render targets chosen for that adapter in this render (() outside a render, or when it declares none);
 # mounts_secrets(m, workload): whether a deployment kit rendering m mounts the workload's SecretProviderClasses in its
-# pods (Adapter.mounts_secrets)
+# pods (Adapter.mounts_secrets); installed_logs: the LogSources every installed adapter declares (a kit's resolved),
+# whether or not it renders the environment: what a kit reads its products' log files from
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
                                    ("deployable_config", Callable), ("signals", Callable), ("logs", Callable),
                                    ("host_files", Callable), ("render_targets", Callable),
-                                   ("mounts_secrets", Callable)])
+                                   ("mounts_secrets", Callable), ("installed_logs", tuple)])
 
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
@@ -363,7 +364,10 @@ Adapter = namedtuple("Adapter", (
                             # reading the secret at run time (core.interchange.jinja), or None to fall back to its
                             # resolver command}: how configuration management reads its schemes' secrets
     "signals",              # Signals: the neutral signals its products' servers expose as Prometheus metrics
-    "logs",                 # LogSources: the logs its products' servers (or, for a kit, the role's containers) write
+    "logs",                 # LogSources: the logs its products' servers (or, for a kit, the role's containers) write;
+                            # or (installed adapters' static LogSources, their product roles ((product, kind,
+                            # role), ...)) -> LogSources, for a kit deriving its own from the products' (resolved
+                            # once when the registry loads the adapters: connectors.registry.resolved_logs)
     "host_files",           # (EnvModel, Services) -> HostFiles: files configuration management places on the
                             # environment's servers (agents' configuration), or None
     "places_host_files",    # whether it places the other adapters' HostFiles on an environment's servers (the
@@ -383,10 +387,17 @@ Adapter = namedtuple("Adapter", (
     "roles_used",           # (EnvModel) -> (RoleUse, ...): the binding roles its products' entries use in an
                             # environment (a connector's or data store's credential), whether or not it applies there
                             # (the keys report says which product would use them), or None
-    "mounts_secrets"),      # (EnvModel, workload) -> bool: whether its pods (a deployment kit's) mount the
+    "mounts_secrets",       # (EnvModel, workload) -> bool: whether its pods (a deployment kit's) mount the
                             # SecretProviderClasses of a workload it deploys, or None (it mounts none)
+    "roles"),               # ((kind, (role, ...)), ...): the roles its products use, by kind (ROLE_KINDS), so a kit
+                            # deploying them finds them by product (core.environment.roles_for), never by name
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None))
+              None, False, None, None, ()))
+
+# The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
+# keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it
+# by), cluster-discovery (the binding role its nodes find each other through).
+ROLE_KINDS = ("server", "keystore", "service", "cluster-discovery")
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

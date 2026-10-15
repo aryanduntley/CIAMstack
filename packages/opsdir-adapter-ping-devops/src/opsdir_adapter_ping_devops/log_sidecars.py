@@ -1,5 +1,5 @@
 """The ping-devops values that make PingFederate's log files their own containers' output (user decision 2348): for each
-file an environment's log routes pick (logs.SIDECAR_FILES), a sidecar tailing it, so a collector tells the files
+file an environment's log routes pick (logs.sidecar_files), a sidecar tailing it, so a collector tells the files
 apart by container name. Pure.
 
 As the pinned chart reads them (tools/ping-devops/0.16.0: templates/pinglib/_workload.tpl): a sidecar is defined
@@ -13,19 +13,21 @@ start hooks take an existing server root for a restart, and kubelet would create
 """
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.sources import shipments
-from .logs import LOGS, OUT_DIR, SIDECAR_FILES
+from .logs import OUT_DIR, kit_logs, server_roles, sidecar_files
 
 OUT_VOLUME, MOUNT = "out-dir", "/pf-out"
 RESOURCES = {"requests": {"cpu": "10m", "memory": "16Mi"}, "limits": {"memory": "64Mi"}}
 SECURITY = {"allowPrivilegeEscalation": False, "capabilities": {"drop": ["ALL"]}}
 
 
-def picked(m, role):
+def picked(m, services, role):
     """((sidecar container, path under the server root), ...) of a role's files environment m's log routes pick (from
-    this kit's own declarations), in declaration order."""
-    wanted = {x.source.container for x in shipments(m, log_routes(m.d), LOGS)
+    this kit's own declarations, over PingFederate's as Services.installed_logs gives them), in declaration order."""
+    sources = services.installed_logs
+    files = sidecar_files(sources, server_roles(m.product_roles))
+    wanted = {x.source.container for x in shipments(m, log_routes(m.d), kit_logs(sources, m.product_roles))
               if x.on == "kubernetes" and x.role == role and x.source.container}
-    return tuple((c, path) for r, c, path, _ in SIDECAR_FILES if r == role and c in wanted)
+    return tuple((c, path) for r, c, path, _ in files if r == role and c in wanted)
 
 
 def sidecar(image, path):

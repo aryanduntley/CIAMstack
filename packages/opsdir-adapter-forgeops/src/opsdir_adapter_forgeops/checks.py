@@ -10,12 +10,12 @@ to its component (when the target renders config profiles).
 import re
 
 from opsdir.core.directory import rdn_value
-from opsdir.core.environment import one_role
+from opsdir.core.environment import one_role, roles_for
 from opsdir.core.findings import findings, responsible
 from opsdir.domains.compute.workloads import workload_secrets
 from opsdir_adapter_kubernetes.render import namespace_of, on_kubernetes, service_account_of
 from .components import image_of, keystore_from_record, placements, slot_envs, split_ds, unplaced
-from .release import (AMSTER_ENV_SECRET, CONFIG_PROFILES, HELM, IDENTITY_PLATFORM, KEYSTORE_KEY, KEYSTORE_ROLES,
+from .release import (AMSTER_ENV_SECRET, CONFIG_PROFILES, HELM, IDENTITY_PLATFORM, KEYSTORE_KEY, KEYSTORE_PRODUCTS,
                       KEYSTORE_SECRET, KUSTOMIZE, SERVERS_CA, component, kit_secrets, public_image)
 
 AREA = "ForgeOps"
@@ -82,9 +82,10 @@ def _slot_text(m, p, c, v):
 
 
 def _keystore(m, p):
-    """The action naming the keystore the release generates while the environment binds the record's (am-keystore,
-    idm-keystore), or ()."""
-    bound = [r for r in KEYSTORE_ROLES if one_role(m, r) is not None]
+    """The action naming the keystore the release generates while the environment binds the record's (AM's and
+    IDM's keystore roles, am-keystore and idm-keystore: release.KEYSTORE_PRODUCTS), or ()."""
+    bound = [r for product in KEYSTORE_PRODUCTS for r in roles_for(m, product, "keystore")
+             if one_role(m, r) is not None]
     if not bound or not {"am", "idm"} & set(p.on) or keystore_from_record(m, p):
         return ()
     return (f"ForgeOps in {m.label} (namespace `{p.namespace}`) generates AM's and IDM's keystore (the keystore-create "

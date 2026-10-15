@@ -2,7 +2,7 @@
 
 opsdir adapter for PingGateway (ForgeRock Identity Gateway): the routes that protect applications, rendered for each environment from the record and read back from a gateway configuration directory (saved, or collected from Git or a ConfigMap).
 
-**Applies to** environments where PingGateway or ForgeRock Identity Gateway runs: a server, or a Kubernetes workload's binding, whose `ciamProductVersion` starts with `PingGateway` or `ForgeRock Identity Gateway` (`runs_product`). Supported: PingGateway `>=2023,<2027`, ForgeRock Identity Gateway `>=7,<8`. A product adapter: it defines the server role `ig`. What depends on the version follows the servers' recorded `ciamProductVersion` (none recorded: the newest release).
+**Applies to** environments where PingGateway or ForgeRock Identity Gateway runs: a server, or a Kubernetes workload's binding, whose `ciamProductVersion` starts with `PingGateway` or `ForgeRock Identity Gateway` (`runs_product`). Supported: PingGateway `>=2023,<2027`, ForgeRock Identity Gateway `>=7,<8`. A product adapter: it defines the server role `ig` and declares it for the kits that deploy it, which find it by product (`Adapter.roles`: server `ig`). What depends on the version follows the servers' recorded `ciamProductVersion` (none recorded: the newest release).
 
 **Depends on** `opsdir` only. Installing the package registers it with opsdir (entry point `opsdir.adapters`: `pinggateway`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
 

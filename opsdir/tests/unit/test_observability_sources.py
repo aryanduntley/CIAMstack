@@ -80,15 +80,10 @@ def test_declarations_are_checked():
 
 
 def _adapters():
-    from opsdir_adapter_forgeops.adapter import ADAPTER as FORGEOPS
-    from opsdir_adapter_opendj.adapter import ADAPTER as OPENDJ
-    from opsdir_adapter_ping_devops.adapter import ADAPTER as PING_DEVOPS
-    from opsdir_adapter_pingam.adapter import ADAPTER as PINGAM
-    from opsdir_adapter_pingds.adapter import ADAPTER as PINGDS
-    from opsdir_adapter_pingfederate.adapter import ADAPTER as PINGFEDERATE
-    from opsdir_adapter_pinggateway.adapter import ADAPTER as PINGGATEWAY
-    from opsdir_adapter_pingidm.adapter import ADAPTER as PINGIDM
-    return {a.name: a for a in (FORGEOPS, OPENDJ, PING_DEVOPS, PINGAM, PINGDS, PINGFEDERATE, PINGGATEWAY, PINGIDM)}
+    """The products' and kits' adapters as the registry holds them (a kit's logs resolved over the products')."""
+    from opsdir.connectors.registry import ADAPTERS
+    names = ("forgeops", "opendj", "ping-devops", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm")
+    return {a.name: a for a in ADAPTERS if a.name in names}
 
 
 def test_every_declared_source_is_well_formed():

@@ -60,13 +60,13 @@ def _workload(m, services, w, sidecars=()):
     return {"labels": pod_labels_of(m, services, w), "annotations": marks, **stateful}
 
 
-def _logs(m, p, product):
+def _logs(m, services, p, product):
     """(image, the log sidecars its role's routes pick, whether it is a StatefulSet) of a product run here, or None."""
     w = workload_of(p, product.name)
     if w is None:
         return None
     repository, tag = chart_image(image_of(m, p, product.name))
-    return f"{repository}:{tag}", picked(m, product.role), bool(_claim(m, w))
+    return f"{repository}:{tag}", picked(m, services, product.role), bool(_claim(m, w))
 
 
 def _ingress(m, w):
@@ -108,7 +108,7 @@ def product_values(m, services, p, product):
         return {"enabled": False}
     repository, tag = chart_image(image_of(m, p, product.name))
     container, files, ingress, envs = _container(m, w), _secret_volumes(w), _ingress(m, w), profile_envs(m, w)
-    _, found, stateful = _logs(m, p, product)
+    _, found, stateful = _logs(m, services, p, product)
     logs, secrets = product_logs(found, stateful), secret_mounts(m, services, w)
     mounts = [*logs.get("volumeMounts", ()), *secrets.get("volumeMounts", ())]      # the sidecars' and the classes'
     return {"enabled": True, "image": {"repositoryFqn": repository, "tag": tag},
@@ -126,7 +126,7 @@ def chart_values(m, services, p):
     query = recorded_query(m)
     return {"global": {"envs": {EULA: "YES", **({DNS_QUERY: query} if query else {})}},
             **{x.name: product_values(m, services, p, x) for x in PRODUCTS},
-            **shared_logs(tuple(found for found in (_logs(m, p, x) for x in PRODUCTS) if found))}
+            **shared_logs(tuple(found for found in (_logs(m, services, p, x) for x in PRODUCTS) if found))}
 
 
 def install_command(namespace):

@@ -6,6 +6,7 @@ adapter (`applies` is None: a generic adapter for a standard, which every compli
 inferred; it renders only where a stack declares it. A connector: it joins the directory's declarations with what
 the registry discovered. Every function here is pure.
 """
+from ..core.environment import EnvModel, product_roles, with_product_roles
 from ..core.naming import env_label
 from ..core.versions import in_range, product_version
 from ..domains.compute.workloads import version_holders
@@ -18,9 +19,16 @@ def matches_data(a, m):
     return a.applies is not None and a.applies(m)
 
 
+def _with_roles(m, adapters):
+    """m carrying the adapters' product roles, unless it already carries some (registry.environment's) or isn't an
+    EnvModel (a caller's stand-in)."""
+    return with_product_roles(m, product_roles(adapters)) if isinstance(m, EnvModel) and not m.product_roles else m
+
+
 def declared_adapters(m, adapters):
     """The adapters that render an environment: its declared stack's (in registry order), or those whose `applies`
-    matches its data when it declares none."""
+    matches its data when it declares none (with the adapters' product roles: a kit finds its products by them)."""
+    m = _with_roles(m, adapters)
     if not m.stack:
         return tuple(a for a in adapters if matches_data(a, m))
     names = {c.adapter for c in m.stack}
@@ -95,6 +103,7 @@ def stack_rows(m, adapters, versions, host_files=()):
 
 
 def _stack_rows(m, adapters, versions):
+    m = _with_roles(m, adapters)
     products = _product_rows(m, declared_adapters(m, adapters))
     if not m.stack:
         inferred = ", ".join(a.name for a in declared_adapters(m, adapters)) or "none"

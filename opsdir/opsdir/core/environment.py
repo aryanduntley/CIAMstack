@@ -29,8 +29,10 @@ EnvModel = NamedTuple("EnvModel", [("d", Directory), ("dn", str), ("env", Entry)
                                    ("declared_roles", tuple),   # roles the environment declares it must bind
                                    ("overrides", tuple),        # ciamOverride entries that apply to it
                                    ("lineage", tuple),          # the environment, then its bases (overlays)
-                                   ("scope", Optional[Scope])])  # what a render writes of it (None: all of it)
-EnvModel.__new__.__defaults__ = (None,)
+                                   ("scope", Optional[Scope]),  # what a render writes of it (None: all of it)
+                                   ("product_roles", tuple)])   # ((product, kind, role), ...) the installed
+                                                                # adapters declare (with_product_roles)
+EnvModel.__new__.__defaults__ = (None, ())
 
 
 def env_dn(spec):
@@ -91,6 +93,25 @@ def as_seen(m):
 def with_required_roles(m, required_roles):
     """The same environment, with unbound roles recomputed for a (new) set of required roles (and its own)."""
     return m._replace(unbound=_unbound(m.bindings, required_roles, m.declared_roles))
+
+
+def product_roles(adapters):
+    """((product, kind, role), ...): every role these adapters declare (Adapter.roles: ((kind, (role, ...)), ...)),
+    under each product name the declaring adapter lists (Adapter.products), in their order."""
+    return tuple((product, kind, role) for a in adapters for product, _ in a.products for kind, roles in a.roles
+                 for role in roles)
+
+
+def with_product_roles(m, product_roles):
+    """The same environment, carrying the roles the installed product adapters declare ((product, kind, role), ...:
+    connectors.registry.product_roles), so a kit finds a product's roles by product (roles_for)."""
+    return m._replace(product_roles=tuple(product_roles))
+
+
+def roles_for(m, product, kind):
+    """The roles of a kind (contract.ROLE_KINDS) the installed adapter of a product (as its Adapter.products names it)
+    declares, in its order; () when no installed adapter declares the product."""
+    return tuple(dict.fromkeys(r for p, k, r in m.product_roles if p == product and k == kind))
 
 
 def published_role(d, host):

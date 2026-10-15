@@ -32,7 +32,7 @@ PROFILE_BUILDS = (("idm", "PingIDM", "config", "/config/"), ("amster", "PingAM",
 # AM's and IDM's keystore (deferred 2136 part 4): the Secret and key the release mounts it from, and the roles the
 # product adapters bind it to. A workload mapping that key delivers the record's keystore; the release then makes none.
 KEYSTORE_SECRET, KEYSTORE_KEY = "keystore", "keystore.jceks"
-KEYSTORE_ROLES = ("am-keystore", "idm-keystore")
+KEYSTORE_PRODUCTS = ("PingAM", "PingIDM")     # their keystore roles: Adapter.roles kind keystore (roles_for)
 # The Secret the amster job reads every variable from (envFrom): a profile's secrets for amster are its keys.
 AMSTER_ENV_SECRET = "amster-env-secrets"
 DS_LDAPS_PORT = 1636                    # the in-cluster DS LDAPS port ForgeOps addresses (ds-idrepo-0.ds-idrepo:1636)
@@ -80,8 +80,10 @@ _BY_NAME = {c.name: c for c in COMPONENTS}
 TOOLING_IMAGES = (("am-custom", "busybox:musl"), ("idm-custom", "busybox:musl"),
                   ("kubectl", f"{PUBLIC_IMAGES}images/kubectl:1.36.1"))
 
-# The components a server role runs as (ds: by the workload's name, ForgeOps' ds-idrepo or ds-cts).
-ROLE_COMPONENTS = {"am": ("am",), "idm": ("idm",), "ig": ("ig",), "ds": ("ds-idrepo", "ds-cts")}
+# The components a product's server role runs as (DS: by the workload's name, ForgeOps' ds-idrepo or ds-cts); the
+# product's server roles are its adapter's (Adapter.roles kind server, core.environment.roles_for).
+PRODUCT_COMPONENTS = (("PingAM", ("am",)), ("PingIDM", ("idm",)), ("PingGateway", ("ig",)),
+                      ("PingDS", ("ds-idrepo", "ds-cts")))
 UIS = ("admin-ui", "end-user-ui", "login-ui")
 # Components without a workload of their own whose image the record keeps in a workload's binding under their first
 # container name (Component.containers), the container of their pods that runs it (amster's: its init container):
@@ -90,11 +92,11 @@ UIS = ("admin-ui", "end-user-ui", "login-ui")
 COMPANION_IMAGES = ("amster", "admin-ui", "end-user-ui", "login-ui", "idm-admin-ui")
 IDM_ADMIN_UI, IDM_ADMIN_UI_VERSIONS = "idm-admin-ui", ">=8.1"
 
-# The role a component without a workload of its own labels its pods with (opsdir.io/role), so the namespace's default
-# deny of ingress lets in what reaches it: the UIs serve through the ingress as AM does (port 8080), ds-set-passwords
-# reaches DS as its peers do. Jobs that only call out (amster, keystore-create) need none.
-COMPANION_ROLES = (("admin-ui", "am"), ("end-user-ui", "am"), ("login-ui", "am"), ("idm-admin-ui", "idm"),
-                   ("ds-set-passwords", "ds"))
+# The product whose server role a component without a workload of its own labels its pods with (opsdir.io/role), so
+# the namespace's default deny of ingress lets in what reaches it: the UIs serve through the ingress as AM does (port
+# 8080), ds-set-passwords reaches DS as its peers do. Jobs that only call out (amster, keystore-create) need none.
+COMPANION_PRODUCTS = (("admin-ui", "PingAM"), ("end-user-ui", "PingAM"), ("login-ui", "PingAM"),
+                      ("idm-admin-ui", "PingIDM"), ("ds-set-passwords", "PingDS"))
 
 # The HTTP routes of the release's own Ingresses (kustomize/base/*/*-ingress.yaml, the charts' *-ingress.yaml), for a
 # cluster gateway to serve instead: (component, roles whose service names' hosts carry it, path, match, Service, port,
@@ -114,9 +116,9 @@ ROUTES = (("am", ("am",), "/am", "prefix", "am", 80, None),
 # Routes a component takes over when it is on: (component whose route it was, path, component taking it). With the
 # IDM admin UI pod on, the chart's IDM Ingress sends /admin (and the UI's /api) to it (2026.3.2 idm-ingress.yaml).
 TAKEN_ROUTES = (("idm", "/admin", "idm-admin-ui"),)
-# The roles whose service names a chart's Ingresses serve: with any of them behind a cluster gateway, the chart's
-# Ingresses are off (the gateway serves its routes).
-CHART_ROLES = ((IDENTITY_PLATFORM, ("am", "idm")), (PING_GATEWAY, ("ig",)))
+# The products whose server roles' service names a chart's Ingresses serve: with any of them behind a cluster gateway,
+# the chart's Ingresses are off (the gateway serves its routes).
+CHART_PRODUCTS = ((IDENTITY_PLATFORM, ("PingAM", "PingIDM")), (PING_GATEWAY, ("PingGateway",)))
 
 # What the release's pods listen on, per server role (the bases' and charts' containerPort): (role, port, purpose,
 # peers) as contract.Listener's. AM, IDM and IG serve HTTP behind the ingress; DS serves LDAP and LDAPS to AM, IDM
@@ -170,7 +172,7 @@ def kit_secrets(names, target):
     read: None when the record (or the operator) supplies it. With no DS store among them, ds-ssl-keypair is
     SERVERS_CA."""
     wanted = set(names)
-    servers = not wanted & set(ROLE_COMPONENTS["ds"])
+    servers = not wanted & set(dict(PRODUCT_COMPONENTS)["PingDS"])
     found = (SERVERS_CA if servers and s.name == SERVERS_CA.name else s for s in KIT_SECRETS)
     return tuple((s, dict(s.made).get(target)) for s in found if wanted & set(s.readers))
 

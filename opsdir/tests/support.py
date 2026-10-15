@@ -9,9 +9,10 @@ import psycopg
 import pytest
 
 from opsdir.connectors.importing import import_changes
-from opsdir.connectors.registry import core_fragments, import_table, schema_fragments
+from opsdir.connectors.registry import ADAPTERS, core_fragments, import_table, schema_fragments
 from opsdir.connectors.schema import composed_schema
 from opsdir.core.directory import make_directory, make_entry, norm_dn
+from opsdir.core.environment import env_model, product_roles, with_product_roles
 from opsdir.core.inventory import with_imports
 from opsdir.core.paths import SCHEMA_FILE
 from opsdir.core.standard import registry_ldif
@@ -64,6 +65,13 @@ def schema_for(records):
     rows = (split_record(canon, r.attrs) for r in records)
     return composed_schema(schema_fragments(), tuple(make_entry(r.dn, classes, attrs) for r, (classes, attrs)
                                                      in zip(records, rows) if _defines(classes)))
+
+
+
+def installed_model(d, spec):
+    """env_model of an environment carrying the installed adapters' product roles, as connectors.registry.environment
+    gives it: what the deployment kits find their products' roles by (core.environment.roles_for)."""
+    return with_product_roles(env_model(d, spec), product_roles(ADAPTERS))
 
 
 def build_directory(schema_text, records, change_records=()):

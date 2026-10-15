@@ -18,7 +18,8 @@ from .versions import VERSION_CHANGES
 PRODUCTS = ("PingAM", "ForgeRock AM")
 # An AM session token (the iPlanetDirectoryPro cookie value) is a live credential
 SECRET_PATTERNS = (SecretPattern("am-session-token", r"AQIC5[A-Za-z0-9*._-]{40,}", "An AM session token"),)
-REQUIRED_ROLES = ("subnet-am", "am-service", "am-admin-password", "am-keystore", "am-ds-bind-password")
+KEYSTORE_ROLE = "am-keystore"          # the secret role holding AM's keystore (Adapter.roles, kind keystore)
+REQUIRED_ROLES = ("subnet-am", "am-service", "am-admin-password", KEYSTORE_ROLE, "am-ds-bind-password")
 
 
 def applies(m):
@@ -31,6 +32,7 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=(*FORMATS, *SAML_FORMATS, *OIDC_FORMATS),
                   products=(("PingAM", ">=7,<9"), ("ForgeRock AM", ">=7,<8")),
+                  roles=(("server", SERVER_ROLES), ("keystore", (KEYSTORE_ROLE,))),
                   secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
