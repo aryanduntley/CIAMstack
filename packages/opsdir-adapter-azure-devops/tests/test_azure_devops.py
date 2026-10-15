@@ -112,5 +112,5 @@ def test_a_pipeline_a_reread_repository_no_longer_defines_is_removed():
     changes, notices = preview_import(d, "azure-devops/pipelines", reread, (ADAPTER,))
     assert sorted((r.changetype, r.dn) for r in changes) == [                      # ciam/web not read: kept
         ("delete", job_dn("azure-devops-infra-azure-pipelines")), ("delete", job_dn("azure-devops-infra-nightly"))]
-    assert "pipeline azure-devops-infra-azure-pipelines (azure-devops, https://dev.azure.com/example/ciam/_git/infra, " \
-        "azure-pipelines.yml): no longer defined in its repository; removed" in notices
+    assert "pipeline azure-devops-infra-azure-pipelines (azure-devops, https://dev.azure.com/example/ciam/_git/infra" \
+        ", azure-pipelines.yml): no longer defined in its repository; removed" in notices

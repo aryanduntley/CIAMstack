@@ -1,7 +1,7 @@
 """GitHub Actions workflows read as pipeline jobs: schedules, triggers, runners, environments and the secrets they name
 (never a value; GITHUB_TOKEN skipped); one job per workflow, matched by repository and path on a re-import (which
-changes nothing and keeps an owner), named by the workflow's name:; a workflow a re-read repository no longer has removed
-(not one that can't be read this time, nor another repository's); files that aren't workflows and repositories
+changes nothing and keeps an owner), named by the workflow's name:; a workflow a re-read repository no longer has
+removed (not one that can't be read this time, nor another repository's); files that aren't workflows and repositories
 without workflows named."""
 import pytest
 
