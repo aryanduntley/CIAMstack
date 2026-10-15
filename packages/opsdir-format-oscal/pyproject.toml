@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-format-oscal"
+version = "0.1.0"
+description = "OSCAL for opsdir: the record's POA&M, system security plans and assessment results written as OSCAL JSON, and OSCAL POA&Ms, assessment results and catalogs read back."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.formats"]
+oscal-json = "opsdir_format_oscal.format:FORMAT"
+
+[project.entry-points."opsdir.adapters"]
+oscal = "opsdir_format_oscal.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]
