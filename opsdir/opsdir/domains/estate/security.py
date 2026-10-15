@@ -15,7 +15,7 @@ actions, which block the move where the target's data is classified restricted."
 from collections import namedtuple
 
 from ...core.directory import one, rdn_value, subtree, values
-from ...core.environment import env_model, of_class, one_role
+from ...core.environment import env_model, of_class, role_named
 from ...core.findings import findings, responsible
 from ...core.naming import branch
 from ..governance.keepers import managed_by_name
@@ -51,8 +51,7 @@ def security_role(resource, roles):
 def findings_destination(m, service):
     """The binding of environment m a security service's findings (or recorded configuration) go to (its
     ciamFindingsRole), or None."""
-    role = one(service, "ciamFindingsRole")
-    return one_role(m, role) if role else None
+    return role_named(m, service, "ciamFindingsRole")
 
 
 def service_coverage(m, services):

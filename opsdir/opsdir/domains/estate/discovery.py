@@ -21,7 +21,7 @@ report reads the record, not the adapters)."""
 from collections import namedtuple
 
 from ...core.directory import one, rdn_value, subtree, values
-from ...core.environment import env_model, of_class, one_role
+from ...core.environment import env_model, of_class, role_named
 from ...core.findings import findings, responsible
 from ...core.naming import branch
 from ..governance.keepers import managed_by_name
@@ -65,9 +65,8 @@ def rescan_days(services):
 
 def destination(m, s, attr):
     """The binding of environment m a data discovery service's findings (ciamFindingsRole) or results
-    (ciamResultsRole) go to, or None."""
-    role = one(s, attr)
-    return one_role(m, role) if role else None
+    (ciamResultsRole) go to, or None (core.environment.role_named)."""
+    return role_named(m, s, attr)
 
 
 def _sends(m, services, attr):

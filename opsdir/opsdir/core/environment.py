@@ -242,3 +242,10 @@ def secret_placeholder(m, role):
 def joins(m):
     """The environment whose replication deployment this one joins (migration), if any."""
     return follow(m.d, m.env, "ciamJoinsDeploymentOf")
+
+
+def role_named(m, e, attr):
+    """The binding of environment m whose role entry e's attribute attr names (one_role), or None when e names no
+    role there or m binds nothing with it."""
+    role = one(e, attr)
+    return one_role(m, role) if role else None
