@@ -54,6 +54,7 @@ NAMESPACES = (
     ("azurerm_role_", "Microsoft.Authorization"),
     ("azurerm_route", "Microsoft.Network"),
     ("azurerm_security_center_", "Microsoft.Security"),
+    ("azurerm_sentinel_", "Microsoft.SecurityInsights"),
     ("azurerm_servicebus_", "Microsoft.ServiceBus"),
     ("azurerm_storage_", "Microsoft.Storage"),
     ("azurerm_subnet", "Microsoft.Network"),

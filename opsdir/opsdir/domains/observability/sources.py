@@ -151,6 +151,13 @@ def shipments(m, routes, sources):
     return tuple(x for c in collections(m, routes, sources) if c.source is not None for x in of(c))
 
 
+def own_shipments(m, found, keeper, me):
+    """The Shipments found whose destination no adapter but me keeps (keeper: Services.siem_keeper, the name of the
+    adapter keeping a SIEM index, or None): a provider adapter leaves the others to the adapter keeping them (it
+    ships them, or says why not)."""
+    return tuple(x for x in found if x.destination is None or keeper(m, x.destination) in (None, me))
+
+
 def unpermitted(m, found):
     """((server role, destination role), ...) of host Shipments whose role's servers no workload principal lets write
     to the route's destination: none acting for the role (ciamTargetRole) holds the permit `write-logs <role>`. For

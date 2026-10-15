@@ -234,6 +234,10 @@ echo "   the record queries that show it met), recorded on the boundary under CH
 rm -rf out/evidence-SSP-CIAM-2026
 od evidence --boundary SSP-CIAM-2026 --change CHG-2046 -o out/evidence-SSP-CIAM-2026
 od report evidence
+echo "-- the security team's Splunk: what production's index keeps and the detection Splunk runs, read in from its"
+echo "   management API's answers (exports/splunk); the security events must be kept 365 days"
+od import --change CHG-2049 --at 20260923090000Z splunk/rest exports/splunk
+od report log-routes
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

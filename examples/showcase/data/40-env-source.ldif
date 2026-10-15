@@ -627,6 +627,22 @@ ciamBindingRole: alerts-page
 ciamChannelKind: topic
 ciamProviderRef: arn:aws:sns:us-east-1:111122223333:ciam-prod-page
 
+dn: cn=soc-alerts,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: soc-alerts
+ciamBindingRole: soc-alerts
+ciamChannelKind: email
+ciamProviderRef: mailto:soc@example-aero.test
+
+dn: cn=siem,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: siem
+ciamBindingRole: siem
+ciamDestinationKind: siem-index
+ciamProviderRef: ciam_security
+
 dn: cn=audit-logs,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamLogDestination
@@ -1303,6 +1319,16 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pinggateway
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: gateway
+
+dn: cn=siem,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: siem
+ciamAdapter: splunk
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-splunk
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: siem
 
 dn: cn=ds-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

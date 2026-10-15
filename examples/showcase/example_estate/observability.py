@@ -10,10 +10,19 @@ into a bucket under Object Lock in compliance mode; the target's Activity Log ex
 setting) into its storage account's insights-activity-logs container; the standby's Cloud Audit Logs sink (Data
 Access logs on) into a bucket whose retention policy is locked.
 
+Security events (milestone 6.2e): the PingFederate engines' audit logs and the admin console's logs go to the security
+team's SIEM, kept 365 days. Production's is Splunk (its stack declares the Splunk add-on: the render writes the
+opsdir_ciam app and the forwarders' inputs), the index's retention and the detection the security team runs read in from
+Splunk's management API under CHG-2049 (exports/splunk); the target's is Microsoft Sentinel on its own workspace, 90
+days searchable and 365 in all, with the admin-login detection as a scheduled analytics rule.
+
 Planted for the planner to find:
   - the target's audit workspace keeps logs 90 days; the audit route must keep them 400 (and they are under legal hold)
   - the source runs an alarm on disk space that realizes no recorded rule, and the target doesn't run it
   - the login-failures rule names no runbook
+  - Splunk keeps production's security events 180 days, short of the 365 the route needs (read in under CHG-2049)
+  - the target's Sentinel keeps them searchable 90 days only: older events must be restored from its archive
+  - nothing in production runs the admin-login detection until CHG-2049 reads in the one Splunk runs
   - the target's audit trail records control-plane activity only (the source's records data writes too), and its
     container's immutability policy is unlocked: a privileged user can lift it, so its records are less protected
     than the source's validated ones
@@ -46,6 +55,11 @@ def entries():
                  ciamSignal="login-failures", ciamTargetRole="pf-engine", ciamComparison="gt", ciamThreshold="50 /min",
                  ciamEvaluationPeriod="5m", ciamSeverity="sev2", ciamAlertRole="alerts-page",
                  ciamOwner=owner("ciam-platform")),
+            spec(FILE, f"cn=admin-login-failures,{RULES}", ["top", "ciamObject", "ciamAlertRule"],
+                 cn="admin-login-failures", ciamSignal="admin-login-failures", ciamTargetRole="pf-admin",
+                 ciamComparison="gt", ciamThreshold="10 /min", ciamEvaluationPeriod="5m", ciamSeverity="sev2",
+                 ciamAlertRole="soc-alerts", ciamRunbookRef=f"cn=WI-CIAM-012,{RB}",
+                 ciamOwner=owner("security-operations")),
             ou(FILE, "log-routes"),
             spec(FILE, f"cn=audit-logs,{ROUTES}", ["top", "ciamObject", "ciamLogRoute"], cn="audit-logs",
                  ciamLogKind=["audit", "admin"], ciamPublishedBy=["ds", "pf-engine", "pf-admin"],
@@ -54,6 +68,9 @@ def entries():
             spec(FILE, f"cn=access-logs,{ROUTES}", ["top", "ciamObject", "ciamLogRoute"], cn="access-logs",
                  ciamLogKind="access", ciamPublishedBy=["ds", "pf-engine"], ciamLogDestinationRole="ops-logs",
                  ciamRetentionDays=30, ciamOwner=owner("ciam-platform")),
+            spec(FILE, f"cn=security-events,{ROUTES}", ["top", "ciamObject", "ciamLogRoute"], cn="security-events",
+                 ciamLogKind=["audit", "admin"], ciamPublishedBy=["pf-engine", "pf-admin"],
+                 ciamLogDestinationRole="siem", ciamRetentionDays=365, ciamOwner=owner("security-operations")),
             ou(FILE, "canaries"),
             spec(FILE, f"cn=sso-login,{CANARIES}", ["top", "ciamObject", "ciamCanary"], cn="sso-login",
                  ciamCheckedService="pf-sso-service", ciamCanaryFlow="oidc-token", ciamInterval="5m",
@@ -82,9 +99,17 @@ def _aws(service, rest):
 
 # Each environment's monitoring bindings: (class, name, binding role, attributes).
 PAGE_TOPIC = _aws("sns", "ciam-prod-page")
+SENTINEL = AZ_WORKSPACES.format("law-ciam-prod-sentinel")
+# the target's admin-login detection: admin console sign-ins that fail, in the containers' output Sentinel keeps
+ADMIN_LOGINS = 'ContainerLogV2 | where ContainerName startswith "pf-log-admin" and LogMessage has "Login failed"'
 MONITORING = {
     "source": (
         ("ciamAlertChannel", "alerts-page", "alerts-page", {"ciamChannelKind": "topic", "ciamProviderRef": PAGE_TOPIC}),
+        ("ciamAlertChannel", "soc-alerts", "soc-alerts",
+         {"ciamChannelKind": "email", "ciamProviderRef": "mailto:soc@example-aero.test"}),
+        # the security team's Splunk index; what it keeps is read in from Splunk (CHG-2049)
+        ("ciamLogDestination", "siem", "siem",
+         {"ciamDestinationKind": "siem-index", "ciamProviderRef": "ciam_security"}),
         ("ciamLogDestination", "audit-logs", "audit-logs",
          {"ciamDestinationKind": "log-group", "ciamRetentionDays": 400,
           "ciamProviderRef": _aws("logs", "log-group:/ciam/prod/audit")}),
@@ -123,6 +148,15 @@ MONITORING = {
     "target": (
         ("ciamAlertChannel", "alerts-page", "alerts-page",
          {"ciamChannelKind": "action-group", "ciamProviderRef": AZ_INSIGHTS.format("actionGroups/ag-ciam-page")}),
+        ("ciamAlertChannel", "soc-alerts", "soc-alerts",
+         {"ciamChannelKind": "action-group", "ciamProviderRef": AZ_INSIGHTS.format("actionGroups/ag-ciam-soc")}),
+        # planted: Sentinel keeps the security events searchable 90 days (365 in all)
+        ("ciamLogDestination", "siem", "siem",
+         {"ciamDestinationKind": "siem-index", "ciamRetentionDays": 90, "ciamTotalRetentionDays": 365,
+          "ciamProviderRef": SENTINEL}),
+        ("ciamAlarmBinding", "pf-admin-login-failures", "alarm-admin-login-failures",
+         {"ciamProviderRef": f"{SENTINEL}/providers/Microsoft.SecurityInsights/alertRules/ciam-admin-login-failures",
+          "ciamRealizes": "admin-login-failures", "ciamMetric": ADMIN_LOGINS, "ciamLogDestinationRole": "siem"}),
         # planted: the target's audit workspace keeps logs 90 days; the audit route must keep them 400
         ("ciamLogDestination", "audit-logs", "audit-logs",
          {"ciamDestinationKind": "workspace", "ciamRetentionDays": 90,

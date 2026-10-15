@@ -31,7 +31,7 @@ from opsdir.core.manifest import header
 from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.workloads import role_clusters, role_namespaces
 from opsdir.domains.observability.logs import log_routes
-from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, shipments
+from opsdir.domains.observability.sources import ALL, containers_of, kept_clauses, own_shipments, shipments
 from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
@@ -144,7 +144,8 @@ def render_container_logs(m, services):
 def container_log_notes(m, services):
     """The render notes of the container output environment m's routes don't ship to Log Analytics (blockers), and in
     Azure Government what to confirm (an action); each once (render_files writes their comments)."""
-    every = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "kubernetes")
+    every = own_shipments(m, tuple(x for x in shipments(m, log_routes(m.d), services.logs(m))
+                                   if x.on == "kubernetes"), services.siem_keeper, "azure")
     rules = cluster_routes(m, services)
     per_cluster = {c.dn: (c, sum(1 for k, _, _ in rules if k.dn == c.dn)) for c, _, _ in rules}
     return tuple(dict.fromkeys((

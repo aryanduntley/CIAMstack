@@ -19,7 +19,7 @@ logging): to be confirmed.
 from opsdir.core.directory import rdn_value
 from opsdir.core.notes import RECORD, note
 from opsdir.domains.observability.logs import log_routes
-from opsdir.domains.observability.sources import shipments
+from opsdir.domains.observability.sources import own_shipments, shipments
 from opsdir_format_terraform.hcl import tf_block, tf_name
 from .account import project_id, regime
 from .container_logs import container_filter, container_log_notes, container_shipments
@@ -63,7 +63,7 @@ def render_log_sinks(m, services):
 
 
 def _not_bucket(m, services):
-    every = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)))
+    every = own_shipments(m, shipments(m, log_routes(m.d), services.logs(m)), services.siem_keeper, "gcp")
     return tuple(note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"role {x.role}'s logs not shipped: its "
                       f"destination {rdn_value(x.destination)} isn't a Cloud Logging bucket "
                       "(projects/<p>/locations/<l>/buckets/<b>)",

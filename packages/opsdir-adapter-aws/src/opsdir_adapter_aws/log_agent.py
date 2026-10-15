@@ -23,7 +23,7 @@ from opsdir.core.directory import one, rdn_value
 from opsdir.core.notes import RECORD, note
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.observability.logs import log_routes
-from opsdir.domains.observability.sources import ALL, shipments, unpermitted
+from opsdir.domains.observability.sources import ALL, own_shipments, shipments, unpermitted
 from .observability import group_name
 
 # how to handle a route's destination that isn't a CloudWatch log group (also Fluent Bit's)
@@ -42,8 +42,10 @@ def log_group(b):
 
 
 def host_shipments(m, services):
-    """The Shipments of environment m from its servers (its log routes and the LogSources its adapters declare)."""
-    return tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "servers")
+    """The Shipments of environment m from its servers (its log routes and the LogSources its adapters declare), but
+    those to a SIEM index another adapter keeps (sources.own_shipments)."""
+    return own_shipments(m, tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "servers"),
+                         services.siem_keeper, "aws")
 
 
 def _shipped(x):

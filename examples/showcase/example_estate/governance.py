@@ -116,6 +116,8 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2046", "Take SSP-CIAM-2026's evidence package and record it on the boundary", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2049", "Read the security team's Splunk retention and detections into the record", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

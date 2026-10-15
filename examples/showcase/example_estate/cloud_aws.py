@@ -176,16 +176,17 @@ def _aws_backup(p):
 
 def _aws_monitoring():
     """CloudWatch as the source runs it: the alert topic, the log groups, the alarms and the canary the record holds
-    (each tagged with its role or the rule it realizes), and one alarm nobody tagged (named in the dry run)."""
+    (each tagged with its role or the rule it realizes), and one alarm nobody tagged (named in the dry run); the
+    security team's e-mail channel and Splunk index aren't AWS's."""
     by_class = {oc: [(cn, role, attrs) for c, cn, role, attrs in MONITORING["source"] if c == oc]
                 for oc in ("ciamAlertChannel", "ciamLogDestination", "ciamAlarmBinding", "ciamCanaryBinding")}
     return [*(_res("managed", "aws_sns_topic", cn, {"arn": a["ciamProviderRef"], "name": f"ciam-prod-{cn}",
                                                     "tags": {"Role": role}})
-              for cn, role, a in by_class["ciamAlertChannel"]),
+              for cn, role, a in by_class["ciamAlertChannel"] if a["ciamChannelKind"] == "topic"),
             *(_res("managed", "aws_cloudwatch_log_group", cn, {
                 "arn": a["ciamProviderRef"], "name": a["ciamProviderRef"].split("log-group:", 1)[1],
                 "retention_in_days": a["ciamRetentionDays"], "tags": {"Role": role}})
-              for cn, role, a in by_class["ciamLogDestination"]),
+              for cn, role, a in by_class["ciamLogDestination"] if a["ciamDestinationKind"] == "log-group"),
             *(_res("managed", "aws_cloudwatch_metric_alarm", cn, {
                 "arn": a["ciamProviderRef"], "alarm_name": cn, "namespace": a["ciamMetric"].split(" ")[0],
                 "metric_name": a["ciamMetric"].split(" ")[1], "alarm_actions": [a["ciamNotifies"]],

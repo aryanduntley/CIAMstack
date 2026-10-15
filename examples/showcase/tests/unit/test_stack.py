@@ -39,7 +39,7 @@ def test_environments_declare_their_stack(estate, source):
 
 def test_the_declared_stack_decides_which_adapters_render(source):
     assert [a.name for a in declared_adapters(source, ADAPTERS)] == \
-        ["aws", "ansible", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
+        ["aws", "ansible", "splunk", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
     only_provider = source._replace(stack=(component("aws", "provider"),))
     assert [a.name for a in declared_adapters(only_provider, ADAPTERS)] == ["aws"]
 

@@ -29,7 +29,7 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.hosts import baseline_for
 from opsdir.domains.observability.logs import log_routes
-from opsdir.domains.observability.sources import ALL, kept_clauses, shipments
+from opsdir.domains.observability.sources import ALL, kept_clauses, own_shipments, shipments
 from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
 from .account import government, tagged
 from .identities import LOC, RG
@@ -119,13 +119,30 @@ def _rule(m, n, route, table, dest, streams):
         ("tags", tagged(m, {"Realizes": rdn_value(route), "ManagedBy": "opsdir"}))])
 
 
+MAX_TOTAL_DAYS = 4383                   # the longest a Log Analytics table keeps logs in all
+
+
+def total_retention(dest):
+    """The custom table's total retention for a destination recording ciamTotalRetentionDays: ((("#", why),)?,
+    ("total_retention_in_days", days)) items, the longest a table keeps for indefinitely or more; () when it records
+    none."""
+    total = one(dest, "ciamTotalRetentionDays")
+    if total is None:
+        return ()
+    days = int(total)
+    if days == 0 or days > MAX_TOTAL_DAYS:
+        return (("#", f"{'indefinitely' if days == 0 else f'{days} days'} is longer than a table keeps logs in all: "
+                      f"kept {MAX_TOTAL_DAYS} days"), ("total_retention_in_days", MAX_TOTAL_DAYS))
+    return (("total_retention_in_days", days),)
+
+
 def _route_blocks(m, route, found):
     n, table, dest = tf_name(f"logs_{rdn_value(route)}"), table_name(route), found[0].destination
     streams = tuple((f"Custom-{table[:-3]}File{i}", x) for i, x in enumerate(found, 1))
     hosts = tuple(dict.fromkeys(h for x in found for h in x.hosts))
     return (tf_block("resource", [TABLE, n], [
                 ("name", table), ("workspace_id", workspace_id(m, dest)), ("plan", "Analytics"),
-                *_columns(TABLE_TYPES)]),
+                *total_retention(dest), *_columns(TABLE_TYPES)]),
             _rule(m, n, route, table, dest, streams),
             *(tf_block("resource", [ASSOCIATION, f"{n}_{tf_name(h)}"], [
                 ("name", f"{rdn_value(route)}-{h}"), ("target_resource_id", ref(f"{VM}.{tf_name(h)}.id")),
@@ -145,7 +162,8 @@ def log_collection_notes(m, services):
     """The render notes of what environment m's servers' log routes don't ship to Log Analytics (blockers), or ship
     differently and what collecting them needs (notes), and in Azure Government what to confirm (an action); each
     once (render_files writes their comments)."""
-    every = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "servers")
+    every = own_shipments(m, tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "servers"),
+                          services.siem_keeper, "azure")
     found = host_shipments(m, services)
     return tuple(dict.fromkeys((
         *(note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"{x.path} not shipped: its destination "

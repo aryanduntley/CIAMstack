@@ -141,3 +141,29 @@ def test_the_products_declare_only_documented_signals():
     assert [(s.signal, s.server_role, s.versions) for s in IDM.signals] == [("heap-used", "idm", ">=8"),
                                                                             ("heap-used", "idm", "<8")]
     assert PF.signals == ()                 # PingFederate serves heartbeat statistics, no Prometheus endpoint
+
+
+SIEM = _binding(BETA, "siem", "ciamLogDestination", "siem",
+                "ciamDestinationKind: siem-index\nciamProviderRef: ciam_security\nciamRetentionDays: 400\n")
+
+
+def _keeper(keeps):
+    return _adapter()._replace(name="siem-product", siem_indexes=lambda m, b: keeps)
+
+
+def test_a_siem_index_nothing_rendering_the_target_keeps_is_an_action():
+    from opsdir.connectors.observability import siem_check
+    from opsdir.connectors.registry import siem_keeper_of
+    d = _record(SIEM)
+    ctx = PlanContext(d, env_model(d, "alpha/prod"), env_model(d, "beta/prod"), None, dt.date(2026, 10, 1), {}, {},
+                      ())
+    (action,) = siem_check((_adapter(), _keeper(False)))(ctx).actions
+    assert action[1] == (
+        "beta/prod's `siem` is a SIEM index (ciam_security) that nothing rendering beta/prod keeps: its retention, the "
+        "detections searching it and the forwarding of logs to it are left to whoever runs the SIEM. Declare the "
+        "SIEM's adapter in the environment's stack (stack role siem), or confirm the SIEM team keeps them.")
+    assert not siem_check((_adapter(), _keeper(True)))(ctx).actions
+    beta = env_model(d, "beta/prod")
+    (index,) = (b for b in beta.bindings if b.dn.startswith("cn=siem,"))
+    # the mini estate declares no stack: the adapters whose data applies render it (these apply nowhere)
+    assert siem_keeper_of(beta, index, installed=(_keeper(True),)) is None

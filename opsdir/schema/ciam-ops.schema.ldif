@@ -3139,6 +3139,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.687 NAME 'ciamEvidenceQueryRef' DESC
   'An evidence query an evidence package ran' EQUALITY distinguishedNameMatc
  h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'd
  n' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.710 NAME 'ciamTotalRetentionDays' DE
+ SC 'How many days a log destination keeps logs in all, searchable and archi
+ ved (a SIEM\27s archive, a Log Analytics table\27s long-term retention); it
+ s ciamRetentionDays are the days they stay searchable. Not recorded: nothin
+ g is kept beyond those' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.27 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'int' X-ORIGIN 'o
+ psdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3452,13 +3459,17 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.65 NAME 'ciamAlertChannel' DESC 'What
  viderRef X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.66 NAME 'ciamLogDestination' DESC 'Wh
  at keeps logs of a role in an environment, and for how many days (0: kept i
- ndefinitely)' SUP ciamBinding STRUCTURAL MUST ciamDestinationKind MAY ( cia
- mProviderRef $ ciamRetentionDays $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ ndefinitely): searchable (ciamRetentionDays), and in all when it archives t
+ hem (ciamTotalRetentionDays)' SUP ciamBinding STRUCTURAL MUST ciamDestinati
+ onKind MAY ( ciamProviderRef $ ciamRetentionDays $ ciamTotalRetentionDays $
+  ciamManagedBy ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.67 NAME 'ciamAlarmBinding' DESC 'An a
  larm a cloud runs in an environment: the alert rule it realizes, what it ev
- aluates, what it notifies' SUP ciamBinding STRUCTURAL MUST ciamProviderRef 
- MAY ( ciamRealizes $ ciamNotifies $ ciamMetric $ ciamManagedBy ) X-ORIGIN '
- opsdir' )
+ aluates, what it notifies; a SIEM detection names the log destination (a SI
+ EM index) its search runs on (ciamLogDestinationRole) and holds the search 
+ in ciamMetric' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamRe
+ alizes $ ciamNotifies $ ciamMetric $ ciamManagedBy $ ciamLogDestinationRole
+  ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.68 NAME 'ciamCanaryBinding' DESC 'A s
  ynthetic check a cloud runs in an environment: the canary it realizes, how 
  often, where it keeps its results when the cloud asks for a place (ciamStor
