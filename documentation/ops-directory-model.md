@@ -110,6 +110,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certifica
 | What doesn't anyone know yet, and who must answer it? | `opsdir report unknowns`: each question in the unknowns register with its owner, whether a move waits for it, what it concerns, when it was raised and is needed, open / overdue / answered and the answer. The planner counts the ones concerning the source or the target: an open blocking one is a blocker, another open one an action dated by when the answer is needed (else the cutover), an answered one in place |
 | What does nobody own? | `opsdir report unowned` |
 | How does an environment differ from the one it overlays? | `opsdir report overrides` |
+| Do the firewalls run the rules the record holds? | `opsdir import --dry-run panos/running-config DIR` (a Panorama's or firewall's running configuration: conflicts, missing and unrecorded rules), then `opsdir report firewall-running`: each rule as last read back (committed, deployed, disabled, missing; what it runs that the record doesn't) and each firewall's rules the record doesn't hold |
 | Which files copy a value of the record, on which lines? | `opsdir census PATH` records it; `opsdir report census [DN]` lists it, and `blast-radius` includes the files |
 | Any ad-hoc question | `opsdir search -b <base> '<LDAP filter>' [attributes]`, e.g. `(&(objectClass=ciamConsumer)(!(ciamOwner=*)))` for consumers with no owner |
 

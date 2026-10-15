@@ -234,6 +234,12 @@ echo "   the record queries that show it met), recorded on the boundary under CH
 rm -rf out/evidence-SSP-CIAM-2026
 od evidence --boundary SSP-CIAM-2026 --change CHG-2046 -o out/evidence-SSP-CIAM-2026
 od report evidence
+echo "-- the lab's firewall rules as the HQ Panorama runs them (its running configuration, as the XML API answers"
+echo "   type=config&action=show): the drift, then read back under CHG-2048 keeping the record's admin range"
+od import --dry-run --at 20260923090000Z panos/running-config exports/panos
+od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
+  panos/running-config exports/panos
+od report firewall-running
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

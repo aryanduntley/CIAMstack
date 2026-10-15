@@ -28,7 +28,8 @@ rm -rf "$OUT" && mkdir -p "$OUT/cmd"
 
 # The generators must reproduce the published schema and data files exactly (independent of git state).
 generated() { (cd "$CORE" && sha256sum schema/*.ldif); sha256sum data/*.ldif data/*.json;
-              find exports/ds-config exports/ds-access-logs exports/cloud exports/ds-data exports/regions -type f | sort |
+              find exports/ds-config exports/ds-access-logs exports/cloud exports/ds-data exports/regions \
+                exports/panos -type f | sort |
                 xargs sha256sum; }
 generated > "$OUT/cmd/.generated-before"
 cap 00-gen-schema    "$PY" "$CORE/scripts/gen-schema.py"
@@ -133,6 +134,10 @@ cap 08-apply-chg-2042 od modify --change CHG-2042 changes/CHG-2042-standby-itar-
 cap 08-apply-chg-2043 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
 cap 08-apply-chg-2044 od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
 cap 08-apply-chg-2046 od evidence --boundary SSP-CIAM-2026 --change CHG-2046 -o "$OUT/evidence/SSP-CIAM-2026"
+cap 08-firewall-drift-lab od import --dry-run --at 20260923090000Z panos/running-config exports/panos
+cap 08-apply-chg-2048 od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
+  panos/running-config exports/panos
+cap 08-report-firewall-running od report firewall-running
 cap 08-report-evidence od report evidence
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites

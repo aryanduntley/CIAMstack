@@ -458,6 +458,9 @@ EXPECTED = MappingProxyType({
         ("A144", "Evidence", "Boundary `SSP-CIAM-2026` (target/prod is inside it) has no recorded evidence package",
          "once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded", "CHG-2046",
          "CHG-2032"),
+        ("A145", "Allowlist", "`hq-apps-egress-to-ldaps`",
+         "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds "
+         "the target's, which the running-config import records", "CHG-2048"),
     ],
 })
 

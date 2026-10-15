@@ -1327,6 +1327,13 @@
       "planted": "once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded",
       "cleared_by": "CHG-2046",
       "raised_by": "CHG-2032"
+    },
+    {
+      "id": "A145",
+      "area": "Allowlist",
+      "match": "`hq-apps-egress-to-ldaps`",
+      "planted": "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds the target's, which the running-config import records",
+      "cleared_by": "CHG-2048"
     }
   ]
 }
