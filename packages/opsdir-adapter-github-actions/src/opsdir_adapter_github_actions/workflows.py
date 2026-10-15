@@ -11,7 +11,10 @@ repository's .github/workflows/*.yml (or the whole checkout). For each workflow:
   jobs.*.environment                    -> environments it deploys to
   ${{ secrets.NAME }}                   -> the secrets it names (never a value; GITHUB_TOKEN, GitHub's own, skipped)
 
-Files that aren't YAML workflows are named; a repository folder without workflows is named.
+Each pipeline records the workflow's name: (else its file name) as ciamJobName. A workflow the record has from a
+repository folder read here that the folder no longer defines is removed (named in a notice; a file that isn't a
+workflow this time keeps its pipeline). Files that aren't YAML workflows are named; a repository folder without
+workflows is named.
 """
 import re
 from types import MappingProxyType
@@ -20,7 +23,8 @@ import yaml
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.sources import parsed
-from opsdir.domains.automation.pipelines import FoundPipeline, environment_name, jobs_container, pipeline_groups
+from opsdir.domains.automation.pipelines import (FoundPipeline, ReadRepository, environment_name, jobs_container,
+                                                 pipeline_groups)
 
 SYSTEM = "github-actions"
 WORKFLOWS = ".github/workflows/"
@@ -79,13 +83,17 @@ def _repos(files):
 def read_workflows(files, d, patterns, at=None):
     """Imported: the pipelines GitHub Actions workflows define, as jobs."""
     repos = _repos(files)
-    found = [(r, p, workflow(r, f"https://github.com/{r}" if r.count("/") == 1 else None, p, t))
+    url = {r: f"https://github.com/{r}" if r.count("/") == 1 else None for r in repos}
+    found = [(r, p, workflow(r, url[r], p, t))
              for r, ws in repos.items() for p, t in sorted(ws.items()) if p.endswith((".yml", ".yaml"))]
     pipelines = [f for _, _, f in found if f]
     others = sorted({"/".join(p.split("/")[:2]) if p.count("/") >= 2 else p.split("/")[0]
                      for p in files if f"/{WORKFLOWS}" not in p and "/" in p})
-    return Imported(containers=(jobs_container(),), groups=pipeline_groups(d, pipelines),
+    groups, removed = pipeline_groups(d, pipelines, tuple(
+        ReadRepository(SYSTEM, r, url[r], tuple(p for rr, p, f in found if rr == r and not f)) for r in repos))
+    return Imported(containers=(jobs_container(),), groups=groups,
                     notices=(*(f"{r}/{p}: not a GitHub Actions workflow; not read" for r, p, f in found if not f),
+                             *removed,
                              *(f"{o}: no .github/workflows/ in it; not read" for o in others
                                if o not in repos and not any(r.startswith(o + "/") for r in repos)),
                              *(("no repository folders (one folder per repository, owner/repo, holding "

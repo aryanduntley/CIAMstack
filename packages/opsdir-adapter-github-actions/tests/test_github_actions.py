@@ -1,6 +1,8 @@
 """GitHub Actions workflows read as pipeline jobs: schedules, triggers, runners, environments and the secrets they name
 (never a value; GITHUB_TOKEN skipped); one job per workflow, matched by repository and path on a re-import (which
-changes nothing and keeps an owner); files that aren't workflows and repositories without workflows named."""
+changes nothing and keeps an owner), named by the workflow's name:; a workflow a re-read repository no longer has removed
+(not one that can't be read this time, nor another repository's); files that aren't workflows and repositories
+without workflows named."""
 import pytest
 
 from opsdir.connectors.importing import preview_import
@@ -68,9 +70,10 @@ def test_a_scheduled_workflow(after):
     job = get(d, NIGHTLY_DN)
     assert (one(job, "ciamJobKind"), values(job, "ciamSchedule"), values(job, "ciamTrigger"), one(job, "ciamRuntime"),
             values(job, "ciamDeploysTo"), values(job, "ciamSecretName"), one(job, "ciamRepoUrl"),
-            one(job, "ciamRepoPath")) == \
+            one(job, "ciamRepoPath"), one(job, "ciamJobName"), one(job, "ciamCiSystem")) == \
         ("pipeline", ("30 2 * * *",), ("manual",), "self-hosted, linux, ciam", ("prod",), ("DS_BIND_PASSWORD",),
-         "https://github.com/example-aero/ciam-ops", ".github/workflows/nightly.yml")
+         "https://github.com/example-aero/ciam-ops", ".github/workflows/nightly.yml", "Nightly directory export",
+         "github-actions")
 
 
 def test_a_workflow_on_push_with_several_jobs(after):
@@ -91,3 +94,16 @@ def test_a_reimport_changes_nothing_and_keeps_the_owner():
     d, _, _ = imported(OWNER)
     assert preview_import(d, "github-actions/workflows", FILES, (ADAPTER,))[0] == ()
     assert one(get(d, NIGHTLY_DN), "ciamOwner") == "cn=ops,ou=owners,dc=ciam-ops"
+
+
+def test_a_workflow_gone_from_a_reread_repository_is_removed():
+    other = {"example-aero/web/.github/workflows/deploy.yml": DEPLOY}
+    d, _, _ = imported(files={**FILES, **other})
+    deploy, nightly = job_dn("github-actions-ciam-ops-deploy"), NIGHTLY_DN
+    assert one(get(d, deploy), "ciamJobName") == "deploy.yaml"                      # no name: its file name
+    changes, notices = preview_import(d, "github-actions/workflows", {          # deploy.yaml deleted, nightly broken
+        "example-aero/ciam-ops/.github/workflows/nightly.yml": "on: [\n"}, (ADAPTER,))
+    assert [(r.changetype, r.dn) for r in changes] == [("delete", deploy)]           # web wasn't read: untouched
+    assert f"pipeline github-actions-ciam-ops-deploy (github-actions, https://github.com/example-aero/ciam-ops, " \
+        ".github/workflows/deploy.yaml): no longer defined in its repository; removed" in notices
+    assert get(d, nightly) is not None and get(d, job_dn("github-actions-web-deploy")) is not None

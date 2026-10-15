@@ -14,8 +14,10 @@ The importer `gitlab-ci/pipelines` takes one folder per project (group/.../proje
                                 (GET /projects/:id/variables): the keys of masked or hidden ones are secret names;
                                 every value is dropped as the file is parsed, never kept
 
-One job per project pipeline. A project folder without .gitlab-ci.yml, and files that aren't what they should be,
-are named. include: and extends: are not followed.
+One job per project pipeline, its name (ciamJobName) the project's. A pipeline the record has from a project folder
+read here whose .gitlab-ci.yml is gone is removed (named in a notice; one that isn't a GitLab CI definition this time
+keeps it). A project folder without .gitlab-ci.yml, and files that aren't what they should be, are named. include:
+and extends: are not followed.
 """
 import re
 from types import MappingProxyType
@@ -24,7 +26,8 @@ import yaml
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.sources import folders, json_document, parsed
-from opsdir.domains.automation.pipelines import FoundPipeline, environment_name, jobs_container, pipeline_groups
+from opsdir.domains.automation.pipelines import (FoundPipeline, ReadRepository, environment_name, jobs_container,
+                                                 pipeline_groups)
 
 SYSTEM = "gitlab-ci"
 DEFINITION, SCHEDULES, VARIABLES, PROJECT = (".gitlab-ci.yml", "pipeline_schedules.json", "variables.json",
@@ -78,6 +81,12 @@ def secret_variables(text):
     return tuple(k for k, secret in keys if k and secret)
 
 
+def project_url(files):
+    """The project's web_url from project.json (None: not there)."""
+    url = (json_document(files[PROJECT], dict) or {}).get("web_url") if PROJECT in files else None
+    return url if isinstance(url, str) else None
+
+
 def project_pipeline(project, files):
     """(FoundPipeline or None, notices) of one project folder."""
     doc = parsed(yaml.safe_load, files[DEFINITION], (yaml.YAMLError,)) if DEFINITION in files else None
@@ -89,8 +98,7 @@ def project_pipeline(project, files):
     secrets = sorted({*(str(k) for j in jobs if isinstance(j.get("secrets"), dict) for k in j["secrets"]),
                       *(secret_variables(files[VARIABLES]) if VARIABLES in files else ())})
     triggers = _triggers(doc)
-    url = (json_document(files[PROJECT], dict) or {}).get("web_url") if PROJECT in files else None
-    return FoundPipeline(SYSTEM, project, url if isinstance(url, str) else None, DEFINITION,
+    return FoundPipeline(SYSTEM, project, project_url(files), DEFINITION,
                          project.rsplit("/", 1)[-1], crons,
                          tuple(t for t in triggers if t), _runners(doc, jobs), tuple(secrets),
                          tuple(dict.fromkeys(e for j in jobs for e in (environment_name(j.get("environment")),)
@@ -107,9 +115,13 @@ def _projects(files):
 
 def read_pipelines(files, d, patterns, at=None):
     """Imported: the pipelines GitLab CI/CD projects define, as jobs."""
-    read = [project_pipeline(p, fs) for p, fs in _projects(files).items()]
-    return Imported(containers=(jobs_container(),), groups=pipeline_groups(d, [p for p, _ in read if p]),
-                    notices=(*(n for _, ns in read for n in ns),
+    projects = _projects(files)
+    read = [project_pipeline(p, fs) for p, fs in projects.items()]
+    groups, removed = pipeline_groups(d, [p for p, _ in read if p], tuple(
+        ReadRepository(SYSTEM, p, project_url(fs), (DEFINITION,) if DEFINITION in fs and not found else ())
+        for (p, fs), (found, _) in zip(projects.items(), read)))
+    return Imported(containers=(jobs_container(),), groups=groups,
+                    notices=(*(n for _, ns in read for n in ns), *removed,
                              *(("no project folders (one folder per project, group/project, holding .gitlab-ci.yml)",)
                                if not read else ())))
 

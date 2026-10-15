@@ -1,6 +1,8 @@
 """Azure DevOps YAML pipelines read as pipeline jobs: schedules, triggers (CI unless none, PR, pipeline completion),
 pools at every level, deployment jobs' environments, secrets by name (variable groups, Key Vault task filters);
-templates counted, not read as pipelines; a re-import changes nothing."""
+templates counted, not read as pipelines; each named by its file; a re-import changes nothing; a pipeline a re-read
+repository no longer defines (gone, or a template now) removed, not one that isn't YAML this time, nor another
+repository's."""
 import json
 
 import pytest
@@ -76,11 +78,11 @@ def test_a_scheduled_deployment_pipeline(after):
     job = get(d, job_dn("azure-devops-infra-deploy"))
     assert (values(job, "ciamSchedule"), values(job, "ciamTrigger"), one(job, "ciamRuntime"),
             values(job, "ciamDeploysTo"), values(job, "ciamSecretName"), one(job, "ciamRepoUrl"),
-            one(job, "ciamRepoPath")) == \
+            one(job, "ciamRepoPath"), one(job, "ciamJobName"), one(job, "ciamCiSystem")) == \
         (("0 3 * * 1-5",), ("event",), "ubuntu-22.04, pool ciam-agents", ("prod",),
          ("keyvault kv-ciam-prod/ds-root-password", "keyvault kv-ciam-prod/pf-admin-password",
           "variable group ciam-prod-secrets"),
-         "https://dev.azure.com/example/ciam/_git/infra", "pipelines/deploy.yml")
+         "https://dev.azure.com/example/ciam/_git/infra", "pipelines/deploy.yml", "deploy.yml", "azure-devops")
 
 
 def test_a_ci_pipeline_with_only_steps(after):
@@ -99,3 +101,16 @@ def test_templates_and_repositories_without_pipelines_are_named(after):
 def test_a_reimport_changes_nothing():
     d, _, _ = imported()
     assert preview_import(d, "azure-devops/pipelines", FILES, (ADAPTER,))[0] == ()
+
+
+def test_a_pipeline_a_reread_repository_no_longer_defines_is_removed():
+    other = {"ciam/web/azure-pipelines.yml": CI, "ciam/infra/pipelines/nightly.yml": CI}
+    d, _, _ = imported({**FILES, **other})
+    reread = {"ciam/infra/repository.json": FILES["ciam/infra/repository.json"],     # azure-pipelines.yml gone
+              "ciam/infra/pipelines/nightly.yml": TEMPLATE,                         # a template now
+              "ciam/infra/pipelines/deploy.yml": "trigger: [\n"}                   # not YAML this time: kept
+    changes, notices = preview_import(d, "azure-devops/pipelines", reread, (ADAPTER,))
+    assert sorted((r.changetype, r.dn) for r in changes) == [                      # ciam/web not read: kept
+        ("delete", job_dn("azure-devops-infra-azure-pipelines")), ("delete", job_dn("azure-devops-infra-nightly"))]
+    assert "pipeline azure-devops-infra-azure-pipelines (azure-devops, https://dev.azure.com/example/ciam/_git/infra, " \
+        "azure-pipelines.yml): no longer defined in its repository; removed" in notices

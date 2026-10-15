@@ -342,7 +342,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | Entries an importer re-imports (owned attributes replaced, the rest kept) | `opsdir.core.directory`: `merged_attrs(existing, owned, names)` |
    | A product's config file kept as captured settings | `opsdir.domains.configuration.record`: `captured_file(fmt, prefix, folder, path, text, patterns, role)` |
    | Cloud inventory: resources, role tags, role map, layout | `opsdir.core.inventory`: `resource`, `tagged_role(tags)`, `of_types(found, *types)`, `layout_import`, `read_together`, `merge_reads` |
-   | CI pipelines as jobs | `opsdir.domains.automation.pipelines`: `FoundPipeline`, `pipeline_groups`, `environment_name` |
+   | CI pipelines as jobs | `opsdir.domains.automation.pipelines`: `FoundPipeline`, `ReadRepository` (a repository the import read, for removing what it no longer defines), `pipeline_groups(d, pipelines, read)` (groups and removal notices), `gone_pipelines`, `environment_name` |
 
    Anything two packages would write alike belongs in the core (or an `opsdir-base-*` library), public and tested. Module-level tables are read-only (`MappingProxyType`, tuples, `frozenset`).
 
