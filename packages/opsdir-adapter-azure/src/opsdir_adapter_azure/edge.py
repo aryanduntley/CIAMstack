@@ -1,11 +1,12 @@
-"""Azure edge: what the edge domain's terms mean on Azure, and the Terraform for a service whose policies ask for more
-than a TCP passthrough. A service name whose TLS terminates at the edge is an Application Gateway v2 (WAF_v2 when a
-protection policy asks for inspection) in the subnet the environment binds to role subnet-edge: listeners per port with
-the TLS policy and the certificate the environment keeps in Key Vault (read by the gateway's own managed identity),
-backend settings with the policy's health probe, cookie affinity, request timeout and draining. Its protection policy
-is a WAF policy on the gateway: the Default Rule Set and Bot Manager, custom rules for rate limits aimed at the
-products' endpoints, addresses and countries, and exclusions. A passthrough service stays a Standard load balancer, with
-the policy's health probe, idle timeout and source-address affinity. Pure.
+"""Azure edge: what the edge domain's terms mean on Azure, and the Terraform of a service name's front (what fronts it
+is the core's edge.gateways.front_choice; terraform.py maps it). A service name whose TLS terminates at the edge is an
+Application Gateway v2 (WAF_v2 when a protection policy asks for inspection) in the subnet the environment binds to role
+subnet-edge: listeners per port with the TLS policy and the certificate the environment keeps in Key Vault (read by the
+gateway's own managed identity), backend settings with the policy's health probe, cookie affinity, request timeout and
+draining. Its protection policy is a WAF policy on the gateway: the Default Rule Set and Bot Manager, custom rules for
+rate limits aimed at the products' endpoints, addresses and countries, and exclusions. A passthrough service (or one
+without policies) is a Standard load balancer (network_lb), with the policy's health probe, idle timeout and
+source-address affinity. Pure.
 
 Known limits: Azure's WAF exclusions apply to every path, not only the endpoint kind named; a rate limit keyed by a
 header is grouped by client address; DDoS Network Protection is a plan on the virtual network the landing zone keeps.
@@ -14,9 +15,10 @@ from collections import namedtuple
 from itertools import chain
 
 from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.environment import by_role
+from opsdir.core.environment import UNBOUND, by_role
+from opsdir.core.notes import note_comment
 from opsdir.domains.edge.exposure import is_internal
-from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
+from opsdir.domains.edge.resolve import inspected, inspection_note, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .identities import LOC, RG
 from .account import tagged
@@ -258,3 +260,72 @@ def ddos_note(spec):
     return () if spec.ddos == "standard" else (
         comment(f"DDoS {spec.ddos}: DDoS Network Protection is a plan linked to the virtual network the landing zone "
                 "keeps (or IP Protection on the public address): ask its owners"),)
+
+
+def _lb_frontend(m, svc, n, ip, internal, subnets):
+    """(data sources needed, frontend_ip_configuration body); an internal one sits in the first of its targets'
+    subnets (its servers', then its compute groups')."""
+    if internal:
+        subnet = ref(f"data.azurerm_subnet.{tf_name(rdn_value(subnets[0]))}.id") if subnets else \
+            f"{UNBOUND}{one(svc, 'ciamTargetRole')}-subnet"
+        return (), (("name", "frontend"), ("zones", ["1", "2", "3"]), ("subnet_id", subnet),
+                    *((("private_ip_address_allocation", "Static"), ("private_ip_address", ip)) if ip else
+                      (("private_ip_address_allocation", "Dynamic"),)))
+    return ((tf_block("data", ["azurerm_public_ip", n], [("name", public_ip_name(svc)),
+                                                       ("resource_group_name", RG)]),),
+            (("name", "frontend"), ("public_ip_address_id", ref(f"data.azurerm_public_ip.{n}.id"))))
+
+
+def _probe_body(spec):
+    """The probe's protocol and settings from a service's traffic policy (a TCP connect without one)."""
+    h = spec.health if spec is not None else None
+    if h is None or h.protocol == "tcp":
+        return (("protocol", "Tcp"),) + ((("interval_in_seconds", h.interval),) if h and h.interval else ())
+    return (("protocol", h.protocol.capitalize()), ("request_path", h.path or "/"),
+            *((("interval_in_seconds", h.interval),) if h.interval else ()),
+            *((("number_of_probes", h.unhealthy),) if h.unhealthy else ()))
+
+
+def _probed(spec, port):
+    """The port a probe checks: the product's own health port (an admin port) when it declares one, else the rule's."""
+    return spec.health.port if spec is not None and spec.health.port else port
+
+
+def _lb_port(n, port, spec=None):
+    rule = (*((("idle_timeout_in_minutes", min(30, max(4, -(-spec.idle_timeout // 60)))),)
+              if spec is not None and spec.idle_timeout else ()),
+            *((("load_distribution", "SourceIP"),) if spec is not None and spec.stickiness == "source-ip" else ()))
+    return (tf_block("resource", ["azurerm_lb_probe", f"{n}_{port}"], [
+                ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")),
+                *_probe_body(spec)[:1], ("port", int(_probed(spec, port))), *_probe_body(spec)[1:]]),
+            tf_block("resource", ["azurerm_lb_rule", f"{n}_{port}"], [
+                ("name", f"tcp-{port}"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id")), ("protocol", "Tcp"),
+                ("frontend_port", int(port)), ("backend_port", int(port)),
+                ("frontend_ip_configuration_name", "frontend"),
+                ("backend_address_pool_ids", [ref(f"azurerm_lb_backend_address_pool.{n}.id")]),
+                ("probe_id", ref(f"azurerm_lb_probe.{n}_{port}.id")), *rule]))
+
+
+def network_lb(m, svc, spec, targets, subnets):
+    """A Standard load balancer for a service name whose TLS passes through (or that has no policy): its frontend (an
+    internal one in the first of subnets, its recorded address static, else a public IP read as data), a backend pool
+    of the role's servers (targets) by their NICs, a probe and a rule per port as the policy asks (health check,
+    idle timeout, source-IP distribution), the DDoS note, and the planner's note when the protection policy asks for
+    request inspection it can't do (no CDN fronting it)."""
+    n = tf_name(rdn_value(svc))
+    data, fe = _lb_frontend(m, svc, n, one(svc, "ciamFrontendIp"), is_internal(svc), subnets)
+    blind = (comment(note_comment(inspection_note(m, svc, spec))),) \
+        if spec is not None and inspected(spec) and not spec.cdn else ()
+    return (*data, *blind, *(ddos_note(spec) if spec is not None else ()),
+            tf_block("resource", ["azurerm_lb", n], [
+                ("name", f"lb-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("location", LOC),
+                ("resource_group_name", RG), ("sku", "Standard"), ("frontend_ip_configuration", Block(fe)),
+                ("tags", tagged(m, {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"}))]),
+            tf_block("resource", ["azurerm_lb_backend_address_pool", n], [
+                ("name", "servers"), ("loadbalancer_id", ref(f"azurerm_lb.{n}.id"))]),
+            *(tf_block("resource", ["azurerm_network_interface_backend_address_pool_association",
+                                    f"{n}_{tf_name(rdn_value(t))}"], [
+                   ("network_interface_id", ref(f"azurerm_network_interface.{tf_name(rdn_value(t))}.id")),
+                   ("ip_configuration_name", "primary"),
+                   ("backend_address_pool_id", ref(f"azurerm_lb_backend_address_pool.{n}.id"))]) for t in targets),
+            *chain.from_iterable(_lb_port(n, port, spec) for port in values(svc, "ciamPort")))

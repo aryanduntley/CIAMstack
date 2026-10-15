@@ -1,15 +1,17 @@
-"""AWS edge: what the edge domain's terms mean on AWS, and the Terraform for a service whose policies ask for more than
-a TCP passthrough. A service name whose TLS terminates at the edge is an Application Load Balancer (HTTPS listener with
-the TLS policy and the certificate the environment holds in ACM, HTTP or HTTPS target groups with the policy's health
-check, stickiness and draining, its own security group); its protection policy is a WAFv2 web ACL on it (managed rule
-groups, rate-based rules aimed at the products' endpoints, address and country rules) and Shield Advanced protection
-when the policy asks for more than standard DDoS protection. A passthrough service stays a Network Load Balancer, with
-the policy's health check and source-address stickiness. Pure.
+"""AWS edge: what the edge domain's terms mean on AWS, and the Terraform of a service name's front (what fronts it is
+the core's edge.gateways.front_choice; terraform.py maps it). A service name whose TLS terminates at the edge is an
+Application Load Balancer (HTTPS listener with the TLS policy and the certificate the environment holds in ACM, HTTP or
+HTTPS target groups with the policy's health check, stickiness and draining, its own security group); its protection
+policy is a WAFv2 web ACL on it (managed rule groups, rate-based rules aimed at the products' endpoints, address and
+country rules) and Shield Advanced protection when the policy asks for more than standard DDoS protection. A passthrough
+service (or one without policies) is a Network Load Balancer (network_lb), with the policy's health check and
+source-address stickiness. Pure.
 
 Known limits: an ALB's addresses are AWS's (a recorded frontend address isn't kept); a managed rule group can't skip one
 field, so an exclusion keeps the whole endpoint out of that group's scope; Shield Advanced needs the account's
 subscription.
 """
+import ipaddress
 from collections import namedtuple
 from functools import partial
 from itertools import chain
@@ -17,7 +19,7 @@ from itertools import chain
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.notes import note, note_comment
 from opsdir.domains.edge.exposure import is_internal
-from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
+from opsdir.domains.edge.resolve import inspected, inspection_note, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
 
 # (min version, profile, ELB security policy, exact): the intent's TLS terms as ALB/NLB TLS listener policies
@@ -364,3 +366,50 @@ def alb_service(m, svc, spec, backend, subnets):
             *groups,
             *(web_acl(m, n, spec, f"aws_lb.{n}.arn") if inspected(spec) and not spec.cdn else ()),
             *(shield(n, spec, f"aws_lb.{n}.arn") if not spec.cdn else ()))
+
+
+def _subnet_mapping(svc, ip, internal, i, sub):
+    in_subnet = internal and bool(ip) and ipaddress.ip_address(ip) in ipaddress.ip_network(one(sub, "ciamCidr"))
+    eip = not internal and i == 0 and one(svc, "ciamProviderRef")
+    return ("subnet_mapping", Block((("subnet_id", ref(f"data.aws_subnet.{tf_name(rdn_value(sub))}.id")),
+                                     *((("private_ipv4_address", ip),) if in_subnet else ()),
+                                     *((("allocation_id", one(svc, "ciamProviderRef")),) if eip else ()))))
+
+
+def _listener(m, n, svc, port, targets, spec=None):
+    tuning = ((*((("deregistration_delay", spec.drain),) if spec.drain is not None else ()),
+               health_check(spec, False), *stickiness(spec, False)) if spec
+              else (("health_check", Block((("protocol", "TCP"),))),))
+    return (tf_block("resource", ["aws_lb_target_group", f"{n}_{port}"], [
+                ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}-{port}"), ("port", int(port)),
+                ("protocol", "TCP"), ("vpc_id", ref("data.aws_vpc.main.id")), ("target_type", "instance"),
+                *tuning]),
+            *(tf_block("resource", ["aws_lb_target_group_attachment", f"{n}_{port}_{tf_name(rdn_value(t))}"], [
+                ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")),
+                ("target_id", ref(f"aws_instance.{tf_name(rdn_value(t))}.id")), ("port", int(port))])
+              for t in targets),
+            tf_block("resource", ["aws_lb_listener", f"{n}_{port}"], [
+                ("load_balancer_arn", ref(f"aws_lb.{n}.arn")), ("port", int(port)), ("protocol", "TCP"),
+                ("default_action", Block((("type", "forward"),
+                                          ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")))))]))
+
+
+def network_lb(m, svc, spec, targets, subnets):
+    """A Network Load Balancer for a service name whose TLS passes through (or that has no policy): in its subnets
+    (subnet bindings; an internal one's recorded address in the subnet holding it, a public one's first mapping the
+    Elastic IP its provider ref names), TCP target groups and listeners per port over the role's servers (targets) with
+    the policy's health check, source-address stickiness and draining, the rule admitting its health checks to a
+    product's own health port, Shield Advanced when the policy asks (no CDN fronting it), and the planner's note when
+    the protection policy asks for request inspection it can't do."""
+    n = tf_name(rdn_value(svc))
+    ip, internal = one(svc, "ciamFrontendIp"), is_internal(svc)
+    mappings = tuple(_subnet_mapping(svc, ip, internal, i, sub) for i, sub in enumerate(subnets))
+    blind = (("#", note_comment(inspection_note(m, svc, spec))),) \
+        if spec is not None and inspected(spec) and not spec.cdn else ()
+    return (tf_block("resource", ["aws_lb", n], [
+                *blind, ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("internal", internal),
+                ("load_balancer_type", "network"), *mappings,
+                ("tags", {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})]),
+            *chain.from_iterable(_listener(m, n, svc, port, targets, spec) for port in values(svc, "ciamPort")),
+            *probe_ingress(m, n, one(svc, "ciamTargetRole"), spec, tuple(values(svc, "ciamPort"))),
+            *(shield(n, spec, f"aws_lb.{n}.arn") if spec is not None and not spec.cdn else ()))

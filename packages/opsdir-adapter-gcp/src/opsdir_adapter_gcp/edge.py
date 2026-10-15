@@ -1,12 +1,14 @@
-"""Google Cloud edge: what the edge domain's terms mean on Google Cloud, and the Terraform for a service whose policies
-ask for more than a TCP passthrough. A service name whose TLS terminates at the edge is a regional Application Load
-Balancer (external or internal managed, beside the proxy-only subnet the environment binds to role subnet-edge): a
-forwarding rule to a target HTTPS proxy with the TLS policy (an SSL policy) and the Certificate Manager certificate the
-environment holds, a URL map, a backend service over HTTP or HTTPS with the policy's health check, session affinity,
-timeout and draining, and the firewall rules admitting the proxies and the health checks (policy rules under the
-policy firewall model). Its protection policy is a Cloud Armor policy on the backend service: preconfigured WAF rules,
-rate limits aimed at the products' endpoints, address and country rules, exclusions. Advanced network DDoS protection
-is a network policy with an edge security service. Pure.
+"""Google Cloud edge: what the edge domain's terms mean on Google Cloud, and the Terraform of a service name's front
+(what fronts it is the core's edge.gateways.front_choice; terraform.py maps it). A service name whose TLS terminates at
+the edge is a regional Application Load Balancer (external or internal managed, beside the proxy-only subnet the
+environment binds to role subnet-edge): a forwarding rule to a target HTTPS proxy with the TLS policy (an SSL policy)
+and the Certificate Manager certificate the environment holds, a URL map, a backend service over HTTP or HTTPS with the
+policy's health check, session affinity, timeout and draining, and the firewall rules admitting the proxies and the
+health checks (policy rules under the policy firewall model). Its protection policy is a Cloud Armor policy on the
+backend service: preconfigured WAF rules, rate limits aimed at the products' endpoints, address and country rules,
+exclusions. Advanced network DDoS protection is a network policy with an edge security service. A passthrough service
+(or one without policies) is a passthrough network load balancer (network_lb): a regional health check and its probe
+firewall rule, a backend service over the servers' instance groups, a forwarding rule. Pure.
 
 Known limits: a preconfigured rule's exclusions apply to every path; IP reputation needs Cloud Armor Enterprise's
 threat intelligence; bot management needs reCAPTCHA keys; account takeover and account creation fraud have no
@@ -18,8 +20,10 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import by_role
 from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.edge.exposure import is_internal
-from opsdir.domains.edge.resolve import inspected, path_regex, tls_policy
+from opsdir.domains.edge.resolve import inspected, inspection_note, path_regex, tls_policy
+from opsdir.domains.network.stack import firewall_model
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
+from .firewall_policy import health_check_rule
 from .health_checks import probe_ranges
 from .names import NETWORK, REGION, label, network_tag
 
@@ -282,3 +286,76 @@ def application_lb(m, svc, spec, backend, frontend, placement, admit=None):
                   (("#", "UNBOUND: no Certificate Manager certificate holds this service's certificate here"),)),
                 ("ssl_policy", ref(f"{kind('ssl_policy')}.{n}.id"))]),
             forwarding)
+
+
+def _health_check_rule(m, svc, n, name, scheme, port):
+    """The firewall rule admitting Google Cloud's health-check probes to the service's servers on its checked port:
+    part of the load balancer, not one of the record's rules (the importers leave it out). A policy rule under the
+    policy model."""
+    if firewall_model(m) == "policy":
+        return health_check_rule(m, svc, n, probe_ranges(scheme), port)
+    return tf_block("resource", ["google_compute_firewall", f"{n}_health_checks"], [
+        ("name", f"{name}-health-checks"), ("description", f"Google Cloud health checks for {rdn_value(svc)}"),
+        ("network", NETWORK), ("direction", "INGRESS"),
+        ("allow", Block((("protocol", "tcp"), ("ports", [port])))),
+        ("source_ranges", list(probe_ranges(scheme))), ("target_tags", [network_tag(m, one(svc, "ciamTargetRole"))])])
+
+
+def _checked(spec, port):
+    """The port a health check probes: the product's own health port (an admin port) when it declares one, else the
+    service's first."""
+    return str(spec.health.port) if spec is not None and spec.health.port else port
+
+
+def _l4_tuning(spec):
+    """(health check body, backend service settings) from a passthrough service's traffic policy."""
+    if spec is None:
+        return None, ()
+    h = spec.health
+    check = (*((("check_interval_sec", h.interval),) if h.interval else ()),
+             *((("healthy_threshold", h.healthy),) if h.healthy else ()),
+             *((("unhealthy_threshold", h.unhealthy),) if h.unhealthy else ()))
+    kind = ((f"{h.protocol}_health_check", ((("request_path", h.path or "/"),))),) if h.protocol != "tcp" else ()
+    affinity = (("session_affinity", "CLIENT_IP"),) if spec.stickiness == "source-ip" else ()
+    drain = (("connection_draining_timeout_sec", spec.drain),) if spec.drain is not None else ()
+    return (check, kind), (*affinity, *drain)
+
+
+def network_lb(m, svc, spec, groups, backends, frontend, placement):
+    """A passthrough network load balancer for a service name whose TLS passes through (or that has no policy): its
+    zonal instance groups (groups: their blocks), a regional health check (the policy's protocol, path and thresholds,
+    on the product's own health port when it declares one) and the firewall rule its probes need, a regional backend
+    service over backends (the groups' and the role's managed groups' instance_group refs; an EXTERNAL one names its
+    port and scales capacity) with the policy's affinity and draining, a forwarding rule (at most five ports, else all;
+    frontend: (data sources, address) of the service's frontend; placement: an internal one's network and subnetwork),
+    Cloud Armor network DDoS protection on an external one when the policy asks, and the planner's note when the
+    protection policy asks for request inspection it can't do."""
+    n, name = tf_name(rdn_value(svc)), f"ciam-{rdn_value(m.env)}-{rdn_value(svc)}"
+    ports, internal = values(svc, "ciamPort"), is_internal(svc)
+    scheme = "INTERNAL" if internal else "EXTERNAL"
+    data, address = frontend
+    (check, kind), tuning = _l4_tuning(spec) if spec is not None else ((None, ()), ())
+    health = kind[0] if kind else ("tcp_health_check", ())
+    blind = (comment(note_comment(inspection_note(m, svc, spec))),) \
+        if spec is not None and inspected(spec) else ()
+    capacity = () if internal else (("capacity_scaler", 1.0),)
+    forwarded = ((("ports", ports),) if len(ports) <= 5 else
+                 (("#", "more than five ports: all are forwarded; the firewall rules admit only the service's"),
+                  ("all_ports", True)))
+    return (*data, *blind, *groups,
+            tf_block("resource", ["google_compute_region_health_check", n], [
+                ("name", name), ("region", REGION), *(check or ()),
+                (health[0], Block((("port", int(_checked(spec, ports[0]))), *health[1])))]),
+            _health_check_rule(m, svc, n, name, scheme, _checked(spec, ports[0])),
+            tf_block("resource", ["google_compute_region_backend_service", n], [
+                ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("protocol", "TCP"),
+                *((("port_name", "ciam"),) if not internal else ()),
+                ("health_checks", [ref(f"google_compute_region_health_check.{n}.id")]), *tuning,
+                *(("backend", Block((("group", group), ("balancing_mode", "CONNECTION"), *capacity)))
+                  for group in backends)]),
+            tf_block("resource", ["google_compute_forwarding_rule", n], [
+                ("name", name), ("region", REGION), ("load_balancing_scheme", scheme), ("ip_protocol", "TCP"),
+                *forwarded, *((("ip_address", address),) if address else ()),
+                ("backend_service", ref(f"google_compute_region_backend_service.{n}.id")), *placement,
+                ("labels", {"service": label(one(svc, "ciamFqdn")), "managed_by": "opsdir"})]),
+            *(network_ddos(m, n, spec) if spec is not None and not internal else ()))
