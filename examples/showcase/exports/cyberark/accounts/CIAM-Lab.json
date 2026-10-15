@@ -1,0 +1,244 @@
+{
+ "count": 17,
+ "value": [
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_1",
+   "name": "bigip-hq",
+   "platformId": "F5BigIP",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": false,
+    "lastModifiedTime": 1772416800,
+    "lastVerifiedTime": 1789869600,
+    "manualManagementReason": "Rotated by the network team's own change process",
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_2",
+   "name": "dc-hq",
+   "platformId": "WinDomain",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1789005600,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_3",
+   "name": "ds-deployment-id",
+   "platformId": "GenericText",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1762135200,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_4",
+   "name": "ds-deployment-password",
+   "platformId": "GenericText",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1786759200,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_5",
+   "name": "ds-root-password",
+   "platformId": "PingDSRoot",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1788228000,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_6",
+   "name": "ds-tls-keystore",
+   "platformId": "GenericFile",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1771034400,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_7",
+   "name": "panorama-hq",
+   "platformId": "PaloAltoPanorama",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1789178400,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_8",
+   "name": "pf-admin-password",
+   "platformId": "PingFederateAdmin",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1782871200,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_9",
+   "name": "pf-admin-password-old",
+   "platformId": "PingFederateAdmin",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1764554400,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_10",
+   "name": "pf-corp-ad-bind-password",
+   "platformId": "WinDomain",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1788573600,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_11",
+   "name": "pf-ds-bind-password",
+   "platformId": "PingDSBind",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1788573600,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_12",
+   "name": "pf-grants-db-password",
+   "platformId": "PostgreSQL",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1788573600,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_13",
+   "name": "pf-signing-key",
+   "platformId": "GenericFile",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1789696800,
+    "lastVerifiedTime": 1789869600,
+    "status": "Failure"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_14",
+   "name": "pf-signing-key-password",
+   "platformId": "GenericText",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1771034400,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_15",
+   "name": "pf-smtp-password",
+   "platformId": "GenericText",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1788573600,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_16",
+   "name": "sso-tls-keystore",
+   "platformId": "GenericFile",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1771034400,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  },
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "31_17",
+   "name": "sso-tls-keystore-password",
+   "platformId": "GenericText",
+   "safeName": "CIAM-Lab",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1771034400,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  }
+ ]
+}

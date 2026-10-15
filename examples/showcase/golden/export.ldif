@@ -307,6 +307,11 @@ objectClass: organizationalUnit
 ou: runbooks
 description: Work instructions
 
+dn: ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: secret-inventory
+
 dn: ou=tag-policy,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -1434,6 +1439,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Take SSP-CIAM-2026's evidence package and record it on the boundary
 
+dn: cn=CHG-2047,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2047
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the CyberArk safes' account inventory (metadata only) the re
+ ferences are reconciled with
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1718,6 +1733,18 @@ cn: customer-portal-team
 ciamCostCenter: CC-2040
 ciamOwnerKind: team
 mail: customer-portal@example-aero.test
+
+dn: cn=cyberark.accounts.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: cyberark.accounts.shared
+ciamChangeRef: cn=CHG-2047,ou=changes,dc=ciam-ops
+ciamImportScope: cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+ciamImportScope: cn=CIAM-PROD,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+ciamImportScope: cn=CIAM-TARGET,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: cyberark/accounts
 
 dn: cn=data-classification,ou=tag-policy,dc=ciam-ops
 objectClass: top
@@ -4491,6 +4518,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: credential-validators
 
+dn: ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: cyberark
+
 dn: ou=data-stores,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -5024,6 +5056,30 @@ cn: centralus
 ciamGeography: United States
 ciamRegionName: Central US
 ciamRegionStatus: available
+
+dn: cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretInventory
+cn: CIAM-Lab
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
+
+dn: cn=CIAM-PROD,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretInventory
+cn: CIAM-PROD
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
+
+dn: cn=CIAM-TARGET,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretInventory
+cn: CIAM-TARGET
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
 
 dn: cn=cores,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
 objectClass: top
@@ -5987,6 +6043,18 @@ ciamLdapName: appentitlement
 ciamMostValues: 1
 ciamProfiledAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
+dn: cn=bigip-hq,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: bigip-hq
+ciamLastRotated: 20260302020000Z
+ciamLastVerified: 20260920020000Z
+ciamManualReason: Rotated by the network team's own change process
+ciamRotationManaged: FALSE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
 dn: cn=builtin-audit-logging-enabled,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
 objectClass: top
 objectClass: ciamProviderControl
@@ -6163,6 +6231,17 @@ ciamLargestValueBytes: 8
 ciamLdapName: dc
 ciamMostValues: 1
 
+dn: cn=dc-hq,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: dc-hq
+ciamLastRotated: 20260910020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
 dn: cn=Default Password Policy,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
@@ -6326,6 +6405,61 @@ ciamSubnet: cn=snet-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
  am-ops
 ciamZone: 3
 
+dn: cn=ds-deployment-id,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: ds-deployment-id
+ciamLastRotated: 20251103020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=ds-deployment-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: ds-deployment-password
+ciamLastRotated: 20260815020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=ds-root-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: ds-root-password
+ciamLastRotated: 20260901020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=ds-root-password,cn=CIAM-PROD,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: ds-root-password
+ciamLastRotated: 20260902020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=ds-root-pw,cn=CIAM-TARGET,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: ds-root-pw
+ciamLastRotated: 20260915020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
 dn: cn=ds-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -6341,6 +6475,17 @@ ciamServerRole: ds
 ciamSubnet: cn=subnet-ds-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
+
+dn: cn=ds-tls-keystore,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: ds-tls-keystore
+ciamLastRotated: 20260214020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
 
 dn: cn=email,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -6659,6 +6804,17 @@ ciamLargestValueBytes: 16
 ciamLdapName: ou
 ciamMostValues: 1
 
+dn: cn=panorama-hq,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: panorama-hq
+ciamLastRotated: 20260912020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
 dn: cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -6760,6 +6916,28 @@ ciamSubnet: cn=subnet-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc
 ciamZone: us-central1-a
 pingfedOperationalMode: CLUSTERED_CONSOLE
 
+dn: cn=pf-admin-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-admin-password
+ciamLastRotated: 20260701020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=pf-admin-password-old,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-admin-password-old
+ciamLastRotated: 20251201020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
 dn: cn=pf-admin-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamServer
@@ -6775,6 +6953,28 @@ ciamServerRole: pf-admin
 ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
+
+dn: cn=pf-corp-ad-bind-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-corp-ad-bind-password
+ciamLastRotated: 20260905020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=pf-ds-bind-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-ds-bind-password
+ciamLastRotated: 20260905020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
 
 dn: cn=pf-engine-1,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top
@@ -6893,6 +7093,49 @@ ciamSubnet: cn=subnet-pf-a,ou=bindings,env=prod,cloud=source,ou=environments,d
  c=ciam-ops
 ciamZone: us-east-1a
 
+dn: cn=pf-grants-db-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-grants-db-password
+ciamLastRotated: 20260905020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=pf-signing-key,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-signing-key
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: failure
+ciamStoreModified: 20251103020000Z
+
+dn: cn=pf-signing-key-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-signing-key-password
+ciamLastRotated: 20260214020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=pf-smtp-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: pf-smtp-password
+ciamLastRotated: 20260905020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
 dn: cn=registrationstatus,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -6985,6 +7228,28 @@ ciamLargestValueBytes: 5
 ciamLdapName: soldtoaccount
 ciamMostValues: 1
 ciamProfiledAttribute: cn=soldToAccount,ou=user-schema,dc=ciam-ops
+
+dn: cn=sso-tls-keystore,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: sso-tls-keystore
+ciamLastRotated: 20260214020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
+
+dn: cn=sso-tls-keystore-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSecretObject
+cn: sso-tls-keystore-password
+ciamLastRotated: 20260214020000Z
+ciamLastVerified: 20260920020000Z
+ciamRotationManaged: TRUE
+ciamRotationStatus: success
+ciamStoreModified: 20251103020000Z
 
 dn: cn=sub,ou=claims,cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top

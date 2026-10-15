@@ -439,4 +439,29 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2043  update  cn=am,ou=workloads,dc=ciam-ops
 <TIMESTAMP>          CHG-2044  update  cn=q-skyline-signing,ou=unknowns,dc=ciam-ops
 <TIMESTAMP>          CHG-2046  insert  cn=evidence,cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops
-(439 rows)
+<TIMESTAMP>          CHG-2047  insert  ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=CIAM-PROD,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=CIAM-TARGET,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=bigip-hq,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=dc-hq,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=ds-deployment-id,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=ds-deployment-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=ds-root-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=ds-root-password,cn=CIAM-PROD,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=ds-root-pw,cn=CIAM-TARGET,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=ds-tls-keystore,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=panorama-hq,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-admin-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-admin-password-old,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-corp-ad-bind-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-ds-bind-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-grants-db-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-signing-key,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-signing-key-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=pf-smtp-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=sso-tls-keystore,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=sso-tls-keystore-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
+<TIMESTAMP>          CHG-2047  insert  cn=cyberark.accounts.shared,ou=imports,dc=ciam-ops
+(464 rows)

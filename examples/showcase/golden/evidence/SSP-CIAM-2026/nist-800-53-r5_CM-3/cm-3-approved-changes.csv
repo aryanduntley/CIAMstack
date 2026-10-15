@@ -42,3 +42,4 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2043,ou=changes,dc=ciam-ops",Build the target's product configuration into its deployment: config profiles and PingFederate's server profile,CAB 2026-09-18,approved
 "cn=CHG-2044,ou=changes,dc=ciam-ops",Record Skyline Air's answer on the target's signing certificate (unknown q-skyline-signing),CAB 2026-09-18,approved
 "cn=CHG-2046,ou=changes,dc=ciam-ops",Take SSP-CIAM-2026's evidence package and record it on the boundary,CAB 2026-09-18,approved
+"cn=CHG-2047,ou=changes,dc=ciam-ops",Record the CyberArk safes' account inventory (metadata only) the references are reconciled with,CAB 2026-09-18,approved

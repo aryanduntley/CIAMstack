@@ -263,6 +263,12 @@
       "Take SSP-CIAM-2026's evidence package and record it on the boundary",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2047,ou=changes,dc=ciam-ops",
+      "Record the CyberArk safes' account inventory (metadata only) the references are reconciled with",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

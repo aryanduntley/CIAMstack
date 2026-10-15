@@ -234,6 +234,10 @@ echo "   the record queries that show it met), recorded on the boundary under CH
 rm -rf out/evidence-SSP-CIAM-2026
 od evidence --boundary SSP-CIAM-2026 --change CHG-2046 -o out/evidence-SSP-CIAM-2026
 od report evidence
+echo "-- the CyberArk safes' account inventory, metadata only: each reference present, missing or unconfirmed, rotation"
+echo "   from the CPM's own successes, and the accounts nothing references (the target's PAM copy is vaulted elsewhere)"
+od import --change CHG-2047 --at 20260923090000Z cyberark/accounts exports/cyberark
+od report secret-inventory
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

@@ -21,6 +21,7 @@ from .evidence import evidence_check
 from .network import network_check
 from .observability import log_collection_check, signal_check
 from .proxies import proxy_check
+from .secret_inventory import secret_inventory_check
 from .upgrades import upgrade_check
 from ..core.directory import children, date_of, follow, get, is_kind, one, rdn_value, values
 from ..core.environment import ENVIRONMENT, EnvModel, by_role, environment_of, one_role, of_class
@@ -233,7 +234,8 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requ
                         run_check(signal_check(adapters), ctx),
                         run_check(log_collection_check(adapters), ctx),
                         run_check(proxy_check(adapters), ctx),
-                        run_check(upgrade_check(src_adapters, adapters), ctx)])
+                        run_check(upgrade_check(src_adapters, adapters), ctx),
+                        run_check(secret_inventory_check(installed), ctx)])
     blockers, actions, accepted = accept_findings(ctx, domains, f.blockers, f.actions)
     return Plan(src, dst, cutover, as_of, blockers, actions, f.ok, _group_requests(f.requests), dst_files,
                 render_summary(adapters), tuple({x.key: x for x in f.fixes}.values()), accepted)

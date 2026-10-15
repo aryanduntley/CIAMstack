@@ -96,6 +96,28 @@ it is inside with no package or one older than its queries' smallest cadence (an
 differs between source and target (a report with an `environment` column, the source's rows against the target's: an
 action to collect it again after the cutover); the queries it can't compare are listed once as not compared.
 
+### Secret-store inventories
+
+What a secret store holds is recorded as observed metadata, never a value, under `ou=secret-inventory` (the pki
+domain): per container (a PAM safe, a key/value mount, under `ou=<scheme>`) a `ciamSecretInventory` (`ciamInventoryAt`;
+`ciamInventoryState` complete, incomplete or denied, with `ciamInventoryProblem`; `ciamInventoryPrefix` when only
+part was listed) and a `ciamSecretObject` per object found (`ciamObjectState`; `ciamRotationManaged`,
+`ciamRotationStatus`, `ciamManualReason`; `ciamLastRotated` only from a timestamp that means rotation;
+`ciamStoreModified`, any write, never rotation; `ciamLastVerified`). The secret-store adapters' importers write them
+(`cyberark/accounts`, `hashicorp-vault/kv-metadata`, and their collectors, `--inventory-container` naming containers
+beyond those the references name); nothing is written onto the bindings. Each adapter's locator says where a reference
+of its scheme points, and the record's secret references (`ciamRefUri` and every `ciamCopyRef`) are reconciled each
+time: **present**, **deleted** (deleted, destroyed or disabled in the store), **confirmed-missing** (the container
+was listed completely), **inventory-incomplete**, **inaccessible** (the store refused the listing) or
+**not-inventoried**; objects nothing references are **unreferenced**. `opsdir report secret-inventory` lists every
+placed reference (environment, role, reference, container, state, when inventoried, last rotated, rotate by its
+credential's `ciamRotationDays`, what the store says of rotation, problems), then the unreferenced objects. `opsdir
+plan` checks the target (area `Secrets`; nothing when the record holds no inventory of the target's schemes): a
+reference confirmed missing or deleted is a blocker; one that can't be confirmed is an action saying what to grant or
+collect; so are rotation overdue, a failed rotation, a binding saying its store rotates it (`ciamAutoRotate`) when the
+store doesn't manage it, and the objects in the target's containers nothing references (one action per container);
+a container whose inventory can't show rotation (Vault KV metadata) is said once.
+
 ### Who keeps what, and where it renders
 
 Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what
@@ -156,15 +178,19 @@ under an approved change). Each adapter declares collectors (`core.contract.Coll
 its importers' files, in rounds (a list, then each item's details), and a check that your provider login is the
 account, subscription or project the record names (nothing is read when it isn't). A collector also declares the
 options it takes (`core.contract.CollectOption`: flag, metavar, help, order): `opsdir collect` offers the installed
-adapters' options as its own flags (`--terraform-dir`, `--amster-key`, `--ldapsearch`, `--ldap-truststore`, `--ldap-ca`
-with today's adapters) and passes each value given, with or without `--env`; the core names none of them.
+adapters' options as its own flags (`--terraform-dir`, `--amster-key`, `--ldapsearch`, `--ldap-truststore`, `--ldap-ca`,
+`--inventory-container` with today's adapters) and passes each value given, with or without `--env`; the core names none of them.
 
 - Credentials are never stored. Clouds use your own CLI login. What needs more (a product's admin API, a directory, a
   Terraform state object) is declared per environment as a collection source (`ciamCollectionSource`: the importer,
   the URL or object, the role of the binding holding the credential's reference, the login name, the role of the CA
   certificate its endpoint is trusted by): the reference is resolved through its secret store when collecting, held
   in memory for the run, and reaches a tool only on its standard input or opsdir's own HTTP GET (`live.py`); a failing
-  call's error output is shown with resolved values masked. Calls carrying provider debug switches are never run.
+  call's error output is shown with resolved values masked. The source's `ciamCredentialScheme` says how the GET sends
+  it: `basic` (with `ciamLoginName`; the default), `bearer` (`Authorization: Bearer`), `token` (a session token a
+  product's own logon issued, sent as the whole `Authorization` value: opsdir never logs on itself, a logon being a
+  POST) or `api-key` (the secret alone in the header the collector names, no login); each collector says which its
+  API takes. Calls carrying provider debug switches are never run.
 - A collection is complete or not imported: an import makes the record's subtrees exactly what the export holds, so a
   failed call (or a collector asking for more than 8 rounds or 2000 calls, or saying why it must stop) leaves the record as it is and says why.
 - An applied collection records how it was collected on its import run (its `ciamImportRun` entry): the identity the
@@ -398,6 +424,8 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | The controls the operator must show met under the authorizations environments rely on; a table as evidence (cut to environments, CSV, JSON) and a text's SHA-256 | `opsdir.domains.estate.evidence`: `controls_covered(d, env_dns)`, `scoped_rows(headers, rows, labels)`, `table_csv(headers, rows)`, `table_json(headers, rows)`, `sha256(text)` |
    | Who keeps an entry the stack doesn't (the party `ciamManagedBy` names) | `opsdir.domains.governance.keepers`: `managed_by(d, e)` (the party entry or `None`), `managed_by_name(d, e, default)` (its name as reports show it); `keeper(m, e)` for where its keeper's root is |
    | How long a destination keeps what it is sent, and a report's yes/no | `opsdir.domains.observability.retention`: `retention_days(b)`, `longest_retention(days)`, `INDEFINITE` (forever), `yes_no(e, attr)` |
+   | A secret store's inventory (what a safe or mount holds, metadata only) and where a reference points in it | the adapter declares `inventory_locator={"scheme": locate}` (`locate(rest) -> (container, object)` or `None`); its importer builds entries with `opsdir.domains.pki.inventory`: `inventory_entry(d, scheme, container, at, state, problems, prefixes, endpoint)`, `object_entry(d, scheme, container, name, facts)`, `inventory_group(inventory, objects)`; its collector lists `wanted_containers(d, scheme, locate, options.get("inventory_container"))` and declares the shared `CONTAINER_OPTION` (`--inventory-container`) |
+   | Send a collection source's credential the way its API takes it | `Request(url, headers, credential, ca)` with `credential` `(s.scheme, s.credential, s.login)` for `basic`, `bearer` and `token` (the whole `Authorization` value: a session token obtained outside opsdir), `("headers", ref, login, (login header, secret header))`, or `("api-key", ref, None, "X-PAN-KEY")` (the secret alone in the header named) |
 
    Anything two packages would write alike belongs in the core (or an `opsdir-base-*` library), public and tested. Module-level tables are read-only (`MappingProxyType`, tuples, `frozenset`).
 

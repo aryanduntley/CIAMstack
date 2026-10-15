@@ -67,7 +67,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2042", SHOWCASE / "changes" / "CHG-2042-standby-itar-data.ldif"),
             ("CHG-2043", SHOWCASE / "changes" / "CHG-2043-target-profiles.ldif"),
             ("CHG-2044", SHOWCASE / "changes" / "CHG-2044-skyline-signing-answer.ldif"),
-            ("CHG-2046", EvidenceStep("SSP-CIAM-2026")))
+            ("CHG-2046", EvidenceStep("SSP-CIAM-2026")),
+            ("CHG-2047", ImportStep("cyberark/accounts", SHOWCASE / "exports" / "cyberark", "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

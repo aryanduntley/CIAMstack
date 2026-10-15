@@ -132,13 +132,19 @@ def _run(call, secrets):
 
 
 def _authorization(credential, secret):
-    """The headers carrying a resolved credential: Authorization (basic, bearer), or a login and a secret header."""
+    """The headers carrying a resolved credential: Authorization (basic, bearer, or token: the value as it is, a
+    session token a product's own logon issued), a login and a secret header (headers), or the secret alone in the
+    header the request names (api-key: an API key, no login)."""
     scheme, _, login, *names = credential
     if scheme == "basic":
         return {"Authorization": "Basic " + base64.b64encode(f"{login}:{secret}".encode()).decode()}
     if scheme == "headers":
         login_header, secret_header = names[0]
         return {login_header: login, secret_header: secret}
+    if scheme == "api-key":
+        return {names[0]: secret}
+    if scheme == "token":
+        return {"Authorization": secret}
     return {"Authorization": f"Bearer {secret}"}
 
 

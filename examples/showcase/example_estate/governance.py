@@ -116,6 +116,8 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2046", "Take SSP-CIAM-2026's evidence package and record it on the boundary", "approved",
      "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2047", "Record the CyberArk safes' account inventory (metadata only) the references are reconciled with",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

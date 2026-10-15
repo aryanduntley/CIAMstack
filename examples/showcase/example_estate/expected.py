@@ -111,6 +111,11 @@ EXPECTED = MappingProxyType({
         ("B44", "Unknowns", "Open question `q-skyline-signing` (target/prod)",
          "nobody knows yet whether Skyline Air accepts the target's new signing certificate without re-onboarding: "
          "an open question the move waits for, owned by the partner", "CHG-2044"),
+        # the CyberArk inventory (CHG-2047): the PAM copy of the target's DS root password isn't in its safe
+        ("B47", "Secrets", "target/prod references `ds-root-password` (a copy at "
+         "cyberark://ciam-ops/CIAM-TARGET/ds-root-password), but CIAM-TARGET's inventory",
+         "the target's PAM copy of the directory root password was vaulted under another name: the safe, listed "
+         "whole, has no `ds-root-password`, so rotating the password wouldn't update it", None, "CHG-2047"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -458,6 +463,8 @@ EXPECTED = MappingProxyType({
         ("A144", "Evidence", "Boundary `SSP-CIAM-2026` (target/prod is inside it) has no recorded evidence package",
          "once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded", "CHG-2046",
          "CHG-2032"),
+        ("A160", "Secrets", "CIAM-TARGET (cyberark) holds 1 object(s) no reference in the record names: `ds-root-pw`",
+         "the account the target's root password copy was vaulted as: nothing references it", None, "CHG-2047"),
     ],
 })
 

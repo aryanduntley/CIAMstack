@@ -59,10 +59,12 @@ ATTRIBUTES = (
                  'The role of the certificate binding a collection source\'s TLS endpoint is trusted by'),
     AttributeDef(600, 'ciamLoginName', 'string', 'intent', True,
                  'The account a collection source\'s credential signs in as (a read-only service account)'),
-    AttributeDef(633, 'ciamCredentialScheme', 'enum:basic|bearer', 'intent', True,
-                 'How a collection source\'s credential is sent: basic (a password, with ciamLoginName; the default) '
-                 'or bearer (an access token or signed JWT minted outside opsdir, sent as Authorization: Bearer); the '
-                 'importer\'s collector says which it accepts'),
+    AttributeDef(633, 'ciamCredentialScheme', 'enum:basic|bearer|token|api-key', 'intent', True,
+                 'How a collection source\'s credential is sent: basic (a password, with ciamLoginName; the default), '
+                 'bearer (an access token or signed JWT minted outside opsdir, sent as Authorization: Bearer), '
+                 'token (a session token obtained outside opsdir, sent as the Authorization header\'s whole value) '
+                 'or api-key (an API key, sent alone in the header the product names); the importer\'s collector '
+                 'says which it accepts'),
     AttributeDef(601, 'ciamCollectionIdentity', 'string', 'meta', True,
                  'Who the provider said the collector was when an import run\'s export was collected, or a collection '
                  'was attempted (its identity check: account, subscription, project)'),

@@ -204,7 +204,7 @@ def _collect_cli(monkeypatch, adapter, **given):
     a = argparse.Namespace(**{"env": "alpha/prod", "adapter": None, "list": False, "dry_run": False,
                               "change": "CHG-9", "save": None, "terraform_dir": None, "amster_key": None,
                               "ldapsearch": None, "ldap_truststore": None, "ldap_ca": None,
-                              "at": "20261008120000Z", "take": [], "keep": [], **given})
+                              "inventory_container": None, "at": "20261008120000Z", "take": [], "keep": [], **given})
     return cli._cmd_collect(None, a, None), applied, recorded
 
 
@@ -369,11 +369,11 @@ def test_the_collect_usage_is_built_from_the_installed_collectors_options_as_it_
                      if "[--save DIR]" in line or "[--ldap" in line or "[--terraform-dir" in line) == (
         "opsdir collect [--env CLOUD/ENV] [--adapter A[/I]] [--list] [--dry-run] [--change CHG-…] [--save DIR]\n"
         "[--terraform-dir DIR] [--amster-key PATH] [--ldapsearch PATH] [--ldap-truststore PATH]\n"
-        "[--ldap-ca PATH] [--at YYYYMMDDhhmmssZ] [--take K|all] [--keep K|all]")
+        "[--ldap-ca PATH] [--inventory-container NAMES] [--at YYYYMMDDhhmmssZ] [--take K|all]")
     assert "<collect usage>" not in cli.description()
     flags = [x.option_strings[0] for x in cli.parser()._subparsers._group_actions[0].choices["collect"]._actions]
     assert flags[flags.index("--save") + 1:flags.index("--at")] == [
-        "--terraform-dir", "--amster-key", "--ldapsearch", "--ldap-truststore", "--ldap-ca"]
+        "--terraform-dir", "--amster-key", "--ldapsearch", "--ldap-truststore", "--ldap-ca", "--inventory-container"]
 
 
 def _options_seen(monkeypatch, env, **given):
@@ -387,8 +387,8 @@ def _options_seen(monkeypatch, env, **given):
     import argparse
     a = argparse.Namespace(**{"env": env, "adapter": None, "list": False, "dry_run": True, "change": None,
                               "save": None, "terraform_dir": None, "amster_key": None, "ldapsearch": None,
-                              "ldap_truststore": None, "ldap_ca": None, "at": "20261008120000Z", "take": [],
-                              "keep": [], **given})
+                              "ldap_truststore": None, "ldap_ca": None, "inventory_container": None,
+                              "at": "20261008120000Z", "take": [], "keep": [], **given})
     cli._cmd_collect(None, a, None)
     return seen[0]
 

@@ -134,6 +134,7 @@ cap 08-apply-chg-2043 od modify --change CHG-2043 changes/CHG-2043-target-profil
 cap 08-apply-chg-2044 od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
 cap 08-apply-chg-2046 od evidence --boundary SSP-CIAM-2026 --change CHG-2046 -o "$OUT/evidence/SSP-CIAM-2026"
 cap 08-report-evidence od report evidence
+cap 08-apply-chg-2047 od import --change CHG-2047 --at 20260923090000Z cyberark/accounts exports/cyberark
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
@@ -147,6 +148,7 @@ cap 08-report-reportable-incidents od report reportable-incidents
 cap 08-report-exceptions od report exceptions
 cap 08-report-authorizations od report authorizations
 cap 08-report-responsibilities od report responsibilities
+cap 08-report-secret-inventory od report secret-inventory
 od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/<TIMESTAMP>        /' \
   > "$OUT/cmd/09-history.txt"
 

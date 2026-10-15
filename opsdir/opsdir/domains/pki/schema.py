@@ -7,6 +7,11 @@ over from this one, and everywhere it is used. Each environment binds the role t
 secret or key reference (and, for a certificate held in a cloud certificate store, a certificate reference), with
 what the store does for it (protection level, automatic rotation, replicas, who may use it). The material itself is
 never in the record (SPEC R4): only references to it.
+
+A secret store's inventory (ou=secret-inventory) is what the store said it holds, metadata only, as its importers read
+it: per container (a PAM safe, a key/value mount) when it was listed and whether completely, and each object found with
+its state and what the store says of its rotation. The record's references are reconciled with it (inventory.py);
+nothing an inventory observes is written onto the bindings themselves.
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -105,6 +110,29 @@ ATTRIBUTES = (
                  'The secret store auth method mount Kubernetes workloads log in through (a Vault auth mount path)'),
     AttributeDef(620, 'ciamStoreKvVersion', 'enum:1|2', 'binding', True,
                  "The version of a key/value secret store's engine (Vault KV 1 or 2); 2 when not recorded"),
+    # ------------------------------------------------------------------ secret-store inventories (observed, metadata)
+    AttributeDef(690, 'ciamInventoryAt', 'time', 'observed', True,
+                 "When a secret store container's inventory was taken"),
+    AttributeDef(691, 'ciamInventoryState', 'enum:complete|incomplete|denied', 'observed', True,
+                 'complete: every object in the container (or under its listed prefixes) was listed; incomplete: '
+                 'the listing may have missed some (truncated, unread pages); denied: the store refused to list it'),
+    AttributeDef(692, 'ciamInventoryProblem', 'string', 'observed', False,
+                 'Why an inventory is incomplete or denied, in words'),
+    AttributeDef(693, 'ciamInventoryPrefix', 'string', 'observed', False,
+                 'The path prefixes an inventory listed in its container; none: the whole container'),
+    AttributeDef(694, 'ciamObjectState', 'enum:active|deleted|disabled', 'observed', True,
+                 "A secret store object's state: deleted (its current version deleted or destroyed, or scheduled "
+                 "for deletion) and disabled objects can't be read by what references them"),
+    AttributeDef(695, 'ciamRotationManaged', 'bool', 'observed', True,
+                 "The store manages the object's rotation itself (a PAM vault's automatic management)"),
+    AttributeDef(696, 'ciamRotationStatus', 'enum:success|failure|in-progress', 'observed', True,
+                 "How the store's last management (rotation) of the object went"),
+    AttributeDef(697, 'ciamStoreModified', 'time', 'observed', True,
+                 'When the store last changed the object (any write): never evidence of rotation'),
+    AttributeDef(698, 'ciamLastVerified', 'time', 'observed', True,
+                 'When the store last verified that the object still works where it is used'),
+    AttributeDef(699, 'ciamManualReason', 'string', 'observed', True,
+                 "Why the store doesn't manage the object's rotation, as the store records it"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -134,6 +162,17 @@ CLASSES = (
     ClassDef(43, 'ciamCertificateRef', 'ciamBinding', 'STRUCTURAL', ('ciamRefUri', 'ciamHoldsCertificate'),
              ('ciamAutoRotate', 'ciamLastRotated', 'ciamReplicaRegion', 'ciamKeyUser', 'ciamMaterialFrom'),
              'A certificate held in a cloud certificate store'),
+    ClassDef(145, 'ciamSecretInventory', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamInventoryAt', 'ciamInventoryState'),
+             ('ciamInventoryProblem', 'ciamInventoryPrefix', 'ciamStoreEndpoint'),
+             "The last inventory of one secret store container (a PAM safe, a key/value mount; under "
+             "ou=<scheme>,ou=secret-inventory), metadata only: when it was taken, whether it is complete, and the "
+             "objects found as its children; what the record's references are reconciled with"),
+    ClassDef(146, 'ciamSecretObject', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamObjectState', 'ciamRotationManaged', 'ciamRotationStatus', 'ciamLastRotated', 'ciamStoreModified',
+              'ciamLastVerified', 'ciamManualReason'),
+             "An object a secret store inventory found in its container (cn: its name or path), metadata only, "
+             "never its value: its state and what the store says of its rotation (ciamLastRotated only from a "
+             "timestamp that means rotation)"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

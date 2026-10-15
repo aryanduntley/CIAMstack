@@ -15,7 +15,7 @@ SOURCE = "ciamCollectionSource"
 # A collection source resolved against its environment: the binding's name, the importer, the locations it reads (the
 # source ref, or https://<host>:<port> per server of its role), the credential reference and login name, the trust
 # anchor's reference (each None when the source names none or the environment binds no such role), problems, and how
-# the credential is sent (ciamCredentialScheme: basic, the default, or bearer).
+# the credential is sent (ciamCredentialScheme: basic, the default, bearer, token or api-key).
 Source = NamedTuple("Source", [("name", str), ("importer", str), ("locations", tuple), ("credential", object),
                                ("login", object), ("ca", object), ("problems", tuple), ("scheme", str)])
 

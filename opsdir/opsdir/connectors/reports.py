@@ -10,6 +10,7 @@ from ..store.queries import fetch_blast_radius, fetch_rows
 from .keys import keys_report
 from .network import ports_report
 from .observability import coverage_report, log_collection_report
+from .secret_inventory import secret_inventory_report
 from .registry import DOMAINS
 from .settings import SETTINGS_REPORT
 
@@ -23,11 +24,12 @@ def catalogue(domains=DOMAINS):
     """report name → Report: store reports, every domain's reports, cross-domain reports (the ports matrix, from the
     installed adapters' listeners; where an environment keeps its keys, against the roles its installed adapters
     require; where its log routes' logs come from, with the log sources its adapters declare; which synthetic checks
-    each environment renders, with its adapters; the estate settings every installed domain declares)."""
+    each environment renders, with its adapters; every secret reference against its store's inventory, with the
+    adapters' locators; the estate settings every installed domain declares)."""
     return {"portability": PORTABILITY, "blast-radius": BLAST_RADIUS,
             **{name: r for domain in domains for name, r in domain.reports.items()}, "unowned": UNOWNED,
             "ports": ports_report(), "keys": keys_report(), "log-collection": log_collection_report(),
-            "canary-coverage": coverage_report(),
+            "canary-coverage": coverage_report(), "secret-inventory": secret_inventory_report(),
             "settings": SETTINGS_REPORT}
 
 

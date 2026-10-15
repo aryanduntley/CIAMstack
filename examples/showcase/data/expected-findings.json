@@ -311,6 +311,14 @@
       "match": "Open question `q-skyline-signing` (target/prod)",
       "planted": "nobody knows yet whether Skyline Air accepts the target's new signing certificate without re-onboarding: an open question the move waits for, owned by the partner",
       "cleared_by": "CHG-2044"
+    },
+    {
+      "id": "B47",
+      "area": "Secrets",
+      "match": "target/prod references `ds-root-password` (a copy at cyberark://ciam-ops/CIAM-TARGET/ds-root-password), but CIAM-TARGET's inventory",
+      "planted": "the target's PAM copy of the directory root password was vaulted under another name: the safe, listed whole, has no `ds-root-password`, so rotating the password wouldn't update it",
+      "cleared_by": null,
+      "raised_by": "CHG-2047"
     }
   ],
   "actions": [
@@ -1327,6 +1335,14 @@
       "planted": "once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded",
       "cleared_by": "CHG-2046",
       "raised_by": "CHG-2032"
+    },
+    {
+      "id": "A160",
+      "area": "Secrets",
+      "match": "CIAM-TARGET (cyberark) holds 1 object(s) no reference in the record names: `ds-root-pw`",
+      "planted": "the account the target's root password copy was vaulted as: nothing references it",
+      "cleared_by": null,
+      "raised_by": "CHG-2047"
     }
   ]
 }

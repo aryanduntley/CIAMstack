@@ -1,0 +1,19 @@
+{
+ "count": 1,
+ "value": [
+  {
+   "categoryModificationTime": 1762135200,
+   "createdTime": 1762135200,
+   "id": "44_1",
+   "name": "ds-root-pw",
+   "platformId": "PingDSRoot",
+   "safeName": "CIAM-TARGET",
+   "secretManagement": {
+    "automaticManagementEnabled": true,
+    "lastModifiedTime": 1789437600,
+    "lastVerifiedTime": 1789869600,
+    "status": "Success"
+   }
+  }
+ ]
+}
