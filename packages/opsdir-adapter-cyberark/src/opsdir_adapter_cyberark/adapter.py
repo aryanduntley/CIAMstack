@@ -1,6 +1,9 @@
 """CyberArk adapter: a privileged access management vault as a secret store usable from any environment; it renders
-nothing itself."""
+nothing itself. It resolves cyberark:// references, and inventories its safes' accounts, metadata only (inventory.py,
+collect.py), for reconciling the record's references with what the vault holds."""
 from opsdir.core.contract import Adapter
+from .collect import COLLECTORS
+from .inventory import ACCOUNTS_IMPORTER, locate
 from .secrets import password_command
 
 
@@ -14,4 +17,5 @@ ADAPTER = Adapter(name="cyberark", kind="secret-store", applies=applies, require
                   secret_schemes={"cyberark": password_command}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(),
                   products=(),
-                  secret_patterns=(), importers=(), profile_terms=None, access=None)
+                  secret_patterns=(), importers=(ACCOUNTS_IMPORTER,), profile_terms=None, access=None,
+                  collectors=COLLECTORS, inventory_locator={"cyberark": locate})

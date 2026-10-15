@@ -2901,11 +2901,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.632 NAME 'ciamInstallRoot' DESC 'Whe
  string' X-PATTERN '^(/|[A-Za-z]:[\5C\5C/]).*$' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.633 NAME 'ciamCredentialScheme' DESC
   'How a collection source\27s credential is sent: basic (a password, with c
- iamLoginName; the default) or bearer (an access token or signed JWT minted 
- outside opsdir, sent as Authorization: Bearer); the importer\27s collector 
- says which it accepts' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
- .121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:basic|bear
- er' X-ORIGIN 'opsdir' )
+ iamLoginName; the default), bearer (an access token or signed JWT minted ou
+ tside opsdir, sent as Authorization: Bearer), token (a session token obtain
+ ed outside opsdir, sent as the Authorization header\27s whole value) or api
+ -key (an API key, sent alone in the header the product names); the importer
+ \27s collector says which it accepts' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE '
+ enum:basic|bearer|token|api-key' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.634 NAME 'ciamDpopBound' DESC 'Wheth
  er the client\27s access tokens are DPoP-bound: it must present DPoP proofs
   (RFC 9449 dpop_bound_access_tokens)' EQUALITY booleanMatch SYNTAX 1.3.6.1.
@@ -3104,6 +3106,51 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.670 NAME 'ciamApplicationPart' DESC
   of the application start from its parts' EQUALITY distinguishedNameMatch S
  YNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' 
  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.690 NAME 'ciamInventoryAt' DESC 'Whe
+ n a secret store container\27s inventory was taken' EQUALITY generalizedTim
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'obs
+ erved' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.691 NAME 'ciamInventoryState' DESC '
+ complete: every object in the container (or under its listed prefixes) was 
+ listed; incomplete: the listing may have missed some (truncated, unread pag
+ es); denied: the store refused to list it' EQUALITY caseIgnoreMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE
+ -TYPE 'enum:complete|incomplete|denied' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.692 NAME 'ciamInventoryProblem' DESC
+  'Why an inventory is incomplete or denied, in words' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-T
+ YPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.693 NAME 'ciamInventoryPrefix' DESC 
+ 'The path prefixes an inventory listed in its container; none: the whole co
+ ntainer' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PO
+ RTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.694 NAME 'ciamObjectState' DESC 'A s
+ ecret store object\27s state: deleted (its current version deleted or destr
+ oyed, or scheduled for deletion) and disabled objects can\27t be read by wh
+ at references them' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'enum:active|dele
+ ted|disabled' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.695 NAME 'ciamRotationManaged' DESC 
+ 'The store manages the object\27s rotation itself (a PAM vault\27s automati
+ c management)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SI
+ NGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.696 NAME 'ciamRotationStatus' DESC '
+ How the store\27s last management (rotation) of the object went' EQUALITY c
+ aseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABIL
+ ITY 'observed' X-VALUE-TYPE 'enum:success|failure|in-progress' X-ORIGIN 'op
+ sdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.697 NAME 'ciamStoreModified' DESC 'W
+ hen the store last changed the object (any write): never evidence of rotati
+ on' EQUALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SING
+ LE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.698 NAME 'ciamLastVerified' DESC 'Wh
+ en the store last verified that the object still works where it is used' EQ
+ UALITY generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VAL
+ UE X-PORTABILITY 'observed' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.699 NAME 'ciamManualReason' DESC 'Wh
+ y the store doesn\27t manage the object\27s rotation, as the store records 
+ it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
+ LUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3886,3 +3933,17 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.140 NAME 'ciamApplication' DESC 'An a
  nothing is grouped unless recorded here' SUP ciamObject STRUCTURAL MUST cn 
  MAY ( ciamApplicationPart $ ciamUsesRole $ ciamCriticality ) X-ORIGIN 'opsd
  ir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.145 NAME 'ciamSecretInventory' DESC '
+ The last inventory of one secret store container (a PAM safe, a key/value m
+ ount; under ou=<scheme>,ou=secret-inventory), metadata only: when it was ta
+ ken, whether it is complete, and the objects found as its children; what th
+ e record\27s references are reconciled with' SUP ciamObject STRUCTURAL MUST
+  ( cn $ ciamInventoryAt $ ciamInventoryState ) MAY ( ciamInventoryProblem $
+  ciamInventoryPrefix $ ciamStoreEndpoint ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.146 NAME 'ciamSecretObject' DESC 'An 
+ object a secret store inventory found in its container (cn: its name or pat
+ h), metadata only, never its value: its state and what the store says of it
+ s rotation (ciamLastRotated only from a timestamp that means rotation)' SUP
+  ciamObject STRUCTURAL MUST cn MAY ( ciamObjectState $ ciamRotationManaged 
+ $ ciamRotationStatus $ ciamLastRotated $ ciamStoreModified $ ciamLastVerifi
+ ed $ ciamManualReason ) X-ORIGIN 'opsdir' )

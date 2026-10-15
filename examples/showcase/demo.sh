@@ -229,6 +229,10 @@ echo "   server profile (fetched from the platform's profile repository); secret
 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
 echo "-- Skyline Air answers the question the move waited for (unknown q-skyline-signing)"
 od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
+echo "-- the CyberArk safes' account inventory, metadata only: each reference present, missing or unconfirmed, rotation"
+echo "   from the CPM's own successes, and the accounts nothing references (the target's PAM copy is vaulted elsewhere)"
+od import --change CHG-2047 --at 20260923090000Z cyberark/accounts exports/cyberark
+od report secret-inventory
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

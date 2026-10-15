@@ -114,6 +114,8 @@ CHANGES = (
      "server profile", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2044", "Record Skyline Air's answer on the target's signing certificate (unknown q-skyline-signing)",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2047", "Record the CyberArk safes' account inventory (metadata only) the references are reconciled with",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

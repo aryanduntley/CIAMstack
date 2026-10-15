@@ -117,7 +117,7 @@ def test_collect_options_once_each_by_order_a_shared_declaration_counting_once()
     b = adapter("b", "product")._replace(collectors=(Collector("y", "environment", None, options=(own, shared)),))
     assert collect_options((a, b)) == (own, shared) and option_key(shared) == "shared"
     assert [option_key(o) for o in COLLECT_OPTIONS] == ["terraform_dir", "amster_key", "ldapsearch",
-                                                        "ldap_truststore", "ldap_ca"]
+                                                        "ldap_truststore", "ldap_ca", "inventory_container"]
 
 
 def test_two_different_declarations_of_one_collect_flag_are_refused_naming_both_adapters():

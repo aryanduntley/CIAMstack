@@ -290,11 +290,13 @@ Prerequisite = namedtuple("Prerequisite", ("name", "description", "importer", "m
 Command = namedtuple("Command", ("argv", "secrets", "stdin", "env", "absent", "keep", "workdir", "inputs", "digest"),
                      defaults=((), None, (), (), None, False, (), None))
 # An HTTP GET opsdir makes itself (no other method exists): url, headers ((name, value), ...: never a credential),
-# credential (scheme 'basic', 'bearer' or 'headers', the reference to resolve, the login name, and for 'headers' the
-# names of the header carrying the login and of the one carrying the secret: PingIDM's X-OpenIDM-Username and
-# X-OpenIDM-Password) or None, ca the reference
-# to the certificate (PEM) the endpoint is trusted by, or None for the system's trust store; absent the HTTP statuses
-# that mean nothing to read (404); keep as a Command's.
+# credential (scheme 'basic', 'bearer', 'token' (sent as the Authorization header's whole value: a session token a
+# product's own logon issued), 'headers' or 'api-key', the reference to resolve, the login name (None for token and
+# api-key), and for 'headers' the names of the header carrying the login and of the one carrying the secret
+# (PingIDM's X-OpenIDM-Username and X-OpenIDM-Password), for 'api-key' the name of the header carrying the secret
+# alone (PAN-OS's X-PAN-KEY): ('api-key', reference, None, 'X-PAN-KEY')) or None, ca the reference to the
+# certificate (PEM) the endpoint is trusted by, or None for the system's trust store; absent the HTTP statuses that
+# mean nothing to read (404); keep as a Command's.
 Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent", "keep"),
                      defaults=((), None, None, (), None))
 # A collector: the importer (by name) whose export it produces; scope "environment" (one environment's, `--env`) or
@@ -398,11 +400,15 @@ Adapter = namedtuple("Adapter", (
                             # SecretProviderClasses of a workload it deploys, or None (it mounts none)
     "roles",                # ((kind, (role, ...)), ...): the roles its products use, by kind (ROLE_KINDS), so a kit
                             # deploying them finds them by product (core.environment.roles_for), never by name
-    "cluster_discovery"),   # (EnvModel) -> (DiscoveryAnswer, ...): what a deployment kit's chart answers for its
+    "cluster_discovery",    # (EnvModel) -> (DiscoveryAnswer, ...): what a deployment kit's chart answers for its
                             # products' cluster discovery in an environment, for the product's own check
                             # (core.environment discovery_answers), or None
+    "inventory_locator"),   # {ref-uri scheme: (rest of uri) -> (container, object) or None}: where in its store's
+                            # inventory a reference of the scheme points (a safe and an account, a mount and a path),
+                            # for reconciling the record's references with the inventory its importers record
+                            # (domains.pki.inventory), or None (its stores aren't inventoried)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None))
+              None, False, None, None, (), None, None))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

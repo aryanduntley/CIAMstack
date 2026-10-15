@@ -132,6 +132,7 @@ cap 08-apply-chg-2041 od import --change CHG-2041 --at 20260923090000Z gcp/frame
 cap 08-apply-chg-2042 od modify --change CHG-2042 changes/CHG-2042-standby-itar-data.ldif
 cap 08-apply-chg-2043 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
 cap 08-apply-chg-2044 od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
+cap 08-apply-chg-2047 od import --change CHG-2047 --at 20260923090000Z cyberark/accounts exports/cyberark
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
@@ -145,6 +146,7 @@ cap 08-report-reportable-incidents od report reportable-incidents
 cap 08-report-exceptions od report exceptions
 cap 08-report-authorizations od report authorizations
 cap 08-report-responsibilities od report responsibilities
+cap 08-report-secret-inventory od report secret-inventory
 od history 2>&1 | sed -E 's/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}/<TIMESTAMP>        /' \
   > "$OUT/cmd/09-history.txt"
 
