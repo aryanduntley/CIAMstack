@@ -1,6 +1,6 @@
 portability  values
 -----------  ------
-meta         2592
+meta         2617
 intent       1631
 binding      1312
 observed     381

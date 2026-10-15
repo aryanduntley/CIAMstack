@@ -1,0 +1,7 @@
+unknown              question                                                                owner               blocking  concerns     raised      needed by   status    answer                                      answered
+-------------------  ----------------------------------------------------------------------  ------------------  --------  -----------  ----------  ----------  --------  ------------------------------------------  ----------
+q-mro-export-window  When may the MRO batch export pause during the cutover?                 mro-analytics-team  no        source/prod  2026-09-02              answered  Any weekend night: the next run catches up  2026-09-08
+q-skyline-signing    Does Skyline Air accept the target's new SAML signing certificate with  skyline-air         yes       target/prod  2026-09-10              open
+q-tech-pubs-sso      Does the technical publications portal keep its own login page after t  tech-pubs-team      no        the estate   2026-09-12  2026-12-01  open
+(3 rows)
+exit 0

@@ -126,6 +126,7 @@ cap 08-apply-chg-2039 od modify --change CHG-2039 changes/CHG-2039-standby-compl
 cap 08-apply-chg-2041 od import --change CHG-2041 --at 20260923090000Z gcp/frameworks exports/frameworks/gcp
 cap 08-apply-chg-2042 od modify --change CHG-2042 changes/CHG-2042-standby-itar-data.ldif
 cap 08-apply-chg-2043 od modify --change CHG-2043 changes/CHG-2043-target-profiles.ldif
+cap 08-apply-chg-2044 od modify --change CHG-2044 changes/CHG-2044-skyline-signing-answer.ldif
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

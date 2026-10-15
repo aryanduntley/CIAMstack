@@ -301,6 +301,13 @@ ou: tag-policy
 description: Tag policy: the tags every rendered resource carries and where th
  eir values come from
 
+dn: ou=unknowns,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: unknowns
+description: The unknowns register: questions the record can't answer yet, eac
+ h with who must answer it
+
 dn: ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -1288,6 +1295,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Build the target's product configuration into its deployment: confi
  g profiles and PingFederate's server profile
+
+dn: cn=CHG-2044,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2044
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record Skyline Air's answer on the target's signing certificate (un
+ known q-skyline-signing)
 
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
@@ -3475,6 +3492,42 @@ ciamFeedsAlert: cn=login-failures,ou=alert-rules,dc=ciam-ops
 ciamInterval: 10m
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamStartsFrom: cn=customer-portal,ou=integrations,dc=ciam-ops
+
+dn: cn=q-mro-export-window,ou=unknowns,dc=ciam-ops
+objectClass: top
+objectClass: ciamUnknown
+cn: q-mro-export-window
+ciamAnswer: Any weekend night: the next run catches up
+ciamAnsweredAt: 20260908000000Z
+ciamConcerns: env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamOwner: cn=mro-analytics-team,ou=owners,dc=ciam-ops
+ciamQuestion: When may the MRO batch export pause during the cutover?
+ciamRaisedAt: 20260902000000Z
+
+dn: cn=q-skyline-signing,ou=unknowns,dc=ciam-ops
+objectClass: top
+objectClass: ciamUnknown
+cn: q-skyline-signing
+ciamAnswer: Yes: Skyline Air imports the new certificate from the target's met
+ adata, no re-onboarding
+ciamAnsweredAt: 20260922000000Z
+ciamBlocking: TRUE
+ciamChangeRef: cn=CHG-2044,ou=changes,dc=ciam-ops
+ciamConcerns: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamOwner: cn=skyline-air,ou=owners,dc=ciam-ops
+ciamQuestion: Does Skyline Air accept the target's new SAML signing certificat
+ e without re-onboarding the federation?
+ciamRaisedAt: 20260910000000Z
+
+dn: cn=q-tech-pubs-sso,ou=unknowns,dc=ciam-ops
+objectClass: top
+objectClass: ciamUnknown
+cn: q-tech-pubs-sso
+ciamNeededBy: 20261201000000Z
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+ciamQuestion: Does the technical publications portal keep its own login page a
+ fter the move, or switch to the platform's sign-on?
+ciamRaisedAt: 20260912000000Z
 
 dn: cn=registrationStatus,ou=user-schema,dc=ciam-ops
 objectClass: top
