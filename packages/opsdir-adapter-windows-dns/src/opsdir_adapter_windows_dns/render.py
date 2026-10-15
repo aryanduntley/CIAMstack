@@ -8,9 +8,15 @@ priority, weight and port (the module takes one set per name). Types the module 
 sets it can't are named, not written.
 
 What the play wrote before and the record no longer holds is removed: in each zone the platform runs, a ledger (TXT
-records _opsdir-<cloud>-<env>, one per record written: "<type> <name>") lists what this environment wrote; a run
-removes the records its ledger lists and the record no longer wants, then rewrites the ledger. Records the ledger
-doesn't list (other teams', other environments') are never touched. Pure."""
+records _opsdir-<cloud>-<env>, one per value written: "<type> <name> <value>", the value as win_dns_record compares
+it, an SRV record's target; "<type> <name> sha256:<16 hex digits>" of it when the entry would be longer than a TXT
+string) lists what this environment wrote; a run removes the records at a name and type whose data is a value its
+ledger lists and the record no longer wants, then rewrites the ledger. Values the ledger doesn't list (other teams',
+other environments') are never removed by it; an entry without a value (a ledger written before values were kept) is
+left alone and named in the task's result. Writing a name replaces its whole record set of that type, though
+(win_dns_record keeps exactly the values it is given). Pure."""
+import hashlib
+
 from opsdir.core.directory import one, rdn_value
 from opsdir.domains.edge.records import parts, platform_zones, published
 from opsdir_adapter_ansible.output import appliance_inventory, login, requirements_file, unsafe, yaml_files
@@ -19,28 +25,63 @@ STACK_ROLE = "dns"
 GROUP = "ad_dns"
 TYPES = ("A", "AAAA", "CNAME", "TXT", "PTR", "NS")     # what ansible.windows.win_dns_record writes with every value
 SERVER = "{{ ciam_dns_server | default(omit) }}"
+NAMED = ("CNAME", "NS", "PTR", "SRV")   # values win_dns_record ends with a dot before comparing
+TXT_STRING = 255                        # the longest ledger entry: one TXT string
 TIDY = """[CmdletBinding(SupportsShouldProcess)]
 param([string]$Zone, [string]$Ledger, [string[]]$Managed, [string]$Server)
 $where = @{ ZoneName = $Zone }
 if ($Server) { $where.ComputerName = $Server }
+$data = @{ A = 'IPv4Address'; AAAA = 'IPv6Address'; CNAME = 'HostNameAlias'; NS = 'NameServer';
+    PTR = 'PtrDomainName'; SRV = 'DomainName'; TXT = 'DescriptiveText' }
+function Get-Digest([string]$Text) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $hex = -join ($sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Text)) | ForEach-Object { $_.ToString('x2') })
+    'sha256:' + $hex.Substring(0, 16)
+}
 $old = @(Get-DnsServerResourceRecord @where -Name $Ledger -RRType Txt -ErrorAction SilentlyContinue |
     ForEach-Object { $_.RecordData.DescriptiveText })
 $stale = @($old | Where-Object { $_ -and $Managed -notcontains $_ })
+$removed = @()
+$left = @()
 foreach ($entry in $stale) {
-    $type, $name = $entry -split ' ', 2
-    if ($PSCmdlet.ShouldProcess("$type $name in $Zone", 'Remove')) {
-        Get-DnsServerResourceRecord @where -Name $name -RRType $type -ErrorAction SilentlyContinue |
-            Remove-DnsServerResourceRecord @where -Force
+    $type, $name, $value = $entry -split ' ', 3
+    if (-not $value -or -not $data.ContainsKey($type)) { $left += $entry; continue }
+    if ($type -in 'CNAME', 'NS', 'PTR', 'SRV' -and $value -notlike 'sha256:*' -and $value -notlike '*.') {
+        $value = "$value."
     }
-    $Ansible.Changed = $true
+    $mine = @(Get-DnsServerResourceRecord @where -Name $name -RRType $type -ErrorAction SilentlyContinue |
+        Where-Object { $text = $_.RecordData.($data[$type]).ToString()
+                       $text -eq $value -or (Get-Digest $text) -eq $value })
+    foreach ($record in $mine) {
+        if ($PSCmdlet.ShouldProcess("$type $name $value in $Zone", 'Remove')) {
+            $record | Remove-DnsServerResourceRecord @where -Force
+        }
+        $Ansible.Changed = $true
+    }
+    $removed += $entry
 }
-$Ansible.Result = @{ removed = $stale }
+$Ansible.Result = @{ removed = $removed; left = $left }
 """
 
 
 def ledger(m):
     """The name of environment m's ledger records in each zone."""
     return f"_opsdir-{rdn_value(m.cloud)}-{rdn_value(m.env)}"
+
+
+def _entry(rtype, name, value):
+    """A ledger entry for one value written: "<type> <name> <value>", or the value's digest (as compared: a name
+    ending with a dot) when that is longer than a TXT string."""
+    entry = f"{rtype} {name} {value}"
+    if len(entry.encode()) <= TXT_STRING:
+        return entry
+    held = f"{value}." if rtype in NAMED and not value.endswith(".") else value
+    return f"{rtype} {name} sha256:{hashlib.sha256(held.encode()).hexdigest()[:16]}"
+
+
+def _written(p):
+    """The values win_dns_record writes of a published record: an SRV record's targets, others' values."""
+    return tuple(parts("SRV", v)[3] for v in p.values) if p.type == "SRV" else tuple(p.values)
 
 
 def _host(m, services, a):
@@ -72,7 +113,8 @@ def _records(m):
                *(f"SRV {p.fqdn} (its values differ in priority, weight or port)" for p, s in srv if s is None)]
     written = [p for p in found if p.type in TYPES or (p.type == "SRV" and _srv(p) is not None)]
     return (records, [s for _, s in srv if s], skipped,
-            {z: [f"{p.type} {p.name}" for p in written if p.zone == z] for z in platform_zones(m)})
+            {z: list(dict.fromkeys(_entry(p.type, p.name, v) for p in written if p.zone == z for v in _written(p)))
+             for z in platform_zones(m)})
 
 
 def _play(m, records, srv, skipped, zones):

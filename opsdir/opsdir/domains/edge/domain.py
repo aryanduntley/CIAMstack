@@ -11,6 +11,7 @@ from .headers import HEADER_HEADERS, check_headers, header_rows
 from .imports import IMPORT_KINDS, ROLE_LINKS
 from .kubernetes import check_unrendered
 from .policies import POLICY_HEADERS, check_policies, policy_rows
+from .resolve import check_stickiness
 from .running import EDGE_SERVICE_HEADERS, check_running, edge_service_rows
 from .schema import FRAGMENT
 
@@ -20,6 +21,6 @@ DOMAIN = Domain(name="edge", schema=FRAGMENT, required_roles=(), sql=(),
                          "dns": directory_report(DNS_HEADERS, dns_rows),
                          "header-contracts": directory_report(HEADER_HEADERS, header_rows)},
                 checks=(check_policies, check_running, check_unrendered, check_exposure, check_gateway_trust,
-                        check_headers, check_dns),
+                        check_headers, check_dns, check_stickiness),
                 order=64, vocabulary={},
                 import_kinds=IMPORT_KINDS, role_links=ROLE_LINKS)

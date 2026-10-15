@@ -21,8 +21,8 @@ from opsdir.domains.edge.policies import check_policies, intended_facts, policy_
 from opsdir.domains.edge.running import check_running, edge_service_rows, missing, observed_facts, unstated
 from opsdir.domains.edge.records import (answers, forwarders, hosted_notes, is_hosted, parts, records_in, routing,
                                          run_by, ttl)
-from opsdir.domains.edge.resolve import (Exclusion, Health, RateLimit, certificate_ref, declared_endpoints, inspected,
-                                         path_regex, service_edge)
+from opsdir.domains.edge.resolve import (Exclusion, Health, RateLimit, certificate_ref, check_stickiness,
+                                         declared_endpoints, inspected, path_regex, service_edge)
 from opsdir.domains.edge.schema import ATTRIBUTES
 import mini_estate
 from edge_fixtures import PARTY, binding as fixture_binding, dns_estate
@@ -169,6 +169,20 @@ def test_policies_that_cant_be_rendered_as_stated_are_actions():
         "front.",
         "Service role `sso-service` has several traffic policies (sso-edge, sso-edge-old); `sso-edge` applies: keep "
         "one."]
+
+
+def test_cookie_stickiness_where_tls_passes_through_is_an_action_naming_the_service_name():
+    portal = (_policy("portal", "ciamTrafficPolicy", ciamServiceRole="portal-service", ciamTlsMode="passthrough",
+                      ciamStickiness="cookie", ciamOwner=OPS),
+              _service(ALPHA, "svc-portal", "portal-service", "portal.example.test", "198.51.100.11"),
+              _service(BETA, "svc-portal", "portal-service", "portal.example.test", "198.51.100.21"))
+    found = check_stickiness(_ctx(_record(*portal)))
+    assert _texts(found.actions) == [       # sso-edge's cookie terminates TLS: kept, not named
+        "`portal.example.test` (alpha/prod and beta/prod): traffic policy `portal` asks for cookie stickiness, but its "
+        "TLS passes through the load balancer, which can't set a cookie inside it: no stickiness is rendered. "
+        "Terminate or re-encrypt TLS at the load balancer (tls mode terminate or reencrypt), or use stickiness "
+        "source-ip."]
+    assert found.actions[0][2] == "ops" and not check_stickiness(_ctx(_record())).actions
 
 
 def test_what_runs_against_what_the_intent_asks():

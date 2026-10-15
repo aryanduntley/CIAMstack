@@ -23,21 +23,24 @@ Per environment, nothing environment-neutral:
 | No traffic policy, or `ciamTlsMode: passthrough` (the default) | `mode tcp`, a TCP connect check |
 | `ciamTlsMode: terminate` | `mode http`, `bind … ssl crt /etc/haproxy/certs/<service name>.pem ssl-min-ver TLSv<ciamTlsMinVersion, default 1.2>`, `option forwardfor` |
 | `ciamTlsMode: reencrypt` | as `terminate`, and `server … ssl verify required ca-file @system-ca` (the system trust store, where the host config adds the record's CAs); `verify none` when `ciamBackendValidation` is `none`, which is the default when the policy doesn't set it |
-| Health check: `ciamHealthProtocol`, `ciamHealthPath`, else the product's declared health endpoint (over `http` when terminating, `https` when re-encrypting) | `option httpchk GET <path>`; `ciamHealthIntervalSeconds` as `inter <n>s`. With TLS passed through, `check-ssl` (the servers speak TLS on that port), verified as `ciamBackendValidation` says |
-| `ciamStickiness: cookie` | `cookie SERVERID insert indirect nocache`, `cookie s<n>` per server |
+| Health check: `ciamHealthProtocol`, `ciamHealthPath`, else the product's declared health endpoint (over `http` when terminating, `https` when re-encrypting; on the product's own health port, `Endpoint.port`, when it declares one and the policy names no path) | `option httpchk GET <path>`; `ciamHealthIntervalSeconds` as `inter <n>s`; the product's health port as `check port <n>`. With TLS passed through, `check-ssl` (the servers speak TLS on that port), verified as `ciamBackendValidation` says |
+| `ciamStickiness: cookie` | On a terminating or re-encrypting front (`mode http`), `cookie SERVERID insert indirect nocache`, `cookie s<n>` per server. With TLS passed through (`mode tcp`) none: HAProxy can't insert a cookie there |
+| `ciamStickiness: source-ip` | `balance source` (else `balance roundrobin`) |
 | `ciamIdleTimeoutSeconds` | `timeout client` on the frontend, `timeout server` on the backend |
 
 A frontend that would bind an address and port an earlier service name's frontend binds (one without a frontend address binds every address, so it clashes with any address on that port) isn't rendered: a comment names the service name it clashes with, and the planner blocks.
 
 The TLS bundle of a terminating or re-encrypting frontend is the certificate's recorded PEM (`ciamCertificatePem` of the service name's `ciamTlsCertificate`, only when it is nothing but PEM certificates) followed by its private key, read when the play runs from the environment's binding of the certificate's `ciamKeyRole` (that secret must hold the PEM private key): written to `/etc/haproxy/certs/<service name>.pem` mode `0600` with `no_log`, never in a file opsdir renders. A bundle the record can't complete stops the play, naming what to record: no certificate with its PEM, no binding of the key role in the environment, or a key reference no installed adapter can read.
 
-Not rendered: the protection policy (request inspection), the policies' stickiness duration, draining and health thresholds, and a health port other than the service's.
+Not rendered: the protection policy (request inspection), the policies' stickiness duration, draining and health thresholds.
 
 ## Planner checks
 
 `check_hosts`: a target that declares HAProxy but records no server of role `load-balancer` is a blocker (area "Load balancer"): its service names would have no load balancer.
 
 `check_binds`: per service name whose frontend would listen on an address and port an earlier one listens on, a blocker naming both (HAProxy would split connections between unrelated backends): record a frontend address (`ciamFrontendIp`) for each.
+
+The edge domain's `check_stickiness` (any front, the clouds' too) makes an action of each service name whose traffic policy asks for cookie stickiness while TLS passes through: no cookie is rendered; terminate or re-encrypt TLS, or use `source-ip`.
 
 The infrastructure domain's `check_appliance_sources` (`ciamApplianceSource` of load-balancer appliances) doesn't cover HAProxy: it reads `ciamAppliance` entries, and HAProxy's hosts are `ciamServer`s (role `load-balancer`); the firewall rules admitting them to the servers behind them are recorded like any other rule.
 
@@ -47,12 +50,11 @@ It adds no required roles, importers, reference schemes, vocabulary, schema or s
 
 - **Not yet run against live servers.** The play passes ansible-core's syntax check and ansible-lint (marker `ansible`); `haproxy.cfg` is checked by HAProxy itself only when the play runs (`validate`), the tests check its text. Running it is part of the testing plan (milestone 7.2).
 - The protection policy's request inspection (WAF, rate limits, address and country rules) isn't rendered: HAProxy is the load balancer, not a web application firewall.
-- The health check uses the service's port: a product health endpoint declared on another port isn't followed.
-- Cookie stickiness is written whatever the mode; on a passthrough (`mode tcp`) backend HAProxy can't insert cookies.
+- Cookie stickiness needs TLS terminated at HAProxy: on a passthrough (`mode tcp`) backend none is rendered (the edge domain's planner check names it).
 
 ## Tests
 
-`tests/test_haproxy.py`: a terminating front with cookie stickiness and an HTTP check; passthrough without a policy, and with an HTTPS check over TLS (`check-ssl`); two names on the same address and port (the later not rendered, blocked) and a server without an address; the package, SELinux and the pinned requirements; the play's bundles with keys read at run time; a bundle the record can't complete stopping the play; the planner check without load-balancer servers; and (marker `ansible`, skipped without `tools/ansible`) the play through ansible-core and ansible-lint.
+`tests/test_haproxy.py`: a terminating front with cookie stickiness and an HTTP check; passthrough without a policy, and with an HTTPS check over TLS (`check-ssl`); a product's own health port (`check port`); no cookie on a passthrough backend and `balance source` for source-ip; two names on the same address and port (the later not rendered, blocked) and a server without an address; the package, SELinux and the pinned requirements; the play's bundles with keys read at run time; a bundle the record can't complete stopping the play; the planner check without load-balancer servers; and (marker `ansible`, skipped without `tools/ansible`) the play through ansible-core and ansible-lint.
 
 From the repository root: `opsdir/.venv/bin/python -m pytest packages/opsdir-adapter-haproxy/tests` (unit), and with `-m ansible` for the tool checks (`opsdir/scripts/fetch-tools.sh` first).
 

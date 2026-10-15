@@ -49,10 +49,27 @@ def test_srv_and_ns_records_and_the_ledger_of_what_was_written():
     assert play["vars"]["ciam_dns_not_written"] == [
         "MX example.test", "SRV _sip._tcp.example.test (its values differ in priority, weight or port)"]
     assert play["vars"]["ciam_dns_ledger"] == "_opsdir-alpha-prod"
-    assert play["vars"]["ciam_dns_zones"] == [{"zone": "example.test", "managed": [
-        "A sso", "SRV _ldap._tcp", "TXT @", "NS sub"]}]        # the partner's zone is never touched
-    tidy = next(t for t in play["tasks"] if "ansible.windows.win_powershell" in t)
-    assert "SupportsShouldProcess" in tidy["ansible.windows.win_powershell"]["script"]      # --check removes nothing
+    assert play["vars"]["ciam_dns_zones"] == [{"zone": "example.test", "managed": [     # one entry per value written
+        "A sso 10.1.9.10", "SRV _ldap._tcp ds-1.example.test", "SRV _ldap._tcp ds-2.example.test", "TXT @ v=opsdir1",
+        "NS sub ns1.example.test", "NS sub ns2.example.test"]}]        # the partner's zone is never touched
+    script = next(t for t in play["tasks"] if "ansible.windows.win_powershell" in t)["ansible.windows.win_powershell"]
+    assert "SupportsShouldProcess" in script["script"]                                     # --check removes nothing
+    assert "$type, $name, $value = $entry -split ' ', 3" in script["script"]               # removes by value
+    assert "$left += $entry" in script["script"]                                           # entries without a value
+
+
+def test_a_ledger_entry_too_long_for_a_txt_string_is_the_values_digest():
+    import hashlib
+    from opsdir_adapter_windows_dns.render import NAMED, TXT_STRING, _entry
+    text = "k=" + "x" * TXT_STRING
+    long_txt = entry(ALPHA, "rec-dkim", "ciamDnsRecord", ciamBindingRole="rec-dkim",
+                     ciamRecordName="sel._domainkey.example.test", ciamRecordType="TXT", ciamRecordValue=text)
+    (play,) = load(render(alpha_with_dns(*DC, long_txt), services())["ansible/ad-dns.yml"])
+    assert f"TXT sel._domainkey sha256:{hashlib.sha256(text.encode()).hexdigest()[:16]}" in \
+        play["vars"]["ciam_dns_zones"][0]["managed"]
+    target = "t" * TXT_STRING                    # a name is digested as compared: ending with a dot
+    assert _entry(NAMED[0], "www", target) == \
+        f"{NAMED[0]} www sha256:{hashlib.sha256(f'{target}.'.encode()).hexdigest()[:16]}"
 
 
 def test_a_target_declaring_windows_dns_without_a_server_is_blocked():

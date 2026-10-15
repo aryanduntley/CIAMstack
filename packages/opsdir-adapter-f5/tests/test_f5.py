@@ -9,6 +9,7 @@ import pytest
 from ansible_yaml import load
 
 from opsdir.connectors.registry import services
+from opsdir.core.contract import Endpoint
 from opsdir.core.environment import StackComponent
 from opsdir_adapter_f5.as3 import declaration
 from opsdir_adapter_f5.checks import check_appliances
@@ -46,7 +47,38 @@ def test_without_a_policy_tls_passes_through_a_tcp_virtual_server():
     _, alpha, _ = model()
     app = _app(alpha)
     assert app["vs_443"]["class"] == "Service_TCP" and app["pool_443"]["monitors"] == ["tcp"]
+    assert app["vs_443"]["persistenceMethods"] == []           # not AS3's default source-address
     assert app["vs_443"]["virtualAddresses"] == ["UNBOUND:sso-service-frontend-ip"]
+
+
+def _policy(*lines):
+    """The alpha model with a traffic policy of the given attribute lines for sso-service."""
+    from edge_samples import POLICIES
+    _, alpha, _ = model(tree=(f"dn: {POLICIES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: edge-policies\n",
+                              f"dn: cn=sso,{POLICIES}\nobjectClass: top\nobjectClass: ciamObject\n"
+                              "objectClass: ciamTrafficPolicy\ncn: sso\nciamServiceRole: sso-service\n"
+                              + "".join(f"{line}\n" for line in lines)))
+    return alpha
+
+
+def test_a_product_health_port_is_where_the_monitor_checks():
+    endpoints = (Endpoint("health", "/health/startup", "web", port=8085),)
+    app = declaration(_policy("ciamTlsMode: terminate"), endpoints, None)["declaration"]["opsdir_alpha_prod"]["svc_sso"]
+    assert app["monitor"]["targetPort"] == 8085 and app["pool_443"]["monitors"] == [{"use": "monitor"}]
+    assert app["monitor"]["send"].startswith("GET /health/startup HTTP/1.1")
+
+
+def test_passthrough_with_an_https_check_monitors_over_https():
+    app = _app(_policy("ciamTlsMode: passthrough", "ciamHealthProtocol: https", "ciamHealthPath: /health"))
+    assert app["vs_443"]["class"] == "Service_TCP" and app["pool_443"]["monitors"] == [{"use": "monitor"}]
+    assert app["monitor"]["monitorType"] == "https" and "targetPort" not in app["monitor"]
+
+
+def test_stickiness_where_the_service_can_keep_it():
+    cookie = _app(_policy("ciamTlsMode: passthrough", "ciamStickiness: cookie"))
+    assert cookie["vs_443"]["persistenceMethods"] == []        # no cookie inside TLS it doesn't terminate
+    source = _app(_policy("ciamTlsMode: passthrough", "ciamStickiness: source-ip"))
+    assert source["vs_443"]["persistenceMethods"] == ["source-address"]
 
 
 def test_the_bigips_inventory_reads_the_password_at_run_time():

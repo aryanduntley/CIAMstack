@@ -38,21 +38,23 @@ Each application (`template: generic`, `label` the service name's `ciamFqdn`) ha
 
 | From the record | AS3 |
 |---|---|
-| No policy, or `ciamTlsMode: passthrough` (the default) | `Service_TCP`, pool monitor `tcp` |
+| No policy, or `ciamTlsMode: passthrough` (the default) | `Service_TCP` |
 | `ciamTlsMode: terminate` | `Service_HTTPS` (`redirect80` off), `serverTLS` a `TLS_Server` presenting the service name's certificate (`ciamTlsCertificate`, by its entry name) as the BIG-IP holds it: `Certificate` `{bigip: /Common/<certificate>.crt}` and `.key` (the key never enters a declaration) |
 | `ciamTlsMode: reencrypt` | as `terminate`, and `clientTLS` a `TLS_Client`; `validateCertificate` is true unless `ciamBackendValidation` is `none`, which is the default when the policy doesn't set it |
 | `ciamTlsMinVersion` (default 1.2) | On `TLS_Server` and `TLS_Client`, `tls1_0Enabled` … off for each version under it |
-| Health check: `ciamHealthProtocol`, `ciamHealthPath`, `ciamHealthIntervalSeconds`, else the product's declared health endpoint (over `http` when terminating, `https` when re-encrypting) | On a layer-7 service, a `Monitor` (`monitorType` the protocol) sending `GET <path>` with the service name's `ciamFqdn` as `Host`, expecting `HTTP/1.1 2xx/3xx`, `interval` when the policy sets one. A `tcp` health check (no path anywhere) is the built-in `tcp` monitor |
-| `ciamStickiness: cookie` | `persistenceMethods: [cookie]` on the virtual server |
+| Health check: `ciamHealthProtocol`, `ciamHealthPath`, `ciamHealthIntervalSeconds`, else the product's declared health endpoint (over `http` when terminating, `https` when re-encrypting; on the product's own health port, `Endpoint.port`, when it declares one and the policy names no path) | A `Monitor` on the pool (`monitorType` the protocol, on a passthrough service too: the servers speak TLS there) sending `GET <path>` with the service name's `ciamFqdn` as `Host`, expecting `HTTP/1.1 2xx/3xx`, `interval` when the policy sets one, `targetPort` the product's health port. A `tcp` health check (no path anywhere) is the built-in `tcp` monitor |
+| `ciamStickiness` (default `none`) | `persistenceMethods` on the virtual server, always written (without it AS3 applies its own default: `source-address` on `Service_TCP`, `cookie` on `Service_HTTPS`): `cookie` on a terminating or re-encrypting service; `source-ip` as `source-address`; `none`, and `cookie` on a passthrough service (the BIG-IP can't set a cookie inside TLS it doesn't terminate), `[]` |
 | Request inspection on the protection policy (`ciamWafMode`, `ciamWafCategory`, `ciamRateLimit`, `ciamIpRule`, `ciamGeoRule`) | On a layer-7 service, `policyWAF` `{bigip: /Common/<protection policy>}`: the BIG-IP's WAF policy named after the protection policy entry |
 
 A value the record can't give is `UNBOUND:<what>`: `<binding role>-frontend-ip`, `<binding role>-certificate`, `<server>-address`, `<role>-servers` (no server has the target role), and in the inventory `<appliance>-login` (no `ciamLoginName`) and the login secret role (no binding for it, else `<appliance>-login-secret`). AS3 refuses such a declaration, naming it; an unbound login fails the play's sign-in.
 
-Not rendered: the certificates, keys and WAF policies themselves (they must already be on the BIG-IPs), the policies' stickiness duration, idle timeout, draining and health thresholds, and a health port other than the service's.
+Not rendered: the certificates, keys and WAF policies themselves (they must already be on the BIG-IPs), the policies' stickiness duration, idle timeout, draining and health thresholds.
 
 ## Planner checks
 
 `check_appliances`: a target whose stack declares F5 BIG-IP but records no load-balancer appliance is a blocker (area "Load balancer", to the environment's responsible party): its service names would have no load balancer.
+
+The edge domain's `check_stickiness` (any front, the clouds' too) makes an action of each service name whose traffic policy asks for cookie stickiness while TLS passes through: no cookie is rendered; terminate or re-encrypt TLS, or use `source-ip`.
 
 The infrastructure domain's `check_appliance_sources` (any load balancer, not this package's) makes an action of each service name's port that no firewall rule admits a BIG-IP's `ciamApplianceSource` ranges on, to the role behind it: without such a rule the servers' host firewall (and a network firewall the record drives) drops the BIG-IP's connections and health monitors.
 
@@ -68,12 +70,12 @@ It adds no required roles, importers, reference schemes, vocabulary, schema or s
 - The service names' certificates and keys must already be on the BIG-IPs under their certificate names (`/Common/<name>.crt`, `.key`); the WAF policies under their protection policies' names. Neither is uploaded by the play.
 - `TLS_Client` doesn't name a CA bundle: the BIG-IP's default trust applies when it validates the servers.
 - Rate limits, address and country rules are the WAF policy's (not rendered as iRules); a passthrough service can't have one (`policyWAF` is on `Service_HTTPS` only).
-- The monitor checks the pool member's port: a product health endpoint declared on another port isn't followed.
+- Cookie stickiness needs TLS terminated at the BIG-IP: on a passthrough service none is rendered (the edge domain's planner check names it).
 - One declaration per tenant from the first BIG-IP of each scope group; a cluster that doesn't sync its configuration would need each member deployed.
 
 ## Tests
 
-`tests/test_f5.py`: an HTTPS virtual server for a terminating service name, a TCP one without a policy, the BIG-IPs' inventory with the password read at run time, a play per tenant on its first BIG-IP with the dry run, no declaration for an environment without service names, the requirements, the planner check, and (marker `ansible`, skipped without `tools/ansible`) the play and declaration through `validate-ansible.sh`, the declaration against the AS3 schema.
+`tests/test_f5.py`: an HTTPS virtual server for a terminating service name, a TCP one without a policy (no persistence), a product's own health port as the monitor's `targetPort`, an HTTPS monitor on a passthrough service, source-address persistence and no cookie on a passthrough service, the BIG-IPs' inventory with the password read at run time, a play per tenant on its first BIG-IP with the dry run, no declaration for an environment without service names, the requirements, the planner check, and (marker `ansible`, skipped without `tools/ansible`) the play and declaration through `validate-ansible.sh`, the declaration against the AS3 schema.
 
 From the repository root: `opsdir/.venv/bin/python -m pytest packages/opsdir-adapter-f5/tests` (unit), and with `-m ansible` for the tool checks (`opsdir/scripts/fetch-tools.sh` first).
 

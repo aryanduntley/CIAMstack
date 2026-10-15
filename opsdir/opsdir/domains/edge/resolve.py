@@ -1,7 +1,8 @@
 """A service name's edge as a renderer needs it: its traffic and protection policies with the defaults filled in, the
 paths of the endpoints its products serve (declared by the product adapters, moved by the policies), its rate limits
 and exclusions aimed at those paths, and the certificate its listener presents in the environment. What the three cloud
-renderers agree on, so each only maps it to its own resources. Pure.
+renderers agree on, so each only maps it to its own resources; and the planner's check of cookie stickiness asked of a
+front TLS passes through (check_stickiness). Pure.
 
 A service whose role no policy names has no edge spec: its cloud renders it as before (a layer 4 load balancer). Paths
 are written as globs ('*' for one or more path segments) and given to clouds as regular expressions.
@@ -11,6 +12,7 @@ from collections import namedtuple
 
 from ...core.directory import one, rdn_value, values
 from ...core.environment import of_class
+from ...core.findings import findings, responsible
 from ...core.notes import note
 from ...core.versions import holds
 from ..compute.workloads import only_on_kubernetes, recorded_versions
@@ -169,6 +171,23 @@ def inspection_notes(m, endpoints):
     balancer (no cluster gateway, layer 4, no CDN) whose protection policy asks for request inspection."""
     return tuple(inspection_note(m, svc, spec) for svc, spec, gw in rendered_edges(m, endpoints)
                  if gw is None and spec is not None and not spec.layer7 and not spec.cdn and inspected(spec))
+
+
+def check_stickiness(ctx):
+    """Actions for the service names (source's and target's, one per name and traffic policy) whose traffic policy asks
+    for cookie stickiness while their TLS passes through the load balancer: none can set a cookie there, so none is
+    rendered. A cluster gateway's front terminates TLS, so its service names keep their cookies."""
+    found = {}
+    for m in (ctx.src, ctx.dst):
+        for svc, spec, _ in rendered_edges(m, ()):
+            if spec is not None and spec.stickiness == "cookie" and not spec.layer7:
+                found.setdefault((one(svc, "ciamFqdn"), spec.traffic.dn), (svc, spec, []))[2].append(m.label)
+    return findings(actions=[
+        ("Edge", f"`{one(svc, 'ciamFqdn')}` ({' and '.join(labels)}): traffic policy `{rdn_value(spec.traffic)}` asks "
+         "for cookie stickiness, but its TLS passes through the load balancer, which can't set a cookie inside it: no "
+         "stickiness is rendered. Terminate or re-encrypt TLS at the load balancer (tls mode terminate or reencrypt), "
+         "or use stickiness source-ip.", responsible(ctx.d, spec.traffic), None)
+        for svc, spec, labels in found.values()])
 
 
 # A cloud's TLS policies: ((min version, profile, policy name, exact), ...), the policy its renderer uses for each pair

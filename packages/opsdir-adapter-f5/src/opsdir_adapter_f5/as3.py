@@ -3,13 +3,16 @@ scope, else opsdir_<cloud>_<env>; AS3 replaces a tenant whole, so the tenant is 
 application per service name, and per port a virtual server shaped by the service
 name's traffic and protection policies as every cloud's front is (the core edge domain's EdgeSpec):
 
-  passthrough, or no policy   Service_TCP over a pool of the target role's servers, a TCP monitor
+  passthrough, or no policy   Service_TCP over a pool of the target role's servers
   terminate / reencrypt       Service_HTTPS (no port-80 redirect) presenting the service name's certificate as the
                               BIG-IP holds it (Certificate {bigip: /Common/<certificate>.crt and .key}: keys never in
                               a declaration), TLS versions under the policy's minimum off; reencrypt adds serverTLS
-                              (TLS_Client validating the servers' certificates unless the policy says none); an
-                              HTTP(S) monitor sending the health path with the service name as Host
-  stickiness cookie           persistenceMethods cookie
+                              (TLS_Client validating the servers' certificates unless the policy says none)
+  health                      the policy's HTTP(S) check as a monitor sending the health path with the service name
+                              as Host (targetPort the product's own health port when it declares one), else TCP
+  stickiness                  persistenceMethods, always written (AS3 would otherwise default to source-address on
+                              Service_TCP and cookie on Service_HTTPS): cookie on Service_HTTPS (a passthrough service
+                              can't insert one: none, and the planner names it), source-ip as source-address, else []
   request inspection          policyWAF: the BIG-IP's WAF policy named after the protection policy
                               (/Common/<protection policy>)
 
@@ -43,12 +46,21 @@ def _tls_off(minimum):
 
 
 def _monitor(svc, spec):
+    """The policy's HTTP(S) monitor (on the product's own health port when it declares one), or None for a TCP
+    check."""
     if spec is None or spec.health.protocol == "tcp":
         return None
     return {"class": "Monitor", "monitorType": spec.health.protocol,
             "send": f"GET {spec.health.path} HTTP/1.1\\r\\nHost: {one(svc, 'ciamFqdn')}\\r\\n"
                     "Connection: close\\r\\n\\r\\n",
-            "receive": "HTTP/1\\.1 (2|3)", **({"interval": spec.health.interval} if spec.health.interval else {})}
+            "receive": "HTTP/1\\.1 (2|3)", **({"interval": spec.health.interval} if spec.health.interval else {}),
+            **({"targetPort": int(spec.health.port)} if spec.health.port else {})}
+
+
+def _persistence(spec, layer7):
+    """The virtual server's persistenceMethods as the policy's stickiness asks, where the service can keep it."""
+    kind = spec.stickiness if spec is not None else "none"
+    return {"cookie": ["cookie"] if layer7 else [], "source-ip": ["source-address"]}.get(kind, [])
 
 
 def _pool(m, svc, port, monitor):
@@ -62,7 +74,7 @@ def _pool(m, svc, port, monitor):
 def _application(m, svc, endpoints):
     spec = service_edge(m, svc, endpoints)
     layer7 = spec is not None and spec.layer7
-    monitor = _monitor(svc, spec) if layer7 else None
+    monitor = _monitor(svc, spec)
     address = one(svc, "ciamFrontendIp") or f"{UNBOUND}{one(svc, 'ciamBindingRole')}-frontend-ip"
     cert = get(m.d, one(svc, "ciamTlsCertificate")) if one(svc, "ciamTlsCertificate") else None
     cert_name = rdn_value(cert) if cert is not None else f"{UNBOUND}{one(svc, 'ciamBindingRole')}-certificate"
@@ -70,7 +82,7 @@ def _application(m, svc, endpoints):
     for port in values(svc, "ciamPort"):
         pool = f"pool_{port}"
         common = {"virtualAddresses": [address], "virtualPort": int(port), "pool": pool,
-                  **({"persistenceMethods": ["cookie"]} if spec is not None and spec.stickiness == "cookie" else {})}
+                  "persistenceMethods": _persistence(spec, layer7)}
         if layer7:
             reencrypt = spec.mode == "reencrypt"
             app[f"vs_{port}"] = {"class": "Service_HTTPS", "redirect80": False, "serverTLS": "tls_server", **common,
@@ -88,8 +100,8 @@ def _application(m, svc, endpoints):
         if spec.mode == "reencrypt":
             app["tls_client"] = {"class": "TLS_Client", "validateCertificate": spec.backend_validation != "none",
                                  **_tls_off(spec.tls_min)}
-        if monitor:
-            app["monitor"] = monitor
+    if monitor:
+        app["monitor"] = monitor
     return app
 
 
