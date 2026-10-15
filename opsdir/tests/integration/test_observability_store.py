@@ -122,7 +122,8 @@ def test_observability_entries_are_stored_and_reported(conn):
     d = db.load_directory(conn)
     assert alert_rows(d)[0][:6] == ("replication-lag", "replication-delay", "", "gt 5000 ms for 5m", "sev2",
                                     "alerts-page")
-    assert log_rows(d) == [("audit", "audit, admin", "", "audit-logs", "365", "yes")]
+    assert log_rows(d) == [("audit", "audit, admin", "", "audit-logs", "365", "yes",
+                            "home/prod", "log-group", "400", "400")]
     assert canary_rows(d)[0][-1] == "replication-lag"
 
 
