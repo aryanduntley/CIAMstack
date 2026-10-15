@@ -3056,6 +3056,17 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.658 NAME 'ciamStartsFrom' DESC 'The
   identity provider is asked to sign in to it' EQUALITY distinguishedNameMat
  ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'intent'
   X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.659 NAME 'ciamJobName' DESC 'A job\2
+ 7s name as its own system shows it (a workflow\27s name:, a CI project\27s 
+ name), apart from the entry\27s name' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'st
+ ring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.660 NAME 'ciamCiSystem' DESC 'The CI
+  system a pipeline was imported from (the importing package\27s system: git
+ hub-actions, gitlab-ci, ...): a re-import from it removes the pipelines its
+  repositories no longer define' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' 
+ X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3269,7 +3280,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.48 NAME 'ciamJob' DESC 'A piece of th
  amSchedule $ ciamTrigger $ ciamCommand $ ciamRunsAs $ ciamRuntime $ ciamTar
  getRole $ ciamJobRole $ ciamUsesRole $ ciamSecretName $ ciamCodeBundle $ ci
  amRepoPath $ ciamRepoUrl $ ciamDeploysTo $ ciamFoundOn $ ciamCriticality $ 
- ciamInEnvironment $ ciamOnProvider ) X-ORIGIN 'opsdir' )
+ ciamInEnvironment $ ciamOnProvider $ ciamJobName $ ciamCiSystem ) X-ORIGIN 
+ 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.49 NAME 'ciamJobBinding' DESC 'Where 
  an environment runs a job (a function, a pipeline): the provider\27s refere
  nce for it' SUP ciamBinding STRUCTURAL MUST ciamProviderRef MAY ( ciamSched

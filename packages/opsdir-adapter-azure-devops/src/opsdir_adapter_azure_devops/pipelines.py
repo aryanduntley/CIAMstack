@@ -13,13 +13,18 @@ extends); other YAML files are counted as templates. For each pipeline:
   deployment jobs' environment           -> environments it deploys to
   variables: - group: NAME, AzureKeyVault -> the secrets it names: variable group NAME, keyvault VAULT/NAME (never a
     tasks' KeyVaultName + SecretsFilter      value)
+
+Each pipeline's name (ciamJobName) is its file name. A pipeline the record has from a repository folder read here that
+the folder no longer defines (the file is gone, or is a template now) is removed, named in a notice; a file that isn't
+YAML this time keeps its pipeline.
 """
 
 import yaml
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.sources import folders, json_document, parsed
-from opsdir.domains.automation.pipelines import FoundPipeline, environment_name, jobs_container, pipeline_groups
+from opsdir.domains.automation.pipelines import (FoundPipeline, ReadRepository, environment_name, jobs_container,
+                                                 pipeline_groups)
 
 SYSTEM = "azure-devops"
 NAMES = ("azure-pipelines.yml", "azure-pipelines.yaml")
@@ -110,23 +115,24 @@ def _url(text):
 
 
 def repository_pipelines(repo, texts):
-    """(pipelines, templates counted, notices) of one repository folder."""
+    """(pipelines, templates counted, notices, the ReadRepository) of one repository folder."""
     url = _url(texts[REPOSITORY]) if REPOSITORY in texts else None
     docs = [(p, parsed(yaml.safe_load, t, (yaml.YAMLError,))) for p, t in sorted(texts.items())
             if p.endswith((".yml", ".yaml"))]
     found = tuple(pipeline(repo, url, p, doc) for p, doc in docs if is_pipeline(p, doc))
     return (found, sum(1 for p, doc in docs if isinstance(doc, dict) and not is_pipeline(p, doc)),
             (*(f"{repo}/{p}: not YAML; not read" for p, doc in docs if doc is None),
-             *((f"{repo}: no YAML pipeline in it; not read",) if not found else ())))
+             *((f"{repo}: no YAML pipeline in it; not read",) if not found else ())),
+            ReadRepository(SYSTEM, repo, url, tuple(p for p, doc in docs if doc is None)))
 
 
 def read_pipelines(files, d, patterns, at=None):
     """Imported: the pipelines Azure DevOps repositories define, as jobs."""
     read = [repository_pipelines(r, texts) for r, texts in _repos(files).items()]
-    templates = sum(t for _, t, _ in read)
-    return Imported(containers=(jobs_container(),),
-                    groups=pipeline_groups(d, [p for found, _, _ in read for p in found]),
-                    notices=(*(n for _, _, ns in read for n in ns),
+    templates = sum(t for _, t, _, _ in read)
+    groups, removed = pipeline_groups(d, [p for found, _, _, _ in read for p in found], tuple(r for *_, r in read))
+    return Imported(containers=(jobs_container(),), groups=groups,
+                    notices=(*(n for _, _, ns, _ in read for n in ns), *removed,
                              *((f"{templates} YAML file(s) without pipeline-level keys (templates) not read as "
                                 "pipelines",) if templates else ()),
                              *(("no repository folders (one folder per repository, project/repo, holding its YAML "

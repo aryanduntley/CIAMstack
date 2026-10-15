@@ -1,6 +1,8 @@
 """GitLab CI/CD read as pipeline jobs: active schedules with their timezone (inactive ones counted), triggers from
 workflow rules (push by default), runner tags and images, environments, secrets by name from jobs' secrets: and
-masked variables (no value ever kept); one job per project, matched on a re-import; what isn't a definition named."""
+masked variables (no value ever kept); one job per project, named as the project, matched on a re-import; a project
+re-read without its definition loses its pipeline (not one whose definition can't be read this time, nor a project
+not read); what isn't a definition named."""
 import json
 
 import pytest
@@ -68,10 +70,11 @@ def test_a_project_pipeline(after):
     job = get(d, INFRA_DN)
     assert (one(job, "ciamJobKind"), values(job, "ciamSchedule"), values(job, "ciamTrigger"), one(job, "ciamRuntime"),
             values(job, "ciamDeploysTo"), values(job, "ciamSecretName"), one(job, "ciamRepoUrl"),
-            one(job, "ciamRepoPath")) == \
+            one(job, "ciamRepoPath"), one(job, "ciamJobName"), one(job, "ciamCiSystem")) == \
         ("pipeline", ("0 2 * * * (Europe/Berlin)",), ("manual", "pull-request"),
          "ciam, docker, hashicorp/terraform:1.9, registry.example.test/ciam/deployer:2", ("prod",),
-         ("DS_BIND_PASSWORD", "TF_TOKEN"), "https://gitlab.example.test/ciam/infra", ".gitlab-ci.yml")
+         ("DS_BIND_PASSWORD", "TF_TOKEN"), "https://gitlab.example.test/ciam/infra", ".gitlab-ci.yml", "infra",
+         "gitlab-ci")
 
 
 def test_no_variable_value_is_kept(after):
@@ -97,3 +100,14 @@ def test_without_a_url_the_path_names_the_project():
     paths = sorted(one(j, "ciamRepoPath") for j in d.entries.values() if "ciamJob" in j.classes)
     assert paths == ["a/x/.gitlab-ci.yml", "b/x/.gitlab-ci.yml"]
     assert preview_import(d, "gitlab-ci/pipelines", files, (ADAPTER,))[0] == ()
+
+
+def test_a_project_reread_without_its_definition_loses_its_pipeline():
+    files = {"a/x/.gitlab-ci.yml": "build: {script: [make]}\n", "a/y/.gitlab-ci.yml": "build: {script: [make]}\n",
+             "b/z/.gitlab-ci.yml": "build: {script: [make]}\n"}
+    d, _, _ = imported(files)
+    changes, notices = preview_import(d, "gitlab-ci/pipelines", {        # x without its definition, y unreadable
+        "a/x/pipeline_schedules.json": "[]", "a/y/.gitlab-ci.yml": "- a list\n"}, (ADAPTER,))
+    assert [(r.changetype, r.dn) for r in changes] == [("delete", job_dn("gitlab-ci-x-gitlab-ci"))]   # z not read
+    assert "pipeline gitlab-ci-x-gitlab-ci (gitlab-ci, no repository URL, a/x/.gitlab-ci.yml): no longer defined " \
+        "in its repository; removed" in notices

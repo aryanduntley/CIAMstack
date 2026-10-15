@@ -32,11 +32,15 @@ opsdir import --change CHG-… gitlab-ci/pipelines projects/
 | Runner `tags` (`default:`, jobs) and `image` (top level, `default:`, jobs; a string or `{name}`) | `ciamRuntime`: tags then images, in one value |
 | Jobs' `environment` (a name or `{name, url}`) | `ciamDeploysTo` |
 | The keys of jobs' `secrets:` and the masked or hidden keys of `variables.json` (`GET /projects/:id/variables`) | `ciamSecretName` (names only) |
+| The project's folder name (its last path segment) | `ciamJobName` |
+| The CI system | `ciamCiSystem`: `gitlab-ci` |
 | `project.json` (`GET /projects/:id`) | `ciamRepoUrl` (its `web_url`), `ciamRepoPath` `.gitlab-ci.yml`; without it, the path is qualified by the project (`group/project/.gitlab-ci.yml`) so two projects stay apart |
 
 A job is any top-level mapping that isn't a reserved key (`stages`, `variables`, `image`, `services`, `before_script`, `after_script`, `cache`, `include`, `workflow`, `default`) or hidden (`.name`) and has `script`, `trigger` or `extends`.
 
 One job per project (`ciamJobKind: pipeline`, under `ou=jobs`), named `gitlab-ci-<project>-gitlab-ci` (the project's last path segment; made unique with `-2`, `-3`, …), matched on a re-import by repository URL and path. What the record adds (owner, criticality, the binding role that realizes it, the roles it uses) is kept; importing the same projects again changes nothing.
+
+**Removed upstream.** A GitLab CI pipeline the record has from a project folder this import read (same `web_url`, or the same folder when there is none) whose `.gitlab-ci.yml` is gone is removed: its deletion is in the import's change records, named in a notice (`pipeline <name> (gitlab-ci, <URL>, <path>): no longer defined in its repository; removed`), and like every deletion an import makes it is the operator's conflict to take or keep. A `.gitlab-ci.yml` that isn't a definition this time keeps its pipeline; projects the import didn't read, other CI systems' pipelines and jobs that aren't pipelines are never touched.
 
 Named in the notices, not read: a project folder (one holding any of the four files) without `.gitlab-ci.yml`, a `.gitlab-ci.yml` that isn't a YAML mapping, inactive schedules, and an import with no project folders.
 
@@ -51,11 +55,11 @@ None of its own: jobs are the core `automation` domain's (`ciamJob` under `ou=jo
 - `include:` (local, project, remote, template) and `extends:` are not followed; jobs defined only in included files don't contribute runners, environments or secrets.
 - Group- and instance-level CI/CD variables are not read; `rules:` on jobs (as opposed to `workflow:`) don't change the triggers. Workflow rules that never test `$CI_PIPELINE_SOURCE` give no trigger.
 - Child pipelines (`trigger: include:`) are part of their parent's job.
-- A project removed from the import isn't removed from the record by a re-import: each import touches only the jobs it finds.
+- A project deleted (or left out of the import) keeps its pipeline in the record: an import can't tell a partial export from a deletion, so only the project folders it reads lose pipelines. A pipeline imported before opsdir recorded `ciamCiSystem` (an older record) isn't removed this way until a re-import has found it again and recorded its system.
 
 ## Tests
 
-`tests/test_gitlab_ci.py`: a project pipeline (schedules with timezone, workflow-rule triggers with `push` ruled out, tags and images, an environment, secrets from `secrets:` and masked variables, the project's URL), no variable value kept, notices (inactive schedule, not a definition, no definition), a re-import changing nothing, two projects' same-named files kept apart without URLs.
+`tests/test_gitlab_ci.py`: a project pipeline (schedules with timezone, workflow-rule triggers with `push` ruled out, tags and images, an environment, secrets from `secrets:` and masked variables, the project's URL), no variable value kept, notices (inactive schedule, not a definition, no definition), a re-import changing nothing, two projects' same-named files kept apart without URLs, the project's name and CI system recorded, a project re-read without its definition losing its pipeline (not one whose definition doesn't parse, nor a project not read).
 
 From the repository root: `opsdir/.venv/bin/python -m pytest packages/opsdir-adapter-gitlab-ci/tests`.
 

@@ -32,12 +32,19 @@ ATTRIBUTES = (
                  'An environment a pipeline deploys to, as its CI system names it'),
     AttributeDef(231, 'ciamFoundOn', 'dn', 'observed', False,
                  'A server a job was found on'),
+    AttributeDef(659, 'ciamJobName', 'string', 'meta', True,
+                 "A job's name as its own system shows it (a workflow's name:, a CI project's name), apart from the "
+                 "entry's name"),
+    AttributeDef(660, 'ciamCiSystem', 'string', 'meta', True,
+                 'The CI system a pipeline was imported from (the importing package\'s system: github-actions, '
+                 'gitlab-ci, ...): a re-import from it removes the pipelines its repositories no longer define'),
 )
 CLASSES = (
     ClassDef(48, 'ciamJob', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamJobKind'),
              ('ciamSchedule', 'ciamTrigger', 'ciamCommand', 'ciamRunsAs', 'ciamRuntime', 'ciamTargetRole',
               'ciamJobRole', 'ciamUsesRole', 'ciamSecretName', 'ciamCodeBundle', 'ciamRepoPath', 'ciamRepoUrl',
-              'ciamDeploysTo', 'ciamFoundOn', 'ciamCriticality', 'ciamInEnvironment', 'ciamOnProvider'),
+              'ciamDeploysTo', 'ciamFoundOn', 'ciamCriticality', 'ciamInEnvironment', 'ciamOnProvider',
+              'ciamJobName', 'ciamCiSystem'),
              'A piece of the platform\'s automation: what runs, when, on what, with which secrets, from which code'),
     ClassDef(49, 'ciamJobBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamSchedule', 'ciamRuntime'),

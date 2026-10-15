@@ -27,9 +27,13 @@ opsdir import --change CHG-… github-actions/workflows repos/
 | `jobs.*.runs-on` (a label, a list, `{group, labels}`) | `ciamRuntime`: the runners every job asks for, in one value (`self-hosted, linux, ciam`; `group deployers`) |
 | `jobs.*.environment` (a name or `{name, url}`) | `ciamDeploysTo` |
 | `${{ secrets.NAME }}` anywhere in the file | `ciamSecretName` (the name only; `GITHUB_TOKEN`, GitHub's own, skipped; `vars.*` aren't secrets) |
+| `name:` (else the file name) | `ciamJobName` |
+| The CI system | `ciamCiSystem`: `github-actions` |
 | The repository and file | `ciamRepoUrl` (`https://github.com/owner/repo` for an `owner/repo` folder; none for a bare `repo` folder), `ciamRepoPath` (`.github/workflows/<file>`, qualified as `<repo>/.github/workflows/<file>` when the URL isn't known) |
 
 One job per workflow file (`ciamJobKind: pipeline`, under `ou=jobs`), named `github-actions-<repo>-<file name without extension>` (characters other than letters, digits, `.`, `_`, `-` as `-`; made unique with `-2`, `-3`, …), matched on a re-import by repository URL and path. What the record adds (owner, criticality, the binding role that realizes it, the roles it uses) is kept; importing the same workflows again changes nothing.
+
+**Removed upstream.** A GitHub Actions pipeline the record has from a repository folder this import read (same repository URL, or the same folder when there is none) that the folder no longer defines is removed: its deletion is in the import's change records, named in a notice (`pipeline <name> (github-actions, <URL>, <path>): no longer defined in its repository; removed`), and like every deletion an import makes it is the operator's conflict to take or keep. A file that isn't a workflow this time keeps its pipeline; repositories the import didn't read, other CI systems' pipelines and jobs that aren't pipelines are never touched.
 
 Named in the notices, not read: files under `.github/workflows/` that aren't workflows (not YAML, or no `jobs` mapping), folders without `.github/workflows/`, and an empty import. Files under `.github/workflows/` that aren't `.yml`/`.yaml` are passed over.
 
@@ -45,12 +49,12 @@ None of its own: jobs are the core `automation` domain's (`ciamJob` under `ou=jo
 - Organization- and environment-level secrets and variables are not read (names only appear where a workflow references them).
 - `on.schedule` crons are in UTC; the record keeps them as written.
 - The runners of all a workflow's jobs are one `ciamRuntime` value; per-job runners and matrices aren't told apart.
-- The workflow's own `name:` is read but not recorded: the job is named after the file.
-- A workflow deleted from its repository isn't removed from the record by a re-import: each import touches only the jobs it finds.
+- The entry is named after the file; the workflow's `name:` is `ciamJobName`.
+- A repository deleted (or left out of the import) keeps its pipelines in the record: an import can't tell a partial export from a deletion, so only the repositories it reads lose pipelines. A pipeline imported before opsdir recorded `ciamCiSystem` (an older record) isn't removed this way until a re-import has found it again and recorded its system.
 
 ## Tests
 
-`tests/test_github_actions.py`: a scheduled, manually dispatchable workflow (self-hosted runners, an environment, a secret by name, GitHub's token skipped), a push/PR workflow with several jobs (runner group, environment object), what isn't a workflow named, a re-import changing nothing and keeping an owner.
+`tests/test_github_actions.py`: a scheduled, manually dispatchable workflow (self-hosted runners, an environment, a secret by name, GitHub's token skipped), a push/PR workflow with several jobs (runner group, environment object), what isn't a workflow named, a re-import changing nothing and keeping an owner, the workflow's name and CI system recorded, a workflow gone from a re-read repository removed (not a broken one, nor another repository's).
 
 From the repository root: `opsdir/.venv/bin/python -m pytest packages/opsdir-adapter-github-actions/tests`.
 
