@@ -5,9 +5,9 @@ service exposes, the egress firewalls whose domain allowlist it renders, the ran
 environment's firewall model and policy. Nothing recorded, nothing rendered. Pure."""
 import re
 
-from ...core.directory import get, is_kind, one, rdn_value, values
+from ...core.directory import is_kind, one, rdn_value, values
 from ...core.environment import by_role, of_class, one_role
-from ..governance.keepers import keeper
+from ..governance.keepers import keeper, managed_by_name
 from .naming import DESTINATION
 
 # what a destination's port is when it names none
@@ -21,9 +21,7 @@ def owned(b):
 
 def kept_by(m, b):
     """The name of who keeps a binding the stack doesn't (the party ciamManagedBy names, else its DN)."""
-    dn = one(b, "ciamManagedBy")
-    party = get(m.d, dn) if dn else None
-    return rdn_value(party) if party is not None else dn
+    return managed_by_name(m.d, b, one(b, "ciamManagedBy"))
 
 
 def subnets(m, b):

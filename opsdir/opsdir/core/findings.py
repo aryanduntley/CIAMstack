@@ -125,6 +125,19 @@ def merge_findings(parts):
     return Findings(*(tuple(chain.from_iterable(column)) for column in zip(*parts))) if parts else findings()
 
 
+def all_clear(parts, ok_line):
+    """A check's parts (Findings) merged, with ok_line (the check's one line saying all it looked at holds) added to
+    what is fine when none of them is a blocker or an action."""
+    merged = merge_findings(parts)
+    return merged if merged.blockers or merged.actions else merged._replace(ok=(*merged.ok, ok_line))
+
+
+def each_checked(items, judge, ok_line):
+    """A check over items: no findings when there are none; else judge(item) (Findings) for each, merged, with ok_line
+    added when nothing is a blocker or an action (all_clear)."""
+    return all_clear([judge(i) for i in items], ok_line) if items else findings()
+
+
 def responsible(d, *entries):
     """Owners of the first of these entries that has any (e.g. a service, then its environment),
     or **NO OWNER**. Findings name whoever owns the thing they are about, never a hardcoded team."""

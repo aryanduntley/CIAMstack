@@ -14,11 +14,12 @@ configuration recording when the source exports its history; otherwise an action
 actions, which block the move where the target's data is classified restricted."""
 from collections import namedtuple
 
-from ...core.directory import get, one, rdn_value, subtree, values
+from ...core.directory import one, rdn_value, subtree, values
 from ...core.environment import env_model, of_class, one_role
 from ...core.findings import findings, responsible
 from ...core.naming import branch
-from ..observability.audit import INDEFINITE
+from ..governance.keepers import managed_by_name
+from ..observability.retention import INDEFINITE, longest_retention, retention_days, yes_no
 from .naming import REGULATORY, RESTRICTED, SECURITY_AREAS, SECURITY_KINDS
 
 AREA = "Security"
@@ -54,16 +55,6 @@ def findings_destination(m, service):
     return one_role(m, role) if role else None
 
 
-def _days(b):
-    v = one(b, "ciamRetentionDays") if b is not None else None
-    return int(v) if v is not None else None
-
-
-def _longest(days):
-    known = [d for d in days if d is not None]
-    return INDEFINITE if INDEFINITE in known else max(known) if known else None
-
-
 def service_coverage(m, services):
     """The SecurityCoverage of environment m's security services taken together."""
     return SecurityCoverage(
@@ -73,7 +64,8 @@ def service_coverage(m, services):
         any(one(s, "ciamAuditScope") == "organization" for s in services),
         any(one(s, "ciamAllRegions") == "TRUE" for s in services),
         any(findings_destination(m, s) is not None for s in services),
-        _longest([d for s in services for d in (_days(s), _days(findings_destination(m, s)))]))
+        longest_retention([d for s in services
+                           for d in (retention_days(s), retention_days(findings_destination(m, s)))]))
 
 
 def _missing(ctx, kind, src):
@@ -156,26 +148,15 @@ def check_security(ctx):
                     (f"Security services recorded in {ctx.dst.label}: {', '.join(kinds)}.",))
 
 
-def _keeper(m, s):
-    ref = one(s, "ciamManagedBy")
-    keeper = get(m.d, ref) if ref else None
-    return rdn_value(keeper) if keeper is not None else "platform"
-
-
-def _yes(s, attr):
-    v = one(s, attr)
-    return "yes" if v == "TRUE" else "no" if v == "FALSE" else ""
-
-
 def security_rows(d, dn=None):
     """One row per security service of every environment: kind, scope, all regions, the areas it watches, the
     frameworks and baselines it assesses, the role its findings go to, how long its records are kept (its own or its
     findings destination's, the longer), and who keeps it (the platform team unless ciamManagedBy names someone)."""
     models = [env_model(d, e.dn) for e in subtree(d, branch("environments"), "ciamEnvironment")]
     return [(m.label, rdn_value(s), one(s, "ciamSecurityKind"), one(s, "ciamAuditScope", ""),
-             _yes(s, "ciamAllRegions"), ", ".join(values(s, "ciamSecurityCoverage")),
+             yes_no(s, "ciamAllRegions"), ", ".join(values(s, "ciamSecurityCoverage")),
              ", ".join((*values(s, "ciamComplianceStandard"), *values(s, "ciamSecurityBaseline"))),
              one(s, "ciamFindingsRole", ""), "" if days is None else "forever" if days == INDEFINITE else str(days),
-             _keeper(m, s))
+             managed_by_name(m.d, s, "platform"))
             for m in models for s in security_services(m)
-            for days in (_longest((_days(s), _days(findings_destination(m, s)))),)]
+            for days in (longest_retention((retention_days(s), retention_days(findings_destination(m, s)))),)]

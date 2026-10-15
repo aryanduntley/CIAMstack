@@ -14,7 +14,7 @@ goes (decision 2777). Pure."""
 import re
 from typing import NamedTuple, Optional
 
-from ...core.directory import get, is_kind, one, rdn_value
+from ...core.directory import follow, get, is_kind, one, rdn_value
 from ..access.workloads import landing_zone_owner, landing_zone_party
 
 LANDING_ZONE = "terraform/landing-zone"
@@ -32,6 +32,19 @@ SLICE = "terraform/slice"
 # name: who keeps it (as findings name owners); folder: the root it renders into when rendered; party: their entry
 # (None when the record names none); takes: whether the default render gives them that root
 Keeper = NamedTuple("Keeper", [("name", str), ("folder", str), ("party", Optional[object]), ("takes", bool)])
+
+
+def managed_by(d, e):
+    """The party entry entry e's ciamManagedBy names, or None (it names none, or the record has no such entry): who
+    keeps e when the stack doesn't."""
+    return follow(d, e, "ciamManagedBy")
+
+
+def managed_by_name(d, e, default=None):
+    """The name of who keeps entry e as reports and findings show it: the RDN value of the party its ciamManagedBy
+    names (managed_by), else default (e.g. 'platform', or the DN named when the record has no entry for it)."""
+    party = managed_by(d, e)
+    return rdn_value(party) if party is not None else default
 
 
 def takes_generated(party):

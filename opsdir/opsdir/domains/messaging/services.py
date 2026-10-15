@@ -8,7 +8,7 @@ target's identity must sign with DKIM and be authorized by SPF before cutover, o
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
 from ...core.environment import bound_nowhere, of_class, one_role
-from ...core.findings import findings, merge_findings, responsible
+from ...core.findings import all_clear, findings, responsible
 from ..compute.workloads import runs_here
 from ..pki.credentials import role_uses
 from .naming import DMARC_STRENGTH, EXTERNAL_SERVICES, MAIL_SENDERS
@@ -119,11 +119,8 @@ def check_services(ctx):
     held, senders = external_services(ctx.d), mail_senders(ctx.d)
     if not held and not senders:
         return findings()
-    parts = merge_findings([*(_service(ctx, s) for s in held), *(_sender(ctx, m) for m in senders)])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"External services ({len(held)}) and mail senders ({len(senders)}) work "
-                                         f"from {ctx.dst.label}."))
+    return all_clear([*(_service(ctx, s) for s in held), *(_sender(ctx, m) for m in senders)],
+                     f"External services ({len(held)}) and mail senders ({len(senders)}) work from {ctx.dst.label}.")
 
 
 def messaging_roles(m):

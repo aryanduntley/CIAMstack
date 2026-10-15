@@ -10,7 +10,7 @@ isn't the role of the plugin instance it stands for is an action, fixed by setti
 from opsdir.core.contract import RoleUse
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere, one_role
-from opsdir.core.findings import Fix, findings, merge_findings, responsible
+from opsdir.core.findings import Fix, each_checked, findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from opsdir.domains.federation.services import identity_services, integrations_served
 from opsdir.domains.infrastructure.external import external_hosts_fix, unnamed
@@ -137,13 +137,9 @@ def _data_store(ctx, s):
 def check_data_stores(ctx):
     """Data stores the target can't give what they need are blockers; fixed hosts and plain LDAP are actions."""
     stores = children(ctx.d, DATA_STORES, "pingfedDataStore")
-    if not stores:
-        return findings()
-    parts = merge_findings([_data_store(ctx, s) for s in stores])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"PingFederate's {len(stores)} data store(s) reach their systems through "
-                                         f"roles {ctx.dst.label} binds."))
+    return each_checked(stores, lambda s: _data_store(ctx, s),
+                        f"PingFederate's {len(stores)} data store(s) reach their systems through roles "
+                        f"{ctx.dst.label} binds.")
 
 
 def _named(ctx, e, what, refs):

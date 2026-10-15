@@ -9,8 +9,9 @@ must keep them at least as long as the route requires.
 from ...core.directory import children, one, rdn_value, values
 from ...core.environment import bound_nowhere, one_role
 from ...core.changeset import set_values
-from ...core.findings import Fix, findings, merge_findings, responsible
+from ...core.findings import Fix, each_checked, findings, responsible
 from .naming import LOG_ROUTES
+from .retention import INDEFINITE, retention_days
 
 LOG_HEADERS = ("log route", "logs", "from", "kept by", "keep (days)", "legal hold")
 
@@ -27,14 +28,6 @@ def log_rows(d, dn=None):
             for r in log_routes(d)]
 
 
-INDEFINITE = 0                                   # ciamRetentionDays of a destination that never expires logs
-
-
-def _days(b):
-    v = one(b, "ciamRetentionDays") if b is not None else None
-    return int(v) if v is not None else None
-
-
 def _short(days, need):
     return days is not None and days != INDEFINITE and days < need
 
@@ -43,7 +36,7 @@ def _route(ctx, r):
     name, owner, role = rdn_value(r), responsible(ctx.d, r, ctx.dst.env), one(r, "ciamLogDestinationRole")
     need = int(one(r, "ciamRetentionDays")) if one(r, "ciamRetentionDays") else None
     src, dst = (one_role(m, role) for m in (ctx.src, ctx.dst))
-    have, had = _days(dst), _days(src)
+    have, had = retention_days(dst), retention_days(src)
     return findings(
         blockers=[*(("Logs", f"Log route `{name}` sends logs to role `{r}`, which neither {ctx.src.label} nor "
                      f"{ctx.dst.label} binds: they are kept nowhere. Record each environment's destination.", owner)
@@ -73,9 +66,5 @@ def check_logs(ctx):
     records no retention, a source already short of the obligation, and logs under legal hold the source must keep
     are actions."""
     routes = log_routes(ctx.d)
-    if not routes:
-        return findings()
-    parts = merge_findings([_route(ctx, r) for r in routes])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"Log routes ({len(routes)}) are kept long enough in {ctx.dst.label}."))
+    return each_checked(routes, lambda r: _route(ctx, r),
+                        f"Log routes ({len(routes)}) are kept long enough in {ctx.dst.label}.")

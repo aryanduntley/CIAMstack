@@ -18,7 +18,7 @@ import re
 
 from ...core.directory import children, is_a, one, rdn_value, values
 from ...core.environment import bound_nowhere, environment_of, one_role, servers_with_role
-from ...core.findings import findings, merge_findings, responsible
+from ...core.findings import each_checked, findings, responsible
 from ...core.naming import env_label
 from ...core.notes import note
 from .hosts import baseline_for, compute_rows, runs_role
@@ -276,12 +276,8 @@ def check_workloads(ctx):
     """Workloads the target has nowhere to run, or whose identity or secrets nobody binds, are blockers; moves between
     servers and Kubernetes and privileged workloads are actions."""
     held = workloads(ctx.d)
-    if not held:
-        return findings()
-    parts = merge_findings([_workload(ctx, w) for w in held])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"The {len(held)} workload(s) have somewhere to run in {ctx.dst.label}."))
+    return each_checked(held, lambda w: _workload(ctx, w),
+                        f"The {len(held)} workload(s) have somewhere to run in {ctx.dst.label}.")
 
 
 def profile_repo(b):

@@ -10,7 +10,7 @@ apply in the source, and names those that don't apply in the target (they won't 
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
 from ...core.environment import applies_in, bound_nowhere, servers_with_role
-from ...core.findings import findings, merge_findings, responsible
+from ...core.findings import all_clear, findings, responsible
 from ..compute.hosts import scope_text
 from ..compute.workloads import kubernetes_roles
 from ..pki.credentials import role_uses
@@ -74,16 +74,13 @@ def check_jobs(ctx):
     if not held:
         return findings()
     stays = [j for j in held if not applies_in(j, ctx.dst)]
-    parts = merge_findings([*(_job(ctx, j) for j in held if j not in stays),
-                            findings(actions=[("Job", f"Job `{rdn_value(j)}` applies in {scope_text(ctx.d, j)}, not "
-                                               f"in {ctx.dst.label}: it won't run there. Scope it to "
-                                               f"{ctx.dst.label} too if it should (ciamInEnvironment, "
-                                               "ciamOnProvider).", responsible(ctx.d, j, ctx.dst.env), None)
-                                              for j in stays])])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"The {len(held)} job(s) have owners and run in {ctx.dst.label} on what "
-                                         "they run on in the source."))
+    return all_clear([*(_job(ctx, j) for j in held if j not in stays),
+                      findings(actions=[("Job", f"Job `{rdn_value(j)}` applies in {scope_text(ctx.d, j)}, not in "
+                                         f"{ctx.dst.label}: it won't run there. Scope it to {ctx.dst.label} too if it "
+                                         "should (ciamInEnvironment, ciamOnProvider).",
+                                         responsible(ctx.d, j, ctx.dst.env), None) for j in stays])],
+                     f"The {len(held)} job(s) have owners and run in {ctx.dst.label} on what they run on in the "
+                     "source.")
 
 
 def job_roles(m):

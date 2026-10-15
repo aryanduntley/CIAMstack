@@ -5,6 +5,7 @@ count as proven unaltered); the audit-trails report."""
 from opsdir.core.findings import findings
 from opsdir.domains.observability.audit import (PROTECTED, UNLOCKED, audit_rows, audit_trails, check_audit,
                                                coverage, integrity)
+from opsdir.domains.observability.retention import INDEFINITE, longest_retention, retention_days, yes_no
 from network_fixtures import ALPHA, BETA, context, entry, model
 
 PARTY = "cn=landing-zone,ou=owners,dc=ciam-ops"
@@ -143,3 +144,16 @@ def test_a_trail_logs_the_data_it_names_else_the_environment_s_own_and_streams_w
 
 def rdn(b):
     return b.dn.split(",")[0][3:]
+
+
+def test_retention_reads_days_forever_wins_and_switches_read_yes_no_or_nothing():
+    kept, forever, unset = (entry(ALPHA, n, "ciamLogDestination", **kw) for n, kw in (
+        ("kept", {"ciamRetentionDays": "400", "ciamLegalHold": "TRUE"}), ("forever", {"ciamRetentionDays": "0"}),
+        ("unset", {"ciamLegalHold": "FALSE"})))
+    m = model(alpha=(kept, forever, unset))[1]
+    kept, forever, unset = (next(b for b in m.bindings if b.dn.startswith(f"cn={n},")) for n in ("kept", "forever",
+                                                                                                 "unset"))
+    assert [retention_days(b) for b in (kept, forever, unset, None)] == [400, INDEFINITE, None, None]
+    assert (longest_retention((30, None, 400)), longest_retention((400, INDEFINITE)), longest_retention((None,))) == \
+        (400, INDEFINITE, None)
+    assert [yes_no(b, "ciamLegalHold") for b in (kept, unset, forever)] == ["yes", "no", ""]

@@ -3,12 +3,13 @@ our addresses)."""
 import datetime as dt
 
 from ...core.changeset import delete_entry, new_entry, set_values
-from ...core.directory import children, follow, get, is_a, one, rdn_value, values
+from ...core.directory import children, get, is_a, one, rdn_value, values
 from ...core.environment import one_role
 from ...core.findings import Fix, Option, findings, merge_findings, responsible
 from ...core.network import covers
 from ...core.overlays import override_differences
 from ..compute.hosts import compute_groups
+from ..governance.keepers import managed_by
 from ..compute.workloads import product_versions, workload_binding, workloads
 from .naming import EXTERNAL_ALLOWLISTS
 
@@ -56,7 +57,7 @@ def _allowlist(ctx, xa):
     role = one(xa, "ciamRefersToRole")
     b = one_role(ctx.dst, role)
     new = binding_address(b) if b is not None else None
-    mgr = follow(ctx.d, xa, "ciamManagedBy")
+    mgr = managed_by(ctx.d, xa)
     lead = int(one(xa, "ciamLeadTimeDays", "0"))
     if b is None:
         return findings(blockers=[("Allowlist", f"`{rdn_value(xa)}` refers to role `{role}`, which {ctx.dst.label} "

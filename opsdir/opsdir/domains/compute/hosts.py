@@ -14,7 +14,7 @@ runs servers of without a recorded baseline, and a target's compute that is less
 from ...core.directory import children, get, is_a, make_entry, one, rdn_value, values
 from ...core.environment import applies_in, by_role, environment_of, inherited_from, scope_of, servers_with_role
 from ...core.changeset import set_values
-from ...core.findings import Fix, findings, merge_findings, responsible
+from ...core.findings import Fix, all_clear, findings, responsible
 from ...core.naming import env_label
 from .naming import BASELINES
 from .schema import ATTRIBUTES
@@ -214,9 +214,6 @@ def check_hosts(ctx):
     groups = compute_groups(ctx.dst)
     if not held and not groups:
         return findings()
-    parts = merge_findings([*(_baseline(ctx, b) for b in held), _missing_baselines(ctx),
-                            *(_group(ctx, t) for t in groups)])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"Host baselines ({len(held)}) and {ctx.dst.label}'s compute groups "
-                                         f"({len(groups)}) raise nothing."))
+    return all_clear([*(_baseline(ctx, b) for b in held), _missing_baselines(ctx), *(_group(ctx, t) for t in groups)],
+                     f"Host baselines ({len(held)}) and {ctx.dst.label}'s compute groups ({len(groups)}) raise "
+                     "nothing.")
