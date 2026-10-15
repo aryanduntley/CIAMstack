@@ -4,7 +4,7 @@ import pytest
 
 from opsdir.connectors.registry import format_named
 from opsdir_format_arm.arm_json import as_arm_json, dependencies, template_doc
-from opsdir_format_arm.bicep import as_bicep, bicep_string, bicep_value
+from opsdir_format_arm.bicep import as_bicep, bicep_files, bicep_string, bicep_value
 from opsdir_format_arm.format import ARM_FORMAT, BICEP_FORMAT
 from opsdir_format_arm.template import (ArmOutput, ArmResource, ArmTemplate, Interp, Param, ResourceId, ResourceName,
                                         indexed, resource_types, symbol)
@@ -123,3 +123,57 @@ def test_an_existing_child_reads_its_parents_group_and_a_literal_name_is_text():
         "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, "
         "'rg-net'), 'Microsoft.Network/virtualNetworks/subnets', 'vnet-ciam', 'snet-ds')]")
     assert doc["outputs"]["name"]["value"] == "nsg-ds"
+
+
+def test_a_module_is_a_nested_deployment_after_the_resources_and_named_by_its_group(module_sample):
+    """As bicep build compiles a module: a Microsoft.Resources/deployments resource deploying its template inline at
+    the group its scope names (inner expression scope), its params given as values, after every plain resource; what
+    waits for it names it by extensionResourceId on that group."""
+    doc = template_doc(module_sample.MODULES)
+    assert [r["type"] for r in doc["resources"]] == [
+        "Microsoft.ManagedIdentity/userAssignedIdentities", "Microsoft.App/jobs", "Microsoft.Resources/deployments",
+        "Microsoft.Resources/deployments"]
+    pull = doc["resources"][2]
+    assert (pull["name"], pull["subscriptionId"], pull["resourceGroup"]) == (
+        "grant-pull_a", "[split(parameters('registryId'), '/')[2]]", "[split(parameters('registryId'), '/')[4]]")
+    assert pull["properties"]["expressionEvaluationOptions"] == {"scope": "inner"}
+    assert pull["properties"]["parameters"]["principalId"] == {"value": (
+        "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'id-x'), "
+        "'2023-01-31').principalId]")}
+    assert pull["dependsOn"] == ["[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'id-x')]"]
+    inner = pull["properties"]["template"]["resources"]
+    assert [r["type"] for r in inner] == ["Microsoft.Authorization/roleAssignments"]     # the existing target: no
+    assert inner[0]["scope"] == "[resourceId('Microsoft.ContainerRegistry/registries', parameters('targetName'))]"
+    assert module_sample.ACR_PULL in inner[0]["properties"]["roleDefinitionId"]
+    assert doc["resources"][1]["dependsOn"] == [
+        "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', split(parameters('registryId'), '/')[2], "
+        f"split(parameters('registryId'), '/')[4]), 'Microsoft.Resources/deployments', 'grant-{m}')]"
+        for m in ("pull_a", "pull_b")]
+
+
+def test_modules_of_one_template_share_one_bicep_file_beside_the_template(module_sample):
+    MODULES, GRANT = module_sample.MODULES, module_sample.GRANT
+    files = bicep_files(MODULES, "bicep/root/rg-a.bicep")
+    assert sorted(files) == ["bicep/root/modules/role-assignment-registries.bicep", "bicep/root/rg-a.bicep"]
+    main = files["bicep/root/rg-a.bicep"]
+    assert main.count("'./modules/role-assignment-registries.bicep'") == 2
+    assert "  scope: resourceGroup(split(registryId, '/')[2], split(registryId, '/')[4])\n" in main
+    assert files["bicep/root/modules/role-assignment-registries.bicep"] == as_bicep(GRANT)
+    other = module_sample.grant("pull_c")._replace(template=GRANT._replace(parameters=GRANT.parameters[:2] + (
+        GRANT.parameters[2]._replace(description="the registry"),)))
+    named = bicep_files(MODULES._replace(modules=(*MODULES.modules, other)), "x.bicep")
+    assert sorted(named) == ["modules/role-assignment-registries-2.bicep", "modules/role-assignment-registries.bicep",
+                             "x.bicep"]                                    # same name, another template: numbered
+
+
+def test_a_module_is_checked_too(module_sample):
+    MODULES, GRANT = module_sample.MODULES, module_sample.GRANT
+    pull, other = MODULES.modules
+    for bad, why in ((MODULES._replace(modules=(pull, pull, other)), "used more than once: pull_a"),
+                     (MODULES._replace(modules=(pull._replace(depends_on=("nope",)), other)), "doesn't hold: nope"),
+                     (MODULES._replace(modules=(pull._replace(template=GRANT._replace(scope="subscription")), other)),
+                      "must be a resource group's"),
+                     (MODULES._replace(resources=(*MODULES.resources[:1], MODULES.resources[1]._replace(
+                         scope="pull_a"))), "neither a parent nor a scope")):
+        with pytest.raises(ValueError, match=why):
+            indexed(bad)

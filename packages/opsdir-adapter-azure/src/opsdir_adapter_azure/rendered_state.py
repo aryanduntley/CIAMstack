@@ -17,10 +17,13 @@ A Bicep/ARM render (5.6c, decision 2629) reads back through azure/arm from its A
 deployment): each template becomes a deployment folder as the CLI saves one (rendered_deployments): the template and
 `az deployment group show` (the record's subscription, the template's resource group, its parameters' defaults) and
 `az group show` (the group in the environment's region); ARM ids come from names, so nothing else is assigned. The
-Terraform root kept beside the templates becomes its state, its inputs the templates' outputs that name them.
+Terraform root kept beside the templates becomes its state, its inputs the templates' outputs that name them. An
+input naming a resource by its ID (arm_types.INPUT_SCOPES: the check jobs' Application Insights resource and
+registries) is a synthetic ID (input_ids) both ways, so what is granted on it reads back the same.
 """
 import json
 import posixpath
+import re
 import uuid
 from types import MappingProxyType
 
@@ -30,6 +33,7 @@ from opsdir_format_terraform.native import side_inputs
 from opsdir_format_terraform.realized import realized
 from opsdir_format_terraform.state_builder import root_states, synthetic
 from .arm import deployment_outputs
+from .arm_types import input_type
 from .plumbing import WATCHER
 from .purview import START
 from .resource_providers import namespace_of
@@ -164,12 +168,28 @@ INPUTS = MappingProxyType({START: "2026-01-01T02:00:00Z", WATCHER[0]: "NetworkWa
                            WATCHER[1]: "NetworkWatcherRG"})
 
 
+_VARIABLE = re.compile(r'^variable\s+"([^"]+)"', re.M)
+INPUT_GROUP = "rg-inputs"           # the group the synthetic IDs of input_ids are in
+
+
+def input_ids(names, subscription):
+    """{input: a synthetic ID} of the inputs among names that name a resource by its ID (arm_types.input_type): the
+    resource of that type, named after the input, in group INPUT_GROUP of the subscription."""
+    return {n: f"/subscriptions/{subscription}/resourceGroups/{INPUT_GROUP}/providers/{t}/{n.replace('_', '-')}"
+            for n in names for t in (input_type(n),) if t}
+
+
+def _variables(files):
+    """The names of the variables Terraform files ({path: text}) declare."""
+    return {n for t in files.values() if isinstance(t, str) for n in _VARIABLE.findall(t)}
+
+
 # The templates a Bicep/ARM render writes at the subscription and tenant scopes (template_name); the others are
 # resource groups'
 SCOPES = ("subscription", "tenant")
 
 
-def _deployment_folder(path, text, subscription, region):
+def _deployment_folder(path, text, subscription, region, inputs=INPUTS):
     """(folder, {document kind: document}) of one rendered ARM template as the deployment folder the CLI saves: the
     template, the deployment (its scope's id, the parameters' defaults; secure ones never) and, for a resource group's,
     the group (in the region)."""
@@ -180,7 +200,8 @@ def _deployment_folder(path, text, subscription, region):
     scope = f"/subscriptions/{subscription}" if stem in SCOPES else group
     declared = {k: p for k, p in (doc.get("parameters") or {}).items()
                 if isinstance(p, dict) and not str(p.get("type", "")).lower().startswith("secure")}
-    parameters = {**{k: {"value": INPUTS[k]} for k in declared if k in INPUTS},
+    given = {**inputs, **input_ids(declared, subscription)}
+    parameters = {**{k: {"value": given[k]} for k in declared if k in given},
                   **{k: {"value": p["defaultValue"]} for k, p in declared.items() if "defaultValue" in p}}
     deployment = {"id": f"{scope}/providers/Microsoft.Resources/deployments/{stem}", "name": stem,
                   "properties": {"provisioningState": "Succeeded", "parameters": parameters}}
@@ -205,11 +226,14 @@ def rendered_deployments(files, d, environment):
     side = {p: t for p, t in files.items() if p.endswith(".tf") and posixpath.basename(posixpath.dirname(p))
             == "terraform" and posixpath.dirname(posixpath.dirname(p)) in roots}
     return {**deployments, **root_states(side, environment, lambda blocks: azure_assigned(m, blocks),
-                                         {**INPUTS, **side_inputs(side, outputs, lambda variable: variable)})}
+                                         {**INPUTS, **input_ids(_variables(side), subscription),
+                                          **side_inputs(side, outputs, lambda variable: variable)})}
 
 
 def rendered_states(files, d, environment):
     """The ReadBack's prepare: the rendered Terraform roots of an environment ({<cloud>/<env>/...tf: text}) as the
     states applying them would record ({<cloud>/<env>/<root>.tfstate: text}), what Azure assigns from record d."""
     m = env_model(d, env_dn(environment))
-    return root_states(files, environment, lambda blocks: azure_assigned(m, blocks), dict(INPUTS))
+    subscription = one(m.cloud, "ciamAccountRef") or "00000000-0000-0000-0000-000000000000"
+    return root_states(files, environment, lambda blocks: azure_assigned(m, blocks),
+                       {**INPUTS, **input_ids(_variables(files), subscription)})
