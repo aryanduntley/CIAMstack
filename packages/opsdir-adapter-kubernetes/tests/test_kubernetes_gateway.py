@@ -4,6 +4,7 @@ kits' routes, backend TLS and cookie stickiness; its Secrets delivered like a wo
 import pathlib
 import subprocess
 
+import pytest
 import yaml
 
 from opsdir.connectors.registry import services
@@ -184,6 +185,8 @@ def test_a_rendered_gateway_reads_back_as_the_same_binding():
             one(gw, "ciamBindingRole")) == ("k8s", "edge", "istio", "k8s-gateway")
 
 
+@pytest.mark.kubernetes
+@pytest.mark.skipif(not (ROOT / "tools" / "bin" / "kubeconform").exists(), reason="no tools (fetch-tools.sh)")
 def test_the_gateway_render_is_valid_kubernetes(tmp_path):
     for i, extra in enumerate((GATEWAY, GATEWAY + "ciamGatewayImplementation: envoy-gateway\n")):
         for path, text in render(model(extra), services(INSTALLED), ("external-secrets",)).items():

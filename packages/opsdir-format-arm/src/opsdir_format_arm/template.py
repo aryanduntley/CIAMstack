@@ -6,8 +6,8 @@ targetScope). It holds its parameters, resources and outputs in the order a rend
 symbol (its symbolic name: the Bicep identifier, and the key of an ARM JSON languageVersion 2.0 template's resources),
 its type and API version, its own name segment (a child resource also names its parent's symbol: ARM JSON writes
 'parent/child', Bicep writes parent:), its top-level fields (location, kind, sku, identity, tags, zones, ...) and its
-properties. An existing resource is only read (Bicep existing, ARM JSON "existing": true), optionally in another
-resource group.
+properties. An existing resource is only read (Bicep existing; ARM JSON, as Bicep compiles it, leaves it out of the
+resources and names it only in expressions), optionally in another resource group.
 
 Values are JSON-shaped (dict, list or tuple, str, int, float, bool, None) or expressions: a parameter, a template
 resource's id, name or runtime property, an ARM template function call (the functions Bicep shares: resourceId,
@@ -35,7 +35,7 @@ ArmResource = namedtuple("ArmResource", ("symbol", "type", "api_version", "name"
 # An output: its type and value.
 ArmOutput = namedtuple("ArmOutput", ("name", "type", "value"))
 # A whole template: its scope, description, resources, parameters, outputs, and comments (Bicep // lines at the top;
-# ARM JSON keeps them in the template's metadata).
+# the Bicep file's only: ARM JSON, having no comments, leaves them out).
 ArmTemplate = namedtuple("ArmTemplate", ("scope", "description", "resources", "parameters", "outputs", "comments"),
                          defaults=((), (), ()))
 
