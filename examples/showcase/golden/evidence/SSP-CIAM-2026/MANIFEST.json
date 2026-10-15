@@ -1,0 +1,148 @@
+{
+  "boundary": "cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops",
+  "as_of": "2026-09-23",
+  "history_point": {
+    "change": "CHG-2044",
+    "entry": 438
+  },
+  "controls": [
+    {
+      "control": "nist-800-53-r5:AC-2",
+      "queries": [
+        {
+          "query": "ac-2-access-paths",
+          "source": "access-paths",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_AC-2/ac-2-access-paths.csv": "53f6af34479f0750878d8206b325afc2bd17813fa681ce60a850e7e3ad133d93",
+            "nist-800-53-r5_AC-2/ac-2-access-paths.json": "a9450a8f22d8ce80d29dcd15a313a924a9224892d6fc99f4b46602cd435ec9de"
+          }
+        },
+        {
+          "query": "ac-2-principals",
+          "source": "principals",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_AC-2/ac-2-principals.csv": "1680cbd697a4be7c63f09b19e6741935ef4121b362313e2ae983743a23fcb95d",
+            "nist-800-53-r5_AC-2/ac-2-principals.json": "950ac2b21917fcf6b1434db2345d640f3eea64ec46301b42b8f7481451b64cb1"
+          }
+        }
+      ]
+    },
+    {
+      "control": "nist-800-53-r5:AU-11",
+      "queries": [
+        {
+          "query": "au-2-audit-trails",
+          "source": "audit-trails",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_AU-11/au-2-audit-trails.csv": "2a62b33df469b3a3b3a2dedbb1e5255ffb8036e8b346f150ce186b5b765168e9",
+            "nist-800-53-r5_AU-11/au-2-audit-trails.json": "015b22cf4fa7025b894bf5daca171108fc50ff9881b2a18b987afde3aca85095"
+          }
+        },
+        {
+          "query": "au-2-log-routes",
+          "source": "log-routes",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_AU-11/au-2-log-routes.csv": "7ca181702d1af19c2fff69eb0c0decb45e8f4850fc2e833faf0ca43cce985dbb",
+            "nist-800-53-r5_AU-11/au-2-log-routes.json": "a24fc5938b2b769157d05220a8da4c1f3e1ab947578654d07cbc582f55408099"
+          }
+        }
+      ]
+    },
+    {
+      "control": "nist-800-53-r5:AU-2",
+      "queries": [
+        {
+          "query": "au-2-audit-trails",
+          "source": "audit-trails",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_AU-2/au-2-audit-trails.csv": "2a62b33df469b3a3b3a2dedbb1e5255ffb8036e8b346f150ce186b5b765168e9",
+            "nist-800-53-r5_AU-2/au-2-audit-trails.json": "015b22cf4fa7025b894bf5daca171108fc50ff9881b2a18b987afde3aca85095"
+          }
+        },
+        {
+          "query": "au-2-log-routes",
+          "source": "log-routes",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_AU-2/au-2-log-routes.csv": "7ca181702d1af19c2fff69eb0c0decb45e8f4850fc2e833faf0ca43cce985dbb",
+            "nist-800-53-r5_AU-2/au-2-log-routes.json": "a24fc5938b2b769157d05220a8da4c1f3e1ab947578654d07cbc582f55408099"
+          }
+        }
+      ]
+    },
+    {
+      "control": "nist-800-53-r5:CM-3",
+      "queries": [
+        {
+          "query": "cm-3-approved-changes",
+          "source": "search",
+          "dn": "ou=changes,dc=ciam-ops",
+          "files": {
+            "nist-800-53-r5_CM-3/cm-3-approved-changes.csv": "c2008806baf4dbec21c8baaca641a9ec7f4c6c964c470eb2a0243ad17700b63f",
+            "nist-800-53-r5_CM-3/cm-3-approved-changes.json": "b94d56d431d52fad60a0c998548551922a445da510b2bd8ce754f7e4d3919ef0"
+          }
+        },
+        {
+          "query": "cm-3-history",
+          "source": "history",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_CM-3/cm-3-history.csv": "<SHA256>",
+            "nist-800-53-r5_CM-3/cm-3-history.json": "<SHA256>"
+          }
+        }
+      ]
+    },
+    {
+      "control": "nist-800-53-r5:SC-12",
+      "queries": [
+        {
+          "query": "sc-12-credentials",
+          "source": "credentials",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_SC-12/sc-12-credentials.csv": "293643a0ec38f1b887f3164d70078b2720917d99247144759782d2c42aebcda0",
+            "nist-800-53-r5_SC-12/sc-12-credentials.json": "cdbaa056a63df7c86d5a38d973c4707677115a7e18a92186c5471ea08c23a996"
+          }
+        },
+        {
+          "query": "sc-12-keys",
+          "source": "keys",
+          "dn": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "files": {
+            "nist-800-53-r5_SC-12/sc-12-keys.csv": "5e7b7cd800edf2c3a3268e0ded72ce62c1d2342de99267e659cfdad268cc2c0a",
+            "nist-800-53-r5_SC-12/sc-12-keys.json": "29cad57690112e5c1ab45db5617a653602fbf983a4794e53dd864002189d1b39"
+          }
+        }
+      ]
+    },
+    {
+      "control": "nist-800-53-r5:SC-13",
+      "queries": [
+        {
+          "query": "sc-12-credentials",
+          "source": "credentials",
+          "dn": null,
+          "files": {
+            "nist-800-53-r5_SC-13/sc-12-credentials.csv": "293643a0ec38f1b887f3164d70078b2720917d99247144759782d2c42aebcda0",
+            "nist-800-53-r5_SC-13/sc-12-credentials.json": "cdbaa056a63df7c86d5a38d973c4707677115a7e18a92186c5471ea08c23a996"
+          }
+        },
+        {
+          "query": "sc-12-keys",
+          "source": "keys",
+          "dn": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
+          "files": {
+            "nist-800-53-r5_SC-13/sc-12-keys.csv": "5e7b7cd800edf2c3a3268e0ded72ce62c1d2342de99267e659cfdad268cc2c0a",
+            "nist-800-53-r5_SC-13/sc-12-keys.json": "29cad57690112e5c1ab45db5617a653602fbf983a4794e53dd864002189d1b39"
+          }
+        }
+      ]
+    }
+  ]
+}

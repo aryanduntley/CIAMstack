@@ -1,0 +1,16 @@
+control               query                  source        on                                                 cadence (days)  kept by              last collected            status
+--------------------  ---------------------  ------------  -------------------------------------------------  --------------  -------------------  ------------------------  -------
+nist-800-53-r5:AC-2   ac-2-access-paths      access-paths                                                     30              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:AC-2   ac-2-principals        principals                                                       30              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:AU-2   au-2-audit-trails      audit-trails                                                     30              security-operations  SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:AU-11  au-2-audit-trails      audit-trails                                                     30              security-operations  SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:AU-2   au-2-log-routes        log-routes                                                       30              security-operations  SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:AU-11  au-2-log-routes        log-routes                                                       30              security-operations  SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:CM-3   cm-3-approved-changes  search        ou=changes,dc=ciam-ops                             90              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:CM-3   cm-3-history           history                                                          90              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:SC-12  sc-12-credentials      credentials                                                      90              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:SC-13  sc-12-credentials      credentials                                                      90              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:SC-12  sc-12-keys             keys          env=prod,cloud=target,ou=environments,dc=ciam-ops  90              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+nist-800-53-r5:SC-13  sc-12-keys             keys          env=prod,cloud=target,ou=environments,dc=ciam-ops  90              ciam-platform        SSP-CIAM-2026 2026-09-23  current
+(12 rows)
+exit 0

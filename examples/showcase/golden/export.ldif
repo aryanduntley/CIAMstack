@@ -128,6 +128,13 @@ objectClass: top
 objectClass: organizationalUnit
 ou: event-streams
 
+dn: ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: evidence-queries
+description: Which record queries show which controls met (a system boundary's
+  evidence package)
+
 dn: ou=exceptions,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -387,6 +394,26 @@ cn: 483017ca92ce3ac8
 ciamOnServer: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamRepoPath: etc/hosts
 ciamSha256: 78b07d136f28209b3382df98b923779ff28d3e133c419144255ccd74f0bf44eb
+
+dn: cn=ac-2-access-paths,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: ac-2-access-paths
+ciamControlRef: nist-800-53-r5:AC-2
+ciamEvidenceCadenceDays: 30
+ciamEvidenceSource: access-paths
+ciamManagedBy: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+
+dn: cn=ac-2-principals,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: ac-2-principals
+ciamControlRef: nist-800-53-r5:AC-2
+ciamEvidenceCadenceDays: 30
+ciamEvidenceSource: principals
+ciamManagedBy: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
 dn: cn=access-logs,ou=log-routes,dc=ciam-ops
 objectClass: top
@@ -677,6 +704,28 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: low
 ciamPurpose: Application entitlements (app:role)
 
+dn: cn=au-2-audit-trails,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: au-2-audit-trails
+ciamControlRef: nist-800-53-r5:AU-2
+ciamControlRef: nist-800-53-r5:AU-11
+ciamEvidenceCadenceDays: 30
+ciamEvidenceSource: audit-trails
+ciamManagedBy: cn=security-operations,ou=owners,dc=ciam-ops
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+
+dn: cn=au-2-log-routes,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: au-2-log-routes
+ciamControlRef: nist-800-53-r5:AU-2
+ciamControlRef: nist-800-53-r5:AU-11
+ciamEvidenceCadenceDays: 30
+ciamEvidenceSource: log-routes
+ciamManagedBy: cn=security-operations,ou=owners,dc=ciam-ops
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+
 dn: cn=audit-logs,ou=log-routes,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -749,6 +798,59 @@ objectClass: ciamRegionCatalog
 cn: azure
 ciamCloudProvider: azure
 
+dn: cn=azure-ac-2,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-ac-2
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:AC-2
+ciamImplementation: operator access paths and cloud principals recorded and re
+ viewed in the record
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
+dn: cn=azure-au-11,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-au-11
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:AU-11
+ciamImplementation: audit records kept 2557 days in the security workspace
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
+dn: cn=azure-au-2,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-au-2
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:AU-2
+ciamImplementation: the subscription's activity log and the workloads' audit e
+ vents routed to the security workspace
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: shared
+
+dn: cn=azure-cm-3,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-cm-3
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:CM-3
+ciamImplementation: every change to the record under an approved change (CAB)
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
+dn: cn=azure-ia-2,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-ia-2
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:IA-2
+ciamImplementation: operators sign in through Entra ID with phishing-resistant
+  MFA
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: customer
+
 dn: cn=azure-sc-12,ou=responsibilities,dc=ciam-ops
 objectClass: top
 objectClass: ciamControlResponsibility
@@ -762,6 +864,17 @@ ciamImplementation: Key Vault keys created, rotated and retired by the platfor
  m's key roles (WI-CIAM-012)
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamResponsibility: customer
+
+dn: cn=azure-sc-13,ou=responsibilities,dc=ciam-ops
+objectClass: top
+objectClass: ciamControlResponsibility
+cn: azure-sc-13
+ciamAuthorizationRef: cn=F1209051525,ou=authorizations,dc=ciam-ops
+ciamControlRef: nist-800-53-r5:SC-13
+ciamImplementation: FIPS-validated modules of Key Vault Premium (HSM-backed ke
+ ys)
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamResponsibility: shared
 
 dn: cn=azure.quotas.shared,ou=imports,dc=ciam-ops
 objectClass: top
@@ -1312,6 +1425,15 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record Skyline Air's answer on the target's signing certificate (un
  known q-skyline-signing)
 
+dn: cn=CHG-2046,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2046
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Take SSP-CIAM-2026's evidence package and record it on the boundary
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1407,6 +1529,32 @@ ciamDisplayName: Cloud landing zone team
 ciamOwnerKind: team
 ciamTakesGeneratedInfra: TRUE
 mail: landing-zone@example-aero.test
+
+dn: cn=cm-3-approved-changes,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: cm-3-approved-changes
+ciamControlRef: nist-800-53-r5:CM-3
+ciamEvidenceAttribute: ciamTitle
+ciamEvidenceAttribute: ciamApprovedBy
+ciamEvidenceAttribute: ciamChangeStatus
+ciamEvidenceCadenceDays: 90
+ciamEvidenceDn: ou=changes,dc=ciam-ops
+ciamEvidenceFilter: (ciamChangeStatus=approved)
+ciamEvidenceSource: search
+ciamManagedBy: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: The approved changes and who approved them
+
+dn: cn=cm-3-history,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: cm-3-history
+ciamControlRef: nist-800-53-r5:CM-3
+ciamEvidenceCadenceDays: 90
+ciamEvidenceSource: history
+ciamManagedBy: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
 dn: cn=CMMC-2026,ou=assessments,dc=ciam-ops
 objectClass: top
@@ -3642,6 +3790,29 @@ ciamSkeleton:: IyBQaW5nRmVkZXJhdGUgZW5naW5lIHJ1bi5wcm9wZXJ0aWVzIChFeGFtcGxlIEF
  9CnBmLmxvZy5ldmVudGRldGFpbD0ke+6AgHBmLmxvZy5ldmVudGRldGFpbO6AgX0K
 ciamTargetRole: pf-engine
 
+dn: cn=sc-12-credentials,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: sc-12-credentials
+ciamControlRef: nist-800-53-r5:SC-12
+ciamControlRef: nist-800-53-r5:SC-13
+ciamEvidenceCadenceDays: 90
+ciamEvidenceSource: credentials
+ciamManagedBy: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+
+dn: cn=sc-12-keys,ou=evidence-queries,dc=ciam-ops
+objectClass: top
+objectClass: ciamEvidenceQuery
+cn: sc-12-keys
+ciamControlRef: nist-800-53-r5:SC-12
+ciamControlRef: nist-800-53-r5:SC-13
+ciamEvidenceCadenceDays: 90
+ciamEvidenceDn: env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamEvidenceSource: keys
+ciamManagedBy: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+
 dn: cn=security-operations,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
@@ -5084,6 +5255,47 @@ objectClass: ciamCloudRegion
 cn: europe-west2
 ciamCloudEnvironment: public
 ciamRegionStatus: available
+
+dn: cn=evidence,cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEvidenceRun
+cn: evidence
+ciamChangeRef: cn=CHG-2046,ou=changes,dc=ciam-ops
+ciamEvidenceAt: 20260923000000Z
+ciamEvidenceOutput: MANIFEST.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AC-2/ac-2-access-paths.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AC-2/ac-2-access-paths.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AC-2/ac-2-principals.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AC-2/ac-2-principals.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-11/au-2-audit-trails.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-11/au-2-audit-trails.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-11/au-2-log-routes.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-11/au-2-log-routes.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-2/au-2-audit-trails.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-2/au-2-audit-trails.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-2/au-2-log-routes.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_AU-2/au-2-log-routes.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_CM-3/cm-3-approved-changes.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_CM-3/cm-3-approved-changes.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_CM-3/cm-3-history.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_CM-3/cm-3-history.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-12/sc-12-credentials.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-12/sc-12-credentials.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-12/sc-12-keys.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-12/sc-12-keys.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-13/sc-12-credentials.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-13/sc-12-credentials.json <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-13/sc-12-keys.csv <SHA256>
+ciamEvidenceOutput: nist-800-53-r5_SC-13/sc-12-keys.json <SHA256>
+ciamEvidenceQueryRef: cn=ac-2-access-paths,ou=evidence-queries,dc=ciam-ops
+ciamEvidenceQueryRef: cn=ac-2-principals,ou=evidence-queries,dc=ciam-ops
+ciamEvidenceQueryRef: cn=au-2-audit-trails,ou=evidence-queries,dc=ciam-ops
+ciamEvidenceQueryRef: cn=au-2-log-routes,ou=evidence-queries,dc=ciam-ops
+ciamEvidenceQueryRef: cn=cm-3-approved-changes,ou=evidence-queries,dc=ciam-ops
+ciamEvidenceQueryRef: cn=cm-3-history,ou=evidence-queries,dc=ciam-ops
+ciamEvidenceQueryRef: cn=sc-12-credentials,ou=evidence-queries,dc=ciam-ops
+ciamEvidenceQueryRef: cn=sc-12-keys,ou=evidence-queries,dc=ciam-ops
 
 dn: cn=f5a2dd8fd1c7a4e2,cn=default-atm.json,ou=config-files,dc=ciam-ops
 objectClass: top

@@ -1,0 +1,44 @@
+dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
+"cn=CHG-2001,ou=changes,dc=ciam-ops",Add NSG rule for the MRO batch export in the target environment,CAB 2026-09-18,approved
+"cn=CHG-2003,ou=changes,dc=ciam-ops",Restore the stable LDAPS service name in the target environment,CAB 2026-09-18,approved
+"cn=CHG-2004,ou=changes,dc=ciam-ops",Import the partner realm's PingAM configuration (Amster export),CAB 2026-09-18,approved
+"cn=CHG-2005,ou=changes,dc=ciam-ops",Name the secrets the IDM connectors and PingFederate data stores use (credential roles),CAB 2026-09-18,approved
+"cn=CHG-2006,ou=changes,dc=ciam-ops",Record the production directory servers' configuration (config.ldif exports),CAB 2026-09-18,approved
+"cn=CHG-2007,ou=changes,dc=ciam-ops",Record the directory's consumers from the production access logs,CAB 2026-09-18,approved
+"cn=CHG-2008,ou=changes,dc=ciam-ops",Import PingFederate's configuration (Admin API bulk export),CAB 2026-09-18,approved
+"cn=CHG-2009,ou=changes,dc=ciam-ops",Census of the servers' and applications' files for values of the record,CAB 2026-09-18,approved
+"cn=CHG-2010,ou=changes,dc=ciam-ops","Import the platform's hidden automation (servers' schedulers, CI pipelines)",CAB 2026-09-18,approved
+"cn=CHG-2011,ou=changes,dc=ciam-ops",Name the owners of the imported jobs,CAB 2026-09-18,approved
+"cn=CHG-2012,ou=changes,dc=ciam-ops",Import the servers' host baselines,CAB 2026-09-18,approved
+"cn=CHG-2013,ou=changes,dc=ciam-ops",Record the corporate root CA the PingFederate servers trust,CAB 2026-09-18,approved
+"cn=CHG-2014,ou=changes,dc=ciam-ops",Record the shape of the production user data (values-free data profile),CAB 2026-09-18,approved
+"cn=CHG-2015,ou=changes,dc=ciam-ops",Forward the AD domain to the domain controllers from the target environment,CAB 2026-09-18,approved
+"cn=CHG-2016,ou=changes,dc=ciam-ops",Keep the target's grant database's backups 14 days and protect it from deletion,CAB 2026-09-18,approved
+"cn=CHG-2017,ou=changes,dc=ciam-ops",Give the target environment its directory backup target,CAB 2026-09-18,approved
+"cn=CHG-2018,ou=changes,dc=ciam-ops",Make the target's directory data volume as large as production's,CAB 2026-09-18,approved
+"cn=CHG-2019,ou=changes,dc=ciam-ops",Snapshot the target's directory data volume daily with Azure Backup,CAB 2026-09-18,approved
+"cn=CHG-2020,ou=changes,dc=ciam-ops",Fetch AWS's region list into the region catalog (prerequisite aws-regions),CAB 2026-09-18,approved
+"cn=CHG-2021,ou=changes,dc=ciam-ops",Fetch Azure's region list into the region catalog (prerequisite azure-regions),CAB 2026-09-18,approved
+"cn=CHG-2022,ou=changes,dc=ciam-ops",Fetch Google Cloud's region list into the region catalog (prerequisite gcp-regions),CAB 2026-09-18,approved
+"cn=CHG-2023,ou=changes,dc=ciam-ops",Hold the estate's environments to the us residency,CAB 2026-09-18,approved
+"cn=CHG-2024,ou=changes,dc=ciam-ops",Record the target's configuration change history (Azure Resource Graph),CAB 2026-09-18,approved
+"cn=CHG-2025,ou=changes,dc=ciam-ops",Fetch AWS's quota limits for the source's account (prerequisite aws-quotas),CAB 2026-09-18,approved
+"cn=CHG-2026,ou=changes,dc=ciam-ops",Fetch Azure's quota limits for the target's subscription (prerequisite azure-quotas),CAB 2026-09-18,approved
+"cn=CHG-2027,ou=changes,dc=ciam-ops",Fetch Google Cloud's quota limits for the standby's project (prerequisite gcp-quotas),CAB 2026-09-18,approved
+"cn=CHG-2028,ou=changes,dc=ciam-ops",Hold the target to a budget and request its vCPU increase,CAB 2026-09-18,approved
+"cn=CHG-2029,ou=changes,dc=ciam-ops",Hold the target to DFARS 252.204-7012 and page the incident process on Defender's high alerts,CAB 2026-09-18,approved
+"cn=CHG-2030,ou=changes,dc=ciam-ops",Complete the target's risk acceptance and suppress a Defender false positive (azapi add-on),CAB 2026-09-18,approved
+"cn=CHG-2031,ou=changes,dc=ciam-ops",Import AWS US East/West's FedRAMP Certification Package Overview (production's authorization),CAB 2026-09-18,approved
+"cn=CHG-2032,ou=changes,dc=ciam-ops",Extend SSP-CIAM-2026 to the target and record how it meets SC-12 on Azure,CAB 2026-09-18,approved
+"cn=CHG-2033,ou=changes,dc=ciam-ops",Move the target's AD forwarder to the landing zone's DNS servers; accept its reset mail's service,CAB 2026-09-18,approved
+"cn=CHG-2034,ou=changes,dc=ciam-ops","Turn on the target's sensitive data discovery over its backups (Defender CSPM, Purview every 3 days)",CAB 2026-09-18,approved
+"cn=CHG-2035,ou=changes,dc=ciam-ops",Record the organization's sites (prerequisite onprem-sites),CAB 2026-09-18,approved
+"cn=CHG-2036,ou=changes,dc=ciam-ops",Scope the cloud agents and the MRO export to where they run; the lab's own agents,CAB 2026-09-18,approved
+"cn=CHG-2037,ou=changes,dc=ciam-ops","Sync the target's password hashes, write passwords back, watch the corporate AD (Defender for Identity)",CAB 2026-09-18,approved
+"cn=CHG-2038,ou=changes,dc=ciam-ops",Keep the target's resource change history 2557 days by exporting it to its security workspace,CAB 2026-09-18,approved
+"cn=CHG-2039,ou=changes,dc=ciam-ops",Assess the standby against NIST SP 800-53 Rev. 5 and its CIS benchmark with Compliance Manager,CAB 2026-09-18,approved
+"cn=CHG-2041,ou=changes,dc=ciam-ops",Fetch Google Cloud's Compliance Manager frameworks for the standby's organization (prerequisite gcp-frameworks),CAB 2026-09-18,approved
+"cn=CHG-2042,ou=changes,dc=ciam-ops",Record the ITAR technical data the standby will hold (its Assured Workloads folder takes the ITAR package),CAB 2026-09-18,approved
+"cn=CHG-2043,ou=changes,dc=ciam-ops",Build the target's product configuration into its deployment: config profiles and PingFederate's server profile,CAB 2026-09-18,approved
+"cn=CHG-2044,ou=changes,dc=ciam-ops",Record Skyline Air's answer on the target's signing certificate (unknown q-skyline-signing),CAB 2026-09-18,approved
+"cn=CHG-2046,ou=changes,dc=ciam-ops",Take SSP-CIAM-2026's evidence package and record it on the boundary,CAB 2026-09-18,approved
