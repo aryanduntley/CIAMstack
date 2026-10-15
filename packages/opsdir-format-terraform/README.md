@@ -28,7 +28,7 @@ What a renderer asks of items is asked of the data, never of text: `blocks_of(it
 
 ### HCL (`hcl_reader.py`)
 
-`read_hcl(text)` gives a file's top-level items in order: `TfBlock`s (with no origin) and `("#", comment)` lines, blank lines dropped. It reads only what `block()`/`hcl()` write: quoted labels; `key = value`, nested blocks without labels and comments in a body; quoted strings, numbers, `true`/`false`, lists on one line, objects one `key = value` per line; any other expression (a reference, a function call, a conditional, a quoted `${}` template, a `jsonencode(...)` over several lines) kept as its raw `'${...}'` text. `block(*b)` writes a block read back byte for byte, and `read_hcl(hcl_file(f))` gives `f`'s items back; the showcase checks that over every cloud render (`examples/showcase/tests/unit/test_terraform_reader.py`). Anything else is a `ValueError` naming the line (unbalanced brackets included), never a guess. `value_of(text)` reads one value.
+`read_hcl(text)` gives a file's top-level items in order: `TfBlock`s (with no origin) and `("#", comment)` lines, blank lines dropped. It reads only what `block()`/`hcl()` write: quoted labels; `key = value`, nested blocks without labels and comments in a body; quoted strings, numbers, `true`/`false`, lists on one line, objects one `key = value` per line; any other expression (a reference, a function call, a conditional, a quoted `${}` template, a `jsonencode(...)` over several lines, a `for` expression: `[for ...]`, or `{for ...}` on one line) kept as its raw `'${...}'` text. `block(*b)` writes a block read back byte for byte, and `read_hcl(hcl_file(f))` gives `f`'s items back; the showcase checks that over every cloud render (`examples/showcase/tests/unit/test_terraform_reader.py`). Anything else is a `ValueError` naming the line (unbalanced brackets included), never a guess. `value_of(text)` reads one value.
 
 ### Terraform state (`state.py`)
 
@@ -85,7 +85,7 @@ None: no reference schemes, vocabulary, schema, secret patterns, importers or pl
 
 ## Known limits
 
-- **The HCL it reads is the subset it writes**: hand-written Terraform beyond it (heredocs, nested blocks with labels such as `dynamic "x" { }`) is a `ValueError`, and a bracketed `for` expression (`[for a in b : a]`) reads as a one-element list of its raw text. Live Terraform is read from its state, not its configuration.
+- **The HCL it reads is the subset it writes**: hand-written Terraform beyond it (heredocs, nested blocks with labels such as `dynamic "x" { }`) is a `ValueError`. Live Terraform is read from its state, not its configuration.
 - **State format version 4 only.** The built state is what the configuration says plus what the caller assigns: it is no substitute for `terraform plan` against real infrastructure (milestone 7.2).
 - The state builder evaluates the expressions above and nothing else: other functions and conditionals leave their attributes out (named).
 - The translation engine translates only what a target's table maps; everything else stays Terraform beside the templates, with its reason.
@@ -93,7 +93,7 @@ None: no reference schemes, vocabulary, schema, secret patterns, importers or pl
 ## Tests
 
 - `tests/test_hcl.py`: names, expressions, unsupported values refused, `=` aligned like `terraform fmt`, the `hcl` format registered, data values escaped and nested data blocks laid out like `terraform fmt`.
-- `tests/test_hcl_reader.py`: what `block` writes reads back as its data and writes again unchanged; a file as its comments and blocks in order; values; brackets in strings and comments; what it can't read is an error; a file written from its items reads back as them; text is never an item.
+- `tests/test_hcl_reader.py`: what `block` writes reads back as its data and writes again unchanged; a file as its comments and blocks in order; values; a `for` expression (one or two variables, with a condition) as one raw expression, not a list, written back unchanged; brackets in strings and comments; what it can't read is an error; a file written from its items reads back as them; text is never an item.
 - `tests/test_state.py`: resource instances read without their sensitive attributes; what isn't a version 4 state refused.
 - `tests/test_state_builder.py`: configured attributes as the state keeps them; a nested block named like a meta-argument; counts, templates, variables and providers; what the provider assigns from the caller; what can't be evaluated left out and named; root states taking the operator's inputs and another root's outputs through a chain; a root given as `TfFile`s.
 - `tests/test_partition.py`: unstamped items one root unchanged; each resource in its entry's root with its imports, comments, providers and data; cross-root values as inputs and outputs, sensitive on both sides; a providers-only root left out; roots reading each other, one address in two roots and an input named like a variable refused; stamping; anchors; carried files.

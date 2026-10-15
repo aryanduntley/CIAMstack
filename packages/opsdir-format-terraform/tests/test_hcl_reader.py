@@ -44,6 +44,17 @@ def test_values(text, value):
     assert value_of(text) == value
 
 
+@pytest.mark.parametrize("text", ["[for a in var.names : upper(a)]", "[for k, v in var.tags : k if v != \"\"]",
+                                  "[ for a in local.x : a ]"])
+def test_a_for_expression_is_one_expression_not_a_list(text):
+    body = (("names", ref(text)), ("formats", ("${format(\"%s\", x)}",)))
+    assert value_of(text) == "${" + text + "}"
+    written_block = block("locals", [], body)
+    (read,) = read_hcl(written_block)
+    assert read == TfBlock("locals", (), body)
+    assert block(read.kind, read.labels, read.body) == written_block
+
+
 def test_brackets_in_strings_and_comments_dont_count():
     text = '# a comment ( with { brackets\nlocals {\n  a = "]}"\n  # also ) here\n}\n'
     assert read_hcl(text) == (("#", "a comment ( with { brackets"),

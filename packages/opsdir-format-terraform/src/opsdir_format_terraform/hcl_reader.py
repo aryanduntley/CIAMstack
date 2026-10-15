@@ -6,8 +6,8 @@ What it reads is what block() and hcl() write:
   - in a body: `key = value`, nested blocks `key { ... }` (no labels) and `# comment` lines;
   - values as hcl() writes them: quoted strings (\\ and \" escaped), numbers, true / false, lists on one line,
     objects one `key = value` per line; any other expression (a reference, a function call, a conditional, a quoted
-    template interpolating ${...}, jsonencode(...) over several lines) is kept as its text, '${...}', the way block()
-    takes a raw expression.
+    template interpolating ${...}, jsonencode(...) over several lines, a for expression: [for ...], or {for ...} on one
+    line) is kept as its text, '${...}', the way block() takes a raw expression.
 So block(*tf_block) writes a block read from its output back as it was. What the reader can't place is a ValueError
 naming the line, never a guess.
 """
@@ -21,6 +21,7 @@ _TOKENS = re.compile(r'"(?:[^"\\]|\\.)*"|#[^\n]*|[\[\](){},]|\n', re.S)
 _DEPTH = {"(": 1, "[": 1, "{": 1, ")": -1, "]": -1, "}": -1}
 _STRING = re.compile(r'"(?:[^"\\]|\\.)*"', re.S)
 _NUMBER = re.compile(r"-?\d+(\.\d+)?([eE][-+]?\d+)?")
+_FOR = re.compile(r"\s*for\s")                      # a for expression's start, after its opening bracket
 _HEADER = re.compile(r'([A-Za-z_][\w-]*)((?:[ \t]+"(?:[^"\\]|\\.)*")*)[ \t]*\{\n(?:(.*)\n)?\}', re.S)
 _KEY = r'("(?:[^"\\]|\\.)*"|[^\s="{}]+)'
 _ATTRIBUTE = re.compile(_KEY + r"[ \t]*=[ \t]*(.*)", re.S)
@@ -52,7 +53,8 @@ def _fail(where, what):
 def value_of(text):
     """The model value of an HCL expression as hcl() writes it: str (a literal), int, float, bool, a tuple (a list),
     a dict (an object: keys as written) or '${<expression>}' (anything else, kept as its text; a quoted template with
-    ${...} interpolation too, quotes included, since a str starting with '${' and ending with '}' is raw to hcl())."""
+    ${...} interpolation too, quotes included, since a str starting with '${' and ending with '}' is raw to hcl(); a
+    for expression too, brackets included: '[for a in b : a]' is one expression, not a list)."""
     s = text.strip()
     if _STRING.fullmatch(s) and "${" not in s:
         return _unquote(s)
@@ -60,7 +62,7 @@ def value_of(text):
         return s == "true"
     if _NUMBER.fullmatch(s):
         return float(s) if any(c in s for c in ".eE") else int(s)
-    if s.startswith("[") and s.endswith("]") and "\n" not in s:
+    if s.startswith("[") and s.endswith("]") and "\n" not in s and not _FOR.match(s, 1):
         inner = s[1:-1]
         return tuple(value_of(piece) for _, piece in _cut(inner, ",")) if inner.strip() else ()
     if s.startswith("{\n") and s.endswith("}"):
