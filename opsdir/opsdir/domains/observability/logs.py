@@ -9,7 +9,7 @@ must keep them at least as long as the route requires.
 from ...core.directory import children, one, rdn_value, values
 from ...core.environment import bound_nowhere, one_role
 from ...core.changeset import set_values
-from ...core.findings import Fix, findings, merge_findings, responsible
+from ...core.findings import Fix, each_checked, findings, responsible
 from .naming import LOG_ROUTES
 
 LOG_HEADERS = ("log route", "logs", "from", "kept by", "keep (days)", "legal hold")
@@ -73,9 +73,5 @@ def check_logs(ctx):
     records no retention, a source already short of the obligation, and logs under legal hold the source must keep
     are actions."""
     routes = log_routes(ctx.d)
-    if not routes:
-        return findings()
-    parts = merge_findings([_route(ctx, r) for r in routes])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"Log routes ({len(routes)}) are kept long enough in {ctx.dst.label}."))
+    return each_checked(routes, lambda r: _route(ctx, r),
+                        f"Log routes ({len(routes)}) are kept long enough in {ctx.dst.label}.")

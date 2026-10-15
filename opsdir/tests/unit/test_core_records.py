@@ -3,7 +3,7 @@ import pytest
 
 from opsdir.connectors.plan import render_summary
 from opsdir.core.contract import Adapter
-from opsdir.core.findings import Findings, findings, merge_findings
+from opsdir.core.findings import Findings, all_clear, each_checked, findings, merge_findings
 from opsdir.core.naming import SUFFIX, branch
 from opsdir.core.network import covers, is_private
 
@@ -14,6 +14,17 @@ def test_findings_merge_concatenates_each_column_in_order():
     assert merge_findings([a, b]) == Findings((("A", "a", "o"),), (("B", "b", "o", None),), ("fine", "also"),
                                               (("r",),), ())
     assert merge_findings([]) == findings()
+
+
+def test_a_check_says_all_is_well_only_when_nothing_is_a_blocker_or_an_action():
+    fine, blocked = findings(ok=["a holds"]), findings(blockers=[("A", "b broken", "ops")])
+    assert all_clear([fine, findings()], "all hold") == findings(ok=["a holds", "all hold"])
+    assert all_clear([fine, blocked], "all hold") == merge_findings([fine, blocked])
+    assert all_clear([findings(actions=[("A", "do c", "ops", None)])], "all hold").ok == ()
+    judge = lambda n: blocked if n < 0 else fine                                     # noqa: E731
+    assert each_checked((), judge, "all hold") == findings()                         # nothing to check: nothing said
+    assert each_checked((1, 2), judge, "2 hold") == findings(ok=["a holds", "a holds", "2 hold"])
+    assert each_checked((1, -1), judge, "2 hold").blockers == blocked.blockers
 
 
 @pytest.mark.parametrize("cidrs, addr, expected", [

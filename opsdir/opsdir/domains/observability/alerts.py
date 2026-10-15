@@ -10,7 +10,7 @@ binds): alerts that go nowhere and checks that check nothing are what a move bre
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
 from ...core.environment import bound_nowhere
-from ...core.findings import findings, merge_findings, responsible
+from ...core.findings import all_clear, findings, responsible
 from .naming import ALERT_RULES, CANARIES
 
 ALERT_HEADERS = ("alert rule", "signal", "on", "fires when", "severity", "delivered by", "runbooks", "owner")
@@ -89,8 +89,6 @@ def check_alerts(ctx):
     rules, checks = alert_rules(ctx.d), canaries(ctx.d)
     if not rules and not checks:
         return findings()
-    parts = merge_findings([*(_rule(ctx, r) for r in rules), *(_canary(ctx, c) for c in checks)])
-    if parts.blockers or parts.actions:
-        return parts
-    return parts._replace(ok=(*parts.ok, f"Alert rules ({len(rules)}) and canaries ({len(checks)}) are delivered and "
-                                         f"exercised in {ctx.dst.label}."))
+    return all_clear([*(_rule(ctx, r) for r in rules), *(_canary(ctx, c) for c in checks)],
+                     f"Alert rules ({len(rules)}) and canaries ({len(checks)}) are delivered and exercised in "
+                     f"{ctx.dst.label}.")
