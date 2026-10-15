@@ -7,15 +7,20 @@ as a SAVE operation of a resource type: the collection an object is created in (
 path, a key pair's kind for its import (/keyPairs/signing: fileData and password as the import takes them);
 consecutive requests of one type are one operation. metadata.pfVersion is the version the environment runs, as four
 numbers (13.1.3 -> 13.1.3.0): a bulk document is version-specific. The bulk importer (importer.py) reads it back.
+What the requests' check finds (opsdir_adapter_pingfederate.diagnostics: the spec of the version, held settings from
+other versions) is pingfederate/bulk-config-problems.json, outside the folder a server profile takes whole, so
+neither Ping's document nor the profile holds anything of opsdir's.
 """
 import json
 from itertools import groupby
 
 from opsdir.core.environment import UNBOUND
 from .admin_api import request_type, requests
+from .diagnostics import problems
 from .versions import pingfederate_version
 
 OUTPUT = "pingfederate/bulk-config/data.json"
+PROBLEMS = "pingfederate/bulk-config-problems.json"      # outside bulk-config/: render.PROFILE takes it whole
 _IMPORT = "/import"
 
 
@@ -44,6 +49,12 @@ def bulk_document(m):
 
 
 def bulk_files(m):
-    """{pingfederate/bulk-config/data.json: text}, or {} when the record holds nothing for PingFederate."""
+    """{pingfederate/bulk-config/data.json, pingfederate/bulk-config-problems.json: text} (the problems of its
+    requests: diagnostics.problems),
+    or {} when the record holds nothing for PingFederate."""
     doc = bulk_document(m)
-    return {OUTPUT: json.dumps(doc, indent=2) + "\n"} if doc else {}
+    if not doc:
+        return {}
+    version, spec, found = problems(m, requests(m))
+    return {OUTPUT: json.dumps(doc, indent=2) + "\n",
+            PROBLEMS: json.dumps({"pingFederate": version, "adminApi": spec, "problems": list(found)}, indent=2) + "\n"}

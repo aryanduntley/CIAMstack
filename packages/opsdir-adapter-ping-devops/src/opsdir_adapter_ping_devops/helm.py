@@ -22,7 +22,7 @@ from opsdir.domains.compute.workloads import profile_repo, workload_binding
 from opsdir_adapter_kubernetes.kits import chart_image, pod_labels_of, replicas_of, resources_of, storage_of, \
     workload_marks
 from opsdir_adapter_kubernetes.names import DERIVED
-from opsdir_adapter_kubernetes.render import service_account_of
+from opsdir_adapter_kubernetes.render import MOUNTS, class_mount, mounted_classes, service_account_of
 from .discovery import recorded_query
 from .log_sidecars import picked, product_logs, shared_logs
 from .routes import gateway_fronted
@@ -86,22 +86,37 @@ def profile_envs(m, w):
     return {} if repo is None else {k: v for k, v in zip((PROFILE_URL, PROFILE_PATH, PROFILE_BRANCH), repo) if v}
 
 
+def secret_mounts(m, services, w):
+    """The values mounting a workload's SecretProviderClasses in this render (the kubernetes adapter's csi:
+    mounted_classes), so the CSI driver keeps its Secrets: one class through the chart's secretProviderClass (the
+    class the kubernetes adapter renders, create false), several as the product's own csi volumes and mounts, each at
+    /run/secrets/<class>; {} for none."""
+    classes = mounted_classes(m, services, w)
+    if len(classes) == 1:
+        return {"secretProviderClass": {"enabled": True, "create": False, "name": classes[0],
+                                        "mountPath": f"{MOUNTS}/{classes[0]}"}}
+    mounts = [class_mount(c) for c in classes]
+    return {"volumes": [v for v, _ in mounts], "volumeMounts": [mt for _, mt in mounts]} if mounts else {}
+
+
 def product_values(m, services, p, product):
     """One product's values: enabled, and when a workload runs it its image, container (replicas, resources, Secret
-    environment variables), service account, pod labels and storage, Secret files, ingress, log sidecars, the server
-    profile it fetches (profile_envs)."""
+    environment variables), service account, pod labels and storage, Secret files, its SecretProviderClasses' mounts
+    (secret_mounts), ingress, log sidecars, the server profile it fetches (profile_envs)."""
     w = workload_of(p, product.name)
     if w is None:
         return {"enabled": False}
     repository, tag = chart_image(image_of(m, p, product.name))
     container, files, ingress, envs = _container(m, w), _secret_volumes(w), _ingress(m, w), profile_envs(m, w)
     _, found, stateful = _logs(m, p, product)
+    logs, secrets = product_logs(found, stateful), secret_mounts(m, services, w)
+    mounts = [*logs.get("volumeMounts", ()), *secrets.get("volumeMounts", ())]      # the sidecars' and the classes'
     return {"enabled": True, "image": {"repositoryFqn": repository, "tag": tag},
             **({"container": container} if container else {}),
             "rbac": {"serviceAccountName": service_account_of(w)}, "workload": _workload(m, services, w, found),
             **({"envs": envs} if envs else {}),
             **({"secretVolumes": files} if files else {}), **({"ingress": ingress} if ingress else {}),
-            **product_logs(found, stateful)}
+            **logs, **secrets, **({"volumeMounts": mounts} if mounts else {})}
 
 
 def chart_values(m, services, p):

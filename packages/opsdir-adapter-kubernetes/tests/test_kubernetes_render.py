@@ -11,13 +11,15 @@ import yaml
 
 from opsdir.connectors.registry import services
 from opsdir.core.contract import K8sIdentity, Listener
-from opsdir.core.directory import one
-from opsdir.core.environment import env_model
+from opsdir.core.directory import get, make_entry, one
+from opsdir.core.environment import StackComponent, env_model
 from opsdir.core.interchange.ldif import parse
+from opsdir.core.notes import note_comment
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir_adapter_hashicorp_vault.adapter import ADAPTER as VAULT
 from opsdir_adapter_kubernetes.adapter import ADAPTER
-from opsdir_adapter_kubernetes.render import applies, k8s_name, render
+from opsdir_adapter_kubernetes.render import (SYNC_IMAGE, applies, k8s_name, mounted_classes, notes, render,
+                                              sync_deployment)
 import mini_estate
 from mini_estate import FAKE
 from support import REGISTRY, build_directory
@@ -149,6 +151,57 @@ def test_csi_provider_classes_when_asked():
                                              "data": [{"objectName": "am-passwords-admin", "key": "admin"}]}]
     assert yaml.safe_load(spc["spec"]["parameters"]["objects"]) == [
         {"objectName": "am-passwords-admin", "secretPath": "secret/data/ciam/am/admin", "secretKey": "value"}]
+
+
+CSI_CHOSEN = {"kubernetes": ("csi",)}
+
+
+def test_under_csi_a_sync_pod_mounts_the_classes_of_workloads_no_kit_mounts():
+    files = render(model(), services(INSTALLED, CSI_CHOSEN), ("csi",))
+    (sync,) = _docs(files, "kubernetes/identity/secretsync.yaml")
+    assert sync == sync_deployment("identity", "am", ("am-vault-secret",), {"cloud.example.test/use": "true"})
+    pod = sync["spec"]["template"]["spec"]
+    assert (pod["serviceAccountName"], pod["automountServiceAccountToken"], pod["containers"][0]["image"]) == \
+        ("am", False, SYNC_IMAGE)
+    assert pod["containers"][0]["volumeMounts"] == [
+        {"name": "am-vault-secret", "mountPath": "/run/secrets/am-vault-secret", "readOnly": True}]
+    assert "secretsync.yaml" in _docs(files, "kubernetes/identity/kustomization.yaml")[0]["resources"]
+    m = model()
+    assert mounted_classes(m, services(INSTALLED, CSI_CHOSEN), get(m.d, workload_dn("am"))) == ("am-vault-secret",)
+    assert mounted_classes(m, services(INSTALLED), get(m.d, workload_dn("am"))) == ()     # csi not chosen
+
+
+def test_a_kit_that_mounts_the_classes_needs_no_sync_pod():
+    kit = FAKE._replace(name="kit", kind="platform", mounts_secrets=lambda m, w: True)
+    m = model()
+    m = m._replace(stack=(*m.stack, StackComponent("deployment", "kit", None, None)))   # the stack declares the kit
+    files = render(m, services((*INSTALLED, kit), CSI_CHOSEN), ("csi",))
+    assert "kubernetes/identity/secretsync.yaml" not in files
+    assert "kubernetes/identity/secretproviderclasses.yaml" in files
+
+
+def test_sync_pods_name_the_check_only_the_cloud_can_make_until_the_environment_records_it():
+    m = model()
+    (n,) = notes(m, services(INSTALLED, CSI_CHOSEN))
+    assert (n.severity, n.subject, n.entry) == ("action", "secret sync pods in namespace `identity`", m.env.dn)
+    assert "Record ciamConfigurationMet: csi-provider-identity on the environment" in n.how[-1]
+    assert f"# {note_comment(n)}" in render(m, services(INSTALLED, CSI_CHOSEN), ("csi",))[
+        "kubernetes/identity/secretsync.yaml"]
+    met = m._replace(env=make_entry(m.env.dn, m.env.classes,
+                                    {**m.env.attrs, "ciamConfigurationMet": ("csi-provider-identity",)}))
+    assert notes(met, services(INSTALLED, CSI_CHOSEN)) == ()
+    assert notes(m, services(INSTALLED)) == ()                                        # csi not chosen
+
+
+def test_a_secret_filled_from_two_stores_under_csi_is_named():
+    records = RECORDS.replace("ciamRefUri: k8s-secret://identity/am-passwords/keystore",
+                              "ciamRefUri: vault://kv2/ciam/am/keystore")
+    m = env_model(build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + records))), "alpha/prod")
+    split = [n for n in notes(m, services(INSTALLED, CSI_CHOSEN)) if n.subject.startswith("Secret ")]
+    assert [n.subject for n in split] == ["Secret `am-passwords` in namespace `identity`"]
+    assert "2 secret stores (vault:secret, vault:kv2)" in split[0].text
+    assert f"# {note_comment(split[0])}" in render(m, services(INSTALLED, CSI_CHOSEN), ("csi",))[
+        "kubernetes/identity/secretproviderclasses.yaml"]
 
 
 def test_names_kubernetes_accepts():

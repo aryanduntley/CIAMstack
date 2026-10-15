@@ -29,6 +29,7 @@ from opsdir.core.directory import one
 from opsdir.domains.governance.collection import collection_sources
 from opsdir_format_terraform.hcl import Expr, NestedBlock, data_block, tf_name
 from .admin_api import requests
+from .diagnostics import problems
 from .versions import pingfederate_version
 
 OUTPUT = "pingfederate/terraform/"
@@ -251,8 +252,9 @@ def _files(m, reqs, release, product):
     variables = tuple(dict.fromkeys(v for (_, _, _, _, used), _ in built for v in used))
     host = _admin_host(m)
     key_pairs = any(t in KEY_PAIRS for (t, *_), _ in built)
-    head = "".join(f"# Not managed here (no {SOURCE} {release} resource): {k}; apply its admin-api request\n"
-                   for k in unmanaged)
+    head = "".join((*(f"# Problem: {p}\n" for p in problems(m, reqs)[2]),
+                    *(f"# Not managed here (no {SOURCE} {release} resource): {k}; apply its admin-api request\n"
+                      for k in unmanaged)))
     return {
         f"{OUTPUT}versions.tf": data_block("terraform", [], [("required_providers", NestedBlock((("pingfederate", {
             "source": SOURCE, "version": release}),)))]) + "\n\n" + data_block("provider", ["pingfederate"], [

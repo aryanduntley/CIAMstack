@@ -1473,6 +1473,7 @@ pingfedConfig: {"active":true,"contactInfo":{"company":"customer-portal-team"}
  dProfiles":["SP_INITIATED_SSO"],"protocol":"SAML20","ssoServiceEndpoints":[{"
  binding":"POST","isDefault":true,"url":"https://portal.example-aero.test/saml
  /acs"}]},"type":"SP"}
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=customer-portal-egress,ou=external-allowlists,dc=ciam-ops
 objectClass: top
@@ -2240,6 +2241,7 @@ pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
  e":"LDAP","uniqueUserIdFilter":"(mail=${mail})"}},"protocol":"SAML20"},"name"
  :"harbor-mro-federation","type":"IDP"}
 pingfedConnectionId: harbor-mro-federation
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -2721,6 +2723,7 @@ pingfedConfig: {"clientAuth":{"type":"NONE"},"clientId":"mobile-ops","defaultA
  p":{"id":"default-oidc"}},"redirectUris":["https://mobile.example-aero.test/o
  auth2/callback"],"requireProofKeyForCodeExchange":true,"restrictScopes":true,
  "restrictedScopes":["openid","email","offline_access"]}
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
  s
 pingfedUses: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
@@ -3525,6 +3528,7 @@ pingfedConfig: {"clientAuth":{"secret":null,"type":"SECRET"},"clientId":"repor
  ts-api","defaultAccessTokenManagerRef":{"id":"defaultjwt"},"enabled":true,"gr
  antTypes":["CLIENT_CREDENTIALS"],"name":"Reporting API","restrictScopes":true
  ,"restrictedScopes":["reports.read"]}
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
  s
 pingfedWithheld: /clientAuth/secret
@@ -3661,6 +3665,7 @@ pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
  :"ASSERTION"},"value":"sn"}},"type":"LDAP","uniqueUserIdFilter":"(mail=${mail
  })"}},"protocol":"SAML20"},"name":"skyline-air-federation","type":"IDP"}
 pingfedConnectionId: skyline-air-federation
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
 objectClass: top
@@ -3907,6 +3912,7 @@ pingfedConfig: {"active":true,"contactInfo":{"company":"supplier-portal-team"}
  TED_SSO"],"protocol":"SAML20","ssoServiceEndpoints":[{"binding":"POST","isDef
  ault":true,"url":"https://suppliers.example-aero.test/saml/acs"}]},"type":"SP
  "}
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=supplier-portal-egress-sg,ou=external-allowlists,dc=ciam-ops
 objectClass: top
@@ -3996,6 +4002,7 @@ pingfedConfig: {"clientAuth":{"type":"NONE"},"clientId":"tech-pubs-web","defau
  THORIZATION_CODE","REFRESH_TOKEN"],"name":"tech-pubs","redirectUris":["https:
  //techpubs.example-aero.test/oidc/callback"],"requireProofKeyForCodeExchange"
  :true,"restrictScopes":true,"restrictedScopes":["openid","profile","email"]}
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
  s
 xTokenLifetimeMinutes: 60
@@ -4768,6 +4775,7 @@ pingfedConfig: {"hostnames":["dc1.corp.example-aero.test:636","dc2.corp.exampl
  ctions":2,"name":"Corporate directory","password":null,"useSsl":true,"userDN"
  :"CN=svc-pingfed,OU=Service Accounts,DC=corp,DC=example-aero,DC=test"}
 pingfedCredentialRole: pf-corp-ad-bind-password
+pingfedSourceVersion: 12.1.4.0
 pingfedStoreType: LDAP
 pingfedWithheld: /password
 
@@ -4841,6 +4849,7 @@ objectClass: ciamObject
 objectClass: pingfedAuthPolicySet
 cn: default
 pingfedConfig: {"failIfNoSelection":false,"trackedHttpParameters":[]}
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -4849,6 +4858,7 @@ objectClass: pingfedPolicyContract
 cn: default-apc
 pingfedConfig: {"coreAttributes":[{"name":"subject"}],"extendedAttributes":[{"
  name":"mail"}],"name":"Default"}
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -4860,6 +4870,7 @@ pingfedConfig: {"accessTokenManagerRef":{"id":"defaultjwt"},"attributeContract
  ,"attributeMapping":{"attributeContractFulfillment":{"email":{"source":{"type
  ":"TOKEN"},"value":"mail"},"sub":{"source":{"type":"TOKEN"},"value":"sub"}}},
  "idTokenLifetime":5,"name":"Default"}
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
  s
 
@@ -4878,6 +4889,7 @@ pingfedConfig: {"attributeContract":{"extendedAttributes":[{"name":"sub"},{"na
 pingfedPluginKind: access-token-manager
 pingfedPluginType: com.pingidentity.pf.access.token.management.plugins.JwtBear
  erAccessTokenManagementPlugin
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
 
 dn: cn=e0930981c2c28daf,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
@@ -5010,6 +5022,7 @@ pingfedConfig: {"connectionUrl":"jdbc:postgresql:///pf","driverClass":"org.pos
  f_grants"}
 pingfedCredentialRole: pf-grants-db-password
 pingfedPort: 5432
+pingfedSourceVersion: 12.1.4.0
 pingfedStoreType: JDBC
 pingfedTargetRole: pf-grants-db
 pingfedWithheld: /password
@@ -5080,6 +5093,7 @@ pingfedConfig: {"attributeContract":{"coreAttributes":[{"name":"username","pse
 pingfedPluginKind: idp-adapter
 pingfedPluginType: com.pingidentity.adapters.htmlform.idp.HtmlFormIdpAuthnAdap
  ter
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=ciam-
  ops
 
@@ -5162,6 +5176,7 @@ pingfedScope: email
 pingfedScope: profile
 pingfedScope: offline_access
 pingfedScope: reports.read
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
 objectClass: top
@@ -5197,6 +5212,7 @@ pingfedConfig: {"attributeContract":{"coreAttributes":[{"name":"DN"},{"name":"
 pingfedPluginKind: validator
 pingfedPluginType: org.sourceid.saml20.domain.LDAPUsernamePasswordCredentialVa
  lidator
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
 
 dn: cn=PublicIPAddresses,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
@@ -5228,6 +5244,7 @@ pingfedConfig: {"configuration":{"fields":[{"name":"Site Key","value":"6LcEXAM
 pingfedCredentialRole: pf-captcha-secret
 pingfedPluginKind: captcha-provider
 pingfedPluginType: com.pingidentity.captcha.recaptchav3.ReCaptchaV3Plugin
+pingfedSourceVersion: 12.1.4.0
 pingfedWithheld: /configuration/fields/1/value
 
 dn: cn=reconcile-hr,ou=schedules,ou=pingidm,dc=ciam-ops
@@ -5262,6 +5279,7 @@ pingfedConfig: {"configuration":{"fields":[{"name":"From Address","value":"nor
 pingfedCredentialRole: pf-smtp-password
 pingfedPluginKind: notification-publisher
 pingfedPluginType: com.pingidentity.email.SmtpNotificationPlugin
+pingfedSourceVersion: 12.1.4.0
 pingfedWithheld: /configuration/fields/5/value
 
 dn: cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
@@ -5363,6 +5381,7 @@ pingfedConfig: {"hostnames":["ldap.id.example-aero.test:1636","ds-1.aws.intern
  erDN":"uid=pf-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test"}
 pingfedConsumer: cn=pf-ds-svc,ou=consumers,dc=ciam-ops
 pingfedCredentialRole: pf-ds-bind-password
+pingfedSourceVersion: 12.1.4.0
 pingfedStoreType: LDAP
 pingfedWithheld: /password
 
@@ -5796,6 +5815,7 @@ pingfedPolicyTree: {"action":{"authenticationSource":{"sourceRef":{"id":"htmlf
  d":"default-apc"},"context":"Success","type":"APC_MAPPING"}},{"action":{"cont
  ext":"Fail","type":"DONE"}}]}
 pingfedPosition: 0
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
 pingfedUses: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops
 
@@ -6624,6 +6644,7 @@ pingfedConfig: {"contactInfo":{"company":"Example Aero","email":"ciam-platform
  st","saml2EntityId":"https://sso.example-aero.test/idp"},"rolesAndProtocols":
  {"oauthRole":{"enableOauth":true,"enableOpenIdConnect":true}}}
 pingfedResourceType: /serverSettings
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=sn,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top

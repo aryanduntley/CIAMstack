@@ -255,8 +255,20 @@ def _deployable_config(m):
     return deployable_config(m.d, m)
 
 
-def services(installed=ADAPTERS):
-    """What connectors provide to adapters while rendering, resolved against the installed adapters."""
+def chosen_for(targets, name):
+    """The render targets chosen for an adapter in a render ({adapter name: targets}), () when none are."""
+    return tuple(targets.get(name, ()))
+
+
+def mounts_secrets_of(m, w, installed=ADAPTERS):
+    """Whether a deployment kit rendering environment m (its declared stack's) mounts a workload's
+    SecretProviderClasses in its pods (Adapter.mounts_secrets)."""
+    return any(a.mounts_secrets(m, w) for a in declared_adapters(m, installed) if a.mounts_secrets is not None)
+
+
+def services(installed=ADAPTERS, targets=None):
+    """What connectors provide to adapters while rendering, resolved against the installed adapters; targets: the
+    render targets chosen in this render ({adapter name: targets}; none outside a render)."""
     return Services(secret_command=partial(secret_command, installed=installed),
                     endpoints=tuple(e for a in installed for e in a.endpoints),
                     listeners=partial(listeners_of, installed=installed),
@@ -268,7 +280,9 @@ def services(installed=ADAPTERS):
                     deployable_config=_deployable_config,
                     signals=partial(signals_of, installed=installed),
                     logs=partial(logs_of, installed=installed),
-                    host_files=partial(host_files_of, installed=installed))
+                    host_files=partial(host_files_of, installed=installed),
+                    render_targets=partial(chosen_for, dict(targets or {})),
+                    mounts_secrets=partial(mounts_secrets_of, installed=installed))
 
 
 def product_of(adapter):

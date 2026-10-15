@@ -337,9 +337,10 @@ ATTRIBUTES = (
                  "A configuration an environment has in place: for its authorization (an Assured Workloads workload, "
                  "US data location, US-person support, IL5 isolation), for its threat detection watching identity "
                  "(the identity and workload risk licenses, the deploying identity's rights to write sign-in policies "
-                 "and export the risk logs), or for its data discovery scanning through a data catalog account (the "
+                 "and export the risk logs), for its data discovery scanning through a data catalog account (the "
                  "deploying identity's rights in the catalog, the catalog's read access to the databases it scans, "
-                 "its custom scan rule set for the organization's own data types)"),
+                 "its custom scan rule set for the organization's own data types), or for Secrets synced into its "
+                 "clusters (its cloud's CSI provider reading the secret store as each pod's identity, checked there)"),
     AttributeDef(588, 'ciamSspRef', 'string', 'meta', True,
                  "The system security plan a system boundary is documented in: its id and version"),
     AttributeDef(589, 'ciamResponsibility', enum_type(RESPONSIBILITY), 'meta', True,

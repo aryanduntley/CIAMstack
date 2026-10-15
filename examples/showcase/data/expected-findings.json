@@ -1163,6 +1163,13 @@
       "cleared_by": null
     },
     {
+      "id": "A138",
+      "area": "Upgrade",
+      "match": "`pf-admin`, `pf-engine` in target/prod: a pushed authorization request's request_uri can be used again",
+      "planted": "PingFederate 12.1 -> 13.1 lets a PAR request_uri be reused until the PAR Reference Timeout; the authorization server's settings leave PAR on (milestone 5.11)",
+      "cleared_by": null
+    },
+    {
       "id": "A122",
       "area": "Identity protection",
       "match": "target/prod's threat detection watching identity (defender): Microsoft Entra ID P2",

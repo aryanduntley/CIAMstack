@@ -346,3 +346,83 @@ def test_the_planner_names_a_profile_variable_the_record_doesnt_deliver():
     mapped = _with(workload_extra="ciamWorkloadSecret: pf-admin/OPSDIR_PF_GRANTS_DB_PASSWORD <- "
                                   "pf-grants-db-password\n")
     assert unmapped_variables(placements(mapped)[0], files) == ()
+
+
+# ------------------------------------------------------------------ CSI secret mounts (5.12)
+from opsdir.core.environment import StackComponent                       # noqa: E402
+from opsdir_adapter_hashicorp_vault.adapter import ADAPTER as VAULT       # noqa: E402
+from opsdir_adapter_kubernetes.render import render as kubernetes_render  # noqa: E402
+
+CSI = {"kubernetes": ("csi",)}
+WITH_VAULT = (*INSTALLED, VAULT)
+VAULT_STORE = _binding("vault", "ciamSecretStore", "secret-store-vault",
+                       "ciamRefScheme: vault\nciamStoreEndpoint: https://vault.example.test:8200\n"
+                       "ciamStoreAuthRole: ciam\n")
+
+
+def _secrets(admin_mount="secret"):
+    return (VAULT_STORE,
+            _binding("pf-license", "ciamSecretRef", "pf-license", "ciamRefUri: vault://secret/ciam/pf/license\n"),
+            _binding("pf-admin-password", "ciamSecretRef", "pf-admin-password",
+                     f"ciamRefUri: vault://{admin_mount}/ciam/pf/admin\n"))
+
+
+def _declared(m):
+    """The environment's stack names the kits (ping-devops mounts what it deploys; Services.mounts_secrets)."""
+    return m._replace(stack=(*m.stack, StackComponent("kubernetes", "kubernetes", None, None),
+                             StackComponent("deployment", "ping-devops", None, None)))
+
+
+def _csi_values(m):
+    return yaml.safe_load(render(m, services(WITH_VAULT, CSI))[VALUES])
+
+
+def test_under_csi_each_product_mounts_its_class_through_the_charts_own_block():
+    values = _csi_values(_declared(model(*_secrets())))
+    assert values["pingfederate-admin"]["secretProviderClass"] == {
+        "enabled": True, "create": False, "name": "pf-admin-vault-secret",
+        "mountPath": "/run/secrets/pf-admin-vault-secret"}
+    assert values["pingfederate-engine"]["secretProviderClass"]["name"] == "pf-engine-vault-secret"
+    assert "secretProviderClass" not in yaml.safe_load(render(model(*_secrets()), services(WITH_VAULT))[VALUES])[
+        "pingfederate-admin"]                                                        # csi not chosen: nothing
+
+
+def test_several_stores_mount_as_the_products_own_csi_volumes_beside_the_sidecars():
+    from opsdir.domains.observability.naming import LOG_ROUTES
+    m = _declared(model(*_secrets("kv2"),
+                        f"dn: {LOG_ROUTES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: log-routes\n",
+                        _route("audit-logs", ("audit",), ("pf-engine", "pf-admin"))))
+    admin = _csi_values(m)["pingfederate-admin"]
+    assert "secretProviderClass" not in admin
+    assert sorted(v["name"] for v in admin["volumes"]) == ["pf-admin-vault-kv2", "pf-admin-vault-secret"]
+    assert {"name": "pf-admin-vault-kv2", "mountPath": "/run/secrets/pf-admin-vault-kv2", "readOnly": True} in \
+        admin["volumeMounts"]
+
+
+def test_the_workloads_it_mounts_get_no_sync_pod():
+    m = _declared(model(*_secrets()))
+    files = kubernetes_render(m, services(WITH_VAULT, CSI), ("csi",))
+    assert "kubernetes/identity/secretproviderclasses.yaml" in files
+    assert "kubernetes/identity/secretsync.yaml" not in files
+
+
+@pytest.mark.kubernetes
+@pytest.mark.skipif(not (ROOT / "tools" / "bin" / "helm").exists() or not (CHART.parent / ".complete").exists(),
+                    reason="no tools (opsdir/scripts/fetch-tools.sh) or chart (fetch-ping-devops.sh)")
+@pytest.mark.parametrize("admin_mount", ("secret", "kv2"))
+def test_the_chart_mounts_the_classes_in_the_pingfederate_pods(tmp_path, admin_mount):
+    values = tmp_path / "values.yaml"
+    values.write_text(render(_declared(model(*_secrets(admin_mount))), services(WITH_VAULT, CSI))[VALUES])
+    done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-kubernetes.sh"), "--helm", str(CHART),
+                           str(values)], capture_output=True, text=True)
+    assert done.returncode == 0, done.stdout + done.stderr
+    out = subprocess.run([str(ROOT / "tools" / "bin" / "helm"), "template", "pingfederate", str(CHART), "-f",
+                          str(values)], capture_output=True, text=True, check=True).stdout
+    pods = {o["metadata"]["name"]: o["spec"]["template"]["spec"] for o in yaml.safe_load_all(out)
+            if o and o["kind"] in ("Deployment", "StatefulSet")}
+    admin = pods["pingfederate-pingfederate-admin"]
+    classes = sorted(v["csi"]["volumeAttributes"]["secretProviderClass"] for v in admin["volumes"] if "csi" in v)
+    assert classes == sorted({"secret": ["pf-admin-vault-secret"],
+                              "kv2": ["pf-admin-vault-kv2", "pf-admin-vault-secret"]}[admin_mount])
+    mounted = {mt["mountPath"] for mt in admin["containers"][0]["volumeMounts"]}
+    assert {f"/run/secrets/{c}" for c in classes} <= mounted

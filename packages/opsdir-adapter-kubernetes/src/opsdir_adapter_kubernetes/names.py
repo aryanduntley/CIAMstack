@@ -1,6 +1,8 @@
 """Kubernetes object names from the record's words. Pure."""
 import re
 
+NAME = "kubernetes"           # this adapter's name: what Services.render_targets knows its chosen targets by
+
 # The label marking what opsdir renders (Kubernetes' recommended managed-by label): read back, it is the record's own
 # output, derived from what the record holds, not another fact about the cluster.
 MANAGED_BY = ("app.kubernetes.io/managed-by", "opsdir")

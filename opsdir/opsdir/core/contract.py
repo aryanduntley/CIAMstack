@@ -163,12 +163,16 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # reference with at run time (its scheme owner's), or None (it runs the scheme's resolver command instead);
 # deployable_config(m): ((target role, deploy path, repo path, text), ...) of the captured files m receives that say
 # where they go on its servers; signals(m): the Signals the adapters rendering environment m declare; logs(m): the
-# LogSources they declare; host_files(m): the HostFiles they render for m's servers
+# LogSources they declare; host_files(m): the HostFiles they render for m's servers; render_targets(adapter name): the
+# render targets chosen for that adapter in this render (() outside a render, or when it declares none);
+# mounts_secrets(m, workload): whether a deployment kit rendering m mounts the workload's SecretProviderClasses in its
+# pods (Adapter.mounts_secrets)
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
                                    ("deployable_config", Callable), ("signals", Callable), ("logs", Callable),
-                                   ("host_files", Callable)])
+                                   ("host_files", Callable), ("render_targets", Callable),
+                                   ("mounts_secrets", Callable)])
 
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
@@ -376,11 +380,13 @@ Adapter = namedtuple("Adapter", (
                             # or None (its NOTE comments are then collected as notes to review)
     "renders_synthetic_checks",     # whether it renders an environment's synthetic checks (canaries): where no
                                     # adapter rendering an environment does, its canaries are render notes of their own
-    "roles_used"),          # (EnvModel) -> (RoleUse, ...): the binding roles its products' entries use in an
+    "roles_used",           # (EnvModel) -> (RoleUse, ...): the binding roles its products' entries use in an
                             # environment (a connector's or data store's credential), whether or not it applies there
                             # (the keys report says which product would use them), or None
+    "mounts_secrets"),      # (EnvModel, workload) -> bool: whether its pods (a deployment kit's) mount the
+                            # SecretProviderClasses of a workload it deploys, or None (it mounts none)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None))
+              None, False, None, None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

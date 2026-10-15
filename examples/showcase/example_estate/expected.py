@@ -384,6 +384,9 @@ EXPECTED = MappingProxyType({
          "protocolVersion", None),
         ("A121", "Upgrade", "`pf-admin`, `pf-engine` in target/prod: the Admin API validates JDBC data stores",
          "PingFederate 12.1 -> 13.1.3 validates JDBC drivers and URLs; the grant store is JDBC", None),
+        ("A138", "Upgrade", "`pf-admin`, `pf-engine` in target/prod: a pushed authorization request's request_uri can "
+         "be used again", "PingFederate 12.1 -> 13.1 lets a PAR request_uri be reused until the PAR Reference "
+         "Timeout; the authorization server's settings leave PAR on (milestone 5.11)", None),
         # the target's Defender watches identity (Entra ID Protection, milestone 5.5e): what it needs in place, until
         # the record says it is (ciamConfigurationMet)
         ("A122", "Identity protection", "target/prod's threat detection watching identity (defender): Microsoft Entra "

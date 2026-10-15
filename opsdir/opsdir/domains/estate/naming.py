@@ -138,7 +138,11 @@ IDENTITY_PREREQUISITES = ("identity-risk-license", "workload-risk-license", "ris
 # and set up scans, the catalog's identity's read access to the databases it scans, and the catalog's custom scan rule
 # set applying the organization's own data types
 DISCOVERY_PREREQUISITES = ("catalog-scan-permission", "catalog-database-access", "catalog-custom-rules")
-MET_CONFIGURATIONS = CONFIGURATIONS + IDENTITY_PREREQUISITES + DISCOVERY_PREREQUISITES
+# what Secrets synced into a cluster need checked in the environment's own cloud before they are relied on: that the
+# cloud's Secrets Store CSI provider reads the secret store as each pod's service account (its workload identity),
+# which no laptop validation (opsdir/scripts/validate-csi-sync.sh) can show for a cloud
+PLATFORM_PREREQUISITES = ("csi-provider-identity",)
+MET_CONFIGURATIONS = CONFIGURATIONS + IDENTITY_PREREQUISITES + DISCOVERY_PREREQUISITES + PLATFORM_PREREQUISITES
 # how the users of an organization's own directory sign in to a cloud: their password hashes synced to it, checked by
 # an agent on the directory's side, or federated to the organization's sign-in service (password-hash may sit beside
 # the others, for the cloud's leaked-credential detection)

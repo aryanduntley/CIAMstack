@@ -41,6 +41,7 @@ pingfedConfig: {"active":true,"contactInfo":{"company":"customer-portal-team"}
  dProfiles":["SP_INITIATED_SSO"],"protocol":"SAML20","ssoServiceEndpoints":[{"
  binding":"POST","isDefault":true,"url":"https://portal.example-aero.test/saml
  /acs"}]},"type":"SP"}
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -86,6 +87,7 @@ pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
  e":"LDAP","uniqueUserIdFilter":"(mail=${mail})"}},"protocol":"SAML20"},"name"
  :"harbor-mro-federation","type":"IDP"}
 pingfedConnectionId: harbor-mro-federation
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=mobile-ops,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -116,6 +118,7 @@ pingfedConfig: {"clientAuth":{"type":"NONE"},"clientId":"mobile-ops","defaultA
  p":{"id":"default-oidc"}},"redirectUris":["https://mobile.example-aero.test/o
  auth2/callback"],"requireProofKeyForCodeExchange":true,"restrictScopes":true,
  "restrictedScopes":["openid","email","offline_access"]}
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
  s
 pingfedUses: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
@@ -153,6 +156,7 @@ pingfedConfig: {"clientAuth":{"secret":null,"type":"SECRET"},"clientId":"repor
  ts-api","defaultAccessTokenManagerRef":{"id":"defaultjwt"},"enabled":true,"gr
  antTypes":["CLIENT_CREDENTIALS"],"name":"Reporting API","restrictScopes":true
  ,"restrictedScopes":["reports.read"]}
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
  s
 pingfedWithheld: /clientAuth/secret
@@ -202,6 +206,7 @@ pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
  :"ASSERTION"},"value":"sn"}},"type":"LDAP","uniqueUserIdFilter":"(mail=${mail
  })"}},"protocol":"SAML20"},"name":"skyline-air-federation","type":"IDP"}
 pingfedConnectionId: skyline-air-federation
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=supplier-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -245,6 +250,7 @@ pingfedConfig: {"active":true,"contactInfo":{"company":"supplier-portal-team"}
  TED_SSO"],"protocol":"SAML20","ssoServiceEndpoints":[{"binding":"POST","isDef
  ault":true,"url":"https://suppliers.example-aero.test/saml/acs"}]},"type":"SP
  "}
+pingfedSourceVersion: 12.1.4.0
 
 dn: cn=tech-pubs,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -276,6 +282,7 @@ pingfedConfig: {"clientAuth":{"type":"NONE"},"clientId":"tech-pubs-web","defau
  THORIZATION_CODE","REFRESH_TOKEN"],"name":"tech-pubs","redirectUris":["https:
  //techpubs.example-aero.test/oidc/callback"],"requireProofKeyForCodeExchange"
  :true,"restrictScopes":true,"restrictedScopes":["openid","profile","email"]}
+pingfedSourceVersion: 12.1.4.0
 pingfedUses: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-op
  s
 xTokenLifetimeMinutes: 60

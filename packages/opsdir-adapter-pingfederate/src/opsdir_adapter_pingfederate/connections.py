@@ -23,7 +23,8 @@ from types import MappingProxyType
 from opsdir.core.directory import get, one, rdn_value, values
 from opsdir.core.jsondata import held_json
 from opsdir.domains.directory.user_schema import attribute_records
-from opsdir.domains.federation.services import claims
+from opsdir.domains.federation.services import claims, identity_services, integrations_served
+from .naming import SERVER_ROLES
 from .oauth import client_view
 from .versions import runs_in
 from .withheld import filled
@@ -222,6 +223,13 @@ def idp_connection(m, i):
 
 
 BUILDERS = MappingProxyType({"saml2-sp": sp_connection, "oidc-client": oauth_client, "saml2-idp": idp_connection})
+
+
+def served_integrations(d):
+    """The integrations PingFederate serves (its identity services'): OAuth clients, SP connections, IdP connections."""
+    services = identity_services(d, SERVER_ROLES)
+    return tuple(i for ptype in ("oidc-client", "saml2-sp", "saml2-idp")
+                 for i in integrations_served(d, services, ptype))
 
 
 def integration_body(m, i):

@@ -38,7 +38,7 @@ from functools import reduce
 from types import MappingProxyType
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import (fingerprint, get, gtime_of_iso, make_entry, norm_dn, one, ou_entry,
+from opsdir.core.directory import (fingerprint, get, gtime_of_iso, is_a, make_entry, norm_dn, one, ou_entry,
                                    rdn_value, subtree, values, within)
 from opsdir.core.sources import json_document
 from opsdir.domains.directory.user_schema import attribute_records
@@ -61,6 +61,7 @@ from .plugins import KINDS, plugin_groups
 from .policies import policy_groups
 from .naming import SERVER_ROLES
 from .admin_api import request_type
+from .schema import HOLDERS
 from .connections import BINDINGS, CLIENT_AUTH, GRANT_TYPES, LEGACY_METHOD
 
 RESOURCES = MappingProxyType({
@@ -100,7 +101,8 @@ def _operations(doc):
 
 
 def resources(files):
-    """({kind: items}, {resource type not modeled: items}, PingFederate version, unreadable paths) from the export."""
+    """({kind: items}, {resource type not modeled: items}, (source version, notices), unreadable paths) from the
+    export (source_version)."""
     parsed = {p: json_document(t) for p, t in files.items() if p.endswith(".json")}
     bulk = [op for doc in parsed.values() if isinstance(doc, dict) for op in _operations(doc)]
     found = ((RESOURCES.get(op.get("resourceType")), item) for op in bulk if op.get("operationType", "SAVE") == "SAVE"
@@ -111,10 +113,35 @@ def resources(files):
                       for i in op.get("items") or () if isinstance(i, dict))
              for t in dict.fromkeys(op.get("resourceType") for op in bulk)
              if isinstance(t, str) and t not in RESOURCES},
-            next((doc["metadata"].get("pfVersion") if isinstance(doc.get("metadata"), dict) else doc["pingFederate"]
-                  for doc in parsed.values() if isinstance(doc, dict)
-                  and (isinstance(doc.get("metadata"), dict) or doc.get("pingFederate"))), None),
-            tuple(p for p, doc in parsed.items() if doc is None))
+            source_version(parsed), tuple(p for p, doc in parsed.items() if doc is None))
+
+
+def source_version(parsed):
+    """(the PingFederate version the held settings come from, or None; notices): the one pfVersion of the bulk exports
+    read. Exports of several versions record none (each version's export is imported on its own: provenance is never
+    guessed); this adapter's rendered requests record none either (reading a render back is no new source, the record's
+    value is kept)."""
+    docs = [doc for doc in parsed.values() if isinstance(doc, dict)]
+    exported = tuple(dict.fromkeys(str(v) for doc in docs if isinstance(doc.get("metadata"), dict)
+                                   for v in (doc["metadata"].get("pfVersion"),) if v))
+    rendered = tuple(dict.fromkeys(str(doc["pingFederate"]) for doc in docs
+                                   if not isinstance(doc.get("metadata"), dict) and doc.get("pingFederate")))
+    if len(exported) > 1:
+        return None, (f"exported from several PingFederate versions ({', '.join(exported)}): the version each "
+                      "object's settings come from is not recorded; import each version's export on its own",)
+    return ((exported[0], (f"exported from PingFederate {exported[0]}",)) if exported else
+            (None, tuple(f"rendered for {v}: the version held settings come from is kept as recorded"
+                         for v in rendered)))
+
+
+def stamped(groups, version):
+    """The import's groups with each entry holding Admin API settings (HOLDERS) marked with the version they come from
+    (pingfedSourceVersion); as built when the version isn't known."""
+    if version is None:
+        return groups
+    return tuple((dn, tuple(make_entry(e.dn, e.classes, {**e.attrs, "pingfedSourceVersion": (version,)})
+                            if any(is_a(e, c) for c in HOLDERS) else e for e in entries))
+                 for dn, entries in groups)
 
 
 def _name(v, taken):
@@ -371,7 +398,7 @@ def integration_groups(d, found, certs, exported, patterns=()):
 # ------------------------------------------------------------------ the importer
 def read_export(files, d, patterns, at=None):
     """Imported from a PingFederate bulk export (or this adapter's rendered files)."""
-    found, unread, version, unreadable = resources(files)
+    found, unread, (version, version_notices), unreadable = resources(files)
     certs = certificate_entries(d, found)
     keys = {fingerprint(kp.get("sha256Fingerprint")): kp.get("id") for k in ("signing", "ssl") for kp in found[k]}
     named_ = {**{(kind, item.get("id")): ref_dn(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]},
@@ -397,9 +424,9 @@ def read_export(files, d, patterns, at=None):
                 *((RESOURCES_BRANCH,) if unread else ()))
     return Imported(
         containers=tuple(ou_entry(b) for b in (INTEGRATIONS, CERTIFICATES, PINGFEDERATE, DATA_STORES, *branches)),
-        groups=(*((c.dn, (c,)) for c in certs.values()), *groups, *stores, *plugins, *policies, *oauth, *held,
-                *messages),
-        notices=(*((f"exported from PingFederate {version}",) if version else ()), *notices, *store_notices,
+        groups=(*((c.dn, (c,)) for c in certs.values()),
+                *stamped((*groups, *stores, *plugins, *policies, *oauth, *held, *messages), version)),
+        notices=(*version_notices, *notices, *store_notices,
                  *plugin_notices, *policy_notices, *oauth_notices, *message_notices,
                  *held_notices,
                  *(("where PingFederate keeps OAuth clients, grants and sessions is set in its nodes' hivemodule.xml, "

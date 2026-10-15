@@ -314,12 +314,12 @@
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "10f9908acda99a5f8950c745835f4a51b1dda8d5c0d8ad47a6a161236a5512b1"
+      "sha256": "dd222b7abd89cff57d172f61161240990cee7cb2ade2b2702e929487c3028b8e"
     },
     "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "263adf02d7fa3ab0ef689f19af4372f6831399cdab55ec2c17036e2def28e321"
+      "sha256": "b7e1d2745001848fd140443449679929e3dd3666fe2915986bf974609d42eca1"
     },
     "pingfederate/terraform/variables.tf": {
       "scope": "environment-specific",

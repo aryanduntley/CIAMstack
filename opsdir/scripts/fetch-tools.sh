@@ -12,6 +12,8 @@
 # venv (tools/ansible/venv; their own dependencies resolved by pip, not hash-pinned), and the Galaxy collections and
 # roles opsdir-adapter-ansible pins (requirements.py) into tools/ansible/collections and tools/ansible/roles; F5's AS3
 # JSON schema (checked against the SHA-256 pinned below) into tools/ansible.
+# kind and kubectl (opsdir/scripts/validate-csi-sync.sh: a throwaway local cluster): each release's standalone binary,
+# checked against the SHA-256 pinned below (the sums the projects publish beside the binaries).
 # The Bicep CLI (opsdir/scripts/validate-bicep.sh): the release's standalone binary, checked against the SHA-256 pinned
 # below (the digest GitHub reports for the release asset when the version was pinned).
 # cfn-lint (opsdir/scripts/validate-cloudformation.sh): at the version pinned below in its own venv
@@ -29,6 +31,8 @@ PROMETHEUS_VERSION=3.15.0         # 2026-09-24: its promtool checks opsdir-adapt
 ANSIBLE_CORE_VERSION=2.21.5       # 2026-10-05 (controller Python 3.12-3.14)
 ANSIBLE_LINT_VERSION=26.9.0       # 2026-09-22
 BICEP_VERSION=0.48.1              # 2026-10-05
+KIND_VERSION=0.33.0               # 2026-08-26 (default node image kindest/node v1.37.0)
+KUBECTL_VERSION=1.37.1            # the stable release (dl.k8s.io/release/stable.txt) on 2026-10-14
 CFN_LINT_VERSION=1.57.2           # 2026-10-06 (Python 3.10-3.14)
 AS3_SCHEMA=3.54.0-6               # F5 AS3 LTS JSON schema (opsdir-adapter-f5's declarations)
 AS3_SHA256=9bef9d9e8f2fc6e52eef7491683f09dbacd572d87018b68c49013f9857d38fd3
@@ -77,6 +81,10 @@ pinned_sha() {
     promtool-linux-arm64) echo f1f90ec08e849d494ca66c611470afc50192f0355f1a61c33f2cbde02d067823 ;;
     bicep-linux-amd64) echo b09ec25a9d376c1f8e33ede6ed22b587f915ad68488d5db77a6f9541748c7f6e ;;
     bicep-linux-arm64) echo 9cbf6a211137e894a863fbc842e355c2197fc2124a7bda902afe1bceffa35245 ;;
+    kind-linux-amd64) echo aee6151561422756b764a4ae28e7f44cda5af5a9eead3cc9985112b1de8d8e0d ;;
+    kind-linux-arm64) echo 20022bee6cfcd5086cb7234d218e3454e6090022f2a8f55d1fa7fcf42c3867a2 ;;
+    kubectl-linux-amd64) echo 65691ff77eb6fa44c908b77a1082c9f092c3b9733b5cefabec0d1104890e21a8 ;;
+    kubectl-linux-arm64) echo ff749f4b78d9c4f1ec87307df9b50119ed819e2094aa9810cb9acffc3286c8c7 ;;
     *) return 1 ;;
   esac
 }
@@ -123,6 +131,18 @@ if [ -x "$TOOLS/bin/kubeconform" ] && "$TOOLS/bin/kubeconform" -v | grep -qx "v$
 else
   pinned_fetch kubeconform "https://github.com/yannh/kubeconform/releases/download/v$KUBECONFORM_VERSION/kubeconform-$os-$arch.tar.gz" kubeconform &&
     echo "kubeconform $KUBECONFORM_VERSION: tools/bin/kubeconform (verified)"
+fi
+if [ -x "$TOOLS/bin/kind" ] && "$TOOLS/bin/kind" version | grep -q "^kind v$KIND_VERSION "; then
+  echo "kind $KIND_VERSION: already in tools/bin"
+else
+  pinned_binary kind "https://github.com/kubernetes-sigs/kind/releases/download/v$KIND_VERSION/kind-$os-$arch" &&
+    echo "kind $KIND_VERSION: tools/bin/kind (verified)"
+fi
+if [ -x "$TOOLS/bin/kubectl" ] && "$TOOLS/bin/kubectl" version --client 2>/dev/null | grep -q "v$KUBECTL_VERSION\$"; then
+  echo "kubectl $KUBECTL_VERSION: already in tools/bin"
+else
+  pinned_binary kubectl "https://dl.k8s.io/release/v$KUBECTL_VERSION/bin/$os/$arch/kubectl" &&
+    echo "kubectl $KUBECTL_VERSION: tools/bin/kubectl (verified)"
 fi
 if [ -x "$TOOLS/bin/promtool" ] && "$TOOLS/bin/promtool" --version 2>&1 | grep -q "version $PROMETHEUS_VERSION "; then
   echo "promtool $PROMETHEUS_VERSION: already in tools/bin"

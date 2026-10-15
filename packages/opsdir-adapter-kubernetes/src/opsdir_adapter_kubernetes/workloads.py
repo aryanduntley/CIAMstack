@@ -326,7 +326,8 @@ def read_workloads(files, d, patterns, at=None):
                "services": of["Service"], "ingresses": of["Ingress"], "routes": of["HTTPRoute"],
                "accounts": {(_namespace(a), _meta(a).get("name")): a for a in of["ServiceAccount"]}}
     marked = [(p, o) for p, o in found if o and o.get("kind") in (*dict(KINDS), "Job") and mark(o, IMAGE_OF)]
-    workloads = [(p, o) for p, o in found if o and o.get("kind") in dict(KINDS) and not mark(o, IMAGE_OF)]
+    workloads = [(p, o) for p, o in found if o and o.get("kind") in dict(KINDS) and not mark(o, IMAGE_OF)
+                 and _labels(o).get(MANAGED_BY[0]) != MANAGED_BY[1]]      # opsdir's own (sync pods): no workload
     placed = [(p, o, n, workload_role(o, roles)) for (p, o), n in zip(workloads, entry_names(workloads))]
     kept = [(p, o, n, r) for p, o, n, r in placed if r and rdn_safe(n or "")]
     entries = [workload_entry(d, n, p, o, r, context) for p, o, n, r in kept]

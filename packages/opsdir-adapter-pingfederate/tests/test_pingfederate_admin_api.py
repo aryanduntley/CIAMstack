@@ -67,8 +67,8 @@ def test_checked_against_the_spec_of_the_environments_version():
     assert all(p.split(":", 1)[0].split(" ", 1)[0] in ("PUT", "POST") for p in doc["problems"]
                if not p.startswith("key pair "))                   # the fixture's key pairs name no key role
     old = _doc(_env(d, "PingFederate 11.3.2"))
-    assert old["adminApi"] is None and old["problems"][-1] == \
-        "no Admin API spec for PingFederate 11.3.2: the requests are not checked"
+    assert old["adminApi"] is None and \
+        "no Admin API spec for PingFederate 11.3.2: the requests are not checked" in old["problems"]
     mixed = _doc(_env(d, "PingFederate 12.1.4", "PingFederate 13.1.0"))
     assert mixed["problems"][0] == "servers run other versions too (PingFederate 13.1.0): checked against " \
                                    "PingFederate 12.1.4"

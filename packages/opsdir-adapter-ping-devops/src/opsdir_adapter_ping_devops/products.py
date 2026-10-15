@@ -61,6 +61,12 @@ def secret_keys(w):
     return tuple(dict.fromkeys((s, k, file_path(k)) for s, k, _ in workload_secrets(w)))
 
 
+def deploys(m, w):
+    """Adapter.mounts_secrets: whether the chart deploys a workload in environment m (it mounts the workload's
+    SecretProviderClasses in its pods: helm.product_values)."""
+    return any(w in (x for _, x in p.placed) for p in placements(m))
+
+
 def applies(m):
     """Whether environment m runs PingFederate with the ping-devops chart."""
     return bool(placements(m))

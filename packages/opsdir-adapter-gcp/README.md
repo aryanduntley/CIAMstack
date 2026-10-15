@@ -544,7 +544,7 @@ A role bound on a parent (a key ring, the project) covers what is under it; a bu
 | `gcp-cert` | Certificate Manager certificate | not resolved |
 | `gs` | `gs://<bucket>` (Cloud Storage bucket) | not resolved |
 
-Configuration management (`opsdir-adapter-ansible`) reads `gcp-sm://` references at run time through the `gcloud` command above (`ansible.builtin.pipe`); a native `google.cloud.gcp_secret_manager` lookup would need authentication parameters the record doesn't hold.
+Configuration management (`opsdir-adapter-ansible`) reads `gcp-sm://` references at run time through the `gcloud` command above (`ansible.builtin.pipe`), not the `google.cloud.gcp_secret_manager` lookup. That lookup (checked in `google.cloud` 1.14.0 and 1.15.0) reads regional secrets and can use the controller's Application Default Credentials, but it logs the access response, which holds the secret's base64 value, at `-vvv` (`no_log` doesn't stop it), and for `latest` it first lists the secret's versions, which needs `secretmanager.versions.list`, a permission the Secret Accessor role doesn't grant. For FedRAMP High and IL4/IL5 workloads, Google's compliance scope covers regional secrets, not global ones: reference them as `projects/<project>/locations/<location>/secrets/<name>`.
 
 Values of `ciamCloudProvider` (`gcp`) and `ciamCloudEnvironment` (`public`) are validated against this adapter. The store refuses Google Cloud credential forms anywhere in the record: service account key files (`"private_key_id": "<40 hex>"`; the private key itself is refused by the core's private-key pattern), API keys (`AIza…`) and OAuth client secrets (`GOCSPX-…`). Cloud Storage HMAC secrets have no recognizable form; the core's secret-assignment pattern catches them in configuration syntax.
 

@@ -13,6 +13,7 @@ from opsdir.domains.federation.naming import IDENTITY_SERVICES, INTEGRATIONS
 from opsdir.domains.pki.naming import CERTIFICATES
 from opsdir_adapter_pingfederate.importer import read_export
 from opsdir_adapter_pingfederate.naming import DATA_STORES
+from opsdir_adapter_pingfederate.schema import HOLDERS
 from types import SimpleNamespace
 
 from opsdir_adapter_pingfederate.admin_api import admin_api_files
@@ -147,3 +148,36 @@ def test_a_certificate_keeps_the_facts_the_export_doesnt_give():
                                                                  "expires": "2027-06-30T00:00:00Z"}]}]})}
     again = after_import(after, read_export(bare, after, ()))
     assert one(get(again, f"cn=pf-signing-2025,{CERTIFICATES}"), "ciamSubject") == "CN=sso.example.test"
+
+
+def _holders(after):
+    return [e for e in after.entries.values() if any(c in e.classes for c in HOLDERS)]
+
+
+def test_each_object_holding_settings_records_the_version_it_was_exported_from():
+    d = _record()
+    imported = read_export(_files(), d, ())
+    after = after_import(d, imported)
+    holders = _holders(after)
+    assert {one(e, "pingfedSourceVersion") for e in holders} == {"12.1.4.0"}
+    assert {c for e in holders for c in e.classes} >= {"pingfedHeldSettings", "pingfedDataStore"}
+    assert one(get(after, f"cn=pf-signing-2025,{CERTIFICATES}"), "pingfedSourceVersion") is None
+    assert "exported from PingFederate 12.1.4.0" in imported.notices
+
+
+def test_exports_of_several_versions_record_no_version_and_say_so():
+    d = _record()
+    files = _files()
+    other = {"other.json": json.dumps({"metadata": {"pfVersion": "13.1.3.0"}, "operations": []})}
+    imported = read_export({**files, **other}, d, ())
+    assert not any(one(e, "pingfedSourceVersion") for _, es in imported.groups for e in es)
+    assert any(n.startswith("exported from several PingFederate versions (12.1.4.0, 13.1.3.0)")
+               for n in imported.notices)
+
+
+def test_reading_a_render_back_keeps_the_version_the_settings_came_from():
+    d = _record()
+    after = after_import(d, read_export(_files(), d, ()))
+    rendered = admin_api_files(SimpleNamespace(d=after, servers=(), bindings=()))
+    back = after_import(after, read_export(rendered, after, ()))
+    assert {one(e, "pingfedSourceVersion") for e in _holders(back)} == {"12.1.4.0"}

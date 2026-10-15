@@ -2651,15 +2651,17 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.587 NAME 'ciamConfigurationMet' DESC
  sured Workloads workload, US data location, US-person support, IL5 isolatio
  n), for its threat detection watching identity (the identity and workload r
  isk licenses, the deploying identity\27s rights to write sign-in policies a
- nd export the risk logs), or for its data discovery scanning through a data
-  catalog account (the deploying identity\27s rights in the catalog, the cat
- alog\27s read access to the databases it scans, its custom scan rule set fo
- r the organization\27s own data types)' EQUALITY caseIgnoreMatch SYNTAX 1.3
- .6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:assure
- d-workload|us-data-location|us-person-support|il5-isolation|identity-risk-l
- icense|workload-risk-license|risk-policy-permission|risk-log-permission|cat
- alog-scan-permission|catalog-database-access|catalog-custom-rules' X-ORIGIN
-  'opsdir' )
+ nd export the risk logs), for its data discovery scanning through a data ca
+ talog account (the deploying identity\27s rights in the catalog, the catalo
+ g\27s read access to the databases it scans, its custom scan rule set for t
+ he organization\27s own data types), or for Secrets synced into its cluster
+ s (its cloud\27s CSI provider reading the secret store as each pod\27s iden
+ tity, checked there)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:assured-workload|us-data
+ -location|us-person-support|il5-isolation|identity-risk-license|workload-ri
+ sk-license|risk-policy-permission|risk-log-permission|catalog-scan-permissi
+ on|catalog-database-access|catalog-custom-rules|csi-provider-identity' X-OR
+ IGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.588 NAME 'ciamSspRef' DESC 'The syst
  em security plan a system boundary is documented in: its id and version' EQ
  UALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-

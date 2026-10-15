@@ -450,3 +450,9 @@ def test_the_render_with_the_record_s_keystore_builds_and_is_valid_kubernetes(tm
                           capture_output=True, text=True)
     assert helm.returncode == 0, helm.stderr
     assert "name: keystore-create-" not in helm.stdout and "secretName: keystore\n" in helm.stdout
+
+
+def test_its_pods_mount_no_secret_provider_class_so_csi_secrets_come_through_sync_pods():
+    """The identity-platform and ping-gateway charts take no extra volumes (5.12): under the kubernetes adapter's csi
+    target its workloads' Secrets are kept by the kubernetes adapter's sync pods (validate-csi-sync.sh)."""
+    assert ADAPTER.mounts_secrets is None

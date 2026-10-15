@@ -1,7 +1,8 @@
 """What an Ansible run of the rendered files needs from Ansible Galaxy, pinned: each collection a rendered file names
 (by its namespace.name prefix: a module, a lookup), and the hardening roles a baseline names. The same pins are what
-opsdir/scripts/fetch-tools.sh installs for validation, so what is checked is what is rendered. Each version was
-released at least two weeks before it was pinned (2026-10-09). Pure."""
+opsdir/scripts/fetch-tools.sh installs for validation, so what is checked is what is rendered. Each version is
+the release validated with the rendered files when it was pinned (2026-10-09); CIAMstack's own pins track the current
+release. Pure."""
 COLLECTIONS = (                            # (name, version)
     ("ansible.posix", "2.2.2"),            # sysctl, selinux, firewalld
     ("community.general", "13.5.0"),       # pam_limits

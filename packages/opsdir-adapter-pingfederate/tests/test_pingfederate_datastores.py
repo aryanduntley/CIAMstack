@@ -301,7 +301,7 @@ def test_an_upgrade_to_13_1_3_names_the_jdbc_stores_the_admin_api_validates(afte
     (jdbc,) = [c for c in ADAPTER.version_changes if c.has == ">=13.1.3"]
     assert jdbc.effect == "action" and jdbc.touches(d, None, "pf-admin") == ("grants",)
     assert jdbc.touches(d, None, "am") == ()
-    assert [c.touches for c in ADAPTER.version_changes if c.has != ">=13.1.3"] == [None, None, None]
+    assert [c.touches for c in ADAPTER.version_changes if c.effect == "info"] == [None, None, None]
 
 
 def test_on_13_1_3_a_jdbc_store_outside_the_documented_drivers_is_an_action():

@@ -34,23 +34,20 @@ import json
 from typing import NamedTuple
 
 from opsdir.core.directory import children, one, rdn_value
-from opsdir.domains.federation.services import identity_services, integrations_served
-from .admin_api_spec import load_spec, request_problems, spec_version
-from .connections import integration_body
+from .connections import integration_body, served_integrations
 from .datastores import data_store_view
+from .diagnostics import problems
 from .generic import held_resources, resource_body
 from .keypairs import key_pair_imports
 from .messaging import smtp_view
-from .naming import CONTRACTS, DATA_STORES, FRAGMENTS, OIDC_POLICIES, SERVER_ROLES
+from .naming import CONTRACTS, DATA_STORES, FRAGMENTS, OIDC_POLICIES
 from .oauth import auth_server_body, oidc_policy_body
 from .plugins import KINDS, plugin_view
 from .policies import contract_body, default_policy_body, fragment_body
-from .versions import pingfederate_version
 
 OUTPUT = "pingfederate/admin-api/requests.json"
 PLUGIN_ORDER = ("validator", "notification-publisher", "captcha-provider", "idp-adapter", "selector",
                 "access-token-manager")
-INTEGRATION_ORDER = ("oidc-client", "saml2-sp", "saml2-idp")
 
 # One Admin API request: method, path, the POST that creates the object where a PUT finds none (None for settings and
 # for objects created by POST alone), and the body.
@@ -92,8 +89,6 @@ def requests(m):
     plugins = {kind: _parents_first(children(d, KINDS[kind].base, "pingfedPlugin")) for kind in PLUGIN_ORDER}
     policy = default_policy_body(d)
     server = auth_server_body(m)
-    services = identity_services(d, SERVER_ROLES)
-    integrations = tuple(i for ptype in INTEGRATION_ORDER for i in integrations_served(d, services, ptype))
     return (*(Request("POST", path, None, body) for path, body in key_pair_imports(m)[0]),
             *(object_request("/dataStores", rdn_value(s), data_store_view(m, s))
               for s in children(d, DATA_STORES, "pingfedDataStore")),
@@ -107,7 +102,7 @@ def requests(m):
             *(object_request("/oauth/openIdConnect/policies", rdn_value(p), oidc_policy_body(p))
               for p in children(d, OIDC_POLICIES, "pingfedOidcPolicy")),
             *((settings_request("/oauth/authServerSettings", server),) if server is not None else ()),
-            *(object_request(*integration_body(m, i)) for i in integrations),
+            *(object_request(*integration_body(m, i)) for i in served_integrations(d)),
             *(_held_request(m, r) for r in held_resources(d)))
 
 
@@ -130,25 +125,14 @@ def rendered_bodies(text):
     return {t: [r.get("body") for r in reqs if request_type(r) == t] for t in dict.fromkeys(map(request_type, reqs))}
 
 
-def checked(spec, reqs):
-    """The problems of the requests against a spec: '<method> <path>: <JSON path>: <what>'."""
-    return tuple(f"{r.method} {r.path}: {p}" for r in reqs for p in request_problems(spec, r.method, r.path, r.body))
-
-
 def admin_api_files(m):
     """{pingfederate/admin-api/requests.json: text}: environment m's requests, checked against its version's spec
     (nothing when the record holds nothing for PingFederate)."""
     reqs = requests(m)
     if not reqs:
         return {}
-    version, others = pingfederate_version(m)
-    vendored = spec_version(version)
-    spec = load_spec(vendored) if vendored else None
-    problems = (*((f"servers run other versions too ({', '.join(others)}): checked against {version}",)
-                  if others else ()), *key_pair_imports(m)[1],
-                *(checked(spec, reqs) if spec else
-                  (f"no Admin API spec for {version or 'an unknown version'}: the requests are not checked",)))
-    doc = {"pingFederate": version, "adminApi": spec["version"] if spec else None, "problems": list(problems),
+    version, spec, found = problems(m, reqs)
+    doc = {"pingFederate": version, "adminApi": spec, "problems": list(found),
            "requests": [{"method": r.method, "path": r.path, **({"createWith": r.create_with} if r.create_with else {}),
                          "body": r.body} for r in reqs]}
     return {OUTPUT: json.dumps(doc, indent=2) + "\n"}

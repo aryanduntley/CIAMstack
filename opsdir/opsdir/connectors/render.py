@@ -95,7 +95,7 @@ def render_parts(d, spec, installed=ADAPTERS, wanted=None, scope=None):
                          f"{m.provider})")
     targets = chosen_targets(adapters, wanted, m.stack)
     neutral = {p: text for a in adapters if a.render_neutral for p, text in a.render_neutral(m.d).items()}
-    found = services(installed)
+    found = services(installed, targets)
     specific = {p: text for a in adapters if a.render_env for p, text in _env_files(a, m, found, targets).items()}
     specific = {**specific, **_kit_profiles(m, adapters, neutral, specific, targets)} if not sliced else specific
     if sliced and not specific:
@@ -124,11 +124,12 @@ def file_formats(adapters, paths, formats=FORMATS):
     return {p: name for p, (_, name) in found.items()}
 
 
-def adapter_notes(m, adapters, installed=ADAPTERS):
+def adapter_notes(m, adapters, installed=ADAPTERS, targets=None):
     """The RenderNotes of environment m's render: those the adapters rendering it return (Adapter.notes, with the
-    Services of the installed adapters, as their render_env gets them), then the core's own: its canaries none of them
-    renders (observability unrun_notes, naming the installed adapters that render synthetic checks)."""
-    found = services(installed)
+    Services of the installed adapters and the render targets chosen, as their render_env gets them), then the core's
+    own: its canaries none of them renders (observability unrun_notes, naming the installed adapters that render
+    synthetic checks)."""
+    found = services(installed, targets)
     return (*(n for a in adapters if a.notes for n in a.notes(m, found)),
             *unrun_notes(m, adapters, found.endpoints, tuple(a.name for a in installed if a.renders_synthetic_checks)))
 
@@ -138,7 +139,8 @@ def environment_notes(d, spec, installed=ADAPTERS):
     rendering it: what `opsdir check` lists."""
     shared, adapters = environment(d, spec, installed)
     m = as_seen(shared)
-    return m, ordered(with_owners(m.d, m.env, adapter_notes(m, adapters, installed)))
+    return m, ordered(with_owners(m.d, m.env, adapter_notes(m, adapters, installed,
+                                                         chosen_targets(adapters, None, m.stack))))
 
 
 def assemble(m, adapters, neutral, specific, targets=None, requester=None, installed=ADAPTERS):
@@ -152,7 +154,7 @@ def assemble(m, adapters, neutral, specific, targets=None, requester=None, insta
         raise SystemExit(f"captured files and rendered files share paths: {', '.join(clash)}")
     formats = {**file_formats(adapters, (*neutral, *specific)), **config.formats}
     files = {**neutral, **specific, **config.files}
-    notes = collected(m, adapter_notes(m, adapters, installed), files)
+    notes = collected(m, adapter_notes(m, adapters, installed, targets), files)
     return {**files,
             "MANIFEST.json": manifest(m, neutral, specific, formats, config.files, config.scopes, config.not_rendered,
                                       targets, requester),

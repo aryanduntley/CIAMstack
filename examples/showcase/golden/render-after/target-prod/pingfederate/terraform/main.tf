@@ -1,3 +1,7 @@
+# Problem: held settings exported from PingFederate 12.1.4.0, rendered for 13.1.3: 21 objects (Customers, corp-directory, customer-portal, default, default-apc, default-oidc, defaultjwt, grant-store, harbor-mro-federation, htmlform, mobile-ops, oauth-auth-server, pcvcustomers, recaptcha, reports-api, settings, skyline-air-federation, smtp, supplier-portal, tech-pubs, user-directory): nothing is migrated between the versions; review them against the changes named, or upgrade a copy of PingFederate 12.1.4.0 and export it again
+# Problem: PingFederate >=13.1: a pushed authorization request's request_uri can be used again until the PAR Reference Timeout expires (when no consent details are shown): oauth-auth-server: Review the PAR Reference Timeout and consent settings against that window.
+# Problem: PingFederate >=13.1.3: the Admin API validates JDBC data stores' driver class and URL: grant-store: Check each store's driver and URL against the drivers 13.1.3 allows before the cutover: the Admin API rejects the others.
+
 resource "pingfederate_keypairs_signing_key" "signing_2025" {
   count     = var.pingfederate_create_key_pairs ? 1 : 0
   key_id    = "signing-2025"

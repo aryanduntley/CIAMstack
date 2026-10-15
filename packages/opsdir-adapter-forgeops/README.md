@@ -58,7 +58,7 @@ ForgeOps makes these itself:
 - the AM/IDM keystore (the keystore-create job, `keystore_create.force`);
 - under Helm, amster's SSH key pair (the ssh-keygen job) and, with DS in the cluster, the DS certificates (cert-manager).
 
-Everything else comes from the record (`ciamWorkloadSecret`, delivered by the kubernetes adapter's `external-secrets` target) or from the operator. Its `csi` target doesn't suit ForgeOps: a SecretProviderClass syncs its Secrets only while a pod mounts it, and ForgeOps' pods don't (the identity-platform chart takes no extra volumes). Those Secrets, by name and key (`release.py`, `KIT_SECRETS`):
+Everything else comes from the record (`ciamWorkloadSecret`, delivered by the kubernetes adapter) or from the operator. With its `external-secrets` target (Ping's recommendation for ForgeOps: External Secrets Operator or Vault) nothing more is needed. With its `csi` target, a SecretProviderClass syncs its Secrets only while a pod mounts it, and ForgeOps' pods can't (the identity-platform chart hard-codes its pods' volumes, ping-gateway's has none, and no release adds a hook): this adapter declares no `mounts_secrets`, so the kubernetes adapter renders a sync pod per service account (`kubernetes/<namespace>/secretsync.yaml`) that mounts the classes and keeps the Secrets, under Helm and Kustomize alike. That pattern is validated on a local cluster (`opsdir/scripts/validate-csi-sync.sh`); in the environment's own cloud it stays an action in the plan until the environment records `ciamConfigurationMet: csi-provider-identity` (the kubernetes adapter's README). Those Secrets, by name and key (`release.py`, `KIT_SECRETS`):
 - `am-env-secrets`
 - `ds-env-secrets`
 - `amster-env-secrets`

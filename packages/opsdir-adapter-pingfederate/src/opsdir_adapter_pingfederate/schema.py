@@ -66,33 +66,42 @@ ATTRIBUTES = (
     AttributeDef(23, 'pingfedDiscoveryProtocol', 'vocab', 'binding', True,
                  "The JGroups discovery protocol an environment's PingFederate nodes find each other with, chosen per "
                  "environment from the protocols the adapter renders (TCPPING, NATIVE_S3_PING, DNS_PING)"),
+    AttributeDef(24, 'pingfedSourceVersion', 'string', 'meta', True,
+                 "The PingFederate version the object's settings were exported from (the bulk export's pfVersion): "
+                 "a render for another version names what changed between the two"),
 )
+# the classes holding settings as the Admin API writes them, each with the version they were exported from
+HOLDERS = ('pingfedDataStore', 'pingfedPlugin', 'pingfedPolicyContract', 'pingfedAuthPolicySet', 'pingfedAuthPolicy',
+           'pingfedOidcPolicy', 'pingfedSettings', 'pingfedResource', 'pingfedHeldSettings')
+SOURCE = ('pingfedSourceVersion',)
 CLASSES = (
     ClassDef(1, 'pingfedDataStore', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedStoreType'),
              ('pingfedTargetRole', 'pingfedPort', 'pingfedCredentialRole', 'pingfedConsumer', 'pingfedConfig',
-              'pingfedWithheld'),
+              'pingfedWithheld', *SOURCE),
              'A data store PingFederate reads users or keeps state in (cn: its id): a directory, a database, a '
              'custom store'),
     ClassDef(2, 'pingfedPlugin', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedPluginKind', 'pingfedPluginType'),
-             ('pingfedParent', 'pingfedUses', 'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
+             ('pingfedParent', 'pingfedUses', 'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld', *SOURCE),
              'A plugin instance (cn: its id): a password credential validator, an IdP adapter, an authentication '
              'selector'),
-    ClassDef(3, 'pingfedPolicyContract', 'ciamObject', 'STRUCTURAL', ('cn',), ('pingfedConfig',),
+    ClassDef(3, 'pingfedPolicyContract', 'ciamObject', 'STRUCTURAL', ('cn',), ('pingfedConfig', *SOURCE),
              'An authentication policy contract (cn: its id): the attributes an authentication policy hands on'),
-    ClassDef(4, 'pingfedAuthPolicySet', 'ciamObject', 'STRUCTURAL', ('cn',), ('pingfedConfig',),
+    ClassDef(4, 'pingfedAuthPolicySet', 'ciamObject', 'STRUCTURAL', ('cn',), ('pingfedConfig', *SOURCE),
              "The authentication policies' own settings (cn: default): its trees are its children"),
     ClassDef(5, 'pingfedAuthPolicy', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedPolicyTree'),
-             ('pingfedPosition', 'pingfedEnabled', 'pingfedUses', 'pingfedConfig'),
+             ('pingfedPosition', 'pingfedEnabled', 'pingfedUses', 'pingfedConfig', *SOURCE),
              'An authentication policy tree (cn: its name), or a policy fragment (cn: its id)'),
     ClassDef(6, 'pingfedConnection', 'top', 'AUXILIARY', ('pingfedConnectionId',), (),
              'An integration that is a PingFederate partner connection (an IdP connection): '
              'the id policies name it by'),
     ClassDef(7, 'pingfedKeyPair', 'top', 'AUXILIARY', ('pingfedKeyPairId',), (),
              "A certificate of one of PingFederate's own key pairs: the id its token managers name it by"),
-    ClassDef(8, 'pingfedOidcPolicy', 'ciamObject', 'STRUCTURAL', ('cn',), ('pingfedUses', 'pingfedConfig'),
+    ClassDef(8, 'pingfedOidcPolicy', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('pingfedUses', 'pingfedConfig', *SOURCE),
              'An OpenID Connect policy (cn: its id): the ID token it issues, from the token manager it names'),
     ClassDef(9, 'pingfedSettings', 'ciamObject', 'STRUCTURAL', ('cn',),
-             ('pingfedScope', 'pingfedUses', 'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
+             ('pingfedScope', 'pingfedUses', 'pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld',
+              *SOURCE),
              "One of PingFederate's settings resources (cn: which: oauth-auth-server, ...), "
              "as the Admin API writes it"),
     ClassDef(10, 'pingfedClient', 'top', 'AUXILIARY', (), ('pingfedUses',),
@@ -103,7 +112,7 @@ CLASSES = (
              "A server that is a PingFederate node: its run.properties (mode, tags, listeners, other settings) and the "
              "cluster discovery protocol it uses"),
     ClassDef(12, 'pingfedResource', 'ciamObject', 'STRUCTURAL', ('cn', 'pingfedResourceType'),
-             ('pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld'),
+             ('pingfedCredentialRole', 'pingfedConfig', 'pingfedWithheld', *SOURCE),
              'An item of an Admin API resource the adapter does not model, held as the Admin API writes it '
              '(cn: its id; settings for a resource that is one object)'),
     ClassDef(13, 'pingfedClusterDiscovery', 'ciamBinding', 'STRUCTURAL', ('pingfedDiscoveryProtocol',),
@@ -111,7 +120,7 @@ CLASSES = (
              "Where an environment's PingFederate nodes find each other (role pf-cluster-discovery): the protocol "
              "chosen, and the bucket (NATIVE_S3_PING) or DNS name (DNS_PING) it needs; TCPPING needs neither"),
     ClassDef(14, 'pingfedHeldSettings', 'top', 'AUXILIARY', (),
-             ('pingfedConfig', 'pingfedWithheld', 'pingfedCredentialRole'),
+             ('pingfedConfig', 'pingfedWithheld', 'pingfedCredentialRole', *SOURCE),
              "An integration (SP connection, IdP connection, OAuth client) with PingFederate's own settings held as "
              "the Admin API writes them (secrets withheld): rendered back with the record's standard facts in place"),
 )

@@ -31,8 +31,16 @@ def _schema_name(ref):
     return ref.rsplit("/", 1)[-1]
 
 
+def real_values(enum):
+    """An enum's values without one that only lists the others, comma-joined: an artefact of the generated specs
+    (13.1's parStatus: 'DISABLED, ENABLED, REQUIRED'), which PingFederate's documentation names as three states."""
+    return [v for v in enum if not (isinstance(v, str) and ", " in v
+                                     and set(v.split(", ")) <= set(enum) - {v})]
+
+
 def trimmed_schema(schema):
-    """A schema with only the validation keywords (prose, examples and formats left out), its parts trimmed too."""
+    """A schema with only the validation keywords (prose, examples and formats left out; real_values of an enum), its
+    parts trimmed too."""
     if isinstance(schema, list):
         return [trimmed_schema(s) for s in schema]
     if not isinstance(schema, dict):
@@ -42,6 +50,7 @@ def trimmed_schema(schema):
             **({"properties": {n: trimmed_schema(p) for n, p in kept["properties"].items()}}
                if "properties" in kept else {}),
             **{k: trimmed_schema(kept[k]) for k in ("items", "allOf", "oneOf") if k in kept},
+            **({"enum": real_values(kept["enum"])} if isinstance(kept.get("enum"), list) else {}),
             **({"additionalProperties": trimmed_schema(kept["additionalProperties"])}
                if isinstance(kept.get("additionalProperties"), dict) else {}),
             **({"discriminator": {k: v for k, v in kept["discriminator"].items() if k in ("propertyName", "mapping")}}

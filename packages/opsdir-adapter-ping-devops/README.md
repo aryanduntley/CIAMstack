@@ -28,7 +28,8 @@ Per product (the one without a workload is `enabled: false`), from the record:
 - **Marks** (`workload.annotations`, pod annotations): the workload's `opsdir.io/cluster-role`, `workload-role`, `identity-role` and `workload` (the chart names it `<release>-pingfederate-admin`; the mark gives the record's name), and `opsdir.io/derived-containers` naming the log sidecars, so the deployment reads back as the record (opsdir-adapter-kubernetes).
 - **Secrets**: each key the workload reads (`ciamWorkloadSecret <secret>/<key> <- <role>`) is set as the environment variable of its name (`secretKeyRef`).
   - The exception is `pingfederate.lic`, which is mounted as the license file at `/opt/in/instance/server/default/conf/pingfederate.lic`, as in the chart's own example.
-  - The chart writes no Secret; they come from the kubernetes adapter (`external-secrets`) or the operator.
+  - The chart writes no Secret; they come from the kubernetes adapter (`external-secrets` or `csi`) or the operator.
+  - Under the kubernetes adapter's `csi` target (its SecretProviderClasses, one per secret store a workload reads from), each product mounts its classes, so the CSI driver keeps the Secrets synced (the adapter declares `mounts_secrets` for the workloads it deploys; no sync pod is rendered for them). One class through the chart's own block: `secretProviderClass` `enabled: true`, `create: false` (the class is the kubernetes adapter's), `name`, `mountPath: /run/secrets/<class>`; it reaches the utility sidecar too. Several classes as the product's own `volumes` (CSI, read-only) and `volumeMounts` at `/run/secrets/<class>`, beside the log sidecars' mounts. Checked with `helm template` and kubeconform (the test marked `kubernetes`).
 - **Storage**: when the binding records `ciamStorageSize` or `ciamStorageClass`, the product runs as a StatefulSet with a volume for `/opt/out`.
   - A release first installed as a Deployment can't be changed to a StatefulSet in place.
 - **Ingress** for the hosts the workload records (`ciamIngressHost`), TLS from the chart's default TLS secret; none when it records none.
@@ -78,7 +79,6 @@ The chart's PingFederate pods' container ports (`release.py`, `POD_PORTS`), decl
 Tests: `tests/test_ping_devops.py`.
 
 Not done here:
-- The chart's own Secret Provider Class mount, for the kubernetes adapter's `csi` target. Use `external-secrets`.
 - PingFederate's configuration as Admin API payloads or Terraform, applied to the running admin console: the `pingfederate` adapter renders those (the server profile above is its bulk import document).
 - The rest of the chart's products.
 

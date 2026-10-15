@@ -42,6 +42,7 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES,
                               "pingfedDiscoveryProtocol": CHOICES}, schema=FRAGMENT,
                   formats=(("pingfederate/admin-api/*.json", "json"), ("pingfederate/bulk-config/*.json", "json"),
+                           ("pingfederate/bulk-config-problems.json", "json"),
                            ("pingfederate/terraform/*.tf", "hcl"),
                            ("pingfederate/cluster/*.properties", "java-properties"),
                            *SAML_FORMATS, *OIDC_FORMATS),

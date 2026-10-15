@@ -52,6 +52,16 @@ def test_rendering_uses_the_adapter_and_its_secret_resolver(d):
                                                                       "fake/neutral.txt": "environment-neutral"}
 
 
+def test_services_carry_the_render_targets_chosen_and_whether_a_kit_mounts_a_workloads_secrets(d):
+    found = services((FAKE,), {"fake-cloud": ("a", "b")})
+    assert (found.render_targets("fake-cloud"), found.render_targets("other"), services((FAKE,)).render_targets("x")) \
+        == (("a", "b"), (), ())
+    m = env_model(d, ALPHA)
+    mounting = FAKE._replace(mounts_secrets=lambda m, w: w == "mounted")
+    assert services((mounting,)).mounts_secrets(m, "mounted") and not services((mounting,)).mounts_secrets(m, "x")
+    assert not services((FAKE,)).mounts_secrets(m, "mounted")                 # no kit declares it
+
+
 def test_secret_references_resolve_through_the_given_adapters():
     assert secret_command("fake://x", (FAKE,)) == services((FAKE,)).secret_command("fake://x") == "fake-cli get x"
     with pytest.raises(SystemExit, match="no resolver"):
