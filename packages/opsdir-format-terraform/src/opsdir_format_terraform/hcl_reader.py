@@ -11,6 +11,7 @@ What it reads is what block() and hcl() write:
 So block(*tf_block) writes a block read from its output back as it was. What the reader can't place is a ValueError
 naming the line, never a guess.
 """
+from functools import reduce
 from itertools import accumulate
 import re
 
@@ -19,6 +20,7 @@ from .hcl import Block, TfBlock
 # What decides where a logical line ends: strings and comments (their brackets don't count), brackets, commas, newlines
 _TOKENS = re.compile(r'"(?:[^"\\]|\\.)*"|#[^\n]*|[\[\](){},]|\n', re.S)
 _DEPTH = {"(": 1, "[": 1, "{": 1, ")": -1, "]": -1, "}": -1}
+_OPENS = {")": "(", "]": "[", "}": "{"}               # the bracket each closing bracket closes
 _STRING = re.compile(r'"(?:[^"\\]|\\.)*"', re.S)
 _NUMBER = re.compile(r"-?\d+(\.\d+)?([eE][-+]?\d+)?")
 _FOR = re.compile(r"\s*for\s")                      # a for expression's start, after its opening bracket
@@ -50,12 +52,14 @@ def _fail(where, what):
     raise ValueError(f"line {where}: {what}")
 
 
-def value_of(text):
+def value_of(text, line=1):
     """The model value of an HCL expression as hcl() writes it: str (a literal), int, float, bool, a tuple (a list),
     a dict (an object: keys as written) or '${<expression>}' (anything else, kept as its text; a quoted template with
     ${...} interpolation too, quotes included, since a str starting with '${' and ending with '}' is raw to hcl(); a
-    for expression too, brackets included: '[for a in b : a]' is one expression, not a list)."""
+    for expression too, brackets included: '[for a in b : a]' is one expression, not a list). line: the line text
+    starts on, for errors inside an object (1: text's own first line)."""
     s = text.strip()
+    start = line + text[:len(text) - len(text.lstrip())].count("\n")
     if _STRING.fullmatch(s) and "${" not in s:
         return _unquote(s)
     if s in ("true", "false"):
@@ -66,7 +70,7 @@ def value_of(text):
         inner = s[1:-1]
         return tuple(value_of(piece) for _, piece in _cut(inner, ",")) if inner.strip() else ()
     if s.startswith("{\n") and s.endswith("}"):
-        return dict(_pairs(s[2:s.rindex("\n")], 0, nested=False))
+        return dict(_pairs(s[2:s.rindex("\n")], start + 1, nested=False))
     return "${" + s + "}"
 
 
@@ -76,10 +80,10 @@ def _pair(piece, line, nested):
         return "#", s[1:].strip()
     attribute = _ATTRIBUTE.fullmatch(s)
     if attribute:
-        return attribute.group(1), value_of(attribute.group(2))
+        return attribute.group(1), value_of(attribute.group(2), line)
     block = _NESTED.fullmatch(s) if nested else None
     if block:
-        return block.group(1), Block(_pairs(block.group(2) or "", line, nested=True))
+        return block.group(1), Block(_pairs(block.group(2) or "", line + 1, nested=True))
     return _fail(line, f"not an attribute{', nested block' if nested else ''} or comment: {s.splitlines()[0][:60]}")
 
 
@@ -101,10 +105,34 @@ def _top(piece, line):
     return TfBlock(header.group(1), labels, _pairs(header.group(3) or "", line + 1))
 
 
+def _unbalanced(marks):
+    """(position, what) of the bracket to blame in marks that don't balance, matching each closing bracket with the
+    one it closes: the first that closes nothing, else the bracket a wrong kind of closing bracket meets, else the
+    innermost one left open."""
+    def step(state, mark):
+        stack, found = state
+        at, t, _ = mark
+        if found or t not in _DEPTH:
+            return state
+        if _DEPTH[t] > 0:
+            return (*stack, (at, t)), None
+        if not stack:
+            return stack, (at, f"'{t}' closes nothing")
+        return (stack[:-1], None) if stack[-1][1] == _OPENS[t] else (stack, _open(stack[-1]))
+    stack, found = reduce(step, marks, ((), None))
+    return found or _open(stack[-1])
+
+
+def _open(opened):
+    at, t = opened
+    return at, f"'{t}' is never closed"
+
+
 def read_hcl(text):
     """The top-level items of a Terraform file as hcl.py writes it, in order: TfBlocks and ('#', comment) lines
     (blank lines dropped). ValueError naming the line on anything it can't read."""
     marks = _marks(text)
     if any(depth < 0 for _, _, depth in marks) or (marks and marks[-1][2] != 0):
-        raise ValueError("unbalanced brackets")
+        at, what = _unbalanced(marks)
+        _fail(text.count("\n", 0, at) + 1, f"unbalanced brackets: {what}")
     return tuple(_top(piece, text.count("\n", 0, at) + 1) for at, piece in _cut(text, "\n") if piece.strip())

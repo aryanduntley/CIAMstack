@@ -1,5 +1,7 @@
 """The HCL reader: what block() and hcl() write reads back as the data they were given, so block() writes it again
 byte for byte; what the reader can't place is an error naming the line."""
+import re
+
 import pytest
 
 from opsdir_format_terraform.hcl import (Block, TfBlock, TfFile, block, comment, hcl_file, hcl_item, jsonencoded, ref,
@@ -62,11 +64,30 @@ def test_brackets_in_strings_and_comments_dont_count():
 
 
 @pytest.mark.parametrize("text, message", [
-    ('resource "x" "y" {\n  a = (1\n}\n', "unbalanced"), ('resource "x" {\n  ??\n}\n', "line 2: not an attribute"),
+    ('resource "x" "y" {\n  a = (1\n}\n', "line 2: unbalanced brackets: '(' is never closed"),
+    ('locals {\n  a = [1, 2\n  b = "]"\n', "line 2: unbalanced brackets: '[' is never closed"),
+    ('locals {\n  a = 1\n}\n}\n', "line 4: unbalanced brackets: '}' closes nothing"),
+    ('resource "x" {\n  ??\n}\n', "line 2: not an attribute"),
     ("just words\n", "line 1: not a block or comment")])
 def test_what_it_cannot_read_is_an_error(text, message):
-    with pytest.raises(ValueError, match=message.replace("(", r"\(")):
+    with pytest.raises(ValueError, match=re.escape(message)):
         read_hcl(text)
+
+
+@pytest.mark.parametrize("text, line", [
+    ('resource "x" "y" {\n  a = 1\n  ??\n}\n', 3), ('resource "x" "y" {\n  a = 1\n  tags = {\n    ??\n  }\n}\n', 4),
+    ('resource "x" "y" {\n  a = 1\n  ebs {\n    ??\n  }\n}\n', 4),
+    ('locals {\n  a = {\n    b = {\n      c = 1\n      ??\n    }\n  }\n}\n', 5),
+    ('# head\n\nresource "x" "y" {\n  ebs {\n    t = {\n      a = 1\n      ??\n    }\n  }\n}\n', 7)])
+def test_an_error_names_the_line_it_is_on_in_objects_and_nested_blocks_too(text, line):
+    assert text.splitlines()[line - 1].strip() == "??"
+    with pytest.raises(ValueError, match=f"^line {line}: "):
+        read_hcl(text)
+
+
+def test_value_of_counts_lines_from_its_own_text():
+    with pytest.raises(ValueError, match="^line 4: "):
+        value_of("\n{\n  a = 1\n  ??\n}")
 
 
 def test_a_file_written_from_its_items_reads_back_as_them():
