@@ -52,6 +52,14 @@ KEPT = {
     # organization-wide Defender (5.7b): the management group's part, in the landing zone keeper's root
     "azurerm_management_group_policy_assignment": _MANAGEMENT_GROUP,
     "azurerm_management_group_policy_remediation": _MANAGEMENT_GROUP,
+    # Microsoft Sentinel (6.2e): extension resources on the workspace (Microsoft.SecurityInsights), kept in Terraform
+    # until their ARM form is translated (a follow-up)
+    "azurerm_sentinel_log_analytics_workspace_onboarding": (
+        "Microsoft Sentinel's onboarding is an extension resource on the workspace (Microsoft.SecurityInsights/"
+        "onboardingStates); its ARM form isn't translated yet"),
+    "azurerm_sentinel_alert_rule_scheduled": (
+        "a Sentinel analytics rule is an extension resource on the workspace (Microsoft.SecurityInsights/alertRules); "
+        "its ARM form isn't translated yet"),
     "azurerm_storage_object_replication": (
         "ARM sets object replication on the destination account first, in that account's resource group, and the "
         "source's policy takes the id it returns; the destination is an input the record holds no group for"),

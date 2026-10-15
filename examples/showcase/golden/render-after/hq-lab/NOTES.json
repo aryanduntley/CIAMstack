@@ -3,7 +3,7 @@
   "counts": {
     "blocker": 3,
     "action": 0,
-    "note": 1,
+    "note": 2,
     "to_review": 0
   },
   "notes": [
@@ -65,6 +65,24 @@
       "scope": "hq/lab",
       "owners": [
         "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "prometheus/rules/ciam.rules.yml",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "note",
+      "subject": "alert rule admin-login-failures",
+      "text": "no product rendering hq/lab declares signal `admin-login-failures` for role `pf-admin`: not rendered",
+      "how": [],
+      "entry": "cn=admin-login-failures,ou=alert-rules,dc=ciam-ops",
+      "scope": "hq/lab",
+      "owners": [
+        "security-operations"
       ],
       "places": [
         {

@@ -74,6 +74,7 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2047", ImportStep("cyberark/accounts", SHOWCASE / "exports" / "cyberark", "20260923090000Z")),
             ("CHG-2048", ImportStep("panos/running-config", SHOWCASE / "exports" / "panos", "20260923090000Z",
                                     keep=(FIREWALL_ADMIN,))),
+            ("CHG-2049", ImportStep("splunk/rest", SHOWCASE / "exports" / "splunk", "20260923090000Z")),
             ("CHG-2050", ImportStep("adcs/inventory", SHOWCASE / "exports" / "adcs", "20260923090000Z")),
             ("CHG-2051", SHOWCASE / "changes" / "CHG-2051-issuing-ca-and-template-owners.ldif"),
             ("CHG-2055", SHOWCASE / "changes" / "CHG-2055-ticket-links.ldif"),

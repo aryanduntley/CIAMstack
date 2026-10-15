@@ -1,0 +1,6 @@
+source/prod: 1 alarm resource(s) not in the record and naming no role, e.g. Errors in the last 24 hours (tag them Role, name them in roles.json, or record them); not imported
+source/prod: 3 logs resource(s) not in the record and naming no role, e.g. history, main, summary (tag them Role, name them in roles.json, or record them); not imported
+source/prod: alarm ciam-admin-login-failures added (role alarm-admin-login-failures)
+source/prod: Splunk index ciam_security also freezes its oldest data past maxTotalDataSizeMB 500000: its days are a ceiling, not a guarantee
+CHG-2049: 3 change(s) applied, the import run among them
+exit 0

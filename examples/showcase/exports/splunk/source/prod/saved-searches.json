@@ -1,0 +1,42 @@
+{
+  "links": {},
+  "origin": "https://splunk.mgmt.example-aero.test:8089/servicesNS/-/-/saved/searches",
+  "updated": "2026-09-23T09:00:00+00:00",
+  "generator": {
+    "build": "10.6.0.0",
+    "version": "10.6.0.0"
+  },
+  "entry": [
+    {
+      "name": "ciam-admin-login-failures",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/ciam_soc/saved/searches/ciam-admin-login-failures",
+      "content": {
+        "search": "index=ciam_security sourcetype=\"ciam:pf-admin:admin\" \"Login failed\"",
+        "description": "opsdir: realizes alert rule admin-login-failures",
+        "is_scheduled": true,
+        "cron_schedule": "*/5 * * * *",
+        "dispatch.earliest_time": "-5m",
+        "dispatch.latest_time": "now",
+        "alert_type": "number of events",
+        "alert_comparator": "greater than",
+        "alert_threshold": "50",
+        "disabled": false
+      }
+    },
+    {
+      "name": "Errors in the last 24 hours",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/ciam_soc/saved/searches/Errors in the last 24 hours",
+      "content": {
+        "search": "error OR failed OR severe OR ( sourcetype=access_* ( 404 OR 500 OR 503 ) )",
+        "description": "",
+        "is_scheduled": false,
+        "disabled": false
+      }
+    }
+  ],
+  "paging": {
+    "total": 2,
+    "perPage": 0,
+    "offset": 0
+  }
+}

@@ -1430,6 +1430,28 @@
       "planted": "CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed",
       "cleared_by": null,
       "raised_by": "CHG-2056"
+    },
+    {
+      "id": "A150",
+      "area": "Logs",
+      "match": "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 days in all but searchable only 90",
+      "planted": "the target's Sentinel keeps security events searchable 90 days: older ones must be restored from its archive",
+      "cleared_by": null
+    },
+    {
+      "id": "A151",
+      "area": "Monitoring",
+      "match": "Alert rule `admin-login-failures` isn't realized in source/prod",
+      "planted": "nothing in production is recorded running the admin-login detection, until Splunk's is read in",
+      "cleared_by": "CHG-2049"
+    },
+    {
+      "id": "A152",
+      "area": "Logs",
+      "match": "Log route `security-events` must keep logs 365 days; source/prod's `siem` keeps them 180 already",
+      "planted": "Splunk keeps production's security events 180 days, short of the 365 the route needs",
+      "cleared_by": null,
+      "raised_by": "CHG-2049"
     }
   ]
 }

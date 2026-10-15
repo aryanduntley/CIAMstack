@@ -1,0 +1,94 @@
+{
+  "links": {},
+  "origin": "https://splunk.mgmt.example-aero.test:8089/services/data/indexes",
+  "updated": "2026-09-23T09:00:00+00:00",
+  "generator": {
+    "build": "10.6.0.0",
+    "version": "10.6.0.0"
+  },
+  "entry": [
+    {
+      "name": "_audit",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/search/data/indexes/_audit",
+      "content": {
+        "datatype": "event",
+        "disabled": false,
+        "frozenTimePeriodInSecs": 188697600,
+        "homePath": "$SPLUNK_DB/_audit/db",
+        "coldPath": "$SPLUNK_DB/_audit/colddb",
+        "thawedPath": "$SPLUNK_DB/_audit/thaweddb",
+        "maxTotalDataSizeMB": 500000
+      }
+    },
+    {
+      "name": "_internal",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/search/data/indexes/_internal",
+      "content": {
+        "datatype": "event",
+        "disabled": false,
+        "frozenTimePeriodInSecs": 2592000,
+        "homePath": "$SPLUNK_DB/_internal/db",
+        "coldPath": "$SPLUNK_DB/_internal/colddb",
+        "thawedPath": "$SPLUNK_DB/_internal/thaweddb",
+        "maxTotalDataSizeMB": 500000
+      }
+    },
+    {
+      "name": "ciam_security",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/search/data/indexes/ciam_security",
+      "content": {
+        "datatype": "event",
+        "disabled": false,
+        "frozenTimePeriodInSecs": 15552000,
+        "homePath": "$SPLUNK_DB/ciam_security/db",
+        "coldPath": "$SPLUNK_DB/ciam_security/colddb",
+        "thawedPath": "$SPLUNK_DB/ciam_security/thaweddb",
+        "maxTotalDataSizeMB": 500000
+      }
+    },
+    {
+      "name": "history",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/search/data/indexes/history",
+      "content": {
+        "datatype": "event",
+        "disabled": false,
+        "frozenTimePeriodInSecs": 604800,
+        "homePath": "$SPLUNK_DB/history/db",
+        "coldPath": "$SPLUNK_DB/history/colddb",
+        "thawedPath": "$SPLUNK_DB/history/thaweddb",
+        "maxTotalDataSizeMB": 500000
+      }
+    },
+    {
+      "name": "main",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/search/data/indexes/main",
+      "content": {
+        "datatype": "event",
+        "disabled": false,
+        "frozenTimePeriodInSecs": 188697600,
+        "homePath": "$SPLUNK_DB/main/db",
+        "coldPath": "$SPLUNK_DB/main/colddb",
+        "thawedPath": "$SPLUNK_DB/main/thaweddb",
+        "maxTotalDataSizeMB": 500000
+      }
+    },
+    {
+      "name": "summary",
+      "id": "https://splunk.mgmt.example-aero.test:8089/servicesNS/nobody/search/data/indexes/summary",
+      "content": {
+        "datatype": "event",
+        "disabled": false,
+        "frozenTimePeriodInSecs": 188697600,
+        "homePath": "$SPLUNK_DB/summary/db",
+        "coldPath": "$SPLUNK_DB/summary/colddb",
+        "thawedPath": "$SPLUNK_DB/summary/thaweddb",
+        "maxTotalDataSizeMB": 500000
+      }
+    }
+  ],
+  "paging": {
+    "total": 6,
+    "perPage": 0,
+    "offset": 0
+  }
+}

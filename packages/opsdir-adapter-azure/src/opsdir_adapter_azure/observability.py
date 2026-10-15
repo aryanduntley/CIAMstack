@@ -13,10 +13,11 @@ every minute (every five past five minutes); ciamSeverity sev0..sev4 as its seve
 alarm (ciamMetric "log query"), with no target role, or whose role has no virtual machine here, is named; an alarm
 someone else keeps, or an overlay inherits from its base (rendered there), is named with its keeper.
 
-Workspaces: each log destination of kind workspace the platform keeps (not inherited) whose ciamProviderRef is a
-workspace ID, as an azurerm_log_analytics_workspace of that name (PerGB2018) keeping logs as many days as recorded
-within what a workspace's retention allows (30 to 730: fewer raised to 30, more, or indefinitely, kept 730 with a
-comment: a table's total retention keeps them longer, up to 4383 days).
+Workspaces: each log destination of kind workspace, or of kind siem-index on a workspace (Sentinel: sentinel.py), the
+platform keeps (not inherited) whose ciamProviderRef is a workspace ID, as an azurerm_log_analytics_workspace of that
+name (PerGB2018) keeping logs as many days as recorded within what a workspace's retention allows (30 to 730: fewer
+raised to 30, more, or indefinitely, kept 730 with a comment: a table's total retention keeps them longer, up to 4383
+days: log_collection.total_retention).
 """
 from decimal import Decimal
 
@@ -170,6 +171,13 @@ def workspace_name(b):
     return ref_[i + len(marker):].split("/", 1)[0] if i >= 0 else None
 
 
+def holds_logs(b):
+    """Whether log destination b is a Log Analytics workspace this render may ship to: of kind workspace, or a SIEM
+    index whose ciamProviderRef is a workspace ID (Microsoft Sentinel on it)."""
+    kind = one(b, "ciamDestinationKind") if b is not None else None
+    return kind == "workspace" or (kind == "siem-index" and workspace_name(b) is not None)
+
+
 def destination_note(m, b):
     """The render note of a log destination of kind workspace this render makes but whose ciamProviderRef isn't a Log
     Analytics workspace ID (a blocker: no workspace), or None."""
@@ -189,7 +197,7 @@ def workspace_notes(m):
 
 def _workspace(m, b):
     cn, name = rdn_value(b), workspace_name(b)
-    if one(b, "ciamDestinationKind") != "workspace":
+    if not holds_logs(b):
         return ()
     if keeper_of(m, b):
         return (comment(f"Log Analytics workspace {cn}: kept by {keeper_of(m, b)}, not rendered here"),)
@@ -204,9 +212,9 @@ def _workspace(m, b):
 
 
 def workspace_id(m, b):
-    """The ID Terraform gives a log destination of kind workspace: the workspace rendered here when this root
-    renders it, else its recorded ID; None for another kind or no workspace ID."""
-    if b is None or one(b, "ciamDestinationKind") != "workspace" or workspace_name(b) is None:
+    """The ID Terraform gives a log destination on a workspace (holds_logs): the workspace rendered here when this
+    root renders it, else its recorded ID; None for another kind or no workspace ID."""
+    if not holds_logs(b) or workspace_name(b) is None:
         return None
     return one(b, "ciamProviderRef") if keeper_of(m, b) or not is_rendered(m, b) else \
         ref(f"{WORKSPACE}.{tf_name(rdn_value(b))}.id")

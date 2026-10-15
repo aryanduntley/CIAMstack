@@ -16,6 +16,7 @@ from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command, keyvault_lookup
+from .sentinel import keeps as sentinel_keeps
 from .terraform import PRIORITIES, TARGETS, render, render_notes
 from .rendered_state import rendered_deployments, rendered_states
 
@@ -52,4 +53,4 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                                        rendered_states, intent=True),
                               ReadBack("arm", "arm/*", "arm/", "{environment}/", True, rendered_deployments,
                                        intent=True)),
-                  notes=render_notes, renders_synthetic_checks=True)
+                  notes=render_notes, renders_synthetic_checks=True, siem_indexes=sentinel_keeps)

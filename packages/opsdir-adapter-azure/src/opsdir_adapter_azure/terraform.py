@@ -29,6 +29,7 @@ from .audit import audit_notes, render_trails
 from .container_logs import container_log_notes, render_container_logs
 from .log_collection import agent_hosts, log_collection_notes, render_log_collection
 from .observability import alert_notes, render_alerts, render_workspaces, workspace_notes
+from .sentinel import render_sentinel, sentinel_notes
 from .canaries import render_tests, test_notes
 from .check_jobs import job_notes, render_jobs
 from .budgets import budget_inputs, budget_notes, render_budgets
@@ -214,7 +215,7 @@ def terraform_parts(m, services):
            *(render_log_collection(m, services) if services else ()),
            *(comment(note_comment(n)) for n in (log_collection_notes(m, services) if services else ())),
            *containers, *(comment(note_comment(n)) for n in (container_log_notes(m, services) if services else ())),
-           *render_alerts(m),
+           *render_alerts(m), *render_sentinel(m),
            *render_tests(m, endpoints), *jobs,
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
@@ -280,14 +281,15 @@ def render_notes(m, services):
     """Adapter notes (core.notes, flow 43): what environment m's Azure render leaves out or to a person, as data: the
     synthetic checks it doesn't render (availability tests, check jobs), the check jobs' subnet delegation and what to
     expect of their first runs; then the security services', audit trails', data discovery's, suppressions',
-    guardrails', alert rules', workspaces', identities' (core access.workloads), Kubernetes-only roles' (core
-    edge.kubernetes) and unpinned rule priorities' notes, the network depth's and the landing zone plumbing's, the
+    guardrails', alert rules', workspaces', Sentinel's, identities' (core access.workloads), Kubernetes-only roles'
+    (core edge.kubernetes) and unpinned rule priorities' notes, the network depth's and the landing zone plumbing's, the
     resource providers to register by hand (the Terraform parts placed again: landing.placed_notes), and log
     shipping's (servers, containers); each written as its comment."""
     endpoints = services.endpoints if services else ()
     return (*test_notes(m, endpoints), *job_notes(m, endpoints), *security_notes(m, discovery_plans(m)),
             *audit_notes(m), *discovery_notes(m), *suppression_notes(m), *guardrail_notes(m), *alert_notes(m),
-            *workspace_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m), *firewall_notes(m),
+            *workspace_notes(m), *sentinel_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m),
+            *firewall_notes(m),
             *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m), *backup_notes(m),
             *database_notes(m), *volume_notes(m), *group_notes(m), *inspection_notes(m, endpoints),
             *frontdoor_notes(m, endpoints), *quota_notes(m), *network_notes(m, endpoints), *plumbing_notes(m),

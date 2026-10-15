@@ -521,7 +521,7 @@
     "prometheus/rules/ciam.rules.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "ef9d9344360d75bf3d35fabe191d8c54a7985b9aa9771c310ea6b40d99704e79"
+      "sha256": "585c8ff29845517275a8fa8bf36e36a7de73fd65173e9536a5fce9389c8f0143"
     },
     "saml/idp/partners.xml": {
       "scope": "environment-neutral",
@@ -576,12 +576,12 @@
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "27e3da8a632311a2a4a8e49c1b4819c078f79954e07b2cbd3060c6862a59ee58"
+      "sha256": "bad0363bf958b9052f295f12b5594f57d3d354da39d89fd02d58899c1e880fc9"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "9a5f093e63958da434d3b386b65a6f6323ee58106e0b1cacd166c46f00987577"
+      "sha256": "a4b7789c59e7abac0ae91df3bd90c5bb25fa69e78515ecfac1f6ffd7b9185663"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

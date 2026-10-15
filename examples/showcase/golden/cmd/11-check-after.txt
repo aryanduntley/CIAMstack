@@ -30,7 +30,7 @@ Expected findings check (after changes)
            B55  raised by CHG-2050: the PKI team renewed the directory's LDAPS certificate (request 1342) and revoked the old one, which the record and its servers still use: clients checking revocation refuse it → reported
            B60  raised by CHG-2056: the record approves CHG-2004 (the partner realm's PingAM import), but the CAB rejected its ticket → reported
            B61  raised by CHG-2056: the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled → reported
-  actions  planted 152   expected now 122   detected 122   missed 0   unexpected 0
+  actions  planted 155   expected now 124   detected 124   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -61,6 +61,7 @@ Expected findings check (after changes)
            A131 cleared by CHG-2043: the target's AM/IDM keys are generated in the cluster, not the record's → gone
            A144 cleared by CHG-2046: once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded → gone
            A145 cleared by CHG-2048: the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds the target's, which the running-config import records → gone
+           A151 cleared by CHG-2049: nothing in production is recorded running the admin-login detection, until Splunk's is read in → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported
@@ -78,6 +79,7 @@ Expected findings check (after changes)
            A173 raised by CHG-2056: the record plans CHG-2006 for 2026-09-20; its ticket's window is 2026-09-27 to 2026-09-28 → reported
            A174 raised by CHG-2056: CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state is kept native) → reported
            A175 raised by CHG-2056: CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed → reported
+           A152 raised by CHG-2049: Splunk keeps production's security events 180 days, short of the 365 the route needs → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

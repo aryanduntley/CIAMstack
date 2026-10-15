@@ -13,6 +13,19 @@ def retention_days(b):
     return int(v) if v is not None else None
 
 
+def total_days(b):
+    """How many days binding b keeps what it is sent in all, searchable and archived: its ciamTotalRetentionDays when
+    recorded, else its ciamRetentionDays (retention_days); None when b is None or records neither."""
+    v = one(b, "ciamTotalRetentionDays") if b is not None else None
+    return int(v) if v is not None else retention_days(b)
+
+
+def days_text(days):
+    """A report's cell for a number of days kept (retention_days, total_days): '' when not recorded, 'forever' for
+    INDEFINITE, else the number."""
+    return "" if days is None else "forever" if days == INDEFINITE else str(days)
+
+
 def longest_retention(days):
     """The longest of several retentions (retention_days values): INDEFINITE when any keeps forever, else the most
     days; None when none is recorded."""

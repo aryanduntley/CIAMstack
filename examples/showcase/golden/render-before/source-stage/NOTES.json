@@ -2,8 +2,8 @@
   "environment": "env=stage,cloud=source,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 0,
-    "action": 2,
-    "note": 0,
+    "action": 3,
+    "note": 1,
     "to_review": 0
   },
   "notes": [
@@ -32,6 +32,21 @@
       ]
     },
     {
+      "area": "Logs",
+      "severity": "action",
+      "subject": "Splunk forwarding",
+      "text": "the forwarders' inputs are rendered (configuration management places them); where they send (outputs.conf, or Splunk Cloud's forwarder credentials package) is the Splunk team's",
+      "how": [
+        "Confirm the servers' Universal Forwarders send to the indexers keeping these indexes"
+      ],
+      "entry": null,
+      "scope": "source/stage",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
       "area": "Network",
       "severity": "action",
       "subject": "flow log `flow-vpc`",
@@ -48,6 +63,24 @@
         {
           "path": "terraform/landing-zone/network.tf",
           "line": 220
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "note",
+      "subject": "alert rule admin-login-failures",
+      "text": "not rendered: no alarm in source/stage realizes it (a ciamAlarmBinding with ciamRealizes admin-login-failures): record the one the cloud runs, or let Prometheus evaluate it",
+      "how": [],
+      "entry": "cn=admin-login-failures,ou=alert-rules,dc=ciam-ops",
+      "scope": "source/stage",
+      "owners": [
+        "security-operations"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1364
         }
       ]
     }

@@ -506,6 +506,17 @@ EXPECTED = MappingProxyType({
          "its legacy change model's state is kept native)", None, "CHG-2056"),
         ("A175", "Change tickets", "names ticket servicenow:CHG0030107, but no import has read it",
          "CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed", None, "CHG-2056"),
+        # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
+        # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
+        ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "
+         "days in all but searchable only 90",
+         "the target's Sentinel keeps security events searchable 90 days: older ones must be restored from its archive",
+         None),
+        ("A151", "Monitoring", "Alert rule `admin-login-failures` isn't realized in source/prod",
+         "nothing in production is recorded running the admin-login detection, until Splunk's is read in", "CHG-2049"),
+        ("A152", "Logs", "Log route `security-events` must keep logs 365 days; source/prod's `siem` keeps them 180 "
+         "already", "Splunk keeps production's security events 180 days, short of the 365 the route needs", None,
+         "CHG-2049"),
     ],
 })
 

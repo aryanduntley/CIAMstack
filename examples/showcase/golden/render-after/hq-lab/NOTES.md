@@ -5,7 +5,7 @@
 -->
 # Render notes: hq/lab
 
-**3 blockers, 0 actions, 1 note, 0 to review**
+**3 blockers, 0 actions, 2 notes, 0 to review**
 
 ## Blockers
 
@@ -41,5 +41,11 @@
 ### alert rule login-failures (Monitoring)
 
 - **What:** no product rendering hq/lab declares signal `login-failures` for role `pf-engine`: not rendered
-- **Where:** prometheus/rules/ciam.rules.yml:4; hq/lab
+- **Where:** prometheus/rules/ciam.rules.yml:5; hq/lab
 - **Who:** ciam-platform
+
+### alert rule admin-login-failures (Monitoring)
+
+- **What:** no product rendering hq/lab declares signal `admin-login-failures` for role `pf-admin`: not rendered
+- **Where:** prometheus/rules/ciam.rules.yml:4; hq/lab
+- **Who:** security-operations

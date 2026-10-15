@@ -49,6 +49,10 @@ ATTRIBUTES = (
                  'What delivers alerts in an environment: a topic, an action group, a paging service, ...'),
     AttributeDef(322, 'ciamDestinationKind', enum_type(DESTINATION_KINDS), 'binding', True,
                  'What keeps logs in an environment: a log group, a workspace, a SIEM index, a bucket'),
+    AttributeDef(710, 'ciamTotalRetentionDays', 'int', 'binding', True,
+                 "How many days a log destination keeps logs in all, searchable and archived (a SIEM's archive, a "
+                 "Log Analytics table's long-term retention); its ciamRetentionDays are the days they stay "
+                 "searchable. Not recorded: nothing is kept beyond those"),
     # ------------------------------------------------------------------ what a cloud runs
     AttributeDef(323, 'ciamRealizes', 'string', 'binding', True,
                  'The alert rule or canary (its name) an alarm or synthetic check a cloud runs realizes'),
@@ -93,12 +97,14 @@ CLASSES = (
     ClassDef(65, 'ciamAlertChannel', 'ciamBinding', 'STRUCTURAL', ('ciamChannelKind',), ('ciamProviderRef',),
              'What delivers alerts of a role in an environment (a topic, an action group, a paging service)'),
     ClassDef(66, 'ciamLogDestination', 'ciamBinding', 'STRUCTURAL', ('ciamDestinationKind',),
-             ('ciamProviderRef', 'ciamRetentionDays', 'ciamManagedBy'),
-             'What keeps logs of a role in an environment, and for how many days (0: kept indefinitely)'),
+             ('ciamProviderRef', 'ciamRetentionDays', 'ciamTotalRetentionDays', 'ciamManagedBy'),
+             'What keeps logs of a role in an environment, and for how many days (0: kept indefinitely): searchable '
+             '(ciamRetentionDays), and in all when it archives them (ciamTotalRetentionDays)'),
     ClassDef(67, 'ciamAlarmBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamRealizes', 'ciamNotifies', 'ciamMetric', 'ciamManagedBy'),
+             ('ciamRealizes', 'ciamNotifies', 'ciamMetric', 'ciamManagedBy', 'ciamLogDestinationRole'),
              'An alarm a cloud runs in an environment: the alert rule it realizes, what it evaluates, what it '
-             'notifies'),
+             'notifies; a SIEM detection names the log destination (a SIEM index) its search runs on '
+             '(ciamLogDestinationRole) and holds the search in ciamMetric'),
     ClassDef(68, 'ciamCanaryBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamRealizes', 'ciamInterval', 'ciamStorageRef', 'ciamSubnetRole', 'ciamManagedBy',
               'ciamContainerImage'),

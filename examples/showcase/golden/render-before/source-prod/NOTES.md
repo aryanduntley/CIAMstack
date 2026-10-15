@@ -5,14 +5,14 @@
 -->
 # Render notes: source/prod
 
-**1 blocker, 11 actions, 0 notes, 0 to review**
+**1 blocker, 13 actions, 2 notes, 0 to review**
 
 ## Blockers
 
 ### guardduty (Security)
 
 - **What:** runs in every region, but the region catalog holds no aws regions (`opsdir prerequisites`): only us-east-1 renders
-- **Where:** terraform/main.tf:2365; every region of source/prod but us-east-1
+- **Where:** terraform/main.tf:2367; every region of source/prod but us-east-1
 - **Who:** ciam-platform
 - **How:** Fetch the region catalog (`opsdir prerequisites`), then re-render
 
@@ -41,38 +41,54 @@
 - **Who:** ciam-platform
 - **How:** Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it
 
+### Splunk app opsdir_ciam (Logs)
+
+- **What:** rendered for the Splunk team to install where indexes and searches run; opsdir doesn't install it
+- **Where:** splunk/apps/opsdir_ciam/default/indexes.conf:4; source/prod
+- **Who:** ciam-platform
+- **How:**
+  1. Splunk Enterprise: deploy the app to the indexers and search heads (deployment server or cluster manager)
+  2. Splunk Cloud Platform: create the indexes with these values through its index management, and install the saved searches as an app
+
+### Splunk forwarding (Logs)
+
+- **What:** the forwarders' inputs are rendered (configuration management places them); where they send (outputs.conf, or Splunk Cloud's forwarder credentials package) is the Splunk team's
+- **Where:** splunk/apps/opsdir_ciam/default/indexes.conf:5; source/prod
+- **Who:** ciam-platform
+- **How:** Confirm the servers' Universal Forwarders send to the indexers keeping these indexes
+
 ### guardduty's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2331; source/prod
+- **Where:** terraform/main.tf:2333; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
 ### guardduty's incidents to security-incidents (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2360; source/prod
+- **Where:** terraform/main.tf:2362; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security-incidents's access policy (aws:SourceArn the rule's ARN)
 
 ### inspector's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2386; source/prod
+- **Where:** terraform/main.tf:2388; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
 ### macie-backups's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2528; source/prod
+- **Where:** terraform/main.tf:2530; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
 ### security-hub's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2426; source/prod
+- **Where:** terraform/main.tf:2428; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
@@ -96,3 +112,18 @@
 - **Where:** terraform/landing-zone/network.tf:220; source/prod
 - **Who:** network-security
 - **How:** Set the retention of ops-logs to 30 days where it is kept
+
+## Notes
+
+### Splunk index ciam_security (Logs)
+
+- **What:** records no retention (ciamRetentionDays): frozenTimePeriodInSecs not rendered, so the index keeps what Splunk is set to
+- **Where:** splunk/apps/opsdir_ciam/default/indexes.conf:6; source/prod
+- **Who:** ciam-platform
+- **How:** Read what Splunk keeps into the record (splunk/rest), or record the retention the obligations need
+
+### alert rule admin-login-failures (Monitoring)
+
+- **What:** not rendered: no alarm in source/prod realizes it (a ciamAlarmBinding with ciamRealizes admin-login-failures): record the one the cloud runs, or let Prometheus evaluate it
+- **Where:** terraform/main.tf:2083; source/prod
+- **Who:** security-operations

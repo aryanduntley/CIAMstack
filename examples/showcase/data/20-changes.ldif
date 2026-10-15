@@ -462,6 +462,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's firewall rules back from the HQ Panorama's running c
  onfiguration (keep the record's admin range: the next push restores it)
 
+dn: cn=CHG-2049,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2049
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the security team's Splunk retention and detections into the r
+ ecord
+
 dn: cn=CHG-2050,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

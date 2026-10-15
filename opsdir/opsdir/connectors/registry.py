@@ -297,6 +297,13 @@ def mounts_secrets_of(m, w, installed=ADAPTERS):
     return any(a.mounts_secrets(m, w) for a in declared_adapters(m, installed) if a.mounts_secrets is not None)
 
 
+def siem_keeper_of(m, b, installed=ADAPTERS):
+    """The name of the adapter rendering environment m (its declared stack's) that keeps log destination b, a SIEM
+    index (Adapter.siem_indexes), or None."""
+    return next((a.name for a in declared_adapters(m, installed)
+                 if a.siem_indexes is not None and a.siem_indexes(m, b)), None)
+
+
 def services(installed=ADAPTERS, targets=None):
     """What connectors provide to adapters while rendering, resolved against the installed adapters (their callable
     logs resolved: resolved_logs); targets: the render targets chosen in this render ({adapter name: targets}; none
@@ -316,7 +323,8 @@ def services(installed=ADAPTERS, targets=None):
                     host_files=partial(host_files_of, installed=installed),
                     render_targets=partial(chosen_for, dict(targets or {})),
                     mounts_secrets=partial(mounts_secrets_of, installed=installed),
-                    installed_logs=tuple(s for a in installed for s in a.logs))
+                    installed_logs=tuple(s for a in installed for s in a.logs),
+                    siem_keeper=partial(siem_keeper_of, installed=installed))
 
 
 def product_of(adapter):

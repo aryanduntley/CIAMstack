@@ -1361,6 +1361,8 @@ resource "aws_route53_resolver_rule_association" "fwd_corp_ad_0" {
 
 # Log group ops-logs: kept by source/prod (this environment inherits it), not rendered here
 
+# NOTE: alert rule admin-login-failures: not rendered: no alarm in source/stage realizes it (a ciamAlarmBinding with ciamRealizes admin-login-failures): record the one the cloud runs, or let Prometheus evaluate it
+
 # Alarm pf-login-failures (alert rule login-failures): kept by source/prod (this environment inherits it), not rendered here
 
 # Alarm ds-replication-lag (alert rule replication-lag): kept by source/prod (this environment inherits it), not rendered here

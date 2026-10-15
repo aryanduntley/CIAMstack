@@ -65,3 +65,11 @@ ciam_host_files:
       - file:/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json
     hosts:
       - pf-engine-s1.aws.internal.example-aero.test
+  - src: host-files/pf-engine/pf-engine-s1/opt/splunkforwarder/etc/apps/opsdir_ciam/local/inputs.conf.j2
+    dest: /opt/splunkforwarder/etc/apps/opsdir_ciam/local/inputs.conf
+    mode: "0644"
+    reload:
+      - /opt/splunkforwarder/bin/splunk
+      - restart
+    hosts:
+      - pf-engine-s1.aws.internal.example-aero.test

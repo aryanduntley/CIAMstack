@@ -255,7 +255,7 @@
     "prometheus/rules/ciam.rules.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "4fb8d36fa25c586180f5bcc7a9070eacaa296c7603a6684c3dba719188ebcd91"
+      "sha256": "7bdd779fcc0b749c6c86e8d6debd3b020167a106b04895d2dc07fceec824af7c"
     },
     "saml/idp/sso.xml": {
       "scope": "environment-neutral",

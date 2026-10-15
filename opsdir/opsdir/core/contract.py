@@ -167,13 +167,17 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # render targets chosen for that adapter in this render (() outside a render, or when it declares none);
 # mounts_secrets(m, workload): whether a deployment kit rendering m mounts the workload's SecretProviderClasses in its
 # pods (Adapter.mounts_secrets); installed_logs: the LogSources every installed adapter declares (a kit's resolved),
-# whether or not it renders the environment: what a kit reads its products' log files from
+# whether or not it renders the environment: what a kit reads its products' log files from; siem_keeper(m,
+# destination): the name of the adapter rendering m that keeps a log destination of kind siem-index (its retention,
+# its detections and, where it ships logs to it itself, their forwarding: Adapter.siem_indexes), or None; a provider
+# adapter leaves a destination another adapter keeps to it
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
                                    ("deployable_config", Callable), ("signals", Callable), ("logs", Callable),
                                    ("host_files", Callable), ("render_targets", Callable),
-                                   ("mounts_secrets", Callable), ("installed_logs", tuple)])
+                                   ("mounts_secrets", Callable), ("installed_logs", tuple),
+                                   ("siem_keeper", Callable)])
 
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
@@ -403,12 +407,15 @@ Adapter = namedtuple("Adapter", (
     "cluster_discovery",    # (EnvModel) -> (DiscoveryAnswer, ...): what a deployment kit's chart answers for its
                             # products' cluster discovery in an environment, for the product's own check
                             # (core.environment discovery_answers), or None
-    "inventory_locator"),   # {ref-uri scheme: (rest of uri) -> (container, object) or None}: where in its store's
+    "inventory_locator",   # {ref-uri scheme: (rest of uri) -> (container, object) or None}: where in its store's
                             # inventory a reference of the scheme points (a safe and an account, a mount and a path),
                             # for reconciling the record's references with the inventory its importers record
                             # (domains.pki.inventory), or None (its stores aren't inventoried)
+    "siem_indexes"),        # (EnvModel, ciamLogDestination binding of kind siem-index) -> bool: whether its render
+                            # keeps that SIEM index (its retention, the detections searching it and, where it ships
+                            # logs to it itself, their forwarding), or None (it keeps none)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None))
+              None, False, None, None, (), None, None, None))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

@@ -2080,6 +2080,8 @@ resource "aws_cloudwatch_log_group" "ops_logs" {
   }
 }
 
+# NOTE: alert rule admin-login-failures: not rendered: no alarm in source/prod realizes it (a ciamAlarmBinding with ciamRealizes admin-login-failures): record the one the cloud runs, or let Prometheus evaluate it
+
 resource "aws_cloudwatch_metric_alarm" "pf_login_failures" {
   alarm_name          = "pf-login-failures"
   alarm_description   = "Alert rule login-failures: login-failures gt 50 /min (opsdir)"

@@ -475,6 +475,9 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2048  update  cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2048  insert  cn=panos.running-config.hq.lab,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2048  insert  cn=panos.running-config.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2049  insert  cn=ciam-admin-login-failures,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2049  update  cn=siem,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2049  insert  cn=splunk.rest.source.prod,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2050  insert  ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2050  insert  ou=certificate-templates,dc=ciam-ops
 <TIMESTAMP>          CHG-2050  insert  ou=issued-certificates,dc=ciam-ops
@@ -521,4 +524,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2056  insert  cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2056  insert  cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2056  insert  cn=servicenow.change-requests.shared,ou=imports,dc=ciam-ops
-(521 rows)
+(524 rows)

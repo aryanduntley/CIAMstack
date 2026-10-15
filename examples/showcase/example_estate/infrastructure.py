@@ -43,7 +43,7 @@ IMG = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ci
 SOURCE = MappingProxyType({
     "stack": (("provider", "aws"), ("configuration-management", "ansible"), ("directory", "pingds"),
               ("federation", "pingfederate"), ("access", "pingam"), ("identity-management", "pingidm"),
-              ("gateway", "pinggateway")),
+              ("gateway", "pinggateway"), ("siem", "splunk")),
     "net": ("vpc", "vpc-0a1b2c3d4e5f67890", "10.20.0.0/16"),
     "subnets": [("subnet-ds-a", "subnet-ds", "subnet-0a11b22c33d44e55a", "10.20.1.0/24", "us-east-1a"),
                 ("subnet-ds-b", "subnet-ds", "subnet-0a11b22c33d44e55b", "10.20.2.0/24", "us-east-1b"),

@@ -9,6 +9,11 @@ instead); an alarm an overlay inherits from its base (rendered there) is named w
 (ciamManagedBy) is placed by its keeper (governance.keepers). A rule the environment doesn't deliver is the planner's
 blocker, not a renderer's concern.
 
+A rule realized by a SIEM detection (an alarm binding naming the SIEM index its search runs on,
+ciamLogDestinationRole: domains/observability/siem) is the SIEM adapter's, not a cloud alarm: detection_specs gives
+those, and detection_condition its condition as a SIEM counts events (matching events per window, every window of the
+rule's evaluation period breaching).
+
 What a cloud doesn't render is a render note (alarm_note, flow 43): a plain note when no alarm here realizes the rule
 with a metric (the planner's signal check raises a rule nothing evaluates; a Prometheus signal may evaluate it), a
 blocker when the cloud can't express the alarm the record holds (the planner takes it as evaluated).
@@ -50,13 +55,43 @@ def _why_not(m, rule, alarm):
     return None
 
 
-def alarm_specs(m):
-    """Environment m's alert rules it delivers, as AlarmSpecs, in the record's order."""
+def _specs(m):
     def spec(rule):
         alarm = alarm_for(m, rule)
         return AlarmSpec(rule, alarm, one_role(m, one(rule, "ciamAlertRole")), keeper_of(m, alarm),
                          _why_not(m, rule, alarm))
     return tuple(spec(r) for r in alert_rules(m.d) if one_role(m, one(r, "ciamAlertRole")) is not None)
+
+
+def _detects(s):
+    return s.alarm is not None and bool(one(s.alarm, "ciamLogDestinationRole"))
+
+
+def alarm_specs(m):
+    """Environment m's alert rules it delivers, as AlarmSpecs, in the record's order; those a SIEM detection
+    realizes (detection_specs) left out."""
+    return tuple(s for s in _specs(m) if not _detects(s))
+
+
+def detection_specs(m):
+    """Environment m's alert rules it delivers that a SIEM detection realizes (its alarm binding names the SIEM index
+    its search runs on: ciamLogDestinationRole), as AlarmSpecs, in the record's order (why: its search, ciamMetric,
+    isn't recorded)."""
+    return tuple(s for s in _specs(m) if _detects(s))
+
+
+def detection_condition(rule):
+    """(Condition, None) of a rule as a SIEM evaluates it, counting matching events per window: its threshold a
+    count per window (a rate, or a number without a unit taken as a count per minute) compared greater than (or
+    equal), every window of its evaluation period breaching; or (None, why it can't be, about the rule)."""
+    c = condition(rule)
+    if c is None or c.kind not in ("count", None):
+        return None, (f"a SIEM detection counts matching events: its threshold {one(rule, 'ciamThreshold')!r} isn't a "
+                      "rate (per second, minute or hour) or a count")
+    if one(rule, "ciamComparison") not in ("gt", "ge"):
+        return None, (f"a SIEM detection fires on more matching events than its threshold, not on comparison "
+                      f"{one(rule, 'ciamComparison') or '(none)'} (windows without events aren't counted)")
+    return c, None
 
 
 def alarm_note(m, s, why=None):

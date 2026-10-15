@@ -9,6 +9,9 @@ blocker, so it isn't repeated here. Likewise a log route the target keeps whose 
 install root is an action (nothing can locate them), as is one collecting from a server role whose logs there hold
 none of its kinds: either way nothing ships them.
 
+A SIEM index the target keeps logs in (a log destination of kind siem-index) that no adapter rendering it keeps
+(Adapter.siem_indexes: its retention, detections and forwarding) is an action: what it holds is kept by hand.
+
 Which synthetic checks each environment renders (the canary-coverage report): every canary it could run, rendered,
 inherited or kept by someone else, or not rendered with the render note that says why (connectors.render
 environment_notes: the adapters' and the core's own).
@@ -21,6 +24,7 @@ from ..domains.observability.alerts import alert_rules
 from ..domains.observability.canaries import canary_specs
 from ..domains.observability.logs import log_routes
 from ..domains.observability.signals import evaluation
+from ..domains.observability.siem import siem_destinations
 from ..domains.observability.sources import COLLECTION_HEADERS, collection_rows, collections, uncollected
 from .registry import ADAPTERS, environment, environment_specs, services
 from .render import environment_notes
@@ -40,6 +44,21 @@ def signal_check(dst_adapters):
              "the metric the alarm realizing it evaluates there (ciamMetric), or install a product adapter that "
              "declares the signal.", responsible(ctx.d, e.rule, ctx.dst.env), None) for e in missing])
     return check_signals
+
+
+def siem_check(dst_adapters):
+    """The planner check for the target's SIEM indexes no adapter rendering it keeps (Adapter.siem_indexes), given
+    its adapters: an action per index."""
+    def check_siem_kept(ctx):
+        return findings(actions=[
+            ("Logs", f"{ctx.dst.label}'s `{one(b, 'ciamBindingRole')}` is a SIEM index ({one(b, 'ciamProviderRef')}) "
+             f"that nothing rendering {ctx.dst.label} keeps: its retention, the detections searching it and the "
+             "forwarding of logs to it are left to whoever runs the SIEM. Declare the SIEM's adapter in the "
+             "environment's stack (stack role siem), or confirm the SIEM team keeps them.",
+             responsible(ctx.d, b, ctx.dst.env), None)
+            for b in siem_destinations(ctx.dst)
+            if not any(a.siem_indexes is not None and a.siem_indexes(ctx.dst, b) for a in dst_adapters)])
+    return check_siem_kept
 
 
 def _sources(adapters):

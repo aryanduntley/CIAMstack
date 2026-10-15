@@ -140,6 +140,8 @@ cap 08-firewall-drift-lab od import --dry-run --at 20260923090000Z panos/running
 cap 08-apply-chg-2048 od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
   panos/running-config exports/panos
 cap 08-report-firewall-running od report firewall-running
+cap 08-apply-chg-2049 od import --change CHG-2049 --at 20260923090000Z splunk/rest exports/splunk
+cap 08-report-log-routes od report log-routes
 cap 08-apply-chg-2050 od import --change CHG-2050 --at 20260923090000Z adcs/inventory exports/adcs
 cap 08-apply-chg-2051 od modify --change CHG-2051 changes/CHG-2051-issuing-ca-and-template-owners.ldif
 cap 08-report-certificate-authorities od report certificate-authorities

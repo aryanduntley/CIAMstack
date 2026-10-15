@@ -16,7 +16,7 @@ provider "azurerm" {
   }
   subscription_id                 = var.subscription_id
   resource_provider_registrations = "none"
-  resource_providers_to_register  = ["Microsoft.App", "Microsoft.Authorization", "Microsoft.Compute", "Microsoft.Consumption", "Microsoft.DBforPostgreSQL", "Microsoft.DataProtection", "Microsoft.Insights", "Microsoft.Logic", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.OperationalInsights", "Microsoft.Security", "Microsoft.Storage"]
+  resource_providers_to_register  = ["Microsoft.App", "Microsoft.Authorization", "Microsoft.Compute", "Microsoft.Consumption", "Microsoft.DBforPostgreSQL", "Microsoft.DataProtection", "Microsoft.Insights", "Microsoft.Logic", "Microsoft.ManagedIdentity", "Microsoft.Network", "Microsoft.OperationalInsights", "Microsoft.Security", "Microsoft.SecurityInsights", "Microsoft.Storage"]
 }
 
 variable "subscription_id" {

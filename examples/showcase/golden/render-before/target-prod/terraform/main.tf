@@ -1364,6 +1364,20 @@ resource "azurerm_log_analytics_workspace" "security_logs" {
   }
 }
 
+resource "azurerm_log_analytics_workspace" "siem" {
+  name                = "law-ciam-prod-sentinel"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 90
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    BindingRole = "siem"
+  }
+}
+
 resource "azurerm_log_analytics_workspace_table_custom_log" "logs_access_logs" {
   name         = "CiamAccessLogs_CL"
   workspace_id = azurerm_log_analytics_workspace.ops_logs.id
@@ -1727,6 +1741,46 @@ resource "azurerm_monitor_data_collection_rule_association" "logs_audit_logs_aks
   data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_audit_logs_aks.id
 }
 
+resource "azurerm_monitor_data_collection_rule" "logs_security_events_aks" {
+  name                        = "dcr-ciam-prod-security-events-aks"
+  location                    = data.azurerm_resource_group.main.location
+  resource_group_name         = data.azurerm_resource_group.main.name
+  description                 = "Log route security-events: container logs of pf-engine, pf-admin (opsdir)"
+  data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.logs_aks.id
+  destinations {
+    log_analytics {
+      name                  = "workspace"
+      workspace_resource_id = azurerm_log_analytics_workspace.siem.id
+    }
+  }
+  data_sources {
+    extension {
+      name           = "ciam-containers"
+      extension_name = "ContainerLogV2Extension"
+      streams        = ["Microsoft-ContainerLogV2-HighScale"]
+      extension_json = "{\"dataCollectionSettings\":{\"namespaces\":[\"ciam\"]}}"
+    }
+  }
+  data_flow {
+    streams       = ["Microsoft-ContainerLogV2-HighScale"]
+    destinations  = ["workspace"]
+    transform_kql = "source | where (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-audit\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-engine\" and ContainerName == \"pf-log-provisioner-audit\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin-event-detail\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin-api\") or (tostring(KubernetesMetadata.podLabels[\"opsdir.io/role\"]) == \"pf-admin\" and ContainerName == \"pf-log-admin-request\")"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Realizes    = "security-events"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_monitor_data_collection_rule_association" "logs_security_events_aks" {
+  name                    = "security-events-aks"
+  target_resource_id      = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.ContainerService/managedClusters/aks-ciam-prod"
+  data_collection_rule_id = azurerm_monitor_data_collection_rule.logs_security_events_aks.id
+}
+
 # NOTE: alert rule login-failures: not rendered: its alarm is a log query alert and the record holds no query
 
 resource "azurerm_monitor_metric_alert" "ds_replication_lag" {
@@ -1758,6 +1812,26 @@ resource "azurerm_monitor_metric_alert" "ds_replication_lag" {
     BindingRole = "alarm-replication-lag"
   }
 }
+
+resource "azurerm_sentinel_log_analytics_workspace_onboarding" "siem" {
+  workspace_id = azurerm_log_analytics_workspace.siem.id
+}
+
+resource "azurerm_sentinel_alert_rule_scheduled" "pf_admin_login_failures" {
+  name                       = "ciam-admin-login-failures"
+  log_analytics_workspace_id = azurerm_sentinel_log_analytics_workspace_onboarding.siem.workspace_id
+  display_name               = "admin-login-failures"
+  description                = "opsdir: realizes alert rule admin-login-failures"
+  severity                   = "Medium"
+  query                      = "ContainerLogV2 | where ContainerName startswith \"pf-log-admin\" and LogMessage has \"Login failed\" | summarize events = count() by bin(TimeGenerated, 60s) | where events > 10 | summarize breaching = count() | where breaching >= 5"
+  query_frequency            = "PT5M"
+  query_period               = "PT5M"
+  trigger_operator           = "GreaterThan"
+  trigger_threshold          = 0
+  enabled                    = true
+}
+
+# NOTE: log destination siem: keeps logs 365 days in all on the tables opsdir renders for its routes (Ciam<route>_CL); its other tables (Sentinel's own, the containers' ContainerLogV2) keep the workspace's retention unless set by hand
 
 resource "azurerm_application_insights_standard_web_test" "portal_sso" {
   name                    = "portal-sso"

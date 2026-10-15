@@ -41,6 +41,11 @@ state_names.reader_names), managed resources and data sources:
   azurerm_monitor_action_group                -> alert channel (kind channel, ciamAlertChannel): action group
   azurerm_log_analytics_workspace             -> log destination (kind logs, ciamLogDestination): workspace, its
                                                  retention in days
+  azurerm_sentinel_log_analytics_workspace_  -> the workspace it names is a SIEM index (ciamDestinationKind
+    onboarding                                   siem-index): Microsoft Sentinel on it (sentinel.py)
+  azurerm_sentinel_alert_rule_scheduled       -> detection (kind alarm, ciamAlarmBinding): the rule its description
+                                                 names, its query without the render's condition, the workspace it
+                                                 runs in as the SIEM index it searches (sentinel.py)
   azurerm_monitor_metric_alert,               -> alarm (kind alarm, ciamAlarmBinding): what it evaluates (namespace and
     azurerm_monitor_scheduled_query_rules_       metric, or a log query), the action groups it notifies, the alert rule
     alert_v2                                     it realizes (tag Realizes)
@@ -93,6 +98,7 @@ from .audit import trail_resources
 from .budgets import budget_resources
 from .discovery import discovery_resources
 from .security import is_incident_alert, security_notices, security_resources
+from .sentinel import onboarded, sentinel_resources
 from .suppressions import suppression_resources
 from .check_jobs import cron_seconds
 
@@ -508,8 +514,10 @@ def _channels(found):
 
 
 def _log_destinations(found):
-    """Log Analytics workspaces, with their retention."""
-    return tuple(resource("logs", a.get("id"), {"ciamDestinationKind": "workspace",
+    """Log Analytics workspaces, with their retention: a SIEM index when the source holds its Sentinel onboarding."""
+    sentinel = onboarded(found)
+    return tuple(resource("logs", a.get("id"), {"ciamDestinationKind": "siem-index" if a.get("id").lower() in sentinel
+                                                else "workspace",
                                                 "ciamRetentionDays": a.get("retention_in_days")},
                           name=a.get("name"), role=_role(a), tags=_tags(a))
                  for a in of_types(found, "azurerm_log_analytics_workspace") if a.get("id"))
@@ -591,7 +599,8 @@ def pairs_resources(pairs):
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
-             *_canaries(pairs), *iam, *edge, *network, *database_resources(pairs), *volumes, *backups,
+             *_canaries(pairs), *sentinel_resources(pairs), *iam, *edge, *network, *database_resources(pairs),
+             *volumes, *backups,
              *trail_resources(pairs), *security_resources(pairs), *discovery_resources(pairs),
              *suppression_resources(pairs),
              *budget_resources(pairs)),

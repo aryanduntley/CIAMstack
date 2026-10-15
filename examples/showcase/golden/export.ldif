@@ -572,6 +572,21 @@ ciamImportScope: cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-o
 ciamImportedAt: 20260923090000Z
 ciamImporter: adcs/inventory
 
+dn: cn=admin-login-failures,ou=alert-rules,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAlertRule
+cn: admin-login-failures
+ciamAlertRole: soc-alerts
+ciamComparison: gt
+ciamEvaluationPeriod: 5m
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamRunbookRef: cn=WI-CIAM-012,ou=runbooks,dc=ciam-ops
+ciamSeverity: sev2
+ciamSignal: admin-login-failures
+ciamTargetRole: pf-admin
+ciamThreshold: 10 /min
+
 dn: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloudAuthorization
@@ -1506,6 +1521,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's firewall rules back from the HQ Panorama's running c
  onfiguration (keep the record's admin range: the next push restores it)
+
+dn: cn=CHG-2049,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2049
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the security team's Splunk retention and detections into the r
+ ecord
 
 dn: cn=CHG-2050,ou=changes,dc=ciam-ops
 objectClass: top
@@ -4055,6 +4080,19 @@ ciamEvidenceSource: keys
 ciamManagedBy: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 
+dn: cn=security-events,ou=log-routes,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamLogRoute
+cn: security-events
+ciamLogDestinationRole: siem
+ciamLogKind: audit
+ciamLogKind: admin
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamPublishedBy: pf-engine
+ciamPublishedBy: pf-admin
+ciamRetentionDays: 365
+
 dn: cn=security-operations,ou=owners,dc=ciam-ops
 objectClass: top
 objectClass: ciamParty
@@ -4268,6 +4306,19 @@ ciamPasswordAge: >2y=89
 ciamPasswordAge: never=6
 ciamPendingCount: 11
 ciamProfiledEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
+
+dn: cn=splunk.rest.source.prod,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: splunk.rest.source.prod
+ciamChangeRef: cn=CHG-2049,ou=changes,dc=ciam-ops
+ciamImportScope: cn=siem,ou=bindings,env=prod,cloud=source,ou=environments,dc=
+ ciam-ops
+ciamImportScope: cn=ciam-admin-login-failures,ou=bindings,env=prod,cloud=sourc
+ e,ou=environments,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: splunk/rest
 
 dn: cn=sso,ou=identity-services,dc=ciam-ops
 objectClass: top
@@ -8517,6 +8568,17 @@ ciamBindingRole: sso-tls-certificate
 ciamHoldsCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
 ciamRefUri: azkv-cert://kv-ciam-prod/sso-tls-2026
 
+dn: cn=ciam-admin-login-failures,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: ciam-admin-login-failures
+ciamBindingRole: alarm-admin-login-failures
+ciamLogDestinationRole: siem
+ciamMetric: index=ciam_security sourcetype="ciam:pf-admin:admin" "Login failed
+ "
+ciamProviderRef: ciam-admin-login-failures
+ciamRealizes: admin-login-failures
+
 dn: cn=ciam-backups,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamBackupVault
@@ -10789,6 +10851,20 @@ ciamStorageClass: managed-csi-premium
 ciamStorageSize: 8Gi
 ciamWorkloadReplicas: 1
 
+dn: cn=pf-admin-login-failures,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: pf-admin-login-failures
+ciamBindingRole: alarm-admin-login-failures
+ciamLogDestinationRole: siem
+ciamMetric: ContainerLogV2 | where ContainerName startswith "pf-log-admin" and
+  LogMessage has "Login failed"
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-sentinel/providers/Microsoft.SecurityInsights/alertRules/ciam-admin-lo
+ gin-failures
+ciamRealizes: admin-login-failures
+
 dn: cn=pf-discovery,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: pingfedClusterDiscovery
@@ -12265,6 +12341,37 @@ ciamLockoutFailureCount: 0
 ciamPasswordHistoryCount: 0
 ciamStorageScheme: PBKDF2-HMAC-SHA512
 
+dn: cn=siem,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: siem
+ciamBindingRole: siem
+ciamDestinationKind: siem-index
+ciamProviderRef: ciam_security
+ciamRetentionDays: 180
+
+dn: cn=siem,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: siem
+ciamBindingRole: siem
+ciamDestinationKind: siem-index
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-sentinel
+ciamRetentionDays: 90
+ciamTotalRetentionDays: 365
+
+dn: cn=siem,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: siem
+ciamAdapter: splunk
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-splunk
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: siem
+
 dn: cn=snapshots-daily,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamSnapshotPolicy
@@ -12377,6 +12484,23 @@ cn: snet-pf
 ciamBindingRole: subnet-pf
 ciamCidr: 10.60.2.0/24
 ciamProviderRef: vnet-ciam-prod/snet-pf
+
+dn: cn=soc-alerts,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: soc-alerts
+ciamBindingRole: soc-alerts
+ciamChannelKind: email
+ciamProviderRef: mailto:soc@example-aero.test
+
+dn: cn=soc-alerts,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: soc-alerts
+ciamBindingRole: soc-alerts
+ciamChannelKind: action-group
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-soc
 
 dn: cn=soldToAccount,cn=userData,ou=backends,ou=declared,ou=config,dc=ciam-ops
 objectClass: top

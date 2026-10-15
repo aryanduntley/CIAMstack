@@ -141,12 +141,12 @@
     "ansible/inventory/group_vars/pf_admin.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "ef8a8033020568e334311cbcd6d3db679ed46aa5103bae0332a3bea503179df3"
+      "sha256": "49a60de08e0a8f078b0c7697a28622c42ca45854df0f4bc61fa1cddfb39e650d"
     },
     "ansible/inventory/group_vars/pf_engine.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "481b2d1013a2d24e5d0613c014e147c2fa875f48e65157421360bd45df6eab52"
+      "sha256": "72bcddd10741ec443c0fdf24c7e20901789b808252a25b392f522044cc1a4434"
     },
     "ansible/inventory/host_vars/am-s1.aws.internal.example-aero.test.yml": {
       "scope": "environment-specific",
@@ -198,10 +198,20 @@
       "format": "text",
       "sha256": "4372e52c0813088173f83628c26a44be31afe232db585e856feb39c32fc18d0f"
     },
+    "ansible/templates/host-files/pf-admin/pf-admin-s1/opt/splunkforwarder/etc/apps/opsdir_ciam/local/inputs.conf.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "eb1a4dc99120c3d93f5c6acce024aff9bd00eff2a4b00924fcc354e9f433cf80"
+    },
     "ansible/templates/host-files/pf-engine/pf-engine-s1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2": {
       "scope": "environment-specific",
       "format": "text",
       "sha256": "40a42b2dd8cd6a44895820bb13fc711f47187ef1b2eba067b5fd10ca25b8b236"
+    },
+    "ansible/templates/host-files/pf-engine/pf-engine-s1/opt/splunkforwarder/etc/apps/opsdir_ciam/local/inputs.conf.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "101ded2fe1984b9f742f3aa383c163789243efa8c399daf291480c159d3acc13"
     },
     "ansible/templates/pingfederate/bin/run.properties.j2": {
       "scope": "environment-specific",
@@ -402,7 +412,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "39bcbb90ff2f54643bdb3d9d0236843f2f07b6552352279ed92a2e2d572a6765"
+      "sha256": "87a7fa772f29418930d7e3c848c8314cb8eef6fa2fcc6fafe6c16e182d207090"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

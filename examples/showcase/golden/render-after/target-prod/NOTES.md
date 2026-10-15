@@ -5,14 +5,14 @@
 -->
 # Render notes: target/prod
 
-**2 blockers, 5 actions, 10 notes, 0 to review**
+**2 blockers, 5 actions, 12 notes, 0 to review**
 
 ## Blockers
 
 ### alert rule login-failures (Monitoring)
 
 - **What:** not rendered: its alarm is a log query alert and the record holds no query
-- **Where:** terraform/main.tf:1958; target/prod
+- **Where:** terraform/main.tf:2012; target/prod
 - **Who:** ciam-platform
 - **How:**
   1. Record alarm pf-login-failures in a form the cloud's alarms take (its alarm is a log query alert and the record holds no query), under an approved change, and re-render
@@ -41,7 +41,7 @@
 ### check jobs (Monitoring)
 
 - **What:** whoever may start one can override its image, command and environment and use its identity and secrets (Microsoft's jobs documentation): keep that right to identities trusted with them; the built-in Container Apps Jobs Operator and Contributor roles can also read the jobs' secrets
-- **Where:** terraform/main.tf:2267; role assignments on target/prod's jobs
+- **Where:** terraform/main.tf:2341; role assignments on target/prod's jobs
 - **Who:** ciam-platform
 - **How:** Give operators a custom role with only Microsoft.App/jobs/read, jobs/start/action, jobs/stop/action, jobs/stop/execution/action, jobs/executions/read, jobs/execution/read and Microsoft.App/managedEnvironments/read (not the Microsoft.App/jobs/*/action wildcard), assigned only to those trusted with the jobs' identities
 
@@ -57,36 +57,43 @@
 ### subnet snet-checks (Network)
 
 - **What:** must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied
-- **Where:** terraform/main.tf:2242; virtual network of target/prod
+- **Where:** terraform/main.tf:2316; virtual network of target/prod
 - **Who:** ciam-platform
 - **How:** Have the network's keeper delegate subnet snet-checks to Microsoft.App/environments (and move anything else out of it), then apply
 
 ### quota request (vcpus) (Quotas)
 
 - **What:** raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2: azurerm has no resource for it
-- **Where:** terraform/main.tf:2833; subscription 00000000-0000-0000-0000-000000000000
+- **Where:** terraform/main.tf:2907; subscription 00000000-0000-0000-0000-000000000000
 - **Who:** ciam-platform
 - **How:** Request it through the Quota API (`az quota update`, Microsoft.Quota) or a support request; Microsoft's pages don't say whether the Quota API serves Azure Government
 
 ## Notes
 
+### log destination siem (Logs)
+
+- **What:** keeps logs 365 days in all on the tables opsdir renders for its routes (Ciam<route>_CL); its other tables (Sentinel's own, the containers' ContainerLogV2) keep the workspace's retention unless set by hand
+- **Where:** terraform/main.tf:2062; target/prod
+- **Who:** ciam-platform
+- **How:** Set the total retention of the workspace's other tables that must keep logs as long, by hand
+
 ### alert rule login-failures (Monitoring)
 
 - **What:** no product rendering target/prod declares signal `login-failures` for role `pf-engine`: not rendered
-- **Where:** prometheus/rules/ciam.rules.yml:4; target/prod
+- **Where:** prometheus/rules/ciam.rules.yml:5; target/prod
 - **Who:** ciam-platform
 
 ### check jobs (Monitoring)
 
 - **What:** the first runs may fail to post their results (403) until Azure has propagated each job's identity's Monitoring Metrics Publisher role (minutes)
-- **Where:** terraform/main.tf:2269; Application Insights of target/prod
+- **Where:** terraform/main.tf:2343; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** If the first runs' availability results are missing, wait for the role assignment to propagate; nothing to change
 
 ### check jobs (Monitoring)
 
 - **What:** their results are posted as Microsoft.ApplicationInsights.Availability items with an Entra token, a form not yet confirmed against a live Application Insights
-- **Where:** terraform/main.tf:2271; Application Insights of target/prod
+- **Where:** terraform/main.tf:2345; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log
 
@@ -131,3 +138,9 @@
 - **What:** 0.0.0.0/0 nat: not a next hop in Azure (subnets reach it without a route): not rendered
 - **Where:** terraform/landing-zone/network-security/network.tf:53; target/prod
 - **Who:** network-security
+
+### alert rule admin-login-failures (Monitoring)
+
+- **What:** no product rendering target/prod declares signal `admin-login-failures` for role `pf-admin`: not rendered
+- **Where:** prometheus/rules/ciam.rules.yml:4; target/prod
+- **Who:** security-operations

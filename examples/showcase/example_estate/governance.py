@@ -120,6 +120,8 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2048", "Read the lab's firewall rules back from the HQ Panorama's running configuration (keep the record's "
      "admin range: the next push restores it)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2049", "Read the security team's Splunk retention and detections into the record", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2050", "Record the AD CS issuing CA's issued-certificate inventory (metadata only), its revocation endpoints "
      "and the forest's certificate templates", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2051", "Record the issuing CA's own certificate and owner, and who renews the CIAM templates' certificates",

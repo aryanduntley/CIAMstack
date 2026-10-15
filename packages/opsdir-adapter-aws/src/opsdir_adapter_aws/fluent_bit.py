@@ -39,7 +39,7 @@ from opsdir.core.notes import RECORD, note
 from opsdir.domains.compute.workloads import role_clusters
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.observability.logs import log_routes
-from opsdir.domains.observability.sources import kinds_of, shipments
+from opsdir.domains.observability.sources import kinds_of, own_shipments, shipments
 from opsdir_format_terraform.hcl import jsonencoded, ref, tf_block, tf_name
 from .access import resources
 from .account import account_id, partition
@@ -241,7 +241,8 @@ def render_fluent_bit(m, services):
 def fluent_bit_notes(m, services):
     """The render notes of the container logs environment m's routes can't ship to CloudWatch (blockers), each once
     (render_files writes their comments)."""
-    found = tuple(x for x in shipments(m, log_routes(m.d), services.logs(m)) if x.on == "kubernetes")
+    found = own_shipments(m, tuple(x for x in shipments(m, log_routes(m.d), services.logs(m))
+                                   if x.on == "kubernetes"), services.siem_keeper, "aws")
     return tuple(dict.fromkeys(
         note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"role {x.role}'s container output " + (
             f"not shipped: its destination {rdn_value(x.destination)} isn't a CloudWatch log group (kind log-group, a "

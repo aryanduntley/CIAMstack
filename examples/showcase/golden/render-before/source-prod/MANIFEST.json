@@ -115,12 +115,12 @@
     "ansible/inventory/group_vars/pf_admin.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "24a49cf2188dbfc0eeb35fc4bf746cce3ae8318293204584db972503ac11bff0"
+      "sha256": "a2b6b23cca23726ed6b354740963ba2944db32a18644889ea94daea6c155f3c2"
     },
     "ansible/inventory/group_vars/pf_engine.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "507286bccf2ae61a3f871e55f4f1f1e6f995280fac426c5adb512d3ea635b759"
+      "sha256": "8a788894e1c84a4f42d718a84d7ee33ccf47fb59ccdd5ca9bb8b2868443f3e8a"
     },
     "ansible/inventory/host_vars/am-1.aws.internal.example-aero.test.yml": {
       "scope": "environment-specific",
@@ -192,10 +192,20 @@
       "format": "text",
       "sha256": "4372e52c0813088173f83628c26a44be31afe232db585e856feb39c32fc18d0f"
     },
+    "ansible/templates/host-files/pf-admin/pf-admin-1/opt/splunkforwarder/etc/apps/opsdir_ciam/local/inputs.conf.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "8d9725ecf9d872676bda488cd9eff7760be51e27f85019a080a396843aac5357"
+    },
     "ansible/templates/host-files/pf-engine/pf-engine-1/opt/aws/amazon-cloudwatch-agent/etc/opsdir-logs.json.j2": {
       "scope": "environment-specific",
       "format": "text",
       "sha256": "40a42b2dd8cd6a44895820bb13fc711f47187ef1b2eba067b5fd10ca25b8b236"
+    },
+    "ansible/templates/host-files/pf-engine/pf-engine-1/opt/splunkforwarder/etc/apps/opsdir_ciam/local/inputs.conf.j2": {
+      "scope": "environment-specific",
+      "format": "text",
+      "sha256": "21dc2dbe55a0fa03fa281445c5a4c4623db0de2b49b2bf30c7f3b1c91c0ebc92"
     },
     "ansible/templates/pingfederate/bin/run.properties.j2": {
       "scope": "environment-specific",
@@ -388,6 +398,11 @@
       "format": "xml",
       "sha256": "6bb13c0304722ca9b2942a2ef00ea6fd2648469d599edcdd4c48e099f6b80d37"
     },
+    "splunk/apps/opsdir_ciam/default/indexes.conf": {
+      "scope": "environment-specific",
+      "format": "ini",
+      "sha256": "9482d35d501cef9cf9fa26b855466a54d8f99c762b3a67b6a624b426f544f8ac"
+    },
     "terraform/canaries/directory-bind/python/canary.py": {
       "scope": "environment-specific",
       "format": "python",
@@ -426,7 +441,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "fc10db2761c5d1cc54db367caf995b6d35f54d5c21567805dc61d68c8e22bd21"
+      "sha256": "2fe84029f64f501a0c9666554b7c5c351d4c61717b70c36ad8d82174ff478fae"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

@@ -430,10 +430,11 @@ def layout_import(files, d, provider, label, parse, suffix, what, example, summa
     ciamCloudProvider isn't provider, and files outside the layout, are named, not imported. Each folder's roles.json,
     when present, gives roles to what the cloud can't tag; kinds in summarize are counted when unplaced (see
     environment_groups). label names the provider in notices ('AWS'); what names the source ('Terraform state');
-    example is a file name for the layout hint ('terraform.tfstate')."""
+    example is a file name for the layout hint ('terraform.tfstate'). provider None: a source beside the clouds (a
+    SIEM), read into any environment."""
     envs, stray = _environments(files, suffix)
     parsed = {spec: [parse({p[len(spec) + 1:]: files[p] for p in paths})] for spec, paths in envs.items()}
-    wrong = [spec for spec in envs if get(d, env_dn(spec)) is not None
+    wrong = [spec for spec in envs if provider is not None and get(d, env_dn(spec)) is not None
              and one(get(d, env_dn(spec).split(",", 1)[1]), "ciamCloudProvider") != provider]
     roled = {spec: _roles_for(files, spec, tuple(r for rs, _ in parsed[spec] for r in rs))
              for spec in envs if spec not in wrong}

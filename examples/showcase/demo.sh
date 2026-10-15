@@ -244,6 +244,10 @@ od import --dry-run --at 20260923090000Z panos/running-config exports/panos
 od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
   panos/running-config exports/panos
 od report firewall-running
+echo "-- the security team's Splunk: what production's index keeps and the detection Splunk runs, read in from its"
+echo "   management API's answers (exports/splunk); the security events must be kept 365 days"
+od import --change CHG-2049 --at 20260923090000Z splunk/rest exports/splunk
+od report log-routes
 echo "-- the AD CS issuing CA's issued-certificate inventory (metadata only, from the shipped exporter's JSON), its"
 echo "   revocation endpoints and the forest's templates: the directory's LDAPS certificate was revoked as superseded"
 od import --change CHG-2050 --at 20260923090000Z adcs/inventory exports/adcs

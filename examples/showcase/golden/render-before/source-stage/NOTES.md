@@ -5,7 +5,7 @@
 -->
 # Render notes: source/stage
 
-**0 blockers, 2 actions, 0 notes, 0 to review**
+**0 blockers, 3 actions, 1 note, 0 to review**
 
 ## Actions
 
@@ -16,9 +16,24 @@
 - **Who:** ciam-platform
 - **How:** Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it
 
+### Splunk forwarding (Logs)
+
+- **What:** the forwarders' inputs are rendered (configuration management places them); where they send (outputs.conf, or Splunk Cloud's forwarder credentials package) is the Splunk team's
+- **Where:** not written in any file; source/stage
+- **Who:** ciam-platform
+- **How:** Confirm the servers' Universal Forwarders send to the indexers keeping these indexes
+
 ### flow log `flow-vpc` (Network)
 
 - **What:** kept 30 days, the retention of ops-logs (not set here)
 - **Where:** terraform/landing-zone/network.tf:220; source/stage
 - **Who:** network-security
 - **How:** Set the retention of ops-logs to 30 days where it is kept
+
+## Notes
+
+### alert rule admin-login-failures (Monitoring)
+
+- **What:** not rendered: no alarm in source/stage realizes it (a ciamAlarmBinding with ciamRealizes admin-login-failures): record the one the cloud runs, or let Prometheus evaluate it
+- **Where:** terraform/main.tf:1364; source/stage
+- **Who:** security-operations

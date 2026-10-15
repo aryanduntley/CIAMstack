@@ -277,6 +277,12 @@
       "approved"
     ],
     [
+      "cn=CHG-2049,ou=changes,dc=ciam-ops",
+      "Read the security team's Splunk retention and detections into the record",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
       "cn=CHG-2050,ou=changes,dc=ciam-ops",
       "Record the AD CS issuing CA's issued-certificate inventory (metadata only), its revocation endpoints and the forest's certificate templates",
       "CAB 2026-09-18",

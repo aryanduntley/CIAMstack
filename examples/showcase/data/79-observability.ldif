@@ -34,6 +34,21 @@ ciamSignal: login-failures
 ciamTargetRole: pf-engine
 ciamThreshold: 50 /min
 
+dn: cn=admin-login-failures,ou=alert-rules,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAlertRule
+cn: admin-login-failures
+ciamAlertRole: soc-alerts
+ciamComparison: gt
+ciamEvaluationPeriod: 5m
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamRunbookRef: cn=WI-CIAM-012,ou=runbooks,dc=ciam-ops
+ciamSeverity: sev2
+ciamSignal: admin-login-failures
+ciamTargetRole: pf-admin
+ciamThreshold: 10 /min
+
 dn: ou=log-routes,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -65,6 +80,19 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamPublishedBy: ds
 ciamPublishedBy: pf-engine
 ciamRetentionDays: 30
+
+dn: cn=security-events,ou=log-routes,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamLogRoute
+cn: security-events
+ciamLogDestinationRole: siem
+ciamLogKind: audit
+ciamLogKind: admin
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamPublishedBy: pf-engine
+ciamPublishedBy: pf-admin
+ciamRetentionDays: 365
 
 dn: ou=canaries,dc=ciam-ops
 objectClass: top

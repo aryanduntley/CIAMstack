@@ -526,6 +526,41 @@ ciamChannelKind: action-group
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page
 
+dn: cn=soc-alerts,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: soc-alerts
+ciamBindingRole: soc-alerts
+ciamChannelKind: action-group
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-soc
+
+dn: cn=siem,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: siem
+ciamBindingRole: siem
+ciamDestinationKind: siem-index
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-sentinel
+ciamRetentionDays: 90
+ciamTotalRetentionDays: 365
+
+dn: cn=pf-admin-login-failures,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: pf-admin-login-failures
+ciamBindingRole: alarm-admin-login-failures
+ciamLogDestinationRole: siem
+ciamMetric: ContainerLogV2 | where ContainerName startswith "pf-log-admin" and
+  LogMessage has "Login failed"
+ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
+ roups/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-cia
+ m-prod-sentinel/providers/Microsoft.SecurityInsights/alertRules/ciam-admin-lo
+ gin-failures
+ciamRealizes: admin-login-failures
+
 dn: cn=audit-logs,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamLogDestination

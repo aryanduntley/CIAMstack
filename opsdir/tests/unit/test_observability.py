@@ -14,6 +14,7 @@ from opsdir.domains.observability.alerts import alert_rows, canary_rows, check_a
 from opsdir.domains.observability.logs import check_logs, log_rows
 from opsdir.domains.observability.naming import ALERT_RULES, CANARIES, LOG_ROUTES
 from opsdir.domains.observability.realized import check_realized, monitor_rows
+from opsdir.domains.observability.siem import check_siem, detection_index, detections, siem_destinations
 import mini_estate
 from support import REGISTRY, build_directory
 
@@ -94,7 +95,13 @@ def test_the_reports():
         ("replication-lag", "replication-delay", "web", "gt 5000 ms for 5m", "sev2", "alerts-page", "WI-1", "ops")]
     assert canary_rows(d) == [("ldap", "ldap-bind", "ldaps-service", "", "", ""),
                               ("login", "oidc-token", "login-service", "5m", "canary-user", "login-failures")]
-    assert log_rows(d) == [("audit", "audit, admin", "web", "audit-logs", "365", "yes")]
+    route = ("audit", "audit, admin", "web", "audit-logs", "365", "yes")
+    assert log_rows(d) == [(*route, "alpha/prod", "log-group", "400", "400"),
+                           (*route, "beta/prod", "workspace", "90", "90")]
+    # a route nobody keeps is still one row
+    lost = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join(
+        e.replace("ciamLogDestinationRole: audit-logs", "ciamLogDestinationRole: nowhere") for e in BASE))))
+    assert log_rows(lost) == [("audit", "audit, admin", "web", "nowhere", "365", "yes", "", "", "", "")]
 
 
 def test_alerts_that_go_nowhere_and_canaries_that_check_nothing_block():
@@ -196,3 +203,93 @@ def test_a_saml_sign_in_check_names_the_service_provider_it_starts_from():
     f = _plan(_record(saml), check_alerts)
     assert ("Canary `saml` is a SAML sign-in but names no SAML service provider with an entity ID to start from "
             "(ciamStartsFrom): no cloud renders it. Name the integration.") in [t for _, t, _, _ in f.actions]
+
+
+def _rebind(old, new):
+    """BASE with one binding's text replaced (old must occur once), plus nothing else."""
+    assert sum(e.count(old) for e in BASE) == 1
+    return tuple(e.replace(old, new) for e in BASE)
+
+
+def _with(base, *extra):
+    return build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join((*base, *extra)))))
+
+
+BETA_AUDIT = "ciamDestinationKind: workspace\nciamProviderRef: ws-1\nciamRetentionDays: 90\n"
+
+
+def test_a_destination_archiving_long_enough_is_an_action_and_a_short_total_is_the_one_raised():
+    archived = _with(_rebind(BETA_AUDIT, BETA_AUDIT + "ciamTotalRetentionDays: 400\n"))
+    f = _plan(archived, check_logs)
+    assert not f.blockers and not f.fixes
+    assert [t for _, t, _, _ in f.actions][0] == (
+        "Log route `audit` must keep logs 365 days; beta/prod's `audit-logs` keeps them 400 days in all but searchable "
+        "only 90: older logs must be restored from its archive before anyone can search them. Confirm that is "
+        "acceptable, or raise its searchable retention.")
+    assert log_rows(archived)[1][-2:] == ("90", "400")
+    short = _with(_rebind(BETA_AUDIT, BETA_AUDIT + "ciamTotalRetentionDays: 180\n"))
+    f = _plan(short, check_logs)
+    assert [t for _, t, _ in f.blockers] == [
+        "Log route `audit` must keep logs 365 days; beta/prod's `audit-logs` keeps them 180. Raise its retention "
+        "before cutover."]
+    (fix,) = f.fixes
+    assert fix.records[0].mods == (("replace", "ciamTotalRetentionDays", ("365",)),)
+    forever = _with(_rebind(BETA_AUDIT, BETA_AUDIT + "ciamTotalRetentionDays: 0\n"))
+    assert _plan(forever, check_logs).blockers == () and log_rows(forever)[1][-1] == "forever"
+
+
+SIEM = "cn=siem,ou=bindings,"
+
+
+def _siem(env, extra=""):
+    return _binding(env, "siem", "ciamLogDestination", "siem",
+                    f"ciamDestinationKind: siem-index\nciamProviderRef: ciam_security\nciamRetentionDays: 400\n{extra}")
+
+
+def _detection(env, rule, index="siem", search="index=ciam_security status=failure"):
+    return _binding(env, f"det-{rule}", "ciamAlarmBinding", f"det-{rule}",
+                    f"ciamProviderRef: saved-search:{rule}\nciamRealizes: {rule}\nciamLogDestinationRole: {index}\n"
+                    + (f"ciamMetric: {search}\n" if search else ""))
+
+
+def test_siem_indexes_and_the_detections_searching_them():
+    d = _with(BASE, _siem(ALPHA), _detection(ALPHA, "replication-lag"),
+              _binding(ALPHA, "alarm", "ciamAlarmBinding", "alarm", "ciamProviderRef: a-1\nciamRealizes: x\n"))
+    alpha = env_model(d, "alpha/prod")
+    assert [one(b, "cn") for b in siem_destinations(alpha)] == ["siem"]
+    (det,) = detections(alpha)                     # the plain alarm names no index: not a detection
+    assert one(detection_index(alpha, det), "cn") == "siem"
+    assert siem_destinations(env_model(d, "beta/prod")) == ()
+
+
+def test_detections_the_target_loses_or_breaks_and_holds_a_siem_keeps_are_actions():
+    routed = _rebind("ciamLogDestinationRole: audit-logs", "ciamLogDestinationRole: siem")
+    d = _with(routed, _siem(ALPHA), _siem(BETA), _detection(ALPHA, "replication-lag"),
+              _detection(ALPHA, "login-failures"), _detection(BETA, "login-failures", search=None),
+              _detection(BETA, "nothing", index="audit-logs"))
+    texts = [t for _, t, _, _ in _plan(d, check_siem).actions]
+    assert texts == [
+        "alpha/prod's SIEM runs detection `det-replication-lag` for alert rule `replication-lag`; beta/prod records "
+        "none: after the move its SIEM no longer raises it. Record the search beta/prod's SIEM runs (an alarm binding "
+        "naming the rule in ciamRealizes, the SIEM index in ciamLogDestinationRole and the search in ciamMetric).",
+        "beta/prod's detection `det-nothing` searches `audit-logs`, which beta/prod doesn't bind to a SIEM index: it "
+        "searches nothing. Bind the role to the SIEM's index (a log destination of kind siem-index).",
+        "beta/prod's detection `det-login-failures` records no search (ciamMetric): nothing renders it. Record the "
+        "search its SIEM runs.",
+        "Log route `audit` is under legal hold, and beta/prod keeps its logs in a SIEM index (`siem`): its retention "
+        "doesn't prove a hold (a SIEM expires, or an administrator deletes, what it keeps). Record how the hold is "
+        "kept there (an immutable archive, the SIEM's own hold), or keep the source's copy."]
+    assert _plan(_record(), check_siem) == findings()
+
+
+def test_total_days_falls_back_to_the_searchable_days_and_reads_as_reports_write_it():
+    from opsdir.domains.observability.retention import INDEFINITE, days_text, total_days
+    d = _with(_rebind(BETA_AUDIT, BETA_AUDIT + "ciamTotalRetentionDays: 730\n"))
+    alpha, beta = (one_role_of(d, env) for env in ("alpha/prod", "beta/prod"))
+    assert (total_days(alpha), total_days(beta), total_days(None)) == (400, 730, None)
+    assert [days_text(x) for x in (None, INDEFINITE, 30)] == ["", "forever", "30"]
+
+
+def one_role_of(d, env):
+    from opsdir.core.environment import one_role
+    return one_role(env_model(d, env), "audit-logs")
