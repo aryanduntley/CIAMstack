@@ -21,7 +21,7 @@ stored."""
 from functools import reduce
 from urllib.parse import urlparse
 
-from opsdir.core.contract import Collector, Command
+from opsdir.core.contract import CollectOption, Collector, Command
 from opsdir.domains.governance.collection import collection_sources
 
 # the DS-lineage ldapsearch option names that differ between products
@@ -51,6 +51,11 @@ def without_credentials(ldif):
         return (kept if drop else (*kept, line)), drop
     kept, _ = reduce(keep, ldif.splitlines(), ((), False))
     return "\n".join(kept) + ("\n" if ldif.endswith("\n") else "")
+
+
+# The collect options _search reads (ldapsearch, ldap_truststore), declared here once for every product of the lineage.
+LDAPSEARCH = CollectOption("--ldapsearch", "PATH", "the directory product's ldapsearch (default: PATH)", 30)
+LDAP_TRUSTSTORE = CollectOption("--ldap-truststore", "PATH", "truststore checking the directory's certificate", 40)
 
 
 def _host_port(location):
@@ -94,5 +99,7 @@ def config_collectors(product_name, flags):
         first = next(iter(_sources(m, f"{product_name}/declared")), None)
         host, port = _host_port(first.locations[0]) if first else (None, None)
         return (("config.ldif", _search(flags, host, port, first, options)),) if host else ()
-    return (Collector("config", "environment", config_steps, problems=_problems(f"{product_name}/config")),
-            Collector("declared", "environment", declared_steps, problems=_problems(f"{product_name}/declared")))
+    return (Collector("config", "environment", config_steps, problems=_problems(f"{product_name}/config"),
+                      options=(LDAPSEARCH, LDAP_TRUSTSTORE)),
+            Collector("declared", "environment", declared_steps, problems=_problems(f"{product_name}/declared"),
+                      options=(LDAPSEARCH, LDAP_TRUSTSTORE)))

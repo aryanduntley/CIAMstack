@@ -32,7 +32,7 @@ from opsdir.core.contract import Collector, Command
 from opsdir.core.directory import one, values
 from opsdir.core.environment import of_class, one_role
 from opsdir.core.sources import env_relative
-from opsdir_format_terraform.state import state_steps as terraform_state_steps
+from opsdir_format_terraform.state import TERRAFORM_DIR, state_steps as terraform_state_steps
 from .account import subscription_id
 from .storage import container_of
 
@@ -284,4 +284,4 @@ def identity_check(d, m):
 
 
 COLLECTORS = (Collector("cli-inventory", "environment", inventory_steps, identity_check),
-              Collector("terraform-state", "environment", state_steps, identity_check))
+              Collector("terraform-state", "environment", state_steps, identity_check, options=(TERRAFORM_DIR,)))

@@ -308,9 +308,16 @@ Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent",
 # export, kept in the evidence. problems(d, m, options) -> (problem, ...) or None: why it can't collect here (a
 # collection source's credential role unbound, an option missing), shown instead of collecting. verify(d, m) ->
 # (call, check) or None: the identity check run first, check(output) -> a problem (the provider
-# login isn't the account, subscription or project the record names) or None.
-Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "problems"),
-                       defaults=("environment", None, None, None))
+# login isn't the account, subscription or project the record names) or None. options: the CollectOptions it takes
+# (what `opsdir collect` offers as flags; the operator's values reach steps and problems in options).
+Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "problems", "options"),
+                       defaults=("environment", None, None, None, ()))
+# A run-time option a collector takes: flag (--terraform-dir), metavar (DIR), help, and order (its place among the
+# collect flags, lowest first). Data only, never a secret value; the collector reads the operator's value under the
+# flag without dashes, dashes as underscores (terraform_dir). An option several adapters share is declared once by the
+# library that reads it and reused, so its declarations are identical (connectors.registry.collect_options refuses
+# two different declarations of one flag).
+CollectOption = namedtuple("CollectOption", ("flag", "metavar", "help", "order"))
 
 # A change between two releases of a product an adapter renders and reads (decision 2375: a migration may upgrade
 # within the adapter's range, and the planner names what changes): has the versions that have it (a PEP 440 range, or

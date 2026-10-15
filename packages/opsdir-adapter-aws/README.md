@@ -391,7 +391,7 @@ AWS CLI login (`opsdir_adapter_aws.collect`), and imports it like an export you 
   ciamSourceRef: s3://example-ciam-tf-state/env:/prod/ciam/terraform.tfstate
   ```
 
-  (b) `--terraform-dir DIR`: `terraform state pull` in that initialized working directory, the backend as configured
+  (b) `--terraform-dir DIR` (the collector's option, opsdir-format-terraform's `TERRAFORM_DIR`): `terraform state pull` in that initialized working directory, the backend as configured
   there.
 - `aws/cloudformation`: the stacks collection sources name (`ciamImporter: aws/cloudformation`, `ciamSourceRef:
   cfn://<stack name>` in the cloud's region, or the stack's ARN; a stack in another account is refused), each into its

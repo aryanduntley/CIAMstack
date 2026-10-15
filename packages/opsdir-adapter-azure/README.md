@@ -375,7 +375,7 @@ Azure CLI login (`opsdir_adapter_azure.collect`), and imports it like an export 
   ciamSourceRef: azblob://stciamtfstate/tfstate/ciam-prod.terraform.tfstate
   ```
 
-  (b) `--terraform-dir DIR`: `terraform state pull` in that initialized working directory.
+  (b) `--terraform-dir DIR` (the collector's option, opsdir-format-terraform's `TERRAFORM_DIR`): `terraform state pull` in that initialized working directory.
 
 Least privilege: `Reader` on the subscription (management-plane reads: networks, compute, role assignments and
 definitions, policy assignments and exemptions, PIM eligibility, deny assignments, diagnostic settings, alerts,

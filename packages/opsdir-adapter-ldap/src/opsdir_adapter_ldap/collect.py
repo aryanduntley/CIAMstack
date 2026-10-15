@@ -11,7 +11,7 @@ the user data is never held whole, written or kept: the export is the profile's 
 server is checked against is the operator's PEM file, given when collecting (--ldap-ca PATH, LDAPTLS_CACERT)."""
 from urllib.parse import unquote, urlparse
 
-from opsdir.core.contract import Collector, Command
+from opsdir.core.contract import CollectOption, Collector, Command
 from opsdir.core.directory import rdn_value
 from opsdir.domains.governance.collection import collection_sources
 
@@ -52,4 +52,6 @@ def problems(d, m, options):
           if s.locations and not (_parts(s.locations[0])[0] and _parts(s.locations[0])[2]) else ())))
 
 
-COLLECTORS = (Collector("data-profile", "environment", profile_steps, problems=problems),)
+# The collect option profile_steps reads (ldap_ca).
+LDAP_CA = CollectOption("--ldap-ca", "PATH", "CA certificate (PEM) for the data profile's search", 50)
+COLLECTORS = (Collector("data-profile", "environment", profile_steps, problems=problems, options=(LDAP_CA,)),)

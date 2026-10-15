@@ -96,3 +96,26 @@ def test_the_stack_check_gives_a_plain_model_the_adapters_product_roles():
     product = adapter("prod", "product")._replace(products=(("Prod", ">=1"),), roles=(("server", ("web",)),))
     plain = EnvModel(*(None,) * 6, (), (), (), (), (), (), (), None)
     assert declared_adapters(plain, (product, kit)) == (product, kit) and seen == [("web",)]
+
+
+# ------------------------------------------------------------------ collect options (U.14 task 519)
+def test_collect_options_once_each_by_order_a_shared_declaration_counting_once():
+    from opsdir.connectors.registry import COLLECT_OPTIONS, collect_options, option_key
+    from opsdir.core.contract import CollectOption, Collector
+    shared, own = CollectOption("--shared", "DIR", "a library's option", 20), CollectOption("--own", "P", "mine", 10)
+    a = adapter("a", "provider")._replace(collectors=(Collector("x", "environment", None, options=(shared,)),))
+    b = adapter("b", "product")._replace(collectors=(Collector("y", "environment", None, options=(own, shared)),))
+    assert collect_options((a, b)) == (own, shared) and option_key(shared) == "shared"
+    assert [option_key(o) for o in COLLECT_OPTIONS] == ["terraform_dir", "amster_key", "ldapsearch",
+                                                        "ldap_truststore", "ldap_ca"]
+
+
+def test_two_different_declarations_of_one_collect_flag_are_refused_naming_both_adapters():
+    from opsdir.connectors.registry import collect_options
+    from opsdir.core.contract import CollectOption, Collector
+    a = adapter("a", "provider")._replace(collectors=(
+        Collector("x", "environment", None, options=(CollectOption("--dir", "DIR", "one", 10),)),))
+    b = adapter("b", "product")._replace(collectors=(
+        Collector("y", "environment", None, options=(CollectOption("--dir", "PATH", "another", 10),)),))
+    with pytest.raises(SystemExit, match=r"--dir \(a and b\)"):
+        collect_options((a, b))

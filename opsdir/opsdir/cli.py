@@ -47,9 +47,7 @@
                                        applied import records when each scope it read was last imported; --run: run
                                        the importer's provider command(s) for the export instead of reading PATH,
                                        under your own login to the provider (opsdir never sees the credentials)
-  opsdir collect [--env CLOUD/ENV] [--adapter A[/I]] [--list] [--dry-run] [--change CHG-…] [--save DIR]
-                 [--terraform-dir DIR] [--amster-key PATH] [--ldapsearch PATH] [--ldap-truststore PATH]
-                 [--ldap-ca PATH] [--at YYYYMMDDhhmmssZ] [--take K|all] [--keep K|all]
+  <collect usage>
                                        read the live system for the installed adapters' importers, read-only: each
                                        collector's calls (your own provider login; credentials the record references
                                        resolved for the run, never stored), after a check that the login is the
@@ -84,12 +82,13 @@ import pathlib
 import re
 import subprocess
 import sys
+from functools import reduce
 from types import MappingProxyType
 
 from . import live, operations as ops
 from .connectors import collecting, fixes as fixmod, importing, migration, registry, workspace
 from .connectors.prerequisites import command_line
-from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS
+from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, COLLECT_OPTIONS, option_key
 from .connectors.stack import STATUS_HEADERS
 from .core.changeset import describe
 from .core import search as ldap_search
@@ -169,13 +168,8 @@ SUBCOMMANDS = (
                  (("--dry-run",), {"action": "store_true",
                                    "help": "collect and list the change records; apply nothing"}),
                  (("--save",), {"metavar": "DIR", "help": "keep the raw export under DIR (may hold sensitive config)"}),
-                 (("--terraform-dir",), {"metavar": "DIR",
-                                         "help": "read Terraform state with `terraform state pull` in DIR"}),
-                 (("--amster-key",), {"metavar": "PATH", "help": "the private key AM trusts for Amster (not stored)"}),
-                 (("--ldapsearch",), {"metavar": "PATH", "help": "the directory product's ldapsearch (default: PATH)"}),
-                 (("--ldap-truststore",), {"metavar": "PATH",
-                                           "help": "truststore checking the directory's certificate"}),
-                 (("--ldap-ca",), {"metavar": "PATH", "help": "CA certificate (PEM) for the data profile's search"}),
+                 # the installed collectors' own options (Collector.options), in their order
+                 *(((o.flag,), {"metavar": o.metavar, "help": o.help}) for o in COLLECT_OPTIONS),
                  (("--at",), {"help": "when the export is taken, YYYYMMDDhhmmssZ (UTC; default: now)"}),
                  (("--take",), {"action": "append", "default": [], "metavar": "KEY",
                                 "help": "a conflict where the live value goes in (KEY as listed, or all)"}),
@@ -628,11 +622,9 @@ def _cmd_collect(conn, a, as_of):
         raise SystemExit(f"nothing to collect {'for ' + a.env if a.env else 'provider-wide'}"
                          f"{' with ' + a.adapter if a.adapter else ''}")
     captured = import_time(a.at)
-    options = {**{k: v for k, v in (("terraform_dir", a.terraform_dir), ("amster_key", a.amster_key),
-                                    ("ldapsearch", a.ldapsearch), ("ldap_truststore", a.ldap_truststore),
-                                    ("ldap_ca", a.ldap_ca)) if v},
-               "profile": lambda lines: ops.data_profile(lines, a.env, captured.date(), captured)} if a.env else \
-        {k: v for k, v in (("terraform_dir", a.terraform_dir),) if v}
+    given = {k: v for k, v in ((option_key(o), getattr(a, option_key(o))) for o in COLLECT_OPTIONS) if v}
+    options = {**given, "profile": lambda lines: ops.data_profile(lines, a.env, captured.date(), captured)} \
+        if a.env else given
     if a.list:
         return _listed(d, m, targets, options)
     resolve = live.resolver()
@@ -763,8 +755,30 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
 NO_DATABASE = frozenset({"data-profile"})          # commands that run where only the source is reachable
 
 
+COLLECT_HEAD = ("[--env CLOUD/ENV]", "[--adapter A[/I]]", "[--list]", "[--dry-run]", "[--change CHG-…]", "[--save DIR]")
+COLLECT_TAIL = ("[--at YYYYMMDDhhmmssZ]", "[--take K|all]", "[--keep K|all]")
+
+
+def collect_usage(options, indent="  "):
+    """The `opsdir collect` usage lines of the help at an indent (the description's, as the module docstring holds
+    it): its own options, the installed collectors' after --save (in their order), wrapped at 108 characters past the
+    indent, continued under the first option."""
+    def wrapped(lines, token):
+        last = lines[-1]
+        return (*lines[:-1], f"{last} {token}") if len(last) + 1 + len(token) <= len(indent) + 108 else \
+            (*lines, indent + " " * 15 + token)
+    tokens = (*COLLECT_HEAD, *(f"[{o.flag} {o.metavar}]" for o in options), *COLLECT_TAIL)
+    return "\n".join(reduce(wrapped, tokens[1:], (f"{indent}opsdir collect {tokens[0]}",)))
+
+
+def description():
+    """The help's description: the module docstring with the collect usage of the installed collectors' options."""
+    return re.sub(r"^( *)<collect usage>$", lambda found: collect_usage(COLLECT_OPTIONS, found.group(1)), __doc__,
+                  flags=re.M)
+
+
 def parser():
-    ap = argparse.ArgumentParser(prog="opsdir", description=__doc__,
+    ap = argparse.ArgumentParser(prog="opsdir", description=description(),
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--as-of", help="evaluate dates as of YYYY-MM-DD (default: today)")
     ap.add_argument("--workspace", action="store_true",

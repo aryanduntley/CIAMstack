@@ -114,7 +114,10 @@ policy it asks.
 read-only, and imports the result exactly as `opsdir import` would (preview, conflicts to take or keep, applied only
 under an approved change). Each adapter declares collectors (`core.contract.Collector`): the exact calls that produce
 its importers' files, in rounds (a list, then each item's details), and a check that your provider login is the
-account, subscription or project the record names (nothing is read when it isn't).
+account, subscription or project the record names (nothing is read when it isn't). A collector also declares the
+options it takes (`core.contract.CollectOption`: flag, metavar, help, order): `opsdir collect` offers the installed
+adapters' options as its own flags (`--terraform-dir`, `--amster-key`, `--ldapsearch`, `--ldap-truststore`, `--ldap-ca`
+with today's adapters) and passes each value given, with or without `--env`; the core names none of them.
 
 - Credentials are never stored. Clouds use your own CLI login. What needs more (a product's admin API, a directory, a
   Terraform state object) is declared per environment as a collection source (`ciamCollectionSource`: the importer,
@@ -344,6 +347,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | A product's config file kept as captured settings | `opsdir.domains.configuration.record`: `captured_file(fmt, prefix, folder, path, text, patterns, role)` |
    | Cloud inventory: resources, role tags, role map, layout | `opsdir.core.inventory`: `resource`, `tagged_role(tags)`, `of_types(found, *types)`, `layout_import`, `read_together`, `merge_reads` |
    | Another product's roles (its server roles, keystore, service name, cluster discovery), for a kit deploying it: by product, never by name | the product's adapter declares `roles=(("server", ("am",)), ("keystore", ("am-keystore",)))` (kinds: `opsdir.core.contract.ROLE_KINDS`); a kit reads `opsdir.core.environment.roles_for(m, "PingAM", "server")` (models from `connectors.registry.environment` carry them; `product_roles(adapters)` and `with_product_roles(m, roles)` attach them to one built otherwise) |
+   | A run-time option a collector takes (`opsdir collect --FLAG VALUE`) | `Collector(..., options=(CollectOption("--flag", "METAVAR", "help", order),))` (`opsdir.core.contract`); the collector reads the value as `options["flag"]` (dashes as underscores: `connectors.registry.option_key`). An option several adapters read is declared once by the library that reads it and reused (`opsdir_format_terraform.state.TERRAFORM_DIR`, `opsdir_base_ds.collect.LDAPSEARCH` / `LDAP_TRUSTSTORE`); two different declarations of one flag are refused when the registry loads |
    | A kit's logs derived from its products' declared ones | `logs=` a callable `(installed adapters' LogSources, product roles) -> LogSources`, resolved once when the registry loads the adapters (`opsdir.connectors.registry.resolved_logs`); at render, `Services.installed_logs` holds every installed adapter's |
    | CI pipelines as jobs | `opsdir.domains.automation.pipelines`: `FoundPipeline`, `ReadRepository` (a repository the import read, for removing what it no longer defines), `pipeline_groups(d, pipelines, read)` (groups and removal notices), `gone_pipelines`, `environment_name` |
    | A planner check's findings, with its one line saying all it looked at holds when nothing is a blocker or an action | `opsdir.core.findings`: `all_clear(parts, ok_line)`, `each_checked(items, judge, ok_line)` (no findings when there are no items) |

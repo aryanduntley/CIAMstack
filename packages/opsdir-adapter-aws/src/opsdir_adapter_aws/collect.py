@@ -54,7 +54,7 @@ from opsdir.core.environment import of_class, one_role
 from opsdir.core.sources import env_relative
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.governance.collection import collection_sources
-from opsdir_format_terraform.state import state_steps as terraform_state_steps
+from opsdir_format_terraform.state import TERRAFORM_DIR, state_steps as terraform_state_steps
 from .account import account_id, govcloud, partition, standard_account
 from .cli_budgets import budget_folder
 from .cli_compute import launch_template_ref
@@ -648,5 +648,5 @@ def identity_check(d, m):
 
 
 COLLECTORS = (Collector("cli-inventory", "environment", inventory_steps, identity_check, inventory_problems),
-              Collector("terraform-state", "environment", state_steps, identity_check),
+              Collector("terraform-state", "environment", state_steps, identity_check, options=(TERRAFORM_DIR,)),
               Collector("cloudformation", "environment", stack_steps, identity_check, stack_problems))
