@@ -4,6 +4,9 @@ from ...core.naming import branch
 CERTIFICATES = branch("certificates")
 CREDENTIALS = branch("credentials")     # keys and secrets as metadata (never their material)
 SECRET_INVENTORY = branch("secret-inventory")    # secret stores' inventories, metadata only
+AUTHORITIES = branch("certificate-authorities")   # certification authorities, their revocation endpoints as children
+TEMPLATES = branch("certificate-templates")      # the certificate templates CAs issue from
+ISSUED = branch("issued-certificates")           # each CA's issued-certificate inventory, metadata only
 
 
 def credential_dn(name):
@@ -18,3 +21,18 @@ def inventory_scheme_dn(scheme):
 def inventory_dn(scheme, container):
     """The inventory of one container (a safe, a mount) of a scheme's store."""
     return f"cn={container},{inventory_scheme_dn(scheme)}"
+
+
+def authority_dn(name):
+    """A certification authority, by its name."""
+    return f"cn={name},{AUTHORITIES}"
+
+
+def template_dn(name):
+    """A certificate template, by its name."""
+    return f"cn={name},{TEMPLATES}"
+
+
+def issued_inventory_dn(authority):
+    """The issued-certificate inventory of the CA of that name."""
+    return f"cn={authority},{ISSUED}"

@@ -1,0 +1,58 @@
+# CHG-2051 (approved): after the AD CS import (CHG-2050), record what the CA's database can't say. The issuing CA's
+# own certificate, issued by the corporate root (CHG-2013), so the hierarchy runs root -> issuing CA -> the directory's
+# LDAPS certificate; the CA's owner; who renews what CIAM-WebServer issues that the record holds no certificate for
+# (the platform team); and that CIAM-ClientAuth issues the platform's client certificates, so its certificates are
+# judged too: nobody is recorded to renew them yet.
+dn: cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-issuing-ca-2
+ciamCertPurpose: ca
+ciamFingerprint: F5:DB:C6:98:C9:CA:75:19:CB:5F:70:6E:6D:B4:4E:DF:AD:73:C7:D3:5C:A3:96:EF:3C:D5:A8:88:CF:64:3F:B7
+ciamSubject: CN=Example Aero Issuing CA 2
+ciamIssuer: CN=Example Aero Root CA
+ciamIssuedBy: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
+ciamNotBefore: 20250310000000Z
+ciamNotAfter: 20350310000000Z
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+
+dn: cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
+changetype: modify
+add: ciamCaCertificate
+ciamCaCertificate: cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+-
+add: ciamOwner
+ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+-
+
+dn: cn=ds-ldaps-2026,ou=certificates,dc=ciam-ops
+changetype: modify
+add: ciamIssuedBy
+ciamIssuedBy: cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+-
+
+dn: cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
+changetype: modify
+add: ciamRenewalOwner
+ciamRenewalOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+-
+
+dn: cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops
+changetype: modify
+add: ciamCertPurpose
+ciamCertPurpose: client-auth
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+-

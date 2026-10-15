@@ -116,6 +116,11 @@ EXPECTED = MappingProxyType({
          "cyberark://ciam-ops/CIAM-TARGET/ds-root-password), but CIAM-TARGET's inventory",
          "the target's PAM copy of the directory root password was vaulted under another name: the safe, listed "
          "whole, has no `ds-root-password`, so rotating the password wouldn't update it", None, "CHG-2047"),
+        # the AD CS inventory (CHG-2050): the directory's LDAPS certificate was revoked as superseded at its CA
+        ("B55", "Certificate", "Certificate `ds-ldaps-2026` was revoked by Example Aero Issuing CA 2 (request 1187: "
+         "superseded, effective 2026-09-15)",
+         "the PKI team renewed the directory's LDAPS certificate (request 1342) and revoked the old one, which the "
+         "record and its servers still use: clients checking revocation refuse it", None, "CHG-2050"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -468,6 +473,15 @@ EXPECTED = MappingProxyType({
         ("A145", "Allowlist", "`hq-apps-egress-to-ldaps`",
          "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds "
          "the target's, which the running-config import records", "CHG-2048"),
+        # the AD CS inventory (CHG-2050, CHG-2051): active certificates of the CIAM templates the record holds none of
+        ("A161", "Certificate", "Example Aero Issuing CA 2 issued 2 active certificate(s) from template "
+         "`CIAM-WebServer` the record holds none of",
+         "a hand-issued test certificate expiring 2026-10-10 and the LDAPS renewal: CHG-2051 makes the platform "
+         "team their renewal owner", None, "CHG-2050"),
+        ("A162", "Certificate", "Example Aero Issuing CA 2 issued 2 active certificate(s) from template "
+         "`CIAM-ClientAuth` the record holds none of",
+         "the client certificates of the MRO export and the supplier sync: CHG-2051 records the template's purpose, "
+         "but nobody to renew them", None, "CHG-2051"),
     ],
 })
 

@@ -54,6 +54,7 @@ It is built for the ForgeRock/Ping stack on AWS, Azure and Google Cloud today, a
 | When was each part of the record last read back from the live system? | `opsdir report imports` |
 | What doesn't anyone know yet, and who must answer it? | `opsdir report unknowns` (the unknowns register: each question, its owner, whether a move waits for it, what it concerns, raised and needed by, open / overdue / answered, the answer). `opsdir plan` blocks on an open blocking question that concerns the source or the target, gives the other open ones as actions dated by when the answer is needed (else the cutover), and lists the answered ones as in place |
 | Does every secret reference point at something its store still holds, and which vaulted accounts does nothing reference? | `opsdir report secret-inventory` (each `cyberark://` and `vault://` reference against its store's inventory, metadata only: present, deleted, confirmed missing, listing incomplete, refused, not inventoried; rotation against `ciamRotationDays` only from a timestamp that means rotation, the CPM's status; then the objects nothing references). `opsdir plan` blocks on a target reference confirmed missing or deleted and gives the rest as actions |
+| Which CA issued each certificate, has any been revoked or renewed behind the record's back, and which issued certificates does the record not know? | `opsdir report certificate-authorities` (each CA: who issued its own certificates, its templates, its CRL, OCSP and CA-issuer endpoints, its last inventory) and `opsdir report issued-certificates` (each record certificate against its CA's issued-certificate inventory, metadata only: present, revoked, revocation scheduled, superseded by a renewal, confirmed missing, inventory incomplete or refused; then every active certificate the record holds none of, with its renewal owner). `opsdir plan` blocks on a revoked certificate the record still uses and gives the rest as actions |
 | How did each live collection last end, and why did a failed one fail? | `opsdir report collections` |
 | How big is the user data, which password schemes does it hold, how many accounts are idle? | `opsdir report data-profile`, `opsdir report data-profile-attributes` |
 | Which files copy this server's hostname (or any value), on which lines? | `opsdir report census [<DN>]` |
@@ -107,6 +108,9 @@ Adapters are separate installable packages. Installing one registers it with the
 - `opsdir-adapter-hashicorp-vault`: `vault://` references, resolved with the Vault CLI.
 - `opsdir-adapter-kubernetes`: `k8s-secret://` references, resolved with `kubectl`; also **imports Kubernetes manifests** as workloads (below).
 - `opsdir-adapter-cyberark`: `cyberark://` references, resolved with the Credential Provider SDK.
+
+**PKI** (metadata only; never a key)
+- `opsdir-adapter-adcs`: Microsoft AD CS: **imports each CA's issued-certificate inventory** (issued and revoked certificates, requester, template, serial, SHA-256), its revocation endpoints and the forest's certificate templates, from the JSON its shipped PowerShell exporter writes through the CA's documented COM interfaces and an LDIF export of the templates.
 
 **Hosts, clusters and CI** (what runs beyond the products)
 - `opsdir-adapter-linux`: **imports Linux servers' own files**: their crontabs and systemd timers as jobs, and each server role's host baseline (OS, Java runtime and the certificates its truststore adds, limits, kernel settings, FIPS and SELinux modes, agents, service units, names pinned in `/etc/hosts`).

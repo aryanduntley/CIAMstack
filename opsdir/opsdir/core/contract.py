@@ -337,7 +337,7 @@ VersionChange = namedtuple("VersionChange", ("has", "change", "affects", "effect
 # settings None, one that names no prerequisites none.
 Adapter = namedtuple("Adapter", (
     "name",
-    "kind",                 # provider | platform | product | host | delivery | secret-store | compliance
+    "kind",                 # provider | platform | product | host | delivery | secret-store | pki | compliance
     "applies",              # (EnvModel) -> bool, from directory data only; None = declaration-only (connectors.stack)
     "required_roles",
     "render_neutral",       # (Directory) -> {path: text}, same everywhere
