@@ -1,9 +1,9 @@
 {
   "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
   "counts": {
-    "blocker": 5,
-    "action": 9,
-    "note": 0,
+    "blocker": 6,
+    "action": 11,
+    "note": 1,
     "to_review": 0
   },
   "notes": [
@@ -115,6 +115,26 @@
         {
           "path": "terraform/main.tf",
           "line": 2392
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "blocker",
+      "subject": "interconnect `link-source`",
+      "text": "Cloud VPN to AWS (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind): not rendered",
+      "how": [
+        "Record its kind of link (ciamLinkKind), under an approved change, and re-render"
+      ],
+      "entry": "cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "standby/prod",
+      "owners": [
+        "network-security"
+      ],
+      "places": [
+        {
+          "path": "terraform/landing-zone/network.tf",
+          "line": 117
         }
       ]
     },
@@ -295,6 +315,64 @@
         {
           "path": "terraform/main.tf",
           "line": 2423
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
+      "subject": "flow log `flow-subnets`",
+      "text": "subnetworks subnet-ds, subnet-pf, subnet-am, subnet-idm, subnet-ig log their flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: the log_config isn't rendered here",
+      "how": [
+        "Set the log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) of each subnetwork where it is defined"
+      ],
+      "entry": "cn=flow-subnets,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "standby/prod",
+      "owners": [
+        "network-security"
+      ],
+      "places": [
+        {
+          "path": "terraform/landing-zone/network.tf",
+          "line": 119
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
+      "subject": "private endpoint `psc-apis`",
+      "text": "private DNS: the landing zone's private googleapis.com zone answers 10.70.255.5 for it",
+      "how": [
+        "Have the landing zone's private googleapis.com zone answer 10.70.255.5 (its keeper)"
+      ],
+      "entry": "cn=psc-apis,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "standby/prod",
+      "owners": [
+        "network-security"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1936
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "note",
+      "subject": "NAT egress `egress-pf`",
+      "text": "the subnetworks an existing NAT serves aren't recorded: they stay as they are",
+      "how": [],
+      "entry": "cn=egress-pf,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "terraform/landing-zone/network.tf",
+          "line": 96
         }
       ]
     }

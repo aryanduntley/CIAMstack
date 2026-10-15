@@ -7,6 +7,7 @@ from ...core.directory import one, subtree, values
 from ...core.environment import bound_nowhere, environment_of, of_class
 from ...core.findings import Fix, Input, findings, merge_findings, responsible
 from ...core.naming import branch, env_label
+from ..pki.credentials import role_uses
 from .kept import carry_fix, key_choice_fix
 from .naming import DEFAULT_PORTS
 
@@ -204,3 +205,8 @@ def check_databases(ctx):
         return parts._replace(ok=(*parts.ok, f"{len(pairs)} managed database(s) keep their engine, version, "
                                              f"availability, encryption and backups in {ctx.dst.label}."))
     return parts
+
+
+def database_roles(m):
+    """(RoleUse, ...) of environment m's managed databases' credential roles (ciamDbCredentialRole)."""
+    return role_uses(of_class(m, "ciamDatabase"), "ciamDbCredentialRole", "database")

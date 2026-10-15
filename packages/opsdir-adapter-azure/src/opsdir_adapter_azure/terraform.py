@@ -47,11 +47,11 @@ from .frontdoor import endpoint, front_door, frontdoor_notes
 from .identities import LOC, RG, aks_data, identity, scope_data, vm_identity
 from .ingress import gateway_front
 from .guardrails import guardrail_notes
-from .landing import STACK, landing_parts, placed_roots
+from .landing import STACK, landing_parts, placed_notes, placed_roots
 from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
-from .network import render_network
-from .plumbing import network_data
+from .network import network_notes, render_network
+from .plumbing import network_data, plumbing_notes
 from .account import azuread_provider, fips_note, provider_block, required_providers, subscription_variable, tagged
 from .arm_types import arm_files
 from .identity_protection import uses_azuread
@@ -260,9 +260,10 @@ def _interconnect_note(m, ic):
             f"Kept by {k.name} ({where}); not managed here.")
 
 
-def render_files(m, services):
-    """{path: TfFile | text} of environment m's Azure render: the Terraform roots as data (main, providers, the
-    landing zone's roots), the configuration files they come with as text."""
+def terraform_parts(m, services):
+    """(parts, landing_dns, interconnect lines, scripts, container files) of environment m's Azure Terraform before
+    it is placed: the stack's providers and main items and the landing zone's and plumbing keepers' parts
+    (landing_parts), what render_files places and render_notes places again (landing.placed_notes)."""
     endpoints = services.endpoints if services else ()     # what the products serve (contract.Endpoint)
     des, identities = one_role(m, "disk-encryption"), workload_identities(m, ACCESS)
     agents = frozenset(agent_hosts(m, services)) if services else frozenset()
@@ -299,7 +300,14 @@ def render_files(m, services):
             ("description", "The landing zone's DNS forwarding ruleset the forwarding rules join"),
             ("type", ref("string"))]),) if forwarders(m, hosted=False) else ()))
     landing, landing_dns = landing_parts(m)
-    roots = placed_roots(m, ((PROVIDERS, providers), (MAIN, out), *landing), landing_dns, lambda name: (
+    return ((PROVIDERS, providers), (MAIN, out), *landing), landing_dns, notes, scripts, container_files
+
+
+def render_files(m, services):
+    """{path: TfFile | text} of environment m's Azure render: the Terraform roots as data (main, providers, the
+    landing zone's roots: terraform_parts placed), the configuration files they come with as text."""
+    parts, landing_dns, notes, scripts, container_files = terraform_parts(m, services)
+    roots = placed_roots(m, parts, landing_dns, lambda name: (
         header(m, WHAT, HCL) + unbound_comments(m.unbound) + notes + "\n" if name == MAIN else
         header(m, "Providers and inputs", HCL)))
     carried = carried_files(roots, scripts, STACK)
@@ -339,13 +347,15 @@ def render_notes(m, services):
     synthetic checks it doesn't render (availability tests, check jobs), the check jobs' subnet delegation and what to
     expect of their first runs; then the security services', audit trails', data discovery's, suppressions',
     guardrails', alert rules', workspaces', identities' (core access.workloads), Kubernetes-only roles' (core
-    edge.kubernetes) and unpinned rule priorities' notes, and log shipping's (servers, containers); each written as its
-    comment."""
+    edge.kubernetes) and unpinned rule priorities' notes, the network depth's and the landing zone plumbing's, the
+    resource providers to register by hand (the Terraform parts placed again: landing.placed_notes), and log
+    shipping's (servers, containers); each written as its comment."""
     endpoints = services.endpoints if services else ()
     return (*test_notes(m, endpoints), *job_notes(m, endpoints), *security_notes(m, discovery_plans(m)),
             *audit_notes(m), *discovery_notes(m), *suppression_notes(m), *guardrail_notes(m), *alert_notes(m),
             *workspace_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m), *firewall_notes(m),
             *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m), *backup_notes(m),
             *database_notes(m), *volume_notes(m), *group_notes(m), *inspection_notes(m, endpoints),
-            *frontdoor_notes(m, endpoints), *quota_notes(m),
+            *frontdoor_notes(m, endpoints), *quota_notes(m), *network_notes(m, endpoints), *plumbing_notes(m),
+            *placed_notes(m, *terraform_parts(m, services)[:2]),
             *((*log_collection_notes(m, services), *container_log_notes(m, services)) if services else ()))

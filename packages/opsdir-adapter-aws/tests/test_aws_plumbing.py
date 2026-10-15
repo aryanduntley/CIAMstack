@@ -2,10 +2,12 @@
 gateways on their elastic IPs, route tables (targets rendered here, by provider ref, or an input), network ACLs,
 peering / transit / VPN, flow logs, and the private endpoints and egress allowlists someone else keeps; import blocks
 for what exists, inputs for what only the keeper knows, notes for what isn't rendered."""
+from opsdir.core.notes import note_comment
 from opsdir.domains.network.plumbing import keepers
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.landing import render_landing
-from opsdir_adapter_aws.plumbing import render_plumbing
+from opsdir_adapter_aws.plumbing import plumbing_notes, render_plumbing
+from edge_fixtures import note_lines
 from network_fixtures import ALPHA, BETA, entry, model
 
 NET_TEAM = "cn=net-team,ou=owners,dc=ciam-ops"
@@ -63,9 +65,10 @@ def test_routes_point_at_what_is_rendered_here_else_its_ref_else_an_input():
     assert "transit_gateway_id = var.transit_gateway_id" in out and 'variable "transit_gateway_id"' in inputs
     assert "vpc_endpoint_id = var.fw_endpoint_id" in out and "Network Firewall endpoint of fw" in inputs
     assert 'ipv6_cidr_block        = "::/0"' in out and 'egress_only_gateway_id = "eigw-1"' in out
-    assert "# 10.6.0.0/16: a blackhole route; Terraform doesn't create those" in out
+    assert "# NOTE: route table `rt-ds`: 10.6.0.0/16: a blackhole route; Terraform doesn't create those" in out
     assert "# UNBOUND: 10.5.0.0/16 peering: its target link isn't rendered here and has no provider ref" in out
-    assert "# 10.4.0.0/16 applies to ds only elsewhere; AWS routes apply to the whole subnet" in out
+    assert ("# NOTE: route table `rt-ds`: 10.4.0.0/16 applies to ds only elsewhere; AWS routes apply to the whole "
+            "subnet") in out
     assert 'import {\n  to = aws_route_table.rt_ds\n  id = "rtb-1"\n}' in out
     assert "subnet_id      = data.aws_subnet.subnet_ds.id\n  route_table_id = aws_route_table.rt_ds.id" in out
 
@@ -96,7 +99,8 @@ def test_peering_with_the_other_environment_s_vpc_only_on_the_same_provider():
     link = entry(ALPHA, "link", "ciamInterconnect", ciamBindingRole="link", ciamInterconnectKind="peering",
                  ciamLinkKind="peering", ciamPeerEnvironment=BETA, ciamSourceCidr="10.9.0.0/16")
     out, _ = _main(link)
-    assert "# link: peering joins two networks of one provider, and the other end is on fakecloud" in out
+    assert ("# NOTE: interconnect `link`: peering joins two networks of one provider (AWS), and the other end is on "
+            "fakecloud") in out
 
 
 def test_a_vpn_with_bgp_or_static_routes_and_the_vpc_s_vpn_gateway_once():
@@ -120,8 +124,9 @@ def test_links_aws_doesn_t_render_are_named():
                      ciamPeerEnvironment=BETA, ciamSourceCidr="10.9.0.0/16", **kind)
     out, inputs = _main(link("dx", ciamLinkKind="dedicated"), link("hub", ciamLinkKind="hub"), link("odd"),
                         link("tgw", ciamLinkKind="transit"), link("novpn", ciamLinkKind="vpn"))
-    assert "# dx: a dedicated circuit (Direct Connect)" in out and "# hub: AWS has no managed hub connection" in out
-    assert "# odd: odd link: what kind of link it is isn't recorded (ciamLinkKind)" in out
+    assert "# NOTE: interconnect `dx`: a dedicated circuit (Direct Connect)" in out
+    assert "# NOTE: interconnect `hub`: AWS has no managed hub connection" in out
+    assert "# NOTE: interconnect `odd`: odd link: what kind of link it is isn't recorded (ciamLinkKind)" in out
     assert "# novpn: UNBOUND: a VPN needs the other end's gateway address" in out
     assert 'resource "aws_ec2_transit_gateway_vpc_attachment" "tgw"' in out
     assert "subnet_ids         = [data.aws_subnet.subnet_ds.id, data.aws_subnet.subnet_web.id]" in out
@@ -138,13 +143,13 @@ def test_flow_logs_on_the_vpc_or_each_subnet_to_their_destination():
                               ciamLogDestinationRole="flow-logs"),
                         entry(ALPHA, "fl-x", "ciamFlowLog", ciamBindingRole="fl-x", ciamFlowScope="network",
                               ciamLogDestinationRole="nowhere"))
-    assert "# fl: kept 90 days, the retention of flow-logs (not set here)" in out
+    assert "# NOTE: flow log `fl`: kept 90 days, the retention of flow-logs (not set here)" in out
     assert 'vpc_id               = data.aws_vpc.main.id\n  traffic_type         = "ALL"' in out
     assert 'log_destination_type = "cloud-watch-logs"' in out and "iam_role_arn         = var.flow_logs_role_arn" in out
     assert 'import {\n  to = aws_flow_log.fl\n  id = "fl-1"\n}' in out
     assert 'resource "aws_flow_log" "fl_sub_subnet_ds"' in out and 'resource "aws_flow_log" "fl_sub_subnet_web"' in out
     assert "aws_flow_log.fl_sub" not in out                                 # one ref, several flow logs: no import
-    assert "# fl-eni: a flow log on interfaces needs their ids" in out
+    assert "# NOTE: flow log `fl-eni`: a flow log on interfaces needs their ids" in out
     assert "# fl-x: UNBOUND: its log destination has no binding with an ARN here" in out
     assert 'variable "flow_logs_role_arn"' in inputs
 
@@ -183,3 +188,39 @@ def test_what_another_party_keeps_renders_in_their_root_with_its_own_providers()
     assert 'variable "egress_subnet_id"' in files["terraform/landing-zone/providers.tf"]
     assert "variable" not in files["terraform/landing-zone/net-team/providers.tf"]
     assert "main.tf" not in " ".join(files)                                 # no identities or guardrails
+
+
+GAMMA = "env=prod,cloud=gamma,ou=environments,dc=ciam-ops"
+PEER = (f"dn: cloud=gamma,ou=environments,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCloud\ncloud: gamma\n"
+        "ciamCloudProvider: aws\nciamRegion: us-east-1\n",
+        f"dn: {GAMMA}\nobjectClass: top\nobjectClass: ciamEnvironment\nenv: prod\n",
+        f"dn: ou=bindings,{GAMMA}\nobjectClass: top\nobjectClass: organizationalUnit\nou: bindings\n",
+        entry(GAMMA, "net", "ciamNetwork", ciamBindingRole="network", ciamCidr="10.9.0.0/16", ciamProviderRef="vpc-9"))
+
+
+def test_the_plumbing_notes_are_the_comments_every_keeper_s_root_writes():
+    def link(cn, **attrs):
+        return entry(ALPHA, cn, "ciamInterconnect", ciamBindingRole=cn, ciamInterconnectKind=f"{cn} link",
+                     ciamSourceCidr="10.9.0.0/16", **attrs)
+    m = model(alpha=(
+        EGRESS, LOGS,
+        entry(ALPHA, "rt-ds", "ciamRouteTable", ciamBindingRole="rt-ds", ciamSubnetRole="subnet-ds",
+              ciamRoute=("10.6.0.0/16 none", "10.4.0.0/16 appliance eni-1 for ds", "10.3.0.0/16 appliance for ds")),
+        link("cross", ciamLinkKind="peering", ciamPeerEnvironment=BETA),
+        link("same", ciamLinkKind="peering", ciamPeerEnvironment=GAMMA),
+        link("refused", ciamLinkKind="peering", ciamPeerEnvironment=GAMMA, ciamPeerAccepted="FALSE"),
+        link("dx", ciamLinkKind="dedicated"), link("hub", ciamLinkKind="hub"), link("odd"),
+        entry(ALPHA, "fl", "ciamFlowLog", ciamBindingRole="fl", ciamFlowScope="network",
+              ciamLogDestinationRole="flow-logs", ciamRetentionDays="90"),
+        entry(ALPHA, "fl-eni", "ciamFlowLog", ciamBindingRole="fl-eni", ciamFlowScope="interface",
+              ciamLogDestinationRole="flow-logs", ciamManagedBy=NET_TEAM),
+        entry(ALPHA, "pe-kms", "ciamPrivateEndpoint", ciamBindingRole="pe-kms", ciamPrivateService="keys",
+              ciamPrivateEndpointKind="gateway", ciamManagedBy=NET_TEAM),
+        entry(ALPHA, "fw", "ciamProxy", ciamBindingRole="fw", ciamProxyKind="firewall", ciamManagedBy=NET_TEAM,
+              ciamAllowedDestination=("idp.example", "smtp.example:587"))), tree=(*OWNERS, *PEER))[1]
+    notes = plumbing_notes(m)
+    written = note_lines("\n".join(x for k in keepers(m) for part in as_text(render_plumbing(m, k)) for x in part))
+    assert written == sorted(note_comment(n) for n in notes)
+    assert {n.severity for n in notes} == {"blocker", "action", "note"}
+    assert [n.severity for n in notes if n.subject == "interconnect `refused`"] == ["note"]   # the planner raises it
+    assert [n.severity for n in notes if n.subject == "interconnect `same`"] == ["action"]

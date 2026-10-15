@@ -31,6 +31,6 @@ import {
   id = "${data.azurerm_resource_group.main.id}/providers/Microsoft.Network/natGateways/natgw-ciam-prod|${var.egress_pf_ip_0}"
 }
 
-# egress-pf: the subnets an existing NAT gateway serves aren't recorded; its subnet associations stay as they are
+# NOTE: NAT egress `egress-pf`: the subnets an existing NAT gateway serves aren't recorded; its subnet associations stay as they are
 
-# link-source: site-to-site VPN (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind). Not rendered.
+# NOTE: interconnect `link-source`: site-to-site VPN (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind): not rendered

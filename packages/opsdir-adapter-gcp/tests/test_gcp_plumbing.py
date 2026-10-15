@@ -3,7 +3,9 @@ Cloud Router + Cloud NAT, network-wide routes, VPC peering, HA VPN with BGP, flo
 others keep of the stack's depth; import blocks for what exists, a folder per keeper."""
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp.landing import render_landing
-from opsdir_adapter_gcp.plumbing import render_plumbing
+from opsdir.core.notes import note_comment
+from opsdir_adapter_gcp.plumbing import plumbing_notes, render_plumbing
+from edge_fixtures import note_lines
 from opsdir.domains.network.plumbing import keepers
 from network_fixtures import ALPHA, BETA, entry, model
 
@@ -84,7 +86,7 @@ def test_peering_with_a_google_cloud_network_and_the_other_half_named():
 def test_peering_with_another_provider_is_a_vpn():
     out = _network(entry(ALPHA, "link", "ciamInterconnect", ciamBindingRole="link", ciamInterconnectKind="peering",
                          ciamLinkKind="peering", ciamPeerEnvironment=BETA, ciamSourceCidr="10.1.0.0/16"))
-    assert "record it as a vpn link" in out and "google_compute_network_peering" not in out
+    assert "the other end is on fakecloud: not rendered" in out and "google_compute_network_peering" not in out
 
 
 def test_ha_vpn_with_bgp_secret_and_link_local_addresses_as_inputs():
@@ -114,7 +116,7 @@ def test_vpn_without_asns_or_gateway_and_other_links_are_named():
                          ciamLinkKind="dedicated", ciamPeerEnvironment=BETA, ciamSourceCidr="10.1.0.0/16"),
                    entry(ALPHA, "old", "ciamInterconnect", ciamBindingRole="old", ciamInterconnectKind="legacy VPN",
                          ciamPeerEnvironment=BETA, ciamSourceCidr="10.1.0.0/16"))
-    assert "record both ends' ASNs" in out and "UNBOUND: a VPN needs the other end's gateway" in out
+    assert "both ends' ASNs aren't recorded" in out and "UNBOUND: a VPN needs the other end's gateway" in out
     assert "Cloud Interconnect attachment" in out and "legacy VPN: what kind of link it is isn't recorded" in out
     assert "google_compute_vpn_tunnel" not in out
 
@@ -178,3 +180,34 @@ def test_private_services_access_goes_in_its_keepers_root_with_its_range():
     assert "reserved_peering_ranges = [google_compute_global_address.psa.name]" in theirs
     assert 'to = google_compute_global_address.psa\n  id = "projects/p/global/addresses/ciam-services"' in theirs
     assert "to = google_service_networking_connection.psa" not in theirs     # its id needs the network's ref
+
+
+def test_the_plumbing_notes_are_the_comments_every_keeper_s_root_writes():
+    def link(cn, kind, peer=BETA, **attrs):
+        return entry(ALPHA, cn, "ciamInterconnect", ciamBindingRole=cn, ciamInterconnectKind=kind or "a link",
+                     ciamPeerEnvironment=peer, ciamSourceCidr="10.1.0.0/16",
+                     **({"ciamLinkKind": kind} if kind else {}), **attrs)
+    d, m, _ = model(alpha=(
+        entry(ALPHA, "egress", "ciamEgress", ciamBindingRole="egress", ciamCidr="203.0.113.10/32",
+              ciamNatAllocation="static", ciamProviderRef="proj/us-central1/router-a/nat-a"),
+        entry(ALPHA, "private", "ciamEgress", ciamBindingRole="private", ciamCidr="10.1.9.0/24"),
+        entry(ALPHA, "routes", "ciamRouteTable", ciamBindingRole="routes", ciamSubnetRole="subnet-ds",
+              ciamProviderRef="projects/p/global/networks/n/routes",
+              ciamRoute=("10.6.0.0/16 peering", "10.5.0.0/16 transit", "10.4.0.0/16 none", "10.3.0.0/16 nat",
+                         "10.2.0.0/16 vpn vpn", "0.0.0.0/0 internet", "10.0.9.0/24 appliance")),
+        entry(ALPHA, "acl", "ciamNetworkAcl", ciamBindingRole="acl", ciamAclRule="100 allow in tcp 443 0.0.0.0/0"),
+        link("cross", "peering"), link("same", "peering", peer=GAMMA),
+        link("refused", "peering", peer=GAMMA, ciamPeerAccepted="FALSE"),
+        link("vpn", "vpn", ciamPeerGateway="198.51.100.1", ciamLocalAsn="64512", ciamPeerAsn="65010"),
+        link("noasn", "vpn", ciamPeerGateway="198.51.100.2"), link("ic", "dedicated"), link("hub", "hub"),
+        link("transit", "transit", ciamManagedBy=TEAM), link("odd", None),
+        entry(ALPHA, "fl", "ciamFlowLog", ciamBindingRole="fl", ciamFlowScope="subnet", ciamSubnetRole="subnet-ds"),
+        entry(ALPHA, "fl-eni", "ciamFlowLog", ciamBindingRole="fl-eni", ciamFlowScope="interface"),
+        entry(ALPHA, "pga", "ciamPrivateEndpoint", ciamBindingRole="pga", ciamPrivateService="apis",
+              ciamPrivateEndpointKind="subnet-access", ciamManagedBy=TEAM),
+        entry(ALPHA, "fw", "ciamProxy", ciamBindingRole="fw", ciamProxyKind="firewall", ciamManagedBy=TEAM,
+              ciamAllowedDestination=("idp.example",))), tree=TREE)
+    notes = plumbing_notes(m)
+    written = note_lines("\n".join(t for p, t in as_text(render_landing(m)).items() if p.endswith("network.tf")))
+    assert written == sorted(note_comment(n) for n in notes)
+    assert {n.severity for n in notes} == {"blocker", "action", "note"} and len(notes) == 23

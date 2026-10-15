@@ -6,6 +6,7 @@ import datetime as dt
 import pytest
 
 from opsdir.connectors.keys import keys_report
+from opsdir.core.contract import RoleUse
 from opsdir.core.environment import env_dn
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.pki.naming import credential_dn
@@ -168,3 +169,31 @@ def test_a_rotation_due_before_the_as_of_date_is_marked_overdue():
     assert by_name(placement(d, "alpha/prod", dt.date(2026, 5, 30)))["signing-key"][-1] == "ok"
     assert by_name(placement(d, "alpha/prod", dt.date(2026, 5, 31)))["signing-key"][-1] == \
         "rotation overdue (due 2026-05-30)"
+
+
+# the record's entries name the roles they use (Domain and Adapter roles_used): what uses an unbound one says so
+USING = mini_estate.FAKE._replace(roles_used=lambda m: (RoleUse("signing-key", "connector `ldap`"),))
+OTHER_USING = OTHER._replace(required_roles=(), roles_used=lambda m: (RoleUse("signing-key", "connector `ldap`"),))
+DATABASE = tuple(parse(f"""dn: cn=reports-db,ou=bindings,{BETA}
+changetype: add
+objectClass: top
+objectClass: ciamDatabase
+cn: reports-db
+ciamBindingRole: reports-db
+ciamDbEngine: postgresql
+ciamDbCredentialRole: signing-key
+"""))
+
+
+def test_a_credential_an_entry_here_uses_is_unbound_naming_what_uses_it():
+    d = estate(alpha={})
+    assert by_name(placement(d, "beta/prod", installed=(USING,)))["signing-key"][-1] == \
+        "UNBOUND: used by connector `ldap`"
+    assert by_name(placement(estate(alpha={}, extra=DATABASE), "beta/prod", installed=(mini_estate.FAKE,)))[
+        "signing-key"][-1] == "UNBOUND: used by database `reports-db`"
+
+
+def test_a_credential_only_a_product_not_run_here_would_use_names_it():
+    d = estate(alpha={})
+    assert by_name(placement(d, "beta/prod", installed=(mini_estate.FAKE, OTHER_USING)))["signing-key"][-1] == \
+        "not used here: only Other uses it"

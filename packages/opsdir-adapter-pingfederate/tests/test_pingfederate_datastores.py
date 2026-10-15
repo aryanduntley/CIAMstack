@@ -10,7 +10,7 @@ from opsdir.connectors.fixes import chosen
 from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
 from opsdir.connectors.roundtrip import read_back
-from opsdir.core.contract import PlanContext
+from opsdir.core.contract import PlanContext, RoleUse
 from opsdir.core.directory import get, one, values
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
@@ -319,3 +319,8 @@ def test_on_13_1_3_a_jdbc_store_outside_the_documented_drivers_is_an_action():
     assert action.startswith("Data store `reports`: driver `net.sourceforge.jtds.jdbc.Driver` isn't one PingFederate "
                              "documents. From 13.1.3 the Admin API restricts JDBC drivers and URL schemes, and "
                              "beta/prod runs the newest release")
+
+
+def test_the_data_stores_credential_roles_are_the_roles_it_uses():
+    d, _, _ = imported(SET_ROLE)
+    assert RoleUse("pf-ds-bind-password", "data store `users`") in ADAPTER.roles_used(env_model(d, "alpha/prod"))

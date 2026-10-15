@@ -1933,7 +1933,7 @@ resource "google_dns_record_set" "svc_sso" {
 
 # Private endpoint 'psa-services' (database) is kept by network-security; rendered in their root, not here.
 
-# private DNS: the landing zone's private googleapis.com zone answers 10.70.255.5 for 'psc-apis'
+# NOTE: private endpoint `psc-apis`: private DNS: the landing zone's private googleapis.com zone answers 10.70.255.5 for it
 
 resource "google_compute_global_address" "psc_apis" {
   name         = "ciam-prod-psc-apis"

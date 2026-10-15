@@ -5,7 +5,7 @@
 -->
 # Render notes: target/prod
 
-**1 blocker, 3 actions, 9 notes, 0 to review**
+**2 blockers, 3 actions, 11 notes, 0 to review**
 
 ## Blockers
 
@@ -17,6 +17,13 @@
 - **How:**
   1. Record alarm pf-login-failures in a form the cloud's alarms take (its alarm is a log query alert and the record holds no query), under an approved change, and re-render
   2. Or evaluate the rule another way: a Prometheus signal a product declares, or an alert made by hand
+
+### interconnect `link-source` (Network)
+
+- **What:** site-to-site VPN (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind): not rendered
+- **Where:** terraform/landing-zone/network.tf:36; target/prod
+- **Who:** network-security
+- **How:** Record its kind of link (ciamLinkKind), under an approved change, and re-render
 
 ## Actions
 
@@ -74,6 +81,12 @@
 - **Who:** ciam-platform
 - **How:** After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log
 
+### NAT egress `egress-pf` (Network)
+
+- **What:** the subnets an existing NAT gateway serves aren't recorded; its subnet associations stay as they are
+- **Where:** terraform/landing-zone/network.tf:34; target/prod
+- **Who:** ciam-platform
+
 ### firewall rule `fw-apps-public` (Network)
 
 - **What:** reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
@@ -103,3 +116,9 @@
 - **What:** reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
 - **Where:** terraform/main.tf:157; target/prod
 - **Who:** ciam-platform
+
+### route table `rt-private` (Network)
+
+- **What:** 0.0.0.0/0 nat: not a next hop in Azure (subnets reach it without a route): not rendered
+- **Where:** terraform/landing-zone/network-security/network.tf:53; target/prod
+- **Who:** network-security

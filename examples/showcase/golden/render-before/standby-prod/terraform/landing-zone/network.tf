@@ -93,7 +93,7 @@ resource "google_compute_router_nat" "egress_pf" {
     name                    = data.google_compute_subnetwork.subnet_pf.self_link
     source_ip_ranges_to_nat = ["ALL_IP_RANGES"]
   }
-  # the subnetworks an existing NAT serves aren't recorded: they stay as they are
+  # NOTE: NAT egress `egress-pf`: the subnetworks an existing NAT serves aren't recorded: they stay as they are
   lifecycle {
     ignore_changes = [source_subnetwork_ip_ranges_to_nat, subnetwork]
   }
@@ -114,14 +114,6 @@ resource "google_compute_route" "routes_0" {
   description      = "0.0.0.0/0 internet (routes)"
 }
 
-# link-source: Cloud VPN to AWS (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind). Not rendered.
+# NOTE: interconnect `link-source`: Cloud VPN to AWS (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind): not rendered
 
-# flow-subnets: subnetwork subnet-ds logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
-
-# flow-subnets: subnetwork subnet-pf logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
-
-# flow-subnets: subnetwork subnet-am logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
-
-# flow-subnets: subnetwork subnet-idm logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
-
-# flow-subnets: subnetwork subnet-ig logs its flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: set its log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the subnetwork is defined
+# NOTE: flow log `flow-subnets`: subnetworks subnet-ds, subnet-pf, subnet-am, subnet-idm, subnet-ig log their flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: the log_config isn't rendered here

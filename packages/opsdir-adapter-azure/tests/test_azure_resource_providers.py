@@ -4,9 +4,10 @@ without a landing zone."""
 import pathlib
 import re
 
-from opsdir_adapter_azure.resource_providers import namespace_of, registration_note, resource_providers
+from opsdir_adapter_azure.resource_providers import namespace_of, registration_notes, resource_providers
 from opsdir_format_terraform.hcl import as_text
 from opsdir_format_terraform.hcl_reader import read_hcl
+from network_fixtures import model
 
 SOURCE = pathlib.Path(__file__).parents[1] / "src" / "opsdir_adapter_azure"
 MAIN = '''resource "azurerm_linux_virtual_machine" "ds_1" {
@@ -46,7 +47,9 @@ def test_every_azurerm_type_the_adapter_names_has_a_namespace():
 def test_an_unknown_type_and_the_note_without_a_landing_zone():
     namespaces, unknown = resource_providers(_items('resource "azurerm_spring_cloud_app" "x" {\n}\n', MAIN))
     assert unknown == ("azurerm_spring_cloud_app",) and "Microsoft.Compute" in namespaces
-    note = "\n".join(as_text(registration_note(namespaces, unknown)))
-    assert note.startswith("# Register these resource providers in the subscription before applying")
-    assert "# azurerm_spring_cloud_app: its resource provider isn't known to opsdir" in note
-    assert registration_note((), ()) == ()
+    m = model()[1]
+    notes = registration_notes(m, namespaces, unknown)
+    assert [n.severity for n in notes] == ["action", "action"]
+    assert notes[0].text.startswith("to register in the subscription before applying") and notes[0].scope == m.label
+    assert notes[1].subject == "resource type `azurerm_spring_cloud_app`"
+    assert registration_notes(m, (), ()) == ()

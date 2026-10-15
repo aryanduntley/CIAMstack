@@ -2,7 +2,9 @@
 Gateway on the route tables), endpoint services on an L4 service's NLB, an egress firewall's domain allowlist as a
 Network Firewall rule group; comments for what AWS has no endpoint for and what others keep."""
 from opsdir_format_terraform.hcl import as_text
-from opsdir_adapter_aws.network import render_network
+from opsdir.core.notes import note_comment
+from opsdir_adapter_aws.network import network_notes, render_network
+from edge_fixtures import note_lines
 from network_fixtures import ALPHA, entry, model
 
 TERMINATE = ("dn: ou=edge-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: edge-policies\n",
@@ -54,9 +56,9 @@ def test_what_aws_has_no_endpoint_for_is_said():
                   entry(ALPHA, "pe-db", "ciamPrivateEndpoint", ciamBindingRole="pe-db", ciamPrivateService="database"),
                   entry(ALPHA, "pe-apis", "ciamPrivateEndpoint", ciamBindingRole="pe-apis", ciamPrivateService="apis",
                         ciamPrivateEndpointKind="all-apis"))
-    assert "# Private endpoint 'pe-kms': kms has no gateway endpoint (only S3 and DynamoDB)" in out
-    assert "# Private endpoint 'pe-db': no VPC endpoint for database" in out
-    assert "# Private endpoint 'pe-apis': no VPC endpoint for apis" in out
+    assert "# NOTE: private endpoint `pe-kms`: kms has no gateway endpoint (only S3 and DynamoDB)" in out
+    assert "# NOTE: private endpoint `pe-db`: no VPC endpoint for a database" in out
+    assert "# NOTE: private endpoint `pe-apis`: no VPC endpoint for apis" in out
     assert "aws_vpc_endpoint" not in out
 
 
@@ -101,5 +103,21 @@ def test_what_others_keep_is_a_comment_naming_them():
 def test_a_domain_list_says_what_isnt_web_traffic():
     out = _render(entry(ALPHA, "egress-fw", "ciamProxy", ciamBindingRole="egress-firewall", ciamProxyKind="firewall",
                         ciamAllowedDestination=("smtp.example:587", "idp.partner.example")))
-    assert ("# A domain list matches TLS SNI and HTTP Host only: smtp.example:587 isn't web traffic, so the policy's "
-            "other stateful rules decide it") in out
+    assert ("# NOTE: egress firewall `egress-fw`: a domain list matches TLS SNI and HTTP Host only: smtp.example:587 "
+            "isn't web traffic, so the policy's other stateful rules decide it") in out
+
+
+def test_the_network_notes_are_the_comments_the_render_writes():
+    m = model(alpha=(
+        entry(ALPHA, "pe-kms", "ciamPrivateEndpoint", ciamBindingRole="pe-kms", ciamPrivateService="keys",
+              ciamPrivateEndpointKind="gateway"),
+        entry(ALPHA, "pe-db", "ciamPrivateEndpoint", ciamBindingRole="pe-db", ciamPrivateService="database"),
+        entry(ALPHA, "pe-apis", "ciamPrivateEndpoint", ciamBindingRole="pe-apis", ciamPrivateService="apis"),
+        entry(ALPHA, "pe-odd", "ciamPrivateEndpoint", ciamBindingRole="pe-odd", ciamPrivateService="secrets",
+              ciamPrivateEndpointKind="subnet-access"),
+        entry(ALPHA, "ldaps-link", "ciamEndpointService", ciamBindingRole="ldaps-link", ciamServiceRole="sso-service"),
+        entry(ALPHA, "egress-fw", "ciamProxy", ciamBindingRole="egress-firewall", ciamProxyKind="firewall",
+              ciamAllowedDestination=("smtp.example:587", "idp.partner.example"))), tree=TERMINATE)[1]
+    notes = network_notes(m)
+    assert note_lines("\n\n".join(as_text(render_network(m)))) == sorted(note_comment(n) for n in notes)
+    assert {n.severity for n in notes} == {"blocker", "action", "note"} and len(notes) == 7

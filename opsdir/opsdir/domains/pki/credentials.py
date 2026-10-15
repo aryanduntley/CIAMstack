@@ -9,7 +9,8 @@ store is and how Kubernetes workloads log in to it.
 import datetime as dt
 import re
 
-from ...core.directory import children, fingerprint, get, gtime_date, is_a, one, subtree
+from ...core.contract import RoleUse
+from ...core.directory import children, fingerprint, get, gtime_date, is_a, one, rdn_value, subtree, values
 from ...core.environment import by_role, env_model, environment_of
 from ...core.findings import choice_fix
 from ...core.naming import branch
@@ -138,3 +139,9 @@ def credential_role_fix(src, dst, entry, attr, what, key, names=()):
                        "holds only the reference).",),
                       ("A person chooses: the record can't tell which secret holds the credential (a matching name "
                        "is a hint, not proof).",))
+
+
+def role_uses(entries, attr, label):
+    """(RoleUse, ...) of the roles entries name in a credential-role attribute (attr), each used by '<label> `<name>`':
+    how a package says which roles its entries use (Domain and Adapter roles_used)."""
+    return tuple(RoleUse(r, f"{label} `{rdn_value(e)}`") for e in entries for r in values(e, attr))

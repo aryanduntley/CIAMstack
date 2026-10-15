@@ -8,6 +8,7 @@ import ipaddress
 from ...core.directory import one, rdn_value, values
 from ...core.environment import of_class, one_role
 from ...core.findings import findings, responsible
+from ..pki.credentials import role_uses
 
 LOAD_BALANCER = "load-balancer"
 
@@ -66,3 +67,8 @@ def check_appliance_sources(ctx):
                               f"ciamTargetRole {role}, ciamSourceCidr {src}, ciamPort {port}).",
                               responsible(ctx.d, a, m.env), None)
                              for a, src, svc, role, port in unadmitted(m)])
+
+
+def appliance_roles(m):
+    """(RoleUse, ...) of environment m's appliances' login secret roles (ciamLoginSecretRole)."""
+    return role_uses(of_class(m, "ciamAppliance"), "ciamLoginSecretRole", "appliance")

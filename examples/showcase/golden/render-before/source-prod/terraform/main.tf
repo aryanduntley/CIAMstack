@@ -1707,9 +1707,9 @@ resource "aws_vpc_endpoint_service" "ldaps_link" {
   }
 }
 
-# Egress firewall 'egress-firewall': reference this rule group from its firewall policy (arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress) (stateful_rule_group_reference)
+# NOTE: egress firewall `egress-firewall`: reference this rule group from its firewall policy (arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress) (stateful_rule_group_reference)
 
-# A domain list matches TLS SNI and HTTP Host only: email-smtp.us-east-1.amazonaws.com:587 isn't web traffic, so the policy's other stateful rules decide it
+# NOTE: egress firewall `egress-firewall`: a domain list matches TLS SNI and HTTP Host only: email-smtp.us-east-1.amazonaws.com:587 isn't web traffic, so the policy's other stateful rules decide it
 
 resource "aws_networkfirewall_rule_group" "egress_firewall_domains" {
   name        = "ciam-prod-egress-firewall-domains"

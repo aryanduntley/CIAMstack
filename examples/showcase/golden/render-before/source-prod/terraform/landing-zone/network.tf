@@ -217,7 +217,7 @@ import {
   id = "acl-0a1b2c3d4e5f60031"
 }
 
-# flow-vpc: kept 30 days, the retention of ops-logs (not set here)
+# NOTE: flow log `flow-vpc`: kept 30 days, the retention of ops-logs (not set here)
 
 resource "aws_flow_log" "flow_vpc" {
   vpc_id               = data.aws_vpc.main.id

@@ -3,7 +3,9 @@ infrastructure gets its own complete root (terraform/landing-zone/<party>/, with
 one that doesn't is named in the stack's main.tf with what it is asked for, and nothing of it is rendered."""
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_format_terraform.hcl import as_text
-from opsdir_adapter_azure.terraform import render_files
+from opsdir.core.notes import note_comment
+from opsdir_adapter_azure.terraform import render_files, render_notes
+from edge_fixtures import note_lines
 from network_fixtures import ALPHA, entry, model
 
 DBA = "cn=dba,ou=owners,dc=ciam-ops"
@@ -57,7 +59,7 @@ def test_a_landing_zone_whose_keeper_takes_none_is_named_too():
     assert "resource_providers_to_register" in taken["terraform/landing-zone/providers.tf"]
     assert not any(p.startswith("terraform/landing-zone/") for p in asked)
     assert "# The landing zone: kept by lz, not rendered here (" in asked["terraform/main.tf"]
-    assert "Register these resource providers in the subscription" in asked["terraform/providers.tf"]
+    assert "# NOTE: resource providers: to register in the subscription" in asked["terraform/providers.tf"]
 
 
 def test_a_vm_s_disk_someone_else_keeps_goes_to_their_root_with_its_attachment_reading_the_vm():
@@ -69,3 +71,13 @@ def test_a_vm_s_disk_someone_else_keeps_goes_to_their_root_with_its_attachment_r
     assert 'resource "azurerm_managed_disk" "ds_1_vol_ds_data"' in main
     assert "virtual_machine_id = var.azurerm_linux_virtual_machine_ds_1_id" in main
     assert "azurerm_managed_disk" not in files["terraform/main.tf"]
+
+
+def test_the_registration_notes_are_the_comments_the_providers_files_write():
+    for owners in ({}, {"lz_takes": None}):
+        m = model(alpha=(GUARDRAIL,), tree=_owners(**owners), changes=(GROUP,))[1]
+        files = as_text(render_files(m, None))
+        written = note_lines("\n".join(t for p, t in files.items() if p.endswith("providers.tf")))
+        notes = [n for n in render_notes(m, None) if n.area == "Subscription"]
+        assert written == sorted(note_comment(n) for n in notes)
+    assert [n.subject for n in notes] == ["resource providers"]                 # no landing zone: the stack's

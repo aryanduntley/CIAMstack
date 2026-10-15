@@ -5,7 +5,7 @@
 -->
 # Render notes: source/prod
 
-**1 blocker, 8 actions, 0 notes, 0 to review**
+**1 blocker, 11 actions, 0 notes, 0 to review**
 
 ## Blockers
 
@@ -75,3 +75,24 @@
 - **Where:** terraform/main.tf:2426; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
+
+### egress firewall `egress-firewall` (Network)
+
+- **What:** reference this rule group from its firewall policy (arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress) (stateful_rule_group_reference)
+- **Where:** terraform/main.tf:1710; source/prod
+- **Who:** network-security
+- **How:** After applying, add the rule group to the firewall policy's stateful rule group references (whoever keeps the policy)
+
+### egress firewall `egress-firewall` (Network)
+
+- **What:** a domain list matches TLS SNI and HTTP Host only: email-smtp.us-east-1.amazonaws.com:587 isn't web traffic, so the policy's other stateful rules decide it
+- **Where:** terraform/main.tf:1712; source/prod
+- **Who:** network-security
+- **How:** Allow email-smtp.us-east-1.amazonaws.com:587 in the firewall policy's other stateful rules
+
+### flow log `flow-vpc` (Network)
+
+- **What:** kept 30 days, the retention of ops-logs (not set here)
+- **Where:** terraform/landing-zone/network.tf:220; source/prod
+- **Who:** network-security
+- **How:** Set the retention of ops-logs to 30 days where it is kept

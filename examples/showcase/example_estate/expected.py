@@ -104,6 +104,10 @@ EXPECTED = MappingProxyType({
         ("B42", "Monitoring", "target/prod: alert rule login-failures: not rendered: its alarm is a log query alert",
          "the target's login-failures alarm is a log query alert the record holds no query for: Azure Monitor "
          "can't render it, so the alert won't exist (a render note)", None),
+        # the target's interconnects as its landing zone's plumbing renders them (render notes, flow 43)
+        ("B43", "Network", "target/prod: interconnect `link-source`: site-to-site VPN (landing-zone managed): what "
+         "kind of link it is isn't recorded", "the target's cross-cloud replication link to the source records no "
+         "kind of link (ciamLinkKind) and doesn't exist yet: the landing zone can't render it (a render note)", None),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),

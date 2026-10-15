@@ -43,6 +43,7 @@ from ..edge.exposure import service_exposure
 from ..edge.policies import policy_for
 from ..edge.resolve import declared_endpoints, endpoint_query
 from ..network.stack import subnets
+from ..pki.credentials import role_uses
 from .alerts import canaries, starts_nowhere
 from .realized import keeper_of
 
@@ -231,3 +232,10 @@ def unrun_notes(m, adapters, endpoints, renderers=()):
                      "feeding the alert rule it fires"))
     return tuple(unrendered_note(m, s._replace(why=None), reason) for s in canary_specs(m, endpoints)
                  if s.keeper is None)
+
+
+def canary_roles(m):
+    """(RoleUse, ...) of the credential roles (ciamUsesRole) of the canaries environment m checks: those whose checked
+    service it binds (canary_specs)."""
+    return role_uses((c for c in canaries(m.d) if one_role(m, one(c, "ciamCheckedService")) is not None),
+                     "ciamUsesRole", "canary")

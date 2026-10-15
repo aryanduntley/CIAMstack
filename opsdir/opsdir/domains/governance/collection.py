@@ -9,6 +9,7 @@ from typing import NamedTuple
 
 from ...core.directory import one, rdn_value, values
 from ...core.environment import of_class, one_role, servers_with_role
+from ..pki.credentials import role_uses
 
 SOURCE = "ciamCollectionSource"
 # A collection source resolved against its environment: the binding's name, the importer, the locations it reads (the
@@ -57,3 +58,8 @@ def declared_adapters(m):
 def collection_sources(m, importer):
     """The Sources environment m declares for an importer ('adapter/importer')."""
     return tuple(resolve_source(m, s) for s in of_class(m, SOURCE) if one(s, "ciamImporter") == importer)
+
+
+def collection_roles(m):
+    """(RoleUse, ...) of environment m's collection sources' credential roles (ciamCredentialRole)."""
+    return role_uses(of_class(m, "ciamCollectionSource"), "ciamCredentialRole", "collection source")

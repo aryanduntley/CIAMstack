@@ -5,10 +5,14 @@ answers the service's usual name. Private Link Services exposing a service name'
 NAT address in the subnet recorded, visible to the subscriptions recorded, approved automatically for the allowed
 principals unless each connection waits for acceptance; a service on an Application Gateway is not (it has its own
 private link configuration). An egress firewall the stack keeps gets its allowlist as an application rule collection
-group in its Firewall policy. What someone else keeps is a comment naming them. Pure."""
+group in its Firewall policy. What someone else keeps is a comment naming them. What it leaves out or to a person is
+a render note (core.notes, flow 43) written as its comment: endpoint_notes, link_service_note, firewall_notes, all of
+them network_notes. Pure."""
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import one_role
+from opsdir.core.notes import RECORD, note_comment
 from opsdir.domains.edge.resolve import service_edge
+from opsdir.domains.network.plumbing import network_note
 from opsdir.domains.network.stack import (allowlist, egress_firewalls, elsewhere, endpoint_services, private_endpoints,
                                           reached, subnets)
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
@@ -78,17 +82,30 @@ def _endpoint(m, p, name, target, group, sub):
         *dns, ("tags", tagged(m, binding_tags(p)))])
 
 
-def private_endpoint(m, p):
-    """Private endpoints the stack keeps, one per resource its bindings reach (with the data sources naming them); a
-    comment for a service or kind Azure doesn't reach this way."""
-    n, kind, what = tf_name(rdn_value(p)), one(p, "ciamPrivateEndpointKind", "interface"), one(p, "ciamPrivateService")
+def endpoint_notes(m, p):
+    """The render notes (blockers) of a private endpoint private_endpoint doesn't render: a kind other than
+    interface (another provider's, or a subnet's service endpoints), a service it doesn't reach by private endpoint;
+    () when it renders."""
+    kind, what = one(p, "ciamPrivateEndpointKind", "interface"), one(p, "ciamPrivateService")
     if kind != "interface":
-        return (comment(f"Private endpoint '{rdn_value(p)}': Azure's private endpoints are interface endpoints ({kind} "
-                        "is another provider's kind, or a subnet's service endpoints, which the landing zone keeps). "
-                        "Not rendered."),)
+        return (network_note(m, p, "blocker", f"Azure's private endpoints are interface endpoints ({kind} is another "
+                             "provider's kind, or a subnet's service endpoints, which the landing zone keeps): not "
+                             "rendered", (f"Record it as an interface endpoint (ciamPrivateEndpointKind), or ask the "
+                                          f"landing zone for the subnets' service endpoints, {RECORD}",)),)
     if what not in SUBRESOURCES:
-        return (comment(f"Private endpoint '{rdn_value(p)}' to {what}: record the target's resource id as its provider "
-                        "ref and its subresource; not rendered."),)
+        return (network_note(m, p, "blocker", f"{what} isn't a service this render reaches by private endpoint (Key "
+                             "Vault, storage, Service Bus, Container Registry): not rendered",
+                             ("Create the private endpoint by hand with the target's resource id and subresource",)),)
+    return ()
+
+
+def private_endpoint(m, p):
+    """Private endpoints the stack keeps, one per resource its bindings reach (with the data sources naming them); its
+    notes' comments for a service or kind Azure doesn't reach this way (endpoint_notes)."""
+    n, what = tf_name(rdn_value(p)), one(p, "ciamPrivateService")
+    noted = endpoint_notes(m, p)
+    if noted:
+        return tuple(comment(note_comment(x)) for x in noted)
     found = tuple(dict((r[1], r) for r in (_resource(b, n) for b in reached(m, p)) if r is not None).values())
     if not found:
         return (comment(f"UNBOUND: private endpoint '{rdn_value(p)}' reaches nothing this environment binds"),)
@@ -97,18 +114,28 @@ def private_endpoint(m, p):
         *data, _endpoint(m, p, n if len(found) == 1 else f"{n}_{i}", target, SUBRESOURCES[what][0], sub)))
 
 
+def link_service_note(m, e, svc, endpoints=()):
+    """The render note (a blocker) of an endpoint service whose service name runs on an Application Gateway (its
+    traffic policy layer 7, or a CDN): a Private Link Service needs a Standard load balancer frontend; else None."""
+    spec = service_edge(m, svc, endpoints) if svc is not None else None
+    if spec is None or not (spec.layer7 or spec.cdn):
+        return None
+    return network_note(m, e, "blocker", f"{rdn_value(svc)} runs on an Application Gateway (its own private link "
+                        "configuration); a Private Link Service needs a Standard load balancer frontend: not rendered",
+                        ("Configure the Application Gateway's private link by hand, or expose a service name on a "
+                         f"passthrough load balancer (layer 4, no CDN in its protection policy), {RECORD}",))
+
+
 def link_service(m, e, svc, endpoints=()):
     """A Private Link Service on the Standard load balancer frontend of the service name it exposes; a comment when
-    the name isn't bound or runs on an Application Gateway."""
+    the name isn't bound, its note's when it runs on an Application Gateway (link_service_note)."""
     role = one(e, "ciamServiceRole")
     if svc is None:
         return (comment(f"UNBOUND: endpoint service '{rdn_value(e)}' exposes {role}, which this environment doesn't "
                         "bind"),)
-    spec = service_edge(m, svc, endpoints)
-    if spec is not None and (spec.layer7 or spec.cdn):
-        return (comment(f"Endpoint service '{rdn_value(e)}': {rdn_value(svc)} runs on an Application Gateway (its own "
-                        "private link configuration); a Private Link Service needs a Standard load balancer frontend. "
-                        "Not rendered."),)
+    noted = link_service_note(m, e, svc, endpoints)
+    if noted is not None:
+        return (comment(note_comment(noted)),)
     sub = next(iter(subnets(m, e)), None)
     manual = one(e, "ciamAcceptanceRequired") == "TRUE"
     return (tf_block("resource", ["azurerm_private_link_service", tf_name(rdn_value(e))], [
@@ -126,6 +153,15 @@ def link_service(m, e, svc, endpoints=()):
 
 
 WEB = {80: "Http", 443: "Https"}     # what application rules can match: web traffic by its host name
+
+
+def firewall_notes(m, proxy):
+    """The render notes of an egress firewall's rule collection group: an action when sites on other ports than 80
+    and 443 become network rules by FQDN, which need the firewall policy's DNS proxy."""
+    other = tuple(f"{h}:{port}" for port, hosts in allowlist(proxy) if port not in WEB for h in hosts)
+    return (network_note(m, proxy, "action", f"FQDNs in network rules ({', '.join(other)}) need the firewall policy's "
+                         "DNS proxy", ("Turn on the firewall policy's DNS proxy where the policy is kept",)),) \
+        if other else ()
 
 
 def application_rules(m, proxy):
@@ -151,10 +187,19 @@ def application_rules(m, proxy):
             ("name", f"ciam-{rdn_value(m.env)}-sites"), ("priority", 500), ("action", "Allow"), *web))),)
           if web else ()),
         *((("network_rule_collection", Block((
-            ("#", "FQDNs in network rules need the firewall policy's DNS proxy"),
+            *(("#", note_comment(x)) for x in firewall_notes(m, proxy)),
             ("name", f"ciam-{rdn_value(m.env)}-sites-other"), ("priority", 510), ("action", "Allow"), *other))),)
           if other else ()),
     ]),)
+
+
+def network_notes(m, endpoints=()):
+    """The render notes of environment m's network depth the stack renders (render_network): its own private
+    endpoints', endpoint services' and egress firewalls'."""
+    return (*(x for p in private_endpoints(m) for x in endpoint_notes(m, p)),
+            *(x for e, svc in endpoint_services(m) for x in (link_service_note(m, e, svc, endpoints),)
+              if x is not None),
+            *(x for f in egress_firewalls(m) for x in firewall_notes(m, f)))
 
 
 def render_network(m, endpoints=()):

@@ -1,5 +1,7 @@
 """Key reports, pure functions of a snapshot: where an environment keeps every key and secret (placement), how
 spread out each credential is (sprawl), and everything a rotation touches (rotation impact)."""
+from typing import NamedTuple
+
 from ...core.directory import follow, follow_all, get, is_a, one, rdn_value, referrers, values
 from ...core.environment import environment_of
 from ...core.findings import owner_label, responsible
@@ -48,22 +50,37 @@ def _due(credential, b, as_of):
     return f"rotation overdue (due {due})" if due and as_of and due < as_of else None
 
 
-def unbound_status(m, role, elsewhere):
+# What uses each role, for the status of a credential an environment doesn't bind: required_elsewhere, {role:
+# (product, ...)} of the installed adapters that don't apply to it and require the role; used, {role: (what, ...)} of
+# the entries it runs that use the role (Domain and Adapter roles_used); used_elsewhere, {role: (product, ...)} of the
+# installed adapters that don't apply to it and whose entries would use the role.
+Uses = NamedTuple("Uses", [("required_elsewhere", dict), ("used", dict), ("used_elsewhere", dict)])
+NO_USES = Uses({}, {}, {})
+
+
+def _only(products, verb):
+    return f"not used here: only {_joined(products)} {verb}{'s' if len(products) == 1 else ''} it"
+
+
+def unbound_status(m, role, uses=NO_USES):
     """Status of a credential environment m doesn't bind: UNBOUND when m must bind its role (its domains', its
-    adapters' or its own declaration: m.unbound, what the planner blocks on); else not used here, naming the products
-    that require it (elsewhere: {role: (product, ...)} of installed adapters that don't apply to m)."""
+    adapters' or its own declaration: m.unbound, what the planner blocks on), or naming what uses it when an entry m
+    runs uses the role (uses.used: the package's own check blocks on it); else not used here, naming the products that
+    require it or would use it (Uses)."""
     if role in m.unbound:
         return "UNBOUND"
-    products = elsewhere.get(role, ())
-    return (f"not used here: only {_joined(products)} require{'s' if len(products) == 1 else ''} it" if products
+    if role in uses.used:
+        return f"UNBOUND: used by {_joined(uses.used[role])}"
+    required, used = uses.required_elsewhere.get(role, ()), uses.used_elsewhere.get(role, ())
+    return (_only(required, "require") if required else _only(used, "use") if used
             else "not used here: nothing here requires it")
 
 
-def _placement_row(m, credential, as_of, elsewhere):
+def _placement_row(m, credential, as_of, uses):
     b = binding_for(m, credential)
     name, kind, role = one(credential, "cn"), one(credential, "ciamCredentialType"), one(credential, "ciamBindingRole")
     if b is None:
-        return (name, kind, role, "", "", "", "", "", "", "", unbound_status(m, role, elsewhere))
+        return (name, kind, role, "", "", "", "", "", "", "", unbound_status(m, role, uses))
     uri = one(b, "ciamRefUri")
     return (name, kind, role, scheme(uri), uri, one(b, "ciamProtectionLevel", ""), _yes_no(one(b, "ciamAutoRotate")),
             str(rotate_by(credential, b) or ""), _joined(values(b, "ciamReplicaRegion")),
@@ -79,13 +96,13 @@ def _undocumented_row(b):
             _joined(values(b, "ciamKeyUser")), "undocumented: no credential describes this role")
 
 
-def placement_rows(m, as_of=None, elsewhere=None):
+def placement_rows(m, as_of=None, uses=NO_USES):
     """Where environment m (its required roles resolved) keeps every credential (rotations overdue as of as_of
-    marked), the ones it doesn't bind (unbound_status; elsewhere: {role: (product, ...)} of installed adapters that
-    don't apply to it), and material bindings no credential describes."""
+    marked), the ones it doesn't bind (unbound_status, with what uses each role: Uses), and material bindings no
+    credential describes."""
     creds = credentials(m.d)
     described = {one(c, "ciamBindingRole") for c in creds}
-    return [*(_placement_row(m, c, as_of, elsewhere or {}) for c in creds),
+    return [*(_placement_row(m, c, as_of, uses) for c in creds),
             *(_undocumented_row(b) for b in material_bindings(m) if one(b, "ciamBindingRole") not in described)]
 
 

@@ -2,10 +2,11 @@
 by default (resource_provider_registrations = "none"), so the landing zone, applied by the subscription's owner,
 registers the namespaces the rendered roots' resources belong to (decision 2383): read from the rendered blocks, each
 managed azurerm resource by its type's longest matching prefix below, each azapi resource by its type's namespace.
-Pure."""
+What to register by hand is a render note (core.notes, flow 43; registration_notes). Pure."""
 import re
 
-from opsdir_format_terraform.hcl import blocks_of, comment
+from opsdir.core.notes import note
+from opsdir_format_terraform.hcl import blocks_of
 
 NAMESPACES = (
     ("azurerm_application_gateway", "Microsoft.Network"),
@@ -96,10 +97,15 @@ def resource_providers(items):
             tuple(sorted(t for t, ns in known.items() if ns is None)))
 
 
-def registration_note(namespaces, unknown):
-    """The comments naming what to register in the subscription before applying, when no landing-zone root does it;
-    () when nothing needs registering."""
-    return ((comment(f"Register these resource providers in the subscription before applying (azurerm 5.x registers "
-                     f"none, and the environment has no landing zone to do it): {', '.join(namespaces)}"),)
-            if namespaces else ()) \
-        + tuple(comment(f"{t}: its resource provider isn't known to opsdir: register it by hand") for t in unknown)
+def registration_notes(m, namespaces, unknown):
+    """The render notes (actions) of what to register by hand in environment m's subscription before applying: the
+    namespaces given (when no landing-zone root registers them), each azurerm type whose resource provider opsdir
+    doesn't know; () when nothing needs registering."""
+    return ((note("Subscription", "action", "resource providers", "to register in the subscription before applying "
+                  "(azurerm 5.x registers none, and the environment has no landing zone to do it): "
+                  f"{', '.join(namespaces)}",
+                  ("Before applying, register these resource providers in the subscription (its owner)",), None,
+                  m.label),) if namespaces else ()) \
+        + tuple(note("Subscription", "action", f"resource type `{t}`", "its resource provider isn't known to opsdir",
+                     ("Before applying, register its resource provider in the subscription by hand",), None, m.label)
+                for t in unknown)

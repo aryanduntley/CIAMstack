@@ -2,7 +2,7 @@
 from opsdir.core.contract import Adapter, ReadBack
 from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
-from .checks import check_idm
+from .checks import check_idm, connector_roles
 from .listeners import listeners
 from .logs import LOGS
 from .proxy import proxy_settings
@@ -22,7 +22,8 @@ def applies(m):
 
 
 ADAPTER = Adapter(name="pingidm", kind="product", applies=applies, required_roles=REQUIRED_ROLES,
-                  render_neutral=render_neutral, render_env=render_env, checks=(check_idm,), ref_schemes=(),
+                  render_neutral=render_neutral, render_env=render_env, checks=(check_idm,), roles_used=connector_roles,
+                  ref_schemes=(),
                   secret_schemes={}, renders="IDM connector configuration for each environment",
                   neutral_label="PingIDM",
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,

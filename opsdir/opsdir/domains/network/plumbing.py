@@ -4,12 +4,16 @@ private endpoints and egress firewalls when ciamManagedBy names someone else), g
 zone's owner keeps what names no one else, in terraform/landing-zone/; each other party named keeps its own root in
 terraform/landing-zone/<party>/, applied by that team (governance.keepers decides who and where). A binding with a
 provider ref already exists (the render adopts it with an import block); one without is still to be built, which the
-planner asks its keeper for. Pure."""
+planner asks its keeper for. What a cloud's plumbing render leaves out or to a person is a render note
+(core.notes, flow 43) its adapter enumerates the way the render walks the keepers (keeper_notes), with the notes
+every cloud shares (cross-cloud peering, an unrecorded link kind or flow-log scope, the other side's half of a
+peering, a route for some roles on a cloud whose routes apply to whole subnets). Pure."""
 from typing import NamedTuple, Optional
 
 from ...core.directory import children, get, is_kind, one, rdn_value, values
 from ...core.environment import EnvModel, of_class, one_role
 from ...core.naming import env_label
+from ...core.notes import RECORD, note
 from ..governance.keepers import LANDING_ZONE, keeper
 from .stack import owned
 
@@ -104,3 +108,68 @@ def plumbing_requests(m, by=None):
 def plumbing_unasked(m):
     """(Keeper, ...) of environment m with plumbing still to build but no party recorded to ask."""
     return tuple(k for k in keepers(m) if k.party is None and any(not adopted(b) for b in k.bindings))
+
+
+# ------------------------------------------------------------------ render notes
+# what each kind of network binding is called in a render note's subject
+KINDS = (("ciamEgress", "NAT egress"), ("ciamRouteTable", "route table"), ("ciamNetworkAcl", "network ACL"),
+         ("ciamInterconnect", "interconnect"), ("ciamFlowLog", "flow log"), ("ciamPrivateEndpoint", "private endpoint"),
+         ("ciamEndpointService", "endpoint service"), ("ciamProxy", "egress firewall"))
+
+
+def note_subject(m, b):
+    """A render note's subject for a network binding: its kind in words and its name (route table `rt-app`)."""
+    return f"{next((k for oc, k in KINDS if is_kind(m.d, b, oc)), 'binding')} `{rdn_value(b)}`"
+
+
+def network_note(m, b, severity, text, how=()):
+    """A render note (area Network) about network binding b of environment m."""
+    return note("Network", severity, note_subject(m, b), text, how, b.dn, m.label)
+
+
+def keeper_notes(m, notes):
+    """The render notes of environment m's plumbing as its keepers' roots write them (a cloud's render_plumbing walk):
+    notes ((object class, fn(m, b, here)), ...), a cloud's note functions per kind of binding (the first that matches,
+    as its renderers), here the DNs its keeper keeps; each note once."""
+    return tuple(dict.fromkeys(
+        n for k in keepers(m) for here in ({b.dn for b in k.bindings},) for b in k.bindings
+        for fn in (next((fn for oc, fn in notes if is_kind(m.d, b, oc)), None),) if fn is not None
+        for n in fn(m, b, here)))
+
+
+def cross_cloud_peering_note(m, b, provider):
+    """The render note (a blocker) of a peering link whose other end is on another cloud than provider's."""
+    return network_note(m, b, "blocker", f"peering joins two networks of one provider ({provider}), and the other "
+                        f"end is on {one(peer_cloud(m.d, b), 'ciamCloudProvider')}: not rendered",
+                        (f"Record it as a vpn link (ciamLinkKind), {RECORD}",))
+
+
+def link_kind_note(m, b):
+    """The render note (a blocker) of an interconnect whose kind of link isn't recorded (ciamLinkKind)."""
+    return network_note(m, b, "blocker", f"{one(b, 'ciamInterconnectKind')}: what kind of link it is isn't recorded "
+                        "(ciamLinkKind): not rendered", (f"Record its kind of link (ciamLinkKind), {RECORD}",))
+
+
+def flow_scope_note(m, b):
+    """The render note (a blocker) of a flow log on a scope whose resources' ids aren't recorded (anything but the
+    network or its subnets)."""
+    return network_note(m, b, "blocker", f"a flow log on {one(b, 'ciamFlowScope')}s needs their ids, which aren't "
+                        "recorded: not rendered",
+                        (f"Record it on the network or its subnets (ciamFlowScope, ciamSubnetRole), {RECORD}",))
+
+
+def peer_half_note(m, b, text):
+    """The render note of a peering whose other side's half isn't recorded as in place (text: what that side does):
+    an action for its keeper; a plain note when the record says it hasn't accepted (ciamPeerAccepted FALSE), which the
+    planner's interconnect check raises."""
+    raised = one(b, "ciamPeerAccepted") == "FALSE"
+    return network_note(m, b, "note" if raised else "action", text,
+                        () if raised else ("Have the other side's keeper add their half before traffic is expected "
+                                           f"to flow, then record it (ciamPeerAccepted TRUE), {RECORD}",))
+
+
+def subnet_wide_note(m, b, route, provider):
+    """The render note (a plain note) of a route for some roles only, on a cloud whose routes apply to the whole
+    subnet."""
+    return network_note(m, b, "note", f"{route.destination} applies to {', '.join(route.roles)} only elsewhere; "
+                        f"{provider} routes apply to the whole subnet")

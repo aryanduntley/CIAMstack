@@ -392,7 +392,7 @@
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "d34cae1583a895e27688b32b057e30fd1e122853eac5539b0f9cddbcc0137a74"
+      "sha256": "ebaa1e5c532a0ebd2e0a087b7f20d0b55c8f5a6f577619caa9cf51ec47d52e19"
     },
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",

@@ -9,7 +9,9 @@ from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_gcp import edge, terraform
 from opsdir_adapter_gcp.firewall_policy import health_check_rule, policy_firewall
 from opsdir_adapter_gcp.health_checks import probe_ranges
-from opsdir_adapter_gcp.network import psc_name, render_network
+from opsdir.core.notes import note_comment
+from opsdir_adapter_gcp.network import network_notes, psc_name, render_network
+from edge_fixtures import note_lines
 from network_fixtures import ALPHA, entry, model
 
 NETWORK = "ciamBindingRole: network\n"
@@ -137,7 +139,8 @@ def test_a_psc_endpoint_for_googles_apis(network):
     network(ciamProviderRef="projects/host-net/global/networks/ciam")
     out = _render(entry(ALPHA, "psc-apis", "ciamPrivateEndpoint", ciamBindingRole="psc-apis", ciamPrivateService="apis",
                         ciamPrivateEndpointKind="all-apis", ciamFrontendIp="10.255.0.5", ciamPrivateDns="TRUE"))
-    assert "# private DNS: the landing zone's private googleapis.com zone answers 10.255.0.5" in out
+    assert ("# NOTE: private endpoint `psc-apis`: private DNS: the landing zone's private googleapis.com zone answers "
+            "10.255.0.5") in out
     assert 'purpose      = "PRIVATE_SERVICE_CONNECT"' in out and 'address      = "10.255.0.5"' in out
     assert 'name                  = "pscapis"' in out and 'target                = "all-apis"' in out
     assert "ip_address            = google_compute_global_address.psc_apis.id" in out
@@ -150,8 +153,8 @@ def test_what_the_landing_zone_keeps_or_the_record_lacks_is_said():
                   entry(ALPHA, "sql", "ciamPrivateEndpoint", ciamBindingRole="sql", ciamPrivateService="database",
                         ciamPrivateEndpointKind="peered-service"),
                   entry(ALPHA, "psc", "ciamPrivateEndpoint", ciamBindingRole="psc", ciamPrivateService="apis"))
-    assert "# Private endpoint 'pga' (subnet-access): Private Google Access is a subnet setting" in out
-    assert "# Private endpoint 'sql' (peered-service): private services access" in out
+    assert "# NOTE: private endpoint `pga`: subnet-access: Private Google Access is a subnet setting" in out
+    assert "# NOTE: private endpoint `sql`: peered-service: private services access" in out
     assert "# UNBOUND: private endpoint 'psc' to Google's APIs records no address (ciamFrontendIp)" in out
 
 
@@ -189,3 +192,19 @@ def test_an_application_load_balancers_proxies_and_probes_are_policy_rules_when_
     assert 'resource "google_compute_firewall" "svc_sso_proxies"' in "\n\n".join(as_text(
         edge._firewall(m, svc, "svc_sso", "ciam-prod-svc-sso", "443", "10.1.250.0/24",
                        edge.servers_backend(m, svc, ()))))
+
+
+def test_the_network_notes_are_the_comments_the_render_writes():
+    m = _m(entry(ALPHA, "pga", "ciamPrivateEndpoint", ciamBindingRole="pga", ciamPrivateService="apis",
+                 ciamPrivateEndpointKind="subnet-access"),
+           entry(ALPHA, "sql", "ciamPrivateEndpoint", ciamBindingRole="sql", ciamPrivateService="database",
+                 ciamPrivateEndpointKind="peered-service"),
+           entry(ALPHA, "gw", "ciamPrivateEndpoint", ciamBindingRole="gw", ciamPrivateService="object-storage",
+                 ciamPrivateEndpointKind="gateway"),
+           entry(ALPHA, "psc-apis", "ciamPrivateEndpoint", ciamBindingRole="psc-apis", ciamPrivateService="apis",
+                 ciamPrivateEndpointKind="all-apis", ciamFrontendIp="10.255.0.5", ciamPrivateDns="TRUE"),
+           entry(ALPHA, "ldaps-link", "ciamEndpointService", ciamBindingRole="ldaps-link",
+                 ciamServiceRole="sso-service"), FIREWALL)
+    notes = network_notes(m)
+    assert note_lines("\n\n".join(as_text(render_network(m)))) == sorted(note_comment(n) for n in notes)
+    assert {n.severity for n in notes} == {"blocker", "action"} and len(notes) == 6

@@ -7,8 +7,10 @@ cutover. A mail sender sends as a domain from a sending identity each environmen
 target's identity must sign with DKIM and be authorized by SPF before cutover, or reset mail lands in spam.
 """
 from ...core.directory import children, follow, get, one, rdn_value, values
-from ...core.environment import bound_nowhere, one_role
+from ...core.environment import bound_nowhere, of_class, one_role
 from ...core.findings import findings, merge_findings, responsible
+from ..compute.workloads import runs_here
+from ..pki.credentials import role_uses
 from .naming import DMARC_STRENGTH, EXTERNAL_SERVICES, MAIL_SENDERS
 
 SERVICE_HEADERS = ("service", "kind", "vendor", "endpoint", "used from", "allowed domains", "uses", "contact")
@@ -122,3 +124,13 @@ def check_services(ctx):
         return parts
     return parts._replace(ok=(*parts.ok, f"External services ({len(held)}) and mail senders ({len(senders)}) work "
                                          f"from {ctx.dst.label}."))
+
+
+def messaging_roles(m):
+    """(RoleUse, ...) of the roles environment m's messaging uses: the external services' credentials (ciamUsesRole)
+    where m runs a role that reaches them (ciamReachedFrom; every environment when none is recorded), and its stream
+    bindings' send secrets (ciamSendSecretRole)."""
+    reached = (s for s in external_services(m.d)
+               if not values(s, "ciamReachedFrom") or any(runs_here(m, r) for r in values(s, "ciamReachedFrom")))
+    return (*role_uses(reached, "ciamUsesRole", "external service"),
+            *role_uses(of_class(m, "ciamStreamBinding"), "ciamSendSecretRole", "stream"))

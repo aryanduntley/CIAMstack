@@ -44,8 +44,8 @@ from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
 from opsdir_adapter_gcp.names import name_parts
 from opsdir_adapter_gcp.names import NETWORK, PRIORITIES, REGION, label, network_tag
-from opsdir_adapter_gcp.network import render_network
-from opsdir_adapter_gcp.plumbing import network_data
+from opsdir_adapter_gcp.network import network_notes, render_network
+from opsdir_adapter_gcp.plumbing import network_data, plumbing_notes
 from opsdir_adapter_gcp.backups import backup_notes, render_backups
 from opsdir_adapter_gcp.audit import audit_notes, render_trails
 from opsdir_adapter_gcp.log_sinks import log_sink_notes, render_log_sinks
@@ -347,11 +347,13 @@ def render_notes(m, services):
     data, each written as its comment: the synthetic checks it doesn't render (uptime checks, synthetic monitors), then
     the security services', audit trails', data discovery's, guardrails', Assured Workloads workload's, alert rules'
     identities' (core access.workloads), Kubernetes-only roles' (core edge.kubernetes) and unpinned rule priorities'
-    notes, and log shipping's (sinks, the Ops Agent, containers)."""
+    notes, the network depth's and the landing zone plumbing's, and log shipping's (sinks, the Ops Agent,
+    containers)."""
     endpoints = services.endpoints if services else ()
     return (*uptime_notes(m, endpoints), *monitor_notes(m, endpoints), *security_notes(m), *audit_notes(m),
             *discovery_notes(m), *guardrail_notes(m), *workload_notes(m), *alert_notes(m),
             *identity_notes(m, ACCESS), *kubernetes_notes(m, firewall=firewall_model(m) != "policy"),
             *firewall_notes(m), *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m),
             *database_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m), *edge_notes(m, endpoints),
-            *failover_notes(m, endpoints), *quota_notes(m), *(log_sink_notes(m, services) if services else ()))
+            *failover_notes(m, endpoints), *quota_notes(m), *network_notes(m, endpoints), *plumbing_notes(m),
+            *(log_sink_notes(m, services) if services else ()))

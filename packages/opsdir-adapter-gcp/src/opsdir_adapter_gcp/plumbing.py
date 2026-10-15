@@ -19,7 +19,8 @@ network's project (a Shared VPC's host project).
                     the logs go
   kept elsewhere    a PSC endpoint for Google's APIs and an egress firewall's FQDN rules someone else keeps
                     (opsdir_adapter_gcp.network, .firewall_policy), the rules in their policy for every instance
-Pure.
+What it leaves out or to a person is a render note (core.notes, flow 43) written as its comment, enumerated the way the
+keepers' roots are walked (plumbing_notes). Pure.
 """
 import ipaddress
 import re
@@ -28,13 +29,15 @@ from typing import NamedTuple
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role
 from opsdir.core.network import is_private
-from opsdir.domains.network.plumbing import adopted, peer_cloud, peer_network, route_target
+from opsdir.core.notes import RECORD, note_comment
+from opsdir.domains.network.plumbing import (adopted, cross_cloud_peering_note, keeper_notes, link_kind_note,
+                                             network_note, peer_cloud, peer_half_note, peer_network, route_target)
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
 from opsdir_adapter_gcp.firewall_policy import egress_rules, network_project, policy_ref
 from opsdir_adapter_gcp.identities import project_of
 from opsdir_adapter_gcp.names import NETWORK, label, name_parts, network_tag
-from opsdir_adapter_gcp.network import peering_connection_id, private_endpoint
+from opsdir_adapter_gcp.network import endpoint_notes, peering_connection_id, private_endpoint
 from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, from_entry, ref, tf_block, tf_import,
                                          tf_name)
 
@@ -43,19 +46,26 @@ from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, fr
 Rendered = NamedTuple("Rendered", [("blocks", tuple), ("variables", tuple), ("shared", tuple)])
 COMPUTE = "https://www.googleapis.com/compute/v1/"
 INTERNET = "default-internet-gateway"
-# what a route of each kind is on Google Cloud when it isn't a next hop
-NOT_HOPS = {"nat": "Cloud NAT isn't a next hop: egress to the internet takes the default internet gateway route",
-            "peering": "a peering's routes are exchanged by the peering, not written as routes",
-            "transit": "Google Cloud has no transit gateway: routes come from a hub (Network Connectivity Center)",
-            "endpoint": "a Private Service Connect endpoint is an address in the network, not a next hop",
-            "egress-only": "Google Cloud has no egress-only gateway",
-            "none": "a blackhole route; Terraform doesn't create those"}
-# what a link of each other kind is on Google Cloud
-LINKS = {"dedicated": "a Cloud Interconnect attachment (VLAN) on a dedicated or partner interconnect, ordered with "
-                      "Google or the partner. Named, not rendered.",
-         "hub": "a Network Connectivity Center spoke on the hub its keeper runs. Named, not rendered.",
-         "transit": "Google Cloud has no transit gateway: record a hub (Network Connectivity Center) or peering. "
-                    "Not rendered."}
+# what a route of each kind is on Google Cloud when it isn't a next hop: (severity, text, how) of its note
+NOT_HOPS = {"nat": ("note", "Cloud NAT isn't a next hop: egress to the internet takes the default internet gateway "
+                            "route", ()),
+            "peering": ("note", "a peering's routes are exchanged by the peering, not written as routes", ()),
+            "transit": ("blocker", "Google Cloud has no transit gateway: routes come from a hub (Network Connectivity "
+                                   "Center)", (f"Record a hub or peering link instead (ciamLinkKind), {RECORD}",)),
+            "endpoint": ("note", "a Private Service Connect endpoint is an address in the network, not a next hop", ()),
+            "egress-only": ("blocker", "Google Cloud has no egress-only gateway",
+                            (f"Drop the route, or send the range's egress another way, {RECORD}",)),
+            "none": ("blocker", "a blackhole route; Terraform doesn't create those",
+                     (f"Drop the route and deny the range in firewall rules instead, {RECORD}",))}
+# what a link of each other kind is on Google Cloud: (severity, text, how) of its note
+LINKS = {"dedicated": ("action", "a Cloud Interconnect attachment (VLAN) on a dedicated or partner interconnect, "
+                                 "ordered with Google or the partner: not rendered",
+                       ("Order the interconnect (dedicated with Google, or through the partner) and create its VLAN "
+                        "attachment",)),
+         "hub": ("action", "a Network Connectivity Center spoke on the hub its keeper runs: not rendered",
+                 ("Have the hub's keeper add this network as a spoke",)),
+         "transit": ("blocker", "Google Cloud has no transit gateway: not rendered",
+                     (f"Record a hub (Network Connectivity Center) or peering link (ciamLinkKind), {RECORD}",))}
 
 
 def _subnet(m, s):
@@ -90,6 +100,11 @@ def _adopt(address, b, id_=None):
 
 def _note(b, text):
     return Rendered((comment(f"{rdn_value(b)}: {text}"),), (), ())
+
+
+def _noted(notes):
+    """Rendered of render notes' comments."""
+    return Rendered(tuple(comment(note_comment(n)) for n in notes), (), ())
 
 
 def _name(m, *parts):
@@ -131,13 +146,31 @@ def _nat_ips(m, b, n, project, region):
                          for i in range(len(addresses))]),), data
 
 
+def _private_nat(b):
+    return bool(values(b, "ciamCidr")) and all(is_private(c) for c in values(b, "ciamCidr"))
+
+
+def _kept_subnets_note(m, b):
+    return network_note(m, b, "note", "the subnetworks an existing NAT serves aren't recorded: they stay as they are")
+
+
+def egress_notes(m, b, here=()):
+    """The render notes of NAT egress b as egress writes them: a private range (a blocker: Private NAT isn't
+    rendered), an existing NAT's subnetworks left as they are (a plain note)."""
+    if _private_nat(b):
+        return (network_note(m, b, "blocker", "a private range is Private NAT, which translates between networks "
+                             "through Network Connectivity Center: not rendered",
+                             ("Set up Private NAT by hand through Network Connectivity Center, or record the public "
+                              f"addresses it sends from (ciamCidr), {RECORD}",)),)
+    return (_kept_subnets_note(m, b),) if adopted(b) else ()
+
+
 def egress(m, b, here=()):
     """A Cloud Router and its Cloud NAT for the environment's subnetworks: MANUAL_ONLY with its static addresses, or
-    AUTO_ONLY; an existing NAT ignores changes to its subnetworks (which the record doesn't hold); a private range is
-    Private NAT (named, not rendered)."""
-    if values(b, "ciamCidr") and all(is_private(c) for c in values(b, "ciamCidr")):
-        return _note(b, "a private range is Private NAT, which translates between networks through Network "
-                        "Connectivity Center. Not rendered.")
+    AUTO_ONLY; an existing NAT ignores changes to its subnetworks (which the record doesn't hold: a note); a private
+    range is Private NAT (its note, egress_notes)."""
+    if _private_nat(b):
+        return _noted(egress_notes(m, b))
     n = tf_name(rdn_value(b))
     project, region, router, nat = _nat_path(m, b)
     where = (*((("project", project),) if project else ()), ("region", region))
@@ -154,27 +187,47 @@ def egress(m, b, here=()):
         tf_block("resource", ["google_compute_router_nat", n], [
             ("name", nat), ("router", ref(f"google_compute_router.{n}.name")), *where,
             ("nat_ip_allocate_option", "MANUAL_ONLY" if static else "AUTO_ONLY"), *ips, *scope,
-            *((("#", "the subnetworks an existing NAT serves aren't recorded: they stay as they are"),
+            *((("#", note_comment(_kept_subnets_note(m, b))),
                ("lifecycle", Block((("ignore_changes", [ref("source_subnetwork_ip_ranges_to_nat"),
                                                         ref("subnetwork")]),)))) if adopted(b) else ())]),
         *_adopt(f"google_compute_router_nat.{n}", b)), (), data)
 
 
 # ------------------------------------------------------------------ route tables
+def _target(m, route):
+    b = route_target(m, route)
+    return one(b, "ciamProviderRef") if b is not None else route.target
+
+
+def _not_hop(m, route, here):
+    """(severity, text, how) of the note of a route that isn't a next hop on Google Cloud (NOT_HOPS, a route over an
+    HA VPN rendered here, a kind with no next hop), else None (rendered, or UNBOUND)."""
+    b = route_target(m, route)
+    if route.kind in NOT_HOPS:
+        return NOT_HOPS[route.kind]
+    if route.kind == "vpn" and b is not None and b.dn in here:
+        return "note", "routes over an HA VPN are learned by BGP, not written as routes", ()
+    if route.kind in ("internet", "vpn", "gateway-lb", "firewall", "appliance") or not _target(m, route):
+        return None
+    return "blocker", f"Google Cloud has no {route.kind} next hop", (f"Record a next hop Google Cloud has, {RECORD}",)
+
+
+def _route_note(m, b, route, why):
+    severity, text, how = why
+    return network_note(m, b, severity, f"{route.destination} {route.kind}: {text}", how)
+
+
 def _hop(m, route, here):
-    """((next hop attribute, value) or None, variables, why not) of a route on Google Cloud."""
+    """((next hop attribute, value) or None, variables, why not: an UNBOUND text) of a route on Google Cloud that is
+    a next hop (_not_hop says what isn't)."""
     b = route_target(m, route)
     if route.kind == "internet":
         return ("next_hop_gateway", INTERNET), (), None
-    if route.kind in NOT_HOPS:
-        return None, (), NOT_HOPS[route.kind]
-    if route.kind == "vpn" and b is not None and b.dn in here:
-        return None, (), "routes over an HA VPN are learned by BGP, not written as routes"
     if route.kind == "firewall" and b is not None:
         name = f"{tf_name(one(b, 'ciamBindingRole'))}_ilb"
         return ("next_hop_ilb", ref(f"var.{name}")), (_var(name, f"The internal passthrough load balancer "
                                                                 f"(forwarding rule) in front of {rdn_value(b)}"),), None
-    target = one(b, "ciamProviderRef") if b is not None else route.target
+    target = _target(m, route)
     if not target:
         return None, (), (f"UNBOUND: its target {route.target} isn't rendered here and has no provider ref"
                           if route.target else "UNBOUND: it names no target")
@@ -187,17 +240,40 @@ def _hop(m, route, here):
     return None, (), f"Google Cloud has no {route.kind} next hop"
 
 
+def _routes(b):
+    return tuple(r for r in map(parse_route, values(b, "ciamRoute")) if r and r.kind != "local")
+
+
+def _head_notes(m, b):
+    """The notes of a route table as a whole: subnets it can't be associated with (routes are network-wide), existing
+    routes to import or replace."""
+    return (*((network_note(m, b, "note", "Google Cloud's routes apply to the whole network (or to tagged instances), "
+                            f"not to subnets: {', '.join(values(b, 'ciamSubnetRole'))} aren't associated"),)
+              if values(b, "ciamSubnetRole") else ()),
+            *((network_note(m, b, "action", "existing routes keep their own names: import each "
+                            "(projects/<project>/global/routes/<name>) or let these replace them",
+                            ("Before applying, import each existing route (projects/<project>/global/routes/<name>) "
+                             "or let these replace them",)),) if adopted(b) else ()))
+
+
+def route_notes(m, b, here=()):
+    """The render notes of route table b as route_table writes them: the table's (_head_notes), then each route's that
+    isn't a next hop on Google Cloud (_not_hop); each once."""
+    return tuple(dict.fromkeys((*_head_notes(m, b), *(_route_note(m, b, r, why) for r in _routes(b)
+                                                      for why in (_not_hop(m, r, here),) if why is not None))))
+
+
 def route_table(m, b, here=()):
     """A route per route of the table (Google Cloud's routes are network-wide), tagged for the roles a route is
-    for; what isn't a next hop on Google Cloud named."""
+    for; what isn't a next hop on Google Cloud its note's comment (route_notes)."""
     n = tf_name(rdn_value(b))
-    head = (*((comment(f"{rdn_value(b)}: Google Cloud's routes apply to the whole network (or to tagged instances), "
-                       f"not to subnets: {', '.join(values(b, 'ciamSubnetRole'))} aren't associated"),)
-              if values(b, "ciamSubnetRole") else ()),
-            *((comment(f"{rdn_value(b)}: existing routes keep their own names: import each "
-                       "(projects/<project>/global/routes/<name>) or let these replace them"),) if adopted(b) else ()))
+    head = tuple(comment(note_comment(x)) for x in _head_notes(m, b))
     out = []
-    for i, r in enumerate(x for x in map(parse_route, values(b, "ciamRoute")) if x and x.kind != "local"):
+    for i, r in enumerate(_routes(b)):
+        why = _not_hop(m, r, here)
+        if why is not None:
+            out.append(Rendered((comment(note_comment(_route_note(m, b, r, why))),), (), ()))
+            continue
         hop, variables, why = _hop(m, r, here)
         if hop is None:
             out.append(Rendered((comment(f"{rdn_value(b)} {r.destination} {r.kind}: {why}"),), (), ()))
@@ -210,19 +286,42 @@ def route_table(m, b, here=()):
     return Rendered((*head, *(x for p in out for x in p.blocks)), tuple(v for p in out for v in p.variables), ())
 
 
+def acl_notes(m, b, here=()):
+    """The render note (a blocker) of network ACL b: Google Cloud has no stateless network ACLs."""
+    return (network_note(m, b, "blocker", "Google Cloud has no stateless network ACLs (firewall rules and policies "
+                         "filter traffic): not rendered", (f"Record these rules as firewall rules, {RECORD}",)),)
+
+
 def network_acl(m, b, here=()):
-    """Google Cloud has no network ACLs: named."""
-    return _note(b, "Google Cloud has no stateless network ACLs (firewall rules and policies filter traffic). "
-                    "Not rendered.")
+    """Google Cloud has no network ACLs: its note's comment (acl_notes)."""
+    return _noted(acl_notes(m, b))
 
 
 # ------------------------------------------------------------------ interconnects
+def _cross_cloud(m, b):
+    cloud = peer_cloud(m.d, b)
+    return cloud is not None and one(cloud, "ciamCloudProvider") != "gcp"
+
+
+def _peer(m, b):
+    net = peer_network(m.d, b)
+    return one(net, "ciamProviderRef") if net is not None else None
+
+
+def _half_note(m, b):
+    return peer_half_note(m, b, f"the other network adds its half (a peering from {_peer(m, b)} back to this "
+                                "network) in its project")
+
+
+def _single_tunnel_note(m, b):
+    return network_note(m, b, "note", "one peer address: a tunnel from the gateway's second interface to it too gives "
+                        "the 99.99% availability HA VPN offers")
+
+
 def _peering(m, b, n):
-    cloud, net = peer_cloud(m.d, b), peer_network(m.d, b)
-    if cloud is not None and one(cloud, "ciamCloudProvider") != "gcp":
-        return _note(b, f"peering joins two Google Cloud networks, and the other end is on "
-                        f"{one(cloud, 'ciamCloudProvider')}: record it as a vpn link. Not rendered.")
-    peer = one(net, "ciamProviderRef") if net is not None else None
+    if _cross_cloud(m, b):
+        return _noted((cross_cloud_peering_note(m, b, "Google Cloud"),))
+    peer = _peer(m, b)
     if peer is None:
         return _note(b, "UNBOUND: the other environment's network has no provider ref to peer with. Not rendered.")
     ours = name_parts(one(one_role(m, "network"), "ciamProviderRef") if one_role(m, "network") is not None else "")
@@ -230,8 +329,7 @@ def _peering(m, b, n):
         one(b, "ciamProviderRef") or "") else _name(m, rdn_value(b))
     importable = "projects" in ours and "networks" in ours
     return Rendered((
-        *((comment(f"{rdn_value(b)}: the other network adds its half (a peering from {peer} back to this network) in "
-                   "its project"),) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
+        *((comment(note_comment(_half_note(m, b))),) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
         tf_block("resource", ["google_compute_network_peering", n], [
             ("name", name), ("network", NETWORK), ("peer_network", _self_link(peer))]),
         *(_adopt(f"google_compute_network_peering.{n}", b, f"{ours['projects']}/{ours['networks']}/{name}")
@@ -243,7 +341,7 @@ def _vpn(m, b, n):
     if not gateways:
         return _note(b, "UNBOUND: a VPN needs the other end's gateway address (ciamPeerGateway). Not rendered.")
     if not (local and peer_asn):
-        return _note(b, "HA VPN routes by BGP: record both ends' ASNs (ciamLocalAsn, ciamPeerAsn). Not rendered.")
+        return _noted(interconnect_notes(m, b))
     path = name_parts(one(b, "ciamProviderRef") or "")
     where = (*network_project(m), ("region", _region(m, path)))
     name = _name(m, rdn_value(b))
@@ -274,8 +372,7 @@ def _vpn(m, b, n):
     return Rendered((
         *((comment(f"{rdn_value(b)}: accepts {', '.join(accepted)} from the peer, learned by BGP"),)
           if accepted else ()),
-        *((comment(f"{rdn_value(b)}: one peer address: a tunnel from the gateway's second interface to it too gives "
-                   "the 99.99% availability HA VPN offers"),) if len(gateways) == 1 else ()),
+        *((comment(note_comment(_single_tunnel_note(m, b))),) if len(gateways) == 1 else ()),
         tf_block("resource", ["google_compute_ha_vpn_gateway", n], [("name", name), *where, ("network", NETWORK)]),
         tf_block("resource", ["google_compute_external_vpn_gateway", n], [
             ("name", f"{name}-peer"[:63]), *network_project(m), ("redundancy_type", redundancy),
@@ -292,47 +389,91 @@ def _vpn(m, b, n):
              _var(f"{n}_{i}_bgp_peer_ip", f"The peer's BGP address in tunnel {i}'s link-local range")))), ())
 
 
+def interconnect_notes(m, b, here=()):
+    """The render notes of interconnect b as interconnect writes them: a peering to another cloud (a blocker), the
+    other network's half of a peering (peer_half_note), an HA VPN without both ASNs (a blocker) or to one peer address
+    (a plain note), the kinds it doesn't render (LINKS), an unrecorded kind of link (a blocker); an UNBOUND link has
+    none."""
+    kind = one(b, "ciamLinkKind")
+    if kind == "peering" and _cross_cloud(m, b):
+        return (cross_cloud_peering_note(m, b, "Google Cloud"),)
+    if kind == "peering":
+        return (_half_note(m, b),) if _peer(m, b) is not None and one(b, "ciamPeerAccepted") != "TRUE" else ()
+    if kind == "vpn" and not values(b, "ciamPeerGateway"):
+        return ()
+    if kind == "vpn" and not (one(b, "ciamLocalAsn") and one(b, "ciamPeerAsn")):
+        return (network_note(m, b, "blocker", "HA VPN routes by BGP, and both ends' ASNs aren't recorded: not "
+                             "rendered", (f"Record both ends' ASNs (ciamLocalAsn, ciamPeerAsn), {RECORD}",)),)
+    if kind == "vpn":
+        return (_single_tunnel_note(m, b),) if len(values(b, "ciamPeerGateway")) == 1 else ()
+    if kind in LINKS:
+        severity, text, how = LINKS[kind]
+        return (network_note(m, b, severity, text, how),)
+    return (link_kind_note(m, b),)
+
+
 def interconnect(m, b, here=()):
-    """An interconnect by its kind: peering (our half), HA VPN with BGP; dedicated attachments, hubs and transit
-    named."""
+    """An interconnect by its kind: peering (our half), HA VPN with BGP; dedicated attachments, hubs, transit and
+    unrecorded kinds their notes' comments (interconnect_notes)."""
     n, kind = tf_name(rdn_value(b)), one(b, "ciamLinkKind")
     if kind == "peering":
         return _peering(m, b, n)
     if kind == "vpn":
         return _vpn(m, b, n)
-    if kind in LINKS:
-        return _note(b, LINKS[kind])
-    return _note(b, f"{one(b, 'ciamInterconnectKind')}: what kind of link it is isn't recorded (ciamLinkKind). "
-                    "Not rendered.")
+    return _noted(interconnect_notes(m, b))
 
 
 # ------------------------------------------------------------------ flow logs
-def flow_log(m, b, here=()):
-    """A subnetwork's log_config, named per subnet (the landing zone keeps the subnetworks), with where the logs go."""
+def flow_log_notes(m, b, here=()):
+    """The render notes of flow log b as flow_log writes them: no subnetwork found for its scope (a blocker), else
+    its subnetworks' log_config, set where each is defined (an action)."""
     found = of_class(m, "ciamSubnetBinding") if one(b, "ciamFlowScope") == "network" else subnets(m, b)
     if one(b, "ciamFlowScope") not in ("network", "subnet") or not found:
-        return _note(b, f"Google Cloud's flow logs are subnetworks' ({one(b, 'ciamFlowScope')} named, no subnet "
-                        "found). Not rendered.")
+        return (network_note(m, b, "blocker", f"Google Cloud's flow logs are subnetworks' ({one(b, 'ciamFlowScope')} "
+                             "named, no subnet found): not rendered",
+                             (f"Record it on the network or its subnets (ciamFlowScope, ciamSubnetRole), {RECORD}",)),)
     dest = one_role(m, one(b, "ciamLogDestinationRole") or "")
     days = one(b, "ciamRetentionDays")
     goes = (f"to Cloud Logging, routed to {rdn_value(dest)}" + (f" ({one(dest, 'ciamProviderRef')})"
                                                               if one(dest, "ciamProviderRef") else "")
             if dest is not None else "to Cloud Logging") + (f", kept {days} days there" if days else "")
-    return Rendered(tuple(
-        comment(f"{rdn_value(b)}: subnetwork {rdn_value(s)} logs its flows {goes}: set its log_config "
-                "(aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) where the "
-                "subnetwork is defined") for s in found), (), ())
+    names = ", ".join(rdn_value(s) for s in found)
+    which = f"subnetworks {names} log their" if len(found) > 1 else f"subnetwork {names} logs its"
+    return (network_note(m, b, "action", f"{which} flows {goes}: the log_config isn't rendered here",
+                         ("Set the log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata "
+                          "INCLUDE_ALL_METADATA) of each subnetwork where it is defined",)),)
+
+
+def flow_log(m, b, here=()):
+    """A subnetwork's log_config per subnet (the landing zone keeps the subnetworks), with where the logs go: its
+    notes' comments (flow_log_notes)."""
+    return _noted(flow_log_notes(m, b))
 
 
 # ------------------------------------------------------------------ kept elsewhere
+def _kept_policy(m, b):
+    return (one(b, "ciamProviderRef") or "").rsplit("/", 1)[-1] or policy_ref(m)
+
+
+def _instances_note(m, b):
+    return network_note(m, b, "note", f"its rules apply to every instance of the network, in policy "
+                        f"{_kept_policy(m, b)}")
+
+
+def kept_notes(m, b, here=()):
+    """The render notes of a private endpoint or egress firewall someone else keeps, as kept_elsewhere renders it:
+    the firewall's rules applying to every instance of the network (a plain note), the endpoint's
+    (network.endpoint_notes)."""
+    return (_instances_note(m, b),) if is_kind(m.d, b, "ciamProxy") else endpoint_notes(m, b)
+
+
 def kept_elsewhere(m, b, here=()):
     """A PSC endpoint for Google's APIs, private services access (its address and connection), or an egress
     firewall's FQDN rules in its keeper's network firewall policy for every instance of the network (the stack's tag
     values aren't theirs)."""
     if is_kind(m.d, b, "ciamProxy"):
-        policy = (one(b, "ciamProviderRef") or "").rsplit("/", 1)[-1] or policy_ref(m)
-        return Rendered((comment(f"{rdn_value(b)}: its rules apply to every instance of the network, in policy "
-                                 f"{policy}"),
+        policy = _kept_policy(m, b)
+        return Rendered((comment(note_comment(_instances_note(m, b))),
                          *egress_rules(m, b, targets=(), policy=policy)), (), ())
     blocks, n, connection = private_endpoint(m, b), tf_name(rdn_value(b)), peering_connection_id(m)
     made = bool(blocks_of(blocks, "resource", "google_compute_global_forwarding_rule"))
@@ -341,6 +482,17 @@ def kept_elsewhere(m, b, here=()):
                      *(_adopt(f"google_compute_global_address.{n}", b) if peered else ()),
                      *(_adopt(f"google_service_networking_connection.{n}", b, connection)
                        if peered and connection else ())), (), ())
+
+
+NOTES = (("ciamEgress", egress_notes), ("ciamRouteTable", route_notes), ("ciamNetworkAcl", acl_notes),
+         ("ciamInterconnect", interconnect_notes), ("ciamFlowLog", flow_log_notes),
+         ("ciamPrivateEndpoint", kept_notes), ("ciamProxy", kept_notes))
+
+
+def plumbing_notes(m):
+    """The render notes of environment m's plumbing as its keepers' roots write them (core keeper_notes over
+    NOTES)."""
+    return keeper_notes(m, NOTES)
 
 
 RENDERERS = (("ciamEgress", egress), ("ciamRouteTable", route_table), ("ciamNetworkAcl", network_acl),

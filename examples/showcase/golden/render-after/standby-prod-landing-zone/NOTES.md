@@ -5,4 +5,30 @@
 -->
 # Render notes: standby/prod
 
-**nothing to handle**
+**1 blocker, 1 action, 1 note, 0 to review**
+
+## Blockers
+
+### interconnect `link-source` (Network)
+
+- **What:** Cloud VPN to AWS (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind): not rendered
+- **Where:** terraform/landing-zone/network.tf:117; standby/prod
+- **Who:** network-security
+- **How:** Record its kind of link (ciamLinkKind), under an approved change, and re-render
+
+## Actions
+
+### flow log `flow-subnets` (Network)
+
+- **What:** subnetworks subnet-ds, subnet-pf, subnet-am, subnet-idm, subnet-ig log their flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: the log_config isn't rendered here
+- **Where:** terraform/landing-zone/network.tf:119; standby/prod
+- **Who:** network-security
+- **How:** Set the log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) of each subnetwork where it is defined
+
+## Notes
+
+### NAT egress `egress-pf` (Network)
+
+- **What:** the subnetworks an existing NAT serves aren't recorded: they stay as they are
+- **Where:** terraform/landing-zone/network.tf:96; standby/prod
+- **Who:** ciam-platform

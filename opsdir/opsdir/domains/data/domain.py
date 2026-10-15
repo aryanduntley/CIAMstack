@@ -8,7 +8,7 @@ are the backup vaults and plans of a backup service; restore tests are records t
 to (on a schedule the estate setting restore-test-interval-days sets). Vendor-neutral."""
 from ...core.contract import Domain, ImportKind, directory_report
 from .backups import BACKUP_HEADERS, backup_rows, check_backups
-from .databases import DATABASE_HEADERS, check_databases, database_rows
+from .databases import DATABASE_HEADERS, check_databases, database_roles, database_rows
 from .restores import RESTORE_HEADERS, check_restores, restore_rows
 from .schema import FRAGMENT
 from .settings import SETTINGS
@@ -22,6 +22,7 @@ DOMAIN = Domain(name="data", schema=FRAGMENT, required_roles=(), sql=(),
                          "backups": directory_report(BACKUP_HEADERS, backup_rows),
                          "restore-tests": directory_report(RESTORE_HEADERS, restore_rows)},
                 checks=(check_databases, check_object_stores, check_volumes, check_backups, check_restores), order=68,
+                roles_used=database_roles,
                 vocabulary={},
                 import_kinds=(ImportKind("database", "ciamDatabase", ("ciamDbEngine",)),
                               ImportKind("volume", "ciamVolume", ("ciamTargetRole", "ciamVolumeKind"), match="name"),

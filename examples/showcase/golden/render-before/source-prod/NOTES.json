@@ -2,7 +2,7 @@
   "environment": "env=prod,cloud=source,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 1,
-    "action": 8,
+    "action": 11,
     "note": 0,
     "to_review": 0
   },
@@ -189,6 +189,66 @@
         {
           "path": "terraform/main.tf",
           "line": 2426
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
+      "subject": "egress firewall `egress-firewall`",
+      "text": "reference this rule group from its firewall policy (arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress) (stateful_rule_group_reference)",
+      "how": [
+        "After applying, add the rule group to the firewall policy's stateful rule group references (whoever keeps the policy)"
+      ],
+      "entry": "cn=egress-firewall,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "network-security"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1710
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
+      "subject": "egress firewall `egress-firewall`",
+      "text": "a domain list matches TLS SNI and HTTP Host only: email-smtp.us-east-1.amazonaws.com:587 isn't web traffic, so the policy's other stateful rules decide it",
+      "how": [
+        "Allow email-smtp.us-east-1.amazonaws.com:587 in the firewall policy's other stateful rules"
+      ],
+      "entry": "cn=egress-firewall,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "network-security"
+      ],
+      "places": [
+        {
+          "path": "terraform/main.tf",
+          "line": 1712
+        }
+      ]
+    },
+    {
+      "area": "Network",
+      "severity": "action",
+      "subject": "flow log `flow-vpc`",
+      "text": "kept 30 days, the retention of ops-logs (not set here)",
+      "how": [
+        "Set the retention of ops-logs to 30 days where it is kept"
+      ],
+      "entry": "cn=flow-vpc,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops",
+      "scope": "source/prod",
+      "owners": [
+        "network-security"
+      ],
+      "places": [
+        {
+          "path": "terraform/landing-zone/network.tf",
+          "line": 220
         }
       ]
     }

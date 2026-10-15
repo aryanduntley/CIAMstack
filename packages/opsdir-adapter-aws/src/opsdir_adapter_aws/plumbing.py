@@ -14,7 +14,8 @@ adopted with an import block; what doesn't is created.
   flow logs         on the VPC, each subnet or the transit gateway, to its log destination's ARN (CloudWatch Logs with
                     the delivery role an input, S3, Firehose); retention is the destination's
   kept elsewhere    private endpoints and egress firewalls' domain lists someone else keeps (opsdir_adapter_aws.network)
-Tags Name and Role, read back by the importers. Pure.
+Tags Name and Role, read back by the importers. What it leaves out or to a person is a render note (core.notes, flow
+43) written as its comment, enumerated the way the keepers' roots are walked (plumbing_notes). Pure.
 """
 import ipaddress
 from typing import NamedTuple
@@ -22,13 +23,16 @@ from typing import NamedTuple
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role
 from opsdir.core.network import is_private
-from opsdir.domains.network.plumbing import adopted, peer_cloud, peer_network, route_target
+from opsdir.core.notes import RECORD, note_comment
+from opsdir.domains.network.plumbing import (adopted, cross_cloud_peering_note, flow_scope_note, keeper_notes,
+                                             link_kind_note, network_note, peer_cloud, peer_half_note, peer_network,
+                                             route_target, subnet_wide_note)
 from opsdir.domains.network.ports import acl_rules
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
 from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, from_entry, ref, tf_block, tf_import,
                                          tf_name)
-from .network import binding_tags, domain_rules, private_endpoint
+from .network import binding_tags, domain_rules, endpoint_notes, firewall_notes, private_endpoint
 
 VPC = "data.aws_vpc.main.id"
 # blocks: what the binding renders; variables: inputs only its keeper knows; shared: data sources and resources
@@ -69,6 +73,11 @@ def _adopt(address, b, id_=None):
 
 def _note(b, text):
     return Rendered((comment(f"{rdn_value(b)}: {text}"),), (), ())
+
+
+def _noted(notes):
+    """Rendered of render notes' comments."""
+    return Rendered(tuple(comment(note_comment(n)) for n in notes), (), ())
 
 
 def _subnet(s):
@@ -143,10 +152,28 @@ def _target(m, route, here):
     return route.target or None, (), ()
 
 
-def _route(m, route, here):
-    """Rendered whose blocks are body items of the table: ("route", Block) or a comment."""
+def _blackhole_note(m, b, route):
+    return network_note(m, b, "blocker", f"{route.destination}: a blackhole route; Terraform doesn't create those: "
+                        "not rendered", (f"Drop the route and deny {route.destination} in the subnets' network ACL "
+                                         f"instead, {RECORD}",))
+
+
+def _routes(b):
+    return tuple(r for r in map(parse_route, values(b, "ciamRoute")) if r and r.kind != "local")
+
+
+def route_notes(m, b, here=()):
+    """The render notes of route table b's routes as _route writes them: a blackhole route (a blocker), a route for
+    some roles whose target renders (a plain note: AWS routes apply to the whole subnet); each once."""
+    return tuple(dict.fromkeys(n for r in _routes(b) for n in (
+        (_blackhole_note(m, b, r),) if r.kind == "none" else
+        (subnet_wide_note(m, b, r, "AWS"),) if r.roles and _target(m, r, here)[0] is not None else ())))
+
+
+def _route(m, b, route, here):
+    """Rendered whose blocks are body items of table b: ("route", Block) or a comment."""
     if route.kind == "none":
-        return Rendered((("#", f"{route.destination}: a blackhole route; Terraform doesn't create those"),), (), ())
+        return Rendered((("#", note_comment(_blackhole_note(m, b, route))),), (), ())
     value, variables, shared = _target(m, route, here)
     if value is None:
         return Rendered((("#", f"UNBOUND: {route.destination} {route.kind}: its target {route.target} isn't rendered "
@@ -155,8 +182,7 @@ def _route(m, route, here):
     net = route.destination if "/" in route.destination else None
     dest = ("destination_prefix_list_id" if net is None else
             "ipv6_cidr_block" if ipaddress.ip_network(net, strict=False).version == 6 else "cidr_block")
-    scoped = (("#", f"{route.destination} applies to {', '.join(route.roles)} only elsewhere; AWS routes apply to "
-                    "the whole subnet"),) if route.roles else ()
+    scoped = (("#", note_comment(subnet_wide_note(m, b, route, "AWS"))),) if route.roles else ()
     return Rendered((*scoped, ("route", Block(((dest, route.destination), (TARGETS[route.kind], value))))),
                     variables, shared)
 
@@ -164,7 +190,7 @@ def _route(m, route, here):
 def route_table(m, b, here=()):
     """A route table with its routes and subnet associations; the main table as the VPC's default route table."""
     n, main = tf_name(rdn_value(b)), one(b, "ciamMainTable") == "TRUE"
-    parts = tuple(_route(m, r, here) for r in map(parse_route, values(b, "ciamRoute")) if r and r.kind != "local")
+    parts = tuple(_route(m, b, r, here) for r in _routes(b))
     kind = "aws_default_route_table" if main else "aws_route_table"
     table = tf_block("resource", [kind, n], [
         ("default_route_table_id", ref("data.aws_vpc.main.main_route_table_id")) if main else ("vpc_id", ref(VPC)),
@@ -214,17 +240,25 @@ def _vpn_gateway(m):
         ("tags", {"Name": f"ciam-{rdn_value(m.env)}", "ManagedBy": "opsdir"})])
 
 
+def _cross_cloud(m, b):
+    cloud = peer_cloud(m.d, b)
+    return cloud is not None and one(cloud, "ciamCloudProvider") != "aws"
+
+
+def _accept_note(m, b):
+    return peer_half_note(m, b, "the other side accepts the peering in its account "
+                                "(aws_vpc_peering_connection_accepter)")
+
+
 def _peering(m, b, n):
     cloud, peer = peer_cloud(m.d, b), _peers(m, b)
-    if cloud is not None and one(cloud, "ciamCloudProvider") != "aws":
-        return _note(b, f"peering joins two networks of one provider, and the other end is on "
-                        f"{one(cloud, 'ciamCloudProvider')}: record it as a vpn link. Not rendered.")
+    if _cross_cloud(m, b):
+        return _noted((cross_cloud_peering_note(m, b, "AWS"),))
     if peer is None:
         return _note(b, "UNBOUND: the other environment's network has no provider ref to peer with. Not rendered.")
     region = one(cloud, "ciamRegion") if cloud is not None else None
     return Rendered((
-        *((comment(f"{rdn_value(b)}: the other side accepts the peering in its account "
-                   "(aws_vpc_peering_connection_accepter)"),) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
+        *((comment(note_comment(_accept_note(m, b))),) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
         tf_block("resource", ["aws_vpc_peering_connection", n], [
             ("vpc_id", ref(VPC)), ("peer_vpc_id", peer),
             *((("peer_region", region),) if region and region != one(m.cloud, "ciamRegion") else ()),
@@ -252,8 +286,31 @@ def _vpn(m, b, n):
         *_adopt(f"aws_vpn_connection.{n}", b), *static), (), ())
 
 
+def interconnect_notes(m, b, here=()):
+    """The render notes of interconnect b as interconnect writes them: a peering to another cloud (a blocker), the
+    other side accepting a peering (peer_half_note), a Direct Connect circuit ordered by hand (an action), a hub link
+    (a blocker: AWS has none), an unrecorded kind of link (a blocker); an UNBOUND link has none."""
+    kind = one(b, "ciamLinkKind")
+    if kind == "peering" and _cross_cloud(m, b):
+        return (cross_cloud_peering_note(m, b, "AWS"),)
+    if kind == "peering":
+        return (_accept_note(m, b),) if _peers(m, b) is not None and one(b, "ciamPeerAccepted") != "TRUE" else ()
+    if kind in ("transit", "vpn"):
+        return ()
+    if kind == "dedicated":
+        return (network_note(m, b, "action", "a dedicated circuit (Direct Connect) is ordered from a provider; its "
+                             "virtual interface attaches to the VPN gateway or a Direct Connect gateway: not rendered",
+                             ("Order the Direct Connect connection (or a hosted one from a partner) and attach its "
+                              "virtual interface to the VPN gateway or a Direct Connect gateway",)),)
+    if kind == "hub":
+        return (network_note(m, b, "blocker", "AWS has no managed hub connection: a transit gateway attachment is a "
+                             "transit link: not rendered", (f"Record it as a transit link (ciamLinkKind), {RECORD}",)),)
+    return (link_kind_note(m, b),)
+
+
 def interconnect(m, b, here=()):
-    """An interconnect by its kind: peering, transit attachment, VPN; dedicated circuits and hubs named."""
+    """An interconnect by its kind: peering, transit attachment, VPN; dedicated circuits, hubs and unrecorded kinds
+    their notes' comments (interconnect_notes)."""
     n, kind = tf_name(rdn_value(b)), one(b, "ciamLinkKind")
     if kind == "peering":
         return _peering(m, b, n)
@@ -266,36 +323,54 @@ def interconnect(m, b, here=()):
             (_var(TRANSIT, "The transit gateway the network attaches to (the hub's)"),), ())
     if kind == "vpn":
         return _vpn(m, b, n)
-    if kind == "dedicated":
-        return _note(b, "a dedicated circuit (Direct Connect) is ordered from a provider; its virtual interface "
-                        "attaches to the VPN gateway or a Direct Connect gateway. Named, not rendered.")
-    if kind == "hub":
-        return _note(b, "AWS has no managed hub connection: a transit gateway attachment is a transit link. "
-                        "Not rendered.")
-    return _note(b, f"{one(b, 'ciamInterconnectKind')}: what kind of link it is isn't recorded (ciamLinkKind). "
-                    "Not rendered.")
+    return _noted(interconnect_notes(m, b))
 
 
 # ------------------------------------------------------------------ flow logs
-def flow_log(m, b, here=()):
-    """A flow log on the VPC, each subnet or the transit gateway, to its log destination's ARN."""
-    n, scope = tf_name(rdn_value(b)), one(b, "ciamFlowScope")
+def _destination(m, b):
+    """(log destination binding, its ARN) of a flow log, either None."""
     dest = one_role(m, one(b, "ciamLogDestinationRole") or "")
-    arn = one(dest, "ciamProviderRef") if dest is not None else None
+    return dest, one(dest, "ciamProviderRef") if dest is not None else None
+
+
+def _flows_on(m, b, n):
+    """((resource name, target body item), ...) of what a flow log is on: the VPC, the transit gateway or each
+    subnet; () for another scope."""
+    return ({"network": ((n, ("vpc_id", ref(VPC))),),
+             "transit": ((n, ("transit_gateway_id", ref(f"var.{TRANSIT}"))),),
+             "subnet": tuple((f"{n}_{tf_name(rdn_value(s))}", ("subnet_id", _subnet(s))) for s in subnets(m, b))}
+            .get(one(b, "ciamFlowScope"), ()))
+
+
+def _retention_note(m, b, dest, days):
+    return network_note(m, b, "action", f"kept {days} days, the retention of {rdn_value(dest)} (not set here)",
+                        (f"Set the retention of {rdn_value(dest)} to {days} days where it is kept",))
+
+
+def flow_log_notes(m, b, here=()):
+    """The render notes of flow log b as flow_log writes them: a scope whose ids aren't recorded (flow_scope_note),
+    the retention its destination keeps, not set here (an action); none when its destination is UNBOUND."""
+    dest, arn = _destination(m, b)
+    days = one(b, "ciamRetentionDays")
+    return (() if arn is None else (flow_scope_note(m, b),) if not _flows_on(m, b, tf_name(rdn_value(b))) else
+            (_retention_note(m, b, dest, days),) if days else ())
+
+
+def flow_log(m, b, here=()):
+    """A flow log on the VPC, each subnet or the transit gateway, to its log destination's ARN; its notes' comments
+    (flow_log_notes)."""
+    n, scope = tf_name(rdn_value(b)), one(b, "ciamFlowScope")
+    dest, arn = _destination(m, b)
     if arn is None:
         return _note(b, "UNBOUND: its log destination has no binding with an ARN here. Not rendered.")
     kind = next((k for prefix, k in DESTINATIONS if arn.startswith(prefix)), "cloud-watch-logs")
-    on = ({"network": ((n, ("vpc_id", ref(VPC))),),
-           "transit": ((n, ("transit_gateway_id", ref(f"var.{TRANSIT}"))),),
-           "subnet": tuple((f"{n}_{tf_name(rdn_value(s))}", ("subnet_id", _subnet(s))) for s in subnets(m, b))}
-          .get(scope, ()))
+    on = _flows_on(m, b, n)
     if not on:
-        return _note(b, f"a flow log on {scope}s needs their ids, which aren't recorded. Not rendered.")
+        return _noted(flow_log_notes(m, b))
     role = (("iam_role_arn", ref("var.flow_logs_role_arn")),) if kind == "cloud-watch-logs" else ()
     days = one(b, "ciamRetentionDays")
     return Rendered((
-        *((comment(f"{rdn_value(b)}: kept {days} days, the retention of {rdn_value(dest)} (not set here)"),)
-          if days else ()),
+        *((comment(note_comment(_retention_note(m, b, dest, days))),) if days else ()),
         *(x for name, target in on for x in (
             tf_block("resource", ["aws_flow_log", name], [
                 target, ("traffic_type", "ALL"), ("log_destination_type", kind), ("log_destination", arn), *role,
@@ -314,6 +389,21 @@ def kept_elsewhere(m, b, here=()):
     blocks = private_endpoint(m, b)
     made = bool(blocks_of(blocks, "resource", "aws_vpc_endpoint"))
     return Rendered((*blocks, *(_adopt(f"aws_vpc_endpoint.{tf_name(rdn_value(b))}", b) if made else ())), (), ())
+
+
+def kept_notes(m, b, here=()):
+    """The render notes of a private endpoint or egress firewall someone else keeps, as kept_elsewhere renders it."""
+    return firewall_notes(m, b) if is_kind(m.d, b, "ciamProxy") else endpoint_notes(m, b)
+
+
+NOTES = (("ciamRouteTable", route_notes), ("ciamInterconnect", interconnect_notes), ("ciamFlowLog", flow_log_notes),
+         ("ciamPrivateEndpoint", kept_notes), ("ciamProxy", kept_notes))
+
+
+def plumbing_notes(m):
+    """The render notes of environment m's plumbing as its keepers' roots write them (core keeper_notes over
+    NOTES)."""
+    return keeper_notes(m, NOTES)
 
 
 RENDERERS = (("ciamEgress", egress), ("ciamRouteTable", route_table), ("ciamNetworkAcl", network_acl),

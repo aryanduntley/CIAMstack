@@ -5,7 +5,7 @@
 -->
 # Render notes: standby/prod
 
-**5 blockers, 9 actions, 0 notes, 0 to review**
+**6 blockers, 11 actions, 1 note, 0 to review**
 
 ## Blockers
 
@@ -54,6 +54,13 @@
   1. Run the same check from inside the boundary: a scheduled job on the environment's own compute (a Kubernetes CronJob, or a timer on a server) running the probe, its result written as a Cloud Monitoring custom metric with an alert policy on it
   2. Or alert on what the products log: log-based alert policies on failed sign-ins, LDAP binds or SAML errors
   3. Or run the check from a monitoring project outside the Assured Workloads folder, only if the authorizing official accepts check requests and results crossing the boundary
+
+### interconnect `link-source` (Network)
+
+- **What:** Cloud VPN to AWS (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind): not rendered
+- **Where:** terraform/landing-zone/network.tf:117; standby/prod
+- **Who:** network-security
+- **How:** Record its kind of link (ciamLinkKind), under an approved change, and re-render
 
 ## Actions
 
@@ -119,3 +126,25 @@
 - **Where:** terraform/main.tf:2423; standby/prod
 - **Who:** ciam-platform
 - **How:** Grant Security Command Center's notification service agent roles/pubsub.publisher on projects/example-aero-ciam-standby/topics/ciam-security-incidents (its owner)
+
+### flow log `flow-subnets` (Network)
+
+- **What:** subnetworks subnet-ds, subnet-pf, subnet-am, subnet-idm, subnet-ig log their flows to Cloud Logging, routed to ops-logs (projects/example-aero-ciam-standby/locations/global/buckets/ciam-ops), kept 30 days there: the log_config isn't rendered here
+- **Where:** terraform/landing-zone/network.tf:119; standby/prod
+- **Who:** network-security
+- **How:** Set the log_config (aggregation_interval INTERVAL_5_SEC, flow_sampling 0.5, metadata INCLUDE_ALL_METADATA) of each subnetwork where it is defined
+
+### private endpoint `psc-apis` (Network)
+
+- **What:** private DNS: the landing zone's private googleapis.com zone answers 10.70.255.5 for it
+- **Where:** terraform/main.tf:1936; standby/prod
+- **Who:** network-security
+- **How:** Have the landing zone's private googleapis.com zone answer 10.70.255.5 (its keeper)
+
+## Notes
+
+### NAT egress `egress-pf` (Network)
+
+- **What:** the subnetworks an existing NAT serves aren't recorded: they stay as they are
+- **Where:** terraform/landing-zone/network.tf:96; standby/prod
+- **Who:** ciam-platform

@@ -101,8 +101,8 @@ def test_the_agent_is_installed_on_each_server_shipping_logs_with_its_own_identi
     vm = out["terraform/main.tf"].split('resource "azurerm_linux_virtual_machine" "ds_1"', 1)[1].split("\n}", 1)[0]
     assert 'type = "SystemAssigned"' in vm
     assert "terraform/landing-zone/providers.tf" not in out        # no landing zone: the platform root names them
-    assert ("# Register these resource providers in the subscription before applying (azurerm 5.x registers none, "
-            "and the environment has no landing zone to do it): Microsoft.Compute, Microsoft.Insights") \
+    assert ("# NOTE: resource providers: to register in the subscription before applying (azurerm 5.x registers "
+            "none, and the environment has no landing zone to do it): Microsoft.Compute, Microsoft.Insights") \
         in out["terraform/providers.tf"]
 
 

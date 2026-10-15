@@ -7,6 +7,7 @@ notification publishers sign in to with OAuth. From 13.1.3 a JDBC store outside 
 schemes is an action (the Admin API restricts them). An SMTP relay or CAPTCHA service whose credential role
 isn't the role of the plugin instance it stands for is an action, fixed by setting it (as a re-import would)."""
 
+from opsdir.core.contract import RoleUse
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.environment import bound_nowhere, one_role
 from opsdir.core.findings import Fix, findings, merge_findings, responsible
@@ -237,3 +238,14 @@ def check_cluster(ctx):
     return merge_findings([_discovery(ctx, nodes, src, dst, owner),
                            *(_credentials(ctx, n, f"PingFederate node `{rdn_value(n)}`",
                                           responsible(ctx.d, n, ctx.dst.env)) for n in nodes)])
+
+
+def credential_roles(m):
+    """(RoleUse, ...) of the credential roles (pingfedCredentialRole) PingFederate's data stores, plugin instances and
+    resources held as is use, as its credential checks see them: the adapter's roles_used."""
+    found = (*((s, f"data store `{rdn_value(s)}`") for s in children(m.d, DATA_STORES, "pingfedDataStore")),
+             *((p, f"{KINDS[one(p, 'pingfedPluginKind')].label} `{rdn_value(p)}`")
+               for k in KINDS.values() for p in children(m.d, k.base, "pingfedPlugin")),
+             *((r, resource_label(r)) for r in held_resources(m.d)))
+    return tuple(RoleUse(r, what[:1].lower() + what[1:]) for e, what in found
+                 for r in values(e, "pingfedCredentialRole"))

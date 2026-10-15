@@ -5,7 +5,7 @@
 -->
 # Render notes: source/stage
 
-**0 blockers, 1 action, 0 notes, 0 to review**
+**0 blockers, 2 actions, 0 notes, 0 to review**
 
 ## Actions
 
@@ -15,3 +15,10 @@
 - **Where:** terraform/main.tf:941, terraform/main.tf:1237
 - **Who:** ciam-platform
 - **How:** Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it
+
+### flow log `flow-vpc` (Network)
+
+- **What:** kept 30 days, the retention of ops-logs (not set here)
+- **Where:** terraform/landing-zone/network.tf:220; source/stage
+- **Who:** network-security
+- **How:** Set the retention of ops-logs to 30 days where it is kept

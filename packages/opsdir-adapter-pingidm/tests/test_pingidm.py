@@ -15,7 +15,7 @@ from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
 from opsdir.connectors.roundtrip import read_back
 from opsdir.domains.edge.resolve import declared_endpoints
-from opsdir.core.contract import PlanContext
+from opsdir.core.contract import PlanContext, RoleUse
 from opsdir.core.directory import get, make_directory, one, values
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
@@ -265,3 +265,8 @@ def test_what_an_upgrade_to_idm_8_touches_in_the_record():
         "/openidm/info/ping and /openidm/health are deprecated": None,
         "the legacy admin UI is no longer bundled": None}
     assert all(c.touches(d, m, "am") == () for c in ADAPTER.version_changes if c.touches)
+
+
+def test_the_connectors_credential_roles_are_the_roles_it_uses():
+    d, _, _ = imported(SET_ROLE)
+    assert ADAPTER.roles_used(env_model(d, "alpha/prod")) == (RoleUse("idm-ds-bind-password", "connector `ldap`"),)

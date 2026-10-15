@@ -8,7 +8,7 @@ from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from opsdir.domains.infrastructure.external import external_hosts_fix, jdbc_hosts, unnamed
-from opsdir.domains.pki.credentials import credential_role_fix
+from opsdir.domains.pki.credentials import credential_role_fix, role_uses
 from .naming import CONNECTORS, MANAGED, MAPPINGS, SCHEDULES
 
 
@@ -76,3 +76,9 @@ def check_idm(ctx):
     count = len(children(ctx.d, MAPPINGS, "pingidmMapping"))
     return parts if parts.blockers else parts._replace(ok=(*parts.ok, f"IDM's {count} mapping(s) and its schedules "
                                                          "refer only to connectors, objects and mappings it has."))
+
+
+def connector_roles(m):
+    """(RoleUse, ...) of the credential roles PingIDM's connectors use (pingidmCredentialRole): the adapter's
+    roles_used."""
+    return role_uses(children(m.d, CONNECTORS, "pingidmConnector"), "pingidmCredentialRole", "connector")

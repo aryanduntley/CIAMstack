@@ -1,3 +1,4 @@
 rendered 6 files for env=prod,cloud=standby,ou=environments,dc=ciam-ops (gcp) → <OUT>/render-after/standby-prod-landing-zone
-notes: nothing to handle
+notes: 1 blocker, 1 action, 1 note, 0 to review (see <OUT>/render-after/standby-prod-landing-zone/NOTES.md)
+  BLOCKER interconnect `link-source`: Cloud VPN to AWS (landing-zone managed): what kind of link it is isn't recorded (ciamLinkKind): not rendered [network-security]
 exit 0

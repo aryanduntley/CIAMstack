@@ -44,13 +44,13 @@ from .identities import EC2_TRUST, eks_cluster_data, identity_clusters, notes, p
 from .ingress import gateway_front
 from .guardrails import guardrail_notes
 from .landing import STACK, landing_parts, placed_roots
-from .network import render_network
+from .network import network_notes, render_network
 from .backups import backup_notes, render_backups
 from .account import govcloud, organization_providers, provider_block, required_providers, standard_account
 from .volumes import render_snapshot_policies, root_block_device, server_volumes, volume_notes
 from .databases import copy_alias, copy_regions, database_notes, render_databases
 from .storage import kept_buckets, render_object_stores
-from .plumbing import network_data
+from .plumbing import network_data, plumbing_notes
 
 WHAT = "AWS infrastructure for the CIAM platform"
 TERRAFORM, CLOUDFORMATION = "terraform", "cloudformation"
@@ -295,11 +295,13 @@ def render_notes(m, services):
     """Adapter notes (core.notes, flow 43): what environment m's AWS render leaves out or to a person, as data, each
     written as its comment: the canaries it doesn't render, then its security services', audit trails', data
     discovery's, guardrails', alert rules', log destinations', identities' (core access.workloads) and Kubernetes-only
-    roles' (core edge.kubernetes) notes, and log shipping's (servers, Fluent Bit)."""
+    roles' (core edge.kubernetes) notes, the network depth's and the landing zone plumbing's, and log shipping's
+    (servers, Fluent Bit)."""
     return (*canary_notes(m, services.endpoints if services else ()), *security_notes(m), *audit_notes(m),
             *discovery_notes(m), *guardrail_notes(m), *alert_notes(m), *log_group_notes(m),
             *identity_notes(m, ACCESS), *kubernetes_notes(m), *budget_notes(m), *forwarder_notes(m),
             *database_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m),
             *edge_notes(m, services.endpoints if services else ()),
+            *network_notes(m, services.endpoints if services else ()), *plumbing_notes(m),
             *((govcloud_note(m),) if govcloud(m) and _fronted(m, services.endpoints if services else ()) else ()),
             *((*log_notes(m, services), *fluent_bit_notes(m, services)) if services else ()))

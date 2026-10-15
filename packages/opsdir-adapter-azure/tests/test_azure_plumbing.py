@@ -5,7 +5,10 @@ private endpoints and egress allowlists; import blocks for what exists; notes fo
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir_format_terraform.hcl import as_text, comment
+from opsdir.core.notes import note_comment
 from opsdir_adapter_azure.landing import render_landing
+from opsdir_adapter_azure.plumbing import plumbing_notes
+from edge_fixtures import note_lines
 from network_fixtures import ALPHA, BETA, entry, model
 from support import REGISTRY, build_directory
 
@@ -53,7 +56,7 @@ def test_an_existing_nat_gateway_adopted_with_its_public_ips_and_prefixes_its_su
     assert f'to = azurerm_nat_gateway_public_ip_prefix_association.egress_0\n  id = "{nat}|${{var.egress_prefix_0}}"' \
         in out
     assert "azurerm_subnet_nat_gateway_association" not in out
-    assert "# egress: the subnets an existing NAT gateway serves aren't recorded" in out
+    assert "# NOTE: NAT egress `egress`: the subnets an existing NAT gateway serves aren't recorded" in out
 
 
 def test_a_new_nat_gateway_on_the_environment_s_subnets():
@@ -114,7 +117,7 @@ def test_our_half_of_a_peering_with_an_azure_network():
 
 def test_peering_across_providers_and_a_link_without_a_kind_are_named():
     out = _net(_link("link", "peering"), _link("other", None))
-    assert "the other end is on fakecloud: record it as a vpn link" in out
+    assert "provider (Azure), and the other end is on fakecloud: not rendered" in out
     assert "a link: what kind of link it is isn't recorded" in out and "azurerm_virtual_network_peering" not in out
 
 
@@ -209,3 +212,28 @@ def test_a_landing_zone_with_guardrails_and_plumbing_declares_its_data_sources_o
     assert 'data "azurerm_virtual_network" "main"' not in files[NET]     # nothing here reads it: the stack's
     providers = files[f"{LZ}/providers.tf"]
     assert 'variable "subscription_id"' in providers and 'variable "egress_ip_0"' in providers
+
+
+def test_the_plumbing_notes_are_the_comments_every_keeper_s_root_writes():
+    m = model(alpha=(
+        entry(ALPHA, "egress", "ciamEgress", ciamBindingRole="egress", ciamCidr="203.0.113.10/32",
+              ciamProviderRef="ng-1"),
+        entry(ALPHA, "private", "ciamEgress", ciamBindingRole="private", ciamCidr="10.1.9.0/24"),
+        entry(ALPHA, "rt", "ciamRouteTable", ciamBindingRole="rt", ciamMainTable="TRUE", ciamSubnetRole="subnet-web",
+              ciamRoute=("10.8.0.0/16 nat egress", "10.7.0.0/16 appliance 10.1.1.9 for web", "0.0.0.0/0 internet")),
+        entry(ALPHA, "acl", "ciamNetworkAcl", ciamBindingRole="acl", ciamAclRule="100 allow in tcp 443 0.0.0.0/0"),
+        _link("cross", "peering"), _link("same", "peering", peer=GAMMA),
+        _link("refused", "peering", peer=GAMMA, ciamPeerAccepted="FALSE"),
+        _link("vpn", "vpn", ciamPeerGateway="198.51.100.1", ciamLocalAsn="65515"),
+        _link("transit", "transit"), _link("er", "dedicated"), _link("odd", None, ciamManagedBy=TEAM),
+        entry(ALPHA, "fl-nsg", "ciamFlowLog", ciamBindingRole="fl-nsg", ciamFlowScope="security-group"),
+        entry(ALPHA, "fl-eni", "ciamFlowLog", ciamBindingRole="fl-eni", ciamFlowScope="interface"),
+        entry(ALPHA, "pe-db", "ciamPrivateEndpoint", ciamBindingRole="pe-db", ciamPrivateService="database",
+              ciamManagedBy=TEAM),
+        entry(ALPHA, "fw", "ciamProxy", ciamBindingRole="fw", ciamProxyKind="firewall", ciamManagedBy=TEAM,
+              ciamAllowedDestination=("smtp.example:587",))), tree=(*PARTIES, *AZURE_PEER))[1]
+    notes = plumbing_notes(m)
+    written = note_lines("\n".join(t for p, t in as_text(render_landing(m)).items() if p.endswith("network.tf")))
+    assert written == sorted(note_comment(n) for n in notes)
+    assert {n.severity for n in notes} == {"blocker", "action", "note"} and len(notes) == 17
+    assert [n.severity for n in notes if n.subject == "interconnect `refused`"] == ["note"]

@@ -50,7 +50,7 @@ resource "azurerm_route_table" "rt_private" {
   name                = "rt-ciam-prod-rt-private"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
-  # 0.0.0.0/0 nat: not a next hop in Azure (subnets reach it without a route); not rendered
+  # NOTE: route table `rt-private`: 0.0.0.0/0 nat: not a next hop in Azure (subnets reach it without a route): not rendered
   tags = {
     CostCenter  = "CC-1001"
     Environment = "target/prod"

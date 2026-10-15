@@ -13,6 +13,7 @@ from ...core.environment import applies_in, bound_nowhere, servers_with_role
 from ...core.findings import findings, merge_findings, responsible
 from ..compute.hosts import scope_text
 from ..compute.workloads import kubernetes_roles
+from ..pki.credentials import role_uses
 from .naming import JOBS, ON_SERVERS, REALIZED
 
 JOBS_HEADERS = ("job", "kind", "schedule", "runs on", "applies in", "owner", "code", "uses", "found on")
@@ -83,3 +84,9 @@ def check_jobs(ctx):
         return parts
     return parts._replace(ok=(*parts.ok, f"The {len(held)} job(s) have owners and run in {ctx.dst.label} on what "
                                          "they run on in the source."))
+
+
+def job_roles(m):
+    """(RoleUse, ...) of the roles (ciamUsesRole) of the jobs that apply in environment m (applies_in, as the jobs
+    check)."""
+    return role_uses((j for j in jobs(m.d) if applies_in(j, m)), "ciamUsesRole", "job")

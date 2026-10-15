@@ -2,7 +2,9 @@
 of its service, a static address and the private DNS zone group as recorded), Private Link Services on a Standard load
 balancer's frontend, an egress firewall's allowlist as Firewall policy application rules; comments otherwise."""
 from opsdir_format_terraform.hcl import as_text
-from opsdir_adapter_azure.network import render_network
+from opsdir.core.notes import note_comment
+from opsdir_adapter_azure.network import network_notes, render_network
+from edge_fixtures import note_lines
 from network_fixtures import ALPHA, entry, model
 
 TERMINATE = ("dn: ou=edge-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: edge-policies\n",
@@ -55,8 +57,8 @@ def test_what_azure_doesnt_reach_this_way_is_said():
                   entry(ALPHA, "pe-db", "ciamPrivateEndpoint", ciamBindingRole="pe-db", ciamPrivateService="database"),
                   entry(ALPHA, "pe-none", "ciamPrivateEndpoint", ciamBindingRole="pe-none",
                         ciamPrivateService="secrets", ciamReachesRole="nowhere"))
-    assert "# Private endpoint 'pe-s3': Azure's private endpoints are interface endpoints (gateway" in out
-    assert "# Private endpoint 'pe-db' to database: record the target's resource id" in out
+    assert "# NOTE: private endpoint `pe-s3`: Azure's private endpoints are interface endpoints (gateway" in out
+    assert "# NOTE: private endpoint `pe-db`: database isn't a service this render reaches by private endpoint" in out
     assert "# UNBOUND: private endpoint 'pe-none' reaches nothing this environment binds" in out
     assert "azurerm_private_endpoint" not in out
 
@@ -106,7 +108,8 @@ def test_sites_on_other_ports_are_network_rules_by_fqdn():
     out = _render(entry(ALPHA, "egress-fw", "ciamProxy", ciamBindingRole="egress-firewall", ciamProxyKind="firewall",
                         ciamAllowedDestination=("smtp.example:587",)))
     assert "application_rule_collection" not in out and "network_rule_collection {" in out
-    assert "# FQDNs in network rules need the firewall policy's DNS proxy" in out
+    assert ("# NOTE: egress firewall `egress-fw`: FQDNs in network rules (smtp.example:587) need the firewall policy's "
+            "DNS proxy") in out
     assert 'protocols         = ["TCP"]' in out and 'destination_ports = ["587"]' in out
     assert 'destination_fqdns = ["smtp.example"]' in out
 
@@ -123,3 +126,16 @@ def test_a_private_endpoint_s_zone_is_azure_government_s_there():
         "privatelink.vaultcore.usgovcloudapi.net", "privatelink.blob.core.usgovcloudapi.net",
         "privatelink.servicebus.usgovcloudapi.net", "privatelink.azurecr.us"]
     assert private_dns_zone(cloud("eastus2"), "registry") == "privatelink.azurecr.io"
+
+
+def test_the_network_notes_are_the_comments_the_render_writes():
+    m = model(alpha=(
+        entry(ALPHA, "pe-s3", "ciamPrivateEndpoint", ciamBindingRole="pe-s3", ciamPrivateService="object-storage",
+              ciamPrivateEndpointKind="gateway"),
+        entry(ALPHA, "pe-db", "ciamPrivateEndpoint", ciamBindingRole="pe-db", ciamPrivateService="database"),
+        entry(ALPHA, "ldaps-link", "ciamEndpointService", ciamBindingRole="ldaps-link", ciamServiceRole="sso-service"),
+        entry(ALPHA, "egress-fw", "ciamProxy", ciamBindingRole="egress-firewall", ciamProxyKind="firewall",
+              ciamAllowedDestination=("smtp.example:587", "idp.partner.example"))), tree=TERMINATE)[1]
+    notes = network_notes(m)
+    assert note_lines("\n\n".join(as_text(render_network(m)))) == sorted(note_comment(n) for n in notes)
+    assert {n.severity for n in notes} == {"blocker", "action"} and len(notes) == 4

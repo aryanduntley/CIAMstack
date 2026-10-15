@@ -29,7 +29,8 @@ from .guardrails import render_guardrails
 from .identities import RG, assignments, federated_credential, managed_identity, notes, role_of, scope, scope_data
 from .plumbing import render_plumbing
 from .account import provider_block, required_providers, subscription_variable
-from .resource_providers import registration_note, resource_providers
+from opsdir.core.notes import note_comment
+from .resource_providers import registration_notes, resource_providers
 
 STACK = "terraform"           # the stack's own root
 
@@ -115,23 +116,50 @@ def _subscription(x):
     return isinstance(x, TfBlock) and x.kind == "variable" and x.labels[0] == "subscription_id"
 
 
+def _placed(m, parts, landing_dns):
+    return place_roots(parts, placement(m, landing_dns), STACK, named=named_keeper, label=source_label)
+
+
+def _registered(placed):
+    """(namespaces, unknown types) of every placed root's resources (resource_providers)."""
+    return resource_providers(tuple(x for files in placed.files.values() for items in files.values() for x in items))
+
+
+def registrations(m, placed):
+    """{root: (RenderNote, ...)} the providers.tf of environment m's placed roots writes: the stack's every namespace
+    to register by hand when no landing-zone root does it, the landing zone's the types whose resource provider opsdir
+    doesn't know (its provider registers the rest)."""
+    register, unknown = _registered(placed)
+    return {STACK: () if LANDING_ZONE in placed.files else registration_notes(m, register, unknown),
+            LANDING_ZONE: registration_notes(m, (), unknown)}
+
+
+def placed_notes(m, parts, landing_dns):
+    """The render notes of environment m's render parts as placed_roots writes them: placed the same way, each
+    in-scope root's providers.tf registrations."""
+    placed = _placed(m, parts, landing_dns)
+    noted = registrations(m, placed)
+    return tuple(n for root, files in placed.files.items() if in_scope(m, root) and PROVIDERS in files
+                 for n in noted.get(root, ()))
+
+
 def placed_roots(m, parts, landing_dns, stack_head):
     """{path: TfFile} of environment m's Terraform roots: its render parts placed by who keeps what
     (governance.keepers.placement, opsdir_format_terraform.placing): the stack's root (stack_head(file name): its
     files' headers), each keeper's that takes generated infrastructure (its subscription input described), and in the
     stack's main.tf a comment for each entry asked of a keeper instead. The landing zone's provider registers the
-    resource providers every rendered root's resources need (unknown types named above it); with no landing-zone root
-    the stack's providers.tf names what to register."""
-    placed = place_roots(parts, placement(m, landing_dns), STACK, named=named_keeper, label=source_label)
-    register, unknown = resource_providers(tuple(x for files in placed.files.values() for items in files.values()
-                                                 for x in items))
+    resource providers every rendered root's resources need (unknown types a render note above it); with no
+    landing-zone root the stack's providers.tf names what to register (registrations, render notes' comments)."""
+    placed = _placed(m, parts, landing_dns)
+    register, _ = _registered(placed)
+    noted = registrations(m, placed)
 
     def providers(root, items):
+        written = tuple(comment(note_comment(n)) for n in noted.get(root, ()))
         if root == STACK:
-            return (*(() if LANDING_ZONE in placed.files else registration_note(register, unknown)), *items)
-        own = tuple(provider_block(m, register if root == LANDING_ZONE else ()) if _azurerm(x) else
-                    subscription_variable(m, described=True) if _subscription(x) else x for x in items)
-        return (*(registration_note((), unknown) if root == LANDING_ZONE else ()), *own)
+            return (*written, *items)
+        return (*written, *(provider_block(m, register if root == LANDING_ZONE else ()) if _azurerm(x) else
+                            subscription_variable(m, described=True) if _subscription(x) else x for x in items))
 
     def head(root, name, files):
         if root == STACK:

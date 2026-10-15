@@ -20,7 +20,8 @@ doesn't is created.
                     storage account then an input), retention as recorded. Never NSG flow logs (they retire)
   kept elsewhere    private endpoints and egress firewalls' rule collection groups someone else keeps
                     (opsdir_adapter_azure.network)
-Tags Role (and opsdir's mark), read back by the importers. Pure.
+Tags Role (and opsdir's mark), read back by the importers. What it leaves out or to a person is a render note
+(core.notes, flow 43) written as its comment, enumerated the way the keepers' roots are walked (plumbing_notes). Pure.
 """
 import ipaddress
 from typing import NamedTuple
@@ -28,14 +29,17 @@ from typing import NamedTuple
 from opsdir.core.directory import is_kind, one, rdn_value, values
 from opsdir.core.environment import of_class, one_role
 from opsdir.core.network import is_private
-from opsdir.domains.network.plumbing import adopted, peer_cloud, peer_network, route_target
+from opsdir.core.notes import RECORD, note_comment
+from opsdir.domains.network.plumbing import (adopted, cross_cloud_peering_note, flow_scope_note, keeper_notes,
+                                             link_kind_note, network_note, peer_cloud, peer_half_note, peer_network,
+                                             route_target, subnet_wide_note)
 from opsdir.domains.network.routing import parse_route
 from opsdir.domains.network.stack import subnets
 from opsdir_format_terraform.hcl import (Block, blocks_of, comment, distinct, from_entry, ref, tf_block, tf_import,
                                          tf_name)
 from .arm_ids import arm_segment
 from .identities import LOC, RG
-from .network import application_rules, binding_tags, private_endpoint
+from .network import application_rules, binding_tags, endpoint_notes, firewall_notes, private_endpoint
 from .account import tagged
 
 VNET = "data.azurerm_virtual_network.main"
@@ -102,6 +106,11 @@ def _note(b, text):
     return Rendered((comment(f"{rdn_value(b)}: {text}"),), (), ())
 
 
+def _noted(notes):
+    """Rendered of render notes' comments."""
+    return Rendered(tuple(comment(note_comment(n)) for n in notes), (), ())
+
+
 def _subnet(s):
     return ref(f"data.azurerm_subnet.{tf_name(rdn_value(s))}.id")
 
@@ -111,15 +120,36 @@ def _name(m, b, prefix):
 
 
 # ------------------------------------------------------------------ NAT egress
+def _private_only(b):
+    """The egress's ranges when every one is private address space, else ()."""
+    cidrs = values(b, "ciamCidr")
+    return cidrs if cidrs and all(is_private(c) for c in cidrs) else ()
+
+
+def _kept_subnets_note(m, b):
+    return network_note(m, b, "note", "the subnets an existing NAT gateway serves aren't recorded; its subnet "
+                        "associations stay as they are")
+
+
+def egress_notes(m, b, here=()):
+    """The render notes of NAT egress b as egress writes them: a private range only (a blocker: Azure NAT gateways
+    are public only), an existing gateway's subnets left as they are (a plain note)."""
+    private = _private_only(b)
+    if private:
+        return (network_note(m, b, "blocker", f"Azure NAT gateways are public only; {', '.join(private)} is private "
+                             "address space: not rendered",
+                             ("Record the public addresses it sends from (ciamCidr), or send private egress through a "
+                              f"firewall or appliance route, {RECORD}",)),)
+    return (_kept_subnets_note(m, b),) if adopted(b) else ()
+
+
 def egress(m, b, here=()):
     """A NAT gateway with its public IPs (/32) and public IP prefixes (wider ranges) as inputs (an existing gateway's
     associations imported: '<gateway ID>|<IP ID>'), a new one on the environment's subnets (an existing one's subnets
-    aren't recorded, so stay as they are); a note for a private range."""
+    aren't recorded, so stay as they are: a note); a private range's note (egress_notes)."""
     n, cidrs = tf_name(rdn_value(b)), values(b, "ciamCidr")
-    private = tuple(c for c in cidrs if is_private(c))
-    if private and len(private) == len(cidrs):
-        return _note(b, f"Azure NAT gateways are public only; {', '.join(private)} is private address space. "
-                        "Not rendered.")
+    if _private_only(b):
+        return _noted(egress_notes(m, b))
     public = tuple(c for c in cidrs if not is_private(c))
     single = tuple(c for c in public if ipaddress.ip_network(c, strict=False).num_addresses == 1)
     ranges = tuple(c for c in public if c not in single)
@@ -144,8 +174,7 @@ def egress(m, b, here=()):
             *((tf_import(f"azurerm_nat_gateway_public_ip_prefix_association.{n}_{i}",
                          _pair(nat, f"{n}_prefix_{i}")),) if nat else ()))),
         # an existing gateway's subnets aren't recorded (ciamEgress names none): they stay as its keeper has them
-        *((comment(f"{rdn_value(b)}: the subnets an existing NAT gateway serves aren't recorded; its subnet "
-                   "associations stay as they are"),) if nat else
+        *((comment(note_comment(_kept_subnets_note(m, b))),) if nat else
           (tf_block("resource", ["azurerm_subnet_nat_gateway_association", f"{n}_{tf_name(rdn_value(s))}"], [
               ("subnet_id", _subnet(s)), ("nat_gateway_id", ref(f"azurerm_nat_gateway.{n}.id"))]) for s in found))),
         (*(_var(f"{n}_ip_{i}", f"The public IP resource (Standard, static) with address {c} NAT gateway "
@@ -169,15 +198,37 @@ def _address(m, route):
         return ref(f"var.{name}"), (_var(name, f"The private address of {what} routes send traffic to"),)
 
 
-def _route(m, route):
-    """Rendered whose blocks are body items of the table: ("route", Block) or a comment."""
+def _hopless_note(m, b, route):
+    return network_note(m, b, "note", f"{route.destination} {route.kind}: not a next hop in Azure (subnets reach it "
+                        "without a route): not rendered")
+
+
+def _main_note(m, b):
+    return network_note(m, b, "blocker", "Azure has no main route table (subnets without one use the system routes): "
+                        "only the subnets it names are associated", ("Name each subnet it serves (ciamSubnetRole), "
+                                                                     f"{RECORD}",))
+
+
+def _routes(b):
+    return tuple(r for r in map(parse_route, values(b, "ciamRoute")) if r)
+
+
+def route_notes(m, b, here=()):
+    """The render notes of route table b as route_table writes them: a main table (a blocker: Azure has none), routes
+    whose kind isn't a next hop in Azure (plain notes), routes for some roles (subnet_wide_note); each once."""
+    return tuple(dict.fromkeys((
+        *((_main_note(m, b),) if one(b, "ciamMainTable") == "TRUE" else ()),
+        *(n for r in _routes(b) for n in ((_hopless_note(m, b, r),) if NEXT_HOPS.get(r.kind) is None else
+                                          (subnet_wide_note(m, b, r, "Azure"),) if r.roles else ())))))
+
+
+def _route(m, b, route):
+    """Rendered whose blocks are body items of table b: ("route", Block) or a comment."""
     hop = NEXT_HOPS.get(route.kind)
     if hop is None:
-        return Rendered((("#", f"{route.destination} {route.kind}: not a next hop in Azure (subnets reach it without "
-                               "a route); not rendered"),), (), ())
+        return Rendered((("#", note_comment(_hopless_note(m, b, route))),), (), ())
     address, variables = _address(m, route) if hop == "VirtualAppliance" else (None, ())
-    scoped = (("#", f"{route.destination} applies to {', '.join(route.roles)} only elsewhere; Azure routes apply to "
-                    "the whole subnet"),) if route.roles else ()
+    scoped = (("#", note_comment(subnet_wide_note(m, b, route, "Azure"))),) if route.roles else ()
     name = "to-" + "-".join(filter(None, route.destination.replace("/", ".").replace(":", ".").split(".")))
     return Rendered((*scoped, ("route", Block((
         ("name", name), ("address_prefix", route.destination), ("next_hop_type", hop),
@@ -187,9 +238,8 @@ def _route(m, route):
 def route_table(m, b, here=()):
     """A route table with its routes and subnet associations."""
     n = tf_name(rdn_value(b))
-    parts = tuple(_route(m, r) for r in map(parse_route, values(b, "ciamRoute")) if r)
-    main = (comment(f"{rdn_value(b)}: Azure has no main route table (subnets without one use the system routes); "
-                    "associate it with each subnet instead"),) if one(b, "ciamMainTable") == "TRUE" else ()
+    parts = tuple(_route(m, b, r) for r in _routes(b))
+    main = (comment(note_comment(_main_note(m, b))),) if one(b, "ciamMainTable") == "TRUE" else ()
     pref = one(b, "ciamProviderRef")
     name = arm_segment(pref, "routeTables") if pref and pref.startswith("/") else pref
     return Rendered((
@@ -206,10 +256,15 @@ def route_table(m, b, here=()):
         tuple(v for p in parts for v in p.variables), ())
 
 
+def acl_notes(m, b, here=()):
+    """The render note (a blocker) of network ACL b: Azure has no stateless network ACLs."""
+    return (network_note(m, b, "blocker", "Azure has no stateless network ACLs (the stack's NSGs carry its firewall "
+                         "rules): not rendered", (f"Record these rules as firewall rules, {RECORD}",)),)
+
+
 def network_acl(m, b, here=()):
-    """Azure has no stateless network ACLs: named."""
-    return _note(b, "Azure has no stateless network ACLs (the stack's NSGs carry its firewall rules); record these "
-                    "rules as firewall rules. Not rendered.")
+    """Azure has no stateless network ACLs: its note's comment (acl_notes)."""
+    return _noted(acl_notes(m, b))
 
 
 # ------------------------------------------------------------------ interconnects
@@ -226,19 +281,32 @@ def _remote(n, b, pref, group):
             (_var(f"{n}_remote_vnet_id", f"The virtual network {rdn_value(b)} peers with"),))
 
 
+def _cross_cloud(m, b):
+    cloud = peer_cloud(m.d, b)
+    return cloud is not None and one(cloud, "ciamCloudProvider") != "azure"
+
+
+def _half_note(m, b):
+    return peer_half_note(m, b, "the other side adds its half of the peering (its virtual network to ours)")
+
+
+def _asn_note(m, b, asn):
+    return network_note(m, b, "action", f"our side's BGP ASN {asn} is set on the virtual network gateway (an input, "
+                        "not rendered here)", (f"Check that the virtual network gateway uses BGP ASN {asn} (whoever "
+                                               "keeps the gateway)",))
+
+
 def _peering(m, b, n):
-    cloud, net = peer_cloud(m.d, b), peer_network(m.d, b)
-    if cloud is not None and one(cloud, "ciamCloudProvider") != "azure":
-        return _note(b, f"peering joins two networks of one provider, and the other end is on "
-                        f"{one(cloud, 'ciamCloudProvider')}: record it as a vpn link. Not rendered.")
+    net = peer_network(m.d, b)
+    if _cross_cloud(m, b):
+        return _noted((cross_cloud_peering_note(m, b, "Azure"),))
     pref = one(net, "ciamProviderRef") if net is not None else None
     if pref is None:
         return _note(b, "UNBOUND: the other environment's network has no provider ref to peer with. Not rendered.")
     remote, data, variables = _remote(n, b, pref, one(net, "ciamResourceGroup"))
     return Rendered((
         *data,
-        *((comment(f"{rdn_value(b)}: the other side adds its half of the peering (its virtual network to ours)"),)
-          if one(b, "ciamPeerAccepted") != "TRUE" else ()),
+        *((comment(note_comment(_half_note(m, b))),) if one(b, "ciamPeerAccepted") != "TRUE" else ()),
         tf_block("resource", ["azurerm_virtual_network_peering", n], [
             ("name", _name(m, b, "peer")), ("resource_group_name", RG),
             ("virtual_network_name", ref(f"{VNET}.name")), ("remote_virtual_network_id", remote),
@@ -253,8 +321,7 @@ def _vpn(m, b, n):
     bgp = (("bgp_settings", Block((("asn", int(peer_asn)), ("bgp_peering_address", ref(f"var.{n}_bgp_peer_ip"))))),) \
         if peer_asn else ()
     return Rendered((
-        *((comment(f"{rdn_value(b)}: our side's BGP ASN {local_asn} is set on the virtual network gateway"),)
-          if local_asn else ()),
+        *((comment(note_comment(_asn_note(m, b, local_asn))),) if local_asn else ()),
         tf_block("resource", ["azurerm_local_network_gateway", n], [
             ("name", _name(m, b, "lgw")), ("location", LOC), ("resource_group_name", RG),
             ("gateway_address", gateway),
@@ -274,8 +341,38 @@ def _vpn(m, b, n):
         ())
 
 
+def interconnect_notes(m, b, here=()):
+    """The render notes of interconnect b as interconnect writes them: a peering to another cloud (a blocker), the
+    other side's half of a peering (peer_half_note), our side's BGP ASN set on the virtual network gateway (an action),
+    a transit link (a blocker), an ExpressRoute circuit ordered by hand (an action), an unrecorded kind of link (a
+    blocker); an UNBOUND link has none."""
+    kind = one(b, "ciamLinkKind")
+    if kind == "peering" and _cross_cloud(m, b):
+        return (cross_cloud_peering_note(m, b, "Azure"),)
+    if kind == "peering":
+        net = peer_network(m.d, b)
+        bound = net is not None and one(net, "ciamProviderRef") is not None
+        return (_half_note(m, b),) if bound and one(b, "ciamPeerAccepted") != "TRUE" else ()
+    if kind == "vpn":
+        return (_asn_note(m, b, one(b, "ciamLocalAsn")),) if one(b, "ciamPeerGateway") and one(b, "ciamLocalAsn") \
+            else ()
+    if kind == "hub":
+        return ()
+    if kind == "transit":
+        return (network_note(m, b, "blocker", "Azure's transit is a virtual WAN hub (a hub link) or a hub network "
+                             "peered with this one (a peering link): not rendered",
+                             (f"Record it as a hub or peering link (ciamLinkKind), {RECORD}",)),)
+    if kind == "dedicated":
+        return (network_note(m, b, "action", "an ExpressRoute circuit is ordered from a connectivity provider; its "
+                             "connection is made on the virtual network gateway: not rendered",
+                             ("Order the ExpressRoute circuit from a connectivity provider and connect it on the "
+                              "virtual network gateway",)),)
+    return (link_kind_note(m, b),)
+
+
 def interconnect(m, b, here=()):
-    """An interconnect by its kind: peering, VPN, hub connection; transit and dedicated circuits named."""
+    """An interconnect by its kind: peering, VPN, hub connection; transit, dedicated circuits and unrecorded kinds
+    their notes' comments (interconnect_notes)."""
     n, kind = tf_name(rdn_value(b)), one(b, "ciamLinkKind")
     if kind == "peering":
         return _peering(m, b, n)
@@ -287,14 +384,7 @@ def interconnect(m, b, here=()):
             ("remote_virtual_network_id", ref(f"{VNET}.id"))]),
             *_adopt(f"azurerm_virtual_hub_connection.{n}", b)),
             (_var("virtual_hub_id", "The virtual WAN hub the network connects to"),), ())
-    if kind == "transit":
-        return _note(b, "Azure's transit is a virtual WAN hub (record it as a hub link) or a hub network peered with "
-                        "this one (a peering link). Not rendered.")
-    if kind == "dedicated":
-        return _note(b, "an ExpressRoute circuit is ordered from a connectivity provider; its connection is made on "
-                        "the virtual network gateway. Named, not rendered.")
-    return _note(b, f"{one(b, 'ciamInterconnectKind')}: what kind of link it is isn't recorded (ciamLinkKind). "
-                    "Not rendered.")
+    return _noted(interconnect_notes(m, b))
 
 
 # ------------------------------------------------------------------ flow logs
@@ -318,17 +408,31 @@ def _destination(m, b):
     return None, (), (), ()
 
 
+def _flows_on(m, b, n):
+    """((resource name, flow log name, target id), ...) of what a flow log is on: the VNet or each subnet; () for
+    another scope."""
+    return ({"network": ((n, _name(m, b, "fl"), ref(f"{VNET}.id")),),
+             "subnet": tuple((f"{n}_{tf_name(rdn_value(s))}", f"{_name(m, b, 'fl')}-{rdn_value(s)}", _subnet(s))
+                             for s in subnets(m, b))}.get(one(b, "ciamFlowScope"), ()))
+
+
+def flow_log_notes(m, b, here=()):
+    """The render notes (blockers) of flow log b as flow_log writes them: NSG flow logs (they retire), a scope whose
+    ids aren't recorded (flow_scope_note)."""
+    if one(b, "ciamFlowScope") == "security-group":
+        return (network_note(m, b, "blocker", "NSG flow logs retire (no new ones since 2025-07-30, all on 2027-09-30): "
+                             "not rendered", ("Record a virtual network flow log instead (ciamFlowScope network or "
+                                              f"subnet), {RECORD}",)),)
+    return () if _flows_on(m, b, tf_name(rdn_value(b))) else (flow_scope_note(m, b),)
+
+
 def flow_log(m, b, here=()):
-    """Virtual network flow logs on the VNet or each subnet, to the destination's storage account."""
-    n, scope = tf_name(rdn_value(b)), one(b, "ciamFlowScope")
-    if scope == "security-group":
-        return _note(b, "NSG flow logs retire (no new ones since 2025-07-30, all on 2027-09-30): record a virtual "
-                        "network flow log instead. Not rendered.")
-    on = ({"network": ((n, _name(m, b, "fl"), ref(f"{VNET}.id")),),
-           "subnet": tuple((f"{n}_{tf_name(rdn_value(s))}", f"{_name(m, b, 'fl')}-{rdn_value(s)}", _subnet(s))
-                           for s in subnets(m, b))}.get(scope, ()))
-    if not on:
-        return _note(b, f"a flow log on {scope}s needs their ids, which aren't recorded. Not rendered.")
+    """Virtual network flow logs on the VNet or each subnet, to the destination's storage account; its notes'
+    comments when it isn't rendered (flow_log_notes)."""
+    n = tf_name(rdn_value(b))
+    on = _flows_on(m, b, n)
+    if one(b, "ciamFlowScope") == "security-group" or not on:
+        return _noted(flow_log_notes(m, b))
     storage, analytics, data, variables = _destination(m, b)
     if storage is None:
         return _note(b, "UNBOUND: its log destination has no binding naming a storage account or Log Analytics "
@@ -359,6 +463,22 @@ def kept_elsewhere(m, b, here=()):
     single = len(blocks_of(blocks, "resource", "azurerm_private_endpoint")) == 1
     return Rendered((*blocks, *(_adopt(f"azurerm_private_endpoint.{tf_name(rdn_value(b))}", b, "privateEndpoints")
                                 if single else ())), (), ())
+
+
+def kept_notes(m, b, here=()):
+    """The render notes of a private endpoint or egress firewall someone else keeps, as kept_elsewhere renders it."""
+    return firewall_notes(m, b) if is_kind(m.d, b, "ciamProxy") else endpoint_notes(m, b)
+
+
+NOTES = (("ciamEgress", egress_notes), ("ciamRouteTable", route_notes), ("ciamNetworkAcl", acl_notes),
+         ("ciamInterconnect", interconnect_notes), ("ciamFlowLog", flow_log_notes),
+         ("ciamPrivateEndpoint", kept_notes), ("ciamProxy", kept_notes))
+
+
+def plumbing_notes(m):
+    """The render notes of environment m's plumbing as its keepers' roots write them (core keeper_notes over
+    NOTES)."""
+    return keeper_notes(m, NOTES)
 
 
 RENDERERS = (("ciamEgress", egress), ("ciamRouteTable", route_table), ("ciamNetworkAcl", network_acl),

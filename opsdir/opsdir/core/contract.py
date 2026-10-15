@@ -58,6 +58,10 @@ ImportKind = namedtuple("ImportKind", ("kind", "object_class", "required", "matc
 Setting = namedtuple("Setting", ("name", "kind", "default", "description", "minimum", "maximum", "choices"),
                      defaults=(None, None, None))
 
+# One use of a binding role by a record entry an environment runs (Domain and Adapter roles_used): the role and what
+# uses it in words (connector `hrdb`), for the keys report.
+RoleUse = namedtuple("RoleUse", ("role", "by"))
+
 Domain = namedtuple("Domain", (
     "name", "schema",           # its SchemaFragment
     "required_roles",
@@ -72,10 +76,12 @@ Domain = namedtuple("Domain", (
     "import_checks",            # (directory, environment spec, Resources) -> notices, run on every cloud import
     "local_classes",            # binding classes local to their environment's cloud (a cloud's suppression of
                                 # findings): the planner doesn't ask the target to bind what the source's do
-    "accept"),                  # (PlanContext, blockers, actions) -> (blockers, actions, accepted): the findings the
+    "accept",                   # (PlanContext, blockers, actions) -> (blockers, actions, accepted): the findings the
                                 # record's approved decisions accept, each accepted one as (kind, area, text, owner,
                                 # why), shown in the plan, not counted; None: it accepts none
-    defaults=((), {}, (), (), (), None))
+    "roles_used"),              # (EnvModel) -> (RoleUse, ...): the binding roles its entries the environment runs use
+                                # (a connector's credential), for the keys report, or None
+    defaults=((), {}, (), (), (), None, None))
 
 # A language or file format opsdir renders or reads: registered (entry point group opsdir.formats) by the core for the
 # standard ones and by any package for its own, so what a managed system is written in is data, never an assumption.
@@ -368,10 +374,13 @@ Adapter = namedtuple("Adapter", (
     "notes",                # (EnvModel, Services) -> (RenderNote, ...) (core.notes): what its render of the environment
                             # leaves out or to a person, as data (each also written as the comment note_comment gives),
                             # or None (its NOTE comments are then collected as notes to review)
-    "renders_synthetic_checks"),    # whether it renders an environment's synthetic checks (canaries): where no
+    "renders_synthetic_checks",     # whether it renders an environment's synthetic checks (canaries): where no
                                     # adapter rendering an environment does, its canaries are render notes of their own
+    "roles_used"),          # (EnvModel) -> (RoleUse, ...): the binding roles its products' entries use in an
+                            # environment (a connector's or data store's credential), whether or not it applies there
+                            # (the keys report says which product would use them), or None
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False))
+              None, False, None))
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

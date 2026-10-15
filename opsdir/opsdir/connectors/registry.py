@@ -269,3 +269,23 @@ def services(installed=ADAPTERS):
                     signals=partial(signals_of, installed=installed),
                     logs=partial(logs_of, installed=installed),
                     host_files=partial(host_files_of, installed=installed))
+
+
+def product_of(adapter):
+    """The product an adapter is named by in reports: its first product, else its own name."""
+    return adapter.products[0][0] if adapter.products else adapter.name
+
+
+def roles_used(m, adapters, domains=DOMAINS):
+    """{role: (what uses it, ...)}: the binding roles environment m's entries use (every domain's and each applying
+    adapter's roles_used), in record order."""
+    found = tuple(u for part in (*domains, *adapters) if part.roles_used for u in part.roles_used(m))
+    return {r: tuple(dict.fromkeys(u.by for u in found if u.role == r)) for r in dict.fromkeys(u.role for u in found)}
+
+
+def used_elsewhere(m, installed, applying):
+    """{role: (product, ...)}: the roles the installed adapters that don't apply to environment m would use there
+    (their roles_used: the record names them), naming their products."""
+    others = tuple(a for a in installed if a.roles_used and a.name not in {x.name for x in applying})
+    found = tuple((u.role, product_of(a)) for a in others for u in a.roles_used(m))
+    return {r: tuple(dict.fromkeys(p for r_, p in found if r_ == r)) for r in dict.fromkeys(r for r, _ in found)}
