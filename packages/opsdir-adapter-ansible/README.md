@@ -2,11 +2,13 @@
 
 opsdir configuration-management adapter: an environment's servers as an Ansible inventory with their variables, and the host configuration the record holds for them as playbooks. It works for servers on any cloud or on-prem.
 
-**Applies to** environments whose stack declares it (`ciamStackRole: configuration-management`, `ciamAdapter: ansible`); it is never inferred. **Depends on** `opsdir` (the infrastructure and compute domains; the secret stores' adapters for lookups).
+**Applies to** environments whose stack declares it (a `ciamStackComponent` with `ciamStackRole: configuration-management`, `ciamAdapter: ansible`); it is never inferred from the data (`applies` is none). Adapter kind `platform`. Add-ons (opsdir-adapter-f5, -panos, -infoblox, -windows-dns, -haproxy, -prometheus) render their own Ansible files beside its folder with its helpers (`output.py`).
+
+**Depends on** `opsdir` (the infrastructure, compute, automation, network and PKI domains). Secret lookups come from the adapters owning each reference scheme (`Adapter.ansible_lookup`), the product files from the product adapters (`Services.deployable_config`), the agents' files from the adapters that render them (`Services.host_files`). A run needs Ansible on the controller and the Galaxy collections and roles its `requirements.yml` pins; validation installs ansible-core 2.21.5 and ansible-lint 26.9.0 (`opsdir/scripts/fetch-tools.sh`).
 
 ## What it renders
 
-| File | Content |
+| File | From the record |
 |---|---|
 | `ansible/inventory/hosts.yml` | YAML inventory: `all` → `ciam_servers` → one group per server role (the role's name with other characters as `_`: `pf-engine` → `pf_engine`) → its servers by host name (`ciamHostname`), `ansible_host` their `ciamPrivateIp` when recorded |
 | `ansible/inventory/group_vars/all.yml` | `ciam_environment` (`cloud/env`), `ciam_provider`, `ciam_region` (an on-prem environment's site), `ciam_time_sources` (its time servers), `ciam_config_files_not_deployed` (product files and other adapters' files that can't be deployed here, with why) |
@@ -35,11 +37,11 @@ Values come from the record as written. Ansible evaluates any variable holding `
 | `host-files` (default) | The files the other adapters rendering the environment hand it for the role's servers (agents' configuration: the CloudWatch agent's JSON, the Ops Agent's YAML), from their templates to their paths with their modes (`diff: false`), then, for each file that changed, its reload command (`ansible.builtin.command` with `argv`, no shell) so what reads it takes it up. Configure-only: nothing is installed, the agents come with the host's baseline (a run where one is missing fails at its file); a file for only some of the role's servers is written only on them (`when: inventory_hostname in item.hosts`); files for a role with no servers here are named. The adapter declares `places_host_files`: in an environment whose stack declares no adapter that does, `opsdir check` names the files rendered for its servers that nothing places | `Services.host_files` (contract `HostFile`: role, path, text, reload argv, mode, hosts: the servers receiving it, all when empty), from each adapter's `host_files(m, services)` |
 | `verify` (only with `--tags verify`) | What installing the servers brings: OS (`ID VERSION_ID` of os-release), agents' packages installed, service units enabled | `ciamOs`, `ciamHostAgent`, `ciamServiceUnit` |
 
-FIPS: on RHEL 8 and 9 (and Rocky, AlmaLinux, CentOS Stream, Oracle Linux) the play runs `fips-mode-setup --enable` and names the reboot it needs; RHEL 10 can't switch to FIPS mode after installation (Red Hat's RHEL 10 security hardening guide), so there it only checks `/proc/sys/crypto/fips_enabled` and tells you to reinstall with `fips=1`; on other systems it names what to do, changing nothing. A FIPS mode recorded off is never switched off, and the play never reboots. What the record only observed (names pinned in `/etc/hosts`, search domains) is never applied: those are the source's addresses.
+FIPS: on RHEL 8 and 9 (and Rocky, AlmaLinux, CentOS Stream, Oracle Linux) the play runs `fips-mode-setup --enable` when `/proc/sys/crypto/fips_enabled` isn't 1 and names the reboot it needs; RHEL 10 can't switch to FIPS mode after installation (Red Hat's RHEL 10 security hardening guide), so there it only checks `/proc/sys/crypto/fips_enabled`, failing the host with "reinstall with fips=1" when it is off; on other systems it names what to do, changing nothing. SELinux changes that need a reboot are named the same way. A FIPS mode recorded off is never switched off, and the play never reboots. What the record only observed (names pinned in `/etc/hosts`, search domains) is never applied: those are the source's addresses.
 
 A template keeps the file's text verbatim in `{% raw %}` blocks; each secret placeholder (`${secret:<ref-uri>}`) becomes the lookup below, read when the play runs. A file isn't deployed, and is named in `ciam_config_files_not_deployed`, when a placeholder can't be read (no scheme, or one no installed adapter resolves) or its target role has no servers in the environment.
 
-## Secrets at run time
+### Secrets at run time
 
 Nothing secret is written. Where a playbook needs a secret, it reads the reference at run time on the controller, under the operator's own login, with the lookup the adapter owning the reference's scheme declares (`Adapter.ansible_lookup`, `Services.ansible_lookup(m, ref-uri)`):
 
@@ -55,18 +57,34 @@ Nothing secret is written. Where a playbook needs a secret, it reads the referen
 
 The collections a run needs are those its lookups name (`amazon.aws`, `azure.azcollection`, `community.hashi_vault`, `kubernetes.core`; the pipe needs none, only the resolver's CLI on the controller), pinned in the rendered `requirements.yml`. A reference that can't be read (no scheme, or one no installed adapter resolves) is never written: the file holding it isn't deployed, and is named.
 
-## Validation
+### Validation
 
 `ansible/requirements.yml` pins what a run needs from Galaxy (only the collections the rendered files name; Red Hat's STIG roles when a baseline names `disa-stig`), from the adapter's pin list (`requirements.py`: `ansible.posix` 2.2.2, `community.general` 13.5.0, `amazon.aws` 11.4.0, `azure.azcollection` 4.1.0, `community.hashi_vault` 7.1.0, `kubernetes.core` 6.6.0, `ansible.netcommon` 8.7.1, `f5networks.f5_bigip` 3.14.0, `ansible.windows` 3.8.0, `infoblox.nios_modules` 1.10.0, `paloaltonetworks.panos` 3.4.2, `RedHatOfficial.rhel8/9/10_stig` 0.1.82; pinned 2026-10-09 to the release validated with the rendered files, CIAMstack's own pins tracking the current release). The add-ons render their own `requirements-<add-on>.yml` the same way. `opsdir/scripts/fetch-tools.sh` installs the same pins (`--force`, so a changed pin replaces what is installed) with ansible-core 2.21.5 and ansible-lint 26.9.0 into `tools/ansible` (their own Python dependencies are resolved by pip, not hash-pinned), and `opsdir/scripts/validate-ansible.sh` checks every `ansible/` folder: `ansible-inventory --list`, `ansible-playbook --syntax-check`, `ansible-lint --profile production` (the pytest marker `ansible`). The YAML is written with sequences indented under their keys and long strings folded (`output.yaml_text`: core `yaml_text.dump(..., indent_sequences=True, width=160)`), as ansible-lint's yamllint wants. Add-ons write theirs through the same helpers (`output.py`: `yaml_files`, `requirements_file`, `secret_lookup`, `login`, `appliance_inventory`, `LOCAL` for plays run on the controller with its own Python).
 
+## What it reads back
+
+Nothing: it has no importer. The host baselines and jobs it applies are read from the servers by opsdir-adapter-linux (`linux/baseline`, `linux/jobs`); the product files by the product adapters' importers.
+
+## References, vocabulary and planner checks
+
+No reference scheme of its own: it reads every scheme through its owner's lookup, else a pipe (above). Vocabulary: `ciamHardeningProfile` (`disa-stig`, the profiles it applies). It declares `places_host_files`: in an environment whose stack declares no adapter that places host files, `opsdir check` names the files rendered for its servers that nothing places. No schema, required roles, secret patterns or planner checks of its own: what isn't deployed is named in the render (`ciam_config_files_not_deployed`, `ciam_jobs_not_deployed`, `ciam_trusted_unrecorded`) and by the play's debug tasks.
+
 ## Known limits
 
+- **Not run against live servers.** The render passes `ansible-inventory`, `--syntax-check` and `ansible-lint --profile production` (the `ansible` tests); a run against real hosts is part of the testing plan (milestone 7.2).
 - Bundles (`ciamBundle`: scripts, templates, packages) aren't placed: the record holds their digest, not their content.
 - File owners aren't recorded: templates are written with mode `0640`, owned by the play's user.
 - Per-server product scripts (`ds/setup-ds-<n>.sh`, …) are run by the operators, not by this play (installing the products is out of scope).
 - The Java runtime (`ciamJdk`) isn't checked (no version source common to every vendor's runtime).
-- Native lookups not used: CyberArk's Credential Provider (`community.general.cyberarkpassword` ignores the SDK's exit status; the pipe runs the same SDK and checks it), Google Secret Manager (`google.cloud.gcp_secret_manager` logs the secret's value at `-vvv` and lists versions for `latest`; the `gcloud` pipe is kept).
+- Native lookups not used (deferred, both on `output.py`): CyberArk's Credential Provider stays on the `clipasswordsdk` pipe until `community.general.cyberarkpassword` checks the SDK's exit status upstream, or CyberArk documents that every GetPassword failure writes to stderr (then: the native lookup in opsdir-adapter-cyberark, a guard failing on an empty value, `AIM_CLIPASSWORDSDK_CMD`); Google Secret Manager stays on the `gcloud` pipe until `google.cloud.gcp_secret_manager` both stops logging the access response at `-vvv` and reads `latest` without listing versions (beyond `roles/secretmanager.secretAccessor`); then the native lookup in opsdir-adapter-gcp and a `google.cloud` pin here.
 
 ## Tests
 
-`tests/test_ansible_inventory.py`: groups and hosts, variables by scope, headers, group names; native lookups, store-shaped lookups (Azure Government endpoint, Vault KV 1), the pipe fallback. `tests/test_ansible_baseline.py`: baseline variables (intent applied, installation verified, observed facts never applied), the playbook's tasks and tags. `tests/test_ansible_host_config.py`: jobs (cron fields, @-words, timers, withheld commands), firewall rich rules (IPv4 and IPv6), templates (raw text, lookups), other adapters' files (templates, variables, reload on change), tags. `tests/test_ansible_validate.py` (marker `ansible`): a render using every host-config feature passes the real tools.
+- `tests/test_ansible_inventory.py`: one group per role, hosts by name, a recorded address as `ansible_host`, every file's header, group names as identifiers; native lookups where the scheme's owner has one, store-shaped lookups (Azure Government endpoint, Vault KV 1), the pipe fallback, no lookup for a reference nothing reads.
+- `tests/test_ansible_baseline.py`: baseline variables (intent applied, installation verified, observed facts never applied), the role's group variables, the playbook's tasks and tags.
+- `tests/test_ansible_host_config.py`: jobs (cron fields, @-words, timers, withheld commands) and the shell escapes; firewall rich rules and files in the group variables; templates (raw text, run-time lookups, never shown by `--diff`, what can't be deployed named); record text that looks like Jinja never templated; only the jobs and agents that apply in the environment; chrony's time sources; other adapters' files placed, reloaded when they change, and only on the servers they are for; tags.
+- `tests/test_ansible_validate.py` (marker `ansible`, skipped without `tools/ansible`): a render using every host-config feature passes `opsdir/scripts/validate-ansible.sh`.
+
+From the repository root: `opsdir/.venv/bin/python -m pytest packages/opsdir-adapter-ansible/tests` (unit tests); `-m ansible` after `opsdir/scripts/fetch-tools.sh` for the real tools.
+
+Installing the package registers it with opsdir (entry point `opsdir.adapters`: `ansible`); nothing in the opsdir core changes. In this repository: `opsdir/scripts/dev-install.sh`.
