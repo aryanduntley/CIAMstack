@@ -3067,6 +3067,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.660 NAME 'ciamCiSystem' DESC 'The CI
   repositories no longer define' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
  .1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' 
  X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.670 NAME 'ciamApplicationPart' DESC 
+ 'An entry that is part of the application (an integration, a directory cons
+ umer, an external service, a canary, a job): the views and dependency graph
+  of the application start from its parts' EQUALITY distinguishedNameMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' 
+ X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3835,3 +3841,10 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.136 NAME 'ciamProviderControl' DESC '
  res (a deployment of the framework lists every one)' SUP ciamObject STRUCTU
  RAL MUST ( cn $ ciamProviderRef $ ciamRevision ) MAY ( ciamEnforcementMode 
  $ ciamControlParameter ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.140 NAME 'ciamApplication' DESC 'An a
+ pplication as the business knows it, grouping the entries it is made of (ci
+ amApplicationPart) and the binding roles it uses in each environment (ciamU
+ sesRole): what an application view and its dependency graph show together; 
+ nothing is grouped unless recorded here' SUP ciamObject STRUCTURAL MUST cn 
+ MAY ( ciamApplicationPart $ ciamUsesRole $ ciamCriticality ) X-ORIGIN 'opsd
+ ir' )

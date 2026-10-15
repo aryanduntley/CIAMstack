@@ -5,3 +5,4 @@ OWNERS = branch("owners")
 CHANGES = branch("changes")
 RUNBOOKS = branch("runbooks")
 IMPORTS = branch("imports")           # the last import run of each scope by each importer
+APPLICATIONS = branch("applications")      # applications grouping the entries they are made of

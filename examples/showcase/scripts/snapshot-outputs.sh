@@ -68,6 +68,11 @@ cap 03-report-log-collection-source od report log-collection source/prod
 cap 03-report-log-collection-target od report log-collection target/prod
 cap 03-report-canary-coverage od report canary-coverage
 cap 03-report-rotation-impact od report rotation-impact "$ROTATE"
+cap 03-application-customer-portal od application customer-portal --env target/prod
+cap 03-application-customer-portal-json od application customer-portal --format json
+cap 03-graph-customer-portal od graph customer-portal --depth 2
+cap 03-graph-blast-dot od graph "$BLAST" --direction up --format dot
+cap 03-summary od summary source/prod target/prod
 cap 03-report-overrides od report overrides
 cap 03-report-keys-stage od report keys source/stage
 cap 03-report-keys-standby od report keys standby/prod
@@ -153,6 +158,7 @@ cap 10-file-run-properties-lab od file run.properties --env hq/lab
 cap 10-report-baselines-after od report baselines
 cap 10-report-jobs-after od report jobs
 cap 11-plan-after  od plan source/prod target/prod -o "$OUT/plan-after"
+cap 11-summary-after od summary source/prod target/prod
 cap 11-check-after "$PY" scripts/check-findings.py after
 od export > "$OUT/export.ldif" 2>&1
 

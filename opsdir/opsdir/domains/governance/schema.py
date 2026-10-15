@@ -85,6 +85,9 @@ ATTRIBUTES = (
     AttributeDef(607, 'ciamCollectedEnvironment', 'extdn', 'meta', True,
                  'The environment a collection attempt read (absent: estate-wide, provider data such as regions and '
                  'quotas); a DN, not a reference, like an import run\'s scopes'),
+    AttributeDef(670, 'ciamApplicationPart', 'dn', 'meta', False,
+                 'An entry that is part of the application (an integration, a directory consumer, an external '
+                 'service, a canary, a job): the views and dependency graph of the application start from its parts'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -121,6 +124,11 @@ CLASSES = (
              '(or estate-wide), recorded under the change it ran with (ciamChangeRef) whatever the outcome: '
              'complete, or incomplete or skipped with its problems and the calls it made, so a failed collection '
              'stays visible after the run'),
+    ClassDef(140, 'ciamApplication', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamApplicationPart', 'ciamUsesRole', 'ciamCriticality'),
+             'An application as the business knows it, grouping the entries it is made of (ciamApplicationPart) and '
+             'the binding roles it uses in each environment (ciamUsesRole): what an application view and its '
+             'dependency graph show together; nothing is grouped unless recorded here'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

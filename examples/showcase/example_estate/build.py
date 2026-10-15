@@ -21,7 +21,8 @@ def specs():
             *federation.identity_services(), *federation.integrations(), *messaging.entries(),
             *observability.entries(), *access.entries(), *edge.entries(),
             *infrastructure.external_allowlists(), *governance.incidents(), *governance.restore_tests(),
-            *recovery.entries(), *custom.feature_flags(), *config.config_files(), *config.bundles())
+            *recovery.entries(), *custom.feature_flags(), *config.config_files(), *config.bundles(),
+            *governance.applications())
 
 
 def data_files(all_specs):

@@ -13,13 +13,17 @@ from .connectors import capture as capturemod, importing, migration, plan as pla
 from .connectors import fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
 from .connectors.render import environment_notes, render_env
+from .connectors.application import application_view
+from .connectors.graph import dependency_graph
 from .connectors.stack import STATUS_HEADERS, note_rows, stack_rows
+from .connectors.summary import estate_counts, plan_counts
 from .core import search as ldap_search
 from .core.environment import ENVIRONMENT, env_model
 from .core.notes import parsed
 from .core.interchange.export import export_text
 from .domains.governance.attempts import attempt_records
 from .domains.governance.authorization import Area, allow_all, refusal
+from .domains.governance.naming import APPLICATIONS
 from .store import migrations, postgres as db
 from .store.queries import fetch_history
 
@@ -106,6 +110,33 @@ def report(conn, name, dn=None, as_of=None):
 def history(conn, dn=None):
     """Effect (reads the record): the change history, of one entry or of all."""
     return Rows(tuple(reports.HISTORY_HEADERS), tuple(fetch_history(conn, dn)))
+
+
+def _entry_dn(dn):
+    """An entry named on the command line: a DN as it is, a bare name an application's (cn=NAME,ou=applications)."""
+    return dn if "=" in dn else f"cn={dn},{APPLICATIONS}"
+
+
+def application(conn, dn, as_of, env=None):
+    """Effect (reads the record): the application view of an entry (connectors.application.ApplicationView; a bare
+    name an application's), its roles realized in environment env (CLOUD/ENV) when given, else in every one."""
+    d = db.load_directory(conn)
+    return application_view(d, _entry_dn(dn), as_of, env_model(d, env) if env else None)
+
+
+def dependencies(conn, dn, direction="both", depth=3, env=None):
+    """Effect (reads the record): the dependency graph around an entry (connectors.graph.Graph; a bare name an
+    application's): what it depends on (down), what depends on it (up) or both, depth steps out; role nodes linked to
+    their bindings in environment env (CLOUD/ENV) when given."""
+    d = db.load_directory(conn)
+    return dependency_graph(d, _entry_dn(dn), direction, depth, env_model(d, env) if env else None)
+
+
+def summary(conn, as_of, src=None, dst=None):
+    """Effect (reads the record): the estate in counts, each with its evidence (connectors.summary.Count), and the
+    blockers, actions and ok lines of the plan from src to dst when both are given. No percentages."""
+    d = db.load_directory(conn)
+    return (*estate_counts(d, as_of), *(plan_counts(planmod.plan(d, src, dst, as_of)) if src and dst else ()))
 
 
 def export(conn, base):

@@ -25,6 +25,9 @@ It is built for the ForgeRock/Ping stack on AWS, Azure and Google Cloud today, a
 | What expires soon? | `opsdir report expiring` |
 | What breaks if this certificate expires or is replaced? | `opsdir report blast-radius <certificate DN>` |
 | What does rotating this key or secret touch? | `opsdir report rotation-impact <credential DN>` |
+| What does this application touch, across every product and cloud? | `opsdir application <name or DN> [--env <env>]`: its identity (integration), directory consumer and ACIs, service names, secrets and keys (references only), certificates with expiry, network rules and allowlists, monitors and synthetic checks, changes and incidents, and owners, each row naming the entry it comes from (`--format json` for tools); an application (`ciamApplication` under `ou=applications`) groups the entries it is made of, and any other entry is a view of itself |
+| What depends on this, and what does it depend on? | `opsdir graph <name or DN> [--direction up\|down\|both] [--depth N] [--env <env>] [--format text\|json\|dot]`: references by DN and by role (bound per environment), as a tree, JSON or Graphviz DOT |
+| The estate in numbers | `opsdir summary [<from> <to>]`: applications, integrations, consumers, expiring certificates, pending changes, incidents and entries awaiting an import, each count with its evidence; with two environments the plan's blockers, actions and ok lines. Counts only, no scores |
 | Where does each environment keep its keys and secrets, and correctly? | `opsdir report keys <env>`, `opsdir report credentials` |
 | Who can read privacy-classified attributes? | `opsdir report pii` |
 | What has drifted from the intended configuration? | `opsdir report drift` |

@@ -1,6 +1,6 @@
 """Governance fixture data: owners (10-owners), change records (20-changes), work instructions
-(65-runbooks) and incidents (85-incidents)."""
-from .common import AWS, CERTS, CHG, DECL, INC, INTS, OWN, RB, R, owner, spec, t
+(65-runbooks), incidents (85-incidents) and applications (97-applications)."""
+from .common import AWS, CERTS, CHG, CON, DECL, INC, INTS, OWN, RB, R, XA, ou, owner, spec, t
 from .estate import COST_CENTERS
 
 PARTIES = (      # cn, kind, mail, contact url, display name
@@ -188,3 +188,29 @@ def incidents():
                  ciamReportedAt=t("2026-09-23", "180000"), ciamReportRef="DIBNET-2026-000042",
                  ciamPreservedUntil=t("2026-12-22"), ciamMediaRequest="none",
                  ciamOwner=owner("security-operations")),)
+
+
+APPS = f"ou=applications,{R}"
+# Applications as the business knows them, each grouping the entries it is made of (ciamApplicationPart) and the
+# binding roles it uses (ciamUsesRole): name, description, parts, roles, criticality, owner
+APPLICATIONS = (
+    ("customer-portal", "Customer Parts Portal: customers order parts and track repairs (SAML SSO, writes profile "
+                        "attributes over LDAPS)",
+     (f"cn=customer-portal,{INTS}", f"cn=customer-portal-svc,{CON}", f"cn=portal-sso,ou=canaries,{R}"),
+     ("ds-ldaps-service",), "high", "customer-portal-team"),
+    ("supplier-portal", "Supplier Portal: suppliers' quotes and deliveries (OIDC sign-in, reads the directory over "
+                        "LDAPS from the supplier network)",
+     (f"cn=supplier-portal,{INTS}", f"cn=supplier-portal-svc,{CON}", f"cn=supplier-portal-egress-sg,{XA}"),
+     ("ds-ldaps-service",), "medium", "supplier-portal-team"),
+    ("skyline-air-partner", "Skyline Air partner access: Skyline Air staff sign in with their own identity provider",
+     (f"cn=skyline-air-federation,{INTS}", f"cn=skyline-air-ingress,{XA}"), (), "high", "ciam-platform"),
+)
+
+
+def applications():
+    """The applications (97-applications): what `opsdir application` and `opsdir graph` show by name."""
+    return (ou("97-applications", "applications", desc="Applications grouping the entries they are made of"),
+            *(spec("97-applications", f"cn={cn},{APPS}", ["top", "ciamApplication"], cn=cn, description=what,
+                   ciamApplicationPart=list(parts), ciamUsesRole=list(roles) or None, ciamCriticality=level,
+                   ciamOwner=owner(team))
+              for cn, what, parts, roles, level, team in APPLICATIONS))

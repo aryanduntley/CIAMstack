@@ -89,6 +89,13 @@ echo "-- credential sprawl: every key and secret, where it is held and used"; od
 echo "-- what rotating the PingFederate signing key touches"
 od report rotation-impact "cn=pf-signing-key,ou=credentials,dc=ciam-ops"
 
+step "3b. Applications and what they depend on"
+echo "-- everything the Customer Parts Portal touches in the target, each row naming its entry"
+od application customer-portal --env target/prod
+echo "-- what depends on the Skyline Air signing cert, as a graph (Graphviz DOT)"
+od graph "cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops" --direction up --format dot
+echo "-- the estate in counts, each with its evidence"; od summary source/prod target/prod
+
 step "4. The record extended by its operators, and the files it holds"
 echo "-- custom fields and record types";    od report custom
 echo "-- config files held in the record";   od report capture

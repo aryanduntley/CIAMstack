@@ -68,6 +68,7 @@ dc=ciam-ops
 ├── ou=config-files, ou=bundles             files held setting by setting; code and templates by repo path + hash
 ├── ou=custom-schema                        ciamFieldDefinition, ciamRecordTypeDefinition: operator-defined
 ├── ou=runbooks, ou=changes, ou=incidents   ciamRunbook, ciamChange, ciamIncident
+├── ou=applications                         ciamApplication: the entries an application is made of
 └── ou=owners                               ciamParty: teams, partners, vendors, the operator
 ```
 

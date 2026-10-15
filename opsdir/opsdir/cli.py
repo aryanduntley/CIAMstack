@@ -69,6 +69,15 @@
                                        (recorded files not under it are removed)
   opsdir export [-b base]              dump entries as LDIF (for Git review)
   opsdir history [DN]                  change history
+  opsdir application DN|NAME [--env CLOUD/ENV] [--format text|json]
+                                       everything an entry touches, in sections (identity, directory, edge and service
+                                       names, secrets and keys, certificates, network, monitoring, changes and
+                                       incidents, owners), each row naming its entry; NAME: an application's
+                                       (ou=applications); --env: the roles' bindings in that environment only
+  opsdir graph DN|NAME [--direction down|up|both] [--depth N] [--env CLOUD/ENV] [--format text|json|dot]
+                                       what an entry depends on and what depends on it (DN and role references)
+  opsdir summary [FROM TO] [--format text|json]
+                                       the estate in counts, each with its evidence; with FROM TO the plan's too
   opsdir workspace create [--replace]  copy the live record (OPSDIR_DSN) into the migration workspace
   opsdir workspace status|diff         what the workspace changed since its copy (diff: as LDIF change records)
   opsdir workspace cutover --change CHG-…   apply the workspace's changes to the live record, then re-copy
@@ -77,6 +86,7 @@
 import argparse
 import datetime as dt
 import gzip
+import json
 import os
 import pathlib
 import re
@@ -87,6 +97,8 @@ from types import MappingProxyType
 
 from . import live, operations as ops
 from .connectors import collecting, fixes as fixmod, importing, migration, registry, workspace
+from .connectors.application import HEADERS as VIEW_HEADERS, view_document
+from .connectors.graph import graph_document, graph_dot, graph_lines
 from .connectors.prerequisites import command_line
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, COLLECT_OPTIONS, option_key
 from .connectors.stack import STATUS_HEADERS
@@ -187,6 +199,14 @@ SUBCOMMANDS = (
                       (("-o", "--out"), {"help": "write the profile here (default: standard output)"}))),
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
+    ("application", ((("dn",), {"metavar": "DN|NAME"}), (("--env",), {"metavar": "CLOUD/ENV"}),
+                     (("--format",), {"default": "text", "choices": ["text", "json"]}))),
+    ("graph", ((("dn",), {"metavar": "DN|NAME"}),
+               (("--direction",), {"default": "both", "choices": ["down", "up", "both"]}),
+               (("--depth",), {"type": int, "default": 3}), (("--env",), {"metavar": "CLOUD/ENV"}),
+               (("--format",), {"default": "text", "choices": ["text", "json", "dot"]}))),
+    ("summary", ((("src",), {"nargs": "?", "metavar": "FROM"}), (("dst",), {"nargs": "?", "metavar": "TO"}),
+                 (("--format",), {"default": "text", "choices": ["text", "json"]}))),
     ("workspace", ((("action",), {"choices": ["create", "status", "diff", "cutover"]}),
                    (("--change",), {}), (("--replace",), {"action": "store_true"}))),
 )
@@ -725,6 +745,40 @@ def _cmd_history(conn, a, as_of):
     return format_table(r.rows, r.headers)
 
 
+def _json(document):
+    """A document as JSON for a person and a diff: sorted keys, indented by two."""
+    return json.dumps(document, indent=2, sort_keys=True)
+
+
+def _cmd_application(conn, a, as_of):
+    v = ops.application(conn, a.dn, as_of, a.env)
+    if a.format == "json":
+        return _json(view_document(v))
+    head = (f"{v.name} ({v.root})" + (f", in {v.environment}" if v.environment else "")
+            + (f"\nparts: {', '.join(v.parts)}" if v.parts != (v.root,) else "")
+            + (f"\nroles: {', '.join(v.roles)}" if v.roles else ""))
+    return "\n\n".join((head, *(f"{s.name}\n" + (format_table(s.rows, VIEW_HEADERS) if s.rows else "(none)")
+                                 for s in v.sections)))
+
+
+def _cmd_graph(conn, a, as_of):
+    g = ops.dependencies(conn, a.dn, a.direction, a.depth, a.env)
+    return {"json": lambda: _json(graph_document(g)), "dot": lambda: graph_dot(g).rstrip("\n"),
+            "text": lambda: graph_lines(g).rstrip("\n")}[a.format]()
+
+
+def _cmd_summary(conn, a, as_of):
+    if bool(a.src) != bool(a.dst):
+        raise SystemExit("give both FROM and TO for the plan's counts, or neither")
+    counts = ops.summary(conn, as_of, a.src, a.dst)
+    if a.format == "json":
+        return _json([c._asdict() | {"evidence": list(c.evidence)} for c in counts])
+    def named(evidence):          # an entry by its name (the JSON form names it by DN), a command as it is
+        return evidence.split(",", 1)[0].split("=", 1)[1] if "=" in evidence.split(",", 1)[0] else evidence
+    return format_table([(c.what, c.count, ", ".join(named(x) for x in c.evidence)) for c in counts],
+                        ("what", "count", "evidence"))
+
+
 def _cmd_workspace(conn, a, as_of):
     if a.workspace:
         raise SystemExit("workspace commands run against the live record (OPSDIR_DSN); drop --workspace")
@@ -746,7 +800,8 @@ def _cmd_workspace(conn, a, as_of):
 COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check,
                              "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
                              "migrate": _cmd_migrate, "fix": _cmd_fix, "modify": _cmd_modify, "export": _cmd_export,
-                             "history": _cmd_history, "capture": _cmd_capture, "import": _cmd_import,
+                             "history": _cmd_history, "application": _cmd_application, "graph": _cmd_graph,
+                             "summary": _cmd_summary, "capture": _cmd_capture, "import": _cmd_import,
                              "collect": _cmd_collect, "file": _cmd_file,
                              "prerequisites": _cmd_prerequisites,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
