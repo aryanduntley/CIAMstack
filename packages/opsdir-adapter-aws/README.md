@@ -2,7 +2,7 @@
 
 opsdir adapter for Amazon Web Services: Terraform for AWS environments, and CloudFormation translated from it on request; AWS Terraform state, AWS CLI output and CloudFormation stacks read back into the record; `aws-sm://` secret references.
 
-**Applies to** environments whose cloud has `ciamCloudProvider: aws`, in the commercial partition (`ciamCloudEnvironment: public`). A provider adapter: it renders and reads an environment's infrastructure bindings; products (PingDS, PingFederate, …) are other adapters.
+**Applies to** environments whose cloud has `ciamCloudProvider: aws` (`ciamCloudEnvironment: public`), in the commercial partition or in AWS GovCloud (US): a cloud whose `ciamRegion` is `us-gov-*` is in the `aws-us-gov` partition (`account.py`: `govcloud`, `partition`), and what AWS doesn't offer there is written as a comment or rendered from the associated standard-partition account (CloudFront, below). A provider adapter: it renders and reads an environment's infrastructure bindings; products (PingDS, PingFederate, …) are other adapters.
 
 **Depends on** `opsdir`, `opsdir-format-terraform` (HCL formatting, the Terraform state reader, the native translation engine), `opsdir-format-cloudformation` (the CloudFormation it renders) and `pyyaml` (CloudFormation templates it reads).
 
@@ -77,6 +77,7 @@ What a render leaves out or to a person is a render note (core `notes`, flow 43)
 - `check_boundary`: the AWS services the target uses, named as AWS's FedRAMP Certification Package Overviews name them (servers: Amazon Elastic Compute Cloud (EC2); databases by engine: Amazon RDS for Postgres, ...; object stores: Amazon Simple Storage Service (S3); service names: Elastic Load Balancing (ELB); and so on), checked against the in-scope list of the authorization the target relies on (core `estate`: blockers where the target must rely on one). Neither of AWS's lists (2026-08) nor its services-in-scope page (2026-10-08) names Elastic Load Balancing, EC2 Auto Scaling, Data Lifecycle Manager, Site-to-Site VPN, Transit Gateway or CloudWatch Synthetics. Two are covered by a listed service on AWS's own word, shown as in place with the basis: Data Lifecycle Manager (the EBS user guide: assessed as a capability of Amazon EBS; any program listing EBS applies to it) and Site-to-Site VPN (a feature of Amazon VPC in the EC2 API; the scope page counts generally available features of a listed service in scope unless specifically excluded). The others have APIs of their own and no row: a target using them is told so, to check AWS's SSP (the FedRAMP Partner Package in AWS Artifact), use a service in scope, or record an exception.
 - `check_regulated_placement`: where AWS says the target's regulated data (core `estate`: `ciamRegulatedData`) may be held: ITAR and EAR export-controlled data only in AWS GovCloud (US) (a blocker elsewhere; in GovCloud an action naming what its guide says may not hold export-controlled data: S3 bucket names and object metadata, Direct Connect metadata, CloudFront outside its ITAR boundary), CJIS and IRS 1075 in GovCloud and the US regions (a blocker outside them), PHI on HIPAA-eligible services under the account's Business Associate Addendum (an action). The core check carries the source's regulated data to the target and asks for US data location and US-person support for export-controlled data (milestone 5.7b).
 - `check_discovery_availability`: how each kept data discovery's interval is honoured (an OK line: Macie's own schedule, or the scheduler); a GovCloud target that records data discovery the platform keeps gets an action (a blocker where its data is classified `restricted`): AWS's General Reference lists no GovCloud endpoint for Macie and its FedRAMP services-in-scope page marks it for US East/West only (nothing rendered).
+- `check_server_inputs` (core `infrastructure.checks`, listed by the provider adapters that render servers): the target's servers it has no image or size for, and compute groups missing an image, a size or a subnet role (`ciamSubnetRole`), or naming one the target doesn't bind.
 
 ## Edge: traffic and protection policies
 
@@ -861,12 +862,12 @@ Configuration management (`opsdir-adapter-ansible`) reads `aws-sm://` references
 
 Values of `ciamCloudProvider` (`aws`) and `ciamCloudEnvironment` (`public`) are validated against this adapter. The store refuses AWS credential forms anywhere in the record: access key IDs (`AKIA…`, `ASIA…`) and secret access keys (`aws_secret_access_key = …`).
 
-It adds no required roles, planner checks or schema of its own; the environment's product adapters say which roles it must bind.
+It adds no required roles or schema of its own (its planner checks are listed above); the environment's product adapters say which roles it must bind.
 
 ## Known limits
 
 - **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 6.x schema (the showcase's renders pass `terraform validate` against 6.68) and the AWS CLI's output shapes; `terraform plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
-- **Commercial partition only.** GovCloud and China (`aws-us-gov`, `aws-cn`) aren't in the vocabulary yet.
+- **No China partition.** China regions (`cn-*`, partition `aws-cn`) aren't recognized: their ARNs would be written with `aws`. GovCloud (US) is recognized by its region (above).
 - **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
 - **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.
 - **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, Image Builder pipelines (`ciamImageBuild` is recorded by hand), the monitoring above (log groups, alarms, canaries, alert topics) in CLI output, alert topics in CloudFormation stacks (Terraform state reads them all), KMS key protection, bucket encryption (4.10), CloudFront / WAF / API Gateway (edge importers, 4.8).
