@@ -94,6 +94,31 @@ def test_passthrough_with_an_http_check_checks_over_tls():
     assert "server web-1 web-1.example.test:443 check check-ssl verify none\n" in cfg     # as the policy validates
 
 
+def test_a_product_health_port_is_where_the_check_probes():
+    from edge_samples import POLICIES
+    from opsdir.core.contract import Endpoint
+    policy = (f"dn: {POLICIES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: edge-policies\n",
+              f"dn: cn=sso,{POLICIES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamTrafficPolicy\n"
+              "cn: sso\nciamServiceRole: sso-service\nciamTlsMode: reencrypt\n")
+    _, alpha, _ = model(tree=policy)
+    cfg = haproxy_cfg(alpha, (Endpoint("health", "/health/startup", "web", port=8085),))
+    assert "    option httpchk GET /health/startup\n" in cfg
+    assert "server web-1 web-1.example.test:443 check port 8085 ssl verify none\n" in cfg
+
+
+def test_cookie_stickiness_only_where_http_is_spoken_and_source_ip_as_balance_source():
+    from edge_samples import POLICIES
+    def cfg(stickiness):
+        policy = (f"dn: {POLICIES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: edge-policies\n",
+                  f"dn: cn=sso,{POLICIES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamTrafficPolicy\n"
+                  f"cn: sso\nciamServiceRole: sso-service\nciamTlsMode: passthrough\nciamStickiness: {stickiness}\n")
+        _, alpha, _ = model(tree=policy)
+        return haproxy_cfg(alpha)
+    cookie = cfg("cookie")
+    assert "cookie" not in cookie and "    balance roundrobin\n" in cookie       # mode tcp can't insert one
+    assert "    mode tcp\n    balance source\n" in cfg("source-ip")
+
+
 def test_two_names_on_the_same_address_and_port_the_later_isnt_rendered_and_is_blocked():
     from types import SimpleNamespace
     from opsdir.core.environment import StackComponent

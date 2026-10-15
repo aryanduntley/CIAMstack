@@ -3,9 +3,10 @@ address) and a backend of its target role's servers, shaped by the service name'
 front is (the core edge domain's EdgeSpec): TLS passed through (mode tcp, a TCP connect check, or the policy's HTTP(S)
 check over TLS to the servers, check-ssl, since they speak TLS on that port), or terminated (mode http,
 X-Forwarded-For) and re-encrypted to the servers when the policy says so (their certificates checked against the
-system trust store, where the host config adds the record's CAs, unless the policy says none); the health check, the
-minimum TLS version, cookie stickiness and the idle timeout. A terminating frontend presents the bundle the playbook
-writes to /etc/haproxy/certs/<service name>.pem.
+system trust store, where the host config adds the record's CAs, unless the policy says none); the health check (on
+the product's own health port when it declares one, an admin port, else the service's), the minimum TLS version,
+stickiness (a cookie where HTTP is spoken; source-ip as balance source) and the idle timeout. A terminating frontend
+presents the bundle the playbook writes to /etc/haproxy/certs/<service name>.pem.
 
 Two frontends can't share an address and port (HAProxy would split connections between unrelated backends): the
 later is left out, commented, and the planner check (checks.py) names it. A server with no address or host name
@@ -24,6 +25,12 @@ def _name(svc, port):
     return f"{rdn_value(svc)}_{port}".replace("-", "_")
 
 
+def _sticky(spec, kind):
+    """Whether the policy asks for stickiness of a kind the backend can keep (a cookie only where HTTP is spoken:
+    mode tcp can't insert one, and the planner names it)."""
+    return spec is not None and spec.stickiness == kind and (kind != "cookie" or spec.layer7)
+
+
 def _verify(spec):
     return " verify none" if spec is not None and spec.backend_validation == "none" \
         else " verify required ca-file @system-ca"
@@ -37,9 +44,10 @@ def _server(s, port, spec, i):
     http_check = spec is not None and spec.health is not None and spec.health.protocol != "tcp"
     tls = f" ssl{_verify(spec)}" if reencrypt else ""
     check_tls = f" check-ssl{_verify(spec)}" if http_check and not spec.layer7 else ""   # passthrough: TLS servers
-    cookie = f" cookie s{i}" if spec is not None and spec.stickiness == "cookie" else ""
+    cookie = f" cookie s{i}" if _sticky(spec, "cookie") else ""
     health = f" inter {spec.health.interval}s" if spec is not None and spec.health and spec.health.interval else ""
-    return f"    server {rdn_value(s)} {address}:{port} check{health}{check_tls}{tls}{cookie}"
+    probe = f" port {spec.health.port}" if spec is not None and spec.health and spec.health.port else ""
+    return f"    server {rdn_value(s)} {address}:{port} check{probe}{health}{check_tls}{tls}{cookie}"
 
 
 def binds(m):
@@ -72,12 +80,12 @@ def _service(m, svc, endpoints, skipped):
         tls = f" ssl crt {CERTS}/{rdn_value(svc)}.pem ssl-min-ver TLSv{spec.tls_min}" if layer7 else ""
         health = spec.health if spec is not None else None
         check = (f"    option httpchk GET {health.path}",) if health is not None and health.protocol != "tcp" else ()
-        sticky = ("    cookie SERVERID insert indirect nocache",) if spec is not None and spec.stickiness == "cookie" \
-            else ()
+        sticky = ("    cookie SERVERID insert indirect nocache",) if _sticky(spec, "cookie") else ()
+        balance = "source" if _sticky(spec, "source-ip") else "roundrobin"
         yield from (f"frontend fe_{n}", f"    bind {address}:{port}{tls}", f"    mode {mode}",
                     *(("    option forwardfor",) if layer7 else ()),
                     *((f"    timeout client {idle}s",) if idle else ()), f"    default_backend be_{n}", "",
-                    f"backend be_{n}", f"    mode {mode}", "    balance roundrobin", *check, *sticky,
+                    f"backend be_{n}", f"    mode {mode}", f"    balance {balance}", *check, *sticky,
                     *((f"    timeout server {idle}s",) if idle else ()),
                     *(_server(s, port, spec, i) for i, s in enumerate(servers)),
                     *(() if servers else (f"    # no {one(svc, 'ciamTargetRole')} servers recorded",)), "")
