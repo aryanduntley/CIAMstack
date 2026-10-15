@@ -14,7 +14,8 @@ from opsdir.core.formats import DOCKERFILE, MARKDOWN
 from opsdir.core.manifest import header
 from opsdir.core.profiles import slot_env, slotted
 from opsdir.domains.compute.workloads import profile_repo, workload_binding
-from .products import image_of, placements, secret_keys, workload_of
+from opsdir_adapter_kubernetes.kits import workload_of
+from .products import image_of, placements, secret_keys
 from .release import CHART, PRODUCTS, PROFILE_DIR, SERVER_PROFILE
 
 PRODUCT = "PingFederate"

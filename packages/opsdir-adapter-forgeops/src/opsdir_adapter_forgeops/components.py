@@ -11,16 +11,14 @@ component's container names), replicas, cpu and memory, DS storage. What the rec
 base's default, except images: ForgeOps' own are for development and testing only, so an image the record doesn't
 name is UNBOUND:forgeops-<component>-image.
 """
-from collections import namedtuple
-
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, one_role
 from opsdir.core.profiles import SLOT_PREFIX
 from opsdir.core.versions import holds
 from opsdir.domains.compute.workloads import recorded_versions, workload_secrets
 from opsdir.domains.infrastructure.external import role_hosts
-from opsdir_adapter_kubernetes.kits import (image_named, image_of_mark, only_image, pod_labels_of, replicas_of,
-                                             resources_of, storage_of, workload_marks)
+from opsdir_adapter_kubernetes.kits import (Placement, image_named, image_of_mark, kit_image, pod_labels_of,
+                                             replicas_of, resources_of, storage_of, workload_marks, workload_of)
 from opsdir_adapter_kubernetes.names import CONTAINER_NAMES
 from opsdir_adapter_kubernetes.render import ROLE_LABEL, namespace_of, on_kubernetes, service_account_of
 from .release import (AMSTER_ENV_SECRET, COMPANION_IMAGES, COMPANION_ROLES, COMPONENTS, CONFIG_INIT, DS_LDAPS_PORT,
@@ -29,9 +27,6 @@ from .release import (AMSTER_ENV_SECRET, COMPANION_IMAGES, COMPANION_ROLES, COMP
 
 DS_SERVICE_ROLE = "ds-ldaps-service"
 DS_STORES = ("ds-idrepo", "ds-cts")
-
-# One namespace's ForgeOps: placed ((component name, workload), ...), on (component names, in release order).
-Placement = namedtuple("Placement", ("namespace", "placed", "on"))
 
 
 def components_of(w):
@@ -66,7 +61,7 @@ def _with_companions(names, admin_ui=False):
 
 def placements(m):
     """Per namespace (in the order workloads name them), the workloads environment m runs with ForgeOps and every
-    component that is on."""
+    component that is on, in release order (kubernetes kits.Placement)."""
     placed = [(namespace_of(w), c, w) for w in on_kubernetes(m) for c in components_of(w)]
     spaces = dict.fromkeys(ns for ns, _, _ in placed)
     return tuple(Placement(ns, tuple((c, w) for n, c, w in placed if n == ns),
@@ -75,18 +70,10 @@ def placements(m):
                  for ns in spaces)
 
 
-def workload_of(p, name):
-    """The workload a placement runs as a component, or None (a component that comes with others)."""
-    return next((w for c, w in p.placed if c == name), None)
-
-
 def image_of(m, p, name):
-    """The image a component runs: the first of its container names the placement's workload bindings name (its own
-    workload's first), else its own workload's only image, else UNBOUND:forgeops-<component>-image."""
-    own = workload_of(p, name)
-    ws = [*([own] if own is not None else []), *(w for _, w in p.placed)]
-    found = image_named(m, ws, component(name).containers) or (only_image(m, own) if own is not None else None)
-    return found or f"{UNBOUND}forgeops-{name}-image"
+    """The image a component runs (kubernetes kits.kit_image over its container names); UNBOUND:forgeops-<component>-
+    image when the record names none."""
+    return kit_image(m, p, name, component(name).containers, "forgeops")
 
 
 def replicas(m, p, name):

@@ -20,13 +20,13 @@ from opsdir.core.interchange.yaml_text import dump
 from opsdir.core.manifest import header
 from opsdir.domains.compute.workloads import profile_repo, workload_binding
 from opsdir_adapter_kubernetes.kits import chart_image, pod_labels_of, replicas_of, resources_of, storage_of, \
-    workload_marks
+    workload_marks, workload_of
 from opsdir_adapter_kubernetes.names import DERIVED
 from opsdir_adapter_kubernetes.render import MOUNTS, class_mount, mounted_classes, service_account_of
 from .discovery import recorded_query
 from .log_sidecars import picked, product_logs, shared_logs
 from .routes import gateway_fronted
-from .products import image_of, placements, secret_keys, workload_of
+from .products import image_of, placements, secret_keys
 from .release import (CHART, DNS_QUERY, EULA, PRODUCTS, PROFILE_BRANCH, PROFILE_PATH, PROFILE_URL, RELEASE,
                       REPOSITORY, VERSION)
 
