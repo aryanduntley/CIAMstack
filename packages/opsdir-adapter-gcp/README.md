@@ -336,7 +336,7 @@ gcloud login (`opsdir_adapter_gcp.collect`), and imports it like an export you s
   ciamSourceRef: gs://example-ciam-tf-state/ciam/prod.tfstate
   ```
 
-  (b) `--terraform-dir DIR`: `terraform state pull` in that initialized working directory.
+  (b) `--terraform-dir DIR` (the collector's option, opsdir-format-terraform's `TERRAFORM_DIR`): `terraform state pull` in that initialized working directory.
 
 Least privilege: `roles/viewer` on the project covers the management reads; narrower, the predefined viewer roles of
 each service read (Cloud Asset Viewer, Compute Viewer, DNS Reader, Cloud Scheduler Viewer, Monitoring Viewer, Cloud

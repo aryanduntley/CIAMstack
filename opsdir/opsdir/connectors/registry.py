@@ -88,6 +88,26 @@ _ADAPTERS_FOUND = discover(ADAPTER_GROUP)
 ADAPTERS = resolved_logs(ordered_adapters(registered(ADAPTER_GROUP, Adapter, _ADAPTERS_FOUND)))
 ADAPTER_VERSIONS = versions(_ADAPTERS_FOUND)
 FORMATS = tuple(sorted(registered(FORMAT_GROUP, Format, discover(FORMAT_GROUP)), key=lambda f: f.name))
+
+
+def collect_options(installed):
+    """The CollectOptions the installed adapters' collectors declare, each once, by order then flag: a library's shared
+    option (identical declarations) counts once; two different declarations of one flag are refused, naming both
+    adapters."""
+    declared = tuple((a.name, o) for a in installed for c in a.collectors for o in c.options)
+    clashes = sorted({f"{o.flag} ({a} and {b})" for a, o in declared for b, x in declared if x.flag == o.flag and x != o
+                      and a < b})
+    if clashes:
+        raise SystemExit(f"collect options declared differently: {', '.join(clashes)}")
+    return tuple(sorted(dict.fromkeys(o for _, o in declared), key=lambda o: (o.order, o.flag)))
+
+
+def option_key(option):
+    """The name a collector reads an option's value under (--terraform-dir -> terraform_dir)."""
+    return option.flag.lstrip("-").replace("-", "_")
+
+
+COLLECT_OPTIONS = collect_options(ADAPTERS)
 if not DOMAINS:
     raise SystemExit("no opsdir domains are registered: install the package (pip install -e opsdir)")
 

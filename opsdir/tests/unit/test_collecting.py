@@ -360,3 +360,41 @@ def test_a_digest_command_streams_its_output_through_the_digest_only():
     assert live.run_call(call, lambda ref: ("pw", None)) == ("2 entries", None)
     failing = call._replace(argv=("sh", "-c", "cat >&2; exit 3"))
     assert live.run_call(failing, lambda ref: ("s3cret", None)) == (None, f"exit 3: {MASK}")
+
+
+# ------------------------------------------------------------------ collect options from the collectors (U.14 task 519)
+def test_the_collect_usage_is_built_from_the_installed_collectors_options_as_it_was_written():
+    from opsdir import cli
+    assert "\n".join(line.strip() for line in cli.description().splitlines()
+                     if "[--save DIR]" in line or "[--ldap" in line or "[--terraform-dir" in line) == (
+        "opsdir collect [--env CLOUD/ENV] [--adapter A[/I]] [--list] [--dry-run] [--change CHG-…] [--save DIR]\n"
+        "[--terraform-dir DIR] [--amster-key PATH] [--ldapsearch PATH] [--ldap-truststore PATH]\n"
+        "[--ldap-ca PATH] [--at YYYYMMDDhhmmssZ] [--take K|all] [--keep K|all]")
+    assert "<collect usage>" not in cli.description()
+    flags = [x.option_strings[0] for x in cli.parser()._subparsers._group_actions[0].choices["collect"]._actions]
+    assert flags[flags.index("--save") + 1:flags.index("--at")] == [
+        "--terraform-dir", "--amster-key", "--ldapsearch", "--ldap-truststore", "--ldap-ca"]
+
+
+def _options_seen(monkeypatch, env, **given):
+    from opsdir import cli
+    seen = []
+    steps = lambda d, m, done, options: seen.append(options) or ()     # noqa: E731
+    adapter = type("A", (), {"name": "fake", "importers": (), "collectors": ()})()
+    monkeypatch.setattr(cli.db, "load_directory", lambda conn: None)
+    monkeypatch.setattr(cli, "_targets", lambda d, a: (((adapter, Collector("x", "environment", steps)),), None))
+    monkeypatch.setattr(cli.ops, "record_attempts", lambda conn, attempts, at, change: None)
+    import argparse
+    a = argparse.Namespace(**{"env": env, "adapter": None, "list": False, "dry_run": True, "change": None,
+                              "save": None, "terraform_dir": None, "amster_key": None, "ldapsearch": None,
+                              "ldap_truststore": None, "ldap_ca": None, "at": "20261008120000Z", "take": [],
+                              "keep": [], **given})
+    cli._cmd_collect(None, a, None)
+    return seen[0]
+
+
+def test_every_collect_option_given_reaches_the_collectors_with_or_without_an_environment(monkeypatch):
+    given = {"terraform_dir": "tf", "amster_key": "am.pem", "ldap_ca": "ca.pem"}
+    assert _options_seen(monkeypatch, None, **given) == given
+    with_env = _options_seen(monkeypatch, "alpha/prod", **given)
+    assert {k: v for k, v in with_env.items() if k != "profile"} == given and callable(with_env["profile"])

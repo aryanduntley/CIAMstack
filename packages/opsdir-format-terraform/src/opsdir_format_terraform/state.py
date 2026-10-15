@@ -8,7 +8,7 @@ import json
 from collections import Counter
 from typing import Mapping, NamedTuple
 
-from opsdir.core.contract import Command
+from opsdir.core.contract import CollectOption, Command
 from opsdir.domains.governance.collection import collection_sources
 
 # One resource instance of the state: managed or data, its type and name in the configuration, its attributes
@@ -66,6 +66,10 @@ def state_resources(text, skipped, read_pairs, names=lambda rtype, attributes: a
     pairs, unread = state_pairs(text, skipped, names)
     resources, notices = read_pairs(list(pairs))
     return resources, ((*unread, *notices) if skipped_first else (*notices, *unread))
+
+
+# The collect option state_steps reads (terraform_dir), declared here once for every cloud's terraform-state collector.
+TERRAFORM_DIR = CollectOption("--terraform-dir", "DIR", "read Terraform state with `terraform state pull` in DIR", 10)
 
 
 def state_steps(m, importer, scheme, fetch, options):

@@ -7,7 +7,7 @@ existing key file, given when collecting (--amster-key PATH, never stored in the
 private work directory (connect with the key, export-config --failOnError into the directory, exit), and the files it
 writes are the export. Encrypted passwords are exported only with a transport key, which this never configures: they
 are left out, and the importer withholds what it recognizes as secret anyway."""
-from opsdir.core.contract import Collector, Command
+from opsdir.core.contract import CollectOption, Collector, Command
 from opsdir.domains.governance.collection import collection_sources
 
 IMPORTER = "pingam/amster"
@@ -36,4 +36,6 @@ def problems(d, m, options):
               if sources and not options.get("amster_key") else ()))
 
 
-COLLECTORS = (Collector("amster", "environment", amster_steps, problems=problems),)
+# The collect option amster_steps and problems read (amster_key): the key itself is never stored.
+AMSTER_KEY = CollectOption("--amster-key", "PATH", "the private key AM trusts for Amster (not stored)", 20)
+COLLECTORS = (Collector("amster", "environment", amster_steps, problems=problems, options=(AMSTER_KEY,)),)
