@@ -102,6 +102,9 @@ ATTRIBUTES = (
                  'The answer: a question that has one is answered'),
     AttributeDef(667, 'ciamAnsweredAt', 'time', 'meta', True,
                  'When the question was answered'),
+    AttributeDef(670, 'ciamApplicationPart', 'dn', 'meta', False,
+                 'An entry that is part of the application (an integration, a directory consumer, an external '
+                 'service, a canary, a job): the views and dependency graph of the application start from its parts'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -143,6 +146,11 @@ CLASSES = (
              'A question the record can\'t answer yet (under ou=unknowns): what isn\'t known, the party who must '
              'answer it (ciamOwner), whether a move waits for it, what it concerns, when it was raised and is '
              'needed, and its answer once given; the planner counts the open ones'),
+    ClassDef(140, 'ciamApplication', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamApplicationPart', 'ciamUsesRole', 'ciamCriticality'),
+             'An application as the business knows it, grouping the entries it is made of (ciamApplicationPart) and '
+             'the binding roles it uses in each environment (ciamUsesRole): what an application view and its '
+             'dependency graph show together; nothing is grouped unless recorded here'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

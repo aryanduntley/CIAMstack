@@ -46,6 +46,11 @@ On a machine whose global pip config sets `user = true`, pip refuses it inside a
 ./opsdir.sh migrate SRC DST [-o DIR] [--as REQUESTER]  # check both stacks, plan, render the target; exit 1 unless ready
 ./opsdir.sh export [-b BASE]          # entries as LDIF (for review)
 ./opsdir.sh history [DN]              # governed changes
+./opsdir.sh application DN|NAME [--env CLOUD/ENV] [--format text|json]   # everything an entry (an application: NAME) touches,
+                                      # in sections, each row naming its entry
+./opsdir.sh graph DN|NAME [--direction up|down|both] [--depth N] [--env CLOUD/ENV] [--format text|json|dot]
+                                      # what it depends on and what depends on it (by DN and by role)
+./opsdir.sh summary [SRC DST] [--format text|json]   # the estate in counts with their evidence (and the plan's)
 ./opsdir.sh workspace create|status|diff|cutover     # migration workspaces (below)
 ./opsdir.sh --workspace COMMAND …     # any command against the workspace instead of the live record
 ```

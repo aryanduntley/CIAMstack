@@ -69,6 +69,7 @@ dc=ciam-ops
 ├── ou=custom-schema                        ciamFieldDefinition, ciamRecordTypeDefinition: operator-defined
 ├── ou=runbooks, ou=changes, ou=incidents   ciamRunbook, ciamChange, ciamIncident
 ├── ou=unknowns                             ciamUnknown: an open question, who must answer it, whether a move waits
+├── ou=applications                         ciamApplication: the entries an application is made of
 └── ou=owners                               ciamParty: teams, partners, vendors, the operator
 ```
 
