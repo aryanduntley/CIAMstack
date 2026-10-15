@@ -238,6 +238,12 @@ echo "-- the CyberArk safes' account inventory, metadata only: each reference pr
 echo "   from the CPM's own successes, and the accounts nothing references (the target's PAM copy is vaulted elsewhere)"
 od import --change CHG-2047 --at 20260923090000Z cyberark/accounts exports/cyberark
 od report secret-inventory
+echo "-- the lab's firewall rules as the HQ Panorama runs them (its running configuration, as the XML API answers"
+echo "   type=config&action=show): the drift, then read back under CHG-2048 keeping the record's admin range"
+od import --dry-run --at 20260923090000Z panos/running-config exports/panos
+od import --change CHG-2048 --at 20260923090000Z --keep "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr" \
+  panos/running-config exports/panos
+od report firewall-running
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

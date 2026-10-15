@@ -1,9 +1,17 @@
 To: network-security <netsec@example-aero.test>
-Subject: Network changes needed for target/prod before 2027-01-15
+Subject: Allowlist update needed before 2027-01-15 (Example Aero identity platform move)
 
 Hello,
 
-We are moving the Example Aero external identity platform to target/prod; planned cutover is 2027-01-15. Please set up the following in the network you keep (where an item is rendered as Terraform, its root is named):
+We are moving the Example Aero external identity platform to a new hosting environment. Planned cutover is 2027-01-15. Some addresses change (service names are still being confirmed).
+
+Please add the following to the systems you operate:
+
+- **HQ Panorama shared address group ciam-ldaps-servers (the corporate apps' egress to LDAPS)**: add `10.60.1.100/32` (currently allowlisted: 10.20.1.100/32). Needed by 2026-12-22.
+
+Please keep the existing entries until we confirm cutover; we'll tell you when they can go.
+
+Also, in the network you keep:
 
 - Allow `email-smtp.us-east-1.amazonaws.com` (messaging) through `egress-firewall` (firewall) for target/prod: `pf-engine` reach it. Needed by 2027-01-15.
 - Everything you keep for target/prod is rendered in `terraform/landing-zone/network-security/` (what already exists carries import blocks, so you can adopt it into your state). Needed by 2027-01-15.
@@ -13,4 +21,4 @@ We are moving the Example Aero external identity platform to target/prod; planne
 Thank you,
 CIAM platform team
 
-_Generated from the operations directory._
+_Generated from the operations directory; entries hq-apps-egress-to-ldaps._

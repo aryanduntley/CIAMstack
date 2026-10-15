@@ -1,0 +1,13 @@
+environment  entry                state       runs                                                                    read at
+-----------  -------------------  ----------  ----------------------------------------------------------------------  ---------------
+hq/lab       fw-admin             committed                                                                           20260923090000Z
+hq/lab       fw-lb-ldaps          committed   log-end no                                                              20260923090000Z
+hq/lab       fw-pf-cluster        committed   destination 10.80.4.11/32, 10.80.4.13/32                                20260923090000Z
+hq/lab       fw-pf-cluster-admin  missing                                                                             20260923090000Z
+hq/lab       fw-pf-ds-svc         committed                                                                           20260923090000Z
+hq/lab       fw-replication       committed                                                                           20260923090000Z
+hq/lab       fw-sso               disabled                                                                            20260923090000Z
+hq/lab       panorama-hq          unrecorded  device-group/CIAM-Lab pre-rulebase opsdir-hq-lab-fw-old-monitoring: 10  20260923090000Z
+hq/lab       panorama-hq          unrecorded  device-group/CIAM-Lab pre-rulebase vendor-tmp-ldaps: 192.0.2.0/24 -> o  20260923090000Z
+(9 rows)
+exit 0

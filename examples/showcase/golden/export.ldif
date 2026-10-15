@@ -1449,6 +1449,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the CyberArk safes' account inventory (metadata only) the re
  ferences are reconciled with
 
+dn: cn=CHG-2048,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2048
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the lab's firewall rules back from the HQ Panorama's running c
+ onfiguration (keep the record's admin range: the next push restores it)
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2485,6 +2495,23 @@ ciamRecordedCidr: 203.0.113.200/32
 ciamRefersToRole: pf-egress
 ciamRequestStatus: done
 
+dn: cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalAllowlist
+cn: hq-apps-egress-to-ldaps
+ciamAllowlistDirection: consumer-egress
+ciamAllowlistRef: panos:panorama.mgmt.hq.example-aero.internal/shared/address-
+ group/ciam-ldaps-servers
+ciamExternalSystem: HQ Panorama shared address group ciam-ldaps-servers (the c
+ orporate apps' egress to LDAPS)
+ciamLeadTimeDays: 10
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRecordedCidr: 10.20.1.100/32
+ciamRecordedCidr: 10.60.1.100/32
+ciamRefersToRole: ds-ldaps-service
+ciamRequestStatus: requested
+
 dn: cn=identity-audit,ou=event-streams,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3065,6 +3092,41 @@ ciamKeyUsage: administration
 ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
+
+dn: cn=panos.running-config.hq.lab,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: panos.running-config.hq.lab
+ciamChangeRef: cn=CHG-2048,ou=changes,dc=ciam-ops
+ciamImportScope: cn=fw-pf-ds-svc,ou=bindings,env=lab,cloud=hq,ou=environments,
+ dc=ciam-ops
+ciamImportScope: cn=fw-lb-ldaps,ou=bindings,env=lab,cloud=hq,ou=environments,d
+ c=ciam-ops
+ciamImportScope: cn=fw-replication,ou=bindings,env=lab,cloud=hq,ou=environment
+ s,dc=ciam-ops
+ciamImportScope: cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=c
+ iam-ops
+ciamImportScope: cn=fw-sso,ou=bindings,env=lab,cloud=hq,ou=environments,dc=cia
+ m-ops
+ciamImportScope: cn=fw-pf-cluster,ou=bindings,env=lab,cloud=hq,ou=environments
+ ,dc=ciam-ops
+ciamImportScope: cn=fw-pf-cluster-admin,ou=bindings,env=lab,cloud=hq,ou=enviro
+ nments,dc=ciam-ops
+ciamImportScope: cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,d
+ c=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: panos/running-config
+
+dn: cn=panos.running-config.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: panos.running-config.shared
+ciamChangeRef: cn=CHG-2048,ou=changes,dc=ciam-ops
+ciamImportScope: cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: panos/running-config
 
 dn: cn=partner-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -8636,6 +8698,7 @@ ciamBindingRole: fw-admin
 ciamPort: 4444
 ciamProtocol: tcp
 ciamRulePriority: 130
+ciamRunningState: committed
 ciamSourceCidr: 10.80.9.0/28
 ciamTargetRole: ds
 
@@ -8796,6 +8859,8 @@ ciamBindingRole: fw-lb-ldaps
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 110
+ciamRunningFact: log-end no
+ciamRunningState: committed
 ciamSourceCidr: 10.80.9.32/28
 ciamTargetRole: ds
 
@@ -8876,6 +8941,8 @@ ciamPort: 7600
 ciamPort: 7700
 ciamProtocol: tcp
 ciamRulePriority: 150
+ciamRunningFact: destination 10.80.4.11/32, 10.80.4.13/32
+ciamRunningState: committed
 ciamSourceCidr: 10.80.4.0/24
 ciamTargetRole: pf-engine
 
@@ -8925,6 +8992,7 @@ ciamPort: 7600
 ciamPort: 7700
 ciamProtocol: tcp
 ciamRulePriority: 160
+ciamRunningState: missing
 ciamSourceCidr: 10.80.4.0/24
 ciamTargetRole: pf-admin
 
@@ -8973,6 +9041,7 @@ ciamBindingRole: fw-consumer-pf-ds-svc
 ciamPort: 1636
 ciamProtocol: tcp
 ciamRulePriority: 100
+ciamRunningState: committed
 ciamSourceCidr: 10.80.4.0/24
 ciamTargetRole: ds
 
@@ -9033,6 +9102,7 @@ ciamBindingRole: fw-replication
 ciamPort: 8989
 ciamProtocol: tcp
 ciamRulePriority: 120
+ciamRunningState: committed
 ciamSourceCidr: 10.80.1.0/24
 ciamTargetRole: ds
 
@@ -9083,6 +9153,7 @@ ciamBindingRole: fw-sso
 ciamPort: 443
 ciamProtocol: tcp
 ciamRulePriority: 140
+ciamRunningState: disabled
 ciamSourceCidr: 10.0.0.0/8
 ciamTargetRole: pf-engine
 
@@ -10125,6 +10196,10 @@ ciamLoginSecretRole: panorama-hq-login
 ciamManagementAddress: panorama.mgmt.hq.example-aero.internal
 ciamOwner: cn=network-security,ou=owners,dc=ciam-ops
 ciamStackRole: network-firewall
+ciamUnrecordedRule: device-group/CIAM-Lab pre-rulebase opsdir-hq-lab-fw-old-mo
+ nitoring: 10.80.9.0/28 -> opsdir-hq-lab-mon-1 opsdir-tcp-9090
+ciamUnrecordedRule: device-group/CIAM-Lab pre-rulebase vendor-tmp-ldaps: 192.0
+ .2.0/24 -> opsdir-hq-lab-ds-1 opsdir-tcp-1636
 
 dn: cn=panorama-hq-login,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top

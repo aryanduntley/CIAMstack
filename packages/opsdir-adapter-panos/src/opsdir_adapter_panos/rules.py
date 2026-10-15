@@ -34,6 +34,26 @@ def _env(m):
     return f"{rdn_value(m.cloud)}-{rdn_value(m.env)}"
 
 
+def rule_name(m, r):
+    """The security rule name environment m's firewall rule r is written as: opsdir-<cloud>-<env>-<rule>."""
+    return name(f"{_env(m)}-{rdn_value(r)}")
+
+
+def server_object(m, s):
+    """The address object name environment m's server s is written as: opsdir-<cloud>-<env>-<server>."""
+    return name(f"{_env(m)}-{rdn_value(s)}")
+
+
+_MARKED = re.compile(r"^opsdir ([^ /]+/[^ :]+): (\S+) -> role (\S+)")
+
+
+def marked(description):
+    """(environment label, rule, target role) a security rule's description names when it starts with an
+    environment's marker (opsdir <cloud>/<env>: <rule> -> role <role>), else None."""
+    found = _MARKED.match(description or "")
+    return found.groups() if found else None
+
+
 def _source(cidr):
     net = ipaddress.ip_network(cidr, strict=False)
     return {"name": name(str(net).replace("/", "_")), "value": str(net), "address_type": "ip-netmask"}
@@ -51,7 +71,7 @@ def objects(m):
     addresses, services, found = {}, {}, []
     for r in rules:
         sources = [_source(c) for c in values(r, "ciamSourceCidr")]
-        servers = [{"name": name(f"{_env(m)}-{rdn_value(s)}"),
+        servers = [{"name": server_object(m, s),
                     "value": one(s, "ciamPrivateIp") or f"{UNBOUND}{rdn_value(s)}-address",
                     "address_type": "ip-netmask"} for s in servers_with_role(m, one(r, "ciamTargetRole"))]
         protocol = one(r, "ciamProtocol", "tcp")
@@ -59,7 +79,7 @@ def objects(m):
                  for p in values(r, "ciamPort")]
         addresses.update({a["name"]: a for a in (*sources, *servers)})
         services.update({s["name"]: s for s in ports})
-        found.append({"rule_name": name(f"{_env(m)}-{rdn_value(r)}"), "source_ip": [a["name"] for a in sources],
+        found.append({"rule_name": rule_name(m, r), "source_ip": [a["name"] for a in sources],
                       "destination_ip": [a["name"] for a in servers]
                       or [f"{UNBOUND}{one(r, 'ciamTargetRole')}-servers"],
                       "service": [s["name"] for s in ports],

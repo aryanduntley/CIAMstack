@@ -226,6 +226,7 @@ Record changes these findings can make (`opsdir fix show FROM TO KEY`; propose o
 - IDM's 2 mapping(s) and its schedules refer only to connectors, objects and mappings it has.
 - External allowlist `customer-portal-egress` (customer-portal-team) already covers target/prod's `ds-ldaps-service` (10.60.1.100/32).
 - External allowlist `harbor-mro-ingress` (harbor-mro) already covers target/prod's `pf-egress` (203.0.113.200/32).
+- External allowlist `hq-apps-egress-to-ldaps` (network-security) already covers target/prod's `ds-ldaps-service` (10.60.1.100/32).
 - Every user-directory attribute and object class is standard (7) or defined in the record (8).
 - source/prod's user data was profiled on 20260920: 255 entries, 116 not logged in for a year or more, 37 never.
 - Identity service `partners` keeps its published address in target/prod (login.example-aero.test served by the `am` service name).

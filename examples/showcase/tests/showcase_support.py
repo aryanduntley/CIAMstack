@@ -6,6 +6,7 @@ from functools import reduce
 import os
 import pathlib
 import subprocess
+from collections import namedtuple
 from typing import NamedTuple
 
 from opsdir import operations as ops
@@ -25,13 +26,15 @@ DATA = SHOWCASE / "data"
 GOLDEN = SHOWCASE / "golden"
 SCRIPTS = SHOWCASE / "scripts"
 # An approved change made by an import (the record's region catalog fetched from a provider): the importer, the export
-# directory, when it was taken.
-ImportStep = NamedTuple("ImportStep", [("spec", str), ("root", pathlib.Path), ("at", str)])
+# directory, when it was taken, and the conflicts it decides (keys taking the live value, keys keeping the record's).
+ImportStep = namedtuple("ImportStep", ("spec", "root", "at", "take", "keep"), defaults=((), ()))
 # An approved change that records a system boundary's evidence package (`opsdir evidence --change`): the boundary.
 EvidenceStep = NamedTuple("EvidenceStep", [("boundary", str)])
 REGIONS = SHOWCASE / "exports" / "regions"
 QUOTAS = SHOWCASE / "exports" / "quotas"
 FRAMEWORKS = SHOWCASE / "exports" / "frameworks"
+# CHG-2048's decision on the lab Panorama's read-back: keep the record's admin range (the next push restores it)
+FIREWALL_ADMIN = "cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr"
 # the approved changes the showcase applies, in order: (change id, LDIF file, ImportStep or EvidenceStep)
 APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ldif"),
             ("CHG-2003", SHOWCASE / "changes" / "CHG-2003-stable-ldaps-name.ldif"),
@@ -68,7 +71,9 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2043", SHOWCASE / "changes" / "CHG-2043-target-profiles.ldif"),
             ("CHG-2044", SHOWCASE / "changes" / "CHG-2044-skyline-signing-answer.ldif"),
             ("CHG-2046", EvidenceStep("SSP-CIAM-2026")),
-            ("CHG-2047", ImportStep("cyberark/accounts", SHOWCASE / "exports" / "cyberark", "20260923090000Z")))
+            ("CHG-2047", ImportStep("cyberark/accounts", SHOWCASE / "exports" / "cyberark", "20260923090000Z")),
+            ("CHG-2048", ImportStep("panos/running-config", SHOWCASE / "exports" / "panos", "20260923090000Z",
+                                    keep=(FIREWALL_ADMIN,))))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),
@@ -143,7 +148,7 @@ def _changed(schema, records, done, changes):
             return (*so_far, *read_ldif_files([source]))
         d = build_directory(schema, records, so_far)
         plan = importing.import_plan(d, source.spec, export_files(source.root), at=import_time(source.at))
-        return (*so_far, *importing.import_records(d, plan, change_id))
+        return (*so_far, *importing.import_records(d, plan, change_id, source.take, source.keep))
     return reduce(step, changes, tuple(done))
 
 

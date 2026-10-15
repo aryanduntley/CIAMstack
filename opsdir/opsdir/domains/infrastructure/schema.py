@@ -1,7 +1,7 @@
 """infrastructure domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 from ..data.schema import STORAGE_DEPTH
-from .naming import EXPOSURES
+from .naming import ALLOWLIST_REF, EXPOSURES, RUNNING_FACT, RUNNING_STATES
 
 ATTRIBUTES = (
     AttributeDef(1, 'cloud', 'string', 'meta', True,
@@ -80,6 +80,10 @@ ATTRIBUTES = (
     AttributeDef(631, 'ciamApplianceSource', 'cidr', 'binding', False,
                  "A range an appliance's own traffic to the servers comes from (a load balancer's source NAT pool "
                  "and self addresses, its health monitors too): the servers' firewall rules must admit it"),
+    AttributeDef(702, 'ciamUnrecordedRule', 'string', 'observed', False,
+                 "A rule a network firewall's running configuration, read back, holds that the record doesn't: one "
+                 "carrying the environment's marker for a rule the record lacks, or an allow to the environment's "
+                 "servers nobody recorded; '<rulebase> <rule>: <sources> -> <destinations> <services>'"),
     AttributeDef(623, 'ciamExposure', enum_type(EXPOSURES), 'binding', True,
                  'Whether a service name\'s load balancer is internal or internet-facing, recorded when no frontend '
                  'address says so (the provider assigns the address)'),
@@ -91,6 +95,17 @@ ATTRIBUTES = (
                  'Consumer this firewall rule exists for'),
     AttributeDef(34, 'ciamRulePriority', 'int', 'binding', True,
                  'Provider firewall rule priority. Pinned so adding a rule never renumbers others'),
+    AttributeDef(700, 'ciamRunningState', enum_type(RUNNING_STATES), 'observed', True,
+                 "Where a firewall manager's running configuration, read back, holds this rule: committed (a "
+                 "manager's, such as Panorama: its delivery to the firewalls unconfirmed), deployed (a firewall's "
+                 "own), disabled (there, but switched off), missing (the record holds it, the running configuration "
+                 "doesn't)"),
+    AttributeDef(701, 'ciamRunningFact', 'string', 'observed', False,
+                 "What a firewall rule, read back running, does that the rule's own attributes can't hold: "
+                 "'<key> <value>'; record-owned drift (action deny, log-end no, destination 10.0.1.9/32, "
+                 "description <text>, source or service it can't resolve) and the network team's settings that "
+                 "limit what it admits (negate-source yes, schedule <name>, rulebase <where>)",
+                 (("X-PATTERN", RUNNING_FACT),)),
     AttributeDef(36, 'ciamInterconnectKind', 'string', 'binding', True,
                  'Cross-environment link, in words (site-to-site VPN run by the landing zone); ciamLinkKind says '
                  'which kind it is'),
@@ -118,6 +133,11 @@ ATTRIBUTES = (
                  'Typical lead time for the owner to change it'),
     AttributeDef(46, 'ciamRequestStatus', 'enum:not-needed|to-request|requested|done', 'meta', True,
                  'Status of the change request to the owner'),
+    AttributeDef(703, 'ciamAllowlistRef', 'string', 'meta', True,
+                 "Where in the system holding it the allowlist is, as the adapter reading that system names it "
+                 "('<adapter>:<path>', e.g. panos:panorama.example.internal/shared/address-group/partner-in): an "
+                 "import of that system's running configuration records the addresses it holds (ciamRecordedCidr)",
+                 (("X-PATTERN", ALLOWLIST_REF),)),
     AttributeDef(125, 'ciamTlsCertificate', 'dn', 'binding', True,
                  'Certificate this service name presents in this environment'),
     AttributeDef(126, 'ciamStackRole', 'string', 'binding', True,
@@ -175,18 +195,20 @@ CLASSES = (
              'Stable service name + load balancer (its DNS answer, and what the load balancer runs)'),
     ClassDef(133, 'ciamAppliance', 'ciamBinding', 'STRUCTURAL', ('ciamStackRole', 'ciamManagementAddress'),
              ('ciamApplianceScope', 'ciamLoginName', 'ciamLoginSecretRole', 'ciamManagedBy', 'ciamProviderRef',
-              'ciamApplianceSource'),
+              'ciamApplianceSource', 'ciamUnrecordedRule'),
              "An appliance the platform's configuration is pushed to (a load balancer, a DNS server, a network "
              "firewall), filling a stack role: where its management API answers and how the push signs in"),
     ClassDef(9, 'ciamFirewallRule', 'ciamBinding', 'STRUCTURAL', ('ciamSourceCidr', 'ciamPort', 'ciamTargetRole'),
-             ('ciamProtocol', 'ciamAllowsConsumer', 'ciamRulePriority', 'ciamPolicyRole', 'ciamManagedBy'),
+             ('ciamProtocol', 'ciamAllowsConsumer', 'ciamRulePriority', 'ciamPolicyRole', 'ciamManagedBy',
+              'ciamRunningState', 'ciamRunningFact'),
              'Inbound allow rule'),
     ClassDef(12, 'ciamEgress', 'ciamBinding', 'STRUCTURAL', ('ciamCidr',),
              ('ciamNatAllocation', 'ciamZone', 'ciamManagedBy'),
              'Outbound (NAT) addresses our services send from'),
     ClassDef(13, 'ciamExternalAllowlist', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamManagedBy', 'ciamRefersToRole', 'ciamRecordedCidr', 'ciamAllowlistDirection'),
-             ('ciamExternalSystem', 'ciamLeadTimeDays', 'ciamRequestStatus', 'ciamAllowsConsumer'),
+             ('ciamExternalSystem', 'ciamLeadTimeDays', 'ciamRequestStatus', 'ciamAllowsConsumer',
+              'ciamAllowlistRef'),
              "An allowlist in someone else's system that contains our addresses"),
     ClassDef(14, 'ciamBackupTarget', 'ciamObjectStore', 'STRUCTURAL', (),
              ('ciamRetentionDays',),

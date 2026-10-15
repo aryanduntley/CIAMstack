@@ -1343,6 +1343,13 @@
       "planted": "the account the target's root password copy was vaulted as: nothing references it",
       "cleared_by": null,
       "raised_by": "CHG-2047"
+    },
+    {
+      "id": "A145",
+      "area": "Allowlist",
+      "match": "`hq-apps-egress-to-ldaps`",
+      "planted": "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds the target's, which the running-config import records",
+      "cleared_by": "CHG-2048"
     }
   ]
 }

@@ -1,9 +1,9 @@
 portability  values
 -----------  ------
-meta         2740
+meta         2754
 intent       1639
 binding      1312
-observed     381
+observed     382
 secret-ref   125
 contract     107
 (6 rows)

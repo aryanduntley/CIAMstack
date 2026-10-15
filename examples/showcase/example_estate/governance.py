@@ -118,6 +118,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2047", "Record the CyberArk safes' account inventory (metadata only) the references are reconciled with",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2048", "Read the lab's firewall rules back from the HQ Panorama's running configuration (keep the record's "
+     "admin range: the next push restores it)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

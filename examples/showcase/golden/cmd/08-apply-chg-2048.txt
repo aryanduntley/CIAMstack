@@ -1,0 +1,5 @@
+hq/lab: fw-pf-cluster-admin isn't in the running configuration read (missing)
+hq/lab: 2 rule(s) the record doesn't hold on panorama-hq
+conflict cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr: record 10.80.9.0/28 -> live 10.80.9.0/24
+CHG-2048: 11 change(s) applied, the import run among them
+exit 0

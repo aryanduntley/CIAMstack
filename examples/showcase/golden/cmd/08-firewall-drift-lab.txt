@@ -1,0 +1,26 @@
+hq/lab: fw-pf-cluster-admin isn't in the running configuration read (missing)
+hq/lab: 2 rule(s) the record doesn't hold on panorama-hq
+conflict cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops|ciamSourceCidr: record 10.80.9.0/28 -> live 10.80.9.0/24
+modify cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamSourceCidr: 10.80.9.0/24
+    replace ciamRunningState: committed
+modify cn=fw-lb-ldaps,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamRunningState: committed
+    replace ciamRunningFact: log-end no
+modify cn=fw-pf-cluster,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamRunningState: committed
+    replace ciamRunningFact: destination 10.80.4.11/32, 10.80.4.13/32
+modify cn=fw-pf-cluster-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamRunningState: missing
+modify cn=fw-pf-ds-svc,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamRunningState: committed
+modify cn=fw-replication,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamRunningState: committed
+modify cn=fw-sso,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamRunningState: disabled
+modify cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
+    replace ciamRecordedCidr: 10.20.1.100/32 | 10.60.1.100/32
+modify cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+    replace ciamUnrecordedRule: device-group/CIAM-Lab pre-rulebase opsdir-hq-lab-fw-old-monitoring: 10.80.9.0/28 -> opsdir-hq-lab-m…
+9 change(s) (not applied)
+exit 0

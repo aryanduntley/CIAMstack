@@ -6,13 +6,16 @@ from .appliances import appliance_roles, check_appliance_sources
 from .checks import check_allowlists, check_overrides, check_versions
 from .imports import IMPORT_KINDS
 from .reports import OVERRIDES_HEADERS, override_rows
+from .running import FIREWALL_RUNNING_HEADERS, check_firewall_running, firewall_running_rows
 from .schema import FRAGMENT
 
 # Every environment needs a network and encrypted disks, whatever runs in it.
 REQUIRED_ROLES = ("network", "disk-encryption")
 
 DOMAIN = Domain(name="infrastructure", schema=FRAGMENT, required_roles=REQUIRED_ROLES, sql=(),
-                reports={"overrides": directory_report(OVERRIDES_HEADERS, override_rows)},
-                checks=(check_versions, check_allowlists, check_overrides, check_appliance_sources), order=10,
+                reports={"overrides": directory_report(OVERRIDES_HEADERS, override_rows),
+                         "firewall-running": directory_report(FIREWALL_RUNNING_HEADERS, firewall_running_rows)},
+                checks=(check_versions, check_allowlists, check_overrides, check_appliance_sources,
+                        check_firewall_running), order=10,
                 vocabulary={},
                 import_kinds=IMPORT_KINDS, roles_used=appliance_roles)

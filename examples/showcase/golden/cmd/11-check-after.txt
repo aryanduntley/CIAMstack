@@ -27,7 +27,7 @@ Expected findings check (after changes)
            B33  cleared by CHG-2029: production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation → gone
            B44  cleared by CHG-2044: nobody knows yet whether Skyline Air accepts the target's new signing certificate without re-onboarding: an open question the move waits for, owned by the partner → gone
            B47  raised by CHG-2047: the target's PAM copy of the directory root password was vaulted under another name: the safe, listed whole, has no `ds-root-password`, so rotating the password wouldn't update it → reported
-  actions  planted 144   expected now 115   detected 115   missed 0   unexpected 0
+  actions  planted 145   expected now 115   detected 115   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -57,6 +57,7 @@ Expected findings check (after changes)
            A130 cleared by CHG-2037: nothing watches the corporate AD the target's users come from (Defender for Identity) → gone
            A131 cleared by CHG-2043: the target's AM/IDM keys are generated in the cluster, not the record's → gone
            A144 cleared by CHG-2046: once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded → gone
+           A145 cleared by CHG-2048: the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds the target's, which the running-config import records → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported

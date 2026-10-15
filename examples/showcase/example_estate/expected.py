@@ -465,6 +465,9 @@ EXPECTED = MappingProxyType({
          "CHG-2032"),
         ("A160", "Secrets", "CIAM-TARGET (cyberark) holds 1 object(s) no reference in the record names: `ds-root-pw`",
          "the account the target's root password copy was vaulted as: nothing references it", None, "CHG-2047"),
+        ("A145", "Allowlist", "`hq-apps-egress-to-ldaps`",
+         "the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds "
+         "the target's, which the running-config import records", "CHG-2048"),
     ],
 })
 

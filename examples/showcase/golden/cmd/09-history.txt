@@ -464,4 +464,15 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2047  insert  cn=sso-tls-keystore,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 <TIMESTAMP>          CHG-2047  insert  cn=sso-tls-keystore-password,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 <TIMESTAMP>          CHG-2047  insert  cn=cyberark.accounts.shared,ou=imports,dc=ciam-ops
-(464 rows)
+<TIMESTAMP>          CHG-2048  update  cn=fw-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=fw-lb-ldaps,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=fw-pf-cluster,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=fw-pf-cluster-admin,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=fw-pf-ds-svc,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=fw-replication,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=fw-sso,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  update  cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  insert  cn=panos.running-config.hq.lab,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2048  insert  cn=panos.running-config.shared,ou=imports,dc=ciam-ops
+(475 rows)

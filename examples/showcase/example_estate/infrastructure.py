@@ -321,7 +321,14 @@ ALLOWLISTS = (
      "partner-ingress", "pf-egress", ["203.0.113.10/32"], 45, "to-request", None),
     ("harbor-mro-ingress", "harbor-mro", "Harbor MRO SSO ingress allowlist", "partner-ingress", "pf-egress",
      ["203.0.113.10/32", "203.0.113.200/32"], 30, "done", None),
+    # on the HQ Panorama the lab's rules run on (milestone 6.2c): its import reads what the group holds
+    ("hq-apps-egress-to-ldaps", "network-security", "HQ Panorama shared address group ciam-ldaps-servers (the "
+     "corporate apps' egress to LDAPS)", "consumer-egress", "ds-ldaps-service", ["10.20.1.100/32"], 10, "requested",
+     None),
 )
+# where an allowlist is in the system holding it, for the import reading that system (ciamAllowlistRef)
+ALLOWLIST_REFS = {"hq-apps-egress-to-ldaps":
+                  "panos:panorama.mgmt.hq.example-aero.internal/shared/address-group/ciam-ldaps-servers"}
 
 
 def _bindings(file, env, p):
@@ -631,5 +638,6 @@ def external_allowlists():
     return tuple(spec("80-external-allowlists", f"cn={cn},{XA}", ["top", "ciamExternalAllowlist"], cn=cn,
                       ciamManagedBy=owner(mgr)[0], ciamExternalSystem=system, ciamAllowlistDirection=direction,
                       ciamRefersToRole=role, ciamRecordedCidr=recorded, ciamLeadTimeDays=lead, ciamRequestStatus=status,
-                      ciamAllowsConsumer=f"cn={consumer},{CON}" if consumer else None, ciamOwner=owner("ciam-platform"))
+                      ciamAllowsConsumer=f"cn={consumer},{CON}" if consumer else None,
+                      ciamAllowlistRef=ALLOWLIST_REFS.get(cn), ciamOwner=owner("ciam-platform"))
                  for cn, mgr, system, direction, role, recorded, lead, status, consumer in ALLOWLISTS)

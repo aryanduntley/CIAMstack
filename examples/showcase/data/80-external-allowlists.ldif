@@ -69,3 +69,19 @@ ciamRecordedCidr: 203.0.113.10/32
 ciamRecordedCidr: 203.0.113.200/32
 ciamRefersToRole: pf-egress
 ciamRequestStatus: done
+
+dn: cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalAllowlist
+cn: hq-apps-egress-to-ldaps
+ciamAllowlistDirection: consumer-egress
+ciamAllowlistRef: panos:panorama.mgmt.hq.example-aero.internal/shared/address-
+ group/ciam-ldaps-servers
+ciamExternalSystem: HQ Panorama shared address group ciam-ldaps-servers (the c
+ orporate apps' egress to LDAPS)
+ciamLeadTimeDays: 10
+ciamManagedBy: cn=network-security,ou=owners,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRecordedCidr: 10.20.1.100/32
+ciamRefersToRole: ds-ldaps-service
+ciamRequestStatus: requested
