@@ -141,6 +141,26 @@ def test_resolver_properties_are_captured_too_and_other_files_named():
     assert not any("resolver/boot.properties" in n and "not imported" in n for n in notices)
 
 
+def test_names_that_cant_be_record_names_are_named_in_notices_not_imported():
+    project = files_of(PROJECT)
+    managed, sync = json.loads(project["conf/managed.json"]), json.loads(project["conf/sync.json"])
+    bad = {"conf/managed.json": json.dumps({**managed, "objects": [*managed["objects"], {"name": "a,b"}, {}]}),
+           "conf/sync.json": json.dumps({**sync, "mappings": [*sync["mappings"], {"name": "x+y", "source": "s"}]}),
+           "conf/provisioner.openicf-c=d.json": project["conf/provisioner.openicf-hrdb.json"],
+           "conf/schedule-e;f.json": project["conf/schedule-reconcile-hr.json"]}
+    d, changes, notices = imported(files={**project, **bad})
+    assert {n for n in notices if "not imported" in n and n.startswith("conf/")} == {
+        "conf/managed.json: managed object 'a,b' can't be a record name (it holds a DN special character); "
+        "not imported",
+        "conf/managed.json: a managed object without a name; not imported",
+        "conf/sync.json: mapping 'x+y' can't be a record name (it holds a DN special character); not imported",
+        "conf/provisioner.openicf-c=d.json: connector 'c=d' can't be a record name (it holds a DN special "
+        "character); not imported",
+        "conf/schedule-e;f.json: schedule 'e;f' can't be a record name (it holds a DN special character); "
+        "not imported"}
+    assert changes == imported()[1]          # the safe names imported as before; nothing for the others
+
+
 def test_connectors_render_per_environment(after):
     d, _ = after
     d = build_directory(REGISTRY, records(), (*imported()[1], *SET_ROLE))

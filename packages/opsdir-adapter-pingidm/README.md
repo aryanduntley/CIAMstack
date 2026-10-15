@@ -96,13 +96,13 @@ A migration may upgrade the product within the supported range. The planner name
 
 - **Not validated against a live IDM.** The rendered `conf/` files follow IDM's layout; loading them, and collecting from a real IDM, are part of the testing plan (milestone 7.2).
 - **Modeled**: managed objects, connectors, mappings and schedules; everything else in `conf/` and `resolver/` is held as captured files, scripts and UI as bundles.
-- **Names**: a managed object or mapping whose name holds a DN special character is left out of the import without a notice; connector and schedule names come from their file names unchecked.
+- **Names**: a managed object, mapping, connector or schedule whose name can't be a record name (it holds a DN special character, or has none) is not imported; a notice names it and its file. Connector and schedule names come from their file names (`provisioner.openicf-NAME.json`, `schedule-NAME.json`).
 - **One credential role per connector**: all its withheld values take that role's reference.
 - **Listener port** is IDM's default, not recorded.
 
 ## Tests
 
-`tests/test_pingidm.py`: registration and applies from the servers' products; a connector to the directory naming its role and consumer and withholding its credentials; a connector to an unknown host named; mappings, schedules and the rest of `conf/`; `resolver/` properties captured and other files named; connectors rendered per environment; the render reading back unchanged; the planner's findings; a connector whose host is in a JDBC URL named by the fix and rendered with each environment's hosts; endpoints by the recorded version; what an upgrade to IDM 8 touches; the connectors' credential roles. `tests/test_pingidm_collect.py` (the listing, then each object where the project keeps it, with `X-OpenIDM-*` headers), `tests/test_pingidm_listeners.py`, `tests/test_pingidm_proxy.py`. `tests/idm-project/` is the sample project.
+`tests/test_pingidm.py`: registration and applies from the servers' products; a connector to the directory naming its role and consumer and withholding its credentials; a connector to an unknown host named; mappings, schedules and the rest of `conf/`; names that can't be record names named in notices; `resolver/` properties captured and other files named; connectors rendered per environment; the render reading back unchanged; the planner's findings; a connector whose host is in a JDBC URL named by the fix and rendered with each environment's hosts; endpoints by the recorded version; what an upgrade to IDM 8 touches; the connectors' credential roles. `tests/test_pingidm_collect.py` (the listing, then each object where the project keeps it, with `X-OpenIDM-*` headers), `tests/test_pingidm_listeners.py`, `tests/test_pingidm_proxy.py`. `tests/idm-project/` is the sample project.
 
 `tests/test_pingidm_store.py` (marker `integration`, Postgres via `OPSDIR_TEST_DSN`): a project imported under an approved change, the store accepting every entry and holding no credential, a re-import changing nothing.
 

@@ -127,18 +127,36 @@ def _captured(path, text, patterns):
     return (dn, entries), notices
 
 
+def _named_files(files, prefix):
+    """((path, name, text), ...) for the conf/ files of one kind, named after their file name (prefix-NAME.json)."""
+    return tuple((p, p[len(prefix):-5], t) for p, t in sorted(files.items())
+                 if p.startswith(prefix) and p.endswith(".json"))
+
+
+def _unnamed(kind, where, name):
+    return (f"{where}: {kind} {name!r} can't be a record name (it holds a DN special character); not imported"
+            if name else f"{where}: a {kind} without a name; not imported")
+
+
 def _structured(d, files, patterns):
-    """((scope, (entry,)), notices) for managed objects, connectors, mappings and schedules."""
+    """((scope, (entry,)), notices) for managed objects, connectors, mappings and schedules; one whose name can't be a
+    record name is named in a notice, not imported."""
     managed = (json_document(files.get("conf/managed.json", "")) or {}).get("objects") or []
     mappings = (json_document(files.get("conf/sync.json", "")) or {}).get("mappings") or []
-    connectors = tuple(_connector(d, p[len(CONNECTOR_PREFIX):-5], json_document(t) or {}, patterns)
-                       for p, t in sorted(files.items()) if p.startswith(CONNECTOR_PREFIX) and p.endswith(".json"))
+    connector_files, schedule_files = _named_files(files, CONNECTOR_PREFIX), _named_files(files, SCHEDULE_PREFIX)
+    connectors = tuple(_connector(d, name, json_document(t) or {}, patterns)
+                       for _, name, t in connector_files if rdn_safe(name))
     parts = (*(_managed(d, n, o, patterns) for n, o in enumerate(managed) if rdn_safe(o.get("name") or "")),
              *(_mapping(d, n, m, patterns) for n, m in enumerate(mappings) if rdn_safe(m.get("name") or "")),
-             *(_schedule(d, p[len(SCHEDULE_PREFIX):-5], json_document(t) or {}, patterns)
-               for p, t in sorted(files.items()) if p.startswith(SCHEDULE_PREFIX) and p.endswith(".json")),
+             *(_schedule(d, name, json_document(t) or {}, patterns) for _, name, t in schedule_files if rdn_safe(name)),
              *((dn, entry) for dn, entry, _ in connectors))
-    return tuple((dn, (entry,)) for dn, entry in parts), tuple(n for _, _, ns in connectors for n in ns)
+    unnamed = (*(_unnamed("managed object", "conf/managed.json", o.get("name")) for o in managed
+                 if not rdn_safe(o.get("name") or "")),
+               *(_unnamed("mapping", "conf/sync.json", m.get("name")) for m in mappings
+                 if not rdn_safe(m.get("name") or "")),
+               *(_unnamed("connector", p, name) for p, name, _ in connector_files if not rdn_safe(name)),
+               *(_unnamed("schedule", p, name) for p, name, _ in schedule_files if not rdn_safe(name)))
+    return tuple((dn, (entry,)) for dn, entry in parts), (*(n for _, _, ns in connectors for n in ns), *unnamed)
 
 
 def _is_structured(path):

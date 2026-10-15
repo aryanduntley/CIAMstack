@@ -18,7 +18,6 @@ from .naming import RESOURCES, named
 
 from .withheld import filled, withheld_settings
 
-OUTPUT = "pingfederate/other-resources.json"
 OWNED = ("cn", "pingfedResourceType", "pingfedConfig", "pingfedWithheld")
 
 
