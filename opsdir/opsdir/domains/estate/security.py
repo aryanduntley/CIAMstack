@@ -14,10 +14,11 @@ configuration recording when the source exports its history; otherwise an action
 actions, which block the move where the target's data is classified restricted."""
 from collections import namedtuple
 
-from ...core.directory import get, one, rdn_value, subtree, values
+from ...core.directory import one, rdn_value, subtree, values
 from ...core.environment import env_model, of_class, one_role
 from ...core.findings import findings, responsible
 from ...core.naming import branch
+from ..governance.keepers import managed_by_name
 from ..observability.audit import INDEFINITE
 from .naming import REGULATORY, RESTRICTED, SECURITY_AREAS, SECURITY_KINDS
 
@@ -156,12 +157,6 @@ def check_security(ctx):
                     (f"Security services recorded in {ctx.dst.label}: {', '.join(kinds)}.",))
 
 
-def _keeper(m, s):
-    ref = one(s, "ciamManagedBy")
-    keeper = get(m.d, ref) if ref else None
-    return rdn_value(keeper) if keeper is not None else "platform"
-
-
 def _yes(s, attr):
     v = one(s, attr)
     return "yes" if v == "TRUE" else "no" if v == "FALSE" else ""
@@ -176,6 +171,6 @@ def security_rows(d, dn=None):
              _yes(s, "ciamAllRegions"), ", ".join(values(s, "ciamSecurityCoverage")),
              ", ".join((*values(s, "ciamComplianceStandard"), *values(s, "ciamSecurityBaseline"))),
              one(s, "ciamFindingsRole", ""), "" if days is None else "forever" if days == INDEFINITE else str(days),
-             _keeper(m, s))
+             managed_by_name(m.d, s, "platform"))
             for m in models for s in security_services(m)
             for days in (_longest((_days(s), _days(findings_destination(m, s)))),)]

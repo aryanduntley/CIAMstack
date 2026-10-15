@@ -8,7 +8,8 @@ import pytest
 
 from opsdir.connectors.plan import _landing_draft
 from opsdir.core.directory import get
-from opsdir.domains.governance.keepers import LANDING_ZONE, keeper, keeper_folder, landing_zone_keeper, takes_generated
+from opsdir.domains.governance.keepers import (LANDING_ZONE, keeper, keeper_folder, landing_zone_keeper,
+                                              managed_by, managed_by_name, takes_generated)
 from opsdir.domains.network.plumbing import keepers
 from network_fixtures import ALPHA, entry, model
 
@@ -86,6 +87,14 @@ def test_a_party_the_record_has_no_entry_for_is_named_by_its_dn_and_never_rooted
     assert (gone.name, gone.folder, gone.party, gone.takes) == (
         "cn=gone,ou=owners,dc=ciam-ops", f"{LANDING_ZONE}/gone", None, False)
     assert not takes_generated(None)
+
+
+def test_who_manages_an_entry_is_the_party_ciammanagedby_names_else_the_default():
+    m = _alpha(GUARDRAIL, DB_OWN, DB_DBA, DB_GONE)
+    own, dba, gone = _of(m, "db-own"), _of(m, "db-dba"), _of(m, "db-gone")
+    assert (managed_by(m.d, own), managed_by(m.d, dba).dn, managed_by(m.d, gone)) == (None, DBA_TEAM, None)
+    assert [managed_by_name(m.d, e, "platform") for e in (own, dba, gone)] == ["platform", "DBA Team", "platform"]
+    assert managed_by_name(m.d, own) is None
 
 
 def test_keeper_folders_are_slugs_of_the_party_s_name():

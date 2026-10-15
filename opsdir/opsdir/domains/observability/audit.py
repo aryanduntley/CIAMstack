@@ -14,11 +14,12 @@ can lift is weaker. A log destination (a Log Analytics workspace, a log bucket) 
 purged."""
 from collections import namedtuple
 
-from ...core.directory import get, one, rdn_value, subtree, values
+from ...core.directory import one, rdn_value, subtree, values
 from ...core.environment import env_model, of_class, one_role
 from ...core.findings import findings, responsible
 from ...core.naming import branch
 from ..data.kept import lock_rank
+from ..governance.keepers import managed_by_name
 from ..data.naming import IMMUTABILITY
 from .naming import AUDIT_EVENTS, AUDIT_ROLE
 
@@ -47,12 +48,6 @@ def audit_trails(m):
 def audit_role(resource, roles):
     """The binding role of an audit trail a cloud reports without one (ImportKind role)."""
     return AUDIT_ROLE
-
-
-def trail_keeper(m, trail):
-    """The party that keeps an audit trail when the platform team doesn't (ciamManagedBy), or None."""
-    ref = one(trail, "ciamManagedBy")
-    return get(m.d, ref) if ref else None
 
 
 def trail_destination(m, trail):
@@ -195,6 +190,5 @@ def audit_rows(d, dn=None):
     return [(m.label, rdn_value(t), one(t, "ciamAuditScope"), ", ".join(values(t, "ciamAuditEvents")),
              _yes(t, "ciamAllRegions"), _integrity(m, t), one(t, "ciamLogDestinationRole", ""),
              "" if days is None else "forever" if days == INDEFINITE else str(days),
-             rdn_value(keeper) if keeper is not None else "platform")
-            for m in models for t in audit_trails(m)
-            for days, keeper in ((_days(trail_destination(m, t)), trail_keeper(m, t)),)]
+             managed_by_name(m.d, t, "platform"))
+            for m in models for t in audit_trails(m) for days in (_days(trail_destination(m, t)),)]

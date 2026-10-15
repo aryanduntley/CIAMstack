@@ -5,10 +5,11 @@ deleting backups before their retention is named in either environment. Pure."""
 from typing import NamedTuple
 
 from ...core.changeset import set_values
-from ...core.directory import get, is_kind, one, rdn_value, subtree, values
+from ...core.directory import is_kind, one, subtree, values
 from ...core.environment import environment_of, of_class
 from ...core.findings import Fix, Input, findings, merge_findings, responsible
 from ...core.naming import branch, env_label
+from ..governance.keepers import managed_by_name
 from ..network.stack import owned
 from .kept import carry_fix, key_dropped, lock_text, lock_weakened
 from .naming import LIFECYCLE_ACTIONS
@@ -77,15 +78,12 @@ def _yes(e, attr):
 
 def object_store_rows(d, dn=None):
     """One row per object store of every environment (backup targets among them)."""
-    def kept_by(e):
-        dn_ = one(e, "ciamManagedBy")
-        party = get(d, dn_) if dn_ else None
-        return rdn_value(party) if party is not None else dn_ or ""
     return sorted(((env_label(environment_of(e)), one(e, "ciamBindingRole"),
                     "backup target" if "ciamBackupTarget" in e.classes else "object store", one(e, "ciamStorageRef"),
                     _yes(e, "ciamStorageVersioning"), lock_text(e), one(e, "ciamEncryptedByRole") or "",
                     "; ".join(lifecycle_value(r) for r in lifecycle_rules(e)), _yes(e, "ciamStoragePublicBlocked"),
-                    one(e, "ciamStorageReplicaRef") or "", one(e, "ciamRetentionDays") or "", kept_by(e))
+                    one(e, "ciamStorageReplicaRef") or "", one(e, "ciamRetentionDays") or "",
+                    managed_by_name(d, e, one(e, "ciamManagedBy") or ""))
                    for e in subtree(d, branch("environments")) if is_kind(d, e, STORE)), key=lambda row: row[:2])
 
 

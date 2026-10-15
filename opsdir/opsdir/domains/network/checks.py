@@ -12,6 +12,7 @@ from ...core.environment import of_class, one_role
 from ...core.findings import Fix, findings, merge_findings, owner_label, responsible
 from ...core.naming import env_label
 from ...core.network import is_private
+from ..governance.keepers import managed_by, managed_by_name
 from ..infrastructure.naming import EXTERNAL_ALLOWLISTS
 from .plumbing import plumbing_requests, plumbing_unasked
 from .routing import allows, default_routes, required_sites
@@ -42,8 +43,7 @@ def check_egress(ctx):
         b = one_role(ctx.dst, one(xa, "ciamRefersToRole"))
         if one(xa, "ciamAllowlistDirection") != "partner-ingress" or b is None or not is_kind(ctx.d, b, "ciamEgress"):
             continue
-        party = get(ctx.d, one(xa, "ciamManagedBy"))
-        actions += [("Egress", f"`{rdn_value(xa)}` ({rdn_value(party) if party else '?'}) allows {ctx.dst.label}'s "
+        actions += [("Egress", f"`{rdn_value(xa)}` ({managed_by_name(ctx.d, xa, '?')}) allows {ctx.dst.label}'s "
                      f"`{one(b, 'ciamBindingRole')}`, but {p}.", responsible(ctx.d, b, ctx.dst.env), ctx.cutover)
                     for p in egress_problems(ctx.dst, b)]
     return findings(actions=actions)
@@ -180,7 +180,7 @@ def check_sites(ctx):
                      "doesn't allow " + ", ".join(f"`{s.host}` ({s.kind})" for s in missing) + ": allow them before "
                      "cutover, or what the platform fetches there fails (metadata, signing keys, certificate status, "
                      "vendors).", owner, ctx.cutover)] if missing else []
-        party = get(ctx.d, one(p, "ciamManagedBy")) if one(p, "ciamManagedBy") else None
+        party = managed_by(ctx.d, p)
         requests += [(party, None, site_request(ctx.dst, p, s), "network", ctx.cutover)
                      for s in missing] if party is not None else []
         role = one(p, "ciamBindingRole")

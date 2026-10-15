@@ -4,10 +4,11 @@ ciamBillingAccountRef says where billing is managed, which is where budgets live
 (AWS GovCloud's associated standard account; a Google Cloud billing account). The report, and the planner's check: a
 target without a budget while the source has one is an action (its spending would go unwatched); a target budget
 alerting a role it doesn't bind is a blocker (its alerts would reach no one). Pure."""
-from ...core.directory import get, one, rdn_value, subtree, values
+from ...core.directory import one, rdn_value, subtree, values
 from ...core.environment import env_model, of_class, one_role
 from ...core.findings import findings, responsible
 from ...core.naming import branch
+from ..governance.keepers import managed_by_name
 from .naming import DEFAULT_CURRENCY
 
 AREA = "Budgets"
@@ -65,12 +66,6 @@ def _amount(b):
     return f"{one(b, 'ciamBudgetAmount')} {currency(b)} {one(b, 'ciamBudgetPeriod') or 'monthly'}"
 
 
-def _keeper(m, b):
-    ref = one(b, "ciamManagedBy")
-    keeper = get(m.d, ref) if ref else None
-    return rdn_value(keeper) if keeper is not None else "platform"
-
-
 def _percents(b, attr):
     return ", ".join(f"{p}%" for p in thresholds(b, attr))
 
@@ -81,5 +76,5 @@ def budget_rows(d, dn=None):
     models = [env_model(d, e.dn) for e in subtree(d, branch("environments"), "ciamEnvironment")]
     return [(m.label, rdn_value(b), f"{one(b, 'ciamBudgetAmount')} {currency(b)}", one(b, "ciamBudgetPeriod") or
              "monthly", _percents(b, "ciamActualThreshold"), _percents(b, "ciamForecastThreshold"),
-             one(b, "ciamAlertRole", ""), _keeper(m, b))
+             one(b, "ciamAlertRole", ""), managed_by_name(m.d, b, "platform"))
             for m in models for b in budgets(m)]

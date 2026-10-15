@@ -20,10 +20,11 @@ and names the mechanism in the plan (rescan_line) and in its rendered comments; 
 report reads the record, not the adapters)."""
 from collections import namedtuple
 
-from ...core.directory import get, one, rdn_value, subtree, values
+from ...core.directory import one, rdn_value, subtree, values
 from ...core.environment import env_model, of_class, one_role
 from ...core.findings import findings, responsible
 from ...core.naming import branch
+from ..governance.keepers import managed_by_name
 from .authorizations import held_to, required_levels
 
 AREA = "Data discovery"
@@ -133,12 +134,6 @@ def check_discovery(ctx):
                     (f"Data discovery recorded in {ctx.dst.label}: {', '.join(rdn_value(s) for s in dst)}.",))
 
 
-def _keeper(m, s):
-    ref = one(s, "ciamManagedBy")
-    keeper = get(m.d, ref) if ref else None
-    return rdn_value(keeper) if keeper is not None else "platform"
-
-
 def discovery_rows(d, dn=None):
     """One row per data discovery service of every environment: the stores it examines, its own data types (by name),
     how often (days), where its findings and results go, and who keeps it (the platform team unless ciamManagedBy names
@@ -146,7 +141,8 @@ def discovery_rows(d, dn=None):
     models = [env_model(d, e.dn) for e in subtree(d, branch("environments"), "ciamEnvironment")]
     return [(m.label, rdn_value(s), ", ".join(values(s, "ciamScansRole")),
              ", ".join(n for n, _ in custom_identifiers(s)), one(s, "ciamRescanDays", ""),
-             one(s, "ciamFindingsRole", ""), one(s, "ciamResultsRole", ""), _keeper(m, s))
+             one(s, "ciamFindingsRole", ""), one(s, "ciamResultsRole", ""),
+             managed_by_name(m.d, s, "platform"))
             for m in models for s in discovery_services(m)]
 
 
