@@ -9,8 +9,8 @@ import subprocess
 import pytest
 import yaml
 
-from opsdir.connectors.registry import core_fragments, services
-from opsdir.core.contract import K8sIdentity, PlanContext, Route
+from opsdir.connectors.registry import ADAPTERS, schema_fragments, services
+from opsdir.core.contract import DiscoveryAnswer, K8sIdentity, PlanContext, Route
 from opsdir.core.directory import one
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
@@ -19,12 +19,11 @@ from opsdir_adapter_kubernetes.adapter import ADAPTER as KUBERNETES
 from opsdir_adapter_ping_devops import release
 from opsdir_adapter_ping_devops.adapter import ADAPTER
 from opsdir_adapter_ping_devops.checks import check_ping_devops
+from opsdir_adapter_ping_devops.discovery import cluster_discovery
 from opsdir_adapter_ping_devops.helm import render
 from opsdir_adapter_ping_devops.listeners import listeners
 from opsdir_adapter_ping_devops.products import applies, placements, unplaced
 from opsdir_adapter_ping_devops.routes import routes
-from opsdir_adapter_pingfederate.adapter import ADAPTER as PINGFEDERATE
-from opsdir_adapter_pingfederate.schema import FRAGMENT
 import mini_estate
 from mini_estate import FAKE
 from support import build_directory, installed_model
@@ -34,7 +33,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[3]
 CHART = ROOT / "tools" / "ping-devops" / release.VERSION / "ping-devops"
 PF_IMAGE = "registry.example.test:5000/ciam/pingfederate:12.2.1@sha256:" + "b" * 64
 VALUES = "ping-devops/helm/identity/ping-devops-values.yaml"
-REGISTRY = registry_ldif((*core_fragments(), FRAGMENT))       # the record knows PingFederate's discovery binding
+REGISTRY = registry_ldif(schema_fragments())       # the installed packages' schema: PingFederate's discovery binding
 QUERY = "pingfederate-pingfederate-cluster.identity.svc.cluster.local"
 
 
@@ -67,6 +66,7 @@ BASE = (
              f"pingfedDiscoveryProtocol: DNS_PING\nciamFqdn: {QUERY}\n"))
 CLOUD = FAKE._replace(workload_identity=lambda m, b: K8sIdentity(
     (("cloud.example.test/identity", one(b, "ciamProviderRef")),), (("cloud.example.test/use", "true"),)))
+PINGFEDERATE = next(a for a in ADAPTERS if a.name == "pingfederate")    # the installed product adapter, never imported
 INSTALLED = (CLOUD, KUBERNETES, ADAPTER, PINGFEDERATE)     # PingFederate declares the log files the sidecars tail
 
 
@@ -173,29 +173,20 @@ def _fixes(m):
 
 def test_the_nodes_find_each_other_through_the_charts_cluster_service():
     assert release.cluster_query("identity") == QUERY
+    assert cluster_discovery(model()) == (DiscoveryAnswer("PingFederate", "identity", QUERY, "ping-devops",
+                                                          "DNS_QUERY_LOCATION"),)     # PingFederate's check compares
     assert _values(model())["global"]["envs"]["DNS_QUERY_LOCATION"] == QUERY       # from the record's binding
-    assert _fixes(model()) == ()
     unbound = tuple(b for b in BASE if "pf-cluster-discovery" not in b)
     assert "DNS_QUERY_LOCATION" not in _values(model(base=unbound))["global"]["envs"]   # the chart's own default
-    (action,) = _actions(model(base=unbound))
-    assert action.startswith("PingFederate runs on Kubernetes in alpha/prod (namespace `identity`): the chart's pods "
-                             f"find each other by DNS_PING through its cluster service `{QUERY}`, but the record "
-                             "binds no `pf-cluster-discovery` there.")
-    (fix,) = _fixes(model(base=unbound))
-    (record,) = [r for r in fix.records if r.dn.startswith("cn=pf-discovery,")]
-    assert record.attrs["pingfedDiscoveryProtocol"] == ("DNS_PING",) and record.attrs["ciamFqdn"] == (QUERY,)
+    assert _actions(model(base=unbound)) == [] and _fixes(model(base=unbound)) == ()    # not this kit's check
     s3 = tuple(b.replace("pingfedClusterDiscovery", "ciamObjectStore").replace(
         f"pingfedDiscoveryProtocol: DNS_PING\nciamFqdn: {QUERY}\n", "ciamStorageRef: s3://pf-cluster\n")
         for b in BASE)
-    (action,) = _actions(model(base=s3))
-    assert action.endswith("but its `pf-cluster-discovery` binding uses NATIVE_S3_PING. Record that binding.")
+    assert "DNS_QUERY_LOCATION" not in _values(model(base=s3))["global"]["envs"]
     elsewhere = tuple(b.replace(QUERY, "pf.example.test") for b in BASE)
     assert _values(model(base=elsewhere))["global"]["envs"]["DNS_QUERY_LOCATION"] == "pf.example.test"
-    (action,) = _actions(model(base=elsewhere))
-    assert "has them query `pf.example.test`, which the chart's service doesn't answer" in action
-    (fix,) = _fixes(model(base=elsewhere))
-    assert fix.records[0].mods[0] == ("replace", "pingfedDiscoveryProtocol", ("DNS_PING",))
-    assert ("replace", "ciamFqdn", (QUERY,)) in fix.records[0].mods
+    implied = tuple(b.replace("pingfedDiscoveryProtocol: DNS_PING\n", "") for b in BASE)     # a DNS name implies it
+    assert _values(model(base=implied))["global"]["envs"]["DNS_QUERY_LOCATION"] == QUERY
 
 
 def test_pingfederate_declares_its_routes_and_turns_its_ingress_off_behind_a_cluster_gateway():

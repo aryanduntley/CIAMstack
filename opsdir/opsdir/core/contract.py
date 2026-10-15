@@ -396,15 +396,24 @@ Adapter = namedtuple("Adapter", (
                             # (the keys report says which product would use them), or None
     "mounts_secrets",       # (EnvModel, workload) -> bool: whether its pods (a deployment kit's) mount the
                             # SecretProviderClasses of a workload it deploys, or None (it mounts none)
-    "roles"),               # ((kind, (role, ...)), ...): the roles its products use, by kind (ROLE_KINDS), so a kit
+    "roles",                # ((kind, (role, ...)), ...): the roles its products use, by kind (ROLE_KINDS), so a kit
                             # deploying them finds them by product (core.environment.roles_for), never by name
+    "cluster_discovery"),   # (EnvModel) -> (DiscoveryAnswer, ...): what a deployment kit's chart answers for its
+                            # products' cluster discovery in an environment, for the product's own check
+                            # (core.environment discovery_answers), or None
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, ()))
+              None, False, None, None, (), None))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it
 # by), cluster-discovery (the binding role its nodes find each other through).
 ROLE_KINDS = ("server", "keystore", "service", "cluster-discovery")
+
+# What a deployment kit's chart answers for a product's cluster discovery in one namespace (Adapter.cluster_discovery):
+# the product (as its adapter's products name it), the namespace, the DNS name its pods find each other through, the
+# kit (its adapter name) and the setting its values pass the product's discovery binding as.
+DiscoveryAnswer = NamedTuple("DiscoveryAnswer", [("product", str), ("namespace", str), ("name", str), ("kit", str),
+                                                 ("setting", str)])
 
 # What every planner check receives.
 PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),

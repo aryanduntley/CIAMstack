@@ -179,6 +179,42 @@ def discovery_fix(m, b, protocols):
         Option(p.name, f"{p.name}: {p.about}", _records(m, b, p), ()) for p in rendered))
 
 
+# ------------------------------------------------------------------ what a deployment kit's chart answers
+def recorded_query(m):
+    """The DNS name environment m's pf-cluster-discovery binding has its nodes query (DNS_PING), or None."""
+    b = one_role(m, DISCOVERY_ROLE)
+    p = binding_protocol(b) if b is not None else None
+    return one(b, "ciamFqdn") if p is not None and p.name == "DNS_PING" else None
+
+
+def _now(b, have):
+    if b is None:
+        return f"the record binds no `{DISCOVERY_ROLE}` there"
+    if have:
+        return (f"its `{DISCOVERY_ROLE}` binding has them query `{have}`, which the chart's service doesn't answer "
+                "unless something else publishes the pods there")
+    p = binding_protocol(b)
+    return f"its `{DISCOVERY_ROLE}` binding uses {p.name if p else 'no known protocol'}"
+
+
+def discovery_gap(m, answer):
+    """(what to say, the Fix) when environment m's record doesn't have its PingFederate nodes find each other by
+    DNS_PING through the name a deployment kit's chart answers in a namespace (answer: a contract.DiscoveryAnswer),
+    else None."""
+    want, have = answer.name, recorded_query(m)
+    if have == want:
+        return None
+    b = one_role(m, DISCOVERY_ROLE)
+    text = (f"PingFederate runs on Kubernetes in {m.label} (namespace `{answer.namespace}`): the chart's pods find "
+            f"each other by DNS_PING through its cluster service `{want}`, but {_now(b, have)}. Record that binding.")
+    fix = Fix(f"{answer.kit}-discovery:{m.label}:{answer.namespace}", "PingFederate on Kubernetes",
+              f"Bind PingFederate's cluster discovery in {m.label}: DNS_PING through `{want}`",
+              discovery_records(m, b, "DNS_PING", {"ciamFqdn": want}),
+              (f"Install {m.label}'s rendered {answer.kit} values (they set {answer.setting} from the binding).",),
+              ("Nodes still running the old discovery don't find the new ones: move the cluster as a whole.",))
+    return text, fix
+
+
 # ------------------------------------------------------------------ what a node uses
 def _local(tag):
     return tag.rsplit("}", 1)[-1].rsplit(".", 1)[-1]

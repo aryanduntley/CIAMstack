@@ -65,6 +65,16 @@ def test_product_roles_by_product_name_and_kind():
     assert roles_for(m, "PingIDM", "server") == () and EnvModel(*(None,) * 14).product_roles == ()
 
 
+def test_what_the_kits_rendering_an_environment_answer_for_a_products_cluster_discovery():
+    from opsdir.core.contract import DiscoveryAnswer
+    from opsdir.core.environment import EnvModel, discovery_answers, with_cluster_discovery
+    answer = DiscoveryAnswer("Prod", "ns", "prod.ns.svc.cluster.local", "kit", "QUERY_SETTING")
+    kit = adapter("kit", "platform")._replace(cluster_discovery=lambda m: (answer,))
+    m = with_cluster_discovery(EnvModel(*(None,) * 14), (adapter("prod", "product"), kit))
+    assert discovery_answers(m, "Prod") == (answer,) and discovery_answers(m, "Other") == ()
+    assert EnvModel(*(None,) * 14).cluster_discovery == () and adapter("prod", "product").cluster_discovery is None
+
+
 def test_the_installed_products_declare_their_roles_by_known_kinds():
     from opsdir.connectors.registry import ADAPTERS
     from opsdir.core.contract import ROLE_KINDS

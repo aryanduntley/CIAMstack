@@ -20,6 +20,7 @@ SETTINGS = branch("settings", PINGFEDERATE)
 AUTH_SERVER = f"cn=oauth-auth-server,{SETTINGS}"     # the authorization server's settings (scopes, grants, ...)
 RESOURCES = branch("resources", PINGFEDERATE)          # resources held as is, a container per resource type
 STORAGE = f"cn=storage,{SETTINGS}"                    # which store backs clients, grants, sessions (hivemodule.xml)
+PRODUCT = "PingFederate"                             # the product, as the adapter's products name it
 DISCOVERY_ROLE = "pf-cluster-discovery"              # where an environment's nodes find each other (a binding)
 DEFAULT_POLICY = f"cn=default,{POLICIES}"            # the authentication policies' settings; its trees below it
 # what a reference to a PingFederate object of a kind is named under (kinds as the importer reads them)

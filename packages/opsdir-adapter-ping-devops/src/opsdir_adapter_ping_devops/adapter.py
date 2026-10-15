@@ -2,6 +2,7 @@
 Ping Identity's ping-devops Helm chart at the pinned release, from the record's workloads and their bindings."""
 from opsdir.core.contract import Adapter
 from .checks import check_ping_devops
+from .discovery import cluster_discovery
 from .helm import render
 from .listeners import listeners
 from .logs import kit_logs
@@ -30,4 +31,4 @@ ADAPTER = Adapter(name="ping-devops", kind="platform", applies=applies, required
                   neutral_label=None, vocabulary={}, schema=None, formats=FORMATS, products=(),
                   secret_patterns=(), importers=(), profile_terms=None, access=None, render_targets=TARGETS,
                   listeners=listeners, routes=routes, logs=kit_logs, render_profiles=render_profiles,
-                  mounts_secrets=deploys)
+                  mounts_secrets=deploys, cluster_discovery=cluster_discovery)
