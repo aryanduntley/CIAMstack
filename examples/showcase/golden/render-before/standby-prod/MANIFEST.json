@@ -8,6 +8,10 @@
   },
   "requester": "opsdir",
   "render_targets": {
+    "elastic": [
+      "api",
+      "terraform"
+    ],
     "pingfederate": [
       "admin-api",
       "terraform"
@@ -98,6 +102,36 @@
       "scope": "environment-specific",
       "format": "shell",
       "sha256": "e0bf432fd30a860ebece2c7789a807b2d44800f3379a26515e5027800338ed26"
+    },
+    "elastic/api/component-templates.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "b36f7f0a203f9012d1f034119c1484aa6e3131d9641e4de67863384b82156513"
+    },
+    "elastic/api/detection-rules.ndjson": {
+      "scope": "environment-specific",
+      "format": "ndjson",
+      "sha256": "26f27eddfb04a422270108c2fbdd5eadde42b51b73ae34263d7bc36c38b68d53"
+    },
+    "elastic/api/ilm-policies.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "cdf1374249a976ac9ed1f4e2ed5bc621aeded3ef260e108ff2d206aed4d8f4f7"
+    },
+    "elastic/api/slm-policies.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "550cca44cfcc0f7123ba1245ab828c4a0552294995b4c155169de4882b2feb80"
+    },
+    "elastic/terraform/main.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "e8507516bf784303c5f9f7e851abc583fff27d34ad1c8f4485e98f9f84772c1a"
+    },
+    "elastic/terraform/versions.tf": {
+      "scope": "environment-specific",
+      "format": "hcl",
+      "sha256": "bae1fefb45d020d264b011fec85aa674546507e331514dd84b8a6d0630f888f2"
     },
     "files/am/realms/root-partners/OAuth2Provider/OAuth2Provider.json": {
       "scope": "environment-neutral",

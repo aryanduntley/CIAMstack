@@ -1,0 +1,21 @@
+{
+  "component_templates": [
+    {
+      "name": "logs-ciam.security@custom",
+      "component_template": {
+        "template": {
+          "settings": {
+            "index": {
+              "lifecycle": {
+                "name": "opsdir-logs-ciam.security-standby"
+              }
+            }
+          }
+        },
+        "_meta": {
+          "managed_by": "opsdir"
+        }
+      }
+    }
+  ]
+}

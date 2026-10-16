@@ -234,7 +234,8 @@ def _audit_configs():
 
 def _gcp_monitoring():
     """What Cloud Monitoring and Logging run, from the standby's monitoring bindings: the audit trail as the sink
-    exporting Cloud Audit Logs, and the bucket keeping them with its locked retention policy."""
+    exporting Cloud Audit Logs, and the bucket keeping them with its locked retention policy; the security team's
+    Elastic data stream and the detection searching it aren't Google Cloud's."""
     numbered = PROJECT.replace(PROJECT.split("/")[1], NUMBER)
     stores = {role: a for oc, _, role, a in MONITORING["standby"] if oc == "ciamObjectStore"}
 
@@ -256,6 +257,10 @@ def _gcp_monitoring():
                 "filter": 'logName:"cloudaudit.googleapis.com"',
                 "writerIdentity": f"serviceAccount:service-{NUMBER}@gcp-sa-logging.iam.gserviceaccount.com"},
                 name=f"//logging.googleapis.com/{numbered}/sinks/{name}")
+        if oc == "ciamAlertChannel" and attrs["ciamChannelKind"] == "email":
+            return _asset("monitoring.googleapis.com/NotificationChannel", {
+                "name": ref, "type": "email", "displayName": "ciam-soc", "labels": {"email_address": "**********"},
+                "userLabels": {"role": "soc-alerts"}})
         if oc == "ciamAlertChannel":
             return _asset("monitoring.googleapis.com/NotificationChannel", {
                 "name": ref, "type": "pagerduty", "displayName": "ciam-page", "labels": {"service_key": "**********"},
@@ -273,6 +278,8 @@ def _gcp_monitoring():
                 "notificationChannels": [attrs["ciamNotifies"]], "userLabels": {"realizes": attrs["ciamRealizes"]}})
         return _check(ref, attrs)
     return [x for oc, _, _, attrs in MONITORING["standby"]
+            if not (attrs.get("ciamDestinationKind") == "siem-index"
+                    or oc == "ciamAlarmBinding" and "ciamLogDestinationRole" in attrs)
             for x in (asset(oc, attrs) if oc == "ciamCanaryBinding" else (asset(oc, attrs),))]
 
 

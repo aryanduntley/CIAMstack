@@ -6,14 +6,14 @@ declares it (stack role siem) and keeps the Splunk indexes it names (siem_indexe
 them to it."""
 from opsdir.core.contract import Adapter, Importer, ReadBack
 from .collect import COLLECTORS
-from .naming import APP_DIR, SETTINGS, keeps
+from .naming import APP_DIR, SEARCH_LANGUAGE, SETTINGS, keeps
 from .read import read_conf_files, read_rest
 from .render import host_files, render, render_notes
 
 ADAPTER = Adapter(name="splunk", kind="platform", applies=None, required_roles=(),
                   render_neutral=None, render_env=render, checks=(), ref_schemes=(), secret_schemes={},
                   renders="Splunk indexes and detections (the opsdir_ciam app) and Universal Forwarder inputs",
-                  neutral_label=None, vocabulary={}, schema=None,
+                  neutral_label=None, vocabulary={"ciamSearchLanguage": (SEARCH_LANGUAGE,)}, schema=None,
                   formats=((f"{APP_DIR}/*.conf", "ini"),),
                   products=(), secret_patterns=(),
                   importers=(Importer("rest", "Splunk's indexes (retention) and saved searches (detections), as the "

@@ -1,0 +1,18 @@
+{
+  "opsdir-logs-ciam.security-standby": {
+    "policy": {
+      "name": "<opsdir-logs-ciam.security-standby-{now/d}>",
+      "schedule": "0 30 1 * * ?",
+      "repository": "found-snapshots",
+      "config": {
+        "indices": [
+          "logs-ciam.security-standby"
+        ],
+        "include_global_state": false
+      },
+      "retention": {
+        "expire_after": "275d"
+      }
+    }
+  }
+}

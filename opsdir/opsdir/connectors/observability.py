@@ -49,17 +49,25 @@ def signal_check(dst_adapters):
 
 
 def siem_check(dst_adapters):
-    """The planner check for the target's SIEM indexes no adapter rendering it keeps (Adapter.siem_indexes), given
-    its adapters: an action per index."""
+    """The planner check for the target's SIEM indexes no adapter rendering it keeps (Adapter.siem_indexes), or more
+    than one does (the index's reference reads as each one's: only the first renders it), given its adapters: an
+    action per index."""
+    def keepers(ctx, b):
+        return tuple(a.name for a in dst_adapters if a.siem_indexes is not None and a.siem_indexes(ctx.dst, b))
+
     def check_siem_kept(ctx):
+        kept = tuple((b, keepers(ctx, b)) for b in siem_destinations(ctx.dst))
         return findings(actions=[
-            ("Logs", f"{ctx.dst.label}'s `{one(b, 'ciamBindingRole')}` is a SIEM index ({one(b, 'ciamProviderRef')}) "
-             f"that nothing rendering {ctx.dst.label} keeps: its retention, the detections searching it and the "
-             "forwarding of logs to it are left to whoever runs the SIEM. Declare the SIEM's adapter in the "
-             "environment's stack (stack role siem), or confirm the SIEM team keeps them.",
-             responsible(ctx.d, b, ctx.dst.env), None)
-            for b in siem_destinations(ctx.dst)
-            if not any(a.siem_indexes is not None and a.siem_indexes(ctx.dst, b) for a in dst_adapters)])
+            *(("Logs", f"{ctx.dst.label}'s `{one(b, 'ciamBindingRole')}` is a SIEM index ({one(b, 'ciamProviderRef')}) "
+               f"that nothing rendering {ctx.dst.label} keeps: its retention, the detections searching it and the "
+               "forwarding of logs to it are left to whoever runs the SIEM. Declare the SIEM's adapter in the "
+               "environment's stack (stack role siem), or confirm the SIEM team keeps them.",
+               responsible(ctx.d, b, ctx.dst.env), None) for b, names in kept if not names),
+            *(("Logs", f"{ctx.dst.label}'s `{one(b, 'ciamBindingRole')}` is a SIEM index ({one(b, 'ciamProviderRef')}) "
+               f"that {' and '.join(names)} each read as theirs: only {names[0]} renders it (the first declared), so "
+               f"what {', '.join(names[1:])} would keep there isn't rendered. Declare one SIEM adapter for the "
+               "environment, or name the index in the form only its SIEM's adapter reads.",
+               responsible(ctx.d, b, ctx.dst.env), None) for b, names in kept if len(names) > 1)])
     return check_siem_kept
 
 

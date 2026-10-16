@@ -41,6 +41,7 @@ estate = "opsdir.domains.estate.domain:DOMAIN"
 [project.entry-points."opsdir.formats"]
 ldif = "opsdir.core.formats:LDIF"
 json = "opsdir.core.formats:JSON"
+ndjson = "opsdir.core.formats:NDJSON"
 xml = "opsdir.core.formats:XML"
 yaml = "opsdir.core.formats:YAML"
 shell = "opsdir.core.formats:SHELL"

@@ -1,3 +1,3 @@
-initialized: 881 attribute types, 202 object classes
+initialized: 883 attribute types, 202 object classes
 provider prerequisites to fetch once an environment uses their adapter: aws-regions, azure-regions, gcp-regions, onprem-sites (`opsdir prerequisites`)
 exit 0

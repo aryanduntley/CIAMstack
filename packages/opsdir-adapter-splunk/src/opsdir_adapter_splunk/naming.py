@@ -17,6 +17,7 @@ APP = "opsdir_ciam"                                 # the Splunk app holding the
 APP_DIR = f"splunk/apps/{APP}/default"              # where the render writes it
 INDEXES = f"{APP_DIR}/indexes.conf"
 SAVED_SEARCHES = f"{APP_DIR}/savedsearches.conf"
+SEARCH_LANGUAGE = "spl"                             # ciamSearchLanguage of a detection's SPL (its native one)
 _INDEX = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
 FORWARDER_HOME = Setting("splunk-forwarder-home", "string", "/opt/splunkforwarder",

@@ -9,7 +9,8 @@ audit-logs       audit, admin  ds, pf-engine, pf-admin  audit-logs  400         
 audit-logs       audit, admin  ds, pf-engine, pf-admin  audit-logs  400          yes         target/prod   workspace   90                 90
 audit-logs       audit, admin  ds, pf-engine, pf-admin  audit-logs  400          yes         source/stage  log-group   400                400
 security-events  audit, admin  pf-engine, pf-admin      siem        365                      source/prod   siem-index
+security-events  audit, admin  pf-engine, pf-admin      siem        365                      standby/prod  siem-index  90                 365
 security-events  audit, admin  pf-engine, pf-admin      siem        365                      target/prod   siem-index  90                 365
 security-events  audit, admin  pf-engine, pf-admin      siem        365                      source/stage  siem-index
-(11 rows)
+(12 rows)
 exit 0

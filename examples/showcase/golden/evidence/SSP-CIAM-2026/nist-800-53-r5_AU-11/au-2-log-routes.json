@@ -103,6 +103,18 @@
       "siem",
       "365",
       "",
+      "standby/prod",
+      "siem-index",
+      "90",
+      "365"
+    ],
+    [
+      "security-events",
+      "audit, admin",
+      "pf-engine, pf-admin",
+      "siem",
+      "365",
+      "",
       "target/prod",
       "siem-index",
       "90",

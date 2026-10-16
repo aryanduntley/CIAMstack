@@ -2,7 +2,7 @@
   "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 6,
-    "action": 11,
+    "action": 14,
     "note": 1,
     "to_review": 0
   },
@@ -221,6 +221,52 @@
     {
       "area": "Logs",
       "severity": "action",
+      "subject": "Elastic Agent",
+      "text": "the routes' logs on the servers reach the Elastic data streams through Elastic Agent (a Fleet policy), which the Elastic team keeps; opsdir doesn't render it",
+      "how": [
+        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/audit.log on role pf-engine (pf-engine-1, pf-engine-2) into logs-ciam.security-standby",
+        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/provisioner-audit.log on role pf-engine (pf-engine-1, pf-engine-2) into logs-ciam.security-standby",
+        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby",
+        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-event-detail.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby",
+        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-api.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby",
+        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-request.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby"
+      ],
+      "entry": null,
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "elastic/terraform/main.tf",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "area": "Logs",
+      "severity": "action",
+      "subject": "Elastic data stream logs-ciam.security-standby",
+      "text": "opsdir-logs-ciam.security-standby is attached through the component template logs-ciam.security@custom, which takes effect for the backing indices created from the next rollover, and only where the stream's index template composes it (Fleet integration templates do; the built-in logs template doesn't)",
+      "how": [
+        "Switch the existing backing indices: remove their policy, then PUT logs-ciam.security-standby/_settings with index.lifecycle.name opsdir-logs-ciam.security-standby",
+        "Confirm the stream's index template composes logs-ciam.security@custom, and that nothing else the Elastic team keeps in that component template is lost (opsdir writes all of it)"
+      ],
+      "entry": "cn=siem,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops",
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "elastic/terraform/main.tf",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "area": "Logs",
+      "severity": "action",
       "subject": "Ops Agent configuration",
       "text": "opsdir renders it for configuration management to place (/etc/google-cloud-ops-agent/config.yaml); it replaces one the servers already have (the agent reads only that file): merge their own receivers and pipelines into it; the agent itself comes with the host baseline",
       "how": [
@@ -235,6 +281,26 @@
         {
           "path": "terraform/main.tf",
           "line": 2354
+        }
+      ]
+    },
+    {
+      "area": "Monitoring",
+      "severity": "action",
+      "subject": "Elastic rule actions",
+      "text": "the detections' rules raise alerts, but who they notify (their actions and connectors) is set in Kibana, not rendered",
+      "how": [
+        "Give each detection rule the actions that reach the channel its alert rule names"
+      ],
+      "entry": null,
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "elastic/terraform/main.tf",
+          "line": 4
         }
       ]
     },
