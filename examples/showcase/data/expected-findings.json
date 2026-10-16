@@ -1683,6 +1683,14 @@
       "planted": "External ID imports no password hashes: the partner users reset or move just in time",
       "cleared_by": null,
       "raised_by": "CHG-2066"
+    },
+    {
+      "id": "A204",
+      "area": "Certificate",
+      "match": "Certificate template `CIAM-WebServer` lets the requester name the subject of the certificates it issues",
+      "planted": "client authentication added to the web server template, which takes the subject from the request and lets Domain Users enroll: its renewal owner, the platform team",
+      "cleared_by": null,
+      "raised_by": "CHG-2086"
     }
   ]
 }

@@ -291,6 +291,11 @@ echo "   agents then scoped to AWS environments (CHG-2076), so the target's VMs 
 od import --change CHG-2075 --at 20260923090000Z linux/baseline exports/hosts-pingaccess
 od modify --change CHG-2076 changes/CHG-2076-pingaccess-scoped-agents.ldif
 od report regulated-data
+echo "-- the forest's certificate templates collected again over LDAPS with their access rights (CHG-2086,"
+echo "   adcs/inventory's template collector): CIAM-WebServer now also issues client authentication, takes the"
+echo "   subject from the request and lets Domain Users enroll (ESC1-style): an action for its renewal owner; the"
+echo "   import takes the live values where the record held CHG-2050's (who may enroll was unknown then)"
+od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory exports/adcs-templates
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

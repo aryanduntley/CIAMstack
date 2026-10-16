@@ -614,6 +614,11 @@ EXPECTED = MappingProxyType({
         ("A203", "Managed identity", "User accounts and passwords don't move with `partners`'s configuration onto "
          "`partners-external-id`", "External ID imports no password hashes: the partner users reset or move just in "
          "time", None, "CHG-2066"),
+        # the templates collected with their access rights (CHG-2086): an ESC1-style template
+        ("A204", "Certificate", "Certificate template `CIAM-WebServer` lets the requester name the subject of the "
+         "certificates it issues",
+         "client authentication added to the web server template, which takes the subject from the request and "
+         "lets Domain Users enroll: its renewal owner, the platform team", None, "CHG-2086"),
     ],
 })
 

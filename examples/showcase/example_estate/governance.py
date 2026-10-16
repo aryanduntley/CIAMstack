@@ -155,6 +155,8 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2076", "Scope the PingAccess baselines' AWS agents to AWS environments", "approved", "CAB 2026-09-18",
      "2026-09-24"),
+    ("CHG-2086", "Record the forest's certificate templates again, collected over LDAPS with who may enroll",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

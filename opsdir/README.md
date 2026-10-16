@@ -190,8 +190,11 @@ revocation endpoints as children (`ciamRevocationEndpoint`: `ciamRevocationKind`
 `ciamEndpointUrl`, the CA's own template in `description` when a variable couldn't be filled). The hierarchy runs
 certificate by certificate: `ciamIssuedBy` names the certificate of the CA that issued one. Templates are
 `ciamCertTemplate` under `ou=certificate-templates` (display name in `description`, `ciamTemplateOid`,
-`ciamMaxValidityDays`, `ciamExtendedKeyUsage`; the operator's `ciamCertPurpose` and `ciamRenewalOwner`: who renews
-what the template issues that the record holds no certificate for). What a CA's database says it issued is observed
+`ciamMaxValidityDays`, `ciamExtendedKeyUsage`: what it issues; what it lets requesters do and who may request from
+it, as its importer reads them: `ciamSubjectFromRequest`, `ciamApprovalRequired`, `ciamRequiredSignatures`,
+`ciamTemplateVersion`, `ciamEnrollee` and `ciamEnrollmentScope` (broad, restricted or unknown); the operator's
+`ciamCertPurpose` and `ciamRenewalOwner`: who renews what the template issues that the record holds no certificate
+for). What a CA's database says it issued is observed
 metadata, never a key, under `ou=issued-certificates`: per CA a `ciamCertInventory` (`ciamInventoryAt`,
 `ciamInventoryState`, `ciamInventoryProblem`) and a `ciamIssuedCertificate` per issued or revoked certificate (cn: the
 request id; `ciamSerialNumber`, `ciamFingerprint`, `ciamSubject`, validity, `ciamTemplateName`, `ciamRequester`; once
@@ -214,6 +217,16 @@ not confirmable is an action; so is each (CA, template) whose active certificate
 templates the record cares about (a renewal owner or a purpose recorded, or a record certificate issued from it),
 owned by the renewal owner and due when the first expires; and each inventoried CA that publishes no CRL or OCSP
 endpoint.
+
+Template risk (`domains/pki/templates.py`, ESC1-style after the published research on certificate template abuse): a
+template that takes the subject from the request, issues certificates that authenticate their holder (no extended key
+usage, any purpose, client authentication, PKINIT client authentication or smart card logon), and needs no CA manager
+approval or authorized signature lets whoever may enroll obtain a certificate in any account's name. `opsdir plan`
+makes one a broad group may enroll from an action (area `Certificate`), as it does one whose enrollment isn't known
+(collect its access rights); owned by its `ciamRenewalOwner`, else the owners of the CAs issuing from it. One only
+named accounts may enroll from, or that no recorded CA issues from (where the CAs list their templates), is counted.
+An exception under `ou=exceptions` accepts the finding. Any-purpose and enrollment-agent templates, who may change a
+template, and the other published template weaknesses aren't judged yet.
 
 ### Who keeps what, and where it renders
 

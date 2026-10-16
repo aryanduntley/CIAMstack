@@ -166,6 +166,8 @@ cap 08-apply-chg-2069 od modify --change CHG-2069 changes/CHG-2069-issuing-ca-ce
 cap 08-report-canary-coverage-after od report canary-coverage
 cap 08-apply-chg-2075 od import --change CHG-2075 --at 20260923090000Z linux/baseline exports/hosts-pingaccess
 cap 08-apply-chg-2076 od modify --change CHG-2076 changes/CHG-2076-pingaccess-scoped-agents.ldif
+cap 08-apply-chg-2086 od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory \
+  exports/adcs-templates
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

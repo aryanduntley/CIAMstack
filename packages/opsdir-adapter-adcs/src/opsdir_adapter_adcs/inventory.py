@@ -157,14 +157,16 @@ def read_ca(d, path, doc, resolve, at):
 
 
 def read_inventory(files, d, patterns, at=None):
-    """Imported: the forest's templates (from templates.ldif, replacing ou=certificate-templates) and, per CA
-    export, its authority with its endpoints and its issued-certificate inventory, each replacing the record's."""
+    """Imported: the forest's templates (from templates.ldif, replacing ou=certificate-templates, with what each
+    lets requesters do and who may enroll) and, per CA export, its authority with its endpoints and its
+    issued-certificate inventory, each replacing the record's."""
     templates, template_notices = read_templates(files[TEMPLATES_FILE]) if TEMPLATES_FILE in files else ({}, ())
     resolve = resolver(templates or _record_templates(d))
     exports = sorted(p for p in files if p.startswith(CA_ROOT) and p.endswith(".json"))
     docs = tuple((p, _doc(files[p])) for p in exports)
     read = tuple((p, read_ca(d, p, doc, resolve, at)) for p, doc in docs if doc is not None)
-    template_group = (templates_group(d, tuple(template_entry(d, n, t["display"], t["oid"], t["days"], t["usages"])
+    template_group = (templates_group(d, tuple(template_entry(d, n, t["display"], t["oid"], t["days"], t["usages"],
+                                                              t["rights"])
                                                for n, t in templates.items())),) if TEMPLATES_FILE in files else ()
     return Imported(containers=(ou_entry(AUTHORITIES), ou_entry(ISSUED), ou_entry(TEMPLATES)),
                     groups=(*template_group, *(g for _, (groups, _) in read for g in groups)),

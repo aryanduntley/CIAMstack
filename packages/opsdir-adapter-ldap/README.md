@@ -65,7 +65,7 @@ The importer (`profile.py`) reads every `.json` file of the path, checks it agai
 
 ### Collecting the profile (`opsdir collect`)
 
-`opsdir collect --env CLOUD/ENV --ldap-ca CA.pem` runs the search above itself and profiles it as it streams (`collect.py`, collector `data-profile`, which declares the `--ldap-ca` option: `LDAP_CA`): nothing a value holds is held whole, written or kept, and the export is the profile's counts only (`data-profile-<env>.json`, dated when collecting). The environment declares the directory to read (a replica, preferably):
+`opsdir collect --env CLOUD/ENV --ldap-ca CA.pem` runs the search above itself and profiles it as it streams (`collect.py`, collector `data-profile`, which takes the `--ldap-ca` option the core declares for every LDAPS collector: `opsdir/core/ldap_source.py`'s `LDAP_CA`): nothing a value holds is held whole, written or kept, and the export is the profile's counts only (`data-profile-<env>.json`, dated when collecting). The environment declares the directory to read (a replica, preferably):
 
 ```ldif
 dn: cn=profile,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
