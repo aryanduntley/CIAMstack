@@ -40,7 +40,7 @@ Per environment (`render.py`); nothing environment-neutral.
 | Severity | Subject | Says |
 |---|---|---|
 | action | `pingaccess/admin-api/requests.json` | the paths and fields are unverified for the environment's version: check them against `/pa-admin-api/v3/api-docs/pa/api-docs-v2.json` on the admin node before applying |
-| action | `<collection> (<n>)` per environment-bound collection held | environment-bound, not rendered: create `<names>` in the environment |
+| action | `environment-bound objects` | not rendered: create `<collection> <names>; ...` in the environment before applying the requests |
 | blocker | `<collection> <name>` | its secrets are withheld and no credential role supplies them |
 | note | `server profile`, `node files` | what isn't rendered, and what to do instead |
 
@@ -127,9 +127,8 @@ Vocabulary it owns: `ciamServerRole` and `ciamTargetRole` values `pa-admin`, `pa
 | Action: a web session using the implicit flow (`oidcLoginType` `POST` or `x_post`): move it to `Code` | |
 | Action: a site sending requests to fixed hosts from every environment | `external-host:pa-site/<name>`: record the hosts as the source's `ciamExternalHost` of a role you give, so the next import names the role |
 | Action: a header an identity mapping sets that no header contract names | `header-contract:pa/<mapping>/<header>`: record it (kind `identity`, set by `pa-engine`, trusted by the server roles behind the applications using it), so the edge's header check guards it (spoofable until `ciamStripsInbound` is confirmed) |
-| Action: the environment-bound objects to create in the target | |
 
-Otherwise one line says every web session signs users in with clients and OpenID providers the record has. The edge domain's `check_headers` covers the header contracts themselves (a setter the target doesn't run, a spoofable identity header).
+Otherwise one line says every web session signs users in with clients and OpenID providers the record has. The environment-bound objects to create in the target reach the plan as the render's note (above), as do the unverified requests. The edge domain's `check_headers` covers the header contracts themselves (a setter the target doesn't run, a spoofable identity header).
 
 ### Upgrades during a move
 

@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "alias": "example-aero-root-ca",
+      "subjectDn": "CN=Example Aero Root CA",
+      "sha256Fingerprint": "9C:41:7E:22",
+      "expires": 1956528000000
+    }
+  ]
+}

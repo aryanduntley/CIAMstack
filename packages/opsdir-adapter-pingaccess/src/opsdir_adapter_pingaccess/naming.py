@@ -50,6 +50,7 @@ def type_slug(path):
 
 
 def held_base(path):
+    """The container of a collection's objects held as is: ou=<collection>,ou=held,ou=pingaccess."""
     return f"ou={type_slug(path)},{HELD}"
 
 

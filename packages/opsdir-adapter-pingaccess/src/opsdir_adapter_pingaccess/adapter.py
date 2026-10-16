@@ -14,6 +14,7 @@ PRODUCTS = ("PingAccess",)
 
 
 def applies(m):
+    """Whether environment m runs PingAccess (on servers or Kubernetes)."""
     return runs_product(m, PRODUCTS)
 
 

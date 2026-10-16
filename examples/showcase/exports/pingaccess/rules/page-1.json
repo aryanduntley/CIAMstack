@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "techpubs-readers",
+      "className": "com.pingidentity.pa.policy.WebSessionAttributeRule",
+      "configuration": {
+        "attributeName": "groups",
+        "attributeValue": "techpubs-readers"
+      }
+    }
+  ]
+}

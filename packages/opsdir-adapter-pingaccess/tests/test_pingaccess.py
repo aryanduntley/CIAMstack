@@ -227,8 +227,10 @@ def test_render_notes_say_what_is_left_to_a_person(after):
     notes = render_notes(env_model(d, "beta/prod"), None)
     assert [(n.severity, n.subject) for n in notes if "unverified for PingAccess 9.1.1" in n.text] == [
         ("action", f"`{OUTPUT}`")]
-    bound = {n.subject: n.text for n in notes if "environment-bound" in n.text}
-    assert bound["keyPairs (1)"] == "environment-bound, not rendered: create `portal-tls` in beta/prod"
+    bound = {n.subject: n.text for n in notes}
+    assert bound["environment-bound objects"] == (
+        "not rendered: create certificates `corp-root`; trustedCertificateGroups `Corporate`; keyPairs `portal-tls`; "
+        "engines `engine-1` in beta/prod before applying the requests")
     assert any(n.severity == "blocker" and n.entry == entry_dn("web-session", "portal-session") for n in notes)
 
 
@@ -248,8 +250,6 @@ def test_the_planner_names_what_the_target_or_the_record_lacks(after):
     assert any(t.startswith("Site `docs-cdn` sends requests to `cdn.docs.example.net:443` from every environment")
                for t in actions)
     assert any(t.startswith("Identity mapping `portal-headers` sets header `X-Portal-User`") for t in actions)
-    assert any(t.startswith("PingAccess's environment-bound objects aren't rendered: create") and "`portal-tls`" in t
-               for t in actions)
     keys = {x.key for x in f.fixes}
     assert {"external-host:pa-site/docs-cdn", "header-contract:pa/portal-headers/X-Portal-User"} <= keys
 

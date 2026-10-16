@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "host": "techpubs.example-aero.test",
+      "port": 443,
+      "keyPairId": 1,
+      "trustedCertificateGroupId": 0
+    }
+  ]
+}

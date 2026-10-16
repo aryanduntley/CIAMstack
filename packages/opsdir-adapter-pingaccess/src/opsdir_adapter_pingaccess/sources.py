@@ -69,6 +69,7 @@ def _request_part(request):
 
 
 def is_render(doc):
+    """Whether a JSON document is this adapter's rendered requests.json."""
     return isinstance(doc, dict) and isinstance(doc.get("requests"), list) and "pingAccess" in doc
 
 

@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "alias": "techpubs-tls",
+      "subjectDn": "CN=techpubs.example-aero.test",
+      "hsmProviderId": 0
+    }
+  ]
+}

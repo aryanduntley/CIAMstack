@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Example Aero corporate",
+      "certificateIds": [
+        1
+      ],
+      "useJavaTrustStore": false,
+      "skipCertificateDateCheck": false
+    }
+  ]
+}

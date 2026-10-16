@@ -7,7 +7,8 @@ role the target doesn't bind; an object naming one the record doesn't hold (Ping
 service name role or a site's application role the target doesn't bind; a target that runs no engine.
 Actions: an implicit-flow login (POST, x_post); a site sending requests to fixed hosts from every environment (fix:
 record them as an external system's role); a header an identity mapping sets that no header contract names (fix:
-record it, so the edge's header check guards it); the environment-bound objects to create in the target.
+record it, so the edge's header check guards it). The environment-bound objects to create in the target reach the
+plan as the render's note (render.render_notes).
 """
 from opsdir.core.changeset import new_entry
 from opsdir.core.directory import children, follow, get, one, rdn_value, referrers, values
@@ -161,14 +162,6 @@ def _mapping(ctx, m):
                     fixes=[header_fix(ctx, m, h) for h in missing])
 
 
-def _bound(ctx):
-    found = environment_bound(ctx.d)
-    listed = "; ".join(f"{c.path} {', '.join(f'`{rdn_value(e)}`' for e in entries)}" for c, entries in found)
-    return findings(actions=[(AREA, f"PingAccess's environment-bound objects aren't rendered: create {listed} in "
-                              f"{ctx.dst.label} before applying its requests (the record holds their settings, never "
-                              "their keys).", _owner(ctx), ctx.cutover)]) if found else findings()
-
-
 def check_pingaccess(ctx):
     """What PingAccess protects, and whether it can work in the target."""
     d = ctx.d
@@ -188,8 +181,7 @@ def check_pingaccess(ctx):
                               if one(v, "paServiceRole")),
                             *(_site(ctx, s) for s in children(d, KINDS["site"][0], "paSite")),
                             *(_mapping(ctx, m) for m in children(d, KINDS["identity-mapping"][0],
-                                                                 "paIdentityMapping")),
-                            _bound(ctx)])
+                                                                 "paIdentityMapping"))])
     counted = "The web session signs" if len(sessions) == 1 else f"All {len(sessions)} web sessions sign"
     return found if found.blockers or not sessions else found._replace(
         ok=(*found.ok, f"{counted} users in with clients and OpenID providers the record has."))

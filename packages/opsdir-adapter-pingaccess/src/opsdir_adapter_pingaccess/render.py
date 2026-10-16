@@ -158,13 +158,13 @@ def render_notes(m, services):
                 ("Fetch the OpenAPI document from the environment's admin node (an Auditor can read it).",
                  "Validate each request's path and body against it; report a difference so the adapter's api.py is "
                  "corrected.")),) if rendered(d) else ()),
-        *(note(AREA, "action", f"{c.path} ({len(found)})", "environment-bound, not rendered: create "
-               + ", ".join(f"`{rdn_value(e)}`" for e in found) + f" in {m.label}",
-               ("Create them from the environment's own key material, CAs, listeners and nodes (the record holds "
-                "their settings, never their keys).",
-                "The requests name them by ${pingaccess-id:...}: record each one's id in the pipeline before "
-                "applying."))
-          for c, found in environment_bound(d)),
+        *((note(AREA, "action", "environment-bound objects", "not rendered: create " + "; ".join(
+            f"{c.path} " + ", ".join(f"`{rdn_value(e)}`" for e in found) for c, found in environment_bound(d))
+            + f" in {m.label} before applying the requests",
+            ("Create them from the environment's own key material, CAs, listeners and nodes (the record holds "
+             "their settings, never their keys).",
+             "The requests name them by ${pingaccess-id:...}: record each one's id in the pipeline before "
+             "applying.")),) if environment_bound(d) else ()),
         *(note(AREA, "blocker", f"{c.path} `{rdn_value(e)}`", "its secrets are withheld and no credential role "
                "supplies them: the request carries ${withheld}",
                ("Set paCredentialRole to the secret role that holds them, and bind it in the environment, under an "

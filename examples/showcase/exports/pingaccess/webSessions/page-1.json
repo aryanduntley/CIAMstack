@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "techpubs-session",
+      "audience": "techpubs",
+      "clientCredentials": {
+        "clientId": "tech-pubs-web",
+        "credentialsType": "SECRET",
+        "clientSecret": {
+          "value": null,
+          "encryptedValue": "T0JGOnRlY2hwdWJzLWNsaWVudC1zZWNyZXQtY2lwaGVydGV4dA=="
+        }
+      },
+      "oidcLoginType": "Code",
+      "pkceChallengeType": "SHA256",
+      "scopes": [
+        "openid",
+        "profile",
+        "email"
+      ],
+      "sessionTimeoutInMinutes": 480,
+      "idleTimeoutInMinutes": 60,
+      "secureCookie": true,
+      "httpOnlyCookie": true
+    }
+  ]
+}

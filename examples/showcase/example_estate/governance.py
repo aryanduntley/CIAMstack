@@ -130,6 +130,13 @@ CHANGES = (
      "standard state model", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2056", "Read the linked ServiceNow tickets as evidence (state, approval, planned and actual windows)",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2060", "Run PingAccess in front of Tech Pubs in both environments: its admin node and engines, Tech Pubs' "
+     "service name, the application's host and the web session's secret reference", "approved", "CAB 2026-09-18",
+     "2026-09-24"),
+    ("CHG-2061", "Read PingAccess's configuration (Admin API reads, secrets withheld) into the record", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2062", "Record the PingAccess web session's credential role and the header Tech Pubs trusts for who the user "
+     "is", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (
