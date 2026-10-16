@@ -195,6 +195,21 @@ ManagedService = NamedTuple("ManagedService", [("name", str), ("title", str), ("
                                                ("unsupported", Mapping), ("partition_unsupported", Mapping),
                                                ("conditions", Mapping), ("notes", Mapping), ("users", str)])
 
+# A cloud-managed directory service an adapter declares (Adapter.managed_directory: managed Active Directory), as data
+# with its sources, for the planner's managed directory check (connectors.managed_directory). The fields a
+# ManagedService has, read the same way (core.managed_services), over directory capabilities (schema-extension,
+# password-policies, ldaps, ldaps-internet, multi-region, trust:<forest|external>:<direction>; ldap); and: limits
+# {what: (most, source)} (password-policies, regions, trusts: the most a directory takes); editions {capability:
+# (editions, source)}: the ciamDirectoryEdition values a capability needs; default_base: (binding) -> the DN of the
+# OU the service gives the customer to write in (where the record's entries land when the binding records no
+# ciamWritableBase), or None when the customer names it.
+ManagedDirectory = NamedTuple("ManagedDirectory", [("name", str), ("title", str), ("partition", Callable),
+                                                   ("available", Mapping), ("absent", Mapping), ("supported", Mapping),
+                                                   ("unsupported", Mapping), ("partition_unsupported", Mapping),
+                                                   ("conditions", Mapping), ("notes", Mapping), ("users", str),
+                                                   ("limits", Mapping), ("editions", Mapping),
+                                                   ("default_base", Callable)])
+
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
 # target group binding), and the Service's type (ClusterIP, or LoadBalancer for an internal load balancer the front
@@ -436,10 +451,11 @@ Adapter = namedtuple("Adapter", (
                             # keeps that SIEM index (its retention, the detections searching it and, where it ships
                             # logs to it itself, their forwarding), or None (it keeps none)
     "source_checks",        # planner checks an adapter runs when it applies to the SOURCE environment of a plan
-    "managed_identity"),    # ManagedServices: the cloud-managed identity services it declares (their
+    "managed_identity",     # ManagedServices: the cloud-managed identity services it declares (their
                             # ciamManagedService values are in its vocabulary)
+    "managed_directory"),   # ManagedDirectories: the cloud-managed directory services it declares (likewise)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None, None, (), ()))
+              None, False, None, None, (), None, None, None, (), (), ()))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

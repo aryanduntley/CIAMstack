@@ -2,14 +2,16 @@
 (backends, indexes, password policies, connection handlers, log publishers, replication), the records
 describing its schema (user attributes and object classes, standard or defined in the record), the consumers
 that bind to it, the ACIs that grant them access, and the shape of its user data (a values-free profile per
-environment). Product adapters render and import it."""
+environment), and the cloud-managed directory services that hold it or neighbour it (managed.py). Product adapters
+render and import it; cloud adapters declare and render the managed directories."""
 from pathlib import Path
 
-from ...core.contract import Domain, directory_report, sql_report
+from ...core.contract import Domain, ImportKind, directory_report, sql_report
 from ...core.directory import children, rdn_value
 from .checks import check_consumers, check_hygiene
 from .consumers import CONSUMERS_HEADERS, consumer_rows
 from .drift import DRIFT_HEADERS, drift
+from .managed import MANAGED_CLASS, MANAGED_HEADERS, managed_rows
 from .naming import CONSUMERS, DIRECTORY_SERVER_ROLE
 from .profile import ATTRIBUTE_HEADERS, PROFILE_HEADERS, attribute_rows, check_data_profile, profile_rows
 from .schema import FRAGMENT
@@ -38,7 +40,9 @@ DOMAIN = Domain(name="directory", schema=FRAGMENT, required_roles=(),
                          "user-schema": directory_report(USER_SCHEMA_HEADERS, user_schema_rows),
                          "consumers": directory_report(CONSUMERS_HEADERS, consumer_rows, dated=True),
                          "data-profile": directory_report(PROFILE_HEADERS, profile_rows),
-                         "data-profile-attributes": directory_report(ATTRIBUTE_HEADERS, attribute_rows)},
+                         "data-profile-attributes": directory_report(ATTRIBUTE_HEADERS, attribute_rows),
+                         "managed-directory": directory_report(MANAGED_HEADERS, managed_rows)},
                 checks=(check_user_schema, check_consumers, check_hygiene, check_data_profile), order=20,
                 vocabulary={"ciamServerRole": (DIRECTORY_SERVER_ROLE,), "ciamTargetRole": (DIRECTORY_SERVER_ROLE,)},
-                settings=SETTINGS)
+                settings=SETTINGS,
+                import_kinds=(ImportKind("managed-directory", MANAGED_CLASS, ("ciamManagedService",)),))

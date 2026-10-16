@@ -824,9 +824,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.200 NAME 'ciamRotationFunction' DESC
  seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
  TY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.201 NAME 'ciamReplicaRegion' DESC 'R
- egions the key or secret is replicated to (multi-region keys, replicated se
- crets)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-POR
- TABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+ egions the key, secret or managed directory is replicated to (multi-region 
+ keys, replicated secrets, a managed directory\27s further regions)' EQUALIT
+ Y caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'bindi
+ ng' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.202 NAME 'ciamKeyUser' DESC 'Princip
  al the store lets use the material (provider id of a role, identity or serv
  ice account)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
@@ -3624,6 +3625,41 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.843 NAME 'ciamArchiveRef' DESC 'Wher
  (an Elasticsearch snapshot repository)' EQUALITY caseIgnoreMatch SYNTAX 1.3
  .6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYP
  E 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.870 NAME 'ciamNetbiosName' DESC 'Net
+ BIOS name of a managed Active Directory domain' EQUALITY caseIgnoreMatch SY
+ NTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-V
+ ALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.871 NAME 'ciamDirectoryEdition' DESC
+  'Edition (SKU) of a managed directory service, as the adapter declaring th
+ e service names it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.12
+ 1.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'vocab' X-ORIGIN '
+ opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.873 NAME 'ciamWritableBase' DESC 'Th
+ e OU of a managed directory the platform writes in: where the record\27s di
+ rectory entries land' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'extdn' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.874 NAME 'ciamLdapsMode' DESC 'Secur
+ e LDAP of a managed directory: off, on private networks only, or reachable 
+ from the internet' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:off|private|i
+ nternet' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.875 NAME 'ciamTrustDirection' DESC '
+ Direction of a directory trust, from the managed domain\27s side (outgoing:
+  it trusts the other domain, whose users reach its resources)' EQUALITY cas
+ eIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILIT
+ Y 'binding' X-VALUE-TYPE 'enum:one-way-incoming|one-way-outgoing|two-way' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.876 NAME 'ciamTrustType' DESC 'Kind 
+ of a directory trust: a forest trust, or an external trust with one domain'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
+  X-PORTABILITY 'binding' X-VALUE-TYPE 'enum:forest|external' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.877 NAME 'ciamSelectiveAuth' DESC 'A
+  directory trust uses selective authentication (only the users granted reac
+ h the trusting side)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'ops
+ dir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4561,3 +4597,25 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.181 NAME 'ciamEndpointObservation' DE
  InventoryAt ) MAY ( ciamEndpointAnswer $ ciamThisUpdate $ ciamNextUpdate $ 
  ciamCrlNumber $ ciamBaseCrlNumber $ ciamSignatureCheck $ ciamSignedBy $ cia
  mOcspStatus $ ciamSerialNumber $ ciamInventoryProblem ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.189 NAME 'ciamManagedDirectory' DESC 
+ 'A cloud-managed directory service an environment uses (managed Active Dire
+ ctory): the platform\27s user directory held on it there (ciamRealizes ds: 
+ a target), or a directory the platform binds to or syncs from (ciamPartnerO
+ f: the ldap integrations it is the partner side of; a neighbour). Its domai
+ n (ciamFqdn, ciamNetbiosName), edition, regions and domain controllers per 
+ region (ciamReplicaCount), the OU the platform writes in (ciamWritableBase)
+ , secure LDAP (ciamLdapsMode, presenting ciamTlsCertificate), where it is p
+ laced (subnet roles; a reserved range, ciamCidr), the secret role of its ad
+ ministrator\27s password (ciamCredentialRole) and who keeps it when it isn\
+ 27t the platform team (ciamManagedBy); its trusts are entries beneath it' S
+ UP ciamBinding STRUCTURAL MUST ciamManagedService MAY ( ciamRealizes $ ciam
+ PartnerOf $ ciamFqdn $ ciamNetbiosName $ ciamDirectoryEdition $ ciamRegion 
+ $ ciamReplicaRegion $ ciamReplicaCount $ ciamWritableBase $ ciamLdapsMode $
+  ciamTlsCertificate $ ciamSubnetRole $ ciamCidr $ ciamCredentialRole $ ciam
+ ManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.190 NAME 'ciamDirectoryTrust' DESC 'A
+  trust of a managed directory (beneath its binding) with another domain (ci
+ amFqdn), its DNS servers (ciamForwardTarget) and who keeps the other side (
+ ciamManagedBy)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamFqdn $ ciamTrustT
+ ype $ ciamTrustDirection ) MAY ( ciamForwardTarget $ ciamSelectiveAuth $ ci
+ amManagedBy ) X-ORIGIN 'opsdir' )
