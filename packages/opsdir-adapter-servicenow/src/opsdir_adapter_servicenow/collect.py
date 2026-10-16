@@ -19,12 +19,13 @@ import json
 from urllib.parse import quote, urlsplit
 
 from opsdir.core.contract import Collector, Request
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import readable_source, scheme_problems
 from opsdir.domains.governance.tickets import linked_numbers
 from .changes import APPROVER_FIELDS, APPROVER_TABLE, CHANGE_FIELDS, CHANGE_TABLE, SYSTEM, answer_rows
 
 IMPORTER = "servicenow/change-requests"
 SCHEMES = ("basic", "bearer")      # a user's password; an OAuth client-credentials access token minted outside opsdir
+TAKES = "the instance is read with a user's password (basic) or an OAuth access token (bearer)"
 CHUNK = 50                         # tickets per query (the URL stays short)
 PAGE = 100                         # records per page: more than a chunk's tickets, so a chunk's second page is empty
 
@@ -46,11 +47,6 @@ def answer_fields(fields):
 
 def page_path(host, table, chunk, offset):
     return f"{host}/{table}/{chunk}-{offset}.json"
-
-
-def _source(m):
-    return next((s for s in collection_sources(m, IMPORTER) if s.locations and not s.problems and s.scheme in SCHEMES),
-                None)
 
 
 def _request(s, table, query, fields, offset):
@@ -83,7 +79,7 @@ def _value(v):
 def change_steps(d, m, done, options):
     """Each chunk of linked tickets' pages; once every chunk is read to an empty page, the approval records of the
     changes found, paged the same way."""
-    s = _source(m)
+    s = readable_source(m, IMPORTER, SCHEMES)
     if s is None:
         return ()
     host = urlsplit(s.locations[0]).hostname or "instance"
@@ -105,10 +101,7 @@ def change_steps(d, m, done, options):
 def source_problems(d, m, options):
     """Why the collection sources can't be read (an unbound credential or trust anchor, no location, a credential
     scheme the Table API isn't read with here)."""
-    return tuple(p for s in collection_sources(m, IMPORTER) for p in (
-        *s.problems, *((f"collection source `{s.name}`: credential scheme `{s.scheme}`: the instance is read with a "
-                        "user's password (basic) or an OAuth access token (bearer)",) if s.scheme not in SCHEMES
-                       else ())))
+    return scheme_problems(m, IMPORTER, SCHEMES, TAKES)
 
 
 COLLECTORS = (Collector("change-requests", "environment", change_steps, problems=source_problems),)

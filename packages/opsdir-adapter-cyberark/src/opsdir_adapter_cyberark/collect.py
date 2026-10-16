@@ -18,22 +18,18 @@ import json
 from urllib.parse import quote
 
 from opsdir.core.contract import Collector, Request
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import readable_source, scheme_problems
 from opsdir.domains.pki.inventory import CONTAINER_OPTION, wanted_containers
 from .inventory import SCHEME, locate, metadata_only
 
 IMPORTER = "cyberark/accounts"
 SCHEMES = ("token", "bearer")       # a self-hosted PVWA's session token; a Privilege Cloud OAuth access token
+TAKES = "the PVWA API takes a session token (token) or a Privilege Cloud access token (bearer)"
 PAGE = 1000                         # the API's largest page
 
 
 def page_path(safe, offset):
     return f"accounts/{safe}/{offset}.json"
-
-
-def _source(m):
-    return next((s for s in collection_sources(m, IMPORTER) if s.locations and not s.problems and s.scheme in SCHEMES),
-                None)
 
 
 def _request(s, safe, offset):
@@ -58,7 +54,7 @@ def next_offset(text, offset):
 
 def account_steps(d, m, done, options):
     """Each safe's first page, then each next page its last one says remains."""
-    s = _source(m)
+    s = readable_source(m, IMPORTER, SCHEMES)
     if s is None:
         return ()
     def pages(safe):
@@ -77,10 +73,7 @@ def account_steps(d, m, done, options):
 def source_problems(d, m, options):
     """Why the collection sources can't be read (an unbound credential or trust anchor, no location, a credential
     scheme the PVWA API doesn't take)."""
-    return tuple(p for s in collection_sources(m, IMPORTER) for p in (
-        *s.problems, *((f"collection source `{s.name}`: credential scheme `{s.scheme}`: the PVWA API takes a session "
-                        "token (token) or a Privilege Cloud access token (bearer)",) if s.scheme not in SCHEMES
-                       else ())))
+    return scheme_problems(m, IMPORTER, SCHEMES, TAKES)
 
 
 COLLECTORS = (Collector("accounts", "environment", account_steps, problems=source_problems,

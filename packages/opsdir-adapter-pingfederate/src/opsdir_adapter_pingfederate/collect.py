@@ -11,11 +11,12 @@ JWT), and the CA certificate its ciamCaRole binding references as the trust anch
 whichever way the caller signs in. The export holds sensitive values encrypted (the
 importer withholds them); only resource types the Admin API supports are in it."""
 from opsdir.core.contract import Collector, Request
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import readable_sources, scheme_problems
 
 IMPORTER = "pingfederate/bulk"
 XSRF = (("X-XSRF-Header", "PingFederate"),)
 SCHEMES = ("basic", "bearer")       # how the Admin API takes the credential (native/LDAP/RADIUS; OAuth2/JWT)
+TAKES = f"PingFederate's Admin API takes {' or '.join(SCHEMES)}"
 
 
 def _credential(s):
@@ -26,18 +27,13 @@ def bulk_steps(d, m, done, options):
     """The bulk export request of each collection source (its first location)."""
     return tuple((f"bulk-export-{s.name}.json",
                   Request(f"{s.locations[0].rstrip('/')}/pf-admin-api/v1/bulk/export", XSRF, _credential(s), s.ca))
-                 for s in collection_sources(m, IMPORTER) if s.locations and not s.problems and s.scheme in SCHEMES)
+                 for s in readable_sources(m, IMPORTER, SCHEMES))
 
 
 def source_problems(d, m, options):
     """Why the collection sources can't be read (an unbound credential or trust anchor, no location, a credential
     scheme the Admin API doesn't take)."""
-    return tuple(p for s in collection_sources(m, IMPORTER) for p in (*s.problems, *_scheme_problem(s)))
-
-
-def _scheme_problem(s):
-    return (f"collection source `{s.name}`: credential scheme `{s.scheme}`: PingFederate's Admin API takes "
-            f"{' or '.join(SCHEMES)}",) if s.scheme not in SCHEMES else ()
+    return scheme_problems(m, IMPORTER, SCHEMES, TAKES)
 
 
 COLLECTORS = (Collector("bulk", "environment", bulk_steps, problems=source_problems),)

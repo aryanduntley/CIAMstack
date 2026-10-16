@@ -12,7 +12,7 @@ served over REST and aren't collected."""
 import json
 
 from opsdir.core.contract import Collector, Request
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import readable_source, source_problems as problems_of
 
 IMPORTER = "pingidm/project"
 API = (("Accept-API-Version", "resource=1.0"),)
@@ -41,7 +41,7 @@ def _request(s, path, keep=None):
 
 def config_steps(d, m, done, options):
     """The listing, then each configuration object it names."""
-    s = next((x for x in collection_sources(m, IMPORTER) if x.locations and not x.problems), None)
+    s = readable_source(m, IMPORTER)
     if s is None:
         return ()
     try:
@@ -55,7 +55,7 @@ def config_steps(d, m, done, options):
 
 def source_problems(d, m, options):
     """Why the collection sources can't be read (an unbound credential or trust anchor, no location)."""
-    return tuple(p for s in collection_sources(m, IMPORTER) for p in s.problems)
+    return problems_of(m, IMPORTER)
 
 
 COLLECTORS = (Collector("project", "environment", config_steps, problems=source_problems),)
