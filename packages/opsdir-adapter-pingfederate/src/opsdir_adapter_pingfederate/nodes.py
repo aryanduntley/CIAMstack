@@ -18,14 +18,13 @@ Discovery differs per environment (an S3 bucket on AWS, DNS where the platform p
 listed), so it is a binding whose protocol is chosen per environment: see discovery.py.
 """
 from types import MappingProxyType
-import xml.etree.ElementTree as ET
 
 from opsdir.core.contract import Imported, Importer
 from opsdir.core.directory import get, make_entry, merged_attrs, one, ou_entry, rdn_value, subtree
 from opsdir.core.environment import env_model, one_role, server_named
 from opsdir.core.interchange.properties import decode, split
 from opsdir.core.jsondata import canonical
-from opsdir.core.sources import by_folder
+from opsdir.core.sources import by_folder, xml_document
 from .discovery import (CHOICES, JGROUPS_PROPERTIES, PROTOCOLS, RENDERED, TCP_XML, binding_protocol, node_protocol,
                         where)
 from .naming import DISCOVERY_ROLE, SERVER_ROLES, SETTINGS, STORAGE
@@ -51,13 +50,6 @@ def properties(text):
     return {p[0]: decode(p[1]) for p in split(text) if isinstance(p, tuple)}
 
 
-def _xml(text):
-    try:
-        return ET.fromstring(text)
-    except ET.ParseError:
-        return None
-
-
 def _local(tag):
     return tag.rsplit("}", 1)[-1].rsplit(".", 1)[-1]
 
@@ -73,8 +65,8 @@ def storage_kind(implementation):
 
 def storage(text):
     """{what: {"implementation", "storage"}} for the service points of a hivemodule.xml that keep clients, grants and
-    sessions."""
-    root = _xml(text)
+    sessions (none when the file isn't read: xml_document)."""
+    root, _ = xml_document(text)
     points = (e for e in root.iter() if _local(e.tag) == "service-point") if root is not None else ()
     found = ((STORAGE_POINTS.get(p.get("id")), next((c.get("class") for c in p.iter() if c.get("class")), None))
              for p in points)
@@ -138,12 +130,15 @@ def read_node_files(files, d, patterns, at=None):
     placed = [(f, *server_named(d, f, SERVER_ROLES, "PingFederate server")) for f in folders]
     nodes = [(s, node_entries(d, s, folders[f], patterns)) for f, s, _ in placed if s is not None]
     stores = [(f, storage(folders[f][HIVEMODULE])) for f in folders if HIVEMODULE in folders[f]]
+    unread = [(f, why) for f in folders if HIVEMODULE in folders[f]
+              for _, why in (xml_document(folders[f][HIVEMODULE]),) if why]
     kept = next((st for _, st in stores if st), None)
     return Imported(
         containers=(ou_entry(SETTINGS),),
         groups=(*((s.dn, entries) for s, (entries, _) in nodes),
                 *(((STORAGE, (storage_entry(d, kept),)),) if kept else ())),
         notices=(*(why for _, s, why in placed if s is None), *(n for _, (_, ns) in nodes for n in ns),
+                 *(f"node folder {f}: hivemodule.xml not read: {why}" for f, why in unread),
                  *((f"hivemodule.xml differs between nodes ({', '.join(f for f, st in stores if st)}); recorded "
                     f"the first",) if len({canonical(st) for _, st in stores if st}) > 1 else ()),
                  *(("no node folders (one folder per node, named by its hostname, holding bin/run.properties, "

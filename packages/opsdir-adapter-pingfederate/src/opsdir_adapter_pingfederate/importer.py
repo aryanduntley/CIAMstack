@@ -3,7 +3,9 @@
 Reads the Admin API bulk export (GET /pf-admin-api/v1/bulk/export: {"metadata": {"pfVersion"}, "operations":
 [{"operationType", "resourceType", "items"}]}) and this adapter's own rendered requests
 (pingfederate/admin-api/requests.json: each request's body an item of the resource type its path names), so a render
-reads back as it was.
+reads back as it was. An integration the record holds without PingFederate settings (recorded by another product's
+importer or by hand) reads back from such a render as the record's: what the render adds to it (PingFederate's defaults,
+the id it names it by, the settings it builds) is derived from the record, not read from a PingFederate.
 
   /idp/spConnections              -> SAML service providers (saml2-sp integrations): entity ID, default ACS URL and
                                      binding, the claims of the attribute contract (linked to user-schema records),
@@ -101,8 +103,8 @@ def _operations(doc):
 
 
 def resources(files):
-    """({kind: items}, {resource type not modeled: items}, (source version, notices), unreadable paths) from the
-    export (source_version)."""
+    """({kind: items}, {resource type not modeled: items}, (source version, notices), unreadable paths, whether only
+    rendered requests were read) from the export (source_version, rendered_only)."""
     parsed = {p: json_document(t) for p, t in files.items() if p.endswith(".json")}
     bulk = [op for doc in parsed.values() if isinstance(doc, dict) for op in _operations(doc)]
     found = ((RESOURCES.get(op.get("resourceType")), item) for op in bulk if op.get("operationType", "SAVE") == "SAVE"
@@ -113,7 +115,15 @@ def resources(files):
                       for i in op.get("items") or () if isinstance(i, dict))
              for t in dict.fromkeys(op.get("resourceType") for op in bulk)
              if isinstance(t, str) and t not in RESOURCES},
-            source_version(parsed), tuple(p for p, doc in parsed.items() if doc is None))
+            source_version(parsed), tuple(p for p, doc in parsed.items() if doc is None), rendered_only(parsed))
+
+
+def rendered_only(parsed):
+    """Whether the documents read are this adapter's rendered requests only (one at least, no bulk export among them):
+    reading a render back is no new source."""
+    docs = [doc for doc in parsed.values() if isinstance(doc, dict)]
+    return bool(docs) and all(isinstance(doc.get("requests"), list) and not isinstance(doc.get("metadata"), dict)
+                              for doc in docs)
 
 
 def source_version(parsed):
@@ -361,10 +371,12 @@ def _client(d, client, held, dn, name, served, exported, patterns):
     return (entry, *_others(d, dn, held, ())), notices
 
 
-def integration_groups(d, found, certs, exported, patterns=()):
+def integration_groups(d, found, certs, exported, patterns=(), rendered=False):
     """(groups, notices, {("idp-connection", id): DN}): an integration for every SP connection, IdP connection and
     OAuth client in the export (a client linked to the token manager and OIDC policy it names: exported {(kind, id):
-    DN}), and where each IdP connection's is (what policies that name it link to)."""
+    DN}), and where each IdP connection's is (what policies that name it link to). rendered: the files are this
+    adapter's own render (rendered_only), whose integrations the record holds without pingfedConfig are kept as the
+    record holds them (the render derived everything it says of them from the record)."""
     user_attrs = attribute_records(d)
     pf_services = identity_services(d, SERVER_ROLES)
     served = pf_services[0] if len(pf_services) == 1 else None
@@ -384,7 +396,10 @@ def integration_groups(d, found, certs, exported, patterns=()):
         return (*acc, (kind, item, held, name, held.dn if held else f"cn={name},{INTEGRATIONS}"))
     placed = reduce(place, wanted, ())
     keys = {kp.get("id"): fingerprint(kp.get("sha256Fingerprint")) for kp in found["signing"]}
-    built = tuple(_sp(d, item, certs, keys, user_attrs, held, dn, name, served, patterns) if kind == "sp"
+    def as_held(held):
+        return rendered and held is not None and not one(held, "pingfedConfig")
+    built = tuple(((held, *_others(d, dn, held, ())), ()) if as_held(held)
+                  else _sp(d, item, certs, keys, user_attrs, held, dn, name, served, patterns) if kind == "sp"
                   else _idp(d, item, certs, held, dn, name, served, patterns) if kind == "idp"
                   else _client(d, item, held, dn, name, served, exported, patterns)
                   for kind, item, held, name, dn in placed)
@@ -398,12 +413,12 @@ def integration_groups(d, found, certs, exported, patterns=()):
 # ------------------------------------------------------------------ the importer
 def read_export(files, d, patterns, at=None):
     """Imported from a PingFederate bulk export (or this adapter's rendered files)."""
-    found, unread, (version, version_notices), unreadable = resources(files)
+    found, unread, (version, version_notices), unreadable, rendered = resources(files)
     certs = certificate_entries(d, found)
     keys = {fingerprint(kp.get("sha256Fingerprint")): kp.get("id") for k in ("signing", "ssl") for kp in found[k]}
     named_ = {**{(kind, item.get("id")): ref_dn(kind, item.get("id")) for kind in NAMED_KINDS for item in found[kind]},
               **{(KEY_PAIR, keys[fp]): c.dn for fp, c in certs.items() if fp in keys}}
-    groups, notices, connections = integration_groups(d, found, certs, named_, patterns)
+    groups, notices, connections = integration_groups(d, found, certs, named_, patterns, rendered)
     exported = {**named_, **connections}
     stores, store_notices = data_store_groups(d, found["datastore"], patterns)
     plugins, plugin_notices = plugin_groups(d, found, patterns, exported)
