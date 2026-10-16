@@ -411,11 +411,12 @@ Adapter = namedtuple("Adapter", (
                             # inventory a reference of the scheme points (a safe and an account, a mount and a path),
                             # for reconciling the record's references with the inventory its importers record
                             # (domains.pki.inventory), or None (its stores aren't inventoried)
-    "siem_indexes"),        # (EnvModel, ciamLogDestination binding of kind siem-index) -> bool: whether its render
+    "siem_indexes",         # (EnvModel, ciamLogDestination binding of kind siem-index) -> bool: whether its render
                             # keeps that SIEM index (its retention, the detections searching it and, where it ships
                             # logs to it itself, their forwarding), or None (it keeps none)
+    "source_checks"),       # planner checks an adapter runs when it applies to the SOURCE environment of a plan
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None, None))
+              None, False, None, None, (), None, None, None, ()))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

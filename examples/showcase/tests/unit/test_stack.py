@@ -39,14 +39,14 @@ def test_environments_declare_their_stack(estate, source):
 
 def test_the_declared_stack_decides_which_adapters_render(source):
     assert [a.name for a in declared_adapters(source, ADAPTERS)] == \
-        ["aws", "ansible", "splunk", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
+        ["aws", "ansible", "splunk", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm", "siteminder"]
     only_provider = source._replace(stack=(component("aws", "provider"),))
     assert [a.name for a in declared_adapters(only_provider, ADAPTERS)] == ["aws"]
 
 
 def test_without_a_stack_adapters_are_inferred_from_the_data(source):
     assert [a.name for a in declared_adapters(source._replace(stack=()), ADAPTERS)] == \
-        ["aws", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm"]
+        ["aws", "pingam", "pingds", "pingfederate", "pinggateway", "pingidm", "siteminder"]
 
 
 def test_rendering_refuses_a_declared_adapter_that_is_not_installed(source):

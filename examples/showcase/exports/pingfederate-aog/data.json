@@ -1,0 +1,93 @@
+{
+  "metadata": {
+    "pfVersion": "12.1.4.0"
+  },
+  "operations": [
+    {
+      "operationType": "SAVE",
+      "resourceType": "/idp/spConnections",
+      "items": [
+        {
+          "id": "aog-parts-exchange",
+          "name": "aog-parts-exchange",
+          "entityId": "https://parts.aog-exchange.test/saml/sp",
+          "active": true,
+          "contactInfo": {
+            "company": "ciam-platform"
+          },
+          "spBrowserSso": {
+            "protocol": "SAML20",
+            "enabledProfiles": [
+              "SP_INITIATED_SSO"
+            ],
+            "ssoServiceEndpoints": [
+              {
+                "binding": "POST",
+                "url": "https://parts.aog-exchange.test/saml/acs",
+                "isDefault": true
+              }
+            ],
+            "attributeContract": {
+              "coreAttributes": [
+                {
+                  "name": "SAML_SUBJECT"
+                }
+              ],
+              "extendedAttributes": [
+                {
+                  "name": "company"
+                },
+                {
+                  "name": "email"
+                }
+              ]
+            },
+            "adapterMappings": [
+              {
+                "attributeContractFulfillment": {
+                  "SAML_SUBJECT": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "uid"
+                  },
+                  "company": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "companyId"
+                  },
+                  "email": {
+                    "source": {
+                      "type": "LDAP_DATA_STORE",
+                      "id": "user-directory"
+                    },
+                    "value": "mail"
+                  }
+                },
+                "idpAdapterRef": {
+                  "id": "htmlform"
+                }
+              }
+            ],
+            "assertionLifetime": {
+              "minutesBefore": 5,
+              "minutesAfter": 5
+            }
+          },
+          "type": "SP",
+          "credentials": {
+            "signingSettings": {
+              "signingKeyPairRef": {
+                "id": "signing-2025"
+              },
+              "algorithm": "SHA256withRSA"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

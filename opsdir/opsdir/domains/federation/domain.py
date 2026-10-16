@@ -3,6 +3,7 @@ the claim mappings they release. Product adapters render and import it."""
 from ...core.contract import Domain
 from .checks import check_identity_services
 from .schema import FRAGMENT
+from .served import check_served_integrations
 
 DOMAIN = Domain(name="federation", schema=FRAGMENT, required_roles=(), sql=(), reports={},
-                checks=(check_identity_services,), order=30, vocabulary={})
+                checks=(check_identity_services, check_served_integrations), order=30, vocabulary={})

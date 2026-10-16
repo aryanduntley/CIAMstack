@@ -259,6 +259,13 @@ echo "   change_request and its approval records, as the Table API answers): wha
 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif
 od import --change CHG-2056 --at 20260923090000Z servicenow/change-requests exports/servicenow
 od report tickets
+echo "-- production's SiteMinder still protects the crew portal: its policy store export read in (CHG-2063, secrets"
+echo "   withheld), what has no standard equivalent carried as source objects, and AOG Parts Exchange moved to"
+echo "   PingFederate's sso (CHG-2064), whose SP connection the platform team then configures and reads back (CHG-2065)"
+od import --change CHG-2063 --at 20260923090000Z siteminder/xps exports/siteminder
+od modify --change CHG-2064 changes/CHG-2064-siteminder-owners-and-aog-to-sso.ldif
+od import --change CHG-2065 --at 20260923090000Z pingfederate/bulk exports/pingfederate-aog
+od report source-objects
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

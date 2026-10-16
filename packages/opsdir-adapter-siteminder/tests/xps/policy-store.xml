@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A synthetic XPSExport (-xb) built from the documented shapes (archived 12.51 reference, 12.8 KB examples). Not
+     from a real policy store: every class and property name it uses is one opsdir_adapter_siteminder.xps lists. -->
+<XPS ProductVersion="12.8.8" ExportMode="Add" CreatedDateTime="2026-09-20T03:00:00">
+  <PolicyData>
+    <Object Class="CA.SM::Agent" Xid="CA.SM::Agent@01-crew-agent">
+      <Property Name="CA.SM::Agent.Name"><StringValue>crew-agent</StringValue></Property>
+      <Property Name="CA.SM::Agent.AgentType"><StringValue>Web Agent</StringValue></Property>
+      <Property Name="CA.SM::Agent.SharedSecret"><StringValue>{RC2}c2VjcmV0LWFnZW50LWtleQ==</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::Agent" Xid="CA.SM::Agent@01-parts-gateway">
+      <Property Name="CA.SM::Agent.Name"><StringValue>parts-gateway</StringValue></Property>
+      <Property Name="CA.SM::Agent.AgentType"><StringValue>SPS</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::AuthScheme" Xid="CA.SM::AuthScheme@0d-crew-forms">
+      <Property Name="CA.SM::AuthScheme.Name"><StringValue>Crew Forms</StringValue></Property>
+      <Property Name="CA.SM::AuthScheme.Type"><StringValue>HTML Form Template</StringValue></Property>
+      <Property Name="CA.SM::AuthScheme.Level"><NumberValue>5</NumberValue></Property>
+      <Property Name="CA.SM::AuthScheme.Library"><StringValue>smauthhtml</StringValue></Property>
+      <Property Name="CA.SM::AuthScheme.Param"><StringValue>/siteminderagent/forms/login.fcc</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::AuthScheme" Xid="CA.SM::AuthScheme@0d-badge">
+      <Property Name="CA.SM::AuthScheme.Name"><StringValue>Badge Login</StringValue></Property>
+      <Property Name="CA.SM::AuthScheme.Type"><StringValue>Custom Template</StringValue></Property>
+      <Property Name="CA.SM::AuthScheme.Level"><NumberValue>20</NumberValue></Property>
+      <Property Name="CA.SM::AuthScheme.Library"><StringValue>badgeauth</StringValue></Property>
+      <Property Name="CA.SM::AuthScheme.Secret"><StringValue>badge-shared-secret-123</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::UserDirectory" Xid="CA.SM::UserDirectory@0e-crew-directory">
+      <Property Name="CA.SM::UserDirectory.Name"><StringValue>Crew Directory</StringValue></Property>
+      <Property Name="CA.SM::UserDirectory.NameSpace"><StringValue>LDAP:</StringValue></Property>
+      <Property Name="CA.SM::UserDirectory.Server"><StringValue>ldaps.example.test:636</StringValue></Property>
+      <Property Name="CA.SM::UserDirectory.SearchRoot"><StringValue>ou=people,dc=example,dc=test</StringValue></Property>
+      <Property Name="CA.SM::UserDirectory.Username"><StringValue>cn=siteminder-ps,ou=services,dc=example,dc=test</StringValue></Property>
+      <Property Name="CA.SM::UserDirectory.Password"><StringValue>clear-text-bind-password</StringValue></Property>
+      <Property Name="CA.SM::UserDirectory.Secure"><BooleanValue>true</BooleanValue></Property>
+    </Object>
+    <Object Class="CA.SM::AgentConfig" Xid="CA.SM::AgentConfig@25-crew-aco">
+      <Property Name="CA.SM::AgentConfig.Name"><StringValue>crew-aco</StringValue></Property>
+      <Property Name="CA.SM::AgentConfig.Parameters"><StringValue>CookieDomain=.example.test</StringValue><StringValue>LogOffUri=/crew/logout</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::HostConfig" Xid="CA.SM::HostConfig@26-default-hco">
+      <Property Name="CA.SM::HostConfig.Name"><StringValue>default-hco</StringValue></Property>
+      <Property Name="CA.SM::HostConfig.PolicyServer"><StringValue>10.0.1.5,44441,44442,44443</StringValue></Property>
+      <Property Name="CA.SM::HostConfig.EnableFailOver"><BooleanValue>true</BooleanValue></Property>
+    </Object>
+    <Object Class="CA.SM::TrustedHost" Xid="CA.SM::TrustedHost@27-crew-web-1">
+      <Property Name="CA.SM::TrustedHost.Name"><StringValue>crew-web-1</StringValue></Property>
+      <Property Name="CA.SM::TrustedHost.IPAddr"><StringValue>10.0.2.10</StringValue></Property>
+      <Property Name="CA.SM::TrustedHost.SharedSecret"><StringValue>trusted-host-secret</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::Variable" Xid="CA.SM::Variable@2a-shift">
+      <Property Name="CA.SM::Variable.Name"><StringValue>shift</StringValue></Property>
+      <Property Name="CA.SM::Variable.Definition"><StringValue>employeeType</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::Domain" Xid="CA.SM::Domain@03-crew-portal">
+      <Property Name="CA.SM::Domain.Name"><StringValue>Crew Portal</StringValue></Property>
+      <Property Name="CA.SM::Domain.Desc"><StringValue>The crew scheduling portal</StringValue></Property>
+      <Object Class="CA.SM::Realm" Xid="CA.SM::Realm@06-crew">
+        <Property Name="CA.SM::Realm.Name"><StringValue>Crew</StringValue></Property>
+        <Property Name="CA.SM::Realm.ResourceFilter"><StringValue>/crew/</StringValue></Property>
+        <Property Name="CA.SM::Realm.AgentLink"><LinkValue><XID>CA.SM::Agent@01-crew-agent</XID></LinkValue></Property>
+        <Property Name="CA.SM::Realm.AuthSchemeLink"><XREF>Ref1</XREF></Property>
+        <Property Name="CA.SM::Realm.IdleTimeout"><NumberValue>1800</NumberValue></Property>
+        <Property Name="CA.SM::Realm.MaxTimeout"><NumberValue>28800</NumberValue></Property>
+        <Object Class="CA.SM::Rule" Xid="CA.SM::Rule@07-crew-pages">
+          <Property Name="CA.SM::Rule.Name"><StringValue>Crew Pages</StringValue></Property>
+          <Property Name="CA.SM::Rule.Resource"><StringValue>*</StringValue></Property>
+          <Property Name="CA.SM::Rule.Actions"><StringValue>GET,POST</StringValue></Property>
+          <Property Name="CA.SM::Rule.AllowAccess"><BooleanValue>true</BooleanValue></Property>
+          <Property Name="CA.SM::Rule.IsEnabled"><BooleanValue>true</BooleanValue></Property>
+        </Object>
+        <Object Class="CA.SM::Realm" Xid="CA.SM::Realm@06-crew-admin">
+          <Property Name="CA.SM::Realm.Name"><StringValue>Admin</StringValue></Property>
+          <Property Name="CA.SM::Realm.ResourceFilter"><StringValue>/crew/admin/</StringValue></Property>
+          <Property Name="CA.SM::Realm.AgentLink"><LinkValue><XID>CA.SM::Agent@01-crew-agent</XID></LinkValue></Property>
+          <Property Name="CA.SM::Realm.AuthSchemeLink"><LinkValue><XID>CA.SM::AuthScheme@0d-badge</XID></LinkValue></Property>
+          <Object Class="CA.SM::Rule" Xid="CA.SM::Rule@07-admin-pages">
+            <Property Name="CA.SM::Rule.Name"><StringValue>Admin Pages</StringValue></Property>
+            <Property Name="CA.SM::Rule.Resource"><StringValue>^/crew/admin/(roster|swap)</StringValue></Property>
+            <Property Name="CA.SM::Rule.IsRegex"><BooleanValue>true</BooleanValue></Property>
+            <Property Name="CA.SM::Rule.Actions"><StringValue>GET</StringValue></Property>
+            <Property Name="CA.SM::Rule.AllowAccess"><BooleanValue>true</BooleanValue></Property>
+            <Property Name="CA.SM::Rule.IsEnabled"><BooleanValue>true</BooleanValue></Property>
+          </Object>
+        </Object>
+      </Object>
+      <Object Class="CA.SM::Response" Xid="CA.SM::Response@0a-crew-identity">
+        <Property Name="CA.SM::Response.Name"><StringValue>Crew Identity</StringValue></Property>
+        <Object Class="CA.SM::ResponseAttr" Xid="CA.SM::ResponseAttr@0b-sm-user">
+          <Property Name="CA.SM::ResponseAttr.AgentTypeAttr"><StringValue>WebAgent-HTTP-Header-Variable</StringValue></Property>
+          <Property Name="CA.SM::ResponseAttr.Value"><StringValue>SM_USER=&lt;%userattr="uid"%&gt;</StringValue></Property>
+        </Object>
+        <Object Class="CA.SM::ResponseAttr" Xid="CA.SM::ResponseAttr@0b-app-key">
+          <Property Name="CA.SM::ResponseAttr.AgentTypeAttr"><StringValue>WebAgent-HTTP-Header-Variable</StringValue></Property>
+          <Property Name="CA.SM::ResponseAttr.Value"><StringValue>X-Crew-App-Key=fixed-application-key</StringValue></Property>
+        </Object>
+        <Object Class="CA.SM::ResponseAttr" Xid="CA.SM::ResponseAttr@0b-crew-role">
+          <Property Name="CA.SM::ResponseAttr.AgentTypeAttr"><StringValue>WebAgent-HTTP-Cookie-Variable</StringValue></Property>
+          <Property Name="CA.SM::ResponseAttr.Value"><StringValue>CREWROLE=&lt;%userattr="employeeType"%&gt;</StringValue></Property>
+        </Object>
+      </Object>
+      <Object Class="CA.SM::Policy" Xid="CA.SM::Policy@08-all-crew">
+        <Property Name="CA.SM::Policy.Name"><StringValue>All Crew</StringValue></Property>
+        <Property Name="CA.SM::Policy.IsEnabled"><BooleanValue>true</BooleanValue></Property>
+        <Object Class="CA.SM::PolicyLink" Xid="CA.SM::PolicyLink@09-all-crew-1">
+          <Property Name="CA.SM::PolicyLink.RuleLink"><LinkValue><XID>CA.SM::Rule@07-crew-pages</XID></LinkValue></Property>
+          <Property Name="CA.SM::PolicyLink.ResponseLink"><LinkValue><XID>CA.SM::Response@0a-crew-identity</XID></LinkValue></Property>
+        </Object>
+        <Object Class="CA.SM::UserPolicy" Xid="CA.SM::UserPolicy@0c-all-crew">
+          <Property Name="CA.SM::UserPolicy.UserDirectoryLink"><LinkValue><XID>CA.SM::UserDirectory@0e-crew-directory</XID></LinkValue></Property>
+          <Property Name="CA.SM::UserPolicy.FilterClass"><StringValue>Group</StringValue></Property>
+          <Property Name="CA.SM::UserPolicy.FilterPath"><StringValue>cn=crew,ou=groups,dc=example,dc=test</StringValue></Property>
+        </Object>
+      </Object>
+      <Object Class="CA.SM::Policy" Xid="CA.SM::Policy@08-crew-admins">
+        <Property Name="CA.SM::Policy.Name"><StringValue>Crew Admins</StringValue></Property>
+        <Property Name="CA.SM::Policy.IsEnabled"><BooleanValue>true</BooleanValue></Property>
+        <Object Class="CA.SM::PolicyLink" Xid="CA.SM::PolicyLink@09-crew-admins-1">
+          <Property Name="CA.SM::PolicyLink.RuleLink"><LinkValue><XID>CA.SM::Rule@07-admin-pages</XID></LinkValue></Property>
+          <Property Name="CA.SM::PolicyLink.ResponseLink"><LinkValue><XID>CA.SM::Response@0a-crew-identity</XID></LinkValue></Property>
+        </Object>
+        <Object Class="CA.SM::UserPolicy" Xid="CA.SM::UserPolicy@0c-crew-admins">
+          <Property Name="CA.SM::UserPolicy.UserDirectoryLink"><LinkValue><XID>CA.SM::UserDirectory@0e-crew-directory</XID></LinkValue></Property>
+          <Property Name="CA.SM::UserPolicy.FilterClass"><StringValue>Group</StringValue></Property>
+          <Property Name="CA.SM::UserPolicy.FilterPath"><StringValue>cn=crew-admins,ou=groups,dc=example,dc=test</StringValue></Property>
+        </Object>
+      </Object>
+    </Object>
+    <Object Class="CA.FED::Certificate" Xid="CA.FED::Certificate@31-idp-signing">
+      <Property Name="CA.FED::Certificate.Alias"><StringValue>sm-idp-signing</StringValue></Property>
+      <Property Name="CA.FED::Certificate.SHA256Fingerprint"><StringValue>aa:bb:cc</StringValue></Property>
+    </Object>
+    <Object Class="CA.FED::SPPartnership" Xid="CA.FED::SPPartnership@32-parts">
+      <Property Name="CA.FED::PartnershipBase.Name"><StringValue>AOG Parts Exchange</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.LocalEntityID"><StringValue>https://wam.example.test/affwebservices/public/saml2sso</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.LocalBaseURL"><StringValue>https://wam.example.test</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.RemoteEntityID"><StringValue>https://parts.example.test/sp</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.AssertionConsumerServiceURL"><StringValue>https://parts.example.test/acs</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.ACSBinding"><StringValue>HTTP-POST</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.NameIDFormat"><StringValue>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.AssertionAttribute"><StringValue>email=mail</StringValue><StringValue>company=o</StringValue></Property>
+      <Property Name="CA.FED::SPPartnership.CertificateLink"><LinkValue><XID>CA.FED::Certificate@31-idp-signing</XID></LinkValue></Property>
+      <Property Name="CA.FED::SPPartnership.BackchannelPassword"><StringValue>backchannel-pw</StringValue></Property>
+      <Property Name="CA.FED::PartnershipBase.IsActive"><BooleanValue>true</BooleanValue></Property>
+    </Object>
+    <Object Class="CA.SM::SAMLv2SP" Xid="CA.SM::SAMLv2SP@33-parts-runtime">
+      <Property Name="CA.SM::SAMLv2SP.PartnershipLink"><LinkValue><XID>CA.FED::SPPartnership@32-parts</XID></LinkValue></Property>
+    </Object>
+  </PolicyData>
+  <References>
+    <ReferenceValue ReferenceId="Ref1"><LinkValue><XID>CA.SM::AuthScheme@0d-crew-forms</XID></LinkValue></ReferenceValue>
+  </References>
+</XPS>

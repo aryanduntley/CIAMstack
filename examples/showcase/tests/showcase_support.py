@@ -79,7 +79,10 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2051", SHOWCASE / "changes" / "CHG-2051-issuing-ca-and-template-owners.ldif"),
             ("CHG-2055", SHOWCASE / "changes" / "CHG-2055-ticket-links.ldif"),
             ("CHG-2056", ImportStep("servicenow/change-requests", SHOWCASE / "exports" / "servicenow",
-                                    "20260923090000Z")))
+                                    "20260923090000Z")),
+            ("CHG-2063", ImportStep("siteminder/xps", SHOWCASE / "exports" / "siteminder", "20260923090000Z")),
+            ("CHG-2064", SHOWCASE / "changes" / "CHG-2064-siteminder-owners-and-aog-to-sso.ldif"),
+            ("CHG-2065", ImportStep("pingfederate/bulk", SHOWCASE / "exports" / "pingfederate-aog", "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

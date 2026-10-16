@@ -149,6 +149,10 @@ cap 08-report-issued-certificates od report issued-certificates
 cap 08-apply-chg-2055 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif
 cap 08-apply-chg-2056 od import --change CHG-2056 --at 20260923090000Z servicenow/change-requests exports/servicenow
 cap 08-report-tickets od report tickets
+cap 08-apply-chg-2063 od import --change CHG-2063 --at 20260923090000Z siteminder/xps exports/siteminder
+cap 08-apply-chg-2064 od modify --change CHG-2064 changes/CHG-2064-siteminder-owners-and-aog-to-sso.ldif
+cap 08-apply-chg-2065 od import --change CHG-2065 --at 20260923090000Z pingfederate/bulk exports/pingfederate-aog
+cap 08-report-source-objects od report source-objects
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

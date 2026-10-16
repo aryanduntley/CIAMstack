@@ -75,6 +75,23 @@ can't be READY; another open one is an action for its owner, dated by `ciamNeede
 answered one is listed as in place. No fix is offered (an answer is a person's), and an approved risk exception
 accepts these findings like any other.
 
+### What a retired product holds (source objects)
+
+A migration away from a product (a web access manager, a legacy federation server) meets what it holds that the
+standard model has no equivalent for: its agents' configuration, host registrations, custom sign-on code, keys it
+never exports. Its adapter's importer records each as a source object under `ou=<importer>,ou=source-objects`
+(`ciamSourceObject`, the governance domain): the product's own type (`ciamSourceClass`) and its facts
+(`ciamSourceFact`, `<setting> <value>`, never a secret), the server role that holds it (`ciamTargetRole`), how it is
+handled when the product is retired (`ciamHandling`: rebuild, re-provision, re-register, replace, retire, review) and
+in words (`ciamHow`), whether a move waits for that (`ciamBlocking`) and the entries it concerns (`ciamConcerns`).
+Owners and handling are the record's to change: a re-import keeps them. `opsdir report source-objects` lists them;
+`opsdir plan` makes each one held by a role the source runs and the target doesn't an action for its owner (by the
+planned cutover), or a blocker when the move waits for it (area `Source objects`); a target still running the role
+keeps it in place. A product that only ever appears as a source adds its own planner checks as `source_checks`
+(`opsdir.core.contract.Adapter`): the plan runs them when the adapter applies to the source environment. And an
+integration registered with an identity service the target doesn't run (`ciamServedBy`, the service's
+`ciamTargetRole`) is a blocker until it is re-homed (area `Federation`).
+
 ### Compliance evidence
 
 Which record queries show which controls met is recorded under `ou=evidence-queries` (`ciamEvidenceQuery`, the estate
@@ -459,6 +476,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | Need | Use |
    |---|---|
    | Parse an imported file without raising (a file that isn't the format is named, not an error) | `opsdir.core.sources`: `json_document(text, kind)`, `parsed(loader, text, errors, kind)` for any other parser (a YAML loader: the core depends on none) |
+   | Parse an imported XML file, refusing a DOCTYPE or entity declaration | `opsdir.core.sources`: `xml_document(text)` -> `(root, None)` or `(None, why not)` |
    | An import's files by folder (one per server, repository, project) | `opsdir.core.sources`: `by_folder(files)`, `folders(files, roots)`, `under(files, root)` |
    | A collector's earlier outputs as its steps name them (the environment's `<cloud>/<env>/` folder taken off, its own work files kept) | `opsdir.core.sources`: `env_relative(m, files)` |
    | What fronts a service name on a cloud: a note (role only on Kubernetes without a gateway, exposure not recorded), its cluster's gateway, or its role's servers and their subnets | `opsdir.domains.edge.gateways`: `front_choice(m, svc)` |
@@ -484,6 +502,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | How long a destination keeps what it is sent, and a report's yes/no | `opsdir.domains.observability.retention`: `retention_days(b)` (searchable), `total_days(b)` (in all: `ciamTotalRetentionDays`, else `retention_days`), `days_text(days)` (a report's cell: `forever` for `INDEFINITE`), `longest_retention(days)`, `INDEFINITE` (forever), `yes_no(e, attr)` |
    | A secret store's inventory (what a safe or mount holds, metadata only) and where a reference points in it | the adapter declares `inventory_locator={"scheme": locate}` (`locate(rest) -> (container, object)` or `None`); its importer builds entries with `opsdir.domains.pki.inventory`: `inventory_entry(d, scheme, container, at, state, problems, prefixes, endpoint)`, `object_entry(d, scheme, container, name, facts)`, `inventory_group(inventory, objects)`; its collector lists `wanted_containers(d, scheme, locate, options.get("inventory_container"))` and declares the shared `CONTAINER_OPTION` (`--inventory-container`) |
    | Send a collection source's credential the way its API takes it | `Request(url, headers, credential, ca)` with `credential` `(s.scheme, s.credential, s.login)` for `basic`, `bearer` and `token` (the whole `Authorization` value: a session token obtained outside opsdir), `("headers", ref, login, (login header, secret header))`, or `("api-key", ref, None, "X-PAN-KEY")` (the secret alone in the header named) |
+   | What a source product holds with no standard equivalent, carried for the plan; planner checks for a product only a migration's source runs | `opsdir.domains.governance.source_objects`: `source_objects(d)`, `check_source_objects(ctx)`, `source_object_rows(d)`; the vocabulary `opsdir.domains.governance.schema.HANDLINGS`, the branch `opsdir.domains.governance.naming.SOURCE_OBJECTS` (an importer's own below it); the adapter declares `source_checks=` (`opsdir.core.contract.Adapter`: run when it applies to the source) |
    | SIEM indexes and the detections searching them; which adapter keeps a SIEM index | `opsdir.domains.observability.siem`: `SIEM_INDEX`, `is_siem(b)`, `siem_destinations(m)`, `detections(m)`, `detection_index(m, b)`, `detection_for(m, rule)`; a SIEM adapter declares `siem_indexes=` `(EnvModel, destination) -> bool` (`opsdir.core.contract.Adapter`), and a provider adapter leaves a destination another adapter keeps to it: `Services.siem_keeper(m, destination)` (the keeper's name, or `None`) |
 
    Anything two packages would write alike belongs in the core (or an `opsdir-base-*` library), public and tested. Module-level tables are read-only (`MappingProxyType`, tuples, `frozenset`).
