@@ -23,7 +23,7 @@ from opsdir.core.environment import one_role
 from opsdir.core.findings import Fix, Input, Option, bindings_container
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.core.interchange.properties import decode, encode, split
-from opsdir.core.sources import xml_document
+from opsdir.core.sources import xml_document, xml_name
 from .naming import DISCOVERY_ROLE
 
 JGROUPS_PROPERTIES, TCP_XML = "bin/jgroups.properties", "server/default/conf/tcp.xml"
@@ -216,15 +216,16 @@ def discovery_gap(m, answer):
 
 
 # ------------------------------------------------------------------ what a node uses
-def _local(tag):
-    return tag.rsplit("}", 1)[-1].rsplit(".", 1)[-1]
+def local_name(tag):
+    """An element's name in PingFederate's XML files without its namespace or package ('org.jgroups.TCP' -> 'TCP')."""
+    return xml_name(tag).rsplit(".", 1)[-1]
 
 
 def _tcp_xml_protocol(text):
     root, _ = xml_document(text)
     if root is None:
         return None
-    return next((_local(e.tag) for e in root.iter() if _local(e.tag) in PROTOCOLS), None)
+    return next((local_name(e.tag) for e in root.iter() if local_name(e.tag) in PROTOCOLS), None)
 
 
 def node_protocol(files):

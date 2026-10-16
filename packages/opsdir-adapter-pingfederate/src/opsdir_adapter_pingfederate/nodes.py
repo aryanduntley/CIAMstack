@@ -25,8 +25,8 @@ from opsdir.core.environment import env_model, one_role, server_named
 from opsdir.core.interchange.properties import decode, split
 from opsdir.core.jsondata import canonical
 from opsdir.core.sources import by_folder, xml_document
-from .discovery import (CHOICES, JGROUPS_PROPERTIES, PROTOCOLS, RENDERED, TCP_XML, binding_protocol, node_protocol,
-                        where)
+from .discovery import (CHOICES, JGROUPS_PROPERTIES, PROTOCOLS, RENDERED, TCP_XML, binding_protocol, local_name,
+                        node_protocol, where)
 from .naming import DISCOVERY_ROLE, SERVER_ROLES, SETTINGS, STORAGE
 
 from .withheld import withheld_settings
@@ -50,10 +50,6 @@ def properties(text):
     return {p[0]: decode(p[1]) for p in split(text) if isinstance(p, tuple)}
 
 
-def _local(tag):
-    return tag.rsplit("}", 1)[-1].rsplit(".", 1)[-1]
-
-
 def storage_kind(implementation):
     """The kind of store an implementation class keeps its data in, from its name."""
     name = implementation.rsplit(".", 1)[-1].lower()
@@ -67,7 +63,7 @@ def storage(text):
     """{what: {"implementation", "storage"}} for the service points of a hivemodule.xml that keep clients, grants and
     sessions (none when the file isn't read: xml_document)."""
     root, _ = xml_document(text)
-    points = (e for e in root.iter() if _local(e.tag) == "service-point") if root is not None else ()
+    points = (e for e in root.iter() if local_name(e.tag) == "service-point") if root is not None else ()
     found = ((STORAGE_POINTS.get(p.get("id")), next((c.get("class") for c in p.iter() if c.get("class")), None))
              for p in points)
     return {what: {"implementation": impl, "storage": storage_kind(impl)} for what, impl in found if what and impl}

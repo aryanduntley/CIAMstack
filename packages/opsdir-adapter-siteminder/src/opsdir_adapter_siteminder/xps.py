@@ -23,6 +23,8 @@ import re
 from types import MappingProxyType
 from typing import NamedTuple, Optional
 
+from opsdir.core.sources import xml_name
+
 # The XPS classes the adapter maps, by kind (a class not listed is kept as a source object to review)
 KINDS = MappingProxyType({
     "CA.SM::Domain": "domain", "CA.SM::Realm": "realm", "CA.SM::Rule": "rule", "CA.SM::Policy": "policy",
@@ -93,7 +95,7 @@ Obj = NamedTuple("Obj", [("cls", str), ("xid", str), ("props", tuple), ("links",
 
 
 def _tag(e):
-    return e.tag.rsplit("}", 1)[-1]
+    return xml_name(e.tag)
 
 
 def _local(name):

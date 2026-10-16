@@ -19,6 +19,11 @@ def json_document(text, kind=None):
     return parsed(json.loads, text, (ValueError,), kind)
 
 
+def xml_name(tag):
+    """An XML element's name without its namespace ('{urn:x}Object' -> 'Object')."""
+    return tag.rsplit("}", 1)[-1]
+
+
 def xml_document(text):
     """(root element, None) for an XML text, or (None, why not): a document declaring a DOCTYPE or an entity is
     refused before it is parsed (an export never needs one, and entity expansion is how XML files attack their
