@@ -34,3 +34,22 @@ def test_the_services_an_environment_uses_and_those_outside_its_authorization():
     assert [x[1].split(", which")[0] for x in f.blockers if "Communication" in x[1]] == [
         "beta/prod uses Azure Communication Services (mail-sender)"]
     assert not [x for x in f.blockers if "Azure Monitor" in x[1] or "Storage: Blobs" in x[1]]
+
+
+def test_external_id_is_covered_by_microsoft_entra_id_on_the_scope_page():
+    # no row of its own: the Microsoft Entra ID row's footnote applies Entra ID's authorizations to External ID
+    tenant = entry(BETA, "sso-tenant", "ciamManagedIdentity", ciamBindingRole="sso-tenant",
+                   ciamManagedService="entra-external-id", ciamRealizes="sso")
+    held = LdifRecord(BETA, "modify", {}, (("add", "objectClass", ("ciamEnvironmentPlacement",)),
+                                           ("replace", "ciamAuthorizationRef", (AUTH,)),
+                                           ("replace", "ciamRequiredAuthorization", ("fedramp-high",))))
+    listed = LdifRecord(AUTH, "modify", {}, (("add", "ciamInScopeService", ("Microsoft Entra ID (P1 + P2)",)),))
+    d, a, b = model(beta=(tenant,), tree=TREE, changes=(held, listed))
+    assert ("Microsoft Entra External ID", "sso-tenant") in azure_services(b)
+    f = check_boundary(context(d, a, b))
+    assert not [x for x in f.blockers if "External ID" in x[1]]
+    assert any("Microsoft Entra External ID (sso-tenant), which `F1603087869` covers as part of Microsoft Entra ID"
+               in x for x in f.ok)
+    d, a, b = model(beta=(tenant,), tree=TREE, changes=(held,))           # Entra ID not listed: outside
+    assert [x[1].split(", which")[0] for x in check_boundary(context(d, a, b)).blockers] == [
+        "beta/prod uses Microsoft Entra External ID (sso-tenant)"]

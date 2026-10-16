@@ -91,7 +91,9 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2068", SHOWCASE / "changes" / "CHG-2068-external-id-signing-answer.ldif"),
             ("CHG-2069", SHOWCASE / "changes" / "CHG-2069-issuing-ca-certificate.ldif"),
             ("CHG-2075", ImportStep("linux/baseline", SHOWCASE / "exports" / "hosts-pingaccess", "20260923090000Z")),
-            ("CHG-2076", SHOWCASE / "changes" / "CHG-2076-pingaccess-scoped-agents.ldif"))
+            ("CHG-2076", SHOWCASE / "changes" / "CHG-2076-pingaccess-scoped-agents.ldif"),
+            ("CHG-2089", SHOWCASE / "changes" / "CHG-2089-partners-external-tenant.ldif"),
+            ("CHG-2090", ImportStep("azure/external-id", SHOWCASE / "exports" / "external-id", "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

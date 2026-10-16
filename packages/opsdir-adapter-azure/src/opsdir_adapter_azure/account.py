@@ -53,7 +53,7 @@ def government(m):
 
 def required_providers(azapi=False, azuread=False):
     """The terraform block of an Azure root: azurerm, azapi when the root renders azapi resources, azuread when it
-    renders Microsoft Entra ID policy (risk-based Conditional Access)."""
+    renders Microsoft Entra ID policy (risk-based Conditional Access) or an external tenant's app registrations."""
     return tf_block("terraform", [], [("required_providers", Block((
         ("azurerm", {"source": "hashicorp/azurerm", "version": AZURERM_VERSION}),
         *((("azapi", {"source": "Azure/azapi", "version": AZAPI_VERSION}),) if azapi else ()),

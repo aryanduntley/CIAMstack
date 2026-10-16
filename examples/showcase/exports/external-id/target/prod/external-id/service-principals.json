@@ -1,0 +1,11 @@
+{
+ "value": [
+  {
+   "id": "b7e4f1a2-3333-4c6d-9e8f-1a2b3c4d5e63",
+   "appId": "5b0e9c41-7a2f-4d63-9c18-2e4f6a8d0b37",
+   "displayName": "partner-portal",
+   "preferredSingleSignOnMode": null,
+   "servicePrincipalType": "Application"
+  }
+ ]
+}

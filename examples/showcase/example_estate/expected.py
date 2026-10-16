@@ -160,23 +160,16 @@ EXPECTED = MappingProxyType({
          None, "CHG-2063"),
         # cloud-managed identity services (6.1c): the tech-pubs team's Cognito user pool, a neighbour in production
         # (CHG-2067), has no counterpart in the target; the partners service on Entra External ID in the target
-        # (CHG-2066) is outside the target's authorization, and what Microsoft documents neither way waits for its
-        # confirmation (RS256 signing is confirmed by CHG-2068)
+        # (CHG-2066) must keep the realm's sign-in host, which External ID serves as a custom URL domain the binding
+        # doesn't record, and what Microsoft documents neither way (a custom issuer) waits for its confirmation. Its
+        # FedRAMP scope (Microsoft Entra ID's row covers it), refresh tokens and RS256 signing are documented (task 547)
         ("B75", "Binding", "Role `tech-pubs-user-pool` is bound in source/prod but not in target/prod",
          "the tech-pubs team's Cognito user pool relies on the platform's sign-on from production's account: where "
          "it is after the move isn't recorded", None, "CHG-2067"),
-        ("B76", "Authorization", "target/prod uses Microsoft Entra External ID (partners-identity), which "
-         "`F1209051525` doesn't list in its boundary",
-         "External ID isn't in the in-scope list of the Azure authorization the target relies on", None, "CHG-2066"),
-        ("B77", "Managed identity", "`partner-portal` (oidc-client) needs `partners-external-id` (Microsoft Entra "
-         "External ID, running `partners` in target/prod) to accept the refresh_token grant, and no vendor "
-         "documentation establishes that it can",
-         "the partner portal refreshes its tokens: Microsoft's External ID pages don't say the grant is supported "
-         "there; the question is proposed", None, "CHG-2066"),
         ("B78", "Managed identity", "`partners` publishes `login.example-aero.test` (its entity ID), so "
-         "`partners-external-id` in target/prod must serve sign-in at a custom domain",
-         "partners keep the partner realm's sign-in host; whether an external tenant serves a custom domain isn't "
-         "documented in what was read", None, "CHG-2066"),
+         "`partners-external-id` in target/prod must serve it, and it records no such domain",
+         "partners keep the partner realm's sign-in host: an external tenant serves custom URL domains, and the "
+         "binding records none", None, "CHG-2066"),
         ("B79", "Managed identity", "`partners` publishes `login.example-aero.test` (its issuer), so "
          "`partners-external-id` in target/prod must issue tokens under a custom issuer",
          "applications hold the realm's issuer; whether an external tenant issues under a custom one isn't documented "
@@ -605,15 +598,20 @@ EXPECTED = MappingProxyType({
          "the crew web server's trusted-host registration doesn't carry over", None, "CHG-2063"),
         ("A196", "Edge", "Clients can send header `SM_USER` themselves",
          "nothing records that SiteMinder's agent strips the client's own SM_USER header", None, "CHG-2063"),
-        # the partners service on Entra External ID in the target (CHG-2066): nothing of it renders, its journeys and
-        # its users move by hand
-        ("A201", "Identity", "external tenant partners-external-id: Entra External ID isn't rendered",
-         "the external tenant and the partner portal's app registration are created by hand", None, "CHG-2066"),
+        # the partners service on Entra External ID in the target (CHG-2066): its user flows and extensions are set
+        # up by hand, its users move by hand; once the tenant is recorded (CHG-2089) the partner portal's app
+        # registration renders, its signing certificate uploaded by hand
+        ("A201", "Identity", "external tenant partners-external-id user flows: user flows, upstream identity "
+         "providers and custom authentication extensions aren't rendered",
+         "the partner realm's journeys become the tenant's user flows, set up by hand and read back", None,
+         "CHG-2066"),
         ("A202", "Managed identity", "Microsoft Entra External ID in target/prod (public): Its user flows and custom "
          "authentication extensions", "the realm's journeys become user flows, recreated by hand", None, "CHG-2066"),
         ("A203", "Managed identity", "User accounts and passwords don't move with `partners`'s configuration onto "
          "`partners-external-id`", "External ID imports no password hashes: the partner users reset or move just in "
          "time", None, "CHG-2066"),
+        ("A212", "Identity", "external tenant partners-external-id credentials: client credentials aren't rendered",
+         "the partner portal's signing certificate is uploaded to its app registration by hand", None, "CHG-2089"),
     ],
 })
 

@@ -155,6 +155,10 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2076", "Scope the PingAccess baselines' AWS agents to AWS environments", "approved", "CAB 2026-09-18",
      "2026-09-24"),
+    ("CHG-2089", "Record the partners external tenant the render created, so the target adopts it and registers the "
+     "partner portal in it", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2090", "Read the partners external tenant's Graph configuration (app registrations, user flow, token "
+     "extension) into the record", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

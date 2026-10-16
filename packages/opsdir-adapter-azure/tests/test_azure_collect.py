@@ -148,7 +148,8 @@ def test_aks_and_messaging_collected_read_as_saved_by_hand():
 
 def test_the_collectors_are_declared_on_the_adapter():
     assert [(c.importer, c.scope) for c in ADAPTER.collectors] == [("cli-inventory", "environment"),
-                                                                    ("terraform-state", "environment")]
+                                                                    ("terraform-state", "environment"),
+                                                                    ("external-id", "environment")]
 
 
 def test_the_login_must_be_the_subscription_and_cloud_the_record_names():

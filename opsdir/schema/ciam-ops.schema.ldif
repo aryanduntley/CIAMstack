@@ -3371,6 +3371,46 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.771 NAME 'ciamPartnerOf' DESC 'The i
  suer follows from their protocol type' EQUALITY distinguishedNameMatch SYNT
  AX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X
  -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.808 NAME 'ciamFlowApplications' DESC
+  'The integrations a sign-in flow signs users in to' EQUALITY distinguished
+ NameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VAL
+ UE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.809 NAME 'ciamSignInMethod' DESC 'Ho
+ w a sign-in flow signs users in (sign-up: it also creates their accounts; f
+ ederated: through an upstream identity provider)' EQUALITY caseIgnoreMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'e
+ num:email-password|email-otp|sign-up|federated' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.810 NAME 'ciamUpstreamProvider' DESC
+  'An upstream identity provider a sign-in flow offers, as the managed servi
+ ce names it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 
+ X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.811 NAME 'ciamCollectedAttribute' DE
+ SC 'A user attribute a sign-in flow collects at sign-up, as the managed ser
+ vice names it' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.812 NAME 'ciamFlowExtension' DESC 'T
+ he custom authentication extensions a sign-in flow calls' EQUALITY distingu
+ ishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' 
+ X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.813 NAME 'ciamExtensionEvent' DESC '
+ The sign-in event a custom authentication extension answers' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'intent' X-VALUE-TYPE 'enum:token-issuance-start|attribute-collection-start
+ |attribute-collection-submit|otp-send|password-submit' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.814 NAME 'ciamExtensionResource' DES
+ C 'The application a custom authentication extension authenticates to its A
+ PI as (its app ID URI or ID); where the API runs is not recorded' EQUALITY 
+ caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABI
+ LITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.815 NAME 'ciamExtensionClaim' DESC '
+ A claim a custom authentication extension returns for tokens' EQUALITY case
+ IgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'contract' X
+ -VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.816 NAME 'ciamDataGeography' DESC 'W
+ here a managed identity service keeps its users\27 data, as the adapter dec
+ laring it names the geography (a tenant\27s data residency)' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'binding' X-VALUE-TYPE 'vocab' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4245,7 +4285,22 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.167 NAME 'ciamManagedIdentity' DESC '
  me; a target), or a neighbour the platform federates with (ciamPartnerOf: t
  he integrations it is the partner side of); its resource (ciamProviderRef),
   the sign-in host it serves at (ciamFqdn, a custom domain presenting ciamTl
- sCertificate) and who keeps it when it isn\27t the platform team (ciamManag
- edBy)' SUP ciamBinding STRUCTURAL MUST ciamManagedService MAY ( ciamRealize
- s $ ciamPartnerOf $ ciamProviderRef $ ciamFqdn $ ciamTlsCertificate $ ciamM
- anagedBy ) X-ORIGIN 'opsdir' )
+ sCertificate), where it keeps its users\27 data (ciamDataGeography) and who
+  keeps it when it isn\27t the platform team (ciamManagedBy); a target\27s s
+ ign-in flows and custom authentication extensions are entries beneath it' S
+ UP ciamBinding STRUCTURAL MUST ciamManagedService MAY ( ciamRealizes $ ciam
+ PartnerOf $ ciamProviderRef $ ciamFqdn $ ciamTlsCertificate $ ciamManagedBy
+  $ ciamDataGeography ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.178 NAME 'ciamSignInFlow' DESC 'A sig
+ n-in flow of a managed identity service (beneath its binding): the integrat
+ ions it signs users in to, how (its methods, its upstream identity provider
+ s), what it collects at sign-up and the custom authentication extensions it
+  calls' SUP ciamObject STRUCTURAL MUST cn MAY ( ciamFlowApplications $ ciam
+ SignInMethod $ ciamUpstreamProvider $ ciamCollectedAttribute $ ciamFlowExte
+ nsion ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.179 NAME 'ciamAuthExtension' DESC 'A 
+ custom authentication extension of a managed identity service (beneath its 
+ binding): the event it answers, the application it authenticates as and the
+  claims it returns; its endpoint and the code behind it aren\27t recorded' 
+ SUP ciamObject STRUCTURAL MUST ( cn $ ciamExtensionEvent ) MAY ( ciamExtens
+ ionResource $ ciamExtensionClaim ) X-ORIGIN 'opsdir' )

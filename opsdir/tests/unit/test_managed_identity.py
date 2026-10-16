@@ -6,7 +6,9 @@ until a question of the unknowns register (its name given, its fix proposed) is 
 import datetime as dt
 
 from opsdir.connectors.managed_identity import AREA, managed_identity_check, question_name
-from opsdir.core.contract import ManagedService, PlanContext
+from opsdir.connectors.importing import import_changes
+from opsdir.core.contract import Imported, ManagedService, PlanContext
+from opsdir.core.inventory import environment_groups, resource
 from opsdir.core.directory import get, one
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
@@ -90,6 +92,24 @@ def _texts(rows):
 def test_the_federation_domain_reports_managed_identities_and_imports_them():
     assert "managed-identity" in DOMAIN.reports
     assert [(k.kind, k.object_class) for k in DOMAIN.import_kinds] == [("managed-identity", "ciamManagedIdentity")]
+
+
+def test_a_cloud_read_of_a_binding_keeps_the_sign_in_flows_and_extensions_beneath_it():
+    # another importer's entries (a tenant's Graph configuration) beneath a binding a cloud read reports
+    pool = f"cn=sso-pool,ou=bindings,{BETA}"
+    beneath = (_entry(f"cn=loyalty,{pool}", "ciamAuthExtension", cn="loyalty",
+                      ciamExtensionEvent="token-issuance-start", ciamExtensionClaim="tier"),
+               _entry(f"cn=sign-up,{pool}", "ciamSignInFlow", cn="sign-up", ciamSignInMethod=("email-otp", "sign-up"),
+                      ciamFlowApplications="cn=portal,ou=integrations,dc=ciam-ops",
+                      ciamFlowExtension=f"cn=loyalty,{pool}", ciamCollectedAttribute="email"))
+    d = _directory(*beneath)
+    read = resource("managed-identity", "pool-1", {"ciamManagedService": "fake-pool", "ciamRealizes": "sso"},
+                    role="sso-pool")
+    groups, _ = environment_groups(d, "beta/prod", (read,))
+    (scope, (binding, *kept)), = groups
+    assert scope == pool and one(binding, "ciamProviderRef") == "pool-1"
+    assert sorted(e.dn for e in kept) == sorted((f"cn=loyalty,{pool}", f"cn=sign-up,{pool}"))
+    assert not [r for r in import_changes(d, Imported((), groups, ())) if r.changetype == "delete"]
 
 
 def test_issuer_and_relying_party_follow_from_the_protocol_types():

@@ -5,7 +5,8 @@ from opsdir.store.migrations import misdeclared_vocabulary
 from opsdir.store.postgres import schema_rows
 
 VOCAB_ATTRIBUTES = {"ciamCloudProvider", "ciamCloudEnvironment", "ciamServerRole", "ciamTargetRole", "ciamFormat",
-                    "ciamGatewayImplementation", "ciamHardeningProfile", "ciamOnProvider", "ciamManagedService"}
+                    "ciamGatewayImplementation", "ciamHardeningProfile", "ciamOnProvider", "ciamManagedService",
+                    "ciamDataGeography"}
 
 
 def _attribute_rows(fragments=None):

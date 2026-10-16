@@ -24,7 +24,8 @@ from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
 from .databases import database_notes, render_databases
-from .external_id import external_id_notes
+from .external_id import (external_id_notes, external_id_providers, render_external_id, renders_applications,
+                          renders_tenant)
 from .storage import render_object_stores
 from .audit import audit_notes, render_trails
 from .container_logs import container_log_notes, render_container_logs
@@ -221,14 +222,16 @@ def terraform_parts(m, services):
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
            *_key_vault_secrets(m), *scope_data(m, identities),
-           *(comment(note_comment(n)) for n in external_id_notes(m)))     # nothing of an external tenant renders
+           *render_external_id(m))
     out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     providers = (
-        required_providers(uses_azapi(m) or purview_renders(m), uses_azuread(m)),
+        required_providers(uses_azapi(m) or purview_renders(m) or renders_tenant(m),
+                           uses_azuread(m) or renders_applications(m)),
         provider_block(m),
-        *((azapi_provider(m),) if uses_azapi(m) or purview_renders(m) else ()),
+        *((azapi_provider(m),) if uses_azapi(m) or purview_renders(m) or renders_tenant(m) else ()),
         *((azuread_provider(m),) if uses_azuread(m) else ()),
+        *external_id_providers(m),
         subscription_variable(m),
         tf_block("variable", ["admin_ssh_public_key"], [("type", ref("string"))]),
         *budget_inputs(m),

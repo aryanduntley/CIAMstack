@@ -62,7 +62,9 @@ dc=ciam-ops
 ├── ou=acis                                 ciamAci: target, grantee (a consumer), rights, justification, review date
 ├── ou=identity-services                    ciamIdentityService: the platform's own IdP / OpenID provider (contracts);
 │                                           an environment may run one on a cloud-managed service: a
-│                                           ciamManagedIdentity binding realizing it (or a neighbour: ciamPartnerOf)
+│                                           ciamManagedIdentity binding realizing it (or a neighbour: ciamPartnerOf),
+│                                           its sign-in flows (ciamSignInFlow) and custom authentication extensions
+│                                           (ciamAuthExtension) beneath the binding
 ├── ou=integrations                         ciamIntegration (SAML / OIDC / LDAP) -> ou=claims (ciamClaimMap)
 ├── ou=certificates                         ciamCertificate: public facts only (fingerprint, dates, SANs, key role)
 ├── ou=credentials                          ciamCredential: what a key or secret is, how it rotates, where it is used

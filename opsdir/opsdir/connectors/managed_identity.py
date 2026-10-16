@@ -10,8 +10,9 @@ play the part its integrations' protocol types give it. What the vendor document
 confirmation path: the record has to change. What no vendor documentation establishes is a blocker until the
 operator confirms it: an answered question of the register (governance unknowns, ciamUnknown) under the name the
 finding gives (its fix proposes the question); while that question is open the register's own check counts it when it
-blocks. A capability supported on a condition (an add-on), per-application MFA or claim transformations the service
-can't express, what a target in its partition must know, and how users move are actions.
+blocks. A capability supported on a condition (an add-on), per-application MFA the service can't express, claim
+transformations it can't express or expresses only on a condition (an extension), what a target in its partition must
+know, and how users move are actions.
 """
 from urllib.parse import urlsplit
 
@@ -169,9 +170,13 @@ def _target(ctx, m, b, spec):
         f"{spec.title} can't {words('mfa-per-client')}: decide whether every application on `{label}` in {m.label} "
         "requires MFA, or what enforces it per application.", responsible(ctx.d, service, b), None)])]
     shaped = transforms(ctx.d, integrations)
-    transform = [] if not shaped or status(spec, partition, "claim-transform")[0] == SUPPORTED else [findings(actions=[(
-        AREA, f"The claim transformations of {_listed(rdn_value(i) for i in shaped)} aren't expressible in "
-        f"{spec.title}'s settings: implement them in `{label}`'s token customization in {m.label} and record where.",
+    expressible = status(spec, partition, "claim-transform")[0] == SUPPORTED
+    condition = spec.conditions.get("claim-transform") if expressible else None
+    how = (f"need {spec.title}'s {condition}: build them there for `{label}` in {m.label} and record where."
+           if condition else f"aren't expressible in {spec.title}'s settings: implement them in `{label}`'s token "
+           f"customization in {m.label} and record where.")
+    transform = [] if not shaped or expressible and not condition else [findings(actions=[(
+        AREA, f"The claim transformations of {_listed(rdn_value(i) for i in shaped)} {how}",
         responsible(ctx.d, service, b), None)])]
     notes = [findings(actions=[(AREA, f"{spec.title} in {m.label} ({partition}): {text} {how}",
                                 responsible(ctx.d, service, b), None)])

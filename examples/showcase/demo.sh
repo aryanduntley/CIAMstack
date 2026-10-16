@@ -292,6 +292,12 @@ echo "   agents then scoped to AWS environments (CHG-2076), so the target's VMs 
 od import --change CHG-2075 --at 20260923090000Z linux/baseline exports/hosts-pingaccess
 od modify --change CHG-2076 changes/CHG-2076-pingaccess-scoped-agents.ldif
 od report regulated-data
+echo "-- the partners external tenant the render created is recorded (CHG-2089): the target adopts it and registers the"
+echo "   partner portal in it; then its Graph configuration (the portal's registration, the partners' user flow and"
+echo "   token extension) is read back (CHG-2090)"
+od modify --change CHG-2089 changes/CHG-2089-partners-external-tenant.ldif
+od import --change CHG-2090 --at 20260923090000Z azure/external-id exports/external-id
+od report managed-identity
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

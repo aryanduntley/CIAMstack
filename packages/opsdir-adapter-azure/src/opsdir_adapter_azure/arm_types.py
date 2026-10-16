@@ -34,8 +34,11 @@ INPUT_SCOPES = MappingProxyType({r"application_insights_id": ("Microsoft.Insight
 def input_type(name):
     """The ARM type of the resource an input names by its ID (INPUT_SCOPES), else None."""
     return next((t for pattern, (t, _) in INPUT_SCOPES.items() if re.fullmatch(pattern, name)), None)
-# Types ARM has no form for: they stay in the Terraform root beside the templates (research 2595).
-NO_NATIVE = frozenset({"azapi_data_plane_resource", "azuread_conditional_access_policy"})
+# Types ARM has no form for: they stay in the Terraform root beside the templates (research 2595). An external
+# tenant's app registrations are Microsoft Graph objects in another tenant (task 547), which no deployment in the
+# environment's subscription reaches: Terraform, through the tenant-aliased azuread provider.
+NO_NATIVE = frozenset({"azapi_data_plane_resource", "azuread_conditional_access_policy", "azuread_application",
+                       "azuread_service_principal", "azuread_service_principal_token_signing_certificate"})
 _SUBNET = ("a property of the landing zone's subnet: ARM sets it only by re-declaring the whole subnet, which the "
            "landing zone keeps")
 _PARENT_INPUT = ("a child of the {}, which the root takes as an input: ARM deploys a child in its parent's resource "

@@ -1,0 +1,39 @@
+{
+ "value": [
+  {
+   "@odata.type": "#microsoft.graph.externalUsersSelfServiceSignUpEventsFlow",
+   "id": "9e2a7c45-1b3d-4f6e-8a90-c2d4e6f8a0b1",
+   "displayName": "Partners sign up and sign in",
+   "description": "Partner staff sign in with a one-time code sent to their email; first-timers sign up",
+   "onInteractiveAuthFlowStart": {
+    "isSignUpAllowed": true
+   },
+   "onAuthenticationMethodLoadStart": {
+    "identityProviders": [
+     {
+      "id": "EmailOtpSignup-OAUTH",
+      "displayName": "Email One Time Passcode"
+     }
+    ]
+   },
+   "onAttributeCollection": {
+    "attributes": [
+     {
+      "id": "email",
+      "displayName": "Email Address"
+     },
+     {
+      "id": "displayName",
+      "displayName": "Display Name"
+     },
+     {
+      "id": "extension_0c4b2e196d3a4f85b7e291a8c5d0f364_partnerOrganization",
+      "displayName": "Partner organization"
+     }
+    ]
+   },
+   "onAttributeCollectionStart": {},
+   "onAttributeCollectionSubmit": {}
+  }
+ ]
+}
