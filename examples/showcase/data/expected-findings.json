@@ -353,6 +353,14 @@
       "raised_by": "CHG-2099"
     },
     {
+      "id": "B105",
+      "area": "Change tickets",
+      "match": "ITSM says its ticket bmc-helix:CRQ000000001202 (read 2026-09-23) was **rejected**",
+      "planted": "the record approves CHG-2086 (the forest's certificate templates over LDAPS), but its change request is Rejected (Schedule Conflicts): the security CAB rejected its business approval",
+      "cleared_by": null,
+      "raised_by": "CHG-2106"
+    },
+    {
       "id": "B65",
       "area": "PingAccess",
       "match": "Web session `techpubs-session` can't sign users in: it authenticates to the token endpoint as client_secret_basic or client_secret_post (SECRET), but integration `tech-pubs` is registered for none",
@@ -1557,6 +1565,14 @@
       "planted": "the record approves CHG-2081, but its ticket's CAB step is still pending (one CAB member approved: not the step's decision, and the change manager's earlier step doesn't approve the change)",
       "cleared_by": null,
       "raised_by": "CHG-2099"
+    },
+    {
+      "id": "A250",
+      "area": "Change tickets",
+      "match": "ITSM says the work on its ticket bmc-helix:CRQ000000001203 (read 2026-09-23) ran",
+      "planted": "CHG-2092's expedited change request is being implemented: its rollout started 2026-09-22, before the planned window opens on 2026-09-24",
+      "cleared_by": null,
+      "raised_by": "CHG-2106"
     },
     {
       "id": "A150",

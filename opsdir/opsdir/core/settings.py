@@ -59,6 +59,24 @@ def setting_value(d, setting):
     return setting.default if value is None else value
 
 
+def setting_pairs(text):
+    """((name, value), ...) of a setting's '<name>=<value>, ...' text (an operator's mapping), and the parts that
+    aren't one."""
+    parts = [p.strip() for p in (text or "").split(",") if p.strip()]
+    split = [(p, *(s.strip() for s in p.partition("=")[::2])) for p in parts]
+    return (tuple((k, v) for p, k, v in split if "=" in p and k and v),
+            tuple(f"`{p}` isn't <name>=<value>" for p, k, v in split if "=" not in p or not k or not v))
+
+
+def setting_mapping(d, setting):
+    """((name, value), ...) of a mapping setting's value in effect, and its problems named for the setting (malformed
+    parts; a name mapped more than once, of which the first is used)."""
+    pairs, problems = setting_pairs(setting_value(d, setting))
+    twice = sorted({k for k, _ in pairs if sum(1 for x, _ in pairs if x == k) > 1})
+    return pairs, (*(f"{setting.name}: {p}" for p in problems),
+                   *(f"{setting.name}: `{k}` is mapped more than once (the first is used)" for k in twice))
+
+
 def setting_changes(d, setting, text):
     """The change records giving a setting a value (ou=settings added when missing; none when it already holds it);
     ValueError when the value isn't valid for the setting."""

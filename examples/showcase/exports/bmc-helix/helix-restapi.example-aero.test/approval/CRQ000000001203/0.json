@@ -1,0 +1,18 @@
+{
+ "entries": [
+  {
+   "values": {
+    "Application": "CHG:Infrastructure Change",
+    "Approval ID": "000000000000413",
+    "Approval Status": "Approved",
+    "Approver Signature": "secops-cab",
+    "Approvers": "secops-cab",
+    "Create-Date-Sig": "2026-09-19T09:00:00.000+0000",
+    "Detail-Sig-Id": "000000000000813",
+    "Modified-Date-Sig": "2026-09-20T10:00:00.000+0000",
+    "Phase": "Business Approval",
+    "Request": "000000000001203"
+   }
+  }
+ ]
+}

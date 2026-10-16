@@ -36,22 +36,20 @@ export is never removed (the record keeps what it last read, and the planner say
 import re
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import gtime, gtime_of_iso, ou_entry
+from opsdir.core.directory import DATE_WITHOUT_TIME, gtime, gtime_of_iso, iso_date_time, ou_entry
 from opsdir.core.naming import rdn_safe
 from opsdir.core.sources import json_document
 from opsdir.domains.governance.naming import TICKETS
 from opsdir.domains.governance.schema import TICKET_CHANGE_TYPES
-from opsdir.domains.governance.tickets import adapter_dn, linked_numbers, ticket_entry, ticket_group
+from opsdir.domains.governance.tickets import (adapter_dn, approval_step, derived_approval, linked_numbers,
+                                               ticket_entry, ticket_group)
 from .mapping import (CHANGE_FIELDS, STATUS_STATES, WINDOW, field_refs, neutral_state, resolve_fields,
                       status_states, window_candidates)
 
 SYSTEM = "jira-sm"
 ISSUE_FIELDS = ("summary", "status", "resolution", "issuetype", "created", "updated")
 CHANGE_TYPE = "change-type"
-APPROVED_STATES = ("scheduled", "implement", "review", "closed")   # states past authorize: approval no longer pending
 KEY = re.compile(r"[A-Z][A-Z0-9_]*-\d+")
-DATE_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T")
-DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 def jira_error(doc):
@@ -118,12 +116,8 @@ def _steps(pages):
 
 def jira_time(v):
     """(GeneralizedTime, None) of an ISO 8601 date-time (its offset converted to UTC), or (None, why not)."""
-    text = str(v or "")
-    if DATE_TIME.match(text) and gtime_of_iso(text):
-        return gtime_of_iso(text), None
-    if DATE.fullmatch(text):
-        return None, "a date without a time (its time zone is unknown): map a date-time field"
-    return None, f"`{text}` isn't a date-time"
+    when, why = iso_date_time(v)
+    return when, (f"{why}: map a date-time field" if why == DATE_WITHOUT_TIME else why)
 
 
 def field_text(v):
@@ -146,8 +140,8 @@ def _when(date):
 
 def step_rows(steps):
     """The approval steps as ciamTicketApprovalStep values, by step id."""
-    return tuple(sorted(f"{s.get('finalDecision') or '?'} {s.get('id') or '?'} created {_when(s.get('createdDate'))}"
-                        + (f" completed {_when(s.get('completedDate'))}" if s.get("completedDate") else "")
+    return tuple(sorted(approval_step(s.get("finalDecision"), s.get("id"), _when(s.get("createdDate")),
+                                      _when(s.get("completedDate")) if s.get("completedDate") else None)
                         for s in steps))
 
 
@@ -162,12 +156,7 @@ def approver_rows(steps):
 
 def overall_approval(steps, state):
     """The overall approval from the steps' own decisions (none: unknown), never from a single approver's."""
-    decisions = [s.get("finalDecision") for s in steps or ()]
-    if "declined" in decisions:
-        return "rejected"
-    if "pending" in decisions:
-        return "requested"
-    return "approved" if decisions and set(decisions) == {"approved"} and state in APPROVED_STATES else None
+    return derived_approval((s.get("finalDecision") for s in steps or ()), state)
 
 
 def ticket_facts(issue, steps, states, fields):

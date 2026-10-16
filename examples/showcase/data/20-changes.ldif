@@ -732,6 +732,26 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the linked Jira Service Management tickets as evidence (state,
   approval steps, planned window)
 
+dn: cn=CHG-2105,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2105
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Link the security operations team's changes to their BMC Helix ITSM
+  change requests
+
+dn: cn=CHG-2106,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2106
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the linked BMC Helix ITSM change requests as evidence (status,
+  approval signatures, windows)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

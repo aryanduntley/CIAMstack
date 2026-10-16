@@ -36,8 +36,10 @@ from typing import NamedTuple
 from ...core.directory import (children, get, gtime_at, gtime_date, make_entry, merged_attrs, one, rdn_of, rdn_value,
                                subtree, values)
 from ...core.findings import findings, owner_label
+from ...core.settings import setting_mapping
 from .naming import CHANGES, TICKETS
 from .parties import operator_label
+from .schema import TICKET_STATES
 
 AREA = "Change tickets"
 TICKET_CLASS = "ciamTicket"
@@ -54,6 +56,7 @@ BLOCKING = (REJECTED, CANCELLED)
 APPROVING = ("approved", "applied")          # record statuses that let the change's writes in
 PENDING = ("proposed", "approved")           # record statuses that don't say what happened yet
 LIVE = ("scheduled", "implement")            # ticket states of work still to happen or happening
+PAST_AUTHORIZE = ("scheduled", "implement", "review", "closed")   # ticket states past authorization
 
 # A linked change compared with its ticket: the change, the adapter and number it names, the ticket as last read (None:
 # not read) and its drift states (none: nothing to compare yet, the system's tickets were never read).
@@ -91,6 +94,36 @@ def linked_numbers(d, adapter):
 def tickets(d):
     """Every ticket the record holds (as last read)."""
     return tuple(subtree(d, TICKETS, TICKET_CLASS))
+
+
+def ticket_state_map(d, setting):
+    """({the system's status: neutral state}, problems) of an ITSM add-on's status-mapping setting ('<status>=<state>,
+    ...', in effect: the record's or the add-on's default): the first mapping of a status is used; states outside
+    TICKET_STATES are named and left out."""
+    pairs, problems = setting_mapping(d, setting)
+    bad = tuple(f"{setting.name}: `{k}={v}`: {v} isn't a ticket state ({', '.join(TICKET_STATES)})"
+                for k, v in pairs if v not in TICKET_STATES)
+    return {k: v for k, v in reversed(pairs) if v in TICKET_STATES}, (*problems, *bad)
+
+
+def derived_approval(decisions, state):
+    """A ticket's overall approval derived from its approval steps' own decisions (approved, declined, pending), for
+    systems that approve by steps and report no overall approval (the user's rule, task 551): any declined, rejected;
+    else any pending, requested; else at least one step, all approved, and the neutral state past authorization,
+    approved; otherwise None (unknown: no steps doesn't mean none was needed, and a later step may still come)."""
+    decisions = tuple(decisions or ())
+    if "declined" in decisions:
+        return "rejected"
+    if "pending" in decisions:
+        return "requested"
+    return "approved" if decisions and set(decisions) == {"approved"} and state in PAST_AUTHORIZE else None
+
+
+def approval_step(decision, step, created, completed=None):
+    """A ciamTicketApprovalStep value: "<decision> <step id> created <time>[ completed <time>]" ('?' for what the
+    system didn't say)."""
+    done = f" completed {completed}" if completed else ""
+    return f"{decision or '?'} {step or '?'} created {created or '?'}{done}"
 
 
 # ------------------------------------------------------------------ what importers write

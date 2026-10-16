@@ -1,0 +1,32 @@
+{
+ "entries": [
+  {
+   "values": {
+    "Application": "CHG:Infrastructure Change",
+    "Approval ID": "000000000000411",
+    "Approval Status": "Approved",
+    "Approver Signature": "mtorres",
+    "Approvers": "mtorres",
+    "Create-Date-Sig": "2026-09-18T09:00:00.000+0000",
+    "Detail-Sig-Id": "000000000000811",
+    "Modified-Date-Sig": "2026-09-18T13:00:00.000+0000",
+    "Phase": "Review",
+    "Request": "000000000001202"
+   }
+  },
+  {
+   "values": {
+    "Application": "CHG:Infrastructure Change",
+    "Approval ID": "000000000000412",
+    "Approval Status": "Rejected",
+    "Approver Signature": "secops-cab",
+    "Approvers": "secops-cab",
+    "Create-Date-Sig": "2026-09-19T09:00:00.000+0000",
+    "Detail-Sig-Id": "000000000000812",
+    "Modified-Date-Sig": "2026-09-22T15:30:00.000+0000",
+    "Phase": "Business Approval",
+    "Request": "000000000001202"
+   }
+  }
+ ]
+}

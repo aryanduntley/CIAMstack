@@ -1,0 +1,31 @@
+{
+ "entries": [
+  {
+   "_links": {
+    "self": [
+     {
+      "href": "https://helix-restapi.example-aero.test/api/arsys/v1/entry/CHG%3AInfrastructure%20Change/000000000001203"
+     }
+    ]
+   },
+   "values": {
+    "Actual End Date": null,
+    "Actual Start Date": "2026-09-22T19:30:00.000+0000",
+    "Change Request Status": "Implementation In Progress",
+    "Change Timing": "Expedited",
+    "Change Type": "Change",
+    "Description": "Observe the issuing CA's revocation endpoints from the data center",
+    "Impact": "3-Moderate/Limited",
+    "Infrastructure Change ID": "CRQ000000001203",
+    "Last Modified Date": "2026-09-22T16:00:00.000+0000",
+    "Priority": "Medium",
+    "Request ID": "000000000001203",
+    "Risk Level": "Risk Level 2",
+    "Scheduled End Date": "2026-09-24T18:00:00.000+0000",
+    "Scheduled Start Date": "2026-09-24T08:00:00.000+0000",
+    "Status Reason": "In Rollout",
+    "Urgency": "3-Medium"
+   }
+  }
+ ]
+}

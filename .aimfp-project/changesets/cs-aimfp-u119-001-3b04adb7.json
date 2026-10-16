@@ -1,0 +1,1836 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package build config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": "package documentation"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "states.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/states.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "changes.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-bmc-helix (import opsdir_adapter_bmc_helix), registered via entry point opsdir.adapters:bmc-helix; depends on opsdir.",
+        "external_dependencies": "[\"BMC AR System REST API (GET /api/arsys/v1/entry/CHG:Infrastructure Change, /api/arsys/v1/entry/AP:Detail-Signature, read-only)\"]",
+        "path": "packages/opsdir-adapter-bmc-helix/",
+        "purpose": "BMC Helix ITSM / Remedy as an ITSM add-on (kind itsm). It reads the change tickets the record's change records link (bmc-helix:<Infrastructure Change ID>) as evidence. Importer bmc-helix/change-requests reads AR System REST answers of CHG:Infrastructure Change and AP:Detail-Signature, mapping statuses through the setting bmc-helix-status-states (BMC's documented list by default). The approval is rejected on status Rejected and otherwise derived from the signatures grouped by Approval ID. A read-only collector uses an AR-JWT or bearer token minted outside opsdir."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-bmc-helix"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.0,
+        "description": "Read-only linkage of recorded changes (ciamChange.ciamTicketRef '<adapter>:<number>') to their ITSM tickets. An ITSM add-on's importer (offline export, or a read-only collector via ciamCollectionSource) records each linked ticket as observed evidence: ciamTicket under cn=<number>,ou=<adapter>,ou=tickets, holding the neutral state, the overall approval (derived from per-step decisions where the system approves by steps, kept as approval steps), the neutral change type (standard/normal/emergency), planned and work windows, approver rows, raw facts and the provider id. A ticket is never written under ou=changes and is never an approval opsdir acts on. Where a system's states and fields are site-specific, the operator maps them in the add-on's estate settings ('<name>=<value>, ...'). The governance domain reconciles record vs ticket (in-step, not-imported, rejected, cancelled, unapproved, closed-pending, live-but-rejected, window-differs, outside-window) in a planner check and the tickets report. Add-ons (kind itsm): ServiceNow, Jira Service Management (Cloud and Data Center) and BMC Helix ITSM / Remedy (AR System REST)."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "ITSM Ticket Evidence"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "status_states",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The operator's status map from jira-sm-status-states: {status id or exact name: neutral ticket state}, the first of a status mapped twice; with the problems of entries that aren't one (a state outside governance TICKET_STATES, a status mapped twice, malformed parts).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({status: state}, (problem, ...))\"}",
+        "source_hash": "3d9e616112bf32de"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-status-states-048c6e85"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "field_refs",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The operator's field mapping from jira-sm-change-fields: {role (planned-start, planned-end, work-start, work-end, change-type, or another fact name): field id or exact name}, with the problems of entries that aren't one.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({role: field reference}, (problem, ...))\"}",
+        "source_hash": "4551cd46578bfeb3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-field-refs-0db5e897"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "jira_time",
+        "parameters": "[{\"name\": \"v\", \"type\": \"object\", \"required\": true}]",
+        "purpose": "(GeneralizedTime or None, problem or None) of a Jira date-time value: ISO 8601 with its offset converted to UTC; a date without a time (a Date Picker field) or anything else is refused with why.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(GeneralizedTime | None, problem | None)\"}",
+        "source_hash": "c48dfdaaefcd3697"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-jira-time-a6b6f394"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "overall_approval",
+        "parameters": "[{\"name\": \"steps\", \"type\": \"tuple[dict] | None\", \"required\": true}, {\"name\": \"state\", \"type\": \"str | None\", \"required\": true, \"description\": \"the ticket's neutral state\"}]",
+        "purpose": "A request's overall approval from its steps' own decisions (never from single approvers; user decision task 551 Q2a): any declined -> rejected; else any pending -> requested; else at least one step, all approved, and the ticket's neutral state past authorize -> approved; else None (no steps: unknown, never not-requested).",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "b2fbac580356e7d3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-overall-approval-80895f80"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "step_rows",
+        "parameters": "[{\"name\": \"steps\", \"type\": \"tuple[dict]\", \"required\": true}]",
+        "purpose": "The approval steps of one request as ciamTicketApprovalStep values (user decision S1a): '<finalDecision> <step id> created <GeneralizedTime>[ completed <GeneralizedTime>]', sorted.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "5018965dfe9cac43"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-step-rows-54b1ec3b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/settings.py",
+        "id_in_name": 0,
+        "name": "setting_pairs",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str | None\", \"required\": true}]",
+        "purpose": "Parse a mapping setting's '<name>=<value>, ...' text (an operator's mapping, such as an ITSM add-on's status map) into its pairs, and name the parts that aren't a pair.",
+        "returns": "{\"type\": \"tuple[tuple[tuple[str, str]], tuple[str]]\", \"description\": \"((name, value), ...) and problems\"}",
+        "source_hash": "4d0e2e69bdbe2633"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-setting-pairs-b16b079d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/settings.py",
+        "id_in_name": 0,
+        "name": "setting_mapping",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"setting\", \"type\": \"Setting\", \"required\": true}]",
+        "purpose": "The pairs of a mapping setting's value in effect (the record's, else the declared default), with its problems named for the setting: malformed parts, and a name mapped more than once (the first is used).",
+        "returns": "{\"type\": \"tuple[tuple[tuple[str, str]], tuple[str]]\", \"description\": \"(pairs, problems)\"}",
+        "source_hash": "f9c1b3736fa76dc1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_state_map",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"setting\", \"type\": \"Setting\", \"required\": true, \"description\": \"the add-on's declared status-mapping setting\"}]",
+        "purpose": "An ITSM add-on's status-mapping setting ('<status>=<state>, ...', the record's value or the add-on's default) as {the system's status: neutral ticket state}: the first mapping of a status is used, and states outside TICKET_STATES are named and left out. Shared by jira-sm and bmc-helix.",
+        "returns": "{\"type\": \"tuple[dict[str, str], tuple[str]]\", \"description\": \"({status: state}, problems)\"}",
+        "source_hash": "aba50414e4a3ccf7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/directory.py",
+        "id_in_name": 0,
+        "name": "iso_date_time",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str | None\", \"required\": true}]",
+        "purpose": "Read an ISO 8601 date-time as GeneralizedTime, converting its offset to UTC (no offset means UTC). A date without a time is refused with DATE_WITHOUT_TIME (its time zone is unknown), and anything else with a reason. Shared by the ITSM add-ons' window readers.",
+        "returns": "{\"type\": \"tuple[str | None, str | None]\", \"description\": \"(GeneralizedTime, None) or (None, why not)\"}",
+        "source_hash": "96a1db45c3dfcca8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "derived_approval",
+        "parameters": "[{\"name\": \"decisions\", \"type\": \"iterable[str]\", \"required\": true, \"description\": \"each step's decision: approved, declined or pending\"}, {\"name\": \"state\", \"type\": \"str | None\", \"required\": true, \"description\": \"the ticket's neutral state\"}]",
+        "purpose": "A ticket's overall approval derived from its approval steps' own decisions, for systems that approve by steps and report no overall approval (the user's rule from task 551). Any declined gives rejected. Otherwise any pending gives requested. Otherwise, at least one step, all approved, with the neutral state past authorization (PAST_AUTHORIZE), gives approved. Anything else gives None (unknown). Shared by jira-sm and bmc-helix.",
+        "returns": "{\"type\": \"str | None\", \"description\": \"rejected, requested, approved or None\"}",
+        "source_hash": "1b1a437cf0a97fe0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-derived-approval-a7ba8cb2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "approval_step",
+        "parameters": "[{\"name\": \"decision\", \"type\": \"str | None\", \"required\": true}, {\"name\": \"step\", \"type\": \"str | None\", \"required\": true}, {\"name\": \"created\", \"type\": \"str | None\", \"required\": true, \"description\": \"GeneralizedTime\"}, {\"name\": \"completed\", \"type\": \"str | None\", \"required\": false, \"description\": \"GeneralizedTime; None omits the part\"}]",
+        "purpose": "Format one ciamTicketApprovalStep value: '<decision> <step id> created <time>[ completed <time>]', with '?' for what the system didn't say.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "422c471c8aeecd6e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-approval-step-5638f606"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/states.py",
+        "id_in_name": 0,
+        "name": "change_type",
+        "parameters": "[{\"name\": \"timing\", \"type\": \"str | None\", \"required\": true}]",
+        "purpose": "The neutral change type of a BMC Change Timing value: Emergency, Normal and Standard map to emergency, normal and standard; Expedited, Latent and No Impact give None (kept as facts).",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "9d73a43d6e337804"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-change-type-357f3efa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/states.py",
+        "id_in_name": 0,
+        "name": "step_decision",
+        "parameters": "[{\"name\": \"statuses\", \"type\": \"iterable[str]\", \"required\": true}]",
+        "purpose": "An approval step's decision from its AP:Detail-Signature statuses: declined when any is Rejected; otherwise pending when any is Pending/Hold/More Information; otherwise approved when any is Approved. Returns None when only Cancelled, Error or Closed.",
+        "returns": "{\"type\": \"str | None\", \"description\": \"declined, pending, approved or None\"}",
+        "source_hash": "24a279f5bf41812b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-step-decision-814a6bb7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/states.py",
+        "id_in_name": 0,
+        "name": "overall_approval",
+        "parameters": "[{\"name\": \"status\", \"type\": \"str\", \"required\": true, \"description\": \"Change Request Status\"}, {\"name\": \"decisions\", \"type\": \"iterable[str]\", \"required\": true}, {\"name\": \"state\", \"type\": \"str | None\", \"required\": true, \"description\": \"neutral state\"}]",
+        "purpose": "A BMC change ticket's overall approval: rejected when its Change Request Status is Rejected, else derived from its steps' decisions (tickets.derived_approval).",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "37432ac16a0c46f8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-overall-approval-d5329211"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "ar_error",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"object\", \"required\": true, \"description\": \"a parsed JSON answer\"}]",
+        "purpose": "What an AR System REST error answer says ([{messageType, messageNumber, messageText, messageAppendedText}, ...]), or None when the document isn't one.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "4fa522027af20614"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ar-error-af8150ea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "answer_entries",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"object\", \"required\": true}]",
+        "purpose": "The entries of an AR System entry answer: a list answer's entries ({\"entries\": [...]}) or a single entry ({\"values\": {...}}), each having a values object.",
+        "returns": "{\"type\": \"tuple[dict]\"}",
+        "source_hash": "f8230c2698d771de"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-answer-entries-31186ac8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "has_next",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"object\", \"required\": true}]",
+        "purpose": "Whether an AR System list answer links a next page (_links.next).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "ea6d845dfac358a6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-has-next-394e1427"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "self_link",
+        "parameters": "[{\"name\": \"entry\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "An AR System entry's REST self link (_links.self[].href), or None.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "dd66b029eab9400e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-self-link-67f79097"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "approval_key",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The change number an approval answer file is for (.../approval/<CRQ>/<offset>.json as collected, or approval-<CRQ>*.json as an operator saves it), or None.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "b0f01622315034d0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-approval-key-04db3813"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "signatures_of",
+        "parameters": "[{\"name\": \"values\", \"type\": \"dict\", \"required\": true, \"description\": \"the change entry's values\"}, {\"name\": \"signatures\", \"type\": \"iterable[dict]\", \"required\": true, \"description\": \"signature values\"}]",
+        "purpose": "The AP:Detail-Signature rows belonging to one change. A row belongs when its Request is the change's Request ID or its Infrastructure Change ID. Rows are deduplicated by Detail-Sig-Id and split into the change's own (Application CHG:Infrastructure Change or none) and those of another application.",
+        "returns": "{\"type\": \"tuple[tuple[dict], tuple[dict]]\", \"description\": \"(mine, other application's)\"}",
+        "source_hash": "0c3d5a5f34ba2bfe"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-signatures-of-dd08abd7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "steps_of",
+        "parameters": "[{\"name\": \"signatures\", \"type\": \"iterable[dict]\", \"required\": true}]",
+        "purpose": "A change's approval steps from its signatures, grouped by Approval ID: each with its decision (step_decision, None when undecided) and its first Create-Date-Sig as GeneralizedTime.",
+        "returns": "{\"type\": \"tuple[tuple[str, str | None, str | None]]\", \"description\": \"((Approval ID, decision, created), ...) by Approval ID\"}",
+        "source_hash": "0ca3e7e22aaeddff"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-steps-of-f549a0a2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "approver_rows",
+        "parameters": "[{\"name\": \"signatures\", \"type\": \"iterable[dict]\", \"required\": true}]",
+        "purpose": "A change's signatures as ciamTicketApprover values: '<status> <Approver Signature, else Approvers> step <Approval ID> updated <Modified-Date-Sig>[ phase <Phase>]'. These are login ids, never names, with whitespace in a token turned to '_'.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "deefe3773c43ac04"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-approver-rows-d7263f0a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "ticket_facts",
+        "parameters": "[{\"name\": \"entry\", \"type\": \"dict\", \"required\": true}, {\"name\": \"signatures\", \"type\": \"tuple[dict] | None\", \"required\": true}, {\"name\": \"states\", \"type\": \"dict[str, str]\", \"required\": true, \"description\": \"{status: neutral state}\"}]",
+        "purpose": "The ticket attributes of one CHG:Infrastructure Change entry and its signatures (None: approvals not read): neutral state by the status map, overall approval, native state, change type from Change Timing, planned/work windows (offset date-times, date-only refused), steps, approver rows, facts, provider ref, doc URL, title; and the problems to name.",
+        "returns": "{\"type\": \"tuple[dict, tuple[str]]\", \"description\": \"({ticket attribute: value}, problems)\"}",
+        "source_hash": "7753ed5397275837"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "read_changes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the export was taken\"}]",
+        "purpose": "The importer bmc-helix/change-requests reads saved AR System REST answers into the record's ticket evidence. Each linked change becomes its own import group, which replaces only that ticket. Notices name: unmapped statuses, incomplete approvals, other applications' signatures, unlinked changes, linked changes the export lacks, errors and non-answers. An export spanning several servers is refused, and so is an undated one.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "e9acb2eb648178cb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-changes-a176a85c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py",
+        "id_in_name": 0,
+        "name": "credential",
+        "parameters": "[{\"name\": \"s\", \"type\": \"Source\", \"required\": true}]",
+        "purpose": "The Request credential of a bmc-helix collection source. For scheme token, the JWT goes in Authorization after the prefix 'AR-JWT ' (the core's api-key credential). For bearer, it is a bearer token.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "951933f61ef9854f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-credential-bf4b03e7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py",
+        "id_in_name": 0,
+        "name": "entry_url",
+        "parameters": "[{\"name\": \"base\", \"type\": \"str\", \"required\": true}, {\"name\": \"form\", \"type\": \"str\", \"required\": true}, {\"name\": \"qualification\", \"type\": \"str\", \"required\": true}, {\"name\": \"fields\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"limit\", \"type\": \"int\", \"required\": true}, {\"name\": \"offset\", \"type\": \"int\", \"required\": false}]",
+        "purpose": "The URL of a qualified AR System entry read (GET /api/arsys/v1/entry/<form>?q=..&fields=values(..)&limit=..&offset=..), with the form, qualification and field names percent-encoded.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "88ff55e5407a145b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-entry-url-b9b458a2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py",
+        "id_in_name": 0,
+        "name": "entries_view",
+        "parameters": "[{\"name\": \"fields\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "The keep function for an entry answer: only each entry's requested values and self link, plus the answer's next link. Error answers and non-JSON are kept as they are.",
+        "returns": "{\"type\": \"Callable[[str], str]\"}",
+        "source_hash": "bf97e0a7b8eb3a3f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-entries-view-bb504199"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py",
+        "id_in_name": 0,
+        "name": "change_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The collector's calls: first a qualified read (limit 2) of CHG:Infrastructure Change for each linked change, then, for each change read, the AP:Detail-Signature pages (the Request ID or the CRQ), each after a page that links a next one.",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "3d4f06c3fd5ba09e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-change-steps-02d48286"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why bmc-helix's collection sources can't be read: an unbound credential or trust anchor, no location, or a credential scheme other than token or bearer.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "bcbeda441cea08b5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-d0a7e3cf"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-setting-pairs-301d819e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 107 item (analysis note 3064; worker). A new package opsdir-adapter-bmc-helix (kind itsm), the third ITSM after ServiceNow (task 532) and Jira SM (task 551), reusing their contract unchanged where it fits: ciamTicketRef on ciamChange, observed ciamTicket under ou=tickets, ciamTicketApprovalStep (834) and ciamTicketChangeType (835) from decision 3167, ticket evidence, never an approval. Read-only: BMC Helix ITSM / Remedy AR System REST API (CHG:Infrastructure Change form, approval forms), JWT login, least-privilege read user, on-premises vs Helix SaaS, any government cloud offering; export importer if research supports one. Research current BMC docs first via Codex (read-only); design to the master before coding (operator mapping as estate settings like jira-sm, record changes escalate). Showcase ids reserved: CHG-2105..2109, planted A250..A259, B105..B109.",
+        "flows": [
+          "ITSM Ticket Evidence"
+        ],
+        "name": "BMC Helix ITSM / Remedy add-on",
+        "parent": {
+          "slug": "milestone-6-2f-follow-ups-more-itsm-systems-and-ti-74e8fe27"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Codex research on BMC Helix ITSM / Remedy AR REST (auth, CHG:Infrastructure Change fields, AP:Detail-Signature, limits, government, exports); checked on official docs; design sent to master as a decision",
+        "name": "Research and design gate",
+        "parent": {
+          "key": {
+            "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-research-and-design-gate-068227e5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Package opsdir-adapter-bmc-helix (kind itsm): adapter, importer reading saved AR REST JSON (change entries, AP:Detail-Signature pages) into ciamTicket evidence per the approved design",
+        "name": "Importer bmc-helix/change-requests",
+        "parent": {
+          "key": {
+            "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-importer-bmc-helix-change-requests-39dcae89"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Collector: per linked CRQ a qualified GET on CHG:Infrastructure Change, then AP:Detail-Signature pages; AR-JWT token minted outside opsdir",
+        "name": "Read-only collector",
+        "parent": {
+          "key": {
+            "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-read-only-collector-51dd762a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Package tests, showcase change(s) CHG-2105.. and planted findings, package README (U.4 standard, Known limits), root README and opsdir README mentions",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-aed6107b"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "fbb9af2ec0652beb18d38b50f4e3642047ee0bc5",
+    "branch": "aimfp-u119-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "setting_mapping parses the setting's text with setting_pairs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-pairs-b16b079d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "setting_mapping reads the value in effect with setting_value",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_state_map reads the status-mapping setting's pairs with setting_mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "status_states delegates to ticket_state_map with jira-sm-status-states",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-status-states-048c6e85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "field_refs reads jira-sm-change-fields' pairs with setting_mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-field-refs-0db5e897"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "iso_date_time reads the date-time with gtime_of_iso",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "jira_time delegates to iso_date_time, adding Jira's hint for a date-only field",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-jira-time-a6b6f394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      }
+    },
+    {
+      "attributes": {
+        "description": "step_rows formats each step with approval_step",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-step-rows-54b1ec3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approval-step-5638f606"
+      }
+    },
+    {
+      "attributes": {
+        "description": "overall_approval delegates to derived_approval with the steps' finalDecision values",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-overall-approval-80895f80"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-derived-approval-a7ba8cb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "overall_approval calls derived_approval (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-overall-approval-d5329211"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-derived-approval-a7ba8cb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "steps_of calls iso_date_time (directory.py) via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-steps-of-f549a0a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      }
+    },
+    {
+      "attributes": {
+        "description": "steps_of calls step_decision (states.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-steps-of-f549a0a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-step-decision-814a6bb7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "approver_rows calls iso_date_time (directory.py) via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-approver-rows-d7263f0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls iso_date_time (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls approval_step (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approval-step-5638f606"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls change_type (states.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-change-type-357f3efa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls overall_approval (states.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-overall-approval-d5329211"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls self_link (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-self-link-67f79097"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls steps_of (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-steps-of-f549a0a2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls approver_rows (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approver-rows-d7263f0a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls json_document (sources.py) via _answers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls adapter_dn (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-adapter-dn-ea2a1858"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls linked_numbers (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_entry (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_group (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-group-28c07413"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_state_map (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ar_error (changes.py) via _answers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ar-error-af8150ea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls answer_entries (changes.py) via _answers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-entries-31186ac8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls has_next (changes.py) via _complete",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-has-next-394e1427"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls self_link (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-self-link-67f79097"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls approval_key (changes.py) via _answers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approval-key-04db3813"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls signatures_of (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-signatures-of-dd08abd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_facts (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entries_view calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entries-view-bb504199"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entries_view calls ar_error (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entries-view-bb504199"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ar-error-af8150ea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entries_view calls answer_entries (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entries-view-bb504199"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-entries-31186ac8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls json_document (sources.py) via _offsets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls linked_numbers (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls answer_entries (changes.py) via _offsets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-entries-31186ac8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls has_next (changes.py) via _offsets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-has-next-394e1427"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls credential (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-bf4b03e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls entry_url (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-url-b9b458a2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls entries_view (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entries-view-bb504199"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-d0a7e3cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-imported-d85f92ec"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-request-e212bfd1"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-credential-bf4b03e7"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-source-ded5adbf"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-setting-3e4e1085"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-setting-3e4e1085"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/adapter.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/states.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/states.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/settings.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/directory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/states.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-bmc-helix-itsm-remedy-add-on-3fbd5298"
+      }
+    },
+    {
+      "attributes": {
+        "description": "status_states calls setting_value (settings.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-status-states-048c6e85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "status_states calls setting_pairs (mapping.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-status-states-048c6e85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-setting-pairs-301d819e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "field_refs calls setting_value (settings.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-field-refs-0db5e897"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "field_refs calls setting_pairs (mapping.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-field-refs-0db5e897"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-setting-pairs-301d819e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "jira_time calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-jira-time-a6b6f394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    }
+  ],
+  "warnings": []
+}

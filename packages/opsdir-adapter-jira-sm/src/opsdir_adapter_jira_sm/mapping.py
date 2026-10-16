@@ -14,8 +14,9 @@ two fields share is refused (map it by id). A status's id is matched before its 
 import re
 
 from opsdir.core.contract import Setting
-from opsdir.core.settings import setting_value
+from opsdir.core.settings import setting_mapping, setting_pairs  # noqa: F401  (setting_pairs re-exported)
 from opsdir.domains.governance.schema import TICKET_STATES
+from opsdir.domains.governance.tickets import ticket_state_map
 
 STATUS_STATES = Setting("jira-sm-status-states", "string", None,
                         "What each Jira workflow status of the change tickets means, as comma-separated <status id "
@@ -36,32 +37,14 @@ WINDOW_NAMES = ("planned start", "planned start date", "planned end", "planned e
                 "actual end", "change start date", "change completion date")
 
 
-def setting_pairs(text):
-    """((name, value), ...) of a setting's '<name>=<value>, ...' text, and the parts that aren't one."""
-    parts = [p.strip() for p in (text or "").split(",") if p.strip()]
-    split = [(p, *(s.strip() for s in p.partition("=")[::2])) for p in parts]
-    return (tuple((k, v) for p, k, v in split if "=" in p and k and v),
-            tuple(f"`{p}` isn't <name>=<value>" for p, k, v in split if "=" not in p or not k or not v))
-
-
-def _mapping(d, setting):
-    pairs, problems = setting_pairs(setting_value(d, setting))
-    twice = sorted({k for k, _ in pairs if sum(1 for x, _ in pairs if x == k) > 1})
-    return pairs, (*(f"{setting.name}: {p}" for p in problems),
-                   *(f"{setting.name}: `{k}` is mapped more than once (the first is used)" for k in twice))
-
-
 def status_states(d):
     """({status id or exact name: neutral state}, problems) of jira-sm-status-states."""
-    pairs, problems = _mapping(d, STATUS_STATES)
-    bad = tuple(f"{STATUS_STATES.name}: `{k}={v}`: {v} isn't a ticket state ({', '.join(TICKET_STATES)})"
-                for k, v in pairs if v not in TICKET_STATES)
-    return {k: v for k, v in reversed(pairs) if v in TICKET_STATES}, (*problems, *bad)
+    return ticket_state_map(d, STATUS_STATES)
 
 
 def field_refs(d):
     """({role: field id or exact name}, problems) of jira-sm-change-fields."""
-    pairs, problems = _mapping(d, CHANGE_FIELDS)
+    pairs, problems = setting_mapping(d, CHANGE_FIELDS)
     bad = tuple(f"{CHANGE_FIELDS.name}: `{k}` isn't a role name (lowercase letters, digits and dashes)"
                 for k, _ in pairs if not ROLE.fullmatch(k))
     return {k: v for k, v in reversed(pairs) if ROLE.fullmatch(k)}, (*problems, *bad)

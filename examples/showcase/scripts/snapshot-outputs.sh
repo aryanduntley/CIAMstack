@@ -183,6 +183,8 @@ cap 08-report-managed-identity-tenant od report managed-identity
 cap 08-apply-chg-2095 od import --change CHG-2095 --at 20260923090000Z siteminder/agent-files exports/siteminder-agents
 cap 08-apply-chg-2098 od modify --change CHG-2098 changes/CHG-2098-jira-sm-ticket-links.ldif
 cap 08-apply-chg-2099 od import --change CHG-2099 --at 20260923090000Z jira-sm/change-requests exports/jira-sm
+cap 08-apply-chg-2105 od modify --change CHG-2105 changes/CHG-2105-bmc-helix-ticket-links.ldif
+cap 08-apply-chg-2106 od import --change CHG-2106 --at 20260923090000Z bmc-helix/change-requests exports/bmc-helix
 cap 08-report-tickets-jira-sm od report tickets
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
