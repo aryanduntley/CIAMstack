@@ -12,7 +12,8 @@ call (the command or URL, never a credential) with the SHA-256 of what it return
 credential references it resolved; the applied import records it with the import run (domains.governance.imports).
 Whatever the outcome, a run under a change records the attempt (attempt: domains.governance.attempts), so a failed
 one stays visible with its problems and the calls it made.
-Resolved credentials are masked (redact) wherever a call's error output or a problem would show them."""
+Resolved credentials are masked (redact) wherever a call's error output or a problem would show them. An observing
+Request's output (a revocation endpoint's answer) is an observation (core.observation)."""
 import hashlib
 import re
 import shlex

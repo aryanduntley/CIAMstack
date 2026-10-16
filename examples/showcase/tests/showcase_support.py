@@ -97,6 +97,7 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2083", SHOWCASE / "changes" / "CHG-2083-target-pinggateway-protects-tech-pubs.ldif"),
             ("CHG-2086", ImportStep("adcs/inventory", SHOWCASE / "exports" / "adcs-templates", "20260923090000Z",
                                     take=("all",))),
+            ("CHG-2092", ImportStep("x509/revocation", SHOWCASE / "exports" / "revocation", "20260923090000Z")),
             ("CHG-2089", SHOWCASE / "changes" / "CHG-2089-partners-external-tenant.ldif"),
             ("CHG-2090", ImportStep("azure/external-id", SHOWCASE / "exports" / "external-id", "20260923090000Z")),
             ("CHG-2095", ImportStep("siteminder/agent-files", SHOWCASE / "exports" / "siteminder-agents",

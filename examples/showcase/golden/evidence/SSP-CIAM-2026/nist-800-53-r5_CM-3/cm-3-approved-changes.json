@@ -415,6 +415,12 @@
       "approved"
     ],
     [
+      "cn=CHG-2092,ou=changes,dc=ciam-ops",
+      "Record what the issuing CA's revocation endpoints answer, observed from the data center",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
       "cn=CHG-2095,ou=changes,dc=ciam-ops",
       "Record the crew portal web server's SiteMinder agent files (its Web Agent, policy servers, trusted host)",
       "CAB 2026-09-18",

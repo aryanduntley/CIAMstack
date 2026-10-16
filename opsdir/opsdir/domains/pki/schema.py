@@ -21,6 +21,9 @@ the certificates it issues (CRL distribution points, delta CRLs, OCSP, CA issuer
 (name the subject, skip approval) and who may request from them (templates.py judges the risk). A CA's
 issued-certificate inventory (ou=issued-certificates) is what its database said it issued, metadata only, never a key:
 the record's certificates are reconciled with it (issued.py), and nothing it observes is written onto them.
+What each CA's revocation endpoints answered when last observed (ou=revocation-observations, per CA and endpoint) is
+kept apart from the endpoints themselves: whether they answered, how current what they served was, and whether the CA
+the record holds signed it (revocation.py judges it).
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -194,6 +197,39 @@ ATTRIBUTES = (
                  "Whether a certificate template lets a broad group request certificates (anyone, every "
                  "authenticated account, all of a domain's users or computers), or only named principals; unknown "
                  "when its access rights weren't read or hold entries that can't be judged"),
+    # ------------------------------------------------------------------ revocation endpoints observed
+    AttributeDef(818, 'ciamEndpointAnswer', 'enum:answered|http-error|unreachable|unreadable|not-observed',
+                 'observed', True,
+                 "What a revocation endpoint answered when observed: answered (a CRL or OCSP response read), "
+                 "http-error (an error status), unreachable (no answer), unreadable (an answer that isn't a CRL or a "
+                 "successful OCSP response), or not-observed (nothing to fetch: not an http(s) URL, unfilled "
+                 "variables, nothing to ask an OCSP responder about)"),
+    AttributeDef(819, 'ciamThisUpdate', 'time', 'observed', True,
+                 "When the CRL or OCSP response an endpoint served was issued (its thisUpdate)"),
+    AttributeDef(820, 'ciamNextUpdate', 'time', 'observed', True,
+                 "When the CRL or OCSP response an endpoint served says newer information will be available by "
+                 "(its nextUpdate); absent when it gave none"),
+    AttributeDef(821, 'ciamCrlNumber', 'string', 'observed', True,
+                 "The CRL number (RFC 5280 5.2.3) of the CRL an endpoint served, as decimal"),
+    AttributeDef(822, 'ciamBaseCrlNumber', 'string', 'observed', True,
+                 "The delta CRL indicator of a delta CRL an endpoint served (RFC 5280 5.2.4): the number of the "
+                 "oldest complete CRL it can be combined with, as decimal"),
+    AttributeDef(823, 'ciamSignatureCheck',
+                 'enum:valid|invalid|other-issuer|unauthorized-responder|no-ca-certificate|unsupported', 'observed',
+                 True,
+                 "Whether what an endpoint served was signed by the CA the record holds: valid; invalid (its "
+                 "signature doesn't verify with the CA's key); other-issuer (another issuer's); "
+                 "unauthorized-responder (an OCSP response signed by a certificate the CA didn't authorize); "
+                 "no-ca-certificate (the record holds none of the CA's certificates to check it with); unsupported "
+                 "(a signature algorithm the check doesn't verify)"),
+    AttributeDef(824, 'ciamSignedBy', 'dn', 'observed', True,
+                 "The CA certificate in the record (ou=certificates) whose key verified what an endpoint served, "
+                 "directly or through the OCSP responder certificate it issued"),
+    AttributeDef(825, 'ciamOcspStatus',
+                 'enum:good|revoked|unknown|malformedRequest|internalError|tryLater|sigRequired|unauthorized',
+                 'observed', True,
+                 "What an OCSP responder said of the certificate it was asked about (ciamSerialNumber): good, "
+                 "revoked or unknown, or the status of a response that wasn't successful (RFC 6960 4.2.1)"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -259,6 +295,18 @@ CLASSES = (
               'ciamRequester', 'ciamRevokedAt', 'ciamRevocationReason'),
              "A certificate a CA's inventory says it issued (cn: its request id), metadata only, never a key: serial, "
              "SHA-256 fingerprint, subject, validity, template, requester and, once revoked, when and why"),
+    ClassDef(180, 'ciamRevocationObservation', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamInventoryAt'),
+             ('ciamInventoryState', 'ciamInventoryProblem'),
+             "The last observation of one CA's revocation endpoints (cn: the CA's name; under "
+             "ou=revocation-observations): when it was made, whether every endpoint was observed, and each "
+             "endpoint's answer as its children"),
+    ClassDef(181, 'ciamEndpointObservation', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamRevocationKind', 'ciamEndpointUrl', 'ciamInventoryAt'),
+             ('ciamEndpointAnswer', 'ciamThisUpdate', 'ciamNextUpdate', 'ciamCrlNumber', 'ciamBaseCrlNumber',
+              'ciamSignatureCheck', 'ciamSignedBy', 'ciamOcspStatus', 'ciamSerialNumber', 'ciamInventoryProblem'),
+             "What one of a CA's revocation endpoints answered when observed (cn: the endpoint's, crl-1; the URL "
+             "observed): whether it answered, how current what it served was, whether the CA signed it, and for an "
+             "OCSP responder what it said of the certificate it was asked about (ciamSerialNumber)"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

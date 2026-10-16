@@ -7,6 +7,7 @@ SECRET_INVENTORY = branch("secret-inventory")    # secret stores' inventories, m
 AUTHORITIES = branch("certificate-authorities")   # certification authorities, their revocation endpoints as children
 TEMPLATES = branch("certificate-templates")      # the certificate templates CAs issue from
 ISSUED = branch("issued-certificates")           # each CA's issued-certificate inventory, metadata only
+OBSERVATIONS = branch("revocation-observations")  # what each CA's revocation endpoints answered when observed
 
 
 def credential_dn(name):
@@ -36,3 +37,8 @@ def template_dn(name):
 def issued_inventory_dn(authority):
     """The issued-certificate inventory of the CA of that name."""
     return f"cn={authority},{ISSUED}"
+
+
+def observation_dn(authority):
+    """The observation of the revocation endpoints of the CA of that name."""
+    return f"cn={authority},{OBSERVATIONS}"

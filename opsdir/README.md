@@ -282,6 +282,28 @@ named accounts may enroll from, or that no recorded CA issues from (where the CA
 An exception under `ou=exceptions` accepts the finding. Any-purpose and enrollment-agent templates, who may change a
 template, and the other published template weaknesses aren't judged yet.
 
+Revocation endpoints observed (`domains/pki/revocation.py`): what each CA's CRL distribution points, delta CRLs and OCSP
+responders answered when last observed is kept apart from the endpoints, under `ou=revocation-observations`: per CA a
+`ciamRevocationObservation` (cn: the CA's name; `ciamInventoryAt`, `ciamInventoryState` complete when every endpoint
+was observed, `ciamInventoryProblem`) and per endpoint a `ciamEndpointObservation` (cn: the endpoint's; the URL
+observed; `ciamEndpointAnswer` answered, http-error, unreachable, unreadable or not-observed; `ciamThisUpdate`,
+`ciamNextUpdate`, `ciamCrlNumber`, a delta's `ciamBaseCrlNumber`; `ciamSignatureCheck` valid, invalid, other-issuer,
+unauthorized-responder, no-ca-certificate or unsupported, through `ciamSignedBy`, the record's CA certificate; an OCSP
+responder's `ciamOcspStatus` for the certificate it was asked about, `ciamSerialNumber`). A CA-neutral adapter observes
+them (`opsdir-adapter-x509`: `opsdir collect x509/revocation`, an operator-run, read-only fetch of every http(s)
+endpoint whose variables were all filled, then its importer checks each answer against the CA certificates the record
+holds); the core makes the requests (a collector's observing `Request`: whatever an endpoint answers, an error status
+or nothing at all, is what the export keeps, never a failed collection). `opsdir report revocation-endpoints` lists
+every CRL, delta CRL and OCSP endpoint of every CA with what it answered (outdated: its nextUpdate is before the day
+evaluated: observe it again). `opsdir plan` (area `Certificate`; nothing when no observation is recorded) makes each
+endpoint with a problem an action for the CA's owners: it couldn't be reached, answered an error or something that
+isn't a CRL or OCSP response, served what the CA certificate the record holds doesn't verify (or another issuer's, or
+an OCSP responder the CA didn't authorize), the record holds no CA certificate to check it with, what it served had
+expired or was within `revocation-freshness-margin-hours` (an estate setting, default 12) of its nextUpdate when
+observed, a CRL without nextUpdate, a delta CRL building on a newer CRL than the distribution points serve, an OCSP
+responder that refused, doesn't know the certificate or contradicts the CA's inventory, or an endpoint the last
+observation missed.
+
 ### Who keeps what, and where it renders
 
 Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what

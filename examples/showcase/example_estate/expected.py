@@ -650,6 +650,14 @@ EXPECTED = MappingProxyType({
          "identity service's to hold", None, "CHG-2083"),
         ("A212", "Identity", "external tenant partners-external-id credentials: client credentials aren't rendered",
          "the partner portal's signing certificate is uploaded to its app registration by hand", None, "CHG-2089"),
+        # the issuing CA's revocation endpoints observed (CHG-2092): each wrong in its own way
+        ("A220", "Certificate", "Revocation endpoint `crl-2` of certification authority `Example Aero Issuing CA 2`",
+         "the CRL distribution point serves a CRL the recorded CA certificate doesn't verify: the CA's owners, "
+         "security operations", None, "CHG-2092"),
+        ("A221", "Certificate", "Revocation endpoint `delta-crl-1` of certification authority `Example Aero Issuing "
+         "CA 2`", "the delta CRL's location answers HTTP 404", None, "CHG-2092"),
+        ("A222", "Certificate", "Revocation endpoint `ocsp-1` of certification authority `Example Aero Issuing CA 2`",
+         "the OCSP responder refuses requests for the CA's certificates (unauthorized)", None, "CHG-2092"),
     ],
 })
 

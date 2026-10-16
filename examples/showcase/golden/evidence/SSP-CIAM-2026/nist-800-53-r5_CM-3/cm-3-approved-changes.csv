@@ -67,4 +67,5 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2086,ou=changes,dc=ciam-ops","Record the forest's certificate templates again, collected over LDAPS with who may enroll",CAB 2026-09-18,approved
 "cn=CHG-2089,ou=changes,dc=ciam-ops","Record the partners external tenant the render created, so the target adopts it and registers the partner portal in it",CAB 2026-09-18,approved
 "cn=CHG-2090,ou=changes,dc=ciam-ops","Read the partners external tenant's Graph configuration (app registrations, user flow, token extension) into the record",CAB 2026-09-18,approved
+"cn=CHG-2092,ou=changes,dc=ciam-ops","Record what the issuing CA's revocation endpoints answer, observed from the data center",CAB 2026-09-18,approved
 "cn=CHG-2095,ou=changes,dc=ciam-ops","Record the crew portal web server's SiteMinder agent files (its Web Agent, policy servers, trusted host)",CAB 2026-09-18,approved

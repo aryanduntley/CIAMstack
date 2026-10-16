@@ -1763,6 +1763,30 @@
       "planted": "the partner portal's signing certificate is uploaded to its app registration by hand",
       "cleared_by": null,
       "raised_by": "CHG-2089"
+    },
+    {
+      "id": "A220",
+      "area": "Certificate",
+      "match": "Revocation endpoint `crl-2` of certification authority `Example Aero Issuing CA 2`",
+      "planted": "the CRL distribution point serves a CRL the recorded CA certificate doesn't verify: the CA's owners, security operations",
+      "cleared_by": null,
+      "raised_by": "CHG-2092"
+    },
+    {
+      "id": "A221",
+      "area": "Certificate",
+      "match": "Revocation endpoint `delta-crl-1` of certification authority `Example Aero Issuing CA 2`",
+      "planted": "the delta CRL's location answers HTTP 404",
+      "cleared_by": null,
+      "raised_by": "CHG-2092"
+    },
+    {
+      "id": "A222",
+      "area": "Certificate",
+      "match": "Revocation endpoint `ocsp-1` of certification authority `Example Aero Issuing CA 2`",
+      "planted": "the OCSP responder refuses requests for the CA's certificates (unauthorized)",
+      "cleared_by": null,
+      "raised_by": "CHG-2092"
     }
   ]
 }

@@ -326,6 +326,11 @@ ou: restore-tests
 description: Restore tests: one entry per restore someone did, and what it pro
  ved
 
+dn: ou=revocation-observations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: revocation-observations
+
 dn: ou=runbooks,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -1837,6 +1842,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the partners external tenant's Graph configuration (app regist
  rations, user flow, token extension) into the record
 
+dn: cn=CHG-2092,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2092
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record what the issuing CA's revocation endpoints answer, observed 
+ from the data center
+
 dn: cn=CHG-2095,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -2598,6 +2613,14 @@ cn: Example Aero Issuing CA 2
 ciamInventoryAt: 20260923090000Z
 ciamInventoryState: complete
 ciamProviderRef: PKI-ISS-02\Example Aero Issuing CA 2
+
+dn: cn=Example Aero Issuing CA 2,ou=revocation-observations,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationObservation
+cn: Example Aero Issuing CA 2
+ciamInventoryAt: 20260923083000Z
+ciamInventoryState: complete
 
 dn: cn=example-aero,ou=owners,dc=ciam-ops
 objectClass: top
@@ -5408,6 +5431,16 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamTitle: Fail production over to the warm standby
 ciamVersion: 1.0
 
+dn: cn=x509.revocation.shared.s1-4c120123a810196a,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: x509.revocation.shared.s1-4c120123a810196a
+ciamChangeRef: cn=CHG-2092,ou=changes,dc=ciam-ops
+ciamImportScope: ou=revocation-observations,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: x509/revocation
+
 dn: cn=xFeatureFlag,ou=custom-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamRecordTypeDefinition
@@ -6583,6 +6616,18 @@ ciamRevocationKind: crl
 description: the CA's template: ldap:///CN=%7%8,CN=%2,CN=CDP,CN=Public Key Ser
  vices,CN=Services,%6%10
 
+dn: cn=crl-1,cn=Example Aero Issuing CA 2,ou=revocation-observations,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEndpointObservation
+cn: crl-1
+ciamEndpointAnswer: not-observed
+ciamEndpointUrl: ldap:///CN=%7,CN=PKI-ISS-02,CN=CDP,CN=Public Key Services,CN=
+ Services,%6%10
+ciamInventoryAt: 20260923083000Z
+ciamInventoryProblem: its URL still holds the CA's variables
+ciamRevocationKind: crl
+
 dn: cn=crl-2,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -6591,6 +6636,21 @@ cn: crl-2
 ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/Example Aero Issuing 
  CA 2.crl
 ciamRevocationKind: crl
+
+dn: cn=crl-2,cn=Example Aero Issuing CA 2,ou=revocation-observations,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEndpointObservation
+cn: crl-2
+ciamCrlNumber: 118
+ciamEndpointAnswer: answered
+ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/Example Aero Issuing 
+ CA 2.crl
+ciamInventoryAt: 20260923083000Z
+ciamNextUpdate: 20260929180000Z
+ciamRevocationKind: crl
+ciamSignatureCheck: invalid
+ciamThisUpdate: 20260922060000Z
 
 dn: cn=custom-scheme-crew-badge,ou=siteminder,ou=source-objects,dc=ciam-ops
 objectClass: top
@@ -6731,6 +6791,18 @@ objectClass: ciamRevocationEndpoint
 cn: delta-crl-1
 ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/Example Aero Issuing 
  CA 2+.crl
+ciamRevocationKind: delta-crl
+
+dn: cn=delta-crl-1,cn=Example Aero Issuing CA 2,ou=revocation-observations,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEndpointObservation
+cn: delta-crl-1
+ciamEndpointAnswer: http-error
+ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/Example Aero Issuing 
+ CA 2+.crl
+ciamInventoryAt: 20260923083002Z
+ciamInventoryProblem: HTTP 404
 ciamRevocationKind: delta-crl
 
 dn: cn=e0930981c2c28daf,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
@@ -7163,6 +7235,18 @@ objectClass: ciamRevocationEndpoint
 cn: ocsp-1
 ciamEndpointUrl: http://ocsp.example-aero.test/ocsp
 ciamRevocationKind: ocsp
+
+dn: cn=ocsp-1,cn=Example Aero Issuing CA 2,ou=revocation-observations,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEndpointObservation
+cn: ocsp-1
+ciamEndpointAnswer: answered
+ciamEndpointUrl: http://ocsp.example-aero.test/ocsp
+ciamInventoryAt: 20260923083003Z
+ciamOcspStatus: unauthorized
+ciamRevocationKind: ocsp
+ciamSerialNumber: 1a000004a35f8e61c2b07d940000000004a3
 
 dn: cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
 objectClass: top

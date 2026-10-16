@@ -173,6 +173,8 @@ cap 08-apply-chg-2083 od modify --change CHG-2083 changes/CHG-2083-target-pingga
 cap 08-report-protected-applications-after od report protected-applications
 cap 08-apply-chg-2086 od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory \
   exports/adcs-templates
+cap 08-apply-chg-2092 od import --change CHG-2092 --at 20260923090000Z x509/revocation exports/revocation
+cap 08-report-revocation-endpoints od report revocation-endpoints
 cap 08-report-regulated-data od report regulated-data
 cap 08-apply-chg-2089 od modify --change CHG-2089 changes/CHG-2089-partners-external-tenant.ldif
 cap 08-apply-chg-2090 od import --change CHG-2090 --at 20260923090000Z azure/external-id exports/external-id

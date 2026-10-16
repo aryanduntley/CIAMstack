@@ -163,6 +163,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2086", "Record the forest's certificate templates again, collected over LDAPS with who may enroll",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2092", "Record what the issuing CA's revocation endpoints answer, observed from the data center",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2089", "Record the partners external tenant the render created, so the target adopts it and registers the "
      "partner portal in it", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2090", "Read the partners external tenant's Graph configuration (app registrations, user flow, token "
