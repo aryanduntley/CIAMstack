@@ -39,3 +39,16 @@ def test_an_upgrade_names_the_changes_between_the_two_releases():
     assert between == 4 and [c.has for c, names in listed] == [">=8.0", ">=8.1", ">=8.1", ">=8.1"]
     assert all(names is None and c.effect == "info" for c, names in listed)
     assert crossing(None, None, ADAPTER, ("ds",), "7.2.5", "7.5.4")[1] == 1        # 7.3's log move
+
+
+def test_its_profile_is_its_standard_ldap_files_and_its_notes_name_what_it_ships():
+    from opsdir.core.profiles import profile_tree
+    from opsdir.domains.directory.naming import USER_SCHEMA
+    files = ADAPTER.render_neutral(make_directory((), (), ()))
+    assert sorted(profile_tree(ADAPTER.profile, files)) == ["ldap/dit.ldif", "ldap/schema.ldif"]
+    fr = (f"cn=fr-idm-uuid,{USER_SCHEMA}", ("top", "ciamUserAttribute"),
+          {"cn": ["fr-idm-uuid"], "ciamLdapName": ["fr-idm-uuid"], "ciamPiiClass": ["low"],
+           "ciamLdapOid": ["1.3.6.1.4.1.36733.2.3.1.27"], "ciamLdapSyntax": ["1.3.6.1.4.1.1466.115.121.1.15"]})
+    d = make_directory((), {}, (fr,))
+    assert "fr-idm-uuid" not in ADAPTER.render_neutral(d)["ldap/schema.ldif"].split("# NOTE")[0]
+    assert [n.subject for n in ADAPTER.notes(SimpleNamespace(d=d), None)] == ["schema fr-idm-uuid"]

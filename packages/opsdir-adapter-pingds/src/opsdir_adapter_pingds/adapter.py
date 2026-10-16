@@ -8,7 +8,7 @@ from opsdir_base_ds.listeners import ds_listeners
 from opsdir_base_ds.profile import TERMS
 from opsdir_base_ds.product import runs
 from .logs import LOGS
-from .render import PINGDS, render_neutral, setup_scripts
+from .render import PINGDS, PROFILE, render_neutral, render_notes, setup_scripts
 from .replication import check_replication
 from .signals import SIGNALS
 from .versions import VERSION_CHANGES
@@ -33,4 +33,5 @@ ADAPTER = Adapter(name="pingds", kind="product", applies=applies, required_roles
                   secret_patterns=(), importers=importers(PINGDS), profile_terms=TERMS, access=None,
                   listeners=ds_listeners, collectors=config_collectors("pingds", PINGDS_FLAGS),
                   signals=SIGNALS, logs=LOGS,
-                  version_changes=VERSION_CHANGES, reads_back=READS_BACK)
+                  version_changes=VERSION_CHANGES, reads_back=READS_BACK, profile=PROFILE,
+                  notes=render_notes)

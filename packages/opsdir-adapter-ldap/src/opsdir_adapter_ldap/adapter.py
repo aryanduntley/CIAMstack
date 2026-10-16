@@ -17,9 +17,10 @@ NAME = "ldap"
 FORMATS = (("ldap/*.ldif", "ldif"),)      # the format of every file the standard base renders
 
 
-def render_standard(d):
-    """The standard LDAPv3 files every directory adapter renders: {path: text}, environment-neutral."""
-    return {"ldap/schema.ldif": schema_ldif(d), "ldap/dit.ldif": dit_ldif(d)}
+def render_standard(d, keep=None):
+    """The standard LDAPv3 files every directory adapter renders: {path: text}, environment-neutral; keep: which
+    defined schema records the schema adds (schema.schema_record), default all."""
+    return {"ldap/schema.ldif": schema_ldif(d, keep=keep), "ldap/dit.ldif": dit_ldif(d)}
 
 
 ADAPTER = Adapter(name=NAME, kind="product", applies=None, required_roles=(), render_neutral=render_standard,

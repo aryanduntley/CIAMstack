@@ -29,6 +29,30 @@ PROFILE_NAME = "opsdir"                 # the profile's folder under each compon
 CONFIG_INIT = "custom-vol-init"       # the init container running a component's configuration image
 PROFILE_BUILDS = (("idm", "PingIDM", "config", "/config/"), ("amster", "PingAM", "derived", "/opt/amster"),
                   ("ig", "PingGateway", "derived", "${IG_INSTANCE_DIR}"))
+# DS has no config profile: its image carries custom schema and LDAP entries (docker/ds at the release). The Dockerfile
+# copies config/schema/*.ldif to DS_CUSTOM_SCHEMA, which the runtime setup script copies into db/schema after the
+# setup profiles; ds-setup.sh appends ldif-ext/<folder>/*.ldif at build time to the base-entries.ldif template of the
+# setup profile serving that folder (under DS_TEMPLATES). Both apply when a pod sets up an empty volume, and only then.
+# One DS image runs ds-idrepo and ds-cts. DsBackend: ldif-ext folder, the backend's name, its base DN (the setup
+# profiles' defaults, idm-repo's from the domain forgerock.io the setup script sets), its setup profile's folder, and
+# what the &{...} parameter in that profile's template DNs stands for (the base DN; idm-repo's domain).
+# The template is that folder's highest version holding base-entries.ldif, chosen in the image at build time: a
+# profile version without one imports the newest earlier one's (identity-store 8.0 reads 7.0's), and the
+# unversioned profiles the setup script runs (identity-store, idm-repo) are the image's latest. ds-setup.sh names
+# fixed folders (AM/identity-store/7.0, IDM/repo/7.3): on PingDS 8.1.2 (ForgeOps' public image, 2026-10-16) idm-repo
+# 8.1 imports its own 8.1 template, so what ds-setup.sh appends to 7.3 is never imported (tried locally). An entry the
+# template already creates (ou=people,ou=identities) fails the profile's import, so the pod's setup (tried locally).
+DS_PRODUCT, DS_CONTEXT = "PingDS", "ds"      # the product whose profile the DS image carries; its folder
+DS_CUSTOM_SCHEMA = "/opt/opendj/custom-schema"
+DS_TEMPLATES = "/opt/opendj/template/setup-profiles"
+DS_SCHEMA_FILE = "90-opsdir.ldif"         # after the shipped schema files, before 99-user.ldif (DS's own LDAP writes)
+DS_LDIF_FILE = "opsdir.ldif"
+DsBackend = namedtuple("DsBackend", ("folder", "name", "base_dn", "template", "fill"))
+DS_BACKENDS = (DsBackend("am-config", "cfgStore", "ou=am-config", "AM/config", "ou=am-config"),
+               DsBackend("identities", "amIdentityStore", "ou=identities", "AM/identity-store", "ou=identities"),
+               DsBackend("tokens", "amCts", "ou=tokens", "AM/cts", "ou=tokens"),
+               DsBackend("idm-repo", "idmRepo", "dc=openidm,dc=forgerock,dc=io", "IDM/repo", "dc=forgerock,dc=io"))
+DS_APPEND = "append-ldif-ext.sh"          # the build step appending ldif-ext to the templates (ds_profile.py)
 # AM's and IDM's keystore (deferred 2136 part 4): the Secret and key the release mounts it from, and the roles the
 # product adapters bind it to. A workload mapping that key delivers the record's keystore; the release then makes none.
 KEYSTORE_SECRET, KEYSTORE_KEY = "keystore", "keystore.jceks"
