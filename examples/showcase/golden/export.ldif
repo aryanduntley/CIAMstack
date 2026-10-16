@@ -1712,6 +1712,25 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record Microsoft's confirmation that the partners external tenant s
  igns with RS256 (the plan's question)
 
+dn: cn=CHG-2075,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2075
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the PingAccess servers' own files into the record as the pa-ad
+ min and pa-engine host baselines
+
+dn: cn=CHG-2076,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2076
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Scope the PingAccess baselines' AWS agents to AWS environments
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3228,14 +3247,10 @@ objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
 cn: linux.baseline.shared
-ciamChangeRef: cn=CHG-2012,ou=changes,dc=ciam-ops
-ciamImportScope: cn=am,ou=baselines,dc=ciam-ops
-ciamImportScope: cn=ds,ou=baselines,dc=ciam-ops
-ciamImportScope: cn=idm,ou=baselines,dc=ciam-ops
-ciamImportScope: cn=ig,ou=baselines,dc=ciam-ops
-ciamImportScope: cn=pf-admin,ou=baselines,dc=ciam-ops
-ciamImportScope: cn=pf-engine,ou=baselines,dc=ciam-ops
-ciamImportedAt: 20260920030000Z
+ciamChangeRef: cn=CHG-2075,ou=changes,dc=ciam-ops
+ciamImportScope: cn=pa-admin,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=pa-engine,ou=baselines,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
 ciamImporter: linux/baseline
 
 dn: cn=linux.jobs.shared,ou=imports,dc=ciam-ops
@@ -3429,6 +3444,77 @@ cn: owner
 ciamTagKey: Owner
 ciamTagSource: owner
 description: Every rendered resource carries Owner
+
+dn: cn=pa-admin,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: pa-admin
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops
+ciamFipsMode: FALSE
+ciamFoundOn: cn=pa-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: pingaccess soft nofile 65536
+ciamOsLimit: pingaccess hard nofile 65536
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pingaccess.service: user pingaccess, restart on-failure
+ciamTargetRole: pa-admin
+ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-op
+ s
+
+dn: cn=pa-admin-aws,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pa-admin-aws
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamOnProvider: aws
+ciamTargetRole: pa-admin
+
+dn: cn=pa-engine,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHostBaseline
+cn: pa-engine
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops
+ciamFipsMode: FALSE
+ciamFoundOn: cn=pa-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamFoundOn: cn=pa-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+ciamHostAgent: falcon-sensor 7.10.0
+ciamHostAgent: splunkforwarder 9.2.1
+ciamHugePages: never
+ciamJdk: temurin 17.0.11
+ciamKernelSetting: net.core.somaxconn=4096
+ciamKernelSetting: net.ipv4.tcp_keepalive_time=600
+ciamOs: rhel 9.4
+ciamOsLimit: pingaccess soft nofile 65536
+ciamOsLimit: pingaccess hard nofile 65536
+ciamSearchDomain: aws.internal.example-aero.test
+ciamSearchDomain: example-aero.test
+ciamSelinuxMode: enforcing
+ciamServiceUnit: pingaccess.service: user pingaccess, restart on-failure
+ciamTargetRole: pa-engine
+ciamTrustsCertificate: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-op
+ s
+
+dn: cn=pa-engine-aws,ou=baselines,dc=ciam-ops
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pa-engine-aws
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamOnProvider: aws
+ciamTargetRole: pa-engine
 
 dn: cn=pa-techpubs-client-secret,ou=credentials,dc=ciam-ops
 objectClass: top

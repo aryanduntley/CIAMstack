@@ -42,7 +42,7 @@ Expected findings check (after changes)
            B77  raised by CHG-2066: the partner portal refreshes its tokens: Microsoft's External ID pages don't say the grant is supported there; the question is proposed → reported
            B78  raised by CHG-2066: partners keep the partner realm's sign-in host; whether an external tenant serves a custom domain isn't documented in what was read → reported
            B79  raised by CHG-2066: applications hold the realm's issuer; whether an external tenant issues under a custom one isn't documented in what was read → reported
-  actions  planted 171   expected now 140   detected 140   missed 0   unexpected 0
+  actions  planted 171   expected now 138   detected 138   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -74,6 +74,8 @@ Expected findings check (after changes)
            A144 cleared by CHG-2046: once the target is inside SSP-CIAM-2026, the boundary has no evidence package recorded → gone
            A145 cleared by CHG-2048: the HQ apps' egress allowlist pins our old LDAPS IP in the record; the Panorama it lives on already holds the target's, which the running-config import records → gone
            A151 cleared by CHG-2049: nothing in production is recorded running the admin-login detection, until Splunk's is read in → gone
+           A186 cleared by CHG-2075: the PingAccess servers were recorded without their hosts' baselines → gone
+           A187 cleared by CHG-2075: the PingAccess servers were recorded without their hosts' baselines → gone
            A70  raised by CHG-2017: the target's backup container (CHG-2017) has no immutability policy: a backup can be deleted early → reported
            A71  raised by CHG-2017: nothing copies the target's backups to another region; the source replicates to us-west-2 → reported
            A75  raised by CHG-2019: the target's disk backup (CHG-2019) keeps snapshots in its own region: Azure disk backup can't copy them → reported
@@ -97,8 +99,6 @@ Expected findings check (after changes)
            A183 raised by CHG-2061: PingAccess's key pair, trust group and CA certificate are created in each environment, never rendered → reported
            A184 raised by CHG-2060: the move upgrades PingAccess 8.3.6 -> 9.1.1, which rotates cluster certificates over a temporary port → reported
            A185 raised by CHG-2061: the adapter's Admin API forms aren't verified against 9.1.1's own schema yet → reported
-           A186 raised by CHG-2060: the PingAccess servers were recorded without their hosts' baselines → reported
-           A187 raised by CHG-2060: the PingAccess servers were recorded without their hosts' baselines → reported
            A191 raised by CHG-2063: the crew web agent's settings (cookie domain, logout, ignored extensions) are rebuilt in a gateway → reported
            A192 raised by CHG-2063: the crew portal's CREWBASE cookie has no standard equivalent → reported
            A193 raised by CHG-2063: the agents' host configuration retires with SiteMinder → reported

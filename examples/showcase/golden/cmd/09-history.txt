@@ -620,4 +620,11 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2066  insert  cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2067  insert  cn=tech-pubs-user-pool,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2068  insert  cn=confirm-target-prod-partners-external-id-signing-alg-rs256,ou=unknowns,dc=ciam-ops
-(620 rows)
+<TIMESTAMP>          CHG-2075  insert  cn=pa-admin,ou=baselines,dc=ciam-ops
+<TIMESTAMP>          CHG-2075  insert  cn=pa-engine,ou=baselines,dc=ciam-ops
+<TIMESTAMP>          CHG-2075  update  cn=linux.baseline.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2076  update  cn=pa-admin,ou=baselines,dc=ciam-ops
+<TIMESTAMP>          CHG-2076  update  cn=pa-engine,ou=baselines,dc=ciam-ops
+<TIMESTAMP>          CHG-2076  insert  cn=pa-admin-aws,ou=baselines,dc=ciam-ops
+<TIMESTAMP>          CHG-2076  insert  cn=pa-engine-aws,ou=baselines,dc=ciam-ops
+(627 rows)

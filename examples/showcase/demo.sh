@@ -280,6 +280,10 @@ od modify --change CHG-2066 changes/CHG-2066-target-partners-external-id.ldif
 od modify --change CHG-2067 changes/CHG-2067-source-tech-pubs-user-pool.ldif
 od modify --change CHG-2068 changes/CHG-2068-external-id-signing-answer.ldif
 od report managed-identity
+echo "-- the PingAccess servers' own files read in as the pa-admin and pa-engine host baselines (CHG-2075), their AWS"
+echo "   agents then scoped to AWS environments (CHG-2076), so the target's VMs can be checked against them"
+od import --change CHG-2075 --at 20260923090000Z linux/baseline exports/hosts-pingaccess
+od modify --change CHG-2076 changes/CHG-2076-pingaccess-scoped-agents.ldif
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

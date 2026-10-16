@@ -149,6 +149,10 @@ CHANGES = (
      "sign-on, as a neighbour in production", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2068", "Record Microsoft's confirmation that the partners external tenant signs with RS256 (the plan's "
      "question)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2075", "Read the PingAccess servers' own files into the record as the pa-admin and pa-engine host baselines",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2076", "Scope the PingAccess baselines' AWS agents to AWS environments", "approved", "CAB 2026-09-18",
+     "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

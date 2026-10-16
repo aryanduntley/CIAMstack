@@ -16,7 +16,6 @@ the values pingfedDiscoveryProtocol accepts are the rendered rows.
 """
 from types import MappingProxyType
 from typing import Callable, NamedTuple, Optional
-import xml.etree.ElementTree as ET
 
 from opsdir.core.changeset import delete_entry, new_entry
 from opsdir.core.directory import is_a, make_entry, one, rdn_value, values
@@ -24,6 +23,7 @@ from opsdir.core.environment import one_role
 from opsdir.core.findings import Fix, Input, Option, bindings_container
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.core.interchange.properties import decode, encode, split
+from opsdir.core.sources import xml_document
 from .naming import DISCOVERY_ROLE
 
 JGROUPS_PROPERTIES, TCP_XML = "bin/jgroups.properties", "server/default/conf/tcp.xml"
@@ -221,9 +221,8 @@ def _local(tag):
 
 
 def _tcp_xml_protocol(text):
-    try:
-        root = ET.fromstring(text)
-    except ET.ParseError:
+    root, _ = xml_document(text)
+    if root is None:
         return None
     return next((_local(e.tag) for e in root.iter() if _local(e.tag) in PROTOCOLS), None)
 

@@ -18,8 +18,9 @@ resolve recursively (a cycle is named). A service resolves to protocol and port 
 any, application-default, port ranges and predefined services are named. Documents with a DOCTYPE are refused.
 """
 import ipaddress
-import xml.etree.ElementTree as ET
 from typing import NamedTuple
+
+from opsdir.core.sources import xml_document
 
 SHARED = "shared"
 SNAPSHOT = "running-config.xml"
@@ -55,15 +56,6 @@ def xpath(scope, family):
     """The xpath of one family of one scope ('shared', 'device-group/<name>', 'vsys/<name>')."""
     kind, _, name = scope.partition("/")
     return SCOPE_XPATHS[kind].format(name) + FAMILY_XPATHS[family]
-
-
-def _parse(text):
-    if "<!DOCTYPE" in text or "<!ENTITY" in text:
-        return None, "a DOCTYPE or entity declaration: refused"
-    try:
-        return ET.fromstring(text), None
-    except ET.ParseError as e:
-        return None, f"not XML ({e})"
 
 
 def _entries(e):
@@ -150,7 +142,7 @@ def _api_place(path):
 def _api_file(path, text):
     """((scope, family), entries, problem) of one api/ file."""
     place = _api_place(path)
-    root, problem = _parse(text)
+    root, problem = xml_document(text)
     entries, refused = _answer(path, root) if root is not None else ((), None)
     if place is None or problem or refused:
         return None, (), refused or f"{path}: {problem or 'not api/<scope>/<family>.xml'}; not read"
@@ -170,7 +162,7 @@ def read_running(files):
     snapshot, else its api/ answers. None when there is nothing to read or the snapshot can't be read: an incomplete
     read must never say a rule is missing."""
     if SNAPSHOT in files:
-        root, problem = _parse(files[SNAPSHOT])
+        root, problem = xml_document(files[SNAPSHOT])
         if problem or root.tag != "config":
             return None, (f"{SNAPSHOT}: {problem or 'not a <config> document'}; not read",)
         found, notices, version = _snapshot(root), tuple(f"{p}: beside {SNAPSHOT}; not read" for p in files

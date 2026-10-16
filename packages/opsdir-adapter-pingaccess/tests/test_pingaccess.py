@@ -285,3 +285,18 @@ def test_what_an_upgrade_touches():
     by = {c.has: c for c in ADAPTER.version_changes}
     assert by[">=8.2.1"].touches(d, None, "pa-engine") == ("portal-tls",)
     assert by[">=9.1"].touches is None and by[">=9.1"].effect == "action"
+
+
+def test_the_logs_its_servers_write():
+    """The server log on both roles, the admin API's audit on the admin node, the engines' audit logs (resources by
+    their Audit setting, sideband only when it's on), as text under the install root's log/."""
+    logs = {(s.server_role, s.path): (s.format, s.kind, s.requires) for s in ADAPTER.logs}
+    assert {(r, p) for r, p in logs if p == "log/pingaccess.log"} == {("pa-admin", "log/pingaccess.log"),
+                                                                      ("pa-engine", "log/pingaccess.log")}
+    assert logs[("pa-admin", "log/pingaccess_api_audit.log")] == ("text", "admin", None)
+    assert {p: k for (r, p), (_, k, _) in logs.items() if r == "pa-engine" and k == "audit"} == {
+        "log/pingaccess_engine_audit.log": "audit", "log/pingaccess_agent_audit.log": "audit",
+        "log/pingaccess_sideband_client_audit.log": "audit", "log/pingaccess_sideband_audit.log": "audit"}
+    assert all("sideband.http.enabled" in logs[("pa-engine", p)][2]
+               for p in ("log/pingaccess_sideband_client_audit.log", "log/pingaccess_sideband_audit.log"))
+    assert all(s.on == "servers" and s.line_start is None and s.versions is None for s in ADAPTER.logs)

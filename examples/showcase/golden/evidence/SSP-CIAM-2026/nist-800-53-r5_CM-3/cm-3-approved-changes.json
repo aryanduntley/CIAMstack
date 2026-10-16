@@ -359,6 +359,18 @@
       "Record Microsoft's confirmation that the partners external tenant signs with RS256 (the plan's question)",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2075,ou=changes,dc=ciam-ops",
+      "Read the PingAccess servers' own files into the record as the pa-admin and pa-engine host baselines",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2076,ou=changes,dc=ciam-ops",
+      "Scope the PingAccess baselines' AWS agents to AWS environments",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

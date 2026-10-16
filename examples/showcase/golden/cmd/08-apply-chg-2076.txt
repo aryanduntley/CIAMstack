@@ -1,0 +1,5 @@
+CHG-2076: modify cn=pa-admin,ou=baselines,dc=ciam-ops
+CHG-2076: modify cn=pa-engine,ou=baselines,dc=ciam-ops
+CHG-2076: add cn=pa-admin-aws,ou=baselines,dc=ciam-ops
+CHG-2076: add cn=pa-engine-aws,ou=baselines,dc=ciam-ops
+exit 0

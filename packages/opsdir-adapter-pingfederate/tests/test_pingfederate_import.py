@@ -181,3 +181,38 @@ def test_reading_a_render_back_keeps_the_version_the_settings_came_from():
     rendered = admin_api_files(SimpleNamespace(d=after, servers=(), bindings=()))
     back = after_import(after, read_export(rendered, after, ()))
     assert {one(e, "pingfedSourceVersion") for e in _holders(back)} == {"12.1.4.0"}
+
+
+def _foreign():
+    """The record with integrations recorded elsewhere (another product's importer, hand-written LDIF): no
+    PingFederate settings held."""
+    return make_directory((), {}, (
+        *((e.dn, e.classes, {k: list(v) for k, v in e.attrs.items()}) for e in _record().entries.values()),
+        _row(INTEGRATIONS, ("organizationalUnit",), ou="integrations"),
+        _row(f"cn=parts-exchange,{INTEGRATIONS}", ("ciamIntegration",), cn="parts-exchange",
+             ciamProtocolType="saml2-sp", ciamEntityId="https://parts.example.test/sp",
+             ciamAcsUrl="https://parts.example.test/acs", ciamSamlBinding="HTTP-POST",
+             ciamOwner="cn=portal-team,ou=owners,dc=ciam-ops", ciamServedBy=SSO),
+        _row(f"cn=partner-idp,{INTEGRATIONS}", ("ciamIntegration",), cn="partner-idp", ciamProtocolType="saml2-idp",
+             ciamEntityId="https://idp.partner.test", ciamServedBy=SSO),
+        _row(f"cn=parts-app,{INTEGRATIONS}", ("ciamIntegration",), cn="parts-app", ciamProtocolType="oidc-client",
+             ciamClientId="parts-app", ciamRedirectUri="https://parts.example.test/cb",
+             ciamGrantType="authorization_code", ciamTokenAuthMethod="client_secret_basic", ciamServedBy=SSO)))
+
+
+def test_integrations_recorded_elsewhere_read_back_from_a_render_unchanged():
+    d = _foreign()
+    rendered = admin_api_files(SimpleNamespace(d=d, servers=(), bindings=()))
+    assert rendered and not import_changes(d, read_export(rendered, d, ()))
+
+
+def test_a_bulk_export_still_records_the_settings_of_an_integration_recorded_elsewhere():
+    d = _foreign()
+    rendered = admin_api_files(SimpleNamespace(d=d, servers=(), bindings=()))
+    sp = next(b for r in json.loads(rendered["pingfederate/admin-api/requests.json"])["requests"]
+              for b in (r.get("body") or {},) if b.get("entityId") == "https://parts.example.test/sp")
+    export = {"data.json": json.dumps({"metadata": {"pfVersion": "13.1.3.0"}, "operations": [
+        {"operationType": "SAVE", "resourceType": "/idp/spConnections", "items": [sp]}]})}
+    after = after_import(d, read_export(export, d, ()))
+    held = get(after, f"cn=parts-exchange,{INTEGRATIONS}")
+    assert "pingfedHeldSettings" in held.classes and one(held, "pingfedConfig")

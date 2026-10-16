@@ -1,0 +1,45 @@
+# CHG-2076 (approved): the PingAccess host baselines imported by CHG-2075 hold the AWS agents (CloudWatch, SSM), as the
+# other roles' did before CHG-2036. They move to baselines scoped to AWS environments (ciamOnProvider aws), so the
+# target's Azure VMs aren't asked to run them; what every PingAccess server runs (the Falcon sensor, the Splunk
+# forwarder, the corporate root CA in its truststore) stays in the role's baseline.
+dn: cn=pa-admin,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops
+-
+
+dn: cn=pa-engine,ou=baselines,dc=ciam-ops
+changetype: modify
+delete: ciamHostAgent
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops
+-
+
+dn: cn=pa-admin-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pa-admin-aws
+ciamTargetRole: pa-admin
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops
+
+dn: cn=pa-engine-aws,ou=baselines,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamHostBaseline
+cn: pa-engine-aws
+ciamTargetRole: pa-engine
+ciamOnProvider: aws
+ciamHostAgent: amazon-cloudwatch-agent 1.300034.0
+ciamHostAgent: amazon-ssm-agent 3.3.40.0
+ciamChangeRef: cn=CHG-2076,ou=changes,dc=ciam-ops

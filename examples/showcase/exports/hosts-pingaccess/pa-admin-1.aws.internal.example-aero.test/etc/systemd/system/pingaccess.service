@@ -1,0 +1,12 @@
+[Unit]
+Description=pingaccess
+After=network-online.target
+
+[Service]
+User=pingaccess
+Restart=on-failure
+ExecStart=/opt/ping/pingaccess/bin/run.sh
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

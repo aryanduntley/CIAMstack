@@ -603,6 +603,25 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record Microsoft's confirmation that the partners external tenant s
  igns with RS256 (the plan's question)
 
+dn: cn=CHG-2075,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2075
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the PingAccess servers' own files into the record as the pa-ad
+ min and pa-engine host baselines
+
+dn: cn=CHG-2076,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2076
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Scope the PingAccess baselines' AWS agents to AWS environments
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

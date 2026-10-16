@@ -285,6 +285,21 @@ def test_an_unsupported_or_incomplete_target_binding_is_fixed_in_place():
                                   ("replace", "ciamStorageRef", ("s3://beta-pf",)), ("delete", "ciamFqdn", ()))
 
 
+def test_xml_declaring_a_doctype_is_refused_and_named():
+    """hivemodule.xml and tcp.xml are parsed by the core's xml_document: a DOCTYPE (or an entity) is refused, the
+    node's storage and discovery then unread, and a refused or malformed hivemodule.xml named."""
+    doctype = '<?xml version="1.0"?>\n<!DOCTYPE module [<!ENTITY x "y">]>\n'
+    node = "pf-1.alpha.example.test/server/default/conf/"
+    _, changes, notices = imported({**files(), f"{node}META-INF/hivemodule.xml": doctype + HIVEMODULE,
+                                    f"{node}tcp.xml": doctype + _tcp("org.jgroups.aws.s3.NATIVE_S3_PING")})
+    assert STORAGE.lower() not in {c.dn.lower() for c in changes}
+    assert {"node folder pf-1.alpha.example.test: hivemodule.xml not read: a DOCTYPE or entity declaration: refused",
+            "node pf-1.alpha.example.test: neither jgroups.properties nor tcp.xml names a discovery protocol"} \
+        <= set(notices)
+    _, _, broken = imported({**files(), f"{node}META-INF/hivemodule.xml": "<module>"})
+    assert any(n.startswith("node folder pf-1.alpha.example.test: hivemodule.xml not read: not XML (") for n in broken)
+
+
 def test_redis_backed_storage_is_recognised():
     assert storage_kind("com.pingidentity.sdk.oauth20.registration.RedisClientStorageManager") == "Redis"
     assert storage_kind("org.sourceid.oauth20.domain.ClientManagerJdbcImpl") == "JDBC"

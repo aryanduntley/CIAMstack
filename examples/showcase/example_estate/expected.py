@@ -587,9 +587,9 @@ EXPECTED = MappingProxyType({
          "follow Ping's documentation and are unverified for PingAccess 9.1.1",
          "the adapter's Admin API forms aren't verified against 9.1.1's own schema yet", None, "CHG-2061"),
         ("A186", "Host", "Server role `pa-admin` has no host baseline that applies in target/prod",
-         "the PingAccess servers were recorded without their hosts' baselines", None, "CHG-2060"),
+         "the PingAccess servers were recorded without their hosts' baselines", "CHG-2075", "CHG-2060"),
         ("A187", "Host", "Server role `pa-engine` has no host baseline that applies in target/prod",
-         "the PingAccess servers were recorded without their hosts' baselines", None, "CHG-2060"),
+         "the PingAccess servers were recorded without their hosts' baselines", "CHG-2075", "CHG-2060"),
         # what SiteMinder holds that no standard entry does (CHG-2063): source objects for their owners (CHG-2064)
         ("A191", "Source objects", "Source object `aco-crew-aco`",
          "the crew web agent's settings (cookie domain, logout, ignored extensions) are rebuilt in a gateway", None,
