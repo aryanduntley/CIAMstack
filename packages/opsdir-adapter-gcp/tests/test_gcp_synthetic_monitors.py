@@ -12,8 +12,10 @@ import pytest
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
 from opsdir_format_terraform.hcl import as_text
+from opsdir_adapter_gcp.canaries import render_checks
 from opsdir_adapter_gcp.synthetic_monitors import render_monitors
 from network_fixtures import BETA, entry, model, rule
+from pki_samples import CA_PEM, CERTIFICATES, private_chain
 
 ENDPOINTS = (Endpoint("health", "/pf/heartbeat.ping", "web"), Endpoint("token", "/as/token.oauth2", "web"))
 SECRET = "gcp-sm://projects/ciam-prod/secrets/canary-client"
@@ -215,3 +217,38 @@ def test_what_a_monitor_cant_run_is_a_render_note_written_as_its_comment():
     assert directory.entry.startswith("cn=directory,ou=bindings,") and directory.scope.startswith("ldap-bind check of")
     assert directory.how == ("Record directory with the Cloud Storage location its function's source goes to "
                              "(ciamStorageRef gs://bucket/prefix), under an approved change, and re-render",)
+
+
+PRIVATE = (BINDINGS[0].replace("ciamExposure: internet\n",
+                               f"ciamExposure: internet\nciamTlsCertificate: cn=svc-cert,{CERTIFICATES}\n"),
+           *BINDINGS[1:],
+           entry(BETA, "SSO-Alive", "ciamCanaryBinding", ciamBindingRole="canary-sso-alive", ciamRealizes="sso-alive",
+                 ciamStorageRef="gs://ciam-checks"))
+
+
+def test_a_check_that_must_trust_a_private_ca_is_a_synthetic_monitor_given_the_ca():
+    tree = (*TREE, *private_chain())
+    _, _, files = _render(PRIVATE, tree)
+    source = files["terraform/checks/sso-alive/index.js"]       # a public GET, yet no uptime check takes a CA
+    assert f"const CHECK_CA = {json.dumps(CA_PEM)};\nconst CHECK_CA_PARTIAL = false;\n" in source
+    assert "probe(CHECK_FLOW, CHECK_URL, creds, CHECK_CA, CHECK_CA_PARTIAL)" in source
+    assert f"const CHECK_CA = {json.dumps(CA_PEM)};" in files["terraform/checks/token-check/index.js"]   # same service
+    assert "const CHECK_CA = null;" in files["terraform/checks/directory/index.js"]    # no certificate recorded
+    _, _, beta = model(beta=PRIVATE, tree=tree)
+    assert not render_checks(beta, ENDPOINTS)
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="node")
+def test_the_rendered_source_loads_with_the_ca_it_is_given(tmp_path):
+    _, _, files = _render(PRIVATE, (*TREE, *private_chain()))
+    (tmp_path / "index.js").write_text(files["terraform/checks/sso-alive/index.js"])
+    stubs = {"@google-cloud/functions-framework": "exports.http = (name, fn) => { global.registered = [name, fn]; };",
+             "@google-cloud/synthetics-sdk-api": "exports.runSyntheticHandler = (fn) => fn;"}
+    for package, body in stubs.items():
+        (tmp_path / "node_modules" / package).mkdir(parents=True)
+        (tmp_path / "node_modules" / package / "index.js").write_text(body)
+    run = subprocess.run(["node", "-e", """
+        require("./index.js");
+        global.registered[1]({logger: {info: (m) => console.log("INFO " + m)}}).then(() => console.log("PASSED"),
+            (e) => console.log("FAILED " + e.code));"""], cwd=tmp_path, capture_output=True, text=True, timeout=60)
+    assert run.stdout.strip() in ("FAILED ENOTFOUND", "FAILED EAI_AGAIN")   # it ran to the request (no such host)

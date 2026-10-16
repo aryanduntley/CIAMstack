@@ -11,7 +11,10 @@ results, need no such store), tagged Realizes and BindingRole so the inventory r
 makes its flow's request (observability.probes: a GET, a client-credentials token request, an LDAPS simple bind) with
 the credentials it reads when it runs from the canary's credentials secret (Secrets Manager, its JSON holding client_id
 and client_secret, or bind_dn and password; an LDAP bind without credentials is anonymous). The secret is never
-written anywhere opsdir renders.
+written anywhere opsdir renders. A check of a service name whose certificate a private CA issued trusts the CA
+certificates the record holds for it (canary_specs' trust: their PEMs, public material, written into the script and
+added to the runtime's trust store; CA_PARTIAL when an intermediate CA is the anchor); a CA rotation is a record change
+and a re-render.
 
 A canary of an internal service name runs in the VPC (vpc_config): in the subnets canary_specs gives (its binding's
 ciamSubnetRole, else those the firewall rules admit to the service), with the environment's canaries' security group
@@ -67,7 +70,8 @@ def _secret_arn(spec):
 
 
 # The canary's handler, after the probes (observability.probes): the credentials read from Secrets Manager when it
-# runs (oidc-token: {"client_id", "client_secret"}; ldap-bind: {"bind_dn", "password"}; none: an anonymous bind)
+# runs (oidc-token: {"client_id", "client_secret"}; ldap-bind: {"bind_dn", "password"}; none: an anonymous bind), and
+# the CA certificates it trusts besides the runtime's (PEM, public; None: the runtime's alone)
 HANDLER = '''
 import boto3
 from aws_synthetics.common import synthetics_logger as logger
@@ -75,20 +79,25 @@ from aws_synthetics.common import synthetics_logger as logger
 FLOW = {flow!r}
 URL = {url!r}
 SECRET_ID = {secret!r}
+CA = {ca!r}
+CA_PARTIAL = {partial!r}
 
 
 def handler(event, context):
     """{flow} check of URL: the probe raises when it fails, failing the canary."""
     creds = (json.loads(boto3.client("secretsmanager").get_secret_value(SecretId=SECRET_ID)["SecretString"])
              if SECRET_ID else None)
-    logger.info(f"{{URL}}: {{probe(FLOW, URL, creds)}}")
+    logger.info(f"{{URL}}: {{probe(FLOW, URL, creds, CA, CA_PARTIAL)}}")
 '''
 
 
 def script(m, spec):
     """The canary's Python script, with its do-not-edit header."""
+    trust = spec.trust
     return (header(m, f"CloudWatch Synthetics canary {canary_name(spec.name)} ({spec.flow})", PYTHON) + PYTHON_PROBES
-            + HANDLER.format(flow=spec.flow, url=spec.url, secret=_secret_arn(spec)))
+            + HANDLER.format(flow=spec.flow, url=spec.url, secret=_secret_arn(spec),
+                             ca=trust.pem if trust is not None else None,
+                             partial=trust.partial if trust is not None else False))
 
 
 def _schedule(every):

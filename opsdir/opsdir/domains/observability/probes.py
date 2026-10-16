@@ -1,15 +1,20 @@
 """The requests a scripted synthetic check makes, as the source a cloud's check script carries: Python (PYTHON_PROBES:
 AWS CloudWatch Synthetics canaries, Azure Container Apps jobs) and Node.js (NODE_PROBES, a CommonJS module: Google Cloud
 synthetic monitors), cloud-neutral, standard library only, the same checks in both. Each cloud's script adds how it
-reads its credentials when it runs and how it reports; probe(flow, url, creds) does the request and returns what to
-log, raising (Node.js: rejecting) on failure. Pure (text).
+reads its credentials when it runs and how it reports; probe(flow, url, creds, ca, partial) does the request and returns
+what to log, raising (Node.js: rejecting) on failure. Pure (text).
 
 - health, login-page, saml-sso: GET the URL, redirects followed; an answer of 400 or more fails.
 - oidc-token: a client-credentials grant at the token endpoint (HTTP Basic with creds' client_id and client_secret);
   an answer without an access_token fails.
 - ldap-bind: an LDAP simple bind over TLS (RFC 4511, the BER encoded here) as creds' bind_dn and password, anonymous
   without creds; a result code other than success (0) fails.
-TLS certificates are verified against the runtime's trust store.
+TLS certificates are verified against the runtime's trust store, plus the CA certificates (PEM) a check is given
+(canaries.CanarySpec.trust: a private CA's, from the record), added to it, never replacing it: Python loads them into
+its default context (load_verify_locations), Node.js passes them with its default roots (tls.getCACertificates, an
+explicit ca alone would replace them) to both https.request and tls.connect. partial: no self-issued certificate is
+among them, so the intermediate CA given is trusted as the anchor (Python VERIFY_X509_PARTIAL_CHAIN, Node.js
+allowPartialTrustChain).
 """
 
 PYTHON_PROBES = '''import base64
@@ -22,19 +27,31 @@ import urllib.request
 TIMEOUT = 10
 
 
-def get(url):
-    """GET the URL, redirects followed: urllib raises on an answer of 400 or more."""
-    with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=TIMEOUT) as response:
+def context(ca=None, partial=False):
+    """The TLS context a check verifies certificates with: the runtime's trust store, plus the CA certificates (PEM)
+    the check is given, added, never replacing it; partial: the intermediate CA given is trusted as the anchor."""
+    tls = ssl.create_default_context()
+    if ca:
+        tls.load_verify_locations(cadata=ca)
+        if partial:
+            tls.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+    return tls
+
+
+def get(url, tls=None):
+    """GET the URL, redirects followed (each with the same TLS context): urllib raises on an answer of 400 or more."""
+    with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=TIMEOUT,
+                                context=tls or context()) as response:
         return f"HTTP {response.status}"
 
 
-def token(url, creds):
+def token(url, creds, tls=None):
     """A client-credentials grant at the token endpoint must return an access token."""
     basic = base64.b64encode(f"{creds['client_id']}:{creds['client_secret']}".encode()).decode()
     request = urllib.request.Request(url, data=urllib.parse.urlencode({"grant_type": "client_credentials"}).encode(),
                                      method="POST", headers={"Authorization": f"Basic {basic}",
                                                              "Content-Type": "application/x-www-form-urlencoded"})
-    with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+    with urllib.request.urlopen(request, timeout=TIMEOUT, context=tls or context()) as response:
         if not json.loads(response.read()).get("access_token"):
             raise Exception(f"{url}: no access_token in the answer")
         return f"HTTP {response.status}, access token issued"
@@ -76,13 +93,13 @@ def _parts(body):
     return parts
 
 
-def ldap_bind(url, creds):
+def ldap_bind(url, creds, tls=None):
     """An LDAP simple bind over TLS must succeed (result code 0); anonymous without creds."""
     dn, password = (creds["bind_dn"], creds["password"]) if creds else ("", "")
     bind = _element(0x60, _element(0x02, b"\\x03") + _element(0x04, dn.encode()) + _element(0x80, password.encode()))
     where = urllib.parse.urlsplit(url)
     with socket.create_connection((where.hostname, where.port), timeout=TIMEOUT) as raw:
-        with ssl.create_default_context().wrap_socket(raw, server_hostname=where.hostname) as stream:
+        with (tls or context()).wrap_socket(raw, server_hostname=where.hostname) as stream:
             stream.sendall(_element(0x30, _element(0x02, b"\\x01") + bind))
             (_, _), (op, result) = _parts(_response(stream))[:2]
     code = _parts(result)[0][1][0] if op == 0x61 else None
@@ -91,9 +108,12 @@ def ldap_bind(url, creds):
     return f"bound as {dn or 'anonymous'}"
 
 
-def probe(flow, url, creds):
-    """The check a flow makes: what to log when it passes; raises when it fails."""
-    return token(url, creds) if flow == "oidc-token" else ldap_bind(url, creds) if flow == "ldap-bind" else get(url)
+def probe(flow, url, creds, ca=None, partial=False):
+    """The check a flow makes, trusting the CA certificates it is given (ca, partial: context): what to log when it
+    passes; raises when it fails."""
+    tls = context(ca, partial)
+    return (token(url, creds, tls) if flow == "oidc-token" else ldap_bind(url, creds, tls) if flow == "ldap-bind"
+            else get(url, tls))
 '''
 
 
@@ -104,10 +124,16 @@ const tls = require("tls");
 const TIMEOUT = 10000;
 const REDIRECTS = 5;
 
-function request(url, options, body) {
+function trust(ca, partial) {
+  // The TLS options giving a check the CA certificates (PEM) it trusts, added to the runtime's own roots (an explicit
+  // ca alone would replace them); partial: the intermediate CA given is trusted as the anchor. {} without any.
+  return ca ? {ca: [...tls.getCACertificates("default"), ca], allowPartialTrustChain: Boolean(partial)} : {};
+}
+
+function request(url, options, body, secure = {}) {
   // One HTTPS request: resolves {status, headers, body}.
   return new Promise((resolve, reject) => {
-    const req = https.request(url, {timeout: TIMEOUT, ...options}, (res) => {
+    const req = https.request(url, {timeout: TIMEOUT, ...secure, ...options}, (res) => {
       const chunks = [];
       res.on("data", (c) => chunks.push(c));
       res.on("end", () => resolve({status: res.statusCode, headers: res.headers,
@@ -119,11 +145,11 @@ function request(url, options, body) {
   });
 }
 
-async function get(url, left = REDIRECTS) {
-  // GET the URL, redirects followed: an answer of 400 or more fails.
-  const res = await request(url, {method: "GET"});
+async function get(url, secure = {}, left = REDIRECTS) {
+  // GET the URL, redirects followed (each with the same trust): an answer of 400 or more fails.
+  const res = await request(url, {method: "GET"}, undefined, secure);
   if (res.status >= 300 && res.status < 400 && res.headers.location && left > 0) {
-    return get(new URL(res.headers.location, url).toString(), left - 1);
+    return get(new URL(res.headers.location, url).toString(), secure, left - 1);
   }
   if (res.status >= 400) {
     throw new Error(`${url}: HTTP ${res.status}`);
@@ -131,12 +157,12 @@ async function get(url, left = REDIRECTS) {
   return `HTTP ${res.status}`;
 }
 
-async function token(url, creds) {
+async function token(url, creds, secure = {}) {
   // A client-credentials grant at the token endpoint must return an access token.
   const basic = Buffer.from(`${creds.client_id}:${creds.client_secret}`).toString("base64");
   const res = await request(url, {method: "POST", headers: {"Authorization": `Basic ${basic}`,
                                                             "Content-Type": "application/x-www-form-urlencoded"}},
-                            "grant_type=client_credentials");
+                            "grant_type=client_credentials", secure);
   if (res.status >= 400) {
     throw new Error(`${url}: HTTP ${res.status}`);
   }
@@ -183,14 +209,14 @@ function bindResult(message) {
   return op === 0x61 ? parts(result)[0][1][0] : null;
 }
 
-function ldapBind(url, creds) {
+function ldapBind(url, creds, secure = {}) {
   // An LDAP simple bind over TLS must succeed (result code 0); anonymous without creds.
   const [dn, password] = creds ? [creds.bind_dn, creds.password] : ["", ""];
   const where = new URL(url);
   return new Promise((resolve, reject) => {
     let data = Buffer.alloc(0);
     const socket = tls.connect({host: where.hostname, port: Number(where.port), servername: where.hostname,
-                                timeout: TIMEOUT}, () => socket.write(bindRequest(dn, password)));
+                                timeout: TIMEOUT, ...secure}, () => socket.write(bindRequest(dn, password)));
     socket.on("data", (chunk) => {
       data = Buffer.concat([data, chunk]);
       const first = data[1];
@@ -209,10 +235,13 @@ function ldapBind(url, creds) {
   });
 }
 
-async function probe(flow, url, creds) {
-  // The check a flow makes: what to log when it passes; rejects when it fails.
-  return flow === "oidc-token" ? token(url, creds) : flow === "ldap-bind" ? ldapBind(url, creds) : get(url);
+async function probe(flow, url, creds, ca = null, partial = false) {
+  // The check a flow makes, trusting the CA certificates it is given (ca, partial: trust): what to log when it
+  // passes; rejects when it fails.
+  const secure = trust(ca, partial);
+  return flow === "oidc-token" ? token(url, creds, secure) : flow === "ldap-bind" ? ldapBind(url, creds, secure)
+                                                                                 : get(url, secure);
 }
 
-module.exports = {probe, get, token, ldapBind, element, parts, bindRequest, bindResult};
+module.exports = {probe, trust, get, token, ldapBind, element, parts, bindRequest, bindResult};
 '''

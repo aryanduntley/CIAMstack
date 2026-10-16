@@ -603,6 +603,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record Microsoft's confirmation that the partners external tenant s
  igns with RS256 (the plan's question)
 
+dn: cn=CHG-2069,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2069
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record Example Aero Issuing CA 2's certificate itself, so the sourc
+ e's directory check trusts it
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

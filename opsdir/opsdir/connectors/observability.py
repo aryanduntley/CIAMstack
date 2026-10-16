@@ -12,9 +12,10 @@ none of its kinds: either way nothing ships them.
 A SIEM index the target keeps logs in (a log destination of kind siem-index) that no adapter rendering it keeps
 (Adapter.siem_indexes: its retention, detections and forwarding) is an action: what it holds is kept by hand.
 
-Which synthetic checks each environment renders (the canary-coverage report): every canary it could run, rendered,
-inherited or kept by someone else, or not rendered with the render note that says why (connectors.render
-environment_notes: the adapters' and the core's own).
+Which synthetic checks each environment renders (the canary-coverage report): every canary it could run, rendered
+(and, for a service a private CA certified, the CA certificates it is given to trust: CanarySpec.trust), inherited or
+kept by someone else, or not rendered with the render note that says why (connectors.render environment_notes: the
+adapters' and the core's own).
 """
 from ..core.contract import directory_report
 from ..core.directory import one, rdn_value, values
@@ -26,6 +27,7 @@ from ..domains.observability.logs import log_routes
 from ..domains.observability.signals import evaluation
 from ..domains.observability.siem import siem_destinations
 from ..domains.observability.sources import COLLECTION_HEADERS, collection_rows, collections, uncollected
+from ..domains.pki.pem import certificate_pem
 from .registry import ADAPTERS, environment, environment_specs, services
 from .render import environment_notes
 
@@ -108,7 +110,15 @@ def _covered(m, spec, notes):
     if n is not None:
         return ", ".join(n.owners) or "**NO OWNER**", f"NO ({n.severity}): {n.text.removeprefix('not rendered: ')}"
     return (responsible(m.d, spec.binding, spec.canary, m.env),
-            f"inherited or kept: {spec.keeper}" if spec.keeper else "yes")
+            f"inherited or kept: {spec.keeper}" if spec.keeper else "yes" + _trusting(spec.trust))
+
+
+def _trusting(trust):
+    """What a rendered check is given to trust besides its runtime's store, in words ('' when nothing)."""
+    if trust is None or not trust.pem:
+        return ""
+    given = tuple(rdn_value(c) for c in trust.chain if certificate_pem(c))
+    return f", trusting {', '.join(given)}" + (" (an intermediate CA as the anchor)" if trust.partial else "")
 
 
 def coverage_rows(d, spec, installed=ADAPTERS):

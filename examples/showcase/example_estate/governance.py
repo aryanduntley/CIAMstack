@@ -149,6 +149,8 @@ CHANGES = (
      "sign-on, as a neighbour in production", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2068", "Record Microsoft's confirmation that the partners external tenant signs with RS256 (the plan's "
      "question)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2069", "Record Example Aero Issuing CA 2's certificate itself, so the source's directory check trusts it",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

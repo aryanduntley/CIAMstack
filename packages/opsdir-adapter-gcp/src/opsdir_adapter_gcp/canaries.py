@@ -12,7 +12,8 @@ A check of an internal service name, whatever its flow, is a synthetic monitor (
 uptime check (decision 2859): Google's private uptime checks don't support endpoints that redirect (a SAML start or a
 login page does), never validate certificates, and send the Service Directory endpoint's address as the Host header;
 the probes follow redirects and verify certificates, as the other clouds' checks do. The checks no GET makes
-(oidc-token, ldap-bind) are synthetic monitors too.
+(oidc-token, ldap-bind) are synthetic monitors too, as is a check that must trust a private CA (an uptime check's
+HttpCheck takes no CA certificate).
 
 Not rendered, and said so: what canary_specs names; a service name whose exposure isn't recorded; any uptime check where
 the environment is an Assured Workloads workload (a compliance regime: Google supports neither uptime checks nor
@@ -72,8 +73,9 @@ def labels(spec):
 
 def standard(spec):
     """Whether an uptime check makes a check: a flow one GET answers, of a service name not recorded internal (an
-    internal one's check is a synthetic monitor)."""
-    return spec.flow in GET_FLOWS and spec.exposure != "internal"
+    internal one's check is a synthetic monitor) whose certificate needs no CA the check must be given (an uptime
+    check takes none: a synthetic monitor makes it)."""
+    return spec.flow in GET_FLOWS and spec.exposure != "internal" and spec.trust is None
 
 
 def _reason(m, spec):

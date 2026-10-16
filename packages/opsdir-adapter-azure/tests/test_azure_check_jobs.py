@@ -5,18 +5,22 @@ variable; an oidc-token check reading its Key Vault secret when it runs, an LDAP
 subnet the firewall admits, one environment and an identity per job, results reported to Application Insights; what
 can't run, or needs a person, is a render note."""
 import ast
+import base64
 import io
 import json
+import ssl
 import urllib.request
 
 import pytest
 
 from opsdir.core.contract import Endpoint
 from opsdir.domains.observability.naming import CANARIES
-from opsdir_format_terraform.hcl import as_text
+from opsdir_format_terraform.hcl import as_text, blocks_of
 import opsdir_adapter_azure.check_jobs as check_jobs
+from opsdir_adapter_azure.canaries import render_tests
 from opsdir_adapter_azure.check_jobs import cron, job_name, render_jobs
 from network_fixtures import BETA, entry, model, rule
+from pki_samples import CA_PEM, CERTIFICATES, private_chain
 
 ENDPOINTS = (Endpoint("health", "/pf/heartbeat.ping", "web"), Endpoint("token", "/as/token.oauth2", "web"))
 DIGEST = "sha256:" + "0" * 63 + "1"
@@ -191,7 +195,7 @@ def test_the_runner_reports_an_availability_result_with_an_entra_token(monkeypat
     _, _, files = _render()
     sent = []
 
-    def urlopen(request, timeout=None):
+    def urlopen(request, timeout=None, context=None):
         sent.append(request)
         url = request.full_url
         if url.startswith("http://identity"):
@@ -433,3 +437,38 @@ def test_a_check_runs_from_a_subnet_large_enough_else_it_is_named():
     _, hcl, _ = _render((*BINDINGS, *only_tiny), (*TREE, *ADMIN))
     assert ("# NOTE: canary admin-alive: not rendered: subnet subnet-tiny (10.1.8.0/28) is smaller than the /27 a "
             "Container Apps environment with workload profiles needs") in hcl
+
+
+PRIVATE_SSO = BINDINGS[0].replace("ciamFrontendIp: 203.0.113.10\n",
+                                  f"ciamFrontendIp: 203.0.113.10\nciamTlsCertificate: cn=svc-cert,{CERTIFICATES}\n")
+
+
+def test_a_check_that_must_trust_a_private_ca_is_a_job_given_the_ca_as_data():
+    bindings, tree = (PRIVATE_SSO, *BINDINGS[1:], _binding("SSO-Alive", "sso-alive")), (*TREE, *private_chain())
+    text, _, files = _render(bindings, tree)
+    job = _job(text, "sso_alive")                       # a GET of a public service, yet no standard web test takes a CA
+    assert f'value = "{base64.b64encode(CA_PEM.encode()).decode()}"' in job and 'name  = "CHECK_CA"' in job
+    assert 'name  = "CHECK_CA_PARTIAL"\n        value = "false"' in job
+    assert "CHECK_CA" not in _job(_render()[0], "token_check")              # a public CA's service: the image's own
+    assert not blocks_of(render_tests(_model(bindings, tree), ENDPOINTS), "resource")
+    assert files["images/ciam-check/check.py"] == _render()[2]["images/ciam-check/check.py"]   # the same image
+
+
+def test_the_runner_trusts_the_ca_it_is_given_besides_the_images(monkeypatch):
+    _, _, files = _render()
+    seen = []
+
+    def urlopen(request, timeout=None, context=None):
+        seen.append(context)
+        return _Answer(json.dumps({"access_token": "t"}).encode())
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    for k, v in {"APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=ik;IngestionEndpoint=https://in.test/",
+                 "IDENTITY_ENDPOINT": "http://identity/token", "IDENTITY_HEADER": "h", "AZURE_CLIENT_ID": "cid",
+                 "CHECK_FLOW": "health", "CHECK_URL": "https://sso.example.test/", "CHECK_TEST": "SSO-Alive",
+                 "CHECK_AUDIENCE": "https://monitor.azure.com", "CHECK_CA_PARTIAL": "true",
+                 "CHECK_CA": base64.b64encode(CA_PEM.encode()).decode()}.items():
+        monkeypatch.setenv(k, v)
+    exec(compile(files["images/ciam-check/check.py"], "check.py", "exec"), {})
+    probe = seen[0]                                                         # the check's own request
+    assert any("Example Aero CIAM Internal CA" in str(c["subject"]) for c in probe.get_ca_certs())
+    assert probe.verify_flags & ssl.VERIFY_X509_PARTIAL_CHAIN
