@@ -692,6 +692,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the partners external tenant's Graph configuration (app regist
  rations, user flow, token extension) into the record
 
+dn: cn=CHG-2095,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2095
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the crew portal web server's SiteMinder agent files (its Web
+  Agent, policy servers, trusted host)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

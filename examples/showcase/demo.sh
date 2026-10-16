@@ -312,6 +312,10 @@ echo "   token extension) is read back (CHG-2090)"
 od modify --change CHG-2089 changes/CHG-2089-partners-external-tenant.ldif
 od import --change CHG-2090 --at 20260923090000Z azure/external-id exports/external-id
 od report managed-identity
+echo "-- crew-web-1's SiteMinder agent files read in (CHG-2095, siteminder/agent-files): its Web Agent instance (linked"
+echo "   to the server), acting as crew-web-agent, linked to its ACO, HCO, trusted host and sm-ps-1 (its shared secret"
+echo "   withheld); its LocalConfig.conf's IgnoreUrl is named, since crew-aco doesn't allow local configuration"
+od import --change CHG-2095 --at 20260923090000Z siteminder/agent-files exports/siteminder-agents
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

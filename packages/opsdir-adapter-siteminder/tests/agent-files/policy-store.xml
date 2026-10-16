@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- A synthetic XPSExport (-xb) for the agent-files tests, built from the documented shapes like ../xps: a web agent
+     protecting the crew portal and an Access Gateway agent protecting the parts catalogue, their ACOs, HCO and trusted
+     hosts. -->
+<XPS ProductVersion="12.8.8" ExportMode="Add" CreatedDateTime="2026-09-20T03:00:00">
+  <PolicyData>
+    <Object Class="CA.SM::Agent" Xid="CA.SM::Agent@01-crew-agent">
+      <Property Name="CA.SM::Agent.Name"><StringValue>crew-agent</StringValue></Property>
+      <Property Name="CA.SM::Agent.AgentType"><StringValue>Web Agent</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::Agent" Xid="CA.SM::Agent@01-parts-gateway">
+      <Property Name="CA.SM::Agent.Name"><StringValue>parts-gateway</StringValue></Property>
+      <Property Name="CA.SM::Agent.AgentType"><StringValue>SPS</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::AuthScheme" Xid="CA.SM::AuthScheme@0d-crew-forms">
+      <Property Name="CA.SM::AuthScheme.Name"><StringValue>Crew Forms</StringValue></Property>
+      <Property Name="CA.SM::AuthScheme.Type"><StringValue>HTML Form Template</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::AgentConfig" Xid="CA.SM::AgentConfig@25-crew-aco">
+      <Property Name="CA.SM::AgentConfig.Name"><StringValue>crew-aco</StringValue></Property>
+      <Property Name="CA.SM::AgentConfig.Parameters"><StringValue>DefaultAgentName=crew-agent</StringValue><StringValue>IgnoreExt=.gif,.css</StringValue><StringValue>IgnoreUrl=/crew/health</StringValue><StringValue>AllowLocalConfig=IgnoreUrl</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::AgentConfig" Xid="CA.SM::AgentConfig@25-parts-aco">
+      <Property Name="CA.SM::AgentConfig.Name"><StringValue>parts-aco</StringValue></Property>
+      <Property Name="CA.SM::AgentConfig.Parameters"><StringValue>DefaultAgentName=parts-gateway</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::HostConfig" Xid="CA.SM::HostConfig@26-default-hco">
+      <Property Name="CA.SM::HostConfig.Name"><StringValue>default-hco</StringValue></Property>
+      <Property Name="CA.SM::HostConfig.PolicyServer"><StringValue>10.0.1.5,44441,44442,44443</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::TrustedHost" Xid="CA.SM::TrustedHost@27-crew-web-1">
+      <Property Name="CA.SM::TrustedHost.Name"><StringValue>crew-web-1</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::TrustedHost" Xid="CA.SM::TrustedHost@27-parts-gw-1">
+      <Property Name="CA.SM::TrustedHost.Name"><StringValue>parts-gw-1</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::TrustedHost" Xid="CA.SM::TrustedHost@27-old-web">
+      <Property Name="CA.SM::TrustedHost.Name"><StringValue>old-web</StringValue></Property>
+    </Object>
+    <Object Class="CA.SM::Domain" Xid="CA.SM::Domain@03-portal">
+      <Property Name="CA.SM::Domain.Name"><StringValue>Portal</StringValue></Property>
+      <Object Class="CA.SM::Realm" Xid="CA.SM::Realm@06-crew">
+        <Property Name="CA.SM::Realm.Name"><StringValue>Crew</StringValue></Property>
+        <Property Name="CA.SM::Realm.ResourceFilter"><StringValue>/crew/</StringValue></Property>
+        <Property Name="CA.SM::Realm.AgentLink"><LinkValue><XID>CA.SM::Agent@01-crew-agent</XID></LinkValue></Property>
+        <Property Name="CA.SM::Realm.AuthSchemeLink"><LinkValue><XID>CA.SM::AuthScheme@0d-crew-forms</XID></LinkValue></Property>
+        <Object Class="CA.SM::Rule" Xid="CA.SM::Rule@07-crew-pages">
+          <Property Name="CA.SM::Rule.Name"><StringValue>Crew Pages</StringValue></Property>
+          <Property Name="CA.SM::Rule.Resource"><StringValue>*</StringValue></Property>
+          <Property Name="CA.SM::Rule.Actions"><StringValue>GET,POST</StringValue></Property>
+          <Property Name="CA.SM::Rule.AllowAccess"><BooleanValue>true</BooleanValue></Property>
+          <Property Name="CA.SM::Rule.IsEnabled"><BooleanValue>true</BooleanValue></Property>
+        </Object>
+      </Object>
+      <Object Class="CA.SM::Realm" Xid="CA.SM::Realm@06-parts">
+        <Property Name="CA.SM::Realm.Name"><StringValue>Parts</StringValue></Property>
+        <Property Name="CA.SM::Realm.ResourceFilter"><StringValue>/parts/</StringValue></Property>
+        <Property Name="CA.SM::Realm.AgentLink"><LinkValue><XID>CA.SM::Agent@01-parts-gateway</XID></LinkValue></Property>
+        <Property Name="CA.SM::Realm.AuthSchemeLink"><LinkValue><XID>CA.SM::AuthScheme@0d-crew-forms</XID></LinkValue></Property>
+        <Object Class="CA.SM::Rule" Xid="CA.SM::Rule@07-parts-pages">
+          <Property Name="CA.SM::Rule.Name"><StringValue>Parts Pages</StringValue></Property>
+          <Property Name="CA.SM::Rule.Resource"><StringValue>*</StringValue></Property>
+          <Property Name="CA.SM::Rule.Actions"><StringValue>GET</StringValue></Property>
+          <Property Name="CA.SM::Rule.AllowAccess"><BooleanValue>true</BooleanValue></Property>
+          <Property Name="CA.SM::Rule.IsEnabled"><BooleanValue>true</BooleanValue></Property>
+        </Object>
+      </Object>
+    </Object>
+  </PolicyData>
+</XPS>

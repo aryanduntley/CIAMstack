@@ -266,6 +266,94 @@
     },
     {
       "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/crew-portal-crew}/resources/${pingaccess-id:applications/${pingaccess-id:applications/crew-portal-crew}/resources/ignored-ext-css}",
+      "createWith": "POST /applications/${pingaccess-id:applications/crew-portal-crew}/resources",
+      "body": {
+        "name": "ignored-ext-css",
+        "pathPatterns": [
+          {
+            "type": "WILDCARD",
+            "pattern": "/*.css"
+          }
+        ],
+        "methods": [
+          "*"
+        ],
+        "unprotected": true,
+        "policy": {
+          "Web": [],
+          "API": []
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/crew-portal-crew}/resources/${pingaccess-id:applications/${pingaccess-id:applications/crew-portal-crew}/resources/ignored-ext-gif}",
+      "createWith": "POST /applications/${pingaccess-id:applications/crew-portal-crew}/resources",
+      "body": {
+        "name": "ignored-ext-gif",
+        "pathPatterns": [
+          {
+            "type": "WILDCARD",
+            "pattern": "/*.gif"
+          }
+        ],
+        "methods": [
+          "*"
+        ],
+        "unprotected": true,
+        "policy": {
+          "Web": [],
+          "API": []
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/crew-portal-crew}/resources/${pingaccess-id:applications/${pingaccess-id:applications/crew-portal-crew}/resources/ignored-ext-png}",
+      "createWith": "POST /applications/${pingaccess-id:applications/crew-portal-crew}/resources",
+      "body": {
+        "name": "ignored-ext-png",
+        "pathPatterns": [
+          {
+            "type": "WILDCARD",
+            "pattern": "/*.png"
+          }
+        ],
+        "methods": [
+          "*"
+        ],
+        "unprotected": true,
+        "policy": {
+          "Web": [],
+          "API": []
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/crew-portal-crew}/resources/${pingaccess-id:applications/${pingaccess-id:applications/crew-portal-crew}/resources/ignored-ext-js}",
+      "createWith": "POST /applications/${pingaccess-id:applications/crew-portal-crew}/resources",
+      "body": {
+        "name": "ignored-ext-js",
+        "pathPatterns": [
+          {
+            "type": "WILDCARD",
+            "pattern": "/*.js"
+          }
+        ],
+        "methods": [
+          "*"
+        ],
+        "unprotected": true,
+        "policy": {
+          "Web": [],
+          "API": []
+        }
+      }
+    },
+    {
+      "method": "PUT",
       "path": "/applications/${pingaccess-id:applications/crew-portal-crew}/resources/${pingaccess-id:applications/${pingaccess-id:applications/crew-portal-crew}/resources/crew-pages}",
       "createWith": "POST /applications/${pingaccess-id:applications/crew-portal-crew}/resources",
       "body": {

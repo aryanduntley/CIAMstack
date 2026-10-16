@@ -505,7 +505,7 @@
     "pingaccess/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "7926a9e849926338375e29258fc837e27014b1a983dd4cdfab6fc4784a5ab260"
+      "sha256": "21166278e714487b90201b1f46803153ad8ad157a5639404edb6f2e754e5e7ed"
     },
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",

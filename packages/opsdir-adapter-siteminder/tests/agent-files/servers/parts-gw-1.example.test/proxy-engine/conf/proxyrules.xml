@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nete:proxyrules SYSTEM "file:/opt/ca/secure-proxy/proxy-engine/conf/dtd/proxyrules.dtd">
+<nete:proxyrules xmlns:nete="http://www.example.com/" debug="no">
+  <nete:description>Parts catalogue (synthetic, from the documented grammar)</nete:description>
+  <nete:cond type="host" criteria="equals">
+    <nete:case value="parts.example.test">
+      <nete:cond type="uri" criteria="beginswith">
+        <nete:case value="/parts">
+          <nete:forward>http://parts-app.example.test:8080$0</nete:forward>
+        </nete:case>
+        <nete:case value="/legacy">
+          <nete:forward>http://legacy-app.example.test:8080/old$1</nete:forward>
+        </nete:case>
+        <nete:case value="/search">
+          <nete:cond type="query" criteria="contains">
+            <nete:case value="q="><nete:forward>http://search.example.test$0</nete:forward></nete:case>
+            <nete:default><nete:redirect>https://parts.example.test/parts/</nete:redirect></nete:default>
+          </nete:cond>
+        </nete:case>
+        <nete:default>
+          <nete:forward filter="com.example.HeaderFilter">https://www-app.example.test$0</nete:forward>
+        </nete:default>
+      </nete:cond>
+    </nete:case>
+    <nete:default>
+      <nete:redirect>https://www.example.test/</nete:redirect>
+    </nete:default>
+  </nete:cond>
+</nete:proxyrules>

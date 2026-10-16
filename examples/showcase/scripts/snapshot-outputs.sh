@@ -177,6 +177,7 @@ cap 08-report-regulated-data od report regulated-data
 cap 08-apply-chg-2089 od modify --change CHG-2089 changes/CHG-2089-partners-external-tenant.ldif
 cap 08-apply-chg-2090 od import --change CHG-2090 --at 20260923090000Z azure/external-id exports/external-id
 cap 08-report-managed-identity-tenant od report managed-identity
+cap 08-apply-chg-2095 od import --change CHG-2095 --at 20260923090000Z siteminder/agent-files exports/siteminder-agents
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency

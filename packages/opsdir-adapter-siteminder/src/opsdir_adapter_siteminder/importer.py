@@ -17,13 +17,14 @@ from functools import reduce
 from types import MappingProxyType
 
 from opsdir.core.contract import Imported, Importer
-from opsdir.core.directory import ou_entry, rdn_of
+from opsdir.core.directory import get, ou_entry, rdn_of
 from opsdir.core.sources import xml_document
 from opsdir.core.versions import in_range, parsed
 from opsdir.domains.edge.naming import HEADER_CONTRACTS
 from opsdir.domains.federation.naming import IDENTITY_SERVICES, INTEGRATIONS
 from opsdir.domains.governance.naming import SOURCE_OBJECTS
 from opsdir.domains.webaccess.projection import after_import, merged_import
+from .agents import FILE_KINDS, file_concerns
 from .carried import CARRY, carried_entry, carried_name
 from .entries import Export, cleaned, unique, with_rest
 from .federation import PROTOCOLS, integration_groups, place, service_for
@@ -33,6 +34,7 @@ from .naming import (ACCESS_GATEWAY, AGENTS, AUTH_SCHEMES, CARRIED, DOMAINS, SIT
 from .policies import (agent_entry, agent_role, directory_entry, domain_group, is_custom_scheme, realms_of,
                        scheme_entry)
 from .responses import header_entry, header_value, is_header, parts
+from .routing import has_routes
 from .xps import COOKIE_RESPONSE, export_objects, kind, links_of, name
 
 VERSIONS = ">=12.8,<13"              # the SiteMinder releases this adapter reads (its products)
@@ -153,6 +155,13 @@ def _concerning(d, x, order, xid, link):
                  and xid in links_of(r, link))
 
 
+def _routed(d, x, o, k):
+    """Whether the source object of kind k of agent o is the routing the record already holds (the gateway's routes:
+    its agent files)."""
+    agent = get(d, x.placed[o.xid][0]) if k == "routing" else None
+    return agent is not None and has_routes(d, agent)
+
+
 def _carried_groups(d, x, order, at):
     singles = tuple((o, _carried_kind(o)) for o in order if kind(o) not in ("response", "response-attr")
                     and o.xid in x.placed and x.placed[o.xid][0].endswith(CARRIED))
@@ -164,9 +173,12 @@ def _carried_groups(d, x, order, at):
                    for o in order for k in ("custom-scheme", "routing") if f"{o.xid}#{k}" in x.placed)
     keyed = any(kind(o) in ("agent", "trusted-host", "hco", "sp-partnership", "idp-partnership") for o in order)
     keys_dn = named(CARRIED, "keys")
-    return (*(with_rest(d, x.placed[o.xid][0], (carried_entry(d, x, k, o, x.placed[o.xid][0], at),))
+    return (*(with_rest(d, x.placed[o.xid][0], (carried_entry(
+                d, x, k, o, x.placed[o.xid][0], at,
+                file_concerns(d, x.placed[o.xid][0]) if k in FILE_KINDS else ()),))
               for o, k in (*singles, *responses)),
-            *(with_rest(d, dn, (carried_entry(d, x, k, o, dn, at, concerns),)) for o, k, dn, concerns in extras),
+            *((dn, ()) if _routed(d, x, o, k) else with_rest(d, dn, (carried_entry(d, x, k, o, dn, at, concerns),))
+              for o, k, dn, concerns in extras),
             *((with_rest(d, keys_dn, (carried_entry(d, x, "keys", None, keys_dn, at),)),) if keyed else ()))
 
 
@@ -227,7 +239,7 @@ def read_export(files, d, patterns, at=None):
                 *fed_groups),
         notices=(*problems, *(n for _, ns in dirs for n in ns), *service_notices, *fed_notices,
                  *_notices(x, order, unresolved, orphans)))
-    return merged_import(own, projection(after_import(d, own)))
+    return merged_import(own, projection(after_import(d, own), at))
 
 
 XPS = Importer("xps", "a SiteMinder policy store export (XPSExport XML: domains, realms, rules, policies, responses, "

@@ -413,6 +413,12 @@
       "Read the partners external tenant's Graph configuration (app registrations, user flow, token extension) into the record",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2095,ou=changes,dc=ciam-ops",
+      "Record the crew portal web server's SiteMinder agent files (its Web Agent, policy servers, trusted host)",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

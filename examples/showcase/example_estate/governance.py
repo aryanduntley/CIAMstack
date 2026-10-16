@@ -167,6 +167,8 @@ CHANGES = (
      "partner portal in it", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2090", "Read the partners external tenant's Graph configuration (app registrations, user flow, token "
      "extension) into the record", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2095", "Record the crew portal web server's SiteMinder agent files (its Web Agent, policy servers, trusted "
+     "host)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (
