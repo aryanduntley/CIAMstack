@@ -167,3 +167,8 @@ def test_a_token_credential_is_sent_as_the_whole_authorization_header():
 def test_an_api_key_is_sent_alone_in_the_header_the_request_names():
     assert live._authorization(("api-key", "vault://fw/key", None, "X-PAN-KEY"), "LUFRPT1-key") == {
         "X-PAN-KEY": "LUFRPT1-key"}
+
+
+def test_an_api_key_follows_the_prefix_the_request_gives():
+    assert live._authorization(("api-key", "vault://es/key", None, "Authorization", "ApiKey "), "aWQ6a2V5") == {
+        "Authorization": "ApiKey aWQ6a2V5"}

@@ -12,7 +12,7 @@ role listing indexes (indexes_list_all where the listing is restricted) and read
 Event Collector tokens are for sending, never this.
 """
 from opsdir.core.contract import Collector, Request
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import readable_source, source_problems as problems_of
 
 IMPORTER = "splunk/rest"
 CALLS = (("indexes.json", "/services/data/indexes?output_mode=json&count=0"),
@@ -25,8 +25,7 @@ def _credential(s):
 
 def rest_steps(d, m, done, options):
     """The two GETs, against the first location of the environment's first readable collection source."""
-    s = next((x for x in collection_sources(m, IMPORTER)
-              if x.locations and not x.problems), None)
+    s = readable_source(m, IMPORTER)
     if s is None:
         return ()
     return tuple((f"{m.label}/{path}", Request(f"{s.locations[0].rstrip('/')}{call}", (), _credential(s), s.ca))
@@ -35,7 +34,7 @@ def rest_steps(d, m, done, options):
 
 def source_problems(d, m, options):
     """Why the collection sources can't be read (an unbound credential or trust anchor, no location)."""
-    return tuple(p for s in collection_sources(m, IMPORTER) for p in s.problems)
+    return problems_of(m, IMPORTER)
 
 
 COLLECTORS = (Collector("rest", "environment", rest_steps, problems=source_problems),)

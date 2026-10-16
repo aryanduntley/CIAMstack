@@ -23,6 +23,8 @@ def _format(name, title, media_type, extensions, comment, read=None, write=None,
 LDIF = _format("ldif", "LDAP Data Interchange Format (RFC 2849)", "text/x-ldif", (".ldif",), ("#",),
                _ldif_records, write_records, LDIF_CODEC)
 JSON = _format("json", "JSON (RFC 8259)", "application/json", (".json",), (), json.loads, indented, json_text.CODEC)
+# one JSON document per line (NDJSON, JSON Lines): what bulk import and export APIs take and give
+NDJSON = _format("ndjson", "Newline-delimited JSON (JSON Lines)", "application/x-ndjson", (".ndjson", ".jsonl"), ())
 XML = _format("xml", "XML", "application/xml", (".xml",), ("<!--", "-->"), codec=xml_text.CODEC)
 YAML = _format("yaml", "YAML", "application/yaml", (".yaml", ".yml"), ("#",), write=yaml_dump)
 SHELL = _format("shell", "POSIX shell / bash script", "text/x-shellscript", (".sh",), ("#",))

@@ -53,6 +53,9 @@ ATTRIBUTES = (
                  "How many days a log destination keeps logs in all, searchable and archived (a SIEM's archive, a "
                  "Log Analytics table's long-term retention); its ciamRetentionDays are the days they stay "
                  "searchable. Not recorded: nothing is kept beyond those"),
+    AttributeDef(843, 'ciamArchiveRef', 'string', 'binding', True,
+                 "Where a log destination keeps its archive, the copies it holds past its searchable days that must "
+                 "be restored to be searched, as its SIEM names the place (an Elasticsearch snapshot repository)"),
     # ------------------------------------------------------------------ what a cloud runs
     AttributeDef(323, 'ciamRealizes', 'string', 'binding', True,
                  'The alert rule or canary (its name) an alarm or synthetic check a cloud runs realizes'),
@@ -61,6 +64,10 @@ ATTRIBUTES = (
     AttributeDef(325, 'ciamMetric', 'string', 'binding', True,
                  'The metric or query an alarm a cloud runs evaluates, as the provider names it (AWS/EC2 '
                  'CPUUtilization)'),
+    AttributeDef(842, 'ciamSearchLanguage', 'vocab', 'binding', True,
+                 "The language a SIEM detection's search (its ciamMetric) is written in, from the vocabulary the SIEM "
+                 "adapters declare (spl, kusto, esql, kuery, ...). Not recorded: the native language of the SIEM "
+                 "keeping the index it searches"),
     # ------------------------------------------------------------------ control-plane audit trails
     AttributeDef(495, 'ciamAuditScope', enum_type(AUDIT_SCOPES), 'binding', True,
                  "What an audit trail records: one account (an AWS account, an Azure subscription, a Google Cloud "
@@ -97,14 +104,16 @@ CLASSES = (
     ClassDef(65, 'ciamAlertChannel', 'ciamBinding', 'STRUCTURAL', ('ciamChannelKind',), ('ciamProviderRef',),
              'What delivers alerts of a role in an environment (a topic, an action group, a paging service)'),
     ClassDef(66, 'ciamLogDestination', 'ciamBinding', 'STRUCTURAL', ('ciamDestinationKind',),
-             ('ciamProviderRef', 'ciamRetentionDays', 'ciamTotalRetentionDays', 'ciamManagedBy'),
+             ('ciamProviderRef', 'ciamRetentionDays', 'ciamTotalRetentionDays', 'ciamManagedBy', 'ciamArchiveRef'),
              'What keeps logs of a role in an environment, and for how many days (0: kept indefinitely): searchable '
-             '(ciamRetentionDays), and in all when it archives them (ciamTotalRetentionDays)'),
+             '(ciamRetentionDays), and in all when it archives them (ciamTotalRetentionDays), the archive kept where '
+             'ciamArchiveRef says'),
     ClassDef(67, 'ciamAlarmBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
-             ('ciamRealizes', 'ciamNotifies', 'ciamMetric', 'ciamManagedBy', 'ciamLogDestinationRole'),
+             ('ciamRealizes', 'ciamNotifies', 'ciamMetric', 'ciamManagedBy', 'ciamLogDestinationRole',
+              'ciamSearchLanguage'),
              'An alarm a cloud runs in an environment: the alert rule it realizes, what it evaluates, what it '
              'notifies; a SIEM detection names the log destination (a SIEM index) its search runs on '
-             '(ciamLogDestinationRole) and holds the search in ciamMetric'),
+             '(ciamLogDestinationRole) and holds the search in ciamMetric, written in ciamSearchLanguage'),
     ClassDef(68, 'ciamCanaryBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamRealizes', 'ciamInterval', 'ciamStorageRef', 'ciamSubnetRole', 'ciamManagedBy',
               'ciamContainerImage'),

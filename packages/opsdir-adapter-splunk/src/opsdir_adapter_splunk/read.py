@@ -26,18 +26,17 @@ placement's notices about them are left out.
 import json
 import re
 
-from opsdir.core.directory import get, rdn_value
+from opsdir.core.directory import get
 from opsdir.core.environment import env_dn, env_model, of_class
 from opsdir.core.inventory import layout_import, realization_roles, resource
-from opsdir.domains.observability.siem import detection_index, realized_in
+from opsdir.domains.observability.siem import own_notices, realized_in
 from .conf import read_conf
-from .naming import index_name
+from .naming import index_name, keeps
 
 DAY = 86400
 _WRAPPED = re.compile(r"^(?P<base>.*) \| bin _time span=\d+s \| stats count by _time \| where count >=? \S+ "
                       r"\| stats count AS breaching \| where breaching >= \d+$", re.DOTALL)
 _INDEX = re.compile(r"(?:^|\s)index\s*=\s*\"?([a-z0-9][a-z0-9_-]*)")
-_UNREPORTED = "is in the record but not in what the cloud reports"
 REST_FILES = ("indexes.json", "saved-searches.json")
 CONF_FILES = ("indexes.conf", "savedsearches.conf")
 
@@ -109,26 +108,6 @@ def parse_conf(files):
     return resources_of(indexes, searches)
 
 
-def _others(d, spec):
-    """The names of environment spec's log destinations and alarms that aren't Splunk's: what a Splunk source says
-    nothing about."""
-    if get(d, env_dn(spec)) is None:
-        return frozenset()
-    m = env_model(d, spec)
-    splunk = {e.dn for e in of_class(m, "ciamLogDestination") if index_name(e) is not None} | \
-             {e.dn for e in of_class(m, "ciamAlarmBinding") if index_name(detection_index(m, e)) is not None}
-    return frozenset(rdn_value(e) for c in ("ciamLogDestination", "ciamAlarmBinding") for e in of_class(m, c)
-                     if e.dn not in splunk)
-
-
-def _own(d, imported):
-    """Imported without the placement's notices about the environments' entries that aren't Splunk's."""
-    def kept(n):
-        spec, _, rest = n.partition(": ")
-        return not (n.endswith(_UNREPORTED) and any(rest.startswith(f"{x} (") for x in _others(d, spec)))
-    return imported._replace(notices=tuple(n for n in imported.notices if kept(n)))
-
-
 def _size_limits(d, files, suffix):
     """Notices naming the indexes an environment records that also freeze past a size (REST answers only)."""
     def recorded(spec):
@@ -146,12 +125,12 @@ def _size_limits(d, files, suffix):
 
 def read_rest(files, d, patterns=(), at=None):
     """Importer splunk/rest: the management API's indexes and saved searches per <cloud>/<env>/."""
-    imported = _own(d, layout_import(files, d, None, "Splunk", parse_rest, REST_FILES, "Splunk REST answers",
-                                     "indexes.json", summarize=("logs", "alarm")))
+    imported = own_notices(d, layout_import(files, d, None, "Splunk", parse_rest, REST_FILES, "Splunk REST answers",
+                                            "indexes.json", summarize=("logs", "alarm")), keeps)
     return imported._replace(notices=(*imported.notices, *_size_limits(d, files, "/indexes.json")))
 
 
 def read_conf_files(files, d, patterns=(), at=None):
     """Importer splunk/conf: indexes.conf and savedsearches.conf per <cloud>/<env>/."""
-    return _own(d, layout_import(files, d, None, "Splunk", parse_conf, CONF_FILES, "Splunk .conf files",
-                                 "indexes.conf", summarize=("logs", "alarm")))
+    return own_notices(d, layout_import(files, d, None, "Splunk", parse_conf, CONF_FILES, "Splunk .conf files",
+                                        "indexes.conf", summarize=("logs", "alarm")), keeps)

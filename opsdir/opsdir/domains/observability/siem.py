@@ -13,14 +13,15 @@ raises it), a target detection searching nothing or recording no search, and log
 the target (a retention doesn't prove a hold: a SIEM expires, or an administrator deletes, what it keeps) are
 actions. Whether anything renders a SIEM index is a connector's question (connectors.observability.siem_check).
 """
-from ...core.directory import one, rdn_value
-from ...core.environment import of_class, one_role, role_named
+from ...core.directory import get, one, rdn_value
+from ...core.environment import env_dn, env_model, of_class, one_role, role_named
 from ...core.findings import findings, responsible
 from .alerts import alert_rules
 from .logs import log_routes
 
 SIEM_INDEX = "siem-index"           # ciamDestinationKind of a SIEM's index (naming.DESTINATION_KINDS)
 REALIZES = "opsdir: realizes alert rule "       # a rendered detection's description: the rule it realizes
+UNREPORTED = "is in the record but not in what the cloud reports"     # core.inventory's notice for an unread entry
 
 
 def described(rule):
@@ -61,6 +62,33 @@ def detection_index(m, b):
 def detection_for(m, rule):
     """Environment m's detection realizing an alert rule (by its name), or None."""
     return next((b for b in detections(m) if one(b, "ciamRealizes") == rule), None)
+
+
+def search_language(b, native):
+    """The language detection b's search is written in (ciamSearchLanguage), else native: the language of the SIEM
+    keeping the index it searches."""
+    return one(b, "ciamSearchLanguage") or native
+
+
+def _others(d, spec, keeps):
+    if get(d, env_dn(spec)) is None:
+        return frozenset()
+    m = env_model(d, spec)
+    mine = {e.dn for e in of_class(m, "ciamLogDestination") if keeps(m, e)} | \
+           {e.dn for e in of_class(m, "ciamAlarmBinding") if (x := detection_index(m, e)) is not None and keeps(m, x)}
+    return frozenset(rdn_value(e) for c in ("ciamLogDestination", "ciamAlarmBinding") for e in of_class(m, c)
+                     if e.dn not in mine)
+
+
+def own_notices(d, imported, keeps):
+    """A SIEM importer's Imported without the placement's notices about entries that aren't its SIEM's: the log
+    destinations of each environment it read that keeps(m, b) (its adapter's siem_indexes) says aren't its indexes,
+    and the alarms that aren't detections searching one (a cloud's, another SIEM's): a SIEM's answers say nothing
+    about them."""
+    def kept(n):
+        spec, _, rest = n.partition(": ")
+        return not (n.endswith(UNREPORTED) and any(rest.startswith(f"{x} (") for x in _others(d, spec, keeps)))
+    return imported._replace(notices=tuple(n for n in imported.notices if kept(n)))
 
 
 def _lost(ctx, rules):

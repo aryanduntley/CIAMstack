@@ -18,7 +18,7 @@ from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command, keyvault_lookup
-from .sentinel import keeps as sentinel_keeps
+from .sentinel import SEARCH_LANGUAGE, keeps as sentinel_keeps
 from .terraform import PRIORITIES, TARGETS, render, render_notes
 from .rendered_state import rendered_deployments, rendered_states
 
@@ -39,7 +39,8 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment"),
-                              "ciamManagedService": (EXTERNAL_ID,), "ciamDataGeography": tuple(GEOGRAPHIES)},
+                              "ciamManagedService": (EXTERNAL_ID,), "ciamDataGeography": tuple(GEOGRAPHIES),
+                              "ciamSearchLanguage": (SEARCH_LANGUAGE,)},
                   schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/checks/check.py", "python"),
                            ("bicep/*/checks/check.py", "python"), ("arm/*/checks/check.py", "python"),

@@ -569,6 +569,36 @@ ciamBindingRole: alerts-page
 ciamChannelKind: paging-service
 ciamProviderRef: projects/example-aero-ciam-standby/notificationChannels/1001
 
+dn: cn=soc-alerts,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlertChannel
+cn: soc-alerts
+ciamBindingRole: soc-alerts
+ciamChannelKind: email
+ciamProviderRef: projects/example-aero-ciam-standby/notificationChannels/1002
+
+dn: cn=siem,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamLogDestination
+cn: siem
+ciamArchiveRef: found-snapshots
+ciamBindingRole: siem
+ciamDestinationKind: siem-index
+ciamProviderRef: logs-ciam.security-standby
+ciamRetentionDays: 90
+ciamTotalRetentionDays: 365
+
+dn: cn=pf-admin-login-failures,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAlarmBinding
+cn: pf-admin-login-failures
+ciamBindingRole: alarm-admin-login-failures
+ciamLogDestinationRole: siem
+ciamMetric: FROM logs-ciam.security-standby | WHERE event.category == "authent
+ ication" AND event.outcome == "failure" AND service.name == "pf-admin"
+ciamProviderRef: ciam-admin-login-failures
+ciamRealizes: admin-login-failures
+
 dn: cn=audit-logs,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamLogDestination
@@ -1117,6 +1147,16 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pinggateway
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: gateway
+
+dn: cn=siem,ou=stack,env=prod,cloud=standby,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: siem
+ciamAdapter: elastic
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-elastic
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: siem
 
 dn: cn=ds-1,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top

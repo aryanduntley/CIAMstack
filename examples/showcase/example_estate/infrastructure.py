@@ -244,7 +244,7 @@ PROJECT, HOST = "projects/example-aero-ciam-standby", "projects/example-aero-net
 GIMG = "projects/example-aero-images/global/images/"
 STANDBY = MappingProxyType({
     "stack": (("provider", "gcp"), ("directory", "pingds"), ("federation", "pingfederate"), ("access", "pingam"),
-              ("identity-management", "pingidm"), ("gateway", "pinggateway")),
+              ("identity-management", "pingidm"), ("gateway", "pinggateway"), ("siem", "elastic")),
     "net": ("vpc", f"{HOST}/global/networks/ciam-standby", "10.70.0.0/16"), "pinned_priorities": True,
     "subnets": [(f"subnet-{r}", f"subnet-{r}", f"{HOST}/regions/us-central1/subnetworks/ciam-standby-{r}", cidr, None)
                 for r, cidr in (("ds", "10.70.1.0/24"), ("pf", "10.70.2.0/24"), ("am", "10.70.3.0/24"),

@@ -167,3 +167,15 @@ def test_a_siem_index_nothing_rendering_the_target_keeps_is_an_action():
     (index,) = (b for b in beta.bindings if b.dn.startswith("cn=siem,"))
     # the mini estate declares no stack: the adapters whose data applies render it (these apply nowhere)
     assert siem_keeper_of(beta, index, installed=(_keeper(True),)) is None
+
+
+def test_a_siem_index_two_adapters_read_as_theirs_is_an_action():
+    from opsdir.connectors.observability import siem_check
+    d = _record(SIEM)
+    ctx = PlanContext(d, env_model(d, "alpha/prod"), env_model(d, "beta/prod"), None, dt.date(2026, 10, 1), {}, {},
+                      ())
+    (action,) = siem_check((_keeper(True), _keeper(True)._replace(name="other-siem")))(ctx).actions
+    assert action[1] == (
+        "beta/prod's `siem` is a SIEM index (ciam_security) that siem-product and other-siem each read as theirs: "
+        "only siem-product renders it (the first declared), so what other-siem would keep there isn't rendered. "
+        "Declare one SIEM adapter for the environment, or name the index in the form only its SIEM's adapter reads.")

@@ -14,7 +14,9 @@ Security events (milestone 6.2e): the PingFederate engines' audit logs and the a
 team's SIEM, kept 365 days. Production's is Splunk (its stack declares the Splunk add-on: the render writes the
 opsdir_ciam app and the forwarders' inputs), the index's retention and the detection the security team runs read in from
 Splunk's management API under CHG-2049 (exports/splunk); the target's is Microsoft Sentinel on its own workspace, 90
-days searchable and 365 in all, with the admin-login detection as a scheduled analytics rule.
+days searchable and 365 in all, with the admin-login detection as a scheduled analytics rule; the standby's is Elastic
+Security on Elastic Cloud (task 552): a data stream kept 90 days searchable and 365 in all, its archive in the
+deployment's found-snapshots repository, with the admin-login detection as an ES|QL rule.
 
 Planted for the planner to find:
   - the target's audit workspace keeps logs 90 days; the audit route must keep them 400 (and they are under legal hold)
@@ -102,6 +104,10 @@ PAGE_TOPIC = _aws("sns", "ciam-prod-page")
 SENTINEL = AZ_WORKSPACES.format("law-ciam-prod-sentinel")
 # the target's admin-login detection: admin console sign-ins that fail, in the containers' output Sentinel keeps
 ADMIN_LOGINS = 'ContainerLogV2 | where ContainerName startswith "pf-log-admin" and LogMessage has "Login failed"'
+# the standby's: the admin console's failed sign-ins in the Elastic data stream (ECS fields), as ES|QL
+ELASTIC_STREAM = "logs-ciam.security-standby"
+ELASTIC_ADMIN_LOGINS = (f'FROM {ELASTIC_STREAM} | WHERE event.category == "authentication" AND event.outcome == '
+                        '"failure" AND service.name == "pf-admin"')
 MONITORING = {
     "source": (
         ("ciamAlertChannel", "alerts-page", "alerts-page", {"ciamChannelKind": "topic", "ciamProviderRef": PAGE_TOPIC}),
@@ -193,6 +199,15 @@ MONITORING = {
     "standby": (
         ("ciamAlertChannel", "alerts-page", "alerts-page",
          {"ciamChannelKind": "paging-service", "ciamProviderRef": f"{GCP_PROJECT}/notificationChannels/1001"}),
+        ("ciamAlertChannel", "soc-alerts", "soc-alerts",
+         {"ciamChannelKind": "email", "ciamProviderRef": f"{GCP_PROJECT}/notificationChannels/1002"}),
+        # the security team's Elastic Security (Elastic Cloud): 90 days searchable, 365 in all from its snapshots
+        ("ciamLogDestination", "siem", "siem",
+         {"ciamDestinationKind": "siem-index", "ciamRetentionDays": 90, "ciamTotalRetentionDays": 365,
+          "ciamArchiveRef": "found-snapshots", "ciamProviderRef": ELASTIC_STREAM}),
+        ("ciamAlarmBinding", "pf-admin-login-failures", "alarm-admin-login-failures",
+         {"ciamProviderRef": "ciam-admin-login-failures", "ciamRealizes": "admin-login-failures",
+          "ciamMetric": ELASTIC_ADMIN_LOGINS, "ciamLogDestinationRole": "siem"}),
         ("ciamLogDestination", "audit-logs", "audit-logs",
          {"ciamDestinationKind": "log-group", "ciamRetentionDays": 400,
           "ciamProviderRef": f"{GCP_PROJECT}/locations/global/buckets/ciam-audit"}),

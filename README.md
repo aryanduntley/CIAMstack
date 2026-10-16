@@ -128,6 +128,7 @@ Adapters are separate installable packages. Installing one registers it with the
 
 **SIEM** (milestone 6.2e: where the security team keeps logs, for how long, and what it detects)
 - `opsdir-adapter-splunk`: **renders the Splunk indexes** (searchable and archived retention), the detections as scheduled saved searches and the Universal Forwarder inputs; **reads them back** from the .conf files and Splunk's management API (read-only). Microsoft Sentinel is in `opsdir-adapter-azure` (onboarding and scheduled analytics rules on a workspace).
+- `opsdir-adapter-elastic`: **renders Elastic Security's data streams' retention** (an ILM policy per stream attached through its dataset's component template, a snapshot archive) and the detections as ES|QL rules, as API documents and Terraform for `elastic/elasticstack`; **reads them back** from the Elasticsearch and Kibana APIs (read-only, an API key).
 
 **Formats**
 - `opsdir-format-terraform`: HCL laid out like `terraform fmt`, shared by the cloud adapters.

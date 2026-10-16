@@ -38,6 +38,7 @@ from .observability import iso_duration, workspace_id, workspace_name
 ONBOARDING = "azurerm_sentinel_log_analytics_workspace_onboarding"
 RULE = "azurerm_sentinel_alert_rule_scheduled"
 MIN_PERIOD = 300                        # Sentinel runs a scheduled rule every 5 minutes at the most often
+SEARCH_LANGUAGE = "kusto"               # ciamSearchLanguage of a detection's KQL (its native language)
 SEVERITIES = {"sev0": "High", "sev1": "High", "sev2": "Medium", "sev3": "Low", "sev4": "Informational"}
 OPERATORS = {"gt": ">", "ge": ">="}
 _WRAPPED = re.compile(r"^(?P<base>.*) \| summarize events = count\(\) by bin\(TimeGenerated, \d+s\) \| where events "

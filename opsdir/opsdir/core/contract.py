@@ -314,9 +314,10 @@ Command = namedtuple("Command", ("argv", "secrets", "stdin", "env", "absent", "k
 # product's own logon issued), 'headers' or 'api-key', the reference to resolve, the login name (None for token and
 # api-key), and for 'headers' the names of the header carrying the login and of the one carrying the secret
 # (PingIDM's X-OpenIDM-Username and X-OpenIDM-Password), for 'api-key' the name of the header carrying the secret
-# alone (PAN-OS's X-PAN-KEY): ('api-key', reference, None, 'X-PAN-KEY')) or None, ca the reference to the
-# certificate (PEM) the endpoint is trusted by, or None for the system's trust store; absent the HTTP statuses that
-# mean nothing to read (404); keep as a Command's.
+# (PAN-OS's X-PAN-KEY: ('api-key', reference, None, 'X-PAN-KEY')) and, when the value carries a prefix before the
+# secret, that prefix (Elasticsearch's ('api-key', reference, None, 'Authorization', 'ApiKey '))) or None, ca the
+# reference to the certificate (PEM) the endpoint is trusted by, or None for the system's trust store; absent the HTTP
+# statuses that mean nothing to read (404); keep as a Command's.
 Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent", "keep"),
                      defaults=((), None, None, (), None))
 # A collector: the importer (by name) whose export it produces; scope "environment" (one environment's, `--env`) or
