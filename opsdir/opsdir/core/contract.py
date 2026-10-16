@@ -316,9 +316,12 @@ Command = namedtuple("Command", ("argv", "secrets", "stdin", "env", "absent", "k
 # (PingIDM's X-OpenIDM-Username and X-OpenIDM-Password), for 'api-key' the name of the header carrying the secret
 # alone (PAN-OS's X-PAN-KEY): ('api-key', reference, None, 'X-PAN-KEY')) or None, ca the reference to the
 # certificate (PEM) the endpoint is trusted by, or None for the system's trust store; absent the HTTP statuses that
-# mean nothing to read (404); keep as a Command's.
-Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent", "keep"),
-                     defaults=((), None, None, (), None))
+# mean nothing to read (404); keep as a Command's. observe: the call observes an endpoint (a CRL distribution point, an
+# OCSP responder): whatever it answers, or why it answered nothing, is the output, never a failed call, as JSON text
+# {"observedAt": the runner's UTC clock (ISO 8601, Z), "status": the HTTP status or null, "contentType", "body": the
+# body as base64 (binary kept) or null, "error": why there was no answer (unreachable, refused) or null}.
+Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent", "keep", "observe"),
+                     defaults=((), None, None, (), None, False))
 # A collector: the importer (by name) whose export it produces; scope "environment" (one environment's, `--env`) or
 # "estate" (provider-wide data: regions, quota limits); steps(d, m, done, options) -> ((relative path, Command |
 # Request | problem text), ...): the calls still to make given what was collected so far (done: {path: output}), a

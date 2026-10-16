@@ -157,6 +157,8 @@ CHANGES = (
      "2026-09-24"),
     ("CHG-2086", "Record the forest's certificate templates again, collected over LDAPS with who may enroll",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2092", "Record what the issuing CA's revocation endpoints answer, observed from the data center",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

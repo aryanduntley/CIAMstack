@@ -118,6 +118,7 @@ Adapters are separate installable packages. Installing one registers it with the
 - `opsdir-adapter-servicenow`: **imports the ServiceNow change tickets** the record's change records name (Table API answers or JSON list exports of `change_request` and `sysapproval_approver`, or collected read-only from the instance) as evidence the planner compares with the record.
 **PKI** (metadata only; never a key)
 - `opsdir-adapter-adcs`: Microsoft AD CS: **imports each CA's issued-certificate inventory** (issued and revoked certificates, requester, template, serial, SHA-256), its revocation endpoints and the forest's certificate templates, from the JSON its shipped PowerShell exporter writes through the CA's documented COM interfaces and an LDIF export of the templates.
+- `opsdir-adapter-x509`: the X.509 standards, any CA: **observes every recorded CA's revocation endpoints** (RFC 5280 CRLs and delta CRLs, RFC 6960 OCSP) read-only with `opsdir collect`, and checks what each answered against the CA certificates the record holds (current, signed by the CA, reachable). Depends on `cryptography`.
 
 **Hosts, clusters and CI** (what runs beyond the products)
 - `opsdir-adapter-linux`: **imports Linux servers' own files**: their crontabs and systemd timers as jobs, and each server role's host baseline (OS, Java runtime and the certificates its truststore adds, limits, kernel settings, FIPS and SELinux modes, agents, service units, names pinned in `/etc/hosts`).

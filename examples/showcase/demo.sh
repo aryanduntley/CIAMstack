@@ -297,6 +297,11 @@ echo "   adcs/inventory's template collector): CIAM-WebServer now also issues cl
 echo "   subject from the request and lets Domain Users enroll (ESC1-style): an action for its renewal owner; the"
 echo "   import takes the live values where the record held CHG-2050's (who may enroll was unknown then)"
 od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory exports/adcs-templates
+echo "-- the issuing CA's revocation endpoints observed from the data center (CHG-2092, x509/revocation's collector):"
+echo "   the CRL distribution point serves a CRL the CA certificate the record holds doesn't verify, the delta CRL is"
+echo "   gone (HTTP 404) and the OCSP responder refuses to answer for the CA: three actions for the CA's owners"
+od import --change CHG-2092 --at 20260923090000Z x509/revocation exports/revocation
+od report revocation-endpoints
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

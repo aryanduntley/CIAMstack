@@ -10,6 +10,7 @@ from types import SimpleNamespace
 
 from opsdir import live
 from opsdir.connectors import collecting
+from opsdir.core import observation
 from opsdir.connectors.collecting import MASK, chosen, collect, collectors, evidence, first_calls, provenance, redact
 from opsdir.core.contract import Collector, Command, Importer, Request
 from opsdir.domains.governance.collection import collection_sources
@@ -133,6 +134,56 @@ def test_requests_are_gets_with_the_credential_in_the_header():
     server.server_close()
     assert (out, problem) == ('{"ok": true}', None)
     assert got == [("GET", "/pf-admin-api/v1/bulk/export", "Basic cmVhZGVyOnB3", "PingFederate")]   # reader:pw
+
+
+def _serving(status, body, content_type):
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+    server = http.server.HTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.handle_request, daemon=True).start()
+    return server
+
+
+def test_an_observing_request_keeps_whatever_the_endpoint_answers_and_never_fails():
+    der = bytes(range(256))                                         # a binary answer (a DER CRL): not UTF-8
+    server = _serving(200, der, "application/pkix-crl")
+    out, problem = live.run_call(Request(f"http://127.0.0.1:{server.server_port}/ca.crl", observe=True),
+                                 lambda ref: (None, None))
+    server.server_close()
+    seen, bad = observation.read_observation(out)
+    assert problem is None and bad is None
+    assert (seen.status, seen.content_type, seen.body, seen.error) == (200, "application/pkix-crl", der, None)
+    assert seen.at.tzinfo is not None and seen.at.microsecond == 0
+    server = _serving(404, b"gone", "text/plain")                   # an HTTP error is an answer, not a failed call
+    out, problem = live.run_call(Request(f"http://127.0.0.1:{server.server_port}/x.crl", observe=True),
+                                 lambda ref: (None, None))
+    server.server_close()
+    seen, _ = observation.read_observation(out)
+    assert problem is None and (seen.status, seen.body, seen.error) == (404, b"gone", None)
+    port = server.server_port                                       # closed: nothing listens there now
+    out, problem = live.run_call(Request(f"http://127.0.0.1:{port}/x.crl", observe=True), lambda ref: (None, None))
+    seen, _ = observation.read_observation(out)
+    assert problem is None and seen.status is None and seen.body is None and seen.error.startswith("URLError")
+    assert provenance(Request("http://pki.example.test/ca.crl", observe=True)) == "GET http://pki.example.test/ca.crl"
+
+
+def test_observations_read_back_and_refuse_what_isnt_one():
+    text = observation.observation(AT, 200, "application/ocsp-response", b"\x30\x03", None)
+    assert '"observedAt": "2026-10-08T12:00:00Z"' in text and '"body": "MAM="' in text
+    assert observation.read_observation(text) == (observation.Observation(AT, 200, "application/ocsp-response",
+                                                                        b"\x30\x03", None), None)
+    assert observation.read_observation("{}")[0] is None
+    assert observation.read_observation('{"observedAt": "2026-10-08 12:00", "status": 200}')[0] is None
+    assert observation.read_observation('{"observedAt": "2026-10-08T12:00:00Z", "status": "200"}')[0] is None
+    assert observation.read_observation('{"observedAt": "2026-10-08T12:00:00Z", "body": "%%%"}')[0] is None
 
 
 def test_the_resolver_resolves_each_reference_once():

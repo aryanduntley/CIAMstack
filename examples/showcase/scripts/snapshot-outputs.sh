@@ -168,6 +168,8 @@ cap 08-apply-chg-2075 od import --change CHG-2075 --at 20260923090000Z linux/bas
 cap 08-apply-chg-2076 od modify --change CHG-2076 changes/CHG-2076-pingaccess-scoped-agents.ldif
 cap 08-apply-chg-2086 od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory \
   exports/adcs-templates
+cap 08-apply-chg-2092 od import --change CHG-2092 --at 20260923090000Z x509/revocation exports/revocation
+cap 08-report-revocation-endpoints od report revocation-endpoints
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

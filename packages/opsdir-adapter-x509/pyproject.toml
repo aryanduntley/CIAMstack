@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-x509"
+version = "0.1.0"
+description = "opsdir PKI adapter for the X.509 standards themselves (RFC 5280 CRLs, RFC 6960 OCSP), CA-neutral: each recorded CA's revocation endpoints observed read-only and checked against the CA certificates the record holds."
+readme = "README.md"
+requires-python = ">=3.11"
+# our pin: the current release (2026-09-30); the observation's checks need cryptography 43.0 or later (README)
+dependencies = ["opsdir>=0.1", "cryptography>=50.0.2"]
+
+[project.entry-points."opsdir.adapters"]
+x509 = "opsdir_adapter_x509.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

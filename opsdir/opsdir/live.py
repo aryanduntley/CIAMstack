@@ -6,6 +6,7 @@ credential put in the Authorization header in memory, its endpoint trusted by th
 operator's own access to the store), once per run, held in memory only; a failing call's error output is shown with
 every resolved value masked. Nothing is written anywhere but the caller's memory."""
 import base64
+import datetime as dt
 import functools
 import os
 import pathlib
@@ -18,8 +19,10 @@ import urllib.request
 from .connectors.collecting import redact
 from .connectors.registry import ADAPTERS, secret_command
 from .core.contract import Request
+from .core.observation import observation
 
 COMMAND_SECONDS, REQUEST_SECONDS, SECRET_SECONDS = 300, 120, 60
+OBSERVED_BYTES = 64 * 1024 * 1024       # the most an observed endpoint's answer may be (a large CA's CRL is megabytes)
 
 
 def _resolve(ref, installed):
@@ -166,7 +169,40 @@ def _request(call, resolve):
         return None, redact(f"{type(e).__name__}: {getattr(e, 'reason', e)}", tuple(secrets.values()))
 
 
+def _answer(call, resolve):
+    """(status, content type, body bytes, error) of an observing GET: whatever the endpoint answered (an HTTP error
+    status with its body too), or why it answered nothing."""
+    refs = tuple(r for r in ((call.credential[1] if call.credential else None), call.ca) if r)
+    secrets, problems = _secrets(refs, resolve)
+    if problems:
+        return None, None, None, "; ".join(problems)
+    headers = {**dict(call.headers),
+               **(_authorization(call.credential, secrets[call.credential[1]]) if call.credential else {})}
+    try:
+        context = ssl.create_default_context(cadata=secrets[call.ca]) if call.ca else ssl.create_default_context()
+        req = urllib.request.Request(call.url, headers=headers, method="GET")
+        with urllib.request.urlopen(req, timeout=REQUEST_SECONDS, context=context) as answer:
+            body = answer.read(OBSERVED_BYTES + 1)
+            return answer.status, answer.headers.get("Content-Type"), body, None
+    except urllib.error.HTTPError as e:
+        return e.code, e.headers.get("Content-Type") if e.headers else None, e.read(OBSERVED_BYTES + 1), None
+    except (urllib.error.URLError, ssl.SSLError, OSError, ValueError) as e:
+        return None, None, None, redact(f"{type(e).__name__}: {getattr(e, 'reason', e)}", tuple(secrets.values()))
+
+
+def _observe(call, resolve):
+    """(output, None) of an observing GET: the endpoint's answer, or why it gave none, as the observation's text
+    (core.observation), dated by this host's UTC clock; never a failed call."""
+    at = dt.datetime.now(dt.UTC).replace(microsecond=0)
+    status, content_type, body, error = _answer(call, resolve)
+    if body is not None and len(body) > OBSERVED_BYTES:
+        body, error = None, f"the answer is larger than {OBSERVED_BYTES} bytes: not kept"
+    return observation(at, status, content_type, body, error), None
+
+
 def run_call(call, resolve):
-    """(output, problem) of one call: a Command run as a subprocess, a Request made as an HTTP GET; (None, None) when
-    it says there is nothing to read (its absent markers)."""
-    return _request(call, resolve) if isinstance(call, Request) else _command(call, resolve)
+    """(output, problem) of one call: a Command run as a subprocess, a Request made as an HTTP GET (an observing one's
+    answer, whatever it is, as its output); (None, None) when it says there is nothing to read (its absent markers)."""
+    if isinstance(call, Request):
+        return _observe(call, resolve) if call.observe else _request(call, resolve)
+    return _command(call, resolve)

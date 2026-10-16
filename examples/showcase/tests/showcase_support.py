@@ -93,7 +93,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2075", ImportStep("linux/baseline", SHOWCASE / "exports" / "hosts-pingaccess", "20260923090000Z")),
             ("CHG-2076", SHOWCASE / "changes" / "CHG-2076-pingaccess-scoped-agents.ldif"),
             ("CHG-2086", ImportStep("adcs/inventory", SHOWCASE / "exports" / "adcs-templates", "20260923090000Z",
-                                    take=("all",))))
+                                    take=("all",))),
+            ("CHG-2092", ImportStep("x509/revocation", SHOWCASE / "exports" / "revocation", "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

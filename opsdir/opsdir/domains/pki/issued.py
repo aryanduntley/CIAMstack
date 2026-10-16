@@ -60,6 +60,7 @@ REASONS = {0: "unspecified", 1: "keyCompromise", 2: "cACompromise", 3: "affiliat
            5: "cessationOfOperation", 6: "certificateHold", 8: "removeFromCRL", 9: "privilegeWithdrawn",
            10: "aACompromise"}
 REVOCATION_CHECKS = ("crl", "ocsp")             # the endpoint kinds a relying party checks revocation with
+TEMPLATE_KEPT = "the CA's template: "           # an endpoint's description when its URL still holds variables
 AREA = "Certificate"
 
 # A record certificate reconciled with the inventories: the CA it was found for (None: none), that CA's inventory
@@ -92,7 +93,7 @@ def endpoint_entry(d, authority, kind, n, url, template=None):
     the URL still holds variables nobody could fill (description)."""
     dn = f"cn={kind}-{n},{authority_dn(authority)}"
     owned = {"cn": (f"{kind}-{n}",), "ciamRevocationKind": (kind,), "ciamEndpointUrl": (url,),
-             "description": (f"the CA's template: {template}" if template else None,)}
+             "description": (f"{TEMPLATE_KEPT}{template}" if template else None,)}
     return _observed(d, dn, ENDPOINT_CLASS, owned, ENDPOINT_ATTRS)
 
 
@@ -153,7 +154,7 @@ def issued_of(d, inventory):
                         key=lambda e: (0, int(rdn_value(e)), "") if rdn_value(e).isdigit() else (1, 0, rdn_value(e))))
 
 
-def _common_name(subject):
+def common_name(subject):
     """The CN of a distinguished name as text (CN=Example CA, O=Example -> Example CA), or None."""
     m = re.search(r"(?:^|,)\s*cn\s*=\s*([^,]+)", subject or "", re.IGNORECASE)
     return m.group(1).strip() if m else None
@@ -169,12 +170,13 @@ def authority_of(d, cert, cas):
     found = (next((a for a in cas if issuer is not None and issuer.norm in {c.norm for c in own(a)}), None)
              or next((a for a in cas if named and any(norm_dn(one(c, "ciamSubject") or "") == named for c in own(a))),
                      None)
-             or next((a for a in cas if (_common_name(one(cert, "ciamIssuer")) or "").lower()
+             or next((a for a in cas if (common_name(one(cert, "ciamIssuer")) or "").lower()
                       == rdn_value(a).lower()), None))
     return None if found is not None and cert.norm in {c.norm for c in own(found)} else found
 
 
-def _serial(v):
+def serial_key(v):
+    """A serial number as compared: hex digits only, lowercase, without leading zeros."""
     return re.sub(r"[^0-9a-f]", "", (v or "").lower()).lstrip("0")
 
 
@@ -193,10 +195,10 @@ def find_issued(cert, rows, everywhere):
     """The issued certificate matching a record certificate: by fingerprint among everywhere (every inventory's),
     else by serial number, else by subject, start and end of validity among rows (its CA's), or None."""
     fp = fingerprint(one(cert, "ciamFingerprint"))
-    serial = _serial(one(cert, "ciamSerialNumber"))
+    serial = serial_key(one(cert, "ciamSerialNumber"))
     validity = (norm_dn(one(cert, "ciamSubject") or ""), date_of(cert, "ciamNotBefore"), date_of(cert, "ciamNotAfter"))
     return (next((r for r in everywhere if fp and fingerprint(one(r, "ciamFingerprint")) == fp), None)
-            or next((r for r in rows if serial and _serial(one(r, "ciamSerialNumber")) == serial), None)
+            or next((r for r in rows if serial and serial_key(one(r, "ciamSerialNumber")) == serial), None)
             or next((r for r in rows if validity[0] and all(validity)
                      and (norm_dn(one(r, "ciamSubject") or ""), date_of(r, "ciamNotBefore"),
                           date_of(r, "ciamNotAfter")) == validity), None))
