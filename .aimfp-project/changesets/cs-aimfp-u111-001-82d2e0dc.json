@@ -1,0 +1,2330 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "external_id_graph.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/inventory.py",
+        "id_in_name": 0,
+        "name": "environment_groups",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"spec\", \"type\": \"str\", \"description\": \"cloud/env\"}, {\"name\": \"resources\", \"type\": \"tuple[Resource]\"}, {\"name\": \"summarize\", \"type\": \"tuple[str]\", \"required\": false, \"description\": \"kinds counted, not listed, when new and role-less\"}]",
+        "purpose": "((DN, (entry, ...)), ...) and notices placing the resources a cloud reports into an environment's servers and bindings. Each resource is matched per its import kind (provider ref, name, attribute, function; servers also by hostname or private address). Failing that (5.5c), a resource matched by ref that names a role realizes the record's one designed binding of its kind for that role: no ciamProviderRef yet, not claimed by an earlier resource. The first read after applying a design records the ref instead of adding a copy. New resources are added only when they name a role; the rest are named. Inherited entries are left to the base. Links are resolved as DNs or roles; kinds in summarize are counted. A group of an entry the record holds keeps what the record holds beneath it unchanged (another importer's entries: a managed identity service's sign-in flows), so a cloud read never deletes them.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(((dn, (entry, *its held descendants)), ...), notices)\"}",
+        "source_hash": "4701b4f2bedf06a2"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-environment-groups-e8a1e6a6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/boundary.py",
+        "id_in_name": 0,
+        "name": "check_boundary",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Azure adapter planner check: the target's services outside its authorization's in-scope list, a service Microsoft documents as covered by a listed one (COVERED: External ID by Microsoft Entra ID) in place when that one is listed",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "63bc1ecaacc66d3b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-boundary-2a1fa2d4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/account.py",
+        "id_in_name": 0,
+        "name": "required_providers",
+        "parameters": "[{\"name\": \"azapi\", \"type\": \"bool\", \"required\": false}, {\"name\": \"azuread\", \"type\": \"bool\", \"required\": false}]",
+        "purpose": "The terraform block of an Azure root: azurerm (~> 5.9); azapi (~> 2.13) when the root renders azapi resources (an external tenant included); azuread (~> 3.10, validated against 3.10.0) when it renders Microsoft Entra ID policy (risk-based Conditional Access, 5.5e) or an external tenant's app registrations (task 547).",
+        "returns": "{\"type\": \"TfBlock\", \"description\": \"a Terraform block (5.5d)\"}",
+        "source_hash": "abbd10621863b23c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-required-providers-18bb1597"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py",
+        "id_in_name": 0,
+        "name": "terraform_parts",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services | None\", \"required\": true}]",
+        "purpose": "(parts, landing_dns, interconnect lines, scripts, container files) of environment m's Azure Terraform before it is placed: the stack's providers (azapi also for an external tenant, azuread also for its app registrations, each External ID target's aliased azuread provider) and main items (network, servers, groups, backups, services, databases, object stores, DNS, trails, workspaces, log collection, container logs, alerts, Sentinel onboarding and analytics rules: render_sentinel, web tests, check jobs, security, discovery, Purview, suppressions, budgets, quota requests, Key Vault secrets, and last the Entra External ID targets: render_external_id) and the landing zone's and plumbing keepers' parts.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(parts, landing_dns, interconnect header lines, check scripts {path: text}, container files {path: text})\"}",
+        "source_hash": "785482aac3a9558d"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_target",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}]",
+        "purpose": "Findings for a binding running one of the platform's identity services on a managed service: availability, per-integration and service gaps, hosts, MFA split, claim transforms (an action when the service can't express them or does only on a condition, e.g. an extension), partition notes, users, and its ok line.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "0d09be047146cb80"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-target-f81892d8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "partition",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The Azure cloud environment m's cloud is in: usgovernment (Azure Government), else public (the ManagedService partition of External ID).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "8011f73551ce8867"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-partition-3af0beb2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "external_id_bindings",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Environment m's Entra External ID bindings (ciamManagedIdentity with ciamManagedService entra-external-id).",
+        "returns": "{\"type\": \"tuple[Entry, ...]\"}",
+        "source_hash": "5ac50a54fb6361a4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "external_id_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The render notes of environment m's Entra External ID bindings: each target's (the tenant to create by hand or through a preview API, its app registrations waiting on the tenant ID, its client credentials, its user flows/upstream providers/extensions: actions) and a neighbour's (not the platform's to render: a note).",
+        "returns": "{\"type\": \"tuple[RenderNote, ...]\"}",
+        "source_hash": "0018600a412d1a63"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "_neighbour_note",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The note of an External ID neighbour binding: a neighbour the platform federates with, kept by its keeper, not rendered.",
+        "returns": "{\"type\": \"RenderNote\"}",
+        "source_hash": "71cb6fb5511e811c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "tenant_name",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\", \"required\": true, \"description\": \"An External ID ciamManagedIdentity binding\"}]",
+        "purpose": "The initial subdomain of a binding's external tenant (its ARM resource name): the label of its *.ciamlogin.com sign-in host (ciamFqdn), else its name's letters and digits (at most 26).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e89592081526860f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-tenant-name-5ba8d3dd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "renders_tenant",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Whether environment m's render writes an external tenant through azapi (the cloud allows the azapi add-on and it has an External ID target in a public cloud).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "80048d1837a30e92"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-renders-tenant-925049a8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "renders_applications",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Whether environment m's render writes app registrations through azuread: an External ID target whose tenant ID (ciamProviderRef) is recorded.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "0a3d6528b782e5c9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-renders-applications-3289dd9e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "custom_scopes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true, \"description\": \"The target binding\"}]",
+        "purpose": "The scopes the oidc-client integrations an External ID target serves ask for beyond OIDC's (openid, profile, email, offline_access), each once: its identity service's API scopes.",
+        "returns": "{\"type\": \"tuple[str, ...]\"}",
+        "source_hash": "a6d50faa2defdfe7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-custom-scopes-82158418"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "scope_id",
+        "parameters": "[{\"name\": \"service\", \"type\": \"Entry\", \"required\": true, \"description\": \"The ciamIdentityService\"}, {\"name\": \"scope\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The stable id of an identity service's API scope: a UUID5 of its base URL and the scope's name, so re-renders keep the oauth2_permission_scope id.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e2979feda9cf4ac2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-scope-id-2b4efd7e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "confidential",
+        "parameters": "[{\"name\": \"i\", \"type\": \"Entry\", \"required\": true, \"description\": \"A ciamIntegration\"}]",
+        "purpose": "Whether an oidc-client integration authenticates at the token endpoint (a token auth method other than none, or none recorded): a web client with a credential to give it.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "21eae71eb66d60db"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-confidential-1efe078c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "hostless",
+        "parameters": "[{\"name\": \"uri\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a redirect URI has no host (com.example.app:/cb, RFC 8252's private-use form), which azuread refuses: left out of the render with a comment.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "809d15e1adc59969"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-hostless-d930b268"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "external_id_providers",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The aliased azuread provider block (alias the binding's name, tenant_id its ciamProviderRef) of each External ID target whose tenant ID is recorded, for providers.tf (placement drops it from roots that don't use it).",
+        "returns": "{\"type\": \"tuple[TfBlock, ...]\"}",
+        "source_hash": "04b0fab326c43dbd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "render_external_id",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "HCL for environment m's External ID targets, each stamped with its entry: its notes as comments, the tenant (azapi ciamDirectories@2023-05-17-preview, inputs, import block once its tenant ID is recorded) where the azapi add-on is allowed, its identity service's API application, an application + service principal per oidc-client and per saml2-sp integration (custom template, SAML mode, token signing certificate); a neighbour's note as its comment.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "03cbe0036e03718d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "output_kind",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"The output's file name without .json\"}]",
+        "purpose": "The projection a Graph output file is kept by: its read's name (pages <name>-<n> by their read), a flow's includeApplications output (flow-<id>-applications) by flow-applications.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "db0edc0887c1b8ce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-output-kind-ab430857"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "project",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\", \"required\": true, \"description\": \"A PROJECTIONS key\"}, {\"name\": \"doc\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "A Graph list output ({value: [...], @odata.nextLink}) kept to the allowlist of its kind (PROJECTIONS): only the fields the importer reads (never passwordCredentials, keyCredentials, identity providers' client secrets, extensions' endpoints), and the next page's link.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "417f252f8f452f40"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-project-75b8a1fa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "project_output",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\", \"required\": true}, {\"name\": \"out\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Command.keep of a Graph read: its output text kept to the allowlist (project), as JSON text, before anything else sees it (export, evidence hash, --save); an output that isn't JSON keeps nothing.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "12f27f6b3de7ded5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-project-output-804d769b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "graph_target",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Environment m's Entra External ID targets whose tenant ID (ciamProviderRef) is recorded: what the external-id collector reads.",
+        "returns": "{\"type\": \"tuple[Entry, ...]\"}",
+        "source_hash": "fac3ee419ed55fb1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-graph-target-e379c3c8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "graph_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.problems of external-id: why environment m's external tenant can't be collected (no target records its tenant ID, or more than one: one login reads one tenant), else None.",
+        "returns": "{\"type\": \"tuple[str, ...] | None\"}",
+        "source_hash": "33dd4d28575938b1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-graph-problems-003245c9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "graph_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true, \"description\": \"{path: output} collected so far\"}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of external-id: the az rest GETs against Graph v1.0 still to make (organization, applications, servicePrincipals, identityProviders with $select; authenticationEventsFlows and customAuthenticationExtensions projected), every page each output names next (@odata.nextLink), then each flow's includeApplications; each Command keeps its output to the allowlist; nothing read twice.",
+        "returns": "{\"type\": \"tuple[tuple[str, Command], ...]\"}",
+        "source_hash": "e828be2bcb63b7ad"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-graph-steps-5d523a2e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "tenant_check",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Collector.verify of external-id: az account show, and whether its tenantId is the external tenant environment m's target records (ciamProviderRef) and its environmentName AzureCloud (external tenants exist in public clouds only).",
+        "returns": "{\"type\": \"tuple[Command, Callable]\"}",
+        "source_hash": "f0121e67652ccdb4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-tenant-check-6521f7f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py",
+        "id_in_name": 0,
+        "name": "read_graph",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern, ...]\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false}]",
+        "purpose": "Importer azure/external-id: each <cloud>/<env>/external-id/ folder's Graph outputs read into the environment's External ID target whose tenant ID organization.json names: applications + service principals as the realized identity service's integrations (saml2-sp in SAML mode, else oidc-client; matched by client ID, entity ID, then name; a name match keeps the record's differing client ID with a notice; new ones served by the service; Microsoft's own skipped), authentication events flows as ciamSignInFlow and custom authentication extensions as ciamAuthExtension beneath the binding (made exactly the tenant's), identity providers named in a notice; values looking like secret material withheld.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "8cfaa9f06ff8aa9a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-graph-52738612"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-target-note-663aa925"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-apps-7e7b76d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 111's External ID slice (deferred note 3100 on file 1042, connectors/managed_identity.py; flow 66). (1) Render a target's app registrations into the external tenant (hashicorp/azuread current release: azuread_application / azuread_service_principal through a provider alias with tenant_id = ciamProviderRef; SAML apps via the service principal's preferred_single_sign_on_mode) and the tenant itself (ARM Microsoft.AzureActiveDirectory/ciamDirectories through azapi; verify the type and API version against the local bicep type index first). (2) A read-only importer of the tenant's Graph configuration (applications, servicePrincipals, identity/authenticationEventsFlows, identity/identityProviders, identity/customAuthenticationExtensions; app-only *.Read.All permissions), allowlist projection with no credential fields, plus its collector. (3) Research to move External ID and Cognito capabilities left 'not established' to supported/unsupported with sources, and confirm 'Microsoft Entra External ID' as the Azure FedRAMP scope page's name (showcase B76). Managed directories and Google Identity Platform stay for later tasks. Design to the master before coding (it may change what the record holds).",
+        "flows": [
+          "Managed Identity Services"
+        ],
+        "name": "Entra External ID: render app registrations and tenant, read-only Graph importer, capability research",
+        "parent": {
+          "slug": "milestone-6-1c-follow-up-managed-directories-googl-2cb8aef2"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "azuread/azapi current versions and resource forms, ciamDirectories type/API version from the bicep type index, Graph endpoints and least-privilege permissions, capability research for External ID and Cognito, FedRAMP scope name; master approves before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-a47a7453"
+      }
+    },
+    {
+      "attributes": {
+        "description": "App registrations and service principals through a tenant-aliased azuread provider; tenant through azapi; render notes where something can't be rendered.",
+        "name": "External ID render",
+        "parent": {
+          "key": {
+            "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-external-id-render-0c19eaa8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Read-only importer of the external tenant's Graph configuration with an allowlist projection (no credential fields) and its collector (app-only read permissions).",
+        "name": "Graph importer and collector",
+        "parent": {
+          "key": {
+            "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-graph-importer-and-collector-1b664985"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Move 'not established' External ID and Cognito capabilities to supported/unsupported with sources; confirm the FedRAMP scope page name.",
+        "name": "Capabilities and scope name",
+        "parent": {
+          "key": {
+            "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-capabilities-and-scope-name-dee5adb6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, round trip render -> importer, showcase changes if needed, predicted golden changes, READMEs and Known limits.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-8dba4a4c"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "5ba0b0c5c7acadb43b28be11060fe60e070f57e0",
+    "branch": "aimfp-u111-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "environment_groups calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environment-groups-e8a1e6a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_parts calls renders_tenant (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renders-tenant-925049a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_parts calls renders_applications (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renders-applications-3289dd9e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_parts calls external_id_providers (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_parts calls render_external_id (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls one (directory.py) via _credentials_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls values (directory.py) via _credentials_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls rdn_value (directory.py) via _credentials_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls azapi_allowed (account.py) via _tenant_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-azapi-allowed-16fc1d38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls note (notes.py) via _credentials_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls realized_service (managed.py) via _of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls served (managed.py) via _of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls partition (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partition-3af0beb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls confidential (external_id.py) via _credentials_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-confidential-1efe078c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "tenant_name calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-tenant-name-5ba8d3dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "tenant_name calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-tenant-name-5ba8d3dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_tenant calls azapi_allowed (account.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-tenant-925049a8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-azapi-allowed-16fc1d38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_tenant calls is_target (managed.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-tenant-925049a8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_tenant calls realized_service (managed.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-tenant-925049a8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_tenant calls partition (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-tenant-925049a8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partition-3af0beb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_tenant calls external_id_bindings (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-tenant-925049a8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_applications calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-applications-3289dd9e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_applications calls is_target (managed.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-applications-3289dd9e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_applications calls realized_service (managed.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-applications-3289dd9e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_applications calls partition (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-applications-3289dd9e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partition-3af0beb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renders_applications calls external_id_bindings (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renders-applications-3289dd9e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "custom_scopes calls one (directory.py) via _of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-custom-scopes-82158418"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "custom_scopes calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-custom-scopes-82158418"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "custom_scopes calls realized_service (managed.py) via _of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-custom-scopes-82158418"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "custom_scopes calls served (managed.py) via _of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-custom-scopes-82158418"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scope_id calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scope-id-2b4efd7e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "confidential calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confidential-1efe078c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls tf_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls is_target (managed.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls realized_service (managed.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls partition (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partition-3af0beb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_providers calls external_id_bindings (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-providers-5c8618b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls tf_name (hcl.py) via _client",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls ref (hcl.py) via _access",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ref-018f1ed3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls one (directory.py) via _api",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls values (directory.py) via _access",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls rdn_value (directory.py) via _api",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls binding_tags (network.py) via _tenant",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-binding-tags-600deba0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls tagged (account.py) via _tenant",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tagged-9a9e3bdb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls azapi_allowed (account.py) via _tenant",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-azapi-allowed-16fc1d38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls tf_block (hcl.py) via _api",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls tf_import (hcl.py) via _tenant",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-import-7b34c873"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls from_entry (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-from-entry-7471a268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls note (notes.py) via _credentials_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls is_target (managed.py) via _other_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls realized_service (managed.py) via _access",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls served (managed.py) via _applications",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls partition (external_id.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partition-3af0beb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls external_id_bindings (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls _neighbour_note (external_id.py) via _other_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls tenant_name (external_id.py) via _tenant",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tenant-name-5ba8d3dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls custom_scopes (external_id.py) via _api",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-scopes-82158418"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls scope_id (external_id.py) via _access",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scope-id-2b4efd7e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls confidential (external_id.py) via _client",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-confidential-1efe078c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_external_id calls hostless (external_id.py) via _client",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-external-id-3f14345a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-hostless-d930b268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "project_output calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-project-output-804d769b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "project_output calls project (external_id_graph.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-project-output-804d769b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-project-75b8a1fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_target calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-target-e379c3c8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_target calls of_class (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-target-e379c3c8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_target calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-target-e379c3c8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_problems calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-problems-003245c9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_problems calls graph_target (external_id_graph.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-problems-003245c9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-graph-target-e379c3c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_steps calls json_document (sources.py) via _flow_ids",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-steps-5d523a2e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_steps calls output_kind (external_id_graph.py) via _next_pages",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-steps-5d523a2e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-output-kind-ab430857"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_steps references project_output (external_id_graph.py) via _get",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-steps-5d523a2e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-project-output-804d769b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "graph_steps calls graph_target (external_id_graph.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-graph-steps-5d523a2e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-graph-target-e379c3c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "tenant_check calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-tenant-check-6521f7f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "tenant_check calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-tenant-check-6521f7f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "tenant_check calls graph_target (external_id_graph.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-tenant-check-6521f7f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-graph-target-e379c3c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls env_dn (environment.py) via _target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-dn-e280afb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls make_entry (directory.py) via _extension",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls one (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls values (directory.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls rdn_value (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls get (directory.py) via _target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls children (directory.py) via _target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls subtree (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls integrations (services.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integrations-463318b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls value_findings (secrets.py) via _withheld",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-findings-51690bcf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls is_target (managed.py) via _target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls realized_service (managed.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls hostless (external_id.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-hostless-d930b268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls output_kind (external_id_graph.py) via _items",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-output-kind-ab430857"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_graph calls project (external_id_graph.py) via _items",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-graph-52738612"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-project-75b8a1fa"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py"
+      },
+      "flow": {
+        "name": "Ingest (files -> DB)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-azure"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/boundary.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/managed_identity.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id_graph.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_types.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/account.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-entra-external-id-render-app-registratio-4a50040a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_parts calls external_id_notes (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls _target_note (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-target-note-663aa925"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls realized_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls _apps (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-apps-7e7b76d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls served (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    }
+  ],
+  "warnings": []
+}

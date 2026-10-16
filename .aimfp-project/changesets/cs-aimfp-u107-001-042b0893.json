@@ -1,0 +1,1659 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package build config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "empty package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "mapping.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "changes.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/governance/",
+        "purpose": "Owners (parties: parties.py display_name/operator/operator_label), change records, incidents and work instructions. Import runs keyed by importer + environment/shared + scope set (imports.py: run_dn, scope_set_key, runs_covering, reports imports and import-scopes, check_import_runs with fix imports/scope-set-names for legacy-named runs) and collection attempts. Collection sources (collection.py: collection_sources, readable_source, scheme_problems). The unknowns register (ciamUnknown questions the planner counts: check_unknowns, report unknowns). ITSM ticket evidence (tickets.py: ciamTicketRef on ciamChange; observed ciamTicket under ou=<adapter>,ou=tickets with approval steps and change type; vocabularies TICKET_STATES/TICKET_APPROVALS/TICKET_CHANGE_TYPES in schema.py; drift states, check_tickets, report tickets; never an approval). Stale-runbook view and report."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "domain-governance"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-servicenow (import opsdir_adapter_servicenow), registered via entry point opsdir.adapters:servicenow; depends on opsdir.",
+        "external_dependencies": "[\"ServiceNow Table API (GET /api/now/table/change_request, /api/now/table/sysapproval_approver, read-only)\"]",
+        "path": "packages/opsdir-adapter-servicenow/",
+        "purpose": "ServiceNow as an ITSM add-on (kind itsm): reads the change tickets the record's change records link (servicenow:<number>) as evidence. Importer servicenow/change-requests reads Table API answers or JSON list exports of change_request + sysapproval_approver (raw UTC values; the state map is keyed by change model via setting servicenow-standard-state-models; change type from `type`). A read-only collector pages GET /api/now/table/... until an empty page, with basic or bearer credentials."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-servicenow"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-jira-sm (import opsdir_adapter_jira_sm), registered via entry point opsdir.adapters:jira-sm; depends on opsdir.",
+        "external_dependencies": "[\"Jira REST API (GET /rest/api/3|2/issue/{key}, /rest/api/3|2/field, read-only)\", \"Jira Service Management REST API (GET /rest/servicedeskapi/request/{key}/approval, read-only)\"]",
+        "path": "packages/opsdir-adapter-jira-sm/",
+        "purpose": "Jira Service Management as an ITSM add-on (kind itsm): reads the change tickets the record's change records link (jira-sm:<KEY>) as evidence. Importer jira-sm/change-requests reads REST answers (issues, approvals, field list) through the operator's mapping settings jira-sm-status-states and jira-sm-change-fields. A read-only collector makes one GET per linked issue plus its approval pages (Cloud v3 or Data Center v2)."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-jira-sm"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.0,
+        "description": "Read-only linkage of recorded changes (ciamChange.ciamTicketRef '<adapter>:<number>') to their ITSM tickets. An ITSM add-on's importer (offline export, or a read-only collector via ciamCollectionSource) records each linked ticket as observed evidence: ciamTicket under cn=<number>,ou=<adapter>,ou=tickets, holding the neutral state, the overall approval (derived from per-step decisions where the system approves by steps, kept as approval steps), the neutral change type (standard/normal/emergency), planned and work windows, approver rows, raw facts and the provider id. A ticket is never written under ou=changes and is never an approval opsdir acts on. Where a system's states and fields are site-specific, the operator maps them in the add-on's estate settings. The governance domain reconciles record vs ticket (in-step, not-imported, rejected, cancelled, unapproved, closed-pending, live-but-rejected, window-differs, outside-window) in a planner check (blockers for rejected and cancelled, actions otherwise, silent with no tickets) and the tickets report (with step counts). Add-ons: ServiceNow (state map per change model) and Jira Service Management (Cloud and Data Center; status and field mapping as operator data), adapter kind itsm."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "ITSM Ticket Evidence"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "Rows of the `tickets` report: per linked change, its record status and planned day, the ticket, ITSM's state (with native), approval (with its steps' decision counts when the system approves by steps), planned and work windows, when read and the drift.",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"report rows (TICKET_HEADERS)\"}",
+        "source_hash": "0470e6110d4486f8"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ticket-rows-a12f7088"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "ticket_facts",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true}, {\"name\": \"approvers\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"host\", \"type\": \"str | None\", \"required\": true}, {\"name\": \"models\", \"type\": \"frozenset[str]\", \"required\": true}]",
+        "purpose": "The ticket attributes (governance TICKET_ATTRS) of one raw change_request record: its title, its sys_id as ciamProviderRef, the Table API record URL when the instance is known, the neutral state, the overall approval, the native state, the neutral change type from `type` (normal, standard or emergency; task 551 S2a), the windows, the approver rows and the raw facts.",
+        "returns": "{\"type\": \"dict\", \"description\": \"{attribute: value or tuple or None}\"}",
+        "source_hash": "fe9537c84012d607"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ticket-facts-9a963364"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "setting_pairs",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str | None\", \"required\": true}]",
+        "purpose": "The '<name>=<value>' pairs of a mapping setting's text (comma-separated, blanks ignored), and the parts that aren't one.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(((name, value), ...), (problem, ...))\"}",
+        "source_hash": "4d0e2e69bdbe2633"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-setting-pairs-301d819e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "status_states",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The operator's status map from jira-sm-status-states: {status id or exact name: neutral ticket state}, the first of a status mapped twice; with the problems of entries that aren't one (a state outside governance TICKET_STATES, a status mapped twice, malformed parts).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({status: state}, (problem, ...))\"}",
+        "source_hash": "73594874f310090c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-status-states-048c6e85"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "field_refs",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The operator's field mapping from jira-sm-change-fields: {role (planned-start, planned-end, work-start, work-end, change-type, or another fact name): field id or exact name}, with the problems of entries that aren't one.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({role: field reference}, (problem, ...))\"}",
+        "source_hash": "7fb18225feff4229"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-field-refs-0db5e897"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "resolve_fields",
+        "parameters": "[{\"name\": \"refs\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"fields\", \"type\": \"tuple[dict] | None\", \"required\": true, \"description\": \"the site's field list (GET /rest/api/{3|2}/field), None when not read\"}]",
+        "purpose": "Each mapped role's field id: a reference the site's field list holds as an id, else the one field of that exact name (an ambiguous name refused), else a customfield_N reference kept as given when there is no field list; the problems of the rest.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({role: field id}, (problem, ...))\"}",
+        "source_hash": "aea857721e9788dd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resolve-fields-059aa88f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "neutral_state",
+        "parameters": "[{\"name\": \"status\", \"type\": \"dict\", \"required\": true, \"description\": \"an issue's status {id, name, ...}\"}, {\"name\": \"states\", \"type\": \"dict[str, str]\", \"required\": true}]",
+        "purpose": "A Jira status's neutral ticket state by the operator's map (its id first, then its exact name), or None when unmapped.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "90effff8865727f8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-neutral-state-b261db5a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 1,
+        "name": "window_candidates",
+        "parameters": "[{\"name\": \"fields\", \"type\": \"tuple[dict] | None\", \"required\": true}]",
+        "purpose": "The site's fields named like the change window fields Atlassian documents (Planned start/end, Actual start/end, Change start/completion date), as 'name (id)', to point the operator at the ones to map.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "8c6b56c283885be4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-window-candidates-dbaca369"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "jira_error",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"object\", \"required\": true, \"description\": \"a parsed JSON answer\"}]",
+        "purpose": "What a Jira or Jira Service Management error answer says ({errorMessages, errors} or {errorMessage} without values), or None when the document isn't one.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "1e5cddbd0034ae31"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-jira-error-42c49385"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "field_list",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The fields of a saved field list answer (GET /rest/api/{3|2}/field: a JSON list of {id, name, ...}), or None when the text isn't one.",
+        "returns": "{\"type\": \"tuple[dict] | None\"}",
+        "source_hash": "5777fb4fe735d1f2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-field-list-2abb2ec9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "approval_key",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The issue key an approval answer file belongs to, from its path (.../approval/<KEY>/<start>.json or approval-<KEY>*.json), or None.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "1188409bff16dbca"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-approval-key-063d45b7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "jira_time",
+        "parameters": "[{\"name\": \"v\", \"type\": \"object\", \"required\": true}]",
+        "purpose": "(GeneralizedTime or None, problem or None) of a Jira date-time value: ISO 8601 with its offset converted to UTC; a date without a time (a Date Picker field) or anything else is refused with why.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(GeneralizedTime | None, problem | None)\"}",
+        "source_hash": "12ef915c290f2ba0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-jira-time-a6b6f394"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "field_text",
+        "parameters": "[{\"name\": \"v\", \"type\": \"object\", \"required\": true}]",
+        "purpose": "A Jira field value as fact text: an option's value, a person's accountId or key (never a display name), an object's name or id, a list's items joined by commas, else the value itself; '' when empty.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "7cc732b96913ba2b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-field-text-94529652"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "approver_rows",
+        "parameters": "[{\"name\": \"steps\", \"type\": \"tuple[dict]\", \"required\": true, \"description\": \"approval objects of the request\"}]",
+        "purpose": "The people each approval step asked as ciamTicketApprover values, '<approverDecision> <accountId|key> step <step id>' (identifiers, never names), sorted.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "66297b637e78cc7a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-approver-rows-0af5ab2f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "overall_approval",
+        "parameters": "[{\"name\": \"steps\", \"type\": \"tuple[dict] | None\", \"required\": true}, {\"name\": \"state\", \"type\": \"str | None\", \"required\": true, \"description\": \"the ticket's neutral state\"}]",
+        "purpose": "A request's overall approval from its steps' own decisions (never from single approvers; user decision task 551 Q2a): any declined -> rejected; else any pending -> requested; else at least one step, all approved, and the ticket's neutral state past authorize -> approved; else None (no steps: unknown, never not-requested).",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "7817833ac9f8a4d7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-overall-approval-80895f80"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "ticket_facts",
+        "parameters": "[{\"name\": \"issue\", \"type\": \"dict\", \"required\": true}, {\"name\": \"steps\", \"type\": \"tuple[dict] | None\", \"required\": true, \"description\": \"its approval steps; None when the export holds none or stops before the last page\"}, {\"name\": \"states\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"fields\", \"type\": \"dict[str, str]\", \"required\": true, \"description\": \"{role: field id}\"}]",
+        "purpose": "The ticket attributes (governance TICKET_ATTRS) of one Jira issue and its approval steps through the operator's mapping: summary, issue id as ciamProviderRef, its self URL, neutral state, overall approval, native status, neutral change type, windows from the mapped fields, step rows, approver rows, facts (issuetype, status category, resolution, created, updated, other mapped fields); with the problems of window values that aren't date-times and change types that aren't neutral.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({attribute: value or tuple or None}, (problem, ...))\"}",
+        "source_hash": "bec350f7f83dc273"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "read_changes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the export was taken (required)\"}]",
+        "purpose": "Importer jira-sm/change-requests: each linked issue the export holds (REST answers: issues, search answers, approval pages, the field list), its own import group under ou=jira-sm,ou=tickets, through the operator's mapping settings; notices for mapping problems, unmapped statuses and window fields (with the site's candidates), fields never carried, unlinked issues, linked ones missing (never removed), approvals missing or short of their last page, values that aren't times, error answers, files that aren't answers, several sites (refused).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "e8e944750b030313"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "is_cloud",
+        "parameters": "[{\"name\": \"url\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a collection source's base URL is a Jira Cloud site (REST v3): a *.atlassian.net or *.atlassian-us-gov-mod.net site, or an /ex/jira/<cloudId> API gateway path; otherwise Data Center (REST v2).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "dd1fae2f298114cc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-cloud-1e964c93"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "projected",
+        "parameters": "[{\"name\": \"project\", \"type\": \"callable\", \"required\": true, \"description\": \"(parsed answer) -> reduced answer\"}]",
+        "purpose": "A Request keep function: a JSON answer reduced by a projection (what opsdir collect keeps: only what the importer reads); text that isn't JSON, or an error answer, kept as it is.",
+        "returns": "{\"type\": \"callable\", \"description\": \"(text) -> text\"}",
+        "source_hash": "90caf354f88ede70"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-projected-58232d77"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "issue_view",
+        "parameters": "[{\"name\": \"fields\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "Projection of an issue answer to its id, key, self and the requested fields, their objects reduced to ids, keys, names, values and status category (never display names or email addresses).",
+        "returns": "{\"type\": \"callable\", \"description\": \"(issue) -> issue\"}",
+        "source_hash": "b3835966fb96bcbe"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issue-view-a1c20d40"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "approval_view",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Projection of an approval page to its paging and each step's id, finalDecision, created and completed times (iso8601) and approvers' ids (accountId, key) and decisions (never names).",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "af6784b3d71c2038"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-approval-view-e5ca8c34"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "field_view",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"list\", \"required\": true}]",
+        "purpose": "Projection of a field list answer to each field's id, name, custom and schema.",
+        "returns": "{\"type\": \"list\"}",
+        "source_hash": "92efc33a1f897779"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-field-view-5a47a7a4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "change_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps (GETs only): the site's field list; once read, each linked issue (absent on 404) with the system fields and the mapped fields; for each issue read, its approval pages until one says it is the last.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Request), ...)\"}",
+        "source_hash": "ace103ec41696fe5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why the environment's jira-sm/change-requests collection sources can't be read: their own problems, or a credential scheme other than basic or bearer.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "bcbeda441cea08b5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-e5105a4b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "step_rows",
+        "parameters": "[{\"name\": \"steps\", \"type\": \"tuple[dict]\", \"required\": true}]",
+        "purpose": "The approval steps of one request as ciamTicketApprovalStep values (user decision S1a): '<finalDecision> <step id> created <GeneralizedTime>[ completed <GeneralizedTime>]', sorted.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "90b20e8d6de0e6ff"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-step-rows-54b1ec3b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/collection.py",
+        "id_in_name": 1,
+        "name": "readable_source",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"importer\", \"type\": \"str\", \"required\": true, \"description\": \"'adapter/importer'\"}, {\"name\": \"schemes\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"the credential schemes the system is read with\"}]",
+        "purpose": "The first collection source environment m declares for an importer that can be read: a location, no problems, and a credential scheme the system takes; None when there is none.",
+        "returns": "{\"type\": \"Source | None\"}",
+        "source_hash": "528bb2e50e16d3e3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/collection.py",
+        "id_in_name": 1,
+        "name": "scheme_problems",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"importer\", \"type\": \"str\", \"required\": true}, {\"name\": \"schemes\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"takes\", \"type\": \"str\", \"required\": true, \"description\": \"what the system is read with, in words\"}]",
+        "purpose": "Why an importer's collection sources can't be read: each source's own problems, and a credential scheme the system isn't read with ('collection source `<name>`: credential scheme `<scheme>`: <takes>').",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "cbc2a9fe90ecb0ce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Item (1) of milestone 107 (analysis 3064): a new package opsdir-adapter-jira-sm (kind itsm, link 'jira-sm:<KEY>'), the second ITSM after ServiceNow (task 532's contract: ciamTicketRef on ciamChange, observed ciamTicket, ticket evidence). Read-only: Cloud GET /rest/api/3/search/jql (enhanced, nextPageToken, may lag) + /rest/api/3/issue/{key}; approvals GET /rest/servicedeskapi/request/{key}/approval (all pages, stages; never the answer POST); Data Center /rest/api/2/search startAt/maxResults with the same approval path. Change fields are per-site custom fields (planned/actual start/end, change type, risk): discovered via GET /rest/api/3/field and mapped as operator data; status categories are lifecycle only. Auth: Cloud API-token basic or OAuth 3LO (read:servicedesk-request); DC PAT; least privilege Browse Projects + issue security + request visibility. Also an export importer (CSV/XML + saved approval JSON). Atlassian Government Cloud (FedRAMP Moderate) parity unverified. Research current Atlassian docs first (Codex, read-only); design to the master before coding (the field mapping as operator data changes what the record holds).",
+        "flows": [
+          "ITSM Ticket Evidence"
+        ],
+        "name": "Jira Service Management ITSM add-on",
+        "parent": {
+          "slug": "milestone-6-2f-follow-ups-more-itsm-systems-and-ti-74e8fe27"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Current Jira Cloud/DC REST and Service Management approval APIs, change custom-field discovery and mapping as operator data, auth and least privilege, export forms, Government Cloud parity; master (user if the record changes) approves before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-a482b68b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Read-only collector (Cloud and DC) and export importer producing observed tickets with approvals, linked by ciamTicketRef jira-sm:<KEY>.",
+        "name": "Collector and importers",
+        "parent": {
+          "key": {
+            "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-collector-and-importers-f9f9dc0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Ticket checks and evidence reuse the ServiceNow contract (window, approvals, state) through the adapter's field mapping.",
+        "name": "Ticket evidence",
+        "parent": {
+          "key": {
+            "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-ticket-evidence-519f991c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase change if useful, predicted golden changes, README with Known limits.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-597343a1"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "bbeb08553b7845c9e863535665da981135628cae",
+    "branch": "aimfp-u107-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "ticket_rows calls values (directory.py) via _steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-rows-a12f7088"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "status_states calls setting_value (settings.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-status-states-048c6e85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "status_states calls setting_pairs (mapping.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-status-states-048c6e85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-pairs-301d819e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "field_refs calls setting_value (settings.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-field-refs-0db5e897"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "field_refs calls setting_pairs (mapping.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-field-refs-0db5e897"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-pairs-301d819e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "field_list calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-field-list-2abb2ec9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "jira_time calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-jira-time-a6b6f394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls neutral_state (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-state-b261db5a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls jira_time (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-jira-time-a6b6f394"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls field_text (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-text-94529652"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls approver_rows (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approver-rows-0af5ab2f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls overall_approval (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-overall-approval-80895f80"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls step_rows (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-step-rows-54b1ec3b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls json_document (sources.py) via _answers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls adapter_dn (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-adapter-dn-ea2a1858"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls linked_numbers (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_entry (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_group (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-group-28c07413"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls status_states (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-status-states-048c6e85"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls field_refs (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-refs-0db5e897"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls resolve_fields (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resolve-fields-059aa88f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls window_candidates (mapping.py) via _unmapped",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-window-candidates-dbaca369"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls jira_error (changes.py) via _answers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-jira-error-42c49385"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls approval_key (changes.py) via _answers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approval-key-063d45b7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_facts (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-58232d77"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls jira_error (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-58232d77"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-jira-error-42c49385"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls json_document (sources.py) via _approval_starts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls linked_numbers (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls field_refs (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-refs-0db5e897"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls resolve_fields (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resolve-fields-059aa88f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls field_list (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-list-2abb2ec9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls is_cloud (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-cloud-1e964c93"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls projected (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-58232d77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls issue_view (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-view-a1c20d40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps references approval_view (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approval-view-e5ca8c34"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps references field_view (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-view-5a47a7a4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-e5105a4b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "step_rows calls gtime_of_iso (directory.py) via _when",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-step-rows-54b1ec3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "readable_source calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scheme_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/README.md"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/adapter.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/collection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-jira-service-management-itsm-add-on-3640f1b7"
+      }
+    }
+  ],
+  "warnings": []
+}

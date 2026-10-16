@@ -1,0 +1,6116 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "naming.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/naming.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "schema.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/schema.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "apps.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/apps.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "projection.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/projection.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "express.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/express.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "checks.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/checks.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "domain.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/webaccess/domain.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "neutral.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/neutral.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "takeover.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "neutral.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "neutral.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/neutral.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "takeover.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 110 (task 545, flow 70). It names no product. Products project onto it from their own adapters (ciamProjectedFrom ownership).",
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/webaccess/",
+        "purpose": "Core neutral web access domain: protected web applications, their path resources and access rules (schema 776-798, classes 169-171), the projection helpers product importers use, the report, the planner check for apps left unprotected and cross-product move prerequisites, and the expressibility helper product checks and renders share."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "domain-webaccess"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "A vendor-neutral record of the web applications an access gateway or agent protects (core domain webaccess, branch ou=protected-applications). Each application (ciamProtectedApp) records:\n- its base path and the service-name roles it is published as;\n- the server role enforcing it, overridable per environment to move it to another product;\n- the backend role behind a gateway;\n- sign-on: kind, integration, identity service and credential role;\n- session idle/max;\n- the header contracts it sets;\n- its access rules.\nIts path resources (ciamPathResource) carry pattern, match kind prefix|wildcard|regex, methods, access mode standard|anonymous|unprotected, order and rules. Access rules (ciamAccessRule) carry allow|deny|custom, who-expressions, any|all and included rules.\nThe PingAccess, SiteMinder and PingGateway importers project their objects onto it, owning only what they projected (ciamProjectedFrom).\nThe core planner check covers:\n- an application left unprotected in the target;\n- a cross-product move's prerequisites (published and backend roles, sign-in integration, header setter with fix enforcer-header);\n- the fix protect:<adapter>/<app>.\nProduct checks report what their product can't express (webaccess.losses over capabilities declared as data). PingAccess and PingGateway render the neutral applications enforced by their roles that they hold no native entry for. Report protected-applications."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Protected Web Applications (neutral layer)"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/gateway.py",
+        "id_in_name": 0,
+        "name": "read_config",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"description\": \"import time (unused)\", \"required\": false}]",
+        "purpose": "Imported from a PingGateway configuration directory (config/ and routes/), its routes also projected onto the neutral protected-application layer (neutral.projection over the record after the import).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "73572af7f1d8ec28"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-config-1ba1dde3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/render.py",
+        "id_in_name": 0,
+        "name": "render_env",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "Adapter render_env: pinggateway/routes/<name>.json for every route except those whose protected application another role enforces in the environment (takeover.handed_over), plus a route for each protected application the environment has its gateways take over (takeover.takeover_routes).",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "a4f1eed45a0be40f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-env-9b2b0065"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/checks.py",
+        "id_in_name": 0,
+        "name": "check_routes",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: routes that can't sign users in or whose backend role the target doesn't bind are blockers; fixed-backend routes are actions; fixes protect:pinggateway/<application> for protected applications the source enforces and nothing in the target would (when the target runs ig); else an ok line.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "173ca2373deac7de"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-routes-1080e8bf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/listeners.py",
+        "id_in_name": 0,
+        "name": "route_listeners",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The ports an environment's gateways reach through routes that name a backend's service name role, and through the backends of the protected applications the environment has its gateways take over.",
+        "returns": "{\"type\": \"tuple[Listener]\"}",
+        "source_hash": "581a3269ebbfd1f7"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-route-listeners-2806ff8b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py",
+        "id_in_name": 1,
+        "name": "resource_id",
+        "parameters": "[{\"name\": \"type_\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}, {\"name\": \"index\", \"type\": \"int|None\", \"required\": true}, {\"name\": \"configured\", \"type\": \"dict\", \"required\": true}, {\"name\": \"subscription\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The id Azure gives a resource of an azurerm type, as the importers read ids by their segments. Resources go under their resource group with namespace_of(type)/ARM_TYPES[type]/name. Children go under their parent (subnets under the network, flow logs under the network watcher, containers under the storage account, a load balancer's backend pools under the load balancer, so two load balancers' pools stay apart). Subscription-level ones go under the subscription: policy assignments, Defender pricings (by resource_type), the VA setting AzureServersSetting, role definitions and assignments by GUID. A type it doesn't place gets a synthetic id unique in the root.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "9dff6601fd69c4e3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-resource-id-9ab3ca5f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py",
+        "id_in_name": 0,
+        "name": "imported",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"read\", \"type\": \"Read\"}, {\"name\": \"patterns\", \"type\": \"SecretPatterns\"}]",
+        "purpose": "Imported of a Read: entries per kind (roles for hosts, integration and issuer for sessions, header contracts for mappings, held objects marked), groups per collection read, notices; plus the projection of the record's applications, resources and rules onto the neutral protected-application layer (neutral.projection over the record after the import).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "595ae42913a6c4e1"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-imported-68100b68"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "entries_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"c\", \"type\": \"Collection\"}]",
+        "purpose": "The record's entries of a collection, in record order (resources after their application); applications (and their resources) whose protected application another role enforces in the snapshot's view are left out (takeover.handed_over).",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "b496b48e5c7c9e4a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "admin_api_files",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "{pingaccess/admin-api/requests.json: text} for an environment: per collection in order, the record's own objects' requests then those of the protected applications PingAccess takes over there (takeover.requests); nothing when there is nothing to render.",
+        "returns": "{\"type\": \"{path: text}\"}",
+        "source_hash": "edee566e73298539"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Adapter.notes: render notes as data (unverified requests, environment-bound objects to create, withheld secrets, server profile and node files not rendered) and the taken-over applications' notes (takeover.takeover_notes: what PingAccess can't express, a client secret with no credential role).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "b4c0b7053b7870ca"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py",
+        "id_in_name": 0,
+        "name": "check_pingaccess",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check: web sessions (client, issuer, token endpoint auth, PKCE, implicit login), withheld secrets, missing references, virtual host and site roles, engines in the target, fixed sites and unnamed headers (with fixes); and fixes protect:pa/<application> for protected applications the source enforces and nothing in the target would (when the target runs pa-engine).",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "4eb93dcb1b925ca2"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py",
+        "id_in_name": 0,
+        "name": "site_listeners",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Listeners the engines reach through sites naming a backend service name role, and through the backends of the protected applications the environment has PingAccess take over.",
+        "returns": "{\"type\": \"tuple[Listener]\"}",
+        "source_hash": "9e388e1e1a9bf20f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py",
+        "id_in_name": 0,
+        "name": "read_export",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer siteminder/xps: Imported from XPSExport XML files (DOCTYPE refused, other releases refused): policy domains, realms, rules, policies, schemes, user directories, agents, integrations, header contracts and source objects; plus the projection of realms, rules and policies onto the neutral protected-application layer (neutral.projection over the record after the import).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "4109b4a61388acd6"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-export-0062a93a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/naming.py",
+        "id_in_name": 0,
+        "name": "app_dn",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The DN of a protected application named name, under ou=protected-applications.",
+        "returns": "{\"type\": \"str\", \"description\": \"cn=<name>,ou=protected-applications,dc=ciam-ops\"}",
+        "source_hash": "cfa483b9541167ba"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-app-dn-c63e0e12"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/naming.py",
+        "id_in_name": 0,
+        "name": "resource_dn",
+        "parameters": "[{\"name\": \"app\", \"type\": \"str\", \"description\": \"the application's DN\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The DN of a path resource below its application's DN.",
+        "returns": "{\"type\": \"str\", \"description\": \"cn=<name>,<app>\"}",
+        "source_hash": "311ed51d0207c1e5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resource-dn-09dde107"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/naming.py",
+        "id_in_name": 0,
+        "name": "rule_dn",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The DN of an access rule named name, under ou=access-rules,ou=protected-applications.",
+        "returns": "{\"type\": \"str\", \"description\": \"the rule's DN\"}",
+        "source_hash": "05bb60883de7f35f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rule-dn-cc0220e0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/naming.py",
+        "id_in_name": 0,
+        "name": "who",
+        "parameters": "[{\"name\": \"value\", \"type\": \"str\", \"description\": \"a ciamWho value\", \"required\": true}]",
+        "purpose": "Split a ciamWho value into its kind and value ('' for authenticated).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(kind, value)\"}",
+        "source_hash": "c615e9d89a5c5d27"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-who-81e9558f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "protected_apps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every protected application (ciamProtectedApp), in DN order.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the applications\"}",
+        "source_hash": "b9cbc0a7c30d0ec1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "access_rules",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every access rule (ciamAccessRule), in DN order.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the access rules\"}",
+        "source_hash": "059feba6133fbac2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-access-rules-62e4b770"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "path_resources",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"app\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "An application's path resources in evaluation order: those with ciamOrder first (lowest first), then the rest most specific first.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the resources in order\"}",
+        "source_hash": "f5798ed5059001f4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-path-resources-c40f4976"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "rules_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"description\": \"an application or resource\", \"required\": true}]",
+        "purpose": "The access rules an application or resource applies (ciamRuleRef), those the record holds, in the order named.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the rules\"}",
+        "source_hash": "0a0957325f7590e4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rules-of-13265b41"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "included",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"rule\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"seen\", \"type\": \"tuple\", \"description\": \"normalized DNs already visited\", \"required\": false}]",
+        "purpose": "A rule and every rule it includes (ciamIncludesRule), depth first, each once; a loop stops where it closes.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the rule and its includes\"}",
+        "source_hash": "288439f872f4623c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-included-8638cd1e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "every_rule",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"app\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Every access rule an application uses: its own, its resources', and those they include, each once, in order.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the rules\"}",
+        "source_hash": "7514bb50298dcce3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-every-rule-37d77427"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "enforcer",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"app\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The server role enforcing an application in an environment, as the environment sees it (its overrides applied).",
+        "returns": "{\"type\": \"str|None\", \"description\": \"ciamEnforcedByRole in m's view\"}",
+        "source_hash": "b2d7c705b1ce2702"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-enforcer-ebeae005"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "enforced_by",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"roles\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "The applications an environment has enforced by one of the given roles, as it sees them.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the applications\"}",
+        "source_hash": "a4cabd38a0cc780b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-enforced-by-7ecd566a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "projected_from",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The product entry a neutral entry was projected from, or None (an operator's, or the product entry is gone).",
+        "returns": "{\"type\": \"Entry|None\", \"description\": \"the product entry\"}",
+        "source_hash": "ad3f47c6c97a22e8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-projected-from-450f8f1f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "projected_within",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"base\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a neutral entry was projected from a product entry at or below a base DN (a product's own branch).",
+        "returns": "{\"type\": \"bool\", \"description\": \"True when ciamProjectedFrom is within base\"}",
+        "source_hash": "882fbc027bd7492e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-projected-within-80b32d23"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/apps.py",
+        "id_in_name": 0,
+        "name": "protected_app_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"description\": \"unused (report signature)\", \"required\": false}]",
+        "purpose": "Report rows of the protected-applications report: name, base path, enforcing role, published names, backend, sign-on, integration, resource count, rules, projected-from, owners.",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"one row per application\"}",
+        "source_hash": "2630af32fcef211b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "neutral_entry",
+        "parameters": "[{\"name\": \"dn\", \"type\": \"str\", \"required\": true}, {\"name\": \"oc\", \"type\": \"str\", \"description\": \"ciamProtectedApp, ciamPathResource or ciamAccessRule\", \"required\": true}, {\"name\": \"attrs\", \"type\": \"dict\", \"description\": \"{attribute: values} (None values dropped)\", \"required\": true}]",
+        "purpose": "Build a projected neutral entry of an object class; an attribute given no values is one the product says has none, an attribute left out one it says nothing about.",
+        "returns": "{\"type\": \"Entry\", \"description\": \"the entry\"}",
+        "source_hash": "fb32d174a6c44bcf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-neutral-entry-80385687"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "owns",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"description\": \"the projected entry\", \"required\": true}]",
+        "purpose": "Whether a projection may write an entry's DN: nothing holds it, or the record's entry there is projected from the same product entry.",
+        "returns": "{\"type\": \"bool\", \"description\": \"True when the projection owns the DN\"}",
+        "source_hash": "aa5a3be52fadbdd2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-owns-52b637e7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "differences",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "How a projection differs from the entry another product or an operator holds at its DN, over the attributes the projection says something about.",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"'<attribute> <record's> -> <read>' each\"}",
+        "source_hash": "dd6283587e420961"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-differences-c9c574c4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "projected",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"apps\", \"type\": \"tuple\", \"description\": \"((application entry, (resource entries...)), ...)\", \"required\": true}, {\"name\": \"rules\", \"type\": \"tuple[Entry]\", \"required\": true}, {\"name\": \"scopes\", \"type\": \"tuple[str]\", \"description\": \"the product DNs the import replaces\", \"required\": true}, {\"name\": \"label\", \"type\": \"str\", \"description\": \"what notices call the import\", \"required\": true}]",
+        "purpose": "The Projected of a product import: each owned application (with its resources, operator or other products' resources kept) and rule merged with the record (what the projection says replaces, the rest kept, the enforcing role set only where none is recorded); differences from entries it doesn't own as notices; projections of objects within the import's scopes no longer read removed.",
+        "returns": "{\"type\": \"Projected\", \"description\": \"containers, groups, notices to add to the product's Imported\"}",
+        "source_hash": "f56cc087349c7ac1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-projected-e1396639"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "after_import",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"imported\", \"type\": \"Imported\", \"required\": true}]",
+        "purpose": "The record as an Imported leaves it (each group's subtree made exactly its entries, its containers added), without the store's rules: what an importer projects its objects from.",
+        "returns": "{\"type\": \"Directory\", \"description\": \"the record after the import\"}",
+        "source_hash": "b258c3931aea0ec0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-after-import-e5141e54"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "merged_import",
+        "parameters": "[{\"name\": \"imported\", \"type\": \"Imported\", \"required\": true}, {\"name\": \"extra\", \"type\": \"Projected\", \"required\": true}]",
+        "purpose": "An Imported with a projection's containers, groups and notices added after the product's own.",
+        "returns": "{\"type\": \"Imported\", \"description\": \"the combined import\"}",
+        "source_hash": "c8dbc7962a0f6b00"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-merged-import-8e25e810"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "served_by_issuer",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"issuer\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The DN of the identity service whose OpenID Connect issuer is the given one (trailing slash aside), or None.",
+        "returns": "{\"type\": \"str|None\", \"description\": \"the identity service's DN\"}",
+        "source_hash": "9617c782b1034391"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-served-by-issuer-c30822f2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "name": "header_contracts",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"names\", \"type\": \"tuple[str]\", \"description\": \"header names\", \"required\": true}]",
+        "purpose": "The DNs of the edge header contracts naming the given headers (case aside), in the names' order, each once.",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"header contract DNs\"}",
+        "source_hash": "a5a7f51daebb6490"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-header-contracts-83751a9f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/express.py",
+        "id_in_name": 0,
+        "name": "pattern_as",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\", \"description\": \"prefix|wildcard|regex\", \"required\": true}, {\"name\": \"pattern\", \"type\": \"str\", \"required\": true}, {\"name\": \"as_kind\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A path pattern of one match kind written as another without changing what it matches: a prefix as a wildcard or regex, a wildcard as a regex; a regex as written.",
+        "returns": "{\"type\": \"str\", \"description\": \"the translated pattern\"}",
+        "source_hash": "0d378513e57b1074"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-pattern-as-fe63533b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/express.py",
+        "id_in_name": 0,
+        "name": "expressible_who",
+        "parameters": "[{\"name\": \"value\", \"type\": \"str\", \"required\": true}, {\"name\": \"caps\", \"type\": \"Capabilities\", \"required\": true}]",
+        "purpose": "Whether a product (its Capabilities) can test a ciamWho value (IPv6 networks only where it says so).",
+        "returns": "{\"type\": \"bool\", \"description\": \"True when testable\"}",
+        "source_hash": "47bd23ccacce3925"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-expressible-who-f0836850"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/express.py",
+        "id_in_name": 0,
+        "name": "expressible_rule",
+        "parameters": "[{\"name\": \"rule\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"caps\", \"type\": \"Capabilities\", \"required\": true}]",
+        "purpose": "Whether a product can render an access rule itself: not custom, a denial only where it renders denials, every subject testable.",
+        "returns": "{\"type\": \"bool\", \"description\": \"True when renderable\"}",
+        "source_hash": "ed5c397666b878cc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-expressible-rule-62c243e6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/express.py",
+        "id_in_name": 0,
+        "name": "losses",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"app\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"caps\", \"type\": \"Capabilities\", \"required\": true}]",
+        "purpose": "What a protected application uses that a product can't express, in order sign-on, session, resources, rules: a translated pattern info, sign-on or session limits it doesn't hold actions, rules it can't render blockers (the render would admit more).",
+        "returns": "{\"type\": \"tuple[Loss]\", \"description\": \"the losses\"}",
+        "source_hash": "22c8e1ac22695b1c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-losses-857c3f20"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/checks.py",
+        "id_in_name": 0,
+        "name": "protect_fix",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"app\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"role\", \"type\": \"str\", \"required\": true}, {\"name\": \"product\", \"type\": \"str\", \"description\": \"the product's name for the title\", \"required\": true}, {\"name\": \"adapter\", \"type\": \"str\", \"description\": \"the adapter name in the fix key\", \"required\": true}]",
+        "purpose": "The Fix having a product (its server role) protect an application in an environment: the environment's ciamOverride of ciamEnforcedByRole (key protect:<adapter>/<application>).",
+        "returns": "{\"type\": \"Fix\", \"description\": \"the fix\"}",
+        "source_hash": "80324fd59683389d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-protect-fix-9eea2822"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/checks.py",
+        "id_in_name": 0,
+        "name": "enforcer_header_fix",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"contract\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"role\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The Fix having a role set a header contract's header in an environment: its ciamOverride of ciamSetByRole (key enforcer-header:<contract>).",
+        "returns": "{\"type\": \"Fix\", \"description\": \"the fix\"}",
+        "source_hash": "165ec503d7d26ac4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-enforcer-header-fix-bb3cf25f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/webaccess/checks.py",
+        "id_in_name": 0,
+        "name": "check_protected_apps",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check (area Web access): a blocker for an application the source enforces whose target enforcing role the target doesn't run; on a move to another product, blockers for missing or unbound published names, backend role and sign-in integration, and an action with fix enforcer-header for a header still set by another role; ok lines otherwise.",
+        "returns": "{\"type\": \"Findings\", \"description\": \"the findings\"}",
+        "source_hash": "ba756f5fe6d8b587"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/neutral.py",
+        "id_in_name": 0,
+        "name": "projection",
+        "parameters": "[{\"name\": \"view\", \"type\": \"Directory\", \"description\": \"the record as the import leaves it\", \"required\": true}, {\"name\": \"label\", \"type\": \"str\", \"description\": \"what notices call the import\", \"required\": true}]",
+        "purpose": "Projected of the record's PingAccess applications, resources and rules onto the neutral layer (applications enforced by pa-engine with base path, published service roles, site backend, web session sign-on/issuer/timeouts, identity mapping header contracts, policy rules; resources' patterns, methods, access; rules as attribute/scope/network tests, negate as deny, rule sets any/all, others custom).",
+        "returns": "{\"type\": \"Projected\", \"description\": \"the neutral groups and notices\"}",
+        "source_hash": "2cb84c185b3da5cf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-projection-ef903d42"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py",
+        "id_in_name": 0,
+        "name": "taken_over",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The neutral applications an environment has PingAccess's engines enforce that no paApplication projects.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the applications\"}",
+        "source_hash": "858d6a742aa5c397"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-taken-over-0f337b5d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py",
+        "id_in_name": 0,
+        "name": "handed_over",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"description\": \"an environment's view (overrides applied)\", \"required\": true}]",
+        "purpose": "The DNs (lower-cased) of the PingAccess applications whose neutral application another role enforces, as a snapshot sees it.",
+        "returns": "{\"type\": \"frozenset[str]\", \"description\": \"lower-cased paApplication DNs\"}",
+        "source_hash": "1dcb7ed03efe6df0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-handed-over-3924a5a0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py",
+        "id_in_name": 0,
+        "name": "requests",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"path\", \"type\": \"str\", \"description\": \"the collection's path (api.COLLECTIONS)\", \"required\": true}]",
+        "purpose": "The Admin API requests of one collection for every application the environment has PingAccess take over (site, virtual hosts, identity mapping, web session, rules and rule sets, application, resources), each object once.",
+        "returns": "{\"type\": \"list[dict]\", \"description\": \"requests {method, path, createWith, body}\"}",
+        "source_hash": "aaf8ad34c0343c7b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-requests-0802b366"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py",
+        "id_in_name": 0,
+        "name": "takeover_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Render notes for each taken-over application: what PingAccess can't express (express.losses with neutral.CAPABILITIES; rules it can't render are blockers) and a client secret with no credential role (blocker).",
+        "returns": "{\"type\": \"tuple[RenderNote]\", \"description\": \"the notes\"}",
+        "source_hash": "f51d943ae49a89d1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py",
+        "id_in_name": 0,
+        "name": "projection",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"description\": \"the record as the import leaves it\", \"required\": true}]",
+        "purpose": "Projected of the record's SiteMinder realms (applications <domain>-<realm> enforced by their agent's role, sign-on from the scheme type, timeouts, header contracts of granting policies), enabled rules (resources: wildcard/regex/prefix below the realm, HTTP methods, unprotected when ProtectAll is false, granting policies' rules) and enabled policies (access rules allow and -deny with group/user/filter/authenticated subjects, custom otherwise); event actions named in notices.",
+        "returns": "{\"type\": \"Projected\", \"description\": \"the neutral groups and notices\"}",
+        "source_hash": "a80acc03d64b0ce6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-projection-3fb4366a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py",
+        "id_in_name": 0,
+        "name": "domain_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The SiteMinder policy domain a realm, rule or policy is in (the entry below ou=realms or ou=policies of it).",
+        "returns": "{\"type\": \"Entry\", \"description\": \"the smPolicyDomain\"}",
+        "source_hash": "e64c826c642a04db"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-domain-of-184e4ae4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py",
+        "id_in_name": 0,
+        "name": "granting",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"realm\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The enabled policies of a realm's domain granting one of its rules.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the smPolicy entries\"}",
+        "source_hash": "a3129120dcbd09e0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-granting-98edf3aa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/neutral.py",
+        "id_in_name": 0,
+        "name": "base_path",
+        "parameters": "[{\"name\": \"condition\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The base path a route's condition tests request.uri.path for (a literal prefix), or None.",
+        "returns": "{\"type\": \"str|None\", \"description\": \"the base path\"}",
+        "source_hash": "bd52ee3fbaadb6bb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-base-path-b53d09af"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/neutral.py",
+        "id_in_name": 0,
+        "name": "app_source",
+        "parameters": "[{\"name\": \"app\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The ciamProjectedFrom of a projected neutral application (the route's DN).",
+        "returns": "{\"type\": \"str|None\", \"description\": \"the route DN\"}",
+        "source_hash": "912d6fa39d12bd41"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-app-source-0349872d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/neutral.py",
+        "id_in_name": 0,
+        "name": "projection",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"description\": \"the record as the import leaves it\", \"required\": true}]",
+        "purpose": "Projected of the record's PingGateway routes: applications enforced by ig (base path from the condition, published service name from the host test, backend role and scheme, oidc sign-on through the client filter's integration and the issuer's identity service, session timeout as idle, HeaderFilter header contracts, ConditionEnforcementFilters as access rules), resources from AllowOnlyFilter rules (else one for every path) and ConditionalFilter-skipped anonymous paths.",
+        "returns": "{\"type\": \"Projected\", \"description\": \"the neutral groups and notices\"}",
+        "source_hash": "6b81b7c9b14a4815"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-projection-5fb0dc96"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py",
+        "id_in_name": 0,
+        "name": "taken_over",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The neutral applications an environment has its gateways (ig) enforce that no route projects.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the applications\"}",
+        "source_hash": "d18c13f67f105b1b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-taken-over-ed572635"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py",
+        "id_in_name": 0,
+        "name": "handed_over",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The DNs (lower-cased) of the routes whose neutral application another role enforces, as a snapshot sees it.",
+        "returns": "{\"type\": \"frozenset[str]\", \"description\": \"lower-cased route DNs\"}",
+        "source_hash": "b17a27683aa75ebb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-handed-over-956c1e86"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py",
+        "id_in_name": 0,
+        "name": "route",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"app\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The route of one taken-over application: condition (published hosts, base path), baseURI from the backend role, JwtSessionManager idle timeout, and a Chain of the sign-in (ConditionalFilter around AuthorizationCodeOAuth2ClientFilter skipping anonymous/unprotected paths), AllowOnlyFilter per resource, ConditionEnforcementFilter per rule, HeaderFilter for the header contracts, then ReverseProxyHandler.",
+        "returns": "{\"type\": \"dict\", \"description\": \"the route JSON\"}",
+        "source_hash": "b580852e03c1195a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-route-ea6ab223"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py",
+        "id_in_name": 0,
+        "name": "takeover_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"object\", \"required\": false}]",
+        "purpose": "Render notes for each taken-over application (Adapter.notes): what PingGateway can't express (express.losses with neutral.CAPABILITIES) and where the sign-in's client secret comes from.",
+        "returns": "{\"type\": \"tuple[RenderNote]\", \"description\": \"the notes\"}",
+        "source_hash": "68035e5f217ef653"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py",
+        "id_in_name": 0,
+        "name": "own_routes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"description\": \"the record as the environment sees it\", \"required\": true}, {\"name\": \"environment\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "Adapter.reads_back prepare: the rendered gateway files without the routes made for taken-over applications.",
+        "returns": "{\"type\": \"dict\", \"description\": \"the files the importer reads back\"}",
+        "source_hash": "dada797435423ced"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-own-routes-5acc8fe2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py",
+        "id_in_name": 0,
+        "name": "takeover_routes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "{pinggateway/routes/<application>.json: route} for every application the environment has its gateways take over.",
+        "returns": "{\"type\": \"dict\", \"description\": \"path -> route dict\"}",
+        "source_hash": "70674b2002dea404"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-takeover-routes-a9d41912"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "own_requests",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"description\": \"the record as the environment sees it\", \"required\": true}, {\"name\": \"environment\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "Adapter.reads_back prepare: the rendered requests files as PingAccess's own entries render them: without the requests made for taken-over applications (the neutral layer's render) and with those of the applications another role enforces in the environment (left out of its render, still PingAccess's entries).",
+        "returns": "{\"type\": \"dict\", \"description\": \"the files the importer reads back\"}",
+        "source_hash": "db7d66176affcbe3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-own-requests-f256224b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/routes.py",
+        "id_in_name": 0,
+        "name": "filters",
+        "parameters": "[{\"name\": \"route\", \"type\": \"dict\", \"required\": true}, {\"name\": \"kind\", \"type\": \"str\", \"description\": \"the object's type (AllowOnlyFilter, HeaderFilter, ...)\", \"required\": true}]",
+        "purpose": "Every filter (or heap object) of a type anywhere in a route, in document order.",
+        "returns": "{\"type\": \"tuple[dict]\", \"description\": \"the objects\"}",
+        "source_hash": "7d4fc590204bed1a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-filters-cd1101e1"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "What an enforcing product can express of the neutral protected-application layer: product name, match kinds, translated match kinds ((kind, as kind), ...), access modes, who-kinds, sign-on kinds, whether it renders denials, which of idle/max session limits it enforces, whether its network rules take IPv6.",
+        "file": "opsdir/opsdir/domains/webaccess/express.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Capabilities"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-capabilities-7ea11b0c"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One thing a product can't express of a protected application: severity info (translated), action (lost: someone decides) or blocker (a rule left out: the render admits more), and its text.",
+        "file": "opsdir/opsdir/domains/webaccess/express.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Loss"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-loss-27e078db"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "What a product importer adds to its Imported for its neutral projections: containers, groups (scope DN, entries; an empty group removes a stale projection) and notices.",
+        "file": "opsdir/opsdir/domains/webaccess/projection.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Projected"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-projected-09238a7b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 110 in full (description there; notes 3083, 3090, 3095). A neutral core layer for a protected web application (host/base path, enforcing server role, sign-on kind and served-by identity service, session timeouts), its path resources (pattern, match kind prefix|wildcard|regex, methods, access standard/anonymous/unprotected, order) and access rules (allow/deny, any/all, subject expressions), linked to ciamHeaderContract and integrations. PingAccess (arc .3.5), SiteMinder (arc .3.6) and PingGateway map onto it as importer-side projections, so the planner compares cross-product moves (SiteMinder -> PingAccess, PingAccess -> PingGateway) and the target product renders its policy from the source's. This changes what the record holds: the design (schema classes/attributes, where projections live, what the planner compares, what renders) goes to the master, who confers with the user, before coding.",
+        "flows": [
+          "Access Gateway Policy (PingAccess)",
+          "Web Access Policy Capture",
+          "Protected Web Applications (neutral layer)"
+        ],
+        "name": "Neutral protected web application layer (core + PingAccess, SiteMinder, PingGateway projections)",
+        "parent": {
+          "slug": "milestone-6-1-follow-up-neutral-protected-web-appl-1e256ad1"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Neutral classes/attributes (core arc, assigned numbers), how PingAccess, SiteMinder and PingGateway project onto it, what the planner compares across products, what each product renders from it; master confers with the user before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-neutral-protected-web-application-layer-949af48b"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-648e3d72"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Schema, domain functions, validation and reports for protected web applications, path resources and access rules, linked to header contracts and integrations.",
+        "name": "Core neutral layer",
+        "parent": {
+          "key": {
+            "slug": "task-neutral-protected-web-application-layer-949af48b"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-core-neutral-layer-5d7c3f01"
+      }
+    },
+    {
+      "attributes": {
+        "description": "PingAccess, SiteMinder and PingGateway importers project onto the neutral layer; renders read from it where the design says.",
+        "name": "Product projections",
+        "parent": {
+          "key": {
+            "slug": "task-neutral-protected-web-application-layer-949af48b"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-product-projections-a6ee0158"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Cross-product move checks (SiteMinder -> PingAccess, PingAccess -> PingGateway) over the neutral layer, findings as data to the owning team.",
+        "name": "Planner comparisons",
+        "parent": {
+          "key": {
+            "slug": "task-neutral-protected-web-application-layer-949af48b"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-planner-comparisons-d1ebc532"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase changes if needed, predicted golden changes, READMEs and model docs.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-neutral-protected-web-application-layer-949af48b"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-27068818"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "9aaafc195f3f459285abb849773864d716b7bf50",
+    "branch": "aimfp-u110-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "read_config calls after_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-config-1ba1dde3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-after-import-e5141e54"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_config calls merged_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-config-1ba1dde3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-import-8e25e810"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_config calls projection (neutral.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-config-1ba1dde3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projection-5fb0dc96"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls handed_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-9b2b0065"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-handed-over-956c1e86"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls takeover_routes (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-9b2b0065"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-takeover-routes-a9d41912"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_routes calls runs_here (workloads.py) via _protect",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-routes-1080e8bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-here-4528dee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_routes calls protected_apps (apps.py) via _protect",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-routes-1080e8bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_routes calls enforcer (apps.py) via _protect",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-routes-1080e8bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enforcer-ebeae005"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_routes calls protect_fix (checks.py) via _protect",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-routes-1080e8bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protect-fix-9eea2822"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route_listeners calls taken_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-listeners-2806ff8b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-taken-over-ed572635"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls after_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-after-import-e5141e54"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls merged_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-import-8e25e810"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls projection (neutral.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projection-ef903d42"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entries_of calls handed_over (takeover.py) via _applications",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-handed-over-3924a5a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_files calls entries_of (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_files calls requests (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-requests-0802b366"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls takeover_notes (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls protected_apps (apps.py) via _unprotected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls enforcer (apps.py) via _unprotected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enforcer-ebeae005"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls protect_fix (checks.py) via _protect",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protect-fix-9eea2822"
+      }
+    },
+    {
+      "attributes": {
+        "description": "site_listeners calls taken_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-taken-over-0f337b5d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls after_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-after-import-e5141e54"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls merged_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-import-8e25e810"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls projection (neutral.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projection-3fb4366a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_apps calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-apps-99d24891"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "access_rules calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-access-rules-62e4b770"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "path_resources calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-path-resources-c40f4976"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "path_resources calls values (directory.py) via _specificity",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-path-resources-c40f4976"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "path_resources calls rdn_value (directory.py) via _specificity",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-path-resources-c40f4976"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "path_resources calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-path-resources-c40f4976"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rules_of calls follow_all (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rules-of-13265b41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "included calls follow_all (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-included-8638cd1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every_rule calls path_resources (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-every-rule-37d77427"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-resources-c40f4976"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every_rule calls rules_of (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-every-rule-37d77427"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rules-of-13265b41"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every_rule calls included (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-every-rule-37d77427"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-included-8638cd1e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforcer calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforcer-ebeae005"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforcer calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforcer-ebeae005"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforced_by calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforced-by-7ecd566a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforced_by calls protected_apps (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforced-by-7ecd566a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected_from calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-from-450f8f1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected_within calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-within-80b32d23"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected_within calls within (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-within-80b32d23"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls get (directory.py) via _label",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls protected_apps (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls path_resources (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-resources-c40f4976"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protected_app_rows calls every_rule (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protected-app-rows-8e12324f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-every-rule-37d77427"
+      }
+    },
+    {
+      "attributes": {
+        "description": "neutral_entry calls make_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neutral-entry-80385687"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "owns calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-owns-52b637e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "owns calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-owns-52b637e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "owns calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-owns-52b637e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "differences calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-differences-c9c574c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "differences calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-differences-c9c574c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls make_entry (directory.py) via _merged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls one (directory.py) via _kept",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls children (directory.py) via _kept",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls subtree (directory.py) via _projected_under",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls within (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls in_record_order (directory.py) via _merged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-in-record-order-7bcdf35b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls owns (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owns-52b637e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projected calls differences (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-differences-c9c574c4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "after_import calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-after-import-e5141e54"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "after_import calls within (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-after-import-e5141e54"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "served_by_issuer calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-served-by-issuer-c30822f2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "served_by_issuer calls identity_services (services.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-served-by-issuer-c30822f2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-identity-services-cfc03923"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_contracts calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-contracts-83751a9f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_contracts calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-contracts-83751a9f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expressible_who calls who (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expressible-who-f0836850"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-who-81e9558f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expressible_rule calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expressible-rule-62c243e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expressible_rule calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expressible-rule-62c243e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expressible_rule calls expressible_who (express.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expressible-rule-62c243e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-expressible-who-f0836850"
+      }
+    },
+    {
+      "attributes": {
+        "description": "losses calls one (directory.py) via _resource_losses",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "losses calls values (directory.py) via _rule_losses",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "losses calls rdn_value (directory.py) via _resource_losses",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "losses calls who (naming.py) via _rule_losses",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-who-81e9558f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "losses calls path_resources (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-resources-c40f4976"
+      }
+    },
+    {
+      "attributes": {
+        "description": "losses calls every_rule (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-every-rule-37d77427"
+      }
+    },
+    {
+      "attributes": {
+        "description": "losses calls expressible_who (express.py) via _rule_losses",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-expressible-who-f0836850"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protect_fix calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protect-fix-9eea2822"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protect_fix calls get (directory.py) via _override_records",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protect-fix-9eea2822"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protect_fix calls set_values (changeset.py) via _override_records",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protect-fix-9eea2822"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-set-values-53110ff4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "protect_fix calls new_entry (changeset.py) via _override_records",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-protect-fix-9eea2822"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-new-entry-f9df7ccc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforcer_header_fix calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforcer-header-fix-bb3cf25f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforcer_header_fix calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforcer-header-fix-bb3cf25f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforcer_header_fix calls get (directory.py) via _override_records",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforcer-header-fix-bb3cf25f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforcer_header_fix calls set_values (changeset.py) via _override_records",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforcer-header-fix-bb3cf25f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-set-values-53110ff4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enforcer_header_fix calls new_entry (changeset.py) via _override_records",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enforcer-header-fix-bb3cf25f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-new-entry-f9df7ccc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls one (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls values (directory.py) via _move_blockers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls rdn_value (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls get (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls follow_all (directory.py) via _header_actions",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls findings (findings.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls responsible (findings.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls bound_nowhere (environment.py) via _move_blockers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-bound-nowhere-2d798ccb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls runs_here (workloads.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-here-4528dee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls protected_apps (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls path_resources (apps.py) via _what_stops",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-resources-c40f4976"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls every_rule (apps.py) via _what_stops",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-every-rule-37d77427"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls enforcer (apps.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enforcer-ebeae005"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_protected_apps calls enforcer_header_fix (checks.py) via _header_actions",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-protected-apps-89d09820"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enforcer-header-fix-bb3cf25f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls one (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls values (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls rdn_value (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls get (directory.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls follow (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls held_json (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls collection (api.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-e1055127"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls entry_dn (naming.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-dn-fbd44c77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls referenced (naming.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referenced-43be54bd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls app_dn (naming.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-app-dn-c63e0e12"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls resource_dn (naming.py) via _resource",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-dn-09dde107"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls rule_dn (naming.py) via _policy_rules",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-dn-cc0220e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls neutral_entry (projection.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-entry-80385687"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls projected (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-e1396639"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls served_by_issuer (projection.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-by-issuer-c30822f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls pattern_as (express.py) via _patterns",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pattern-as-fe63533b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "taken_over calls enforced_by (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-taken-over-0f337b5d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enforced-by-7ecd566a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "taken_over calls projected_within (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-taken-over-0f337b5d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-within-80b32d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "handed_over calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-handed-over-3924a5a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "handed_over calls protected_apps (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-handed-over-3924a5a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "description": "handed_over calls projected_within (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-handed-over-3924a5a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-within-80b32d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls one (directory.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls values (directory.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls rdn_value (directory.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls get (directory.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls follow (directory.py) via _session",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls follow_all (directory.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls bound (environment.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-bound-d4e512c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls secret_placeholder (environment.py) via _session",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-secret-placeholder-45d84224"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls role_bindings (environment.py) via _targets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-bindings-87248336"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls entry_dn (naming.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-dn-fbd44c77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls reference (naming.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reference-8d5f86cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls resources_path (naming.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resources-path-d5932c43"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls who (naming.py) via _test_body",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-who-81e9558f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls path_resources (apps.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-resources-c40f4976"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls rules_of (apps.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rules-of-13265b41"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls included (apps.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-included-8638cd1e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls every_rule (apps.py) via _app_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-every-rule-37d77427"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls pattern_as (express.py) via _resource",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pattern-as-fe63533b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls expressible_who (express.py) via _tests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-expressible-who-f0836850"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls expressible_rule (express.py) via _rule_requests",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-expressible-rule-62c243e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "requests calls taken_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-requests-0802b366"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-taken-over-0f337b5d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls values (directory.py) via _session",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls secret_placeholder (environment.py) via _session",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-secret-placeholder-45d84224"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls losses (express.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-losses-857c3f20"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls taken_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-69bb27a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-taken-over-0f337b5d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls values (directory.py) via _actions",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls rdn_value (directory.py) via _actions",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls get (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls follow (directory.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls held_json (jsondata.py) via _resource",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls is_true (xps.py) via _resource",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-true-dbbdf33f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls realm_role (checks.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realm-role-bef9c8a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls app_dn (naming.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-app-dn-c63e0e12"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls resource_dn (naming.py) via _resource",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-dn-09dde107"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls rule_dn (naming.py) via _effect_rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-dn-cc0220e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls neutral_entry (projection.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-entry-80385687"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls projected (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-e1396639"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls pattern_as (express.py) via _pattern",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pattern-as-fe63533b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls domain_of (neutral.py) via _name",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-domain-of-184e4ae4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls granting (neutral.py) via _app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-granting-98edf3aa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_of calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-of-184e4ae4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "granting calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-granting-98edf3aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "granting calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-granting-98edf3aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "granting calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-granting-98edf3aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "granting calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-granting-98edf3aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "granting calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-granting-98edf3aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "granting calls domain_of (neutral.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-granting-98edf3aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-domain-of-184e4ae4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "app_source calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-app-source-0349872d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls one (directory.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls rdn_value (directory.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls published_role (environment.py) via _hosts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-service-role-82b21276"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls objects (routes.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-objects-bf534845"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls held_json (jsondata.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls app_dn (naming.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-app-dn-c63e0e12"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls resource_dn (naming.py) via _resources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-dn-09dde107"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls rule_dn (naming.py) via _claim_rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-dn-cc0220e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls neutral_entry (projection.py) via _claim_rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-entry-80385687"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls projected (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-e1396639"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls served_by_issuer (projection.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-by-issuer-c30822f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls header_contracts (projection.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-contracts-83751a9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls base_path (neutral.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-base-path-b53d09af"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls app_source (neutral.py) via _resources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-app-source-0349872d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls filters (routes.py) via _projected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-filters-cd1101e1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "taken_over calls enforced_by (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-taken-over-ed572635"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enforced-by-7ecd566a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "taken_over calls projected_within (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-taken-over-ed572635"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-within-80b32d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "handed_over calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-handed-over-956c1e86"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "handed_over calls protected_apps (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-handed-over-956c1e86"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-protected-apps-99d24891"
+      }
+    },
+    {
+      "attributes": {
+        "description": "handed_over calls projected_within (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-handed-over-956c1e86"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projected-within-80b32d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls values (directory.py) via _allow_only",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls follow (directory.py) via _sign_in",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls follow_all (directory.py) via _headers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls one_role (environment.py) via _backend",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls bound (environment.py) via _condition",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-bound-d4e512c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls who (naming.py) via _claim_test",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-who-81e9558f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls path_resources (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-resources-c40f4976"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls rules_of (apps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rules-of-13265b41"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls pattern_as (express.py) via _full",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pattern-as-fe63533b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route calls expressible_rule (express.py) via _rule_test",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-ea6ab223"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-expressible-rule-62c243e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls secret_placeholder (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-secret-placeholder-45d84224"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls losses (express.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-losses-857c3f20"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_notes calls taken_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-notes-84f5835d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-taken-over-ed572635"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_routes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-routes-5acc8fe2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_routes calls env_model (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-routes-5acc8fe2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_routes calls as_seen (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-routes-5acc8fe2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-as-seen-b0a2d912"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_routes calls taken_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-routes-5acc8fe2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-taken-over-ed572635"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_routes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-routes-a9d41912"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_routes calls taken_over (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-routes-a9d41912"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-taken-over-ed572635"
+      }
+    },
+    {
+      "attributes": {
+        "description": "takeover_routes calls route (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-takeover-routes-a9d41912"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-route-ea6ab223"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_requests calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-requests-f256224b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_requests calls env_model (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-requests-f256224b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_requests calls as_seen (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-requests-f256224b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-as-seen-b0a2d912"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_requests calls collection (api.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-requests-f256224b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-e1055127"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_requests calls request (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-requests-f256224b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-request-16413799"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_requests calls handed_over (takeover.py) via _applications",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-requests-f256224b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-handed-over-3924a5a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_requests calls requests (takeover.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-requests-f256224b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-requests-0802b366"
+      }
+    },
+    {
+      "attributes": {
+        "description": "filters calls objects (routes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-filters-cd1101e1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-objects-bf534845"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-expressible-who-f0836850"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-capabilities-7ea11b0c"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-expressible-rule-62c243e6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-capabilities-7ea11b0c"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-capabilities-7ea11b0c"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-losses-857c3f20"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-loss-27e078db"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-projected-e1396639"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-projected-09238a7b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-merged-import-8e25e810"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-projected-09238a7b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-projection-ef903d42"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-projected-09238a7b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-projected-09238a7b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-projection-5fb0dc96"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-projected-09238a7b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/naming.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/schema.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/apps.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/projection.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/express.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/checks.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/domain.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/neutral.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/neutral.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/neutral.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/gateway.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/render.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/checks.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/listeners.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/adapter.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/routes.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/headers.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/schema.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/naming.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/schema.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/apps.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/projection.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/express.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/checks.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/domain.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-webaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/neutral.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/neutral.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pinggateway"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pinggateway"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Data Model & Standard"
+      }
+    },
+    {
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-1-follow-up-neutral-protected-web-appl-1e256ad1"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/apps.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/projection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/express.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/webaccess/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/neutral.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/takeover.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/neutral.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/takeover.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/routes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/gateway.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/listeners.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/headers.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-neutral-protected-web-application-layer-949af48b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_files calls rendered (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rendered-1a61e00b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls one (directory.py) via _headers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls values (directory.py) via _granting",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls rdn_value (directory.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls get (directory.py) via _domain",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls follow (directory.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls children (directory.py) via _granting",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls findings (findings.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls responsible (findings.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls runs_here (workloads.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-runs-here-4528dee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls realm_role (checks.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-realm-role-bef9c8a8"
+      }
+    }
+  ],
+  "warnings": []
+}

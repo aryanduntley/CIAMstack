@@ -1,0 +1,3885 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "conf.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "proxyrules.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "agents.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "routing.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "agentfiles.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agentfiles.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": "[\"SiteMinder XPSExport XML (XPSDeployment / XPSPolicyData shapes, archived 12.51 reference)\", \"SiteMinder Web Agent files WebAgent.conf / SmHost.conf / LocalConfig.conf (archived 12.52 guide, 12.8 KBs)\", \"SiteMinder Access Gateway server.conf and proxyrules.xml (archived SPS 12.52 guide, KB 216168 / 276675)\"]",
+        "path": "packages/opsdir-adapter-siteminder/",
+        "purpose": "Broadcom SiteMinder product adapter, as a migration SOURCE: importer siteminder/xps reads XPSExport XML (every XPS name as data in xps.py, unverified for 12.8/12.9) into its own arc .3.6 (policy domains, realms, rules, policies, auth schemes, user directories linked to consumers, agents), partnerships/OIDC clients as standard integrations served by its identity service, header responses as edge header contracts, the rest as core source objects; importer siteminder/agent-files reads each server's Web Agent files and an Access Gateway's server.conf/proxyrules.xml (names as data in conf.py/proxyrules.py, unverified) into smWebAgent/smRoute under ou=siteminder naming their server (smServer); one projection onto the neutral protected-application layer run by both (realms, rules, policies, ignored resources, gateway backends, uncovered routes, rewrite source objects); sensitive settings withheld (smWithheld); source checks. Renders nothing."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-siteminder"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "A web access manager's enforcement points read from their own files into the record, one folder per server (importer siteminder/agent-files): each SiteMinder Web Agent instance (WebAgent.conf, SmHost.conf, LocalConfig.conf) as smWebAgent below its ciamServer, linked to the agent identities it acts as, its ACO/HCO/trusted-host source objects and its environment's policy servers (secrets withheld whole); an Access Gateway's server.conf virtual hosts and its proxyrules.xml flattened into ordered smRoute entries (one external DOCTYPE stripped, entities refused). SiteMinder's one projection onto the neutral protected-application layer, run by every SiteMinder importer, adds the agents' ignored extensions/URLs as unprotected resources, gateway backends and published roles, uncovered routes as unprotected applications, and blocking rewrite source objects; the routing source object is dropped once routes are read."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Web Agent & Gateway File Capture"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "sensitive",
+        "parameters": "[{\"name\": \"prop\", \"type\": \"str\"}, {\"name\": \"vals\", \"type\": \"tuple[str]\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}, {\"name\": \"scan\", \"type\": \"Callable\", \"description\": \"core.secrets.scan\"}]",
+        "purpose": "Whether a property or agent-file setting is withheld: a sensitive name (SENSITIVE) other than NOT_SENSITIVE (sharedsecrettime), an encrypted-looking value (ENCRYPTED: {RC2}, {AES}, ...) or a value the store's secret patterns match",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "8ca0504b386b3b3e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-sensitive-b595eb16"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "purpose",
+        "parameters": "[{\"name\": \"prop\", \"type\": \"str\"}]",
+        "purpose": "What a withheld setting is, in words: PURPOSES by name or name ending (case aside: the agent files write sharedsecret), else generic",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "5a3f16b5be764578"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-purpose-da6b5a90"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py",
+        "id_in_name": 0,
+        "name": "carried_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"k\", \"type\": \"str\"}, {\"name\": \"o\", \"type\": \"Obj|None\"}, {\"name\": \"dn\", \"type\": \"str\"}, {\"name\": \"at\", \"type\": \"datetime|None\"}, {\"name\": \"concerns\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "The ciamSourceObject of kind k (CARRY: handling, role, blocking, how) for object o (None: the key store), its facts, concerns (realms, or the servers whose agent files name an ACO/HCO/trusted host) and import time; an ACO's keeps its settings as smConfig; a recorded one keeps the record's handling",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "1f07c7de5695d32f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py",
+        "id_in_name": 0,
+        "name": "read_export",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer siteminder/xps: Imported from XPSExport XML files (DOCTYPE refused, other releases refused): policy domains, realms, rules, policies, schemes, user directories, agents, integrations, header contracts and source objects; plus the projection of realms, rules and policies onto the neutral protected-application layer (neutral.projection over the record after the import).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "13766d75e23de2ce"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-export-0062a93a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py",
+        "id_in_name": 0,
+        "name": "projection",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record as the import leaves it\"}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the import read its files (the rewrites' ciamImportedAt)\"}]",
+        "purpose": "SiteMinder's one projection over the whole record, run by every SiteMinder importer: realms as applications (enforced by their agent's role, sign-on from the scheme type, timeouts, header contracts, plus a gateway application's backend and published roles from its routes), enabled rules as resources and the agent's ignored extensions/URLs as unprotected resources, enabled policies as access rules, routes no realm covers as unprotected applications, rewrite source objects; notices for event actions, agents' differing ignore lists, gateway routes and dangling servers. Scopes ou=siteminder and its source objects.",
+        "returns": "{\"type\": \"Projected\", \"description\": \"the neutral groups, the rewrite source objects' groups and containers, and notices\"}",
+        "source_hash": "a18e387cbf7acaa7"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-projection-3fb4366a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "sections",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Parse a server.conf-style file (section tags around name=\"value\" lines, # comments) into a Section tree; an unclosed section is closed at the end",
+        "returns": "{\"type\": \"Section\", \"description\": \"the whole file as Section named ''\"}",
+        "source_hash": "f428aed12cad6050"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sections-fb83b24d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "settings",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The (name, value) settings of a name=\"value\" agent file, in order (names may repeat)",
+        "returns": "{\"type\": \"tuple[tuple[str,str]]\"}",
+        "source_hash": "c7760ff823884b6f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-settings-d0b8812e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "named",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The values of the settings called name, case aside, in order",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "e339d3b4c3186dd2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-named-febeea1d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "first",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The first value of the setting called name (case aside), or None",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "8a7f9c50efbc3b90"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-first-2d7c9b69"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "attr",
+        "parameters": "[{\"name\": \"section\", \"type\": \"Section\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A server.conf section tag's attribute value (case aside), or None",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "4faf6afa4d8c7d44"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-attr-1edb5bb4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "within",
+        "parameters": "[{\"name\": \"section\", \"type\": \"Section\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Every section called name inside a section, depth first",
+        "returns": "{\"type\": \"tuple[Section]\"}",
+        "source_hash": "625ddd7340121bbc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-within-d4f90c57"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "settings_outside",
+        "parameters": "[{\"name\": \"section\", \"type\": \"Section\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The settings of a section and the sections inside it, those inside sections called name left out (a gateway's server-wide settings)",
+        "returns": "{\"type\": \"tuple[tuple[str,str]]\"}",
+        "source_hash": "7ee5496d7af9a7e2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-settings-outside-ba8184ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "parameters",
+        "parameters": "[{\"name\": \"values\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "(name, value) pairs of an ACO's \"<name>=<value>\" parameters as the export writes them",
+        "returns": "{\"type\": \"tuple[tuple[str,str]]\"}",
+        "source_hash": "e06d5853657c8f34"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parameters-ef7c56f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "listed",
+        "parameters": "[{\"name\": \"values\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "The items of comma-separated values (IgnoreExt=\".gif,.png\"), each once, in order",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "d74f0b3c7d95de46"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-listed-8edd3964"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "agent_names",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"tuple\", \"required\": true}]",
+        "purpose": "The agent identities settings name: each AgentName/AgentNameN mapping's name, then DefaultAgentName",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "98c87e3ca7df48aa"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-agent-names-b7574ef2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "allowed_local",
+        "parameters": "[{\"name\": \"aco\", \"type\": \"tuple\", \"required\": true, \"description\": \"the ACO's (name, value) parameters\"}]",
+        "purpose": "Which LocalConfig.conf settings an ACO's parameters allow to override it (AllowLocalConfig): ALL, NONE or the listed names",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"ALL ('*',), NONE (), or lower-cased names\"}",
+        "source_hash": "cd96a62a6e777b92"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-allowed-local-1245ac36"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "is_allowed",
+        "parameters": "[{\"name\": \"allowed\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether an ACO's allowance lets a local setting of this name override it",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "8ac722b90c1396ec"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-allowed-f0ec3d68"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "effective",
+        "parameters": "[{\"name\": \"central\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"local\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"allowed\", \"type\": \"tuple\", \"required\": true}]",
+        "purpose": "An agent's effective settings: its ACO's, each name the ACO allows local configuration of replaced by LocalConfig.conf's values",
+        "returns": "{\"type\": \"tuple[tuple[str,str]]\"}",
+        "source_hash": "eeb32e51e5668537"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-effective-3571afff"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "matching",
+        "parameters": "[{\"name\": \"paths\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"configured\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The folder file a path configured on the server names: the one sharing the longest tail of path components (file name at least), or None",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "6e16320dd4546508"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-matching-f78de7b3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "name": "file_name",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A path's last component, lower-cased (either separator)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "94e2e853a2549537"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-file-name-1fa0f388"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py",
+        "id_in_name": 0,
+        "name": "rules_document",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Parse an Access Gateway proxyrules.xml: exactly one external DOCTYPE for the proxyrules root (SYSTEM/PUBLIC id, no internal subset) removed, then core xml_document (other declarations refused); root must be proxyrules",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(root element, None) or (None, why not)\"}",
+        "source_hash": "4b8b2ac0111d8aff"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rules-document-fe0a2ad1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py",
+        "id_in_name": 0,
+        "name": "condition",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\", \"required\": true}, {\"name\": \"criteria\", \"type\": \"str\", \"required\": true}, {\"name\": \"value\", \"type\": \"str\", \"required\": true}, {\"name\": \"header\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "A route condition string '<type>[:<header>] <criteria>[ <value>]'",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "4216196b77b1a1e3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-condition-a566017e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py",
+        "id_in_name": 0,
+        "name": "parts",
+        "parameters": "[{\"name\": \"c\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(type, header name or None, criteria, value) of a route condition string",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "1754fd912a7c454a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parts-ca03a110"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py",
+        "id_in_name": 0,
+        "name": "routes",
+        "parameters": "[{\"name\": \"root\", \"type\": \"Element\", \"required\": true}]",
+        "purpose": "Flatten a proxy rules document into ordered leaf Routes (conditions on the way ANDed, document order = first-match order) and notices for elements not read",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((Route, ...), notices)\"}",
+        "source_hash": "537b98f9e790b3c6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-routes-01f4a950"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "instances",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every SiteMinder Web Agent instance the record holds (smWebAgent under ou=web-agents,ou=siteminder), in DN order",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "ed72276b5e7e9cf0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-instances-e7e31479"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "server_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true, \"description\": \"an smWebAgent or smRoute entry\"}]",
+        "purpose": "The server an instance runs on, or whose gateway a route is (its smServer); None when the record no longer holds it",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "8b7371663ec5bc81"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-server-of-05fe99a0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "carried_dn",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The DN of the policy store export's source object of a kind named name (cn=<kind>-<name>)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "81bf41c368f6c23a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-carried-dn-9650c6aa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "agent_dn",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The DN of the smAgent entry an agent name names",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "3514ea51f2540a01"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-agent-dn-fe291236"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "aco_parameters",
+        "parameters": "[{\"name\": \"aco\", \"type\": \"Entry | None\", \"required\": true}]",
+        "purpose": "The (name, value) parameters an ACO source object keeps in smConfig (none when no ACO)",
+        "returns": "{\"type\": \"tuple[tuple[str,str]]\"}",
+        "source_hash": "32bc05d232b7da86"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-aco-parameters-201ccfd0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "local_settings",
+        "parameters": "[{\"name\": \"inst\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The (name, value) settings an instance's LocalConfig.conf sets, as its smConfig keeps them",
+        "returns": "{\"type\": \"tuple[tuple[str,str]]\"}",
+        "source_hash": "7888ec234787f440"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-local-settings-f3dfbb99"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "instance_settings",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"inst\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "An instance's effective agent settings: its ACO's overlaid by what its LocalConfig.conf may set",
+        "returns": "{\"type\": \"tuple[tuple[str,str]]\"}",
+        "source_hash": "4e9e021b365301cf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-instance-settings-dc2daa5c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "identities",
+        "parameters": "[{\"name\": \"central\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"local\", \"type\": \"tuple\", \"required\": true}]",
+        "purpose": "The agent names an instance acts as, from its ACO's parameters and its LocalConfig.conf settings",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "2e654569cb569ec2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-identities-73692175"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "acting_as",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"agent\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The enabled Web Agent instances acting as an agent identity",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "e2461a48ef0df47b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-acting-as-2f44123d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "acos_naming",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"agent\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The ACO source objects whose parameters name an agent identity (DefaultAgentName, AgentName)",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "2ba328ecf53a16d1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-acos-naming-4cda1cb2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "ignored_by",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"agent\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The extensions and URLs an agent passes through unprotected: what every enabled instance acting as it says (else the ACOs naming it), narrowed to what all say, with a notice naming those that differ",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((extensions, URLs), notices)\"}",
+        "source_hash": "3e4da21e6d5f64d9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "ignored_resources",
+        "parameters": "[{\"name\": \"app\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"agent\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"ignored\", \"type\": \"tuple\", \"required\": true, \"description\": \"(extensions, URLs)\"}]",
+        "purpose": "The unprotected neutral path resources of an application an agent enforces: ignored extensions as wildcards below its base path, ignored URLs under it matched exactly; projected from the agent",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "45b1abf6853c7305"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ignored-resources-3ffe86c3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "file_concerns",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The servers whose agent files name the source object at dn (an ACO, an HCO, a trusted host), in DN order",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "c93ffddf3887e80a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-file-concerns-42eb59e7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "routes_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"server_dn\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A gateway server's routes (smRoute under ou=routes,ou=siteminder naming it by smServer), in the order it tries them (ciamOrder)",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "5c8bc3a9dd5788c4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-routes-of-64c7a948"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "has_routes",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"agent\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether the record holds the routes of a server acting as a gateway agent",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "7cbd96bd3bbe9201"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-has-routes-0493fd9d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "routing_objects",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"agent\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The DNs of the routing source objects the policy store export carried for a gateway agent (by its XID)",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "22abe88af346c4a2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-routing-objects-dfaab1bf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "host_role",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"host\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The role a host is in the record: the binding role published at it (core published_role), else a server's role at that hostname or address; None when unknown",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "19bb0cc178a0c3de"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-host-role-109a504b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "coverage",
+        "parameters": "[{\"name\": \"conditions\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"hosts\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"base\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "'all', 'some' or 'none': how many of an application's requests (its virtual host names, below its base path) a route's conditions take",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "298e70206c1d36ca"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-coverage-a0d37381"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "backend",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"target\", \"type\": \"str\", \"required\": true}, {\"name\": \"base\", \"type\": \"str\", \"required\": true}, {\"name\": \"prefix\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The Backend a forward target sends requests below base to ($0 the request URI, $1 what follows prefix), or None when it names other regex groups or no host",
+        "returns": "{\"type\": \"Backend | None\"}",
+        "source_hash": "81c810d03da78fcd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-backend-32e32826"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "gateways",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"apps\", \"type\": \"tuple\", \"required\": true, \"description\": \"((realm application entry, agent DN), ...)\"}]",
+        "purpose": "What the record's gateway servers say of realm applications (backend, published roles) and of routes no realm covers (unprotected applications), with rewrites and notices",
+        "returns": "{\"type\": \"Gateways\"}",
+        "source_hash": "b0bfb466fe4f3d8d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-gateways-182ad0a3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "rewrite_entries",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record as the import leaves it\"}, {\"name\": \"rewrites\", \"type\": \"tuple[Rewrite]\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": true, \"description\": \"when the import read the files (ciamImportedAt), None for none\"}]",
+        "purpose": "The groups of the blocking rewrite source objects (rewrite-<application>), plus an empty group for each recorded one no route makes now; a recorded handling is kept",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((dn, entries), ...)\"}",
+        "source_hash": "d1229b01434842bb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agentfiles.py",
+        "id_in_name": 0,
+        "name": "read_agent_files",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str,str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false}]",
+        "purpose": "Importer siteminder/agent-files: each server folder's Web Agent instances and an Access Gateway's routes below the server, source-object concerns, routing dropped, secrets withheld, then SiteMinder's projection",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "25388d502341e9ba"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "on_server",
+        "parameters": "[{\"name\": \"entries\", \"type\": \"tuple[Entry]\", \"required\": true}, {\"name\": \"server_dn\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The SiteMinder instances or routes naming a server (smServer)",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "0f8536a80eef1d99"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-on-server-d62ad9b6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "server_label",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The name of the server an instance or route names (its DN when the record no longer holds it)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "857a030fc6e68ae1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-server-label-2a3d3908"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py",
+        "id_in_name": 0,
+        "name": "dangling",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Notices for the Web Agent instances and gateway routes naming a server (smServer) the record no longer holds",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "4e1d7e9497e77e9a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-dangling-8619e39d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "name": "route_name",
+        "parameters": "[{\"name\": \"r\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "What a route is called on its gateway: route-<its ciamOrder>",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "363e3af55f2a6d50"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-route-name-08e51af6"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A server.conf section: its tag's name and attributes, its name=value settings in order, the sections inside it (an Access Gateway's server.conf; the whole file is Section '')",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Section"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-section-a5dc97cc"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One leaf of an Access Gateway's proxy rules: the conditions on its way (all must hold; '<type> <criteria> <value>'), forward or redirect, its target URL as written, a forward's filter class",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Route"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-route-f51b3b2d"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A gateway route sending an application's requests to another path than the request's: the application DN, the route DN, its conditions, its target as written, the base path and the backend path it becomes (a blocking rewrite source object)",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Rewrite"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-rewrite-76ef44b1"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "What the record's Access Gateways say of the neutral layer: {application DN: attributes} for realm applications (backend, published roles), uncovered routes' applications with their resource, rewrites and notices",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Gateways"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-gateways-0e10c285"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "Where a forward route sends an application's requests: the host's role in the record (or None), host, port, TLS (TRUE/FALSE) and the backend path for the application's base path",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Backend"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-backend-a6794dda"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A Web Agent instance a server folder holds: its name (virtual host, ServerPath or webagent), its WebAgent.conf path, a gateway virtual host's names and settings, and server.conf's settings outside the virtual hosts (only their secrets recorded, withheld)",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agentfiles.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Plan"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-plan-ab987b54"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 115 items (a) and (b) (description there; decision/evolution 3111). (a) Access Gateway proxyrules.xml importer: each virtual host/path -> backend rule mapped onto the neutral protected-application layer (webaccess, milestone 110: applications' backend roles, published names, path resources), replacing today's blocking 'rebuild: its proxy rules aren't in the policy store' source object where the rules are read. (b) Web Agent files (WebAgent.conf, SmHost.conf, LocalConfig.conf per web server, Apache and IIS): agent name, host config, policy server list, trusted host name and local ACO overrides, sharpening the existing retire/rebuild source objects and linking agents to servers. (c) The admin policy REST collector stays later/optional (not this task). Vendor research first (Codex, read-only: file grammars per web server and Access Gateway release); design to the master before coding (it changes what the record holds: the user decides).",
+        "flows": [
+          "Web Access Policy Capture",
+          "Protected Web Applications (neutral layer)",
+          "Web Agent & Gateway File Capture"
+        ],
+        "name": "SiteMinder Access Gateway proxy rules and Web Agent files onto the neutral layer",
+        "parent": {
+          "slug": "milestone-6-1-follow-up-siteminder-agent-and-gatew-602440fa"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "proxyrules.xml grammar per Access Gateway release; WebAgent.conf/SmHost.conf/LocalConfig.conf per web server; mapping onto the neutral layer and agent-server links; what the record gains; design to the master (user decides) before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-b6c0a24a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Virtual host/path -> backend rules onto neutral applications (backend roles, published names, path resources); replaces the blocking rebuild source object where rules are read.",
+        "name": "Access Gateway proxy rules importer",
+        "parent": {
+          "key": {
+            "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-access-gateway-proxy-rules-importer-8e154c6f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Agent name, host config, policy servers, trusted host, ACO overrides; agent-to-server links; sharpened retire/rebuild source objects.",
+        "name": "Web Agent file importer",
+        "parent": {
+          "key": {
+            "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-web-agent-file-importer-46b9049d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase change if useful, predicted golden changes, SiteMinder README Known limits and acceptance items.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-1d4062a9"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "4a7b92e678ac7d8fa7c2770d60d212ecda276793",
+    "branch": "aimfp-u115-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "settings calls sections (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-settings-d0b8812e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sections-fb83b24d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "first calls named (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-first-2d7c9b69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-febeea1d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_names calls named (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-names-b7574ef2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-febeea1d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "allowed_local calls first (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-allowed-local-1245ac36"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-first-2d7c9b69"
+      }
+    },
+    {
+      "attributes": {
+        "description": "allowed_local calls listed (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-allowed-local-1245ac36"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listed-8edd3964"
+      }
+    },
+    {
+      "attributes": {
+        "description": "effective calls is_allowed (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-effective-3571afff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-allowed-f0ec3d68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rules_document calls xml_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rules-document-fe0a2ad1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-document-2f437afd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rules_document calls xml_name (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rules-document-fe0a2ad1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-name-bac7570e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "routes calls xml_name (sources.py) via _children",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-routes-01f4a950"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-name-bac7570e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "routes calls condition (proxyrules.py) via _case_condition",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-routes-01f4a950"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-condition-a566017e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls config (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-config-e166a0f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls get (directory.py) via _routed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls file_concerns (agents.py) via _carried_groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-concerns-42eb59e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls has_routes (routing.py) via _routed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-has-routes-0493fd9d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls ignored_by (agents.py) via _ignored",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls ignored_resources (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ignored-resources-3ffe86c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls gateways (routing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gateways-182ad0a3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls rewrite_entries (routing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "projection calls dangling (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-projection-3fb4366a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dangling-8619e39d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instances calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instances-e7e31479"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_of calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-of-05fe99a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_dn calls name_of (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-dn-9650c6aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_dn calls dn_named (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-dn-9650c6aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-513ab67f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_dn calls name_of (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-dn-fe291236"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_dn calls dn_named (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-dn-fe291236"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-513ab67f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "aco_parameters calls held_json (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-aco-parameters-201ccfd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "aco_parameters calls parameters (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-aco-parameters-201ccfd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parameters-ef7c56f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "local_settings calls held_json (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-local-settings-f3dfbb99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_settings calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-settings-dc2daa5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_settings calls allowed_local (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-settings-dc2daa5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-allowed-local-1245ac36"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_settings calls effective (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-settings-dc2daa5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-effective-3571afff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_settings calls aco_parameters (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-settings-dc2daa5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-aco-parameters-201ccfd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_settings calls local_settings (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-settings-dc2daa5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-local-settings-f3dfbb99"
+      }
+    },
+    {
+      "attributes": {
+        "description": "identities calls agent_names (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-identities-73692175"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-names-b7574ef2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "identities calls allowed_local (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-identities-73692175"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-allowed-local-1245ac36"
+      }
+    },
+    {
+      "attributes": {
+        "description": "identities calls effective (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-identities-73692175"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-effective-3571afff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acting_as calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acting-as-2f44123d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acting_as calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acting-as-2f44123d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acting_as calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acting-as-2f44123d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acting_as calls instances (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acting-as-2f44123d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instances-e7e31479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acos_naming calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acos-naming-4cda1cb2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acos_naming calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acos-naming-4cda1cb2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acos_naming calls name_of (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acos-naming-4cda1cb2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acos_naming calls agent_names (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acos-naming-4cda1cb2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-names-b7574ef2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "acos_naming calls aco_parameters (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-acos-naming-4cda1cb2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-aco-parameters-201ccfd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_by calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_by calls named (conf.py) via _ignored",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-febeea1d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_by calls listed (conf.py) via _ignored",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listed-8edd3964"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_by calls aco_parameters (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-aco-parameters-201ccfd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_by calls instance_settings (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instance-settings-dc2daa5c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_by calls acting_as (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-acting-as-2f44123d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_by calls acos_naming (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-by-b18b8335"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-acos-naming-4cda1cb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_resources calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-resources-3ffe86c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_resources calls name_of (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-resources-3ffe86c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_resources calls resource_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-resources-3ffe86c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-dn-09dde107"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ignored_resources calls neutral_entry (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ignored-resources-3ffe86c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-entry-80385687"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_concerns calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-concerns-42eb59e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_concerns calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-concerns-42eb59e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_concerns calls instances (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-concerns-42eb59e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instances-e7e31479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_concerns calls server_of (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-concerns-42eb59e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-of-05fe99a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "routes_of calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-routes-of-64c7a948"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "routes_of calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-routes-of-64c7a948"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "routes_of calls on_server (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-routes-of-64c7a948"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-on-server-d62ad9b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_routes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-routes-0493fd9d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_routes calls acting_as (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-routes-0493fd9d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-acting-as-2f44123d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_routes calls routes_of (routing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-routes-0493fd9d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-routes-of-64c7a948"
+      }
+    },
+    {
+      "attributes": {
+        "description": "routing_objects calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-routing-objects-dfaab1bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "routing_objects calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-routing-objects-dfaab1bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host_role calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-host-role-109a504b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host_role calls published_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-host-role-109a504b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-service-role-82b21276"
+      }
+    },
+    {
+      "attributes": {
+        "description": "coverage calls parts (proxyrules.py) via _verdict",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-coverage-a0d37381"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parts-ca03a110"
+      }
+    },
+    {
+      "attributes": {
+        "description": "backend calls host_role (routing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-backend-32e32826"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-host-role-109a504b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls one (directory.py) via _app_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls values (directory.py) via _app_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls rdn_value (directory.py) via _app_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls published_role (environment.py) via _published",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-service-role-82b21276"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls name_of (naming.py) via _uncovered_app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls app_dn (naming.py) via _uncovered_app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-app-dn-c63e0e12"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls resource_dn (naming.py) via _uncovered_app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-dn-09dde107"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls neutral_entry (projection.py) via _uncovered_app",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-entry-80385687"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls parts (proxyrules.py) via _host_condition",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parts-ca03a110"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls instances (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instances-e7e31479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls server_of (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-of-05fe99a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls acting_as (agents.py) via _gateway_instances",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-acting-as-2f44123d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls routes_of (routing.py) via _app_route",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-routes-of-64c7a948"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls coverage (routing.py) via _app_route",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-coverage-a0d37381"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls backend (routing.py) via _app_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-backend-32e32826"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls on_server (agents.py) via _uncovered",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-on-server-d62ad9b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls server_label (agents.py) via _app_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-label-2a3d3908"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateways calls route_name (routing.py) via _route_label",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-route-name-08e51af6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls name_of (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls named (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-513ab67f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls server_label (agents.py) via _route_label",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-label-2a3d3908"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rewrite_entries calls route_name (routing.py) via _route_label",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-route-name-08e51af6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls one (directory.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls rdn_value (directory.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls get (directory.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls children (directory.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files references scan (secrets.py) via _withheld",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scan-9c7ff825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls canonical (jsondata.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-canonical-206598e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls server_location (environment.py) via _prefix",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-location-3152d85c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls server_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-named-11b9b6f3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls by_folder (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-by-folder-73807e09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls name_of (naming.py) via _instance_dns",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls is_true (xps.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-true-dbbdf33f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls sensitive (xps.py) via _withheld",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sensitive-b595eb16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls purpose (xps.py) via _withheld",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-purpose-da6b5a90"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls unique (entries.py) via _instance_dns",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unique-b0ca42c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls entry (entries.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls with_rest (entries.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-rest-7ecdf8db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls after_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-after-import-e5141e54"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls merged_import (projection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-import-8e25e810"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls projection (neutral.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-projection-3fb4366a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls sections (conf.py) via _plans",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sections-fb83b24d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls settings (conf.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-settings-d0b8812e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls named (conf.py) via _plans",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-febeea1d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls first (conf.py) via _init_file",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-first-2d7c9b69"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls attr (conf.py) via _plans",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-attr-1edb5bb4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls within (conf.py) via _init_file",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-d4f90c57"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls settings_outside (conf.py) via _plans",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-settings-outside-ba8184ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls listed (conf.py) via _plans",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listed-8edd3964"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls allowed_local (conf.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-allowed-local-1245ac36"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls is_allowed (conf.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-allowed-f0ec3d68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls matching (conf.py) via _found",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-matching-f78de7b3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls file_name (conf.py) via _of_kind",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-name-1fa0f388"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls rules_document (proxyrules.py) via _route_entries",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rules-document-fe0a2ad1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls routes (proxyrules.py) via _route_entries",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-routes-01f4a950"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls instances (agents.py) via _server_groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instances-e7e31479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls carried_dn (agents.py) via _source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-carried-dn-9650c6aa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls agent_dn (agents.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-dn-fe291236"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls aco_parameters (agents.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-aco-parameters-201ccfd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls identities (agents.py) via _instance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-identities-73692175"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls file_concerns (agents.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-concerns-42eb59e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls has_routes (routing.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-has-routes-0493fd9d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls routing_objects (routing.py) via _carried_updates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-routing-objects-dfaab1bf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_agent_files calls on_server (agents.py) via _server_groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-agent-files-3b3d3dd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-on-server-d62ad9b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "on_server calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-on-server-d62ad9b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "on_server calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-on-server-d62ad9b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_label calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-label-2a3d3908"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_label calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-label-2a3d3908"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_label calls server_of (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-label-2a3d3908"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-of-05fe99a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dangling calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dangling-8619e39d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dangling calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dangling-8619e39d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dangling calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dangling-8619e39d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dangling calls instances (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dangling-8619e39d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instances-e7e31479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dangling calls server_of (agents.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dangling-8619e39d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-of-05fe99a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "route_name calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-route-name-08e51af6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-sections-fb83b24d"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-section-a5dc97cc"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-attr-1edb5bb4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-section-a5dc97cc"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-within-d4f90c57"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-section-a5dc97cc"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-settings-outside-ba8184ab"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-section-a5dc97cc"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-routes-01f4a950"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-route-f51b3b2d"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-gateways-182ad0a3"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-gateways-0e10c285"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-rewrite-entries-db2abcbc"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-rewrite-76ef44b1"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-backend-32e32826"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-backend-a6794dda"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py"
+      },
+      "flow": {
+        "name": "Protected Web Applications (neutral layer)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agentfiles.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      },
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agentfiles.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Web Agent & Gateway File Capture"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-1-follow-up-siteminder-agent-and-gatew-602440fa"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/conf.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/proxyrules.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agents.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/routing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/agentfiles.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/neutral.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-siteminder-access-gateway-proxy-rules-an-18988efb"
+      }
+    }
+  ],
+  "warnings": []
+}

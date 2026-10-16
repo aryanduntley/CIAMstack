@@ -1,0 +1,453 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "logs.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/logs.py"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/importer.py",
+        "id_in_name": 0,
+        "name": "resources",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"description\": \"{path: text} of the files read\", \"required\": true}]",
+        "purpose": "Read the export's JSON documents (bulk exports or this adapter's rendered requests) into the items of every modeled resource kind, the items of resource types not modeled, the source version and its notices, the unreadable paths and whether only rendered requests were read.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({kind: items}, {resource type not modeled: items}, (source version or None, notices), unreadable paths, rendered only: bool)\"}",
+        "source_hash": "01ef44d0727619d7"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-resources-01a5360d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/importer.py",
+        "id_in_name": 0,
+        "name": "integration_groups",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"description\": \"the record\", \"required\": true}, {\"name\": \"found\", \"type\": \"dict\", \"description\": \"{kind: items} from resources\", \"required\": true}, {\"name\": \"certs\", \"type\": \"dict\", \"description\": \"{fingerprint: certificate entry} from certificate_entries\", \"required\": true}, {\"name\": \"exported\", \"type\": \"dict\", \"description\": \"{(kind, id): DN} of the objects the export names by id\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"description\": \"secret patterns for withheld settings\", \"required\": false}, {\"name\": \"rendered\", \"type\": \"bool\", \"description\": \"the files are this adapter's own render (rendered_only)\", \"required\": false}]",
+        "purpose": "Build an integration for every SP connection, IdP connection and OAuth client in the export (merged with the record's, linked to certificates, token managers and OIDC policies), and say where each IdP connection's is; reading this adapter's own render, an integration the record holds without pingfedConfig is kept as the record holds it (the render derived it from the record).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(groups ((dn, entries), ...), notices, {(\\\"idp-connection\\\", id): DN})\"}",
+        "source_hash": "4e782bfd449a563a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-integration-groups-6c2d7fd1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/importer.py",
+        "id_in_name": 0,
+        "name": "read_export",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Imported from a PingFederate bulk export (or the adapter's rendered files): certificates, integrations, data stores, plugins, policies, OAuth, generic resources and messaging groups, each object holding Admin API settings stamped with the export's PingFederate version (stamped; source_version), notices. Reading only the adapter's own render (rendered_only), integrations the record holds without pingfedConfig are kept as the record holds them (integration_groups).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "4f460c10b4bd8601"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-export-0c55dc5a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/nodes.py",
+        "id_in_name": 0,
+        "name": "storage",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"description\": \"the hivemodule.xml text\", \"required\": true}]",
+        "purpose": "Which implementation (and which kind of store) backs OAuth clients, persistent grants and sessions, from the service points of a node's hivemodule.xml; nothing when the file isn't read (xml_document refuses a DOCTYPE or entity declaration, or it isn't well-formed).",
+        "returns": "{\"type\": \"dict\", \"description\": \"{what (clients|grants|sessions): {\\\"implementation\\\", \\\"storage\\\"}}\"}",
+        "source_hash": "c12d25dfe4211684"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-storage-5b2dbd60"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/nodes.py",
+        "id_in_name": 0,
+        "name": "read_node_files",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"description\": \"{path: text}, each path under a node folder\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"description\": \"the record\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"description\": \"secret patterns for withheld settings\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"description\": \"unused import time\", \"required\": false}]",
+        "purpose": "Import each PingFederate node's own files (one folder per node, named by its hostname): run.properties, jgroups.properties / tcp.xml onto its server, hivemodule.xml as the storage settings entry; notices for folders matching no server, each node's findings, hivemodule.xml differing between nodes, a hivemodule.xml not read (refused or malformed), and no folders at all.",
+        "returns": "{\"type\": \"Imported\", \"description\": \"containers, groups (servers' subtrees, the storage entry) and notices\"}",
+        "source_hash": "36924d960346d0eb"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-node-files-6612da07"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "name": "read_running",
+        "parameters": "[{\"name\": \"files\", \"type\": \"Mapping[str, str]\", \"required\": true, \"description\": \"{path within the appliance folder: text}\"}]",
+        "purpose": "(Running or None, notices) of one appliance's files: its running-config.xml <config> snapshot, else its api/<scope>/<family>.xml XML API answers; None when nothing can be read or the answers are incomplete (never half a read); DOCTYPE/entities refused (the core's xml_document parses every document).",
+        "returns": "{\"type\": \"tuple[Running|None, tuple[str]]\"}",
+        "source_hash": "2b655ec2ba4cccfd"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-running-bbd98d76"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/importer.py",
+        "id_in_name": 0,
+        "name": "rendered_only",
+        "parameters": "[{\"name\": \"parsed\", \"type\": \"dict\", \"description\": \"{path: parsed JSON document or None} of the files read\", \"required\": true}]",
+        "purpose": "Whether the documents read are this adapter's rendered requests only (at least one, no bulk export among them): reading a render back is no new source.",
+        "returns": "{\"type\": \"bool\", \"description\": \"True when every readable document is a rendered requests document (a requests list, no metadata) and there is one at least\"}",
+        "source_hash": "e8d062812ffd6e8a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rendered-only-44d3a504"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 112 in full (description there). (1) Note 3093 (file 321): the PingFederate importer keeps an integration recorded elsewhere (another product's importer such as siteminder/xps, or hand-written LDIF) without pingfedHeldSettings/pingfedConfig when reading PingFederate's own render back, so it round-trips before PF has imported it once; see decision 3087 option B. (2) Note 3094 (file 977): panos running.py's private _parse and PingFederate nodes.py / discovery.py switch to opsdir.core.sources.xml_document, then the private parsers go (check PF fixtures declare no DOCTYPE). (3) PingAccess: host baselines for its showcase servers, and LogSources once its log file names are verified (Codex research, read-only). (4) Optional SiteMinder Web Agent conf / Access Gateway proxyrules importers and an admin policy REST collector: assess scope first and propose to the master whether they belong here or in a separate task. Live acceptance (notes 3089, 3092) stays with 7.2.",
+        "flows": [
+          "Product & Host Config Capture",
+          "Access Gateway Policy (PingAccess)",
+          "Web Access Policy Capture",
+          "Firewall Running Read-back",
+          "Log Routing Render"
+        ],
+        "name": "6.1 follow-ups: adapter refinements",
+        "parent": {
+          "slug": "milestone-6-1-follow-ups-adapter-refinements-2bc1caf5"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Note 3093: reading PF's own render back keeps an integration recorded elsewhere without pingfedHeldSettings/pingfedConfig; round-trip tests cover it.",
+        "name": "PingFederate keeps foreign integrations on read-back",
+        "parent": {
+          "key": {
+            "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-pingfederate-keeps-foreign-integrations-8140fa29"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Note 3094: panos running.py, PingFederate nodes.py and discovery.py use opsdir.core.sources.xml_document; private parsers removed; fixtures checked for DOCTYPE.",
+        "name": "XML parsing through core xml_document",
+        "parent": {
+          "key": {
+            "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-xml-parsing-through-core-xml-document-6cd8dc75"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Host baselines for the showcase PingAccess servers; LogSources once log file names are verified by research.",
+        "name": "PingAccess host baselines and LogSources",
+        "parent": {
+          "key": {
+            "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-pingaccess-host-baselines-and-logsources-2fb8735d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Proposal made; split to milestone 115 ('6.1 follow-up: SiteMinder agent and gateway files', flow 65, after milestone 110): Access Gateway proxyrules.xml and Web Agent files mapped onto the neutral layer; the admin policy REST collector later/optional. Master decision 2026-10-16 (option A).",
+        "name": "SiteMinder optional importers: scope proposal",
+        "parent": {
+          "key": {
+            "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-siteminder-optional-importers-scope-prop-6f103eb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase updates if any, README Known limits updated.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-4269e966"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "5dbd3e66fb9ec563d2bd5e54f39e48a1dd494c4e",
+    "branch": "aimfp-u112-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "resources calls rendered_only (importer.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resources-01a5360d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-only-44d3a504"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running calls xml_document (core sources.py), directly and via _api_file",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-bbd98d76"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-document-2f437afd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "storage calls xml_document (core sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-storage-5b2dbd60"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-document-2f437afd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_node_files calls xml_document (core sources.py) to name a hivemodule.xml it can't read",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-node-files-6612da07"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-document-2f437afd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "node_protocol calls xml_document (core sources.py) via _tcp_xml_protocol",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-node-protocol-2d60cb8f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-document-2f437afd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/logs.py"
+      },
+      "flow": {
+        "name": "Log Routing Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/logs.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/logs.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Log Routing Render"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-1-follow-ups-adapter-refinements-2bc1caf5"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/nodes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/logs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/discovery.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1-follow-ups-adapter-refinements-d1017f5e"
+      }
+    }
+  ],
+  "warnings": []
+}

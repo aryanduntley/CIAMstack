@@ -1,0 +1,1125 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/governance/",
+        "purpose": "Owners (parties: parties.py display_name/operator/operator_label), change records, incidents and work instructions; import runs keyed by importer + environment/shared + scope set (imports.py: run_dn, scope_set_key, runs_covering, reports imports and import-scopes, check_import_runs with fix imports/scope-set-names for legacy-named runs) and collection attempts; the unknowns register (ciamUnknown questions the planner counts: check_unknowns, report unknowns); ITSM ticket evidence (tickets.py: ciamTicketRef on ciamChange, observed ciamTicket under ou=<adapter>,ou=tickets, drift states, check_tickets, report tickets; never an approval); stale-runbook view and report."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "domain-governance"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.0,
+        "description": "Every applied import records what it read as data, under the same approved change: an import run entry (ou=imports) naming the importer, the scopes it read (subtree roots, kept even when the export deleted everything under one), when the export was taken, the change that applied it and, for a live collection, how opsdir collected it. A run is one importer's read of one scope set in one environment (or shared), named by a digest of the canonical set: the same set again replaces its run, another set records its own run beside it, so earlier coverage stays. Readers: the prerequisite proof for fixes (the newest single run covering every entry a fix needs, taken after anyone else's last change to them), the firewall read-back's 'last read' dates, and the imports and import-scopes reports. Runs still named by importer and environment only are a plan action whose assisted fix renames them as they were under an approved change. Failed collections are separate attempt entries and never count as runs."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Import Run Receipts"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "run_dn",
+        "parameters": "[{\"name\": \"importer\", \"type\": \"str\", \"required\": true, \"description\": \"'adapter/importer'\"}, {\"name\": \"scopes\", \"type\": \"iterable[str]\", \"required\": true, \"description\": \"the scope DNs of one environment (or none)\"}]",
+        "purpose": "The DN of an importer's run of one scope set, all in one environment or none: cn=<adapter>.<importer>.<environment (normalized) or shared>.<scope_set_key>,ou=imports; ValueError when the scopes lie in more than one environment.",
+        "returns": "{\"type\": \"str\", \"description\": \"the run's DN\"}",
+        "source_hash": "ca53a1adee81b036"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-run-dn-46641b04"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "run_records",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}, {\"name\": \"importer\", \"type\": \"str\", \"required\": true, \"description\": \"'adapter/importer'\"}, {\"name\": \"scopes\", \"type\": \"iterable[str]\", \"required\": true, \"description\": \"scope DNs the import read\"}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": true, \"description\": \"UTC time the export was taken\"}, {\"name\": \"change_id\", \"type\": \"str\", \"required\": true, \"description\": \"the approved change\"}, {\"name\": \"evidence\", \"type\": \"dict|None\", \"required\": false, \"description\": \"{EVIDENCE attribute: values}: how opsdir collected the export\"}]",
+        "purpose": "The records an applied import adds: the ou=imports container when missing, then per environment (and shared) of the scopes read (deduplicated by norm_dn) the run of that scope set: a new entry, or the same set's run given its scopes, time, change and evidence (evidence none: removed). A run of the same set still named the old way (importer.env) is deleted; other sets' runs stay. ValueError when another set's run holds the name.",
+        "returns": "{\"type\": \"tuple[LdifRecord]\", \"description\": \"add/modify/delete records\"}",
+        "source_hash": "930f904d3a1021c4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-run-records-1674a8be"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "environment_of_scope",
+        "parameters": "[{\"name\": \"scope\", \"type\": \"str\", \"required\": true, \"description\": \"a scope DN\"}]",
+        "purpose": "The DN of the environment a scope lies in (the scope itself or one under it), None outside environments.",
+        "returns": "{\"type\": \"str|None\", \"description\": \"environment DN or None\"}",
+        "source_hash": "9ff62020c48e5a1a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-environment-of-scope-30df9a23"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "runs_covering",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}, {\"name\": \"dn\", \"type\": \"str\", \"required\": true, \"description\": \"the entry\"}]",
+        "purpose": "The import runs one of whose scopes holds dn (the entry or one above it), newest export first, equal times by normalized DN: what fixes' prerequisites and firewall read-back dates read.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"ciamImportRun entries\"}",
+        "source_hash": "fbdc9393ce1eba1b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-runs-covering-d5192615"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "import_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false, \"description\": \"unused (report signature)\"}]",
+        "purpose": "The imports report: one row per run (importer, environment or shared, scope-set key, scope count, read at, change), by importer, environment, newest export first, then set.",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"rows of IMPORT_HEADERS\"}",
+        "source_hash": "4483e1563958ee07"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-import-rows-e6d76145"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 1,
+        "name": "imports_container",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "(the ou=imports container's add record,) when the record has none yet, else (): where import runs and collection attempts are kept.",
+        "returns": "{\"type\": \"tuple[LdifRecord]\", \"description\": \"zero or one add record\"}",
+        "source_hash": "d90dd4c3e1895e29"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-imports-container-7daa84f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "scope_set",
+        "parameters": "[{\"name\": \"scopes\", \"type\": \"iterable[str]\", \"required\": true, \"description\": \"scope DNs an import read\"}]",
+        "purpose": "A scope set in canonical form: its scopes' normalized DNs (norm_dn), each once, sorted.",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"sorted unique normalized scope DNs\"}",
+        "source_hash": "743ab44bd37d8e9c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-scope-set-681b5479"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "scope_set_key",
+        "parameters": "[{\"name\": \"scopes\", \"type\": \"iterable[str]\", \"required\": true, \"description\": \"scope DNs\"}]",
+        "purpose": "The name of a scope set: SCOPE_SET ('s1') then the first 16 hex of SHA-256 over 's1\\n' + the canonical set as compact JSON; the same whatever the scopes' order, case, spacing or repeats.",
+        "returns": "{\"type\": \"str\", \"description\": \"e.g. s1-3fa9c0d2e1b47a65\"}",
+        "source_hash": "87c511bd2d2b0c38"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-scope-set-key-dee16182"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "misnamed_runs",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "The import runs not named by their scope set (recorded before scope-set names: importer and environment only), in DN order.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"ciamImportRun entries whose DN isn't run_dn of their importer and scopes\"}",
+        "source_hash": "59d5cb2379648fd1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "renamed_run_records",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "The change records giving each misnamed run its scope-set name: the run added at its new DN with its scopes, export time, change and evidence as they were, and the old entry deleted; where a run already holds that set under the new name, the newer export wins (the old entry's values replace it only when its export is newer).",
+        "returns": "{\"type\": \"tuple[LdifRecord]\", \"description\": \"add/modify/delete records; empty when every run is named by its scope set\"}",
+        "source_hash": "6e756cdcba8dac9b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "check_import_runs",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true, \"description\": \"plan context (only ctx.d is read)\"}]",
+        "purpose": "Planner check: an action per import run still named by importer and environment only (what, where, owner: the party operating the platform, how), with one assisted fix imports/scope-set-names renaming them all under an approved change; nothing when every run has its scope-set name.",
+        "returns": "{\"type\": \"Findings\", \"description\": \"actions and the one fix, or empty findings\"}",
+        "source_hash": "4a417799560eac28"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/imports.py",
+        "id_in_name": 0,
+        "name": "import_scope_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false, \"description\": \"unused (report signature)\"}]",
+        "purpose": "The import-scopes report: one row per scope of each import run (importer, environment or shared, scope-set key, read at, scope), runs in the imports report's order.",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"rows of IMPORT_SCOPE_HEADERS\"}",
+        "source_hash": "c1596d38ad0a4fa3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-import-scope-rows-7fa61d10"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/parties.py",
+        "id_in_name": 0,
+        "name": "operator_label",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "How findings name the party operating the platform as owner: its RDN, or **NO OWNER** when the record names none.",
+        "returns": "{\"type\": \"str\", \"description\": \"the operator party's RDN or **NO OWNER**\"}",
+        "source_hash": "ddc1f0bcf83530b8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-operator-label-a81b467c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 116 in full (description there; analysis 3116, Codex research 3122 with file:line evidence; the Codex report is at /tmp/claude-1000/-home-eveningb4dawn-Desktop-Projects-CIAMstack/6d5160b4-f60f-4ede-81c4-10f402a0dcf2/scratchpad/codex-import-runs-result.md). Run identity becomes importer + environment/shared + canonical scope-set digest; readers stay structurally unchanged; imports report shows sets with deterministic order; approved, audited migration of existing runs; tests per the milestone; showcase golden (two linux.baseline runs, every run DN renamed). Design gate: the exact DN form, digest serialization, migration mechanism and the history-recovery choice go to the master before coding.",
+        "flows": [
+          "Import Run Receipts"
+        ],
+        "name": "Import runs keyed by scope set",
+        "parent": {
+          "slug": "milestone-import-runs-keyed-by-scope-set-1590ad78"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+      }
+    },
+    {
+      "attributes": {
+        "description": "DN form and digest serialization, reader changes, imports report, migration mechanism and history-recovery choice; master approves before coding.",
+        "name": "Design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-design-proposal-eb53a865"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_dn/run_records keyed by importer + environment/shared + canonical scope set; same set replaces only its own run.",
+        "name": "Scope-set run identity",
+        "parent": {
+          "key": {
+            "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-scope-set-run-identity-c64ecb41"
+      }
+    },
+    {
+      "attributes": {
+        "description": "runs_covering/_covering/_read_at checked against several runs (deterministic order for equal times); imports report shows each run's scope set; class description and IMPORTS comment clarified.",
+        "name": "Readers and report",
+        "parent": {
+          "key": {
+            "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-readers-and-report-abcb8a67"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Approved, audited conversion of legacy run entries to scope-set DNs with original time/change/evidence; optional reviewed history recovery.",
+        "name": "Migration of existing runs",
+        "parent": {
+          "key": {
+            "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-migration-of-existing-runs-f911516b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Tests listed in milestone 116; deliberate updates of replace-on-re-run tests; predicted golden changes; README/model docs.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-24ece8c7"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "9aaafc195f3f459285abb849773864d716b7bf50",
+    "branch": "aimfp-u116-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "run_dn calls norm_dn (directory.py) via _env_key",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-dn-46641b04"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_dn calls environment_of_scope (imports.py) via _env_key",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-dn-46641b04"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-scope-30df9a23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_dn calls scope_set_key (imports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-dn-46641b04"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scope-set-key-dee16182"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_records calls norm_dn (directory.py) via _distinct",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-1674a8be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_records calls rdn_value (directory.py) via _run",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-1674a8be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_records calls env_label (naming.py) via _where",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-1674a8be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_records calls rdn_of (directory.py) via _run",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-1674a8be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_records calls delete_entry (changeset.py) via _run",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-1674a8be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-delete-entry-df6676cb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_records calls scope_set (imports.py) via _same_set",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-1674a8be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scope-set-681b5479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_rows calls rdn_of (directory.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-rows-e6d76145"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_rows calls scope_set_key (imports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-rows-e6d76145"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scope-set-key-dee16182"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls operator_label (parties.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-operator-label-a81b467c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scope_set calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scope-set-681b5479"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scope_set_key calls scope_set (imports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scope-set-key-dee16182"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scope-set-681b5479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "misnamed_runs calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "misnamed_runs calls one (directory.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "misnamed_runs calls values (directory.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "misnamed_runs calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "misnamed_runs calls run_dn (imports.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-run-dn-46641b04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls one (directory.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls values (directory.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls get (directory.py) via _renamed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls rdn_of (directory.py) via _renamed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls new_entry (changeset.py) via _renamed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-new-entry-f9df7ccc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls delete_entry (changeset.py) via _renamed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-delete-entry-df6676cb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls run_dn (imports.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-run-dn-46641b04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed_run_records calls misnamed_runs (imports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls one (directory.py) via _misnamed_text",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls values (directory.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls rdn_value (directory.py) via _misnamed_text",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls env_label (naming.py) via _run_env",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls rdn_of (directory.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls run_dn (imports.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-run-dn-46641b04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls environment_of_scope (imports.py) via _run_env",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-scope-30df9a23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls misnamed_runs (imports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-misnamed-runs-c281b07f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls renamed_run_records (imports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renamed-run-records-79237fd8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_import_runs calls operator_label (parties.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-import-runs-514c107e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-operator-label-a81b467c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_scope_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-scope-rows-7fa61d10"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_scope_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-scope-rows-7fa61d10"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_scope_rows calls children (directory.py) via _ordered_runs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-scope-rows-7fa61d10"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_scope_rows calls env_label (naming.py) via _run_env",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-scope-rows-7fa61d10"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_scope_rows calls environment_of_scope (imports.py) via _run_env",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-scope-rows-7fa61d10"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-scope-30df9a23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "import_scope_rows calls scope_set_key (imports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-import-scope-rows-7fa61d10"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scope-set-key-dee16182"
+      }
+    },
+    {
+      "attributes": {
+        "description": "operator_label calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-operator-label-a81b467c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "operator_label calls operator (parties.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-operator-label-a81b467c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-operator-9f163a38"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/imports.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/parties.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-import-runs-keyed-by-scope-set-94c13f51"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls operator (parties.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-operator-9f163a38"
+      }
+    }
+  ],
+  "warnings": []
+}

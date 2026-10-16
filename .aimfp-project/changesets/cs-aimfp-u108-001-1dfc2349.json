@@ -1,0 +1,1321 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "ldap_source.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/core/ldap_source.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "security.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "templates.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/pki/templates.py"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/collect.py",
+        "id_in_name": 0,
+        "name": "profile_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of ldap/data-profile: the first readable LDAPS collection source (core ldaps_source) searched with core ldapsearch_command from its base DN (paged pr=1000, unwrapped, * +), digest = the profiler the front end injects (options profile; the --ldap-ca option reaches ldapsearch as LDAPTLS_CACERT); data-profile-<env>.json",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "bb7985b1ab7000b2"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-profile-steps-24e4afe3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/collect.py",
+        "id_in_name": 0,
+        "name": "problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.problems of ldap/data-profile: the sources' LDAPS problems (core ldaps_source_problems: source problems, no bind DN, no credential, or a ciamSourceRef without host or base DN)",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "2afc2cb3b2fec307"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-problems-cef36132"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "template_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"display\", \"type\": \"str|None\"}, {\"name\": \"oid\", \"type\": \"str|None\"}, {\"name\": \"max_days\", \"type\": \"int|None\"}, {\"name\": \"usages\", \"type\": \"tuple\"}, {\"name\": \"rights\", \"type\": \"dict|None\", \"description\": \"{attribute of TEMPLATE_RIGHTS: bool/int/str value, or tuple for ciamEnrollee; None = not read}\"}]",
+        "purpose": "Importer builder: a ciamCertTemplate entry (display name, OID, max validity days, effective EKUs, and the template's rights: subject from request, approval, required signatures, schema version, enrollees, enrollment scope); purpose and renewal owner kept",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "8153abb3da793d20"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py",
+        "id_in_name": 0,
+        "name": "read_inventory",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict path->text\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\"}, {\"name\": \"at\", \"type\": \"datetime|None\"}]",
+        "purpose": "Importer adcs/inventory read(): templates.ldif into ou=certificate-templates (with each template's effective usages and rights: subject from request, approval, signatures, schema version, enrollees, enrollment scope) and each ca/<name>.json into its authority and issued-certificate inventory",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "ef28d76e50f8260e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py",
+        "id_in_name": 0,
+        "name": "read_templates",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"description\": \"LDIF text (ldapsearch or ldifde)\"}]",
+        "purpose": "(templates, notices) of an LDIF export of the forest's certificate templates: per pKICertificateTemplate its display name, OID, validity days, effective usages and rights (template_rights), plus notices for what was left out, couldn't be read, and one listing templates whose access rights (nTSecurityDescriptor) aren't in the export.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({name: {display, oid, days, usages, rights}}, notices tuple)\"}",
+        "source_hash": "ce4a6393b70a8a70"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-templates-65e423ec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/ldap_source.py",
+        "id_in_name": 0,
+        "name": "ldaps_parts",
+        "parameters": "[{\"name\": \"location\", \"type\": \"str\", \"description\": \"ldaps:// URL (a collection source's ciamSourceRef)\", \"required\": true}]",
+        "purpose": "(host, port, base DN) of an ldaps://<host>:<port>/<base DN> collection source location: port 636 when the URL names none, the base DN percent-decoded; host or base None when the URL lacks them.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(host or None, port int, base DN str ('' when absent))\"}",
+        "source_hash": "d80c4bd76732f65e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ldaps-parts-fa7743d5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py",
+        "id_in_name": 0,
+        "name": "sid_text",
+        "parameters": "[{\"name\": \"raw\", \"type\": \"bytes\", \"required\": true}]",
+        "purpose": "String form S-1-<authority>-<sub>... of a binary SID (MS-DTYP 2.4.2.2) at the start of raw bytes; None when too short for its stated count.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "bc5018b9c0c8a4ad"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sid-text-bd5f26a8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py",
+        "id_in_name": 0,
+        "name": "principal_label",
+        "parameters": "[{\"name\": \"sid\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A trustee as the record names it (ciamEnrollee): its SID with its well-known name when it has one (Everyone, Authenticated Users, a domain's Domain Users/Computers/Admins ...).",
+        "returns": "{\"type\": \"str\", \"description\": \"'<SID> (<name>)' or the SID\"}",
+        "source_hash": "5e867f68481166ff"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-principal-label-157e0f9e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py",
+        "id_in_name": 0,
+        "name": "is_broad",
+        "parameters": "[{\"name\": \"sid\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a trustee SID is a broad group: Everyone, Anonymous Logon, Authenticated Users, BUILTIN\\Users, or a domain's Domain Users (-513), Domain Guests (-514), Domain Computers (-515).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "c7dd5a53615a9574"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-broad-f64629c9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py",
+        "id_in_name": 0,
+        "name": "dacl_aces",
+        "parameters": "[{\"name\": \"sd\", \"type\": \"bytes\", \"required\": true}]",
+        "purpose": "The DACL of a self-relative security descriptor (MS-DTYP 2.4.6) as Ace records in stored order; None for a NULL DACL; a problem when the descriptor can't be read or holds ACE types other than allowed/denied (object) ACEs.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(tuple of Ace | None, problem str | None)\"}",
+        "source_hash": "37fc5a2c85abc181"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-dacl-aces-d6145358"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py",
+        "id_in_name": 0,
+        "name": "enrollees",
+        "parameters": "[{\"name\": \"sd\", \"type\": \"bytes|None\", \"required\": true}]",
+        "purpose": "Who a certificate template's nTSecurityDescriptor grants Enroll (GENERIC_ALL, full control, or control access unscoped or scoped to Certificate-Enrollment; the first ACE met per trustee decides, inherit-only skipped), labelled, and the enrollment scope: broad when one is a broad group, restricted otherwise, unknown with why when the descriptor is missing or can't be judged; a NULL DACL counts as Everyone.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(labelled trustees tuple, 'broad'|'restricted'|'unknown', problem str|None)\"}",
+        "source_hash": "493c4b5b73790709"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-enrollees-4612810c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py",
+        "id_in_name": 0,
+        "name": "flag_value",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "A certificate template's integer attribute as LDAP gives it (signed 32-bit decimal) as its 32 bits unsigned (a negative value has bit 31 set); (None, None) when absent, (None, why) when not a 32-bit integer.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(int|None, problem str|None)\"}",
+        "source_hash": "c2642fa352a7e5c9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-flag-value-a9944cba"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py",
+        "id_in_name": 0,
+        "name": "template_rights",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"the template's cn (for notices)\"}, {\"name\": \"attrs\", \"type\": \"dict\", \"required\": true, \"description\": \"the LDIF entry's attributes (lowercase names)\"}]",
+        "purpose": "What an AD CS template entry issues and lets requesters do: effective usages (msPKI-Certificate-Application-Policy from schema v2 when present, else pKIExtendedKeyUsage; notice when they differ), and the record's template rights (ciamSubjectFromRequest from name flag 0x1, ciamApprovalRequired from enrollment flag 0x2, ciamRequiredSignatures, ciamTemplateVersion, ciamEnrollee and ciamEnrollmentScope from nTSecurityDescriptor), None when not read.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(usages tuple, rights dict, notices tuple)\"}",
+        "source_hash": "5290f8d2f66d4a39"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-rights-13cfcd17"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/ldap_source.py",
+        "id_in_name": 0,
+        "name": "ldaps_source",
+        "parameters": "[{\"name\": \"sources\", \"type\": \"tuple[Source]\", \"required\": true}]",
+        "purpose": "The first collection source ldapsearch can read over LDAPS: a location naming a host and base DN, a bind DN, a credential, no problems; None when none.",
+        "returns": "{\"type\": \"Source|None\"}",
+        "source_hash": "694ad11bf3e029bf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ldaps-source-366e3087"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/ldap_source.py",
+        "id_in_name": 0,
+        "name": "ldaps_source_problems",
+        "parameters": "[{\"name\": \"sources\", \"type\": \"tuple[Source]\", \"required\": true}]",
+        "purpose": "Why collection sources can't be read over LDAPS: each one's problems, no bind DN, no credential, or a location that isn't ldaps://<host>:<port>/<base DN>.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "f4ba3abc3e1c00a9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ldaps-source-problems-556ab316"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/ldap_source.py",
+        "id_in_name": 0,
+        "name": "ldapsearch_command",
+        "parameters": "[{\"name\": \"source\", \"type\": \"Source\", \"required\": true}, {\"name\": \"base\", \"type\": \"str\", \"required\": true}, {\"name\": \"args\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"scope, controls, filter, attributes\"}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true, \"description\": \"the operator's collect options (ldap_ca)\"}, {\"name\": \"digest\", \"type\": \"callable|None\", \"required\": false}]",
+        "purpose": "The Command running OpenLDAP ldapsearch against a collection source's server from a base DN with further args: simple bind as its bind DN, the password only on stdin (-y /dev/stdin), LDAPTLS_CACERT from the --ldap-ca option when given; optional streaming digest.",
+        "returns": "{\"type\": \"Command\"}",
+        "source_hash": "ec22189dee897fc3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ldapsearch-command-536874b9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/collect.py",
+        "id_in_name": 0,
+        "name": "templates_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps for adcs/inventory: one ldapsearch of CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,<forest DN> (one level, unwrapped, SD flags control 7 for owner/group/DACL) of the attributes the template reader reads, nTSecurityDescriptor included, into templates.ldif.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Command),) or () when no readable source\"}",
+        "source_hash": "e5884e6a008ab9bb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-templates-steps-ab3390df"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/collect.py",
+        "id_in_name": 0,
+        "name": "problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why the forest's templates can't be collected: the adcs/inventory collection sources' LDAPS problems (core ldaps_source_problems).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "2afc2cb3b2fec307"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-problems-533e8e56"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/templates.py",
+        "id_in_name": 0,
+        "name": "authenticates",
+        "parameters": "[{\"name\": \"usages\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"EKU OIDs\"}]",
+        "purpose": "Whether certificates with these extended key usages authenticate their holder: none at all, any purpose, client authentication, PKINIT client authentication or smart card logon (the published ESC1 set).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "a1c5d3b63c777ce1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authenticates-4dff3290"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/templates.py",
+        "id_in_name": 0,
+        "name": "issuing_authorities",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(issuing, known) for a template name: the recorded CAs listing it among the templates they issue from, and whether any recorded CA lists its templates at all (publication known).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(tuple of ciamCertAuthority entries, bool)\"}",
+        "source_hash": "3381d92a8ec092b1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issuing-authorities-2ac986e9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/templates.py",
+        "id_in_name": 0,
+        "name": "template_risk",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"t\", \"type\": \"Entry\", \"required\": true, \"description\": \"ciamCertTemplate\"}]",
+        "purpose": "The ESC1-style state of a certificate template: None when it doesn't let the requester name the subject of authenticating certificates without approval or signatures; 'unpublished' when recorded CAs list templates and none issues from it; else its ciamEnrollmentScope (broad, restricted, unknown; unknown when not recorded).",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "ef8dd9c1d2289a0b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-risk-17272b15"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/templates.py",
+        "id_in_name": 0,
+        "name": "check_template_risk",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: certificate templates that let the requester name the subject of authenticating certificates with no manager approval or authorized signatures (ESC1-style): broad enrollment is an action (fix: approval, subject from the directory, or restricted enrollment); unknown enrollment an action to collect the access rights; owner the template's renewal owner, else the issuing CAs' owners, else NO OWNER; restricted and unpublished ones counted in ok.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "387423ac030b89ed"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One ACE of a template's DACL as the AD CS adapter reads it: type (0x00/0x01/0x05/0x06), flags, access mask, object type GUID (None: unscoped) and trustee SID string.",
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Ace"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-ace-670382d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Items (a) and (c) of milestone 108 (analysis note 3068). (a) A read-only template collector for adcs/inventory: ldapsearch of CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,<forest root> into templates.ldif (Authenticated Users can read), following the existing collector contract (Collector, evidence, least privilege, absent markers). (c) ESC1-style template risk in the pki domain: msPKI-Certificate-Name-Flag 0x1 (ENROLLEE_SUPPLIES_SUBJECT) with a client-auth or any-purpose EKU (or no EKU), no manager approval (msPKI-Enrollment-Flag 0x2 absent), no authorized signatures required, and enrollment rights for broad groups (from nTSecurityDescriptor); the showcase fixture's CIAM-WebServer sets name flag 1. Findings go to the template's renewal owner as data. Research current ESC definitions (SpecterOps Certified Pre-Owned and later ESC numbering) and the template attribute forms first (Codex, read-only). Design to the master before coding if it changes what the record holds (e.g. recording enrollment rights). Items (b) CRL/OCSP observation, (d) exporter acceptance and (e) other CAs stay for later tasks.",
+        "flows": [
+          "PKI Authorities & Issued-Certificate Reconciliation",
+          "AD CS Inventory Import"
+        ],
+        "name": "AD CS certificate-template collector and ESC1-style template risk",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ESC1 (and related ESC) definitions and the template attribute forms (msPKI-Certificate-Name-Flag, msPKI-Enrollment-Flag, msPKI-RA-Signature, pKIExtendedKeyUsage, nTSecurityDescriptor); collector command and least privilege; whether enrollment rights need new record data; master approves before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-3d400588"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Read-only collector for adcs/inventory templates.ldif from the configuration naming context, per the collector contract (evidence, absent markers, least privilege).",
+        "name": "Template collector",
+        "parent": {
+          "key": {
+            "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-template-collector-5067a7a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki-domain finding over recorded templates: enrollee-supplied subject + client-auth/any-purpose/no EKU + no manager approval + no authorized signatures + broad enrollment; to the template's renewal owner as data.",
+        "name": "ESC1-style template risk",
+        "parent": {
+          "key": {
+            "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-esc1-style-template-risk-185ac77c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase (CIAM-WebServer case) and predicted golden changes, adcs README Known limits.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-847a923e"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "9aaafc195f3f459285abb849773864d716b7bf50",
+    "branch": "aimfp-u108-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "parses the collection source's ldaps:// location",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-steps-24e4afe3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-parts-fa7743d5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "records the template's bool and int rights as text (TRUE/FALSE)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-entry-d15306c0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-text-adf4c029"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reads the template's DACL",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollees-4612810c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dacl-aces-d6145358"
+      }
+    },
+    {
+      "attributes": {
+        "description": "labels each granted trustee",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollees-4612810c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-principal-label-157e0f9e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judges whether a granted trustee is a broad group",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollees-4612810c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-broad-f64629c9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reads each ACE's trustee SID (via _ace)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dacl-aces-d6145358"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sid-text-bd5f26a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parses the schema version, name, enrollment flags and RA signature count",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-rights-13cfcd17"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-flag-value-a9944cba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reads who may enroll from nTSecurityDescriptor",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-rights-13cfcd17"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enrollees-4612810c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reads each template's usages and rights",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-templates-65e423ec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-rights-13cfcd17"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the environment's adcs/inventory collection sources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-steps-ab3390df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "first readable LDAPS source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-steps-ab3390df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-source-366e3087"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the forest root DN from the source's location",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-steps-ab3390df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-parts-fa7743d5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the ldapsearch command of the templates container",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-steps-ab3390df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldapsearch-command-536874b9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the environment's adcs/inventory collection sources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-533e8e56"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "why they can't be read over LDAPS",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-533e8e56"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-source-problems-556ab316"
+      }
+    },
+    {
+      "attributes": {
+        "description": "location names a host and base DN (via _named)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ldaps-source-366e3087"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-parts-fa7743d5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "location names a host and base DN (via _named)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ldaps-source-problems-556ab316"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-parts-fa7743d5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host and port of the source's location",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ldapsearch-command-536874b9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-parts-fa7743d5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "first readable LDAPS source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-steps-24e4afe3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-source-366e3087"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the paged profile search command",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-steps-24e4afe3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldapsearch-command-536874b9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "why the sources can't be read over LDAPS",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-cef36132"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldaps-source-problems-556ab316"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issuing_authorities calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuing-authorities-2ac986e9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issuing_authorities calls authorities (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuing-authorities-2ac986e9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_risk calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-risk-17272b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_risk calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-risk-17272b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_risk calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-risk-17272b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_risk calls authenticates (templates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-risk-17272b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authenticates-4dff3290"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_risk calls issuing_authorities (templates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-risk-17272b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issuing-authorities-2ac986e9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls one (directory.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls values (directory.py) via _finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls rdn_value (directory.py) via _finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls responsible (findings.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls rdn_of (directory.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls issuing_authorities (templates.py) via _finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issuing-authorities-2ac986e9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_template_risk calls template_risk (templates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-template-risk-db0cf531"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-risk-17272b15"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-dacl-aces-d6145358"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-ace-670382d8"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-enrollees-4612810c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-ace-670382d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/ldap_source.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/ldap_source.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/collect.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/collect.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/templates.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/ldap_source.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "core"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/templates.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-pki"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/ldap_source.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/security.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/templates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ad-cs-certificate-template-collector-and-c0c00edf"
+      }
+    }
+  ],
+  "warnings": []
+}

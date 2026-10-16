@@ -1,0 +1,1418 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "ds_profile",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/schema.py",
+        "id_in_name": 0,
+        "name": "schema_record",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"subschema_dn\", \"type\": \"str\", \"required\": false, \"description\": \"default cn=schema\"}, {\"name\": \"keep\", \"type\": \"Callable[[Entry], bool] | None\", \"required\": false, \"description\": \"which defined user-schema records to add; None: all\"}]",
+        "purpose": "The modify record adding every defined attribute type and object class (those keep(record) admits, when given: a product leaves out what its servers ship), superclasses first, or None when there are none",
+        "returns": "{\"type\": \"LdifRecord | None\"}",
+        "source_hash": "5e7ceaa9d971aad1"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-schema-record-5b180560"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/schema.py",
+        "id_in_name": 0,
+        "name": "schema_ldif",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"subschema_dn\", \"type\": \"str\", \"required\": false, \"description\": \"default cn=schema\"}, {\"name\": \"keep\", \"type\": \"Callable[[Entry], bool] | None\", \"required\": false, \"description\": \"which defined user-schema records to add; None: all\"}]",
+        "purpose": "ldap/schema.ldif: the schema record (schema_record, keep as there) under a header saying only definitions the standards lack are added",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "2d1dc206366162e3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-schema-ldif-3a3baf42"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/adapter.py",
+        "id_in_name": 0,
+        "name": "render_standard",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"keep\", \"type\": \"Callable[[Entry], bool] | None\", \"required\": false, \"description\": \"which defined user-schema records the schema adds; None: all\"}]",
+        "purpose": "The standard LDAPv3 files every directory adapter renders: {path: text}, environment-neutral (ldap/schema.ldif, ldap/dit.ldif); keep: which defined schema records the schema adds (a product leaves out what its servers ship), default all",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "65f18073e480b7bc"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-standard-18dc6ec5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-base-ds/src/opsdir_base_ds/config.py",
+        "id_in_name": 0,
+        "name": "neutral_files",
+        "parameters": "[{\"name\": \"product\", \"type\": \"DsProduct\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every environment-neutral file of a DS-lineage server: the standard LDAP files (the schema without the record's definitions under the product's shipped vendor arcs, each such definition's note comment after it: shipped_notes), then the lineage's own (ds/dsconfig.batch, ds/acis.ldif)",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "6706ec22dd2afdeb"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-neutral-files-3aad8343"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/profiles.py",
+        "id_in_name": 0,
+        "name": "namespace_profiles",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"p\", \"type\": \"Placement\", \"required\": true}, {\"name\": \"profiles\", \"type\": \"dict[str, dict[str, str]]\", \"required\": true}]",
+        "purpose": "{path: text}: a placement's config-profile build contexts (release.PROFILE_BUILDS: idm config image, amster and ig derived images) for the components on whose product has files, DS's image inputs (ds_profile.ds_context: custom schema, ldif-ext entries, Dockerfile), and forgeops/config-profiles/<ns>/README.md listing every secret token, its variable, role and whether the record maps it, plus a DS section when DS inputs are rendered; {} when nothing builds",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "7a972acd88d43e35"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-namespace-profiles-e91e3575"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "schema_entry",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true, \"description\": \"subschema modify LDIF\"}]",
+        "purpose": "The definitions a subschema modify LDIF adds (ldap/schema.ldif) as one cn=schema entry, DS's schema-file form (objectClass top/ldapSubentry/subschema, cn schema, attributeTypes then objectClasses, each in the order given), as ForgeOps' sample config/schema/99-ext.ldif; None when it adds none",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "506bb4e46f001c21"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-schema-entry-ae9b4327"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "backend_of",
+        "parameters": "[{\"name\": \"dn\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The ForgeOps DS backend (release.DsBackend) whose base DN holds a DN, or None",
+        "returns": "{\"type\": \"DsBackend | None\"}",
+        "source_hash": "2807e953625d8112"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-backend-of-a3074084"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "ldif_ext",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true, \"description\": \"tree LDIF\"}]",
+        "purpose": "{ldif-ext folder: (entry LDIF, ...)}: the content entries of a tree LDIF (ldap/dit.ldif) below a ForgeOps backend's base DN, in the order given, by that backend's folder; base entries (the setup profile's) and entries no backend holds are left out",
+        "returns": "{\"type\": \"dict[str, tuple[str]]\"}",
+        "source_hash": "b0a53951f7653b1e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ldif-ext-0deb0296"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "record_backends",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The user directory's declared backends (ciamBackend under ou=backends of the declared configuration)",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "70f6e8ec8b63d33b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-record-backends-e1bcdd0e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "declared_config",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "What the record declares that the PingDS render writes as ds/dsconfig.batch and ds/acis.ldif, by kind (indexes, password policies, connection handlers, log publishers, replication, ACIs), in that order",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "5f03c7f8a2b410ed"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-declared-config-3f7b4020"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "renamed",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "((record backend name, ForgeOps backend name), ...): record backends at a ForgeOps base DN under another name (the batch's create-backend-index lines name the record's)",
+        "returns": "{\"type\": \"tuple[tuple[str, str]]\"}",
+        "source_hash": "db369c3e86cbea23"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-renamed-7b5726db"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "placement_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"p\", \"type\": \"Placement\", \"required\": true}]",
+        "purpose": "The render notes of a placement running DS (ds-idrepo or ds-cts), as data to the owning team: an action per record backend under none of ForgeOps' base DNs (its entries are in no image; create it on the pods or change its base DN), and an action naming the record's DS configuration and ACIs to apply online (ds/dsconfig.batch, ds/acis.ldif; the chart shadows the image's setup scripts), with renamed backends; () when ForgeOps runs no DS there",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "17e178c72523b8aa"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "ds_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "Adapter.notes of the ForgeOps adapter: every placement's DS render notes (placement_notes)",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "3980a07b8ff37959"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ds-notes-2c20ba71"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py",
+        "id_in_name": 0,
+        "name": "ds_context",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"p\", \"type\": \"Placement\", \"required\": true}, {\"name\": \"profiles\", \"type\": \"dict[str, dict[str, str]]\", \"required\": true, \"description\": \"products' profile trees\"}]",
+        "purpose": "{path: text}: a placement's DS image inputs under forgeops/config-profiles/<ns>/ds/: config/schema/90-opsdir.ldif (schema_entry), ldif-ext/<folder>/opsdir.ldif (ldif_ext), append-ldif-ext.sh (the build step appending each folder's LDIF to the base-entries template its setup profile imports: the profile folder's highest version holding one, chosen in the image; entries the template already creates left out) and a Dockerfile FROM ${BASE_IMAGE} (the record's DS image) copying the schema to the custom-schema folder and running the build step, with the placement's note comments; from PingDS's profile tree among the products'; {} when ForgeOps runs no DS there or the record gives it neither schema nor entries",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "bcf509f374d7ff73"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingds/src/opsdir_adapter_pingds/render.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "Adapter.notes of the PingDS adapter: the record's schema definitions its render leaves out because PingDS ships them (base-ds shipped_notes)",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "cef97782ba88e34b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-8a468545"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-base-ds/src/opsdir_base_ds/config.py",
+        "id_in_name": 0,
+        "name": "shipped_definitions",
+        "parameters": "[{\"name\": \"product\", \"type\": \"DsProduct\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "((user-schema record, arc), ...): the record's defined attributes, then classes, whose OID lies under a vendor arc the product's servers ship (DsProduct.shipped_arcs)",
+        "returns": "{\"type\": \"tuple[tuple[Entry, str]]\"}",
+        "source_hash": "2fbadf74b61c4efa"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-shipped-definitions-4efedcf3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-base-ds/src/opsdir_base_ds/config.py",
+        "id_in_name": 0,
+        "name": "shipped_notes",
+        "parameters": "[{\"name\": \"product\", \"type\": \"DsProduct\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "A render note (note, area Directory) per definition the product's schema render leaves out because its servers ship it (shipped_definitions): to the record's owners, how to add it by hand where the servers lack it",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "ba1cbbd86630006f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-shipped-notes-7f92e1d4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-base-ds/src/opsdir_base_ds/product.py",
+        "id_in_name": 0,
+        "name": "shipped_arc",
+        "parameters": "[{\"name\": \"product\", \"type\": \"DsProduct\", \"required\": true}, {\"name\": \"oid\", \"type\": \"str | None\", \"required\": true}]",
+        "purpose": "The product's shipped vendor arc (DsProduct.shipped_arcs) an OID lies under (the arc itself or below it, not a longer sibling), or None",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "1f1167dfda740d3b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-shipped-arc-55d68d71"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"namedtuple\", \"fields\": {\"name\": \"str (as servers record it in ciamProductVersion)\", \"root_dn\": \"str (administrator bind DN)\", \"dsconfig_apply\": \"tuple[str] (comment lines: how to apply the batch)\", \"handler_names\": \"Mapping (record handler name -> product name)\", \"builtin_policies\": \"tuple[str] (password policies every server already has: dsconfig sets them, never creates them)\", \"shipped_arcs\": \"tuple[str] (default (): vendor OID arcs whose schema definitions the product's servers ship; left out of the schema the record renders for them)\"}}",
+        "description": "What distinguishes one DS-lineage product from another, as data the shared renderers read",
+        "file": "packages/opsdir-base-ds/src/opsdir_base_ds/product.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "DsProduct"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-dsproduct-45e405a4"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"namedtuple\", \"fields\": {\"folder\": \"str (ldif-ext folder: am-config, identities, tokens, idm-repo)\", \"name\": \"str (the backend's name in ForgeOps' DS: cfgStore, amIdentityStore, amCts, idmRepo)\", \"base_dn\": \"str (its base DN: the setup profiles' defaults; idm-repo's from the domain forgerock.io)\", \"template\": \"str (its setup profile's folder under DS_TEMPLATES, e.g. IDM/repo; the build step picks its highest version holding base-entries.ldif)\", \"fill\": \"str (what the &{...} parameter in that profile's template DNs stands for: the base DN; idm-repo's domain dc=forgerock,dc=io)\"}}",
+        "description": "One backend of ForgeOps' DS image at the pinned release (release.DS_BACKENDS): where its ldif-ext entries go and what serves which base DN",
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/release.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "DsBackend"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-dsbackend-2e2a87f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 114 in full (description there; deferred note 2824 on file 933). Render PingDS for ForgeOps' DS custom image: (1) only the record's custom schema (operator and packages' own OID arcs, not the standard schema) as config/schema/*.ldif; (2) the DIT into ldif-ext/<backend>/ chosen by base DN, entries no ForgeOps backend serves becoming a render note to the owning team; (3) how dsconfig.batch and acis.ldif reach the image (custom ds-setup.sh or a render note). Verify current ForgeOps docker/ds layout first (Codex, read-only, exact file paths only; record a research note). Design proposal to the master before coding.",
+        "flows": [
+          "Product Profile Build"
+        ],
+        "name": "5.9 follow-up: PingDS ForgeOps custom-schema profile",
+        "parent": {
+          "slug": "milestone-5-9-follow-up-pingds-forgeops-custom-sch-e4a551dd"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Current ForgeOps docker/ds layout (custom-schema, ldif-ext backends, ds-setup.sh hooks); how to select custom schema by OID arc; master approves before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-e511bec2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "config/schema/*.ldif holds only the operator's and packages' own arcs, not the standard schema.",
+        "name": "Custom-schema-only render",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-custom-schema-only-render-1bded568"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Choose ldif-ext/<backend>/ by base DN; entries no ForgeOps backend serves become a render note.",
+        "name": "DIT into ldif-ext by base DN",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-dit-into-ldif-ext-by-base-dn-9957e985"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Reach the image through a custom ds-setup.sh or a render note, per the approved design.",
+        "name": "dsconfig.batch and ACIs",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-dsconfig-batch-and-acis-aaeab9ac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, round-trip where an importer reads it, showcase change if needed (demo.sh, snapshot-outputs.sh, showcase_support APPROVED), local docker build of the DS image context if feasible, README.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-94a22907"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-pingds declares PROFILE = ProductProfile('PingDS', (('ldap/', 'ldap/'),)) so the kit gets its schema.ldif and dit.ldif",
+        "name": "D1 PingDS ProductProfile",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-d1-pingds-productprofile-30613641"
+      }
+    },
+    {
+      "attributes": {
+        "description": "DsProduct gains the vendor OID arcs its servers ship (Codex-verified); base-ds renders ldap/schema.ldif without definitions under them; PingDS and OpenDJ adapters return a RenderNote (note) per left-out definition",
+        "name": "D2(A) base-ds shipped vendor arcs",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-d2-a-base-ds-shipped-vendor-arcs-9627c555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "release data (backends: folder, name, base DN, template path; schema file name); config/schema/90-opsdir.ldif (cn=schema entry form), ldif-ext/<backend>/opsdir.ldif split by base DN, derived Dockerfile FROM ${BASE_IMAGE} appending ldif-ext to the release's templates; formats; README",
+        "name": "D2/D3/D4 ForgeOps DS build context",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-d2-d3-d4-forgeops-ds-build-context-92211899"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Adapter.notes for forgeops: record backends no ForgeOps base DN serves (action); DS configuration and ACIs to apply online (action) incl. backend-name mismatches; data to owning team",
+        "name": "D3/D5 ForgeOps render notes",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-d3-d5-forgeops-render-notes-7db1fd4a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unit tests: forgeops DS profile + notes; base-ds shipped arcs filter + notes; line length",
+        "name": "Tests",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-7e2cf325"
+      }
+    },
+    {
+      "attributes": {
+        "description": "forgeops README Config profiles + Known limits (incl. two unverified items), pingds README, base-ds README (schema render change)",
+        "name": "Docs",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docs-acd44d7e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "local docker build of the rendered DS context if the public image pulls; new deferred note for 7.2 live verification",
+        "name": "Docker build check + deferred 7.2 note",
+        "parent": {
+          "key": {
+            "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docker-build-check-deferred-7-2-note-960208ae"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "5dbd3e66fb9ec563d2bd5e54f39e48a1dd494c4e",
+    "branch": "aimfp-u114-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "neutral_files calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neutral-files-3aad8343"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "neutral_files calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neutral-files-3aad8343"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "neutral_files calls shipped_notes (config.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neutral-files-3aad8343"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-notes-7f92e1d4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "neutral_files calls shipped_arc (product.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neutral-files-3aad8343"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-arc-55d68d71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "namespace_profiles calls ds_context (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-namespace-profiles-e91e3575"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "schema_entry calls parse (ldif.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-schema-entry-ae9b4327"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parse-b8338446"
+      }
+    },
+    {
+      "attributes": {
+        "description": "schema_entry calls write_entry (ldif.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-schema-entry-ae9b4327"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-write-entry-55e58bd5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "backend_of calls within (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-backend-of-a3074084"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ldif_ext calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ldif-ext-0deb0296"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ldif_ext calls parse (ldif.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ldif-ext-0deb0296"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parse-b8338446"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ldif_ext calls write_entry (ldif.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ldif-ext-0deb0296"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-write-entry-55e58bd5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ldif_ext calls backend_of (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ldif-ext-0deb0296"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-backend-of-a3074084"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_backends calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-backends-e1bcdd0e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "declared_config calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-declared-config-3f7b4020"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "declared_config calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-declared-config-3f7b4020"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "declared_config calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-declared-config-3f7b4020"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-7b5726db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-7b5726db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-7b5726db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renamed calls record_backends (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renamed-7b5726db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-record-backends-e1bcdd0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement_notes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement_notes calls rdn_value (directory.py) via _unserved_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement_notes calls note (notes.py) via _config_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement_notes calls backend_of (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-backend-of-a3074084"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement_notes calls record_backends (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-record-backends-e1bcdd0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement_notes calls declared_config (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-declared-config-3f7b4020"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement_notes calls renamed (ds_profile.py) via _config_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renamed-7b5726db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_notes calls placements (components.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-notes-2c20ba71"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placements-68ee00d0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_notes calls placement_notes (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-notes-2c20ba71"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_context calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_context calls image_of (components.py) via _dockerfile",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-image-of-dd15e658"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_context calls note_comment (notes.py) via _dockerfile",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_context calls schema_entry (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-schema-entry-ae9b4327"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_context calls ldif_ext (ds_profile.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ldif-ext-0deb0296"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_context calls placement_notes (ds_profile.py) via _dockerfile",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-context-798a4fc1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placement-notes-d6e67356"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls shipped_notes (config.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-8a468545"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-notes-7f92e1d4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped_definitions calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-definitions-4efedcf3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped_definitions calls defined_attributes (user_schema.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-definitions-4efedcf3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-defined-attributes-ffc98134"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped_definitions calls defined_classes (user_schema.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-definitions-4efedcf3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-defined-classes-eb1920ff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped_definitions calls shipped_arc (product.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-definitions-4efedcf3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-arc-55d68d71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped_notes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-notes-7f92e1d4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-notes-7f92e1d4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped_notes calls shipped_definitions (config.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-notes-7f92e1d4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-definitions-4efedcf3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-backend-of-a3074084"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-dsbackend-2e2a87f2"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-shipped-arc-55d68d71"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-dsproduct-45e405a4"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-shipped-definitions-4efedcf3"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-dsproduct-45e405a4"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-shipped-notes-7f92e1d4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-dsproduct-45e405a4"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py"
+      },
+      "flow": {
+        "name": "Product Profile Build"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py"
+      },
+      "flow": {
+        "name": "Render Notes Reporting"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-forgeops"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/ds_profile.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingds/src/opsdir_adapter_pingds/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-base-ds/src/opsdir_base_ds/config.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-base-ds/src/opsdir_base_ds/product.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/profiles.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/release.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingds/src/opsdir_adapter_pingds/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-9-follow-up-pingds-forgeops-custom-sch-f5ca39f2"
+      }
+    }
+  ],
+  "warnings": []
+}

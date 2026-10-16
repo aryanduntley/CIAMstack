@@ -1,0 +1,778 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "chain.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/pki/chain.py"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "Record -> each environment's synthetic checks. The core turns a canary the environment can run into a cloud-neutral spec: what it requests (HTTPS for health, login page or token; the IdP's start of a SAML sign-in; ldaps:// for a directory bind), how often, its credentials' secret role, the service's exposure, for an internal one the subnets it runs from, the CAs it must trust (the recorded PEMs of the CA certificates the service's certificate chains to, public material added to the runtime's trust store; none recorded: not rendered), or why it can't run. One set of probes (GET following redirects, client-credentials token, LDAPS simple bind; certificates verified) exists as Python and Node.js source. AWS: CloudWatch Synthetics canaries (in the VPC for an internal service, credentials from Secrets Manager). Azure: standard web tests for public GETs needing no private CA, else Container Apps jobs, each with its own identity, running one shared runner given its check as data, by default from an image the organization builds, signs and records by digest; results to Application Insights. Google Cloud: uptime checks for public GETs needing no private CA, else synthetic monitors (Node.js Cloud Run functions, credentials a mounted secret, Direct VPC egress); none in Assured Workloads. Secrets are never rendered; a CA rotation is a record change and a re-render; what can't run is a render note; the checks read back as canary bindings."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Synthetic Checks Render"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/canaries.py",
+        "id_in_name": 0,
+        "name": "canary_specs",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"endpoints\", \"type\": \"tuple[Endpoint]\", \"required\": true}]",
+        "purpose": "An environment's canaries whose checked service it binds, as CanarySpecs: name (canary binding else canary), flow, what it requests (https fqdn[:port] + the products' endpoint path for the flow through edge policies; saml-sso: the IdP's saml-start path with the starting SAML integration's entity ID in its query; ldap-bind: ldaps://fqdn:port), interval seconds, credentials secret binding (optional for ldap-bind), keeper, why not rendered, the service name's exposure, for an internal one the subnets its check runs from (the canary binding's ciamSubnetRole, else admitted_subnets), and trust (pki.chain trust_for of the service name's ciamTlsCertificate: the private CA PEMs the check is given, or None); a certificate chaining to CA certificates the record holds none of the PEMs of is a why (with how: record ciamCertificatePem, naming the CA certificates' owners).",
+        "returns": "{\"type\": \"tuple[CanarySpec]\"}",
+        "source_hash": "672b4052206567e4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-canary-specs-3b55e49f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/canaries.py",
+        "id_in_name": 0,
+        "name": "script",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true, \"description\": \"The environment\"}, {\"name\": \"spec\", \"type\": \"CanarySpec\", \"required\": true, \"description\": \"The canary\"}]",
+        "purpose": "The canary's Python script: its do-not-edit header, the shared probes (observability.probes PYTHON_PROBES: GET, client-credentials token request, LDAPS simple bind) and the CloudWatch Synthetics handler (HANDLER) that reads the canary's Secrets Manager credentials at run time (none: an anonymous LDAP bind) and runs probe(flow, url, creds, CA, CA_PARTIAL), failing the canary when it raises; CA / CA_PARTIAL: the PEMs of the private CA certificates the record holds for the checked service's certificate (spec.trust, pki.chain; None: the runtime's trust store alone) and whether an intermediate is the anchor.",
+        "returns": "{\"type\": \"str\", \"description\": \"Script text\"}",
+        "source_hash": "86cb8548bbed4cd1"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-script-975c0917"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/canaries.py",
+        "id_in_name": 0,
+        "name": "standard",
+        "parameters": "[{\"name\": \"spec\", \"type\": \"CanarySpec\", \"required\": true}]",
+        "purpose": "Whether an Application Insights standard web test makes a check: a flow one GET answers (core canaries GET_FLOWS: health, login-page, saml-sso) of an internet-facing service name whose certificate needs no CA the check must be given (spec.trust None: a standard test takes no CA certificate); the others are Container Apps jobs (check_jobs).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "82ca78f837c0ec5f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-standard-560a62a6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/synthetic_monitors.py",
+        "id_in_name": 0,
+        "name": "index_js",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"spec\", \"type\": \"CanarySpec\", \"required\": true}]",
+        "purpose": "The synthetic monitor function's index.js: its do-not-edit header (JavaScript comments), the shared Node.js probes (observability.probes NODE_PROBES) and the handler registering SyntheticFunction with runSyntheticHandler: credentials read at each run from the mounted Secret Manager secret (CREDENTIALS = /etc/secrets/check/credentials, null without one), CHECK_CA / CHECK_CA_PARTIAL (the private CA PEMs spec.trust gives, added to Node.js's roots; null: none), probe(flow, url, creds, ca, partial) logged, a rejection failing the monitor.",
+        "returns": "{\"type\": \"str\", \"description\": \"JavaScript source\"}",
+        "source_hash": "a4dc4c87005f6c28"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-index-js-26a35452"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/canaries.py",
+        "id_in_name": 0,
+        "name": "standard",
+        "parameters": "[{\"name\": \"spec\", \"type\": \"CanarySpec\", \"required\": true}]",
+        "purpose": "Whether an uptime check makes a check: a flow one GET answers (core GET_FLOWS: health, login-page, saml-sso) of a service name not recorded internal whose certificate needs no CA the check must be given (spec.trust None: an uptime check takes no CA certificate); the others, an internal one's included, are synthetic monitors (decision 2859).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "7b8257c31febbd00"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-standard-681ea15b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/observability.py",
+        "id_in_name": 0,
+        "name": "coverage_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"spec\", \"type\": \"str\", \"required\": true, \"description\": \"cloud/env or the environment's DN\"}, {\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false}]",
+        "purpose": "(environment, canary, flow, owner, rendered) of each canary environment spec could run: yes (and, when the check is given private CA certificates to trust, ', trusting <CA certificates with a PEM>' plus ' (an intermediate CA as the anchor)' when partial: CanarySpec.trust); inherited or kept (by whom); or NO (severity: why, from its render note).",
+        "returns": "{\"type\": \"tuple[tuple]\"}",
+        "source_hash": "1eb68a5527666727"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-coverage-rows-0ec2b93b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/chain.py",
+        "id_in_name": 0,
+        "name": "ca_certificates",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The CA certificates the record holds (ciamCertificate under ou=certificates with ciamCertPurpose ca), in record order.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "95970e2612a82b59"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ca-certificates-d3d8039a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/chain.py",
+        "id_in_name": 0,
+        "name": "self_issued",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether a certificate is self-issued (a root): its ciamIssuer is its ciamSubject, or 'self-signed'.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "6e71069ab24d0a46"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-self-issued-16a1a851"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/chain.py",
+        "id_in_name": 0,
+        "name": "issuer_certificate",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"cert\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"cas\", \"type\": \"tuple[Entry]\", \"required\": false, \"description\": \"the CA certificates to match by subject (default: ca_certificates(d))\"}]",
+        "purpose": "The certificate a certificate was issued by as the record holds it: its ciamIssuedBy, else the CA certificate (purpose ca) whose ciamSubject is its ciamIssuer; None for a self-issued one or an issuer the record doesn't hold.",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "2fe1fc5e33441f7a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issuer-certificate-5b1c9b99"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/chain.py",
+        "id_in_name": 0,
+        "name": "issuer_chain",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"cert\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The CA certificates a certificate is issued under, nearest first, issuer by issuer (issuer_certificate) up to a self-issued one or the last the record holds; cycle-guarded; () when the record holds none.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "6329291734862004"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issuer-chain-e02e3dd0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/chain.py",
+        "id_in_name": 0,
+        "name": "trust_for",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"cert\", \"type\": \"Entry|None\", \"required\": true}]",
+        "purpose": "What a client must be given to trust a certificate whose chain reaches CA certificates the record holds (a Trust: the recorded PEMs along the chain joined, None when none is recorded; partial when no self-issued certificate is in the bundle; the chain; the CA the certificate was issued by, ciamCertAuthority, when recorded), else None (its issuer isn't one the record holds: the client's own trust store decides).",
+        "returns": "{\"type\": \"Trust|None\"}",
+        "source_hash": "fc1685ff4ceecb62"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-trust-for-30da5353"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"collections.namedtuple (how defaults to (), trust to None)\", \"fields\": [\"canary\", \"binding\", \"name\", \"flow\", \"url\", \"every\", \"secret\", \"keeper\", \"why\", \"exposure\", \"subnets\", \"how\", \"trust\"]}",
+        "description": "A canary as one environment renders it: canary, binding, name, flow, url (https://, or ldaps:// for ldap-bind), every (seconds), secret, keeper, why (not rendered), exposure (internal/internet/None), subnets (subnet bindings an internal service's check runs from), how (steps that would let it render, when why: flow 43's render notes), trust (pki.chain Trust: the private CA PEMs the check is given and whether an intermediate is the anchor; None: the runtime's trust store decides).",
+        "file": "opsdir/opsdir/domains/observability/canaries.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "CanarySpec"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-canaryspec-da5b19a4"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "What a client is given to trust a certificate chaining to CAs the record holds: pem (the recorded PEMs along the chain joined, or None when none is recorded), partial (an intermediate CA is the anchor: no self-issued certificate in the bundle), chain (the CA certificate entries, nearest first), authority (the ciamCertAuthority the certificate was issued by, or None).",
+        "file": "opsdir/opsdir/domains/pki/chain.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Trust"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-trust-4a199b72"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 113 (deferred note 2837 on file 831). As approved (decision 3109, research 3108): a synthetic check of a service whose certificate (ciamTlsCertificate) chains to CA certificates the record holds is given their recorded PEMs (ciamCertificatePem, public material; pki.chain), added to the runtime's own trust store (an intermediate trusted as the anchor when no root is among them): AWS CloudWatch Synthetics (Python, in the script), Azure Container Apps check jobs (CHECK_CA / CHECK_CA_PARTIAL data, image unchanged), GCP synthetic monitors (Node.js index.js). Managed public checks (Azure standard web tests, GCP uptime checks) take no CA: such checks become jobs / monitors. A held chain with no PEM recorded: not rendered, a render note (flow 43, blocker when it feeds an alert) naming the CA (ciamCertAuthority, flow 60), the chain, the CA certificates' owners and what to record. A CA rotation is a record change + re-render. Showcase CHG-2069 (Issuing CA 2's certificate). Departs from the original \"by reference read at run time\" (premise predated attr 624).",
+        "flows": [
+          "Synthetic Checks Render",
+          "Render Notes Reporting"
+        ],
+        "name": "5.4 follow-up: synthetic checks trust a private CA by reference",
+        "parent": {
+          "slug": "milestone-5-4-follow-up-private-ca-trust-for-synth-12858bd2"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "How each runtime (CloudWatch Synthetics Python, the Azure check job runner image, GCP Node.js synthetic monitor) can trust an extra CA at run time; record shape of the CA reference; master approves before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-06da3375"
+      }
+    },
+    {
+      "attributes": {
+        "description": "The attribute/reference a check carries for its issuing CA (by reference only), its schema and validation.",
+        "name": "Record: CA reference on checks",
+        "parent": {
+          "key": {
+            "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-record-ca-reference-on-checks-57178d0a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "AWS, Azure and GCP check renders load the referenced CA as trust anchor; identity/permission to read it.",
+        "name": "Render per cloud",
+        "parent": {
+          "key": {
+            "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-render-per-cloud-22af5d44"
+      }
+    },
+    {
+      "attributes": {
+        "description": "A check of a service whose certificate's issuer is a private CA and that has no CA reference becomes a render note (flow 43) to the owning team.",
+        "name": "Render note without a reference",
+        "parent": {
+          "key": {
+            "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-render-note-without-a-reference-9c90ef8e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests per runtime, local run of the rendered check code against a private-CA endpoint where feasible, showcase change if it adds one (demo.sh, snapshot-outputs.sh, showcase_support APPROVED), README Known limits.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-e251aecc"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "5dbd3e66fb9ec563d2bd5e54f39e48a1dd494c4e",
+    "branch": "aimfp-u113-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "skips a self-issued certificate",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuer-certificate-5b1c9b99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-self-issued-16a1a851"
+      }
+    },
+    {
+      "attributes": {
+        "description": "CA certificates to match the issuer subject against (default)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuer-certificate-5b1c9b99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-certificates-d3d8039a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the CA certificates once for the walk",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuer-chain-e02e3dd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-certificates-d3d8039a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issuer by issuer",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuer-chain-e02e3dd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issuer-certificate-5b1c9b99"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the chain",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trust-for-30da5353"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issuer-chain-e02e3dd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "each CA certificate's recorded PEM",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trust-for-30da5353"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-pem-4b86c6be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "partial when no self-issued certificate is in the bundle",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trust-for-30da5353"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-self-issued-16a1a851"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the CA (ciamCertAuthority) the certificate was issued by",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trust-for-30da5353"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-of-51a8f553"
+      }
+    },
+    {
+      "attributes": {
+        "description": "canary_specs calls owner_label (findings.py) via _untrusted",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-canary-specs-3b55e49f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": "canary_specs calls trust_for (chain.py) via _spec",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-canary-specs-3b55e49f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-trust-for-30da5353"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_certificates calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-certificates-d3d8039a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_certificates calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-certificates-d3d8039a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "self_issued calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-self-issued-16a1a851"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "self_issued calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-self-issued-16a1a851"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issuer_certificate calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuer-certificate-5b1c9b99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issuer_certificate calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuer-certificate-5b1c9b99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issuer_certificate calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issuer-certificate-5b1c9b99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "trust_for calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trust-for-30da5353"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "coverage_rows calls certificate_pem (pem.py) via _trusting",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-coverage-rows-0ec2b93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-pem-4b86c6be"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-trust-for-30da5353"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-trust-4a199b72"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/chain.py"
+      },
+      "flow": {
+        "name": "Synthetic Checks Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/chain.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/chain.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-pki"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/chain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/canaries.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/probes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/canaries.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/canaries.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/canaries.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/check_jobs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/synthetic_monitors.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/observability.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-5-4-follow-up-synthetic-checks-trust-a-p-ecfbe8d0"
+      }
+    }
+  ],
+  "warnings": []
+}

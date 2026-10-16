@@ -1,0 +1,2945 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "revocation.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/pki/revocation.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "observation.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/core/observation.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package build config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "verify.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "plan.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "revocation.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/revocation.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": "package documentation"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-x509 (kind pki, declaration-only): plan.py (what each endpoint is asked: CRL URLs, OCSP GET requests with a SHA-1 CertID, no nonce, one serial from core revocation.probe_serial), collect.py (estate collector of observing Requests), verify.py (CRL and OCSP response parsing and signature checks: CA-signed, delegated responder with id-kp-OCSPSigning; PSS OCSP unsupported), revocation.py (importer x509/revocation replacing ou=revocation-observations). The only package depending on cryptography.",
+        "external_dependencies": "[\"cryptography>=50.0.2 (pyca; CRL/OCSP parsing, signature verification, OCSP request building)\"]",
+        "path": "packages/opsdir-adapter-x509/",
+        "purpose": "The X.509 standards (RFC 5280 CRLs, RFC 6960 OCSP), CA-neutral: every recorded CA's revocation endpoints observed read-only and checked against the CA certificates the record holds, into the core pki domain's revocation observations"
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-x509"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "Each recorded CA's revocation endpoints (ou=certificate-authorities children) observed from where relying parties sit, CA-neutral (RFC 5280/6960; decision of task 548): an operator-run, read-only estate collection (opsdir-adapter-x509, importer x509/revocation) GETs every http(s) CRL / delta CRL endpoint and asks every OCSP responder (RFC 6960 A.1 GET, SHA-1 CertID, no nonce) about one certificate the CA issued; the core's observing Request keeps whatever each answers (status, body as base64, or why nothing) without failing the collection. The importer (pure, offline, the only code needing the cryptography library) verifies each answer against the record's CA certificates (signature, issuer, cRLSign; OCSP: the CA or a delegated responder it issued with id-kp-OCSPSigning) and replaces ou=revocation-observations (ciamRevocationObservation per CA, ciamEndpointObservation per endpoint: answer, this/next update, CRL numbers, signature check, signer, OCSP status). The core pki domain's pure check (revocation.py) turns unreachable, unreadable, wrongly signed, expired or stale (estate setting revocation-freshness-margin-hours) endpoints, a delta ahead of its base, and OCSP answers disagreeing with the CA's inventory into actions for the CA's owners; report revocation-endpoints."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Revocation Endpoint Observation"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/live.py",
+        "id_in_name": 0,
+        "name": "run_call",
+        "parameters": "[{\"name\": \"call\", \"type\": \"Command|Request\", \"required\": true}, {\"name\": \"resolve\", \"type\": \"Callable\", \"required\": true}]",
+        "purpose": "Effect: (output, problem) of one collection call: Command as a subprocess (no shell; credentials only on stdin; extra env switches; failure = 'exit N: <last 600 chars of stderr, redacted>', or not installed / timeout); a workdir Command runs in a private 0700 directory and returns {relative path: text} of what it wrote under export/ (.git never read; a symlink or non-UTF-8 file maps to None, failing the collection if kept); Request as an HTTP GET (Authorization built in memory; TLS trust from the CA reference or system store); an observing Request (observe=True) via _observe: whatever the endpoint answered (HTTP error statuses too, body at most OBSERVED_BYTES) or why it answered nothing, as core.observation text dated by this host's UTC clock, never a problem",
+        "returns": "{\"type\": \"(str|None, str|None)\"}",
+        "source_hash": "0f73bb01179e9134"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-run-call-4195ce4c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "endpoint_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"authority\", \"type\": \"str\"}, {\"name\": \"kind\", \"type\": \"str\"}, {\"name\": \"n\", \"type\": \"int\"}, {\"name\": \"url\", \"type\": \"str\"}, {\"name\": \"template\", \"type\": \"str|None\"}]",
+        "purpose": "Importer builder: the n-th ciamRevocationEndpoint of a kind under a CA, with its URL and the CA's unexpanded template when variables remain",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "cb71b9580b419e13"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"cert\", \"type\": \"Entry\"}, {\"name\": \"cas\", \"type\": \"tuple of Entry\"}]",
+        "purpose": "The CA a record certificate was issued by: ciamIssuedBy listed as CA's own certificate, else issuer = CA certificate's subject, else issuer CN = CA name; None for a CA's own certificate",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "6a409b926d475023"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-authority-of-51a8f553"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "find_issued",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"Entry\"}, {\"name\": \"rows\", \"type\": \"tuple of Entry\"}, {\"name\": \"everywhere\", \"type\": \"tuple of Entry\"}]",
+        "purpose": "The issued certificate matching a record certificate: fingerprint (everywhere) > serial > subject+validity (its CA's rows)",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "86b07b58cbc180bc"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/observation.py",
+        "id_in_name": 0,
+        "name": "observation",
+        "parameters": "[{\"name\": \"at\", \"type\": \"datetime\", \"required\": true, \"description\": \"when (aware)\"}, {\"name\": \"status\", \"type\": \"int|None\", \"required\": true}, {\"name\": \"content_type\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"body\", \"type\": \"bytes|None\", \"required\": true}, {\"name\": \"error\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "An observing Request's output text: JSON {observedAt (ISO 8601 UTC, Z), status, contentType, body (base64, so a binary answer is kept), error}, indented, newline-terminated.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "670e6322e7454662"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observation-cbf3ad62"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/observation.py",
+        "id_in_name": 0,
+        "name": "read_observation",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(Observation, problem): an observing Request's output read back (observedAt parsed as UTC, body base64-decoded strictly, status an int or null); (None, why) when it isn't one.",
+        "returns": "{\"type\": \"(Observation|None, str|None)\"}",
+        "source_hash": "0a16e3c387a472f2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-observation-0d228280"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "observation_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"authority\", \"type\": \"str\", \"required\": true, \"description\": \"the CA's name\"}, {\"name\": \"at\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime\"}, {\"name\": \"state\", \"type\": \"str\", \"required\": true, \"description\": \"complete|incomplete\"}, {\"name\": \"problems\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "The observation of the revocation endpoints of the CA named authority (ciamRevocationObservation, cn the CA's name, under ou=revocation-observations): made at `at`, complete or incomplete, with why; attributes the importer doesn't own kept.",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "7d320279a7df80c2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observation-entry-4ee68d00"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "endpoint_observation_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"authority\", \"type\": \"str\", \"required\": true}, {\"name\": \"endpoint\", \"type\": \"str\", \"required\": true, \"description\": \"the endpoint's cn\"}, {\"name\": \"kind\", \"type\": \"str\", \"required\": true, \"description\": \"crl|delta-crl|ocsp\"}, {\"name\": \"url\", \"type\": \"str\", \"required\": true, \"description\": \"the endpoint's ciamEndpointUrl as recorded\"}, {\"name\": \"at\", \"type\": \"str\", \"required\": true}, {\"name\": \"facts\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "What one revocation endpoint (cn e.g. crl-1) of the CA named authority answered when observed at `at` at url (ciamEndpointObservation child of the CA's observation): facts {attribute of FACTS: value, or a tuple for ciamInventoryProblem; None not known}.",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "01eedc2c9b7cb069"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-endpoint-observation-entry-dba35a5e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "observations_group",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"entries\", \"type\": \"tuple[Entry]\", \"required\": true}]",
+        "purpose": "An Imported group: ou=revocation-observations made exactly these entries (observations and their endpoints' answers, parents first by depth; the container kept).",
+        "returns": "{\"type\": \"(str, tuple[Entry])\"}",
+        "source_hash": "a71c70286cbba77b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observations-group-432967de"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "observable_url",
+        "parameters": "[{\"name\": \"endpoint\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamRevocationEndpoint\"}]",
+        "purpose": "(the URL to GET, None) of a revocation endpoint, its path percent-encoded (spaces; existing escapes kept); (None, why) when it can't be observed: its URL still holds the CA's variables (description starts with issued.TEMPLATE_KEPT) or isn't http(s).",
+        "returns": "{\"type\": \"(str|None, str|None)\"}",
+        "source_hash": "5821f806658e5063"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observable-url-eb536a63"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "authority_certificates",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"authority\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The CA's own certificates the record holds: its ciamCaCertificate entries, else the CA certificates (chain.ca_certificates) whose subject's common name is its name.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "1a82e9c3c709bdc6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authority-certificates-3ee42a66"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "probe_serial",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"authority\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "(serial, which certificate) an OCSP responder of the CA is asked about: a record certificate the CA issued (its ciamSerialNumber, else the serial of the inventory row found for it), else the newest unrevoked certificate in the CA's inventory; (None, why) when none.",
+        "returns": "{\"type\": \"(str|None, str)\"}",
+        "source_hash": "b05dc939d94a765a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "observations",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "{CA name lowercase: its ciamRevocationObservation} of every observation the record holds.",
+        "returns": "{\"type\": \"dict[str, Entry]\"}",
+        "source_hash": "0a74e9b5db5bbebd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observations-2500c568"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "endpoint_observations",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"observation\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "{endpoint name lowercase: what it answered} of one CA's observation.",
+        "returns": "{\"type\": \"dict[str, Entry]\"}",
+        "source_hash": "6746f4b3f7a36de1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-endpoint-observations-0a79d2b4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "observation_for",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"endpoint\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"seen\", \"type\": \"dict[str, Entry]\", \"required\": true, \"description\": \"endpoint_observations\"}]",
+        "purpose": "What an endpoint answered at its CA's last observation, or None: not observed, or observed at another URL (changed since).",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "8b014d8331896083"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observation-for-d99129e2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "endpoint_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"obs\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamEndpointObservation\"}, {\"name\": \"margin\", \"type\": \"timedelta\", \"required\": true}, {\"name\": \"published\", \"type\": \"tuple[int]\", \"required\": false, \"description\": \"CRL numbers the CA's distribution points served\"}, {\"name\": \"rows\", \"type\": \"tuple[Entry]\", \"required\": false, \"description\": \"the CA inventory's certificates\"}]",
+        "purpose": "((short label, text), ...) of what is wrong with what an endpoint answered: http-error/unreachable/unreadable; bad signature, other issuer, unauthorized responder, no CA certificate; expired, stale within margin, CRL without nextUpdate; delta ahead of the published CRL numbers; OCSP refused, unknown, or contradicting the CA's inventory rows.",
+        "returns": "{\"type\": \"tuple[(str, str)]\"}",
+        "source_hash": "1eeb5b7cfb8f3199"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-endpoint-problems-751d929d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "judged",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"authority\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"observation\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"margin\", \"type\": \"timedelta\", \"required\": true}]",
+        "purpose": "((endpoint, its observation or None, problems), ...) for each crl/delta-crl/ocsp endpoint of a CA: an observable endpoint its last observation missed is a 'not observed' problem.",
+        "returns": "{\"type\": \"tuple[(Entry, Entry|None, tuple)]\"}",
+        "source_hash": "c752098424246ac9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-judged-e6cd08c5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "check_revocation_endpoints",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: nothing when the record holds no revocation observation; else each observed CA's endpoint with a problem (judged) an action for the CA's owners (owner_label), and endpoints answering current and validly signed counted as ok. Margin from the estate setting revocation-freshness-margin-hours.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "e3458e26ce7d00f5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/revocation.py",
+        "id_in_name": 0,
+        "name": "revocation_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": true, \"description\": \"unused\"}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Report revocation-endpoints (dated): one row per crl/delta-crl/ocsp endpoint of every CA: URL, observed at, answer, this/next update, CRL number (or the base a delta builds on), signature check, OCSP status and serial, state (problem labels, ok, not observed; outdated when nextUpdate is before as_of), detail (the observation's ciamInventoryProblem: why not observed, HTTP status, responder certificate) and the CA's owners.",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "91b6fa78e523482e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-revocation-rows-58440810"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/naming.py",
+        "id_in_name": 0,
+        "name": "observation_dn",
+        "parameters": "[{\"name\": \"authority\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The DN of the observation of the revocation endpoints of the CA of that name (cn=<name>,ou=revocation-observations).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "b4c0480794ca2fc8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observation-dn-077cfe1a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "common_name",
+        "parameters": "[{\"name\": \"subject\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The CN of a distinguished name as text (CN=Example CA, O=Example -> Example CA), or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "4ee2de88d8f7f69a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "serial_key",
+        "parameters": "[{\"name\": \"v\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "A serial number as compared: hex digits only, lowercase, without leading zeros.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "82cb267181719687"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-serial-key-9f0ee287"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py",
+        "id_in_name": 0,
+        "name": "load_certificate",
+        "parameters": "[{\"name\": \"pem\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The first certificate of a PEM text as an x509.Certificate, or None when it isn't one.",
+        "returns": "{\"type\": \"x509.Certificate|None\"}",
+        "source_hash": "f2f49be1fd597c26"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-load-certificate-5888d789"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py",
+        "id_in_name": 0,
+        "name": "serial_hex",
+        "parameters": "[{\"name\": \"n\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "A serial number (int) as lowercase hex of even length, as the record writes serials.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "a2700793945b4864"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-serial-hex-319ec339"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py",
+        "id_in_name": 0,
+        "name": "key_hash",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"x509.Certificate\", \"required\": true}]",
+        "purpose": "SHA-1 of a certificate's subjectPublicKey bits (RFC 6960 CertID issuerKeyHash; RFC 5280 key identifier method 1), via x509.SubjectKeyIdentifier.from_public_key.",
+        "returns": "{\"type\": \"bytes\"}",
+        "source_hash": "66a5b48168158ba1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-key-hash-5d132554"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py",
+        "id_in_name": 0,
+        "name": "name_hash",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"x509.Certificate\", \"required\": true}]",
+        "purpose": "SHA-1 of a certificate's DER subject name (RFC 6960 CertID issuerNameHash when it is the issuer).",
+        "returns": "{\"type\": \"bytes\"}",
+        "source_hash": "2f85fb7a75bf34aa"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-name-hash-512bb5ad"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py",
+        "id_in_name": 0,
+        "name": "crl_facts",
+        "parameters": "[{\"name\": \"body\", \"type\": \"bytes\", \"required\": true}, {\"name\": \"cas\", \"type\": \"tuple[(Entry, x509.Certificate)]\", \"required\": true, \"description\": \"the CA's own certificates\"}]",
+        "purpose": "Facts (core revocation FACTS) of a CRL an endpoint served (DER or PEM) checked against the CA's certificates: answered with this/next update, CRL number, delta base, signature check (valid / invalid incl. key usage without cRLSign / other-issuer / no-ca-certificate / unsupported) and signer DN; unreadable when it isn't a CRL.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "af114cd732adf532"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-crl-facts-1d1a4e16"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py",
+        "id_in_name": 0,
+        "name": "ocsp_facts",
+        "parameters": "[{\"name\": \"body\", \"type\": \"bytes\", \"required\": true}, {\"name\": \"cas\", \"type\": \"tuple[(Entry, x509.Certificate)]\", \"required\": true}, {\"name\": \"serial\", \"type\": \"str|None\", \"required\": false, \"description\": \"the serial asked about\"}]",
+        "purpose": "Facts of an OCSP responder's answer (DER): a non-successful response's status (malformedRequest..unauthorized) with the serial asked about; else certificate status, this/next update, the response's serial and the signature check (CA-signed, or a delegated responder certificate in the response issued directly by the CA with id-kp-OCSPSigning valid at producedAt; else unauthorized-responder; RSA-PSS unsupported); unreadable when it isn't an OCSP response or answers more than one certificate.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "8f016a1e08ca92ee"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ocsp-facts-0fc6fcd7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py",
+        "id_in_name": 0,
+        "name": "signing_certificates",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"authority\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "((record entry, x509.Certificate), ...) of the CA's own certificates (core revocation.authority_certificates) whose recorded PEM loads.",
+        "returns": "{\"type\": \"tuple[(Entry, x509.Certificate)]\"}",
+        "source_hash": "59354a94f099189b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-signing-certificates-099c11e6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py",
+        "id_in_name": 0,
+        "name": "ocsp_request",
+        "parameters": "[{\"name\": \"issuer\", \"type\": \"x509.Certificate\", \"required\": true}, {\"name\": \"serial\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "DER of an RFC 6960 OCSPRequest about the certificate with that serial (hex) the CA certificate issuer issued: one SHA-1 CertID (name_hash, key_hash), no nonce, unsigned.",
+        "returns": "{\"type\": \"bytes\"}",
+        "source_hash": "edb252ffce736d65"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ocsp-request-9e4d5617"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py",
+        "id_in_name": 0,
+        "name": "ocsp_get_url",
+        "parameters": "[{\"name\": \"url\", \"type\": \"str\", \"required\": true}, {\"name\": \"request\", \"type\": \"bytes\", \"required\": true}]",
+        "purpose": "The GET form of an OCSP request (RFC 6960 A.1): the responder URL (trailing slash dropped), '/', the request's base64, URL-encoded.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "2f32a1ca9b9d42cc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ocsp-get-url-17ed73c1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py",
+        "id_in_name": 0,
+        "name": "export_path",
+        "parameters": "[{\"name\": \"authority\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"endpoint\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Where an endpoint's answer is in the export: <CA name>/<endpoint name>.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "9b1eeaac25b78a54"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-export-path-a0eb0115"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py",
+        "id_in_name": 0,
+        "name": "planned",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"authority\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"endpoint\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "How the observation treats one endpoint of a CA (Planned): its export path, the URL to GET (core revocation.observable_url; for OCSP the GET request URL about probe_serial's certificate over the first loadable CA certificate) or why not, and the serial asked about.",
+        "returns": "{\"type\": \"Planned\"}",
+        "source_hash": "a6ca77f07d24ec2c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-planned-cb58f48e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py",
+        "id_in_name": 0,
+        "name": "plan",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The Planned crl/delta-crl/ocsp endpoints of every CA the record holds (CA issuers aren't observed).",
+        "returns": "{\"type\": \"tuple[Planned]\"}",
+        "source_hash": "cf14671004a3a32b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-plan-7b1906e5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/collect.py",
+        "id_in_name": 0,
+        "name": "revocation_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel|None\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps (estate): ((export path, Request(url, observe=True)), ...) for every endpoint the plan fetches; anonymous, no credential.",
+        "returns": "{\"type\": \"tuple[(str, Request)]\"}",
+        "source_hash": "dd711a5850417820"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-revocation-steps-f8a191ef"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/revocation.py",
+        "id_in_name": 0,
+        "name": "answer_facts",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\", \"required\": true}, {\"name\": \"observation\", \"type\": \"Observation\", \"required\": true}, {\"name\": \"cas\", \"type\": \"tuple[(Entry, x509.Certificate)]\", \"required\": true}, {\"name\": \"serial\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Facts of one observed endpoint's answer (Observation): unreachable (error or no status), http-error (non-2xx status), unreadable (empty body), else crl_facts / ocsp_facts against the CA's certificates; an OCSP responder's facts always name the serial asked about.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "6160994e66dae110"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-answer-facts-1fec957d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/revocation.py",
+        "id_in_name": 0,
+        "name": "read_revocation",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer x509/revocation read: ou=revocation-observations made what the export (<CA>/<endpoint>.json observations) says each recorded CA's planned endpoints answered: per CA an observation (at its first endpoint's observation, else --at; incomplete when a planned endpoint is missing from the export), per endpoint its facts or not-observed with why; files not planned left out with a notice.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "996b0187724ffd1f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"url\": \"str\", \"headers\": \"((name, value), ...) no credentials\", \"credential\": \"(basic|bearer, ref, login) | (headers, ref, login, (login_header, secret_header)) | None\", \"ca\": \"ref of a PEM certificate | None\", \"absent\": \"tuple[int]\", \"keep\": \"fn(output) -> output | None\", \"observe\": \"bool: the answer, whatever it is, as an observation's JSON text (core.observation); never a failed call\"}",
+        "description": "An HTTP GET a collector asks opsdir to make itself (no other method); an observing one (observe=True) records whatever the endpoint answers (a revocation endpoint's binary answer as base64) or why it answered nothing",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Request"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-request-e212bfd1"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "An endpoint's answer as an observing Request recorded it (core.observation: observation text read back by read_observation)",
+        "file": "opsdir/opsdir/core/observation.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Observation"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-observation-1c242440"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One endpoint of a CA as the revocation observation plans it: what is fetched and where its answer goes in the export, or why it isn't observed",
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Planned"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-planned-72ebcc37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Item (b) of milestone 108 (analysis 3068). Observe each recorded CA's revocation endpoints (ou=certificate-authorities children: CRL, delta CRL, OCSP, CA issuers): for each http(s) CRL/delta CRL endpoint, a read-only fetch recording reachability, thisUpdate/nextUpdate and whether it is signed by the CA the record holds; for OCSP (RFC 6960), a status request for a record certificate the CA issued. Stale (past nextUpdate or within a margin as an estate setting), unreachable or wrongly signed endpoints become actions for the CA's owner as data. Follow the existing collector contract (Collector, evidence, least privilege, absent markers): the fetch runs as an operator-run collection producing an export the importer reads, never from inside the planner. Research the CRL/OCSP formats and Python stdlib/cryptography options first (Codex, read-only); check which crypto library the project already depends on before adding one. Design to the master before coding (it may change what the record holds: observed endpoint state).",
+        "flows": [
+          "PKI Authorities & Issued-Certificate Reconciliation",
+          "Revocation Endpoint Observation",
+          "Live Read-Only Collection"
+        ],
+        "name": "CRL and OCSP endpoint observation",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "CRL/delta CRL and OCSP (RFC 5280/6960) parsing and signature checks with the libraries the project already has; collector shape; what observed state the record holds; staleness margin as an estate setting; master approves before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-94724adb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Operator-run read-only collection of each http(s) endpoint into an export; importer records observed state per endpoint.",
+        "name": "Revocation collector and importer",
+        "parent": {
+          "key": {
+            "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-revocation-collector-and-importer-6e1c9cfe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Stale, unreachable or wrongly signed endpoints as actions for the CA's owner, as data.",
+        "name": "Revocation check",
+        "parent": {
+          "key": {
+            "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-revocation-check-4e43149a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests with generated CRLs/OCSP responses, showcase change if useful, predicted golden changes, adcs/pki docs.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-21b9d16f"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "c1b9f6b5809f35ceb097d690d7f1c70f0f708f13",
+    "branch": "aimfp-u108b-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "run_call's observing GET (via _observe) writes its answer as an observation's text",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-call-4195ce4c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observation-cbf3ad62"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_of calls common_name (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-of-51a8f553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_issued calls serial_key (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serial-key-9f0ee287"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observation_entry calls make_entry (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observation-entry-4ee68d00"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observation_entry calls get (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observation-entry-4ee68d00"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observation_entry calls merged_attrs (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observation-entry-4ee68d00"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observation_entry calls observation_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observation-entry-4ee68d00"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observation-dn-077cfe1a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_observation_entry calls make_entry (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-observation-entry-dba35a5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_observation_entry calls get (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-observation-entry-dba35a5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_observation_entry calls merged_attrs (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-observation-entry-dba35a5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_observation_entry calls observation_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-observation-entry-dba35a5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observation-dn-077cfe1a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observations_group calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observations-group-432967de"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observations_group calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observations-group-432967de"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observable_url calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observable-url-eb536a63"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_certificates calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-certificates-3ee42a66"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_certificates calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-certificates-3ee42a66"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_certificates calls follow_all (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-certificates-3ee42a66"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_certificates calls ca_certificates (chain.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-certificates-3ee42a66"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-certificates-d3d8039a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_certificates calls common_name (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-certificates-3ee42a66"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls authorities (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls cert_inventories (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls issued_of (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-of-df28b8c2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls authority_of (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-of-51a8f553"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls is_revoked (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_serial calls find_issued (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observations calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observations-2500c568"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observations calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observations-2500c568"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_observations calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-observations-0a79d2b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_observations calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-observations-0a79d2b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observation_for calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observation-for-d99129e2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observation_for calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observation-for-d99129e2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_problems calls one (directory.py) via _answer_problems",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-problems-751d929d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_problems calls values (directory.py) via _answer_problems",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-problems-751d929d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_problems calls gtime_at (directory.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-problems-751d929d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-at-675ef8b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_problems calls is_revoked (issued.py) via _ocsp_problems",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-problems-751d929d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_problems calls serial_key (issued.py) via _ocsp_problems",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-problems-751d929d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serial-key-9f0ee287"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls rdn_value (directory.py) via _rows",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls gtime_at (directory.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-at-675ef8b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls endpoints (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-a82580c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls cert_inventories (issued.py) via _rows",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls issued_of (issued.py) via _rows",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-of-df28b8c2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls observable_url (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observable-url-eb536a63"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls endpoint_observations (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-observations-0a79d2b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls observation_for (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observation-for-d99129e2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "judged calls endpoint_problems (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-judged-e6cd08c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-problems-751d929d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls owner_label (findings.py) via _action",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls gtime_at (directory.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-at-675ef8b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls authorities (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls observations (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observations-2500c568"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_revocation_endpoints calls judged (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-revocation-endpoints-8a9f427e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-judged-e6cd08c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls owner_label (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls date_of (directory.py) via _state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls authorities (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls endpoints (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-a82580c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls observations (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observations-2500c568"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls judged (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-judged-e6cd08c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "crl_facts calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-crl-facts-1d1a4e16"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ocsp_facts calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ocsp-facts-0fc6fcd7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ocsp_facts calls serial_hex (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ocsp-facts-0fc6fcd7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serial-hex-319ec339"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ocsp_facts calls key_hash (verify.py) via _names_responder",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ocsp-facts-0fc6fcd7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-key-hash-5d132554"
+      }
+    },
+    {
+      "attributes": {
+        "description": "signing_certificates calls certificate_pem (pem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-signing-certificates-099c11e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-pem-4b86c6be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "signing_certificates calls authority_certificates (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-signing-certificates-099c11e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-certificates-3ee42a66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "signing_certificates calls load_certificate (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-signing-certificates-099c11e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-load-certificate-5888d789"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ocsp_request calls key_hash (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ocsp-request-9e4d5617"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-key-hash-5d132554"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ocsp_request calls name_hash (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ocsp-request-9e4d5617"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-hash-512bb5ad"
+      }
+    },
+    {
+      "attributes": {
+        "description": "export_path calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-export-path-a0eb0115"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "planned calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "planned calls observable_url (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observable-url-eb536a63"
+      }
+    },
+    {
+      "attributes": {
+        "description": "planned calls probe_serial (revocation.py) via _ocsp",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-probe-serial-d8ca932b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "planned calls signing_certificates (plan.py) via _ocsp",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-signing-certificates-099c11e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "planned calls ocsp_request (plan.py) via _ocsp",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ocsp-request-9e4d5617"
+      }
+    },
+    {
+      "attributes": {
+        "description": "planned calls ocsp_get_url (plan.py) via _ocsp",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ocsp-get-url-17ed73c1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "planned calls export_path (plan.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-export-path-a0eb0115"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-7b1906e5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan calls authorities (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-7b1906e5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan calls endpoints (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-7b1906e5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-a82580c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan calls planned (plan.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-7b1906e5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-planned-cb58f48e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_steps calls plan (plan.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-steps-f8a191ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-plan-7b1906e5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "answer_facts calls crl_facts (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-answer-facts-1fec957d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-crl-facts-1d1a4e16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "answer_facts calls ocsp_facts (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-answer-facts-1fec957d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ocsp-facts-0fc6fcd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls one (directory.py) via _authority",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls rdn_value (directory.py) via _authority",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls read_observation (observation.py) via _endpoint",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-observation-0d228280"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls observation_entry (revocation.py) via _authority",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observation-entry-4ee68d00"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls endpoint_observation_entry (revocation.py) via _authority",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-observation-entry-dba35a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls observations_group (revocation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observations-group-432967de"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls signing_certificates (plan.py) via _authority",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-signing-certificates-099c11e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls plan (plan.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-plan-7b1906e5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_revocation calls answer_facts (revocation.py) via _endpoint",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-revocation-4b89c9f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-facts-1fec957d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "revocation_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-revocation-rows-58440810"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-observation-0d228280"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-observation-1c242440"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-planned-cb58f48e"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-planned-72ebcc37"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-plan-7b1906e5"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-planned-72ebcc37"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-answer-facts-1fec957d"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-observation-1c242440"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/revocation.py"
+      },
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/revocation.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/observation.py"
+      },
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/observation.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/adapter.py"
+      },
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py"
+      },
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py"
+      },
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/collect.py"
+      },
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/collect.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/revocation.py"
+      },
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/revocation.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-pki"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/observation.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "core"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/revocation.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Keys, Secrets & PKI Metadata"
+      }
+    },
+    {
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "Revocation Endpoint Observation"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/live.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/collecting.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/revocation.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/settings.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/observation.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/verify.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/plan.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/revocation.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-crl-and-ocsp-endpoint-observation-c588e1d8"
+      }
+    }
+  ],
+  "warnings": []
+}

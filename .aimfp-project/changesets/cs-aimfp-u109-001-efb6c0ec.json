@@ -1,0 +1,4260 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package metadata and entry point (config)"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": "package documentation"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "empty package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "naming.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "lifecycle.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "detections.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "shipping.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "api.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "terraform.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "render.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "read.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Task 552 (milestone 109 item e), decisions 3166. Package opsdir-adapter-elastic, entry point elastic. naming (stream names, policy/template names, languages, kibana-space setting), lifecycle (ILM/component template/SLM documents and notes), detections (ES|QL wrap, rule bodies, notes), shipping (Elastic Agent action, container blocker), api and terraform (render targets), render (orchestrator), read (importers elastic/elasticsearch and elastic/kibana), collect (two collectors).",
+        "external_dependencies": "[\"Elasticsearch ILM, SLM, component template and data stream APIs (GET _ilm/policy, _slm/policy, _data_stream)\", \"Kibana detection engine API (/api/detection_engine/rules, _find, _import NDJSON)\", \"elastic/elasticstack Terraform provider (~> 0.16.6)\", \"Elastic Stack 8.x/9.x (current 9.5.5); ECS\"]",
+        "path": "packages/opsdir-adapter-elastic/",
+        "purpose": "SIEM add-on: the Elastic data streams an environment keeps logs in (ILM policy attached by the dataset's @custom component template, SLM snapshot archive), its detections as ES|QL detection rules, as API documents and Terraform for elastic/elasticstack; read back from the Elasticsearch and Kibana APIs (read-only collectors, API key) and its own documents (round trip)."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-elastic"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "A SIEM as a log destination. A ciamLogDestination of kind siem-index keeps logs searchable (ciamRetentionDays) and in all, archive included (ciamTotalRetentionDays), the archive kept where ciamArchiveRef says; the log checks hold the total to the route's obligation and name logs kept only in the archive. A detection is an alarm binding naming the SIEM index it searches (ciamLogDestinationRole) with its search as its metric, written in ciamSearchLanguage (the SIEM adapters' vocabulary; not recorded: the SIEM's native language), rendered with the rule's count-per-window condition; cloud alarm renderers leave detections to the SIEM, and a SIEM's importers say nothing about entries other SIEMs or clouds keep. Core checks: a SIEM index nothing in the stack keeps or two declared adapters both read as theirs, a rule delivered through a SIEM with no working detection, a legal hold resting on a SIEM's retention; the log-routes report shows each environment's searchable and total days. Splunk add-on (stack role siem): indexes.conf, savedsearches.conf and Universal Forwarder inputs; reads back its confs and the REST API through a read-only collector. Microsoft Sentinel in the Azure adapter, on a Log Analytics workspace: onboarding, scheduled analytics rules, table total retention, read back. Elastic Security: its own flow."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "SIEM Integration"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "Elastic Security as a SIEM: a siem-index destination whose reference is a logs data stream (logs-<dataset>-<namespace>) is kept by the Elastic add-on (stack role siem). Its searchable days render as an index lifecycle policy per stream (daily rollover, delete phase at the searchable days, none when kept indefinitely) attached through the dataset's @custom component template; days kept longer in all, with the archive's snapshot repository recorded, render as a daily snapshot policy expiring after the extra days, the delete phase waiting for its snapshot. Detections on a stream render as ES|QL rules counting matching events per window, every window of the rule's period breaching, with severity and risk score from the rule. Both come as Elasticsearch/Kibana API documents (the GET answer shapes, so they read back) and as Terraform for the elastic/elasticstack provider, credentials only from its environment variables. Read back from Elasticsearch (data streams with ILM or data stream lifecycle retention, snapshot archives) and Kibana (detection rules of any language), collected read-only with an API key. What it leaves to the Elastic team is named as render notes: rule actions, when a policy takes effect, archives with no place, shared datasets, Elastic Agent collection; container output is a blocker."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Elastic Security SIEM"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/live.py",
+        "id_in_name": 0,
+        "name": "run_call",
+        "parameters": "[{\"name\": \"call\", \"type\": \"Command|Request\", \"required\": true}, {\"name\": \"resolve\", \"type\": \"Callable\", \"required\": true}]",
+        "purpose": "Effect: (output, problem) of one collection call: Command as a subprocess (no shell; credentials only on stdin; extra env switches; failure = 'exit N: <last 600 chars of stderr, redacted>', or not installed / timeout); a workdir Command runs in a private 0700 directory and returns {relative path: text} of what it wrote under export/ (.git never read; a symlink or non-UTF-8 file maps to None, failing the collection if kept); Request as an HTTP GET (Authorization built in memory: basic, bearer, token, headers, or api-key in the named header after an optional prefix such as Elasticsearch's 'ApiKey '; TLS trust from the CA reference or system store)",
+        "returns": "{\"type\": \"(str|None, str|None)\"}",
+        "source_hash": "3f4f9428dc830d62"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-run-call-4195ce4c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/observability.py",
+        "id_in_name": 0,
+        "name": "siem_check",
+        "parameters": "[{\"name\": \"dst_adapters\", \"type\": \"tuple[Adapter]\"}]",
+        "purpose": "The planner check for the target's SIEM indexes no adapter rendering it keeps (Adapter.siem_indexes), or more than one does (the index reads as each one's: only the first declared renders it): an action per index.",
+        "returns": "{\"type\": \"Callable[[PlanContext], Findings]\"}",
+        "source_hash": "40eb88af3553baa4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-siem-check-8b1c9d6e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "read_rest",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false}]",
+        "purpose": "Importer splunk/rest: the management API's indexes and saved searches per <cloud>/<env>/ placed into the environments (layout_import, provider None), other bindings' notices left out (siem.own_notices with naming.keeps), indexes' size limits named.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "6c6f2b29c37a407e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "read_conf_files",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false}]",
+        "purpose": "Importer splunk/conf: indexes.conf and savedsearches.conf per <cloud>/<env>/ (the render read back, or an app's own), other bindings' notices left out (siem.own_notices with naming.keeps).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "22ea7e9a13aa764a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py",
+        "id_in_name": 0,
+        "name": "rest_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: the two read-only GETs (indexes, saved searches) against the first location of the environment's first readable splunk/rest collection source (governance.collection.readable_source), with its credential (bearer or basic) and CA.",
+        "returns": "{\"type\": \"tuple[(str, Request)]\"}",
+        "source_hash": "0c0a4bf18b877f2e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-rest-steps-a7f4f898"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector problems: why the splunk/rest collection sources can't be read (unbound credential or trust anchor, no location), from governance.collection.source_problems.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "da0062172d7ad28b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-5cfd013f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "stream_name",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\", \"description\": \"a log destination binding\"}]",
+        "purpose": "The logs data stream a log destination names (its ciamProviderRef), or None when it isn't a SIEM index or its reference isn't a logs data stream name.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "3e035185724b0c53"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "is_stream",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "Whether a name is a logs data stream name as Elastic names them (logs-<dataset>-<namespace>).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "a81bb57605984cf5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-stream-181c58f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "dataset_of",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"description\": \"a data stream name\"}]",
+        "purpose": "A data stream's type and dataset (logs-<dataset>), what its component template hook is named by.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "c05f46b8598f31d0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-dataset-of-ff03dd13"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "custom_template",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "The component template a data stream's integration template composes for its dataset's own settings (<type>-<dataset>@custom).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "b464878f0c7cc80c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-custom-template-fde2faf5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "policy_name",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "The ILM (and SLM) policy the render names after a data stream: opsdir-<stream>.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "7dc4c15782b2f954"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-policy-name-8652a190"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "keeps",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "Adapter siem_indexes: whether log destination b of environment m is an Elastic data stream.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "a42eb730133937a0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keeps-59f2aeb7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "kept_streams",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Environment m's Elastic data streams its render writes: those it doesn't inherit from a base environment.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "0b353818cfc08562"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "total_days",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "Days a destination keeps logs in all (ciamTotalRetentionDays), or None when it records none.",
+        "returns": "{\"type\": \"int | None\"}",
+        "source_hash": "3a41d47386ecaae3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-total-days-8fab2975"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "archive_days",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "How many days a destination keeps its logs past its searchable days (total minus searchable; INDEFINITE when kept forever in all), or None when it keeps nothing past them.",
+        "returns": "{\"type\": \"int | None\"}",
+        "source_hash": "f983d9664ba0825b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-archive-days-993fbfda"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "snapshotted",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "Whether a destination's archive is rendered: it keeps logs past its searchable days and records where (ciamArchiveRef).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "a999877165e07bf5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-snapshotted-ab72cdae"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "ilm_policy",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "(policy name, ILM policy as GET _ilm/policy answers it) of a data stream destination: hot rollover 1d/50gb, delete phase at the searchable days (wait_for_snapshot when archived; none when kept indefinitely), _meta naming the stream; None when it records no retention.",
+        "returns": "{\"type\": \"tuple[str, dict] | None\"}",
+        "source_hash": "43a8df5d30853bf4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ilm-policy-f9d4d414"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "slm_policy",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "(policy name, SLM policy as GET _slm/policy answers it) archiving a data stream destination daily into its ciamArchiveRef repository, snapshots expiring after total minus searchable days; None when nothing is archived.",
+        "returns": "{\"type\": \"tuple[str, dict] | None\"}",
+        "source_hash": "8a1e0051bebc037c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "rendered_streams",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Environment m's kept data streams whose policies render: each dataset's first stream recording a retention.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "a9c0b8cca9cbfc06"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "component_template",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "(component template name, component template as GET _component_template answers it) attaching a data stream destination's ILM policy to its dataset (index.lifecycle.name).",
+        "returns": "{\"type\": \"tuple[str, dict]\"}",
+        "source_hash": "3294eff55cb7fff8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-component-template-885eb7c3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "lifecycle_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Render notes of environment m's data streams' retention: none recorded (note), streams sharing a dataset (note when kept as long, else blocker), when each policy takes effect (action), an archive with no place recorded (action).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "7bcda6c414ae2701"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py",
+        "id_in_name": 0,
+        "name": "source_of",
+        "parameters": "[{\"name\": \"query\", \"type\": \"str\"}]",
+        "purpose": "The first source an ES|QL query names (FROM <source>), or None.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "ed207e0084b28402"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-of-5b3be030"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py",
+        "id_in_name": 0,
+        "name": "esql_query",
+        "parameters": "[{\"name\": \"metric\", \"type\": \"str\", \"description\": \"the detection's search (ciamMetric)\"}, {\"name\": \"rule\", \"type\": \"Entry\", \"description\": \"the alert rule\"}, {\"name\": \"c\", \"type\": \"Condition\"}]",
+        "purpose": "A detection rule's ES|QL: the detection's search counted per window (STATS COUNT BY BUCKET), each window compared with the rule's threshold, a row when every window of the period breaches.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "440c8355b06a793a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-esql-query-e6bf6b99"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py",
+        "id_in_name": 0,
+        "name": "base_query",
+        "parameters": "[{\"name\": \"query\", \"type\": \"str\"}]",
+        "purpose": "A rule's own search: the one the render wrapped with an alert rule's condition, else the query as written.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "34b87fc53cb8c167"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-base-query-7ee85e5a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py",
+        "id_in_name": 0,
+        "name": "elastic_detections",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Environment m's detection AlarmSpecs on an Elastic data stream it renders (not a base environment's).",
+        "returns": "{\"type\": \"tuple[AlarmSpec]\"}",
+        "source_hash": "c4e53581f09b106c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-elastic-detections-22954636"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py",
+        "id_in_name": 0,
+        "name": "rule_body",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"s\", \"type\": \"AlarmSpec\"}]",
+        "purpose": "The ES|QL detection rule of a detection spec as the detection engine API takes and answers it (rule_id, name, description, type/language esql, query, interval/from/to, severity and risk score, enabled, tags), or None when it isn't rendered.",
+        "returns": "{\"type\": \"dict | None\"}",
+        "source_hash": "656432767867abe0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rule-body-93f5be92"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py",
+        "id_in_name": 0,
+        "name": "rendered_rules",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "((detection spec, rule body), ...) of environment m's detections rendered as ES|QL rules.",
+        "returns": "{\"type\": \"tuple[tuple[AlarmSpec, dict]]\"}",
+        "source_hash": "0133de843968d169"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rendered-rules-705379db"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py",
+        "id_in_name": 0,
+        "name": "detection_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Render notes of environment m's Elastic detections not rendered: no search recorded (note); a condition, language or source the render can't write (blocker).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "99ba7d0643493fd5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py",
+        "id_in_name": 0,
+        "name": "elastic_shipments",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Environment m's Shipments whose destination is an Elastic data stream.",
+        "returns": "{\"type\": \"tuple[Shipment]\"}",
+        "source_hash": "79c4edfa0f3b9334"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py",
+        "id_in_name": 0,
+        "name": "shipping_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Render notes of how environment m's logs reach its Elastic data streams: an action listing what Elastic Agent must collect from the servers (role, hosts, file, stream), a blocker per route whose logs are a container's output.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "2f781875c3f6ff6c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py",
+        "id_in_name": 0,
+        "name": "ndjson",
+        "parameters": "[{\"name\": \"documents\", \"type\": \"iterable[dict]\"}]",
+        "purpose": "Documents as newline-delimited JSON: one compact document per line.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "79d0efaf9ed144f0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ndjson-de87ebad"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py",
+        "id_in_name": 0,
+        "name": "api_files",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Render target api: {elastic/api/<file>: text} of environment m's ILM policies, component templates, SLM policies (GET answer shapes) and detection rules (NDJSON for _import), each file only when it holds something.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "b05883b2bfcc8423"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-api-files-4b85f510"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "lifecycle_block",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"body\", \"type\": \"dict\"}]",
+        "purpose": "The elasticstack_elasticsearch_index_lifecycle block of an ILM policy (name, GET _ilm/policy body).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "4924c3f7fa0f4390"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-lifecycle-block-29f872a0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "template_block",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"body\", \"type\": \"dict\"}]",
+        "purpose": "The elasticstack_elasticsearch_component_template block of a component template (name, body).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e224429a471f2d85"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-block-3954a8ef"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "snapshot_block",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"body\", \"type\": \"dict\"}]",
+        "purpose": "The elasticstack_elasticsearch_snapshot_lifecycle block of an SLM policy (name, GET _slm/policy body).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "4aaf0e095f686103"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-snapshot-block-e8e8904e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "rule_block",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"description\": \"the detection binding's name\"}, {\"name\": \"body\", \"type\": \"dict\"}, {\"name\": \"space\", \"type\": \"str | None\"}]",
+        "purpose": "The elasticstack_kibana_security_detection_rule block of a detection rule, in a Kibana space (None: the default).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "9f5d0bcdd3fad83a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rule-block-2bf52cbc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "terraform_files",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"notes\", \"type\": \"tuple[RenderNote]\"}]",
+        "purpose": "Render target terraform: {elastic/terraform/versions.tf, main.tf} of environment m (elasticstack ~> 0.16.6, credentials from environment variables; notes as comments, then lifecycle, template, snapshot and rule blocks); nothing when it renders none.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "aba9db0a8541579f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Adapter notes: what environment m's Elastic render leaves out or to a person (rule actions, lifecycle, detections, shipping).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "6a05307fc25e13a7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-87b3811f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py",
+        "id_in_name": 0,
+        "name": "render_env",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}, {\"name\": \"targets\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "Adapter render_env: environment m's Elastic data streams' lifecycle and detection rules in the render targets chosen (api, terraform), when it keeps logs in an Elastic data stream or runs a detection on one.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "7cf275029dc6ba18"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-env-710afa69"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "es_days",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "(whole days, None) of an Elasticsearch duration (90d, 12h, 0ms), (days rounded down, why) when it isn't whole days, or (None, why) when it isn't a duration.",
+        "returns": "{\"type\": \"tuple[int | None, str | None]\"}",
+        "source_hash": "3ab57520ef95160d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-es-days-b280075f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "parse_elasticsearch",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}]",
+        "purpose": "(resources, notices) of one environment's Elasticsearch answers: logs data streams as siem-index destinations with searchable days (DSL data_retention or the ILM delete min_age of the stream's policy), days in all and archive repository from a covering SLM policy.",
+        "returns": "{\"type\": \"tuple[tuple[Resource], tuple[str]]\"}",
+        "source_hash": "8390abfdea81d82b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parse-elasticsearch-5c27bd0d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "rule_resource",
+        "parameters": "[{\"name\": \"rule\", \"type\": \"dict\"}]",
+        "purpose": "(Resource of kind alarm, notices) of one detection rule as the API gives it: the rule its description names, the stream its query searches, its search without the render's wrap, its language when not ES|QL.",
+        "returns": "{\"type\": \"tuple[Resource, tuple[str]]\"}",
+        "source_hash": "68ffaa5273580b33"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "parse_kibana",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}]",
+        "purpose": "(resources, notices) of one environment's detection rules (_find pages or NDJSON), with each data stream they search as a siem-index destination alone.",
+        "returns": "{\"type\": \"tuple[tuple[Resource], tuple[str]]\"}",
+        "source_hash": "479f695236d4b906"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parse-kibana-85613d5d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "read_elasticsearch",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": false}]",
+        "purpose": "Importer elastic/elasticsearch: the data streams' retention per <cloud>/<env>/.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "bc0a2434bc3ea55c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-elasticsearch-63c20ff3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "read_kibana",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": false}]",
+        "purpose": "Importer elastic/kibana: the detection rules per <cloud>/<env>/ (notices about streams no rule searches left out).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "871ace7e62753781"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-kibana-8e9d6200"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py",
+        "id_in_name": 0,
+        "name": "credential",
+        "parameters": "[{\"name\": \"s\", \"type\": \"Source\"}]",
+        "purpose": "How a collection Source's credential is sent: an API key as Authorization: ApiKey <key> (api-key credential with prefix), else its scheme with its login; None when it names none.",
+        "returns": "{\"type\": \"tuple | None\"}",
+        "source_hash": "954f3759010c2374"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-credential-14cc3c6e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py",
+        "id_in_name": 0,
+        "name": "elasticsearch_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: GET /_data_stream, /_ilm/policy and /_slm/policy against the first readable elastic/elasticsearch source.",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "0ed4a7384562a123"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-elasticsearch-steps-44c82aa2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py",
+        "id_in_name": 0,
+        "name": "page_path",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"page\", \"type\": \"int\"}]",
+        "purpose": "Where a page of the detection rules is saved: detection-rules.json, then detection-rules.<page>.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "c704216039f56f64"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-page-path-52b97ab9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py",
+        "id_in_name": 0,
+        "name": "kibana_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: the pages of _find not read yet (per_page 1000, paged by the first page's total), against the first readable elastic/kibana source, in the Kibana space the setting names.",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "7fd8eec683d9a40e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kibana-steps-ca7e153a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py",
+        "id_in_name": 0,
+        "name": "problems_of",
+        "parameters": "[{\"name\": \"importer\", \"type\": \"str\"}]",
+        "purpose": "A collector's problems function for an importer: why its collection sources can't be read.",
+        "returns": "{\"type\": \"Callable\"}",
+        "source_hash": "8bbaa4dd3b9b65fe"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-problems-of-53655719"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/collection.py",
+        "id_in_name": 0,
+        "name": "readable_source",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"importer\", \"type\": \"str\", \"description\": \"'adapter/importer'\"}, {\"name\": \"schemes\", \"type\": \"tuple[str] | None\", \"required\": false, \"description\": \"credential schemes the collector accepts\"}]",
+        "purpose": "Environment m's first collection source for an importer that can be read: it has a location and no problems and, when schemes are given, sends its credential in one of them; None when none can (the collectors' shared idiom).",
+        "returns": "{\"type\": \"Source | None\"}",
+        "source_hash": "59b5bb2c09e6c6af"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-readable-source-44006a09"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/collection.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"importer\", \"type\": \"str\"}]",
+        "purpose": "Why environment m's collection sources for an importer can't be read (an unbound credential or trust anchor, no location), every source's.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "603814c30264aa31"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-04375cae"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "search_language",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\", \"description\": \"a detection (alarm binding)\"}, {\"name\": \"native\", \"type\": \"str\", \"description\": \"the SIEM adapter's native language (spl, kusto, esql)\"}]",
+        "purpose": "The language a detection's search is written in (ciamSearchLanguage, attr 842), else native: the language of the SIEM keeping the index it searches.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "233555c3cabdc4dd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-language-61c81caf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "own_notices",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"imported\", \"type\": \"Imported\"}, {\"name\": \"keeps\", \"type\": \"Callable[[EnvModel, Entry], bool]\", \"description\": \"the adapter's siem_indexes predicate\"}]",
+        "purpose": "A SIEM importer's Imported without the placement's 'in the record but not in what the cloud reports' notices about entries that aren't its SIEM's: log destinations keeps(m, b) says aren't its indexes, and alarms that aren't detections searching one.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "ce805d9699527463"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Item (e) of milestone 109 (analysis 3073): a new package opsdir-adapter-elastic, a third SIEM beside Splunk and Sentinel (task 530's contract: a ciamLogDestination of kind siem-index, total retention ciamRetentionDays, SIEM detections realizing the record's alert rules). Render: index lifecycle (ILM policy delete.min_age from total retention), detection engine rules for the record's detections, data streams/index templates as needed; read back: an ILM reader and detection_engine rules importer; ECS field mapping. Collector read-only against the Elasticsearch/Kibana APIs (least-privilege role, API key from a secret reference). Elastic Cloud vs self-managed and the government offering (if any) researched. Research current Elastic docs first (Codex, read-only; the Codex 6.2e report has basics); check the current Terraform provider (elastic/elasticstack) and pin its current release; design to the master before coding.",
+        "flows": [
+          "SIEM Integration",
+          "Elastic Security SIEM"
+        ],
+        "name": "Elastic Security as a SIEM adapter",
+        "parent": {
+          "slug": "milestone-6-2e-follow-ups-siem-detections-forwardi-af713894"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Current Elasticsearch/Kibana ILM, detection engine rules, ECS, elastic/elasticstack Terraform provider release, Elastic Cloud vs self-managed and government offering; master approves before coding.",
+        "name": "Research and design proposal",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-proposal-12bdeaf7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ILM policy with delete.min_age from total retention, detection rules realizing the record's detections, index templates/data streams as needed; render notes for what can't be expressed.",
+        "name": "Render",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-render-27d97e8b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ILM and detection rules importers; read-only collector with a least-privilege API key from a secret reference; round trip.",
+        "name": "Read-back and collector",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-read-back-and-collector-f15880c2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, terraform validate against the current provider, showcase change if useful, predicted golden changes, README with Known limits.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-03dc6e5f"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "bbeb08553b7845c9e863535665da981135628cae",
+    "branch": "aimfp-u109-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "read_rest references keeps (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeps-9a25816f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls own_notices (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files references keeps (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeps-9a25816f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls own_notices (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rest_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rest-steps-a7f4f898"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-44006a09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls problems_of (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-5cfd013f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-problems-04375cae"
+      }
+    },
+    {
+      "attributes": {
+        "description": "stream_name calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "stream_name calls is_siem (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "stream_name calls is_stream (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-stream-181c58f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "custom_template calls dataset_of (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-custom-template-fde2faf5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dataset-of-ff03dd13"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeps calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeps-59f2aeb7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_streams calls keeper_of (realized.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-of-660beca4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_streams calls siem_destinations (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_streams calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "total_days calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-total-days-8fab2975"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "archive_days calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-archive-days-993fbfda"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "archive_days calls total_days (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-archive-days-993fbfda"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-total-days-8fab2975"
+      }
+    },
+    {
+      "attributes": {
+        "description": "snapshotted calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-snapshotted-ab72cdae"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "snapshotted calls archive_days (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-snapshotted-ab72cdae"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-archive-days-993fbfda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ilm_policy calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ilm-policy-f9d4d414"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ilm_policy calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ilm-policy-f9d4d414"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ilm_policy calls policy_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ilm-policy-f9d4d414"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-name-8652a190"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ilm_policy calls snapshotted (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ilm-policy-f9d4d414"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-snapshotted-ab72cdae"
+      }
+    },
+    {
+      "attributes": {
+        "description": "slm_policy calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "slm_policy calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "slm_policy calls policy_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-name-8652a190"
+      }
+    },
+    {
+      "attributes": {
+        "description": "slm_policy calls archive_days (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-archive-days-993fbfda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "slm_policy calls snapshotted (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-snapshotted-ab72cdae"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_streams calls retention_days (retention.py) via _attached",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_streams calls stream_name (naming.py) via _attached",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_streams calls custom_template (naming.py) via _attached",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-template-fde2faf5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_streams calls kept_streams (naming.py) via _attached",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "component_template calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-component-template-885eb7c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "component_template calls custom_template (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-component-template-885eb7c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-template-fde2faf5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "component_template calls policy_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-component-template-885eb7c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-name-8652a190"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls custom_template (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-template-fde2faf5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls policy_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-name-8652a190"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls kept_streams (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls total_days (lifecycle.py) via _kept_as",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-total-days-8fab2975"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls archive_days (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-archive-days-993fbfda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls rendered_streams (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      }
+    },
+    {
+      "attributes": {
+        "description": "esql_query calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-esql-query-e6bf6b99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elastic_detections calls detection_index (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elastic-detections-22954636"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elastic_detections calls detection_specs (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elastic-detections-22954636"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elastic_detections calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elastic-detections-22954636"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls duration_text (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-duration-text-4521a52f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls detection_index (siem.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls detection_condition (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls described (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-described-493bb060"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls stream_name (naming.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls source_of (detections.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-of-5b3be030"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls esql_query (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-esql-query-e6bf6b99"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_body calls search_language (siem.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-body-93f5be92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-language-61c81caf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_rules calls elastic_detections (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-rules-705379db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-detections-22954636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_rules calls rule_body (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-rules-705379db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-body-93f5be92"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls one (directory.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls alarm_note (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-alarm-note-a5555062"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls detection_index (siem.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls detection_condition (alarms.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls stream_name (naming.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls source_of (detections.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-of-5b3be030"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls elastic_detections (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-detections-22954636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls search_language (siem.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-language-61c81caf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elastic_shipments calls log_routes (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-log-routes-c199f9a9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elastic_shipments calls shipments (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipments-a7760481"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elastic_shipments calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls elastic_shipments (shipping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files calls indented (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-indented-8956ec35"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files references ilm_policy (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ilm-policy-f9d4d414"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files references slm_policy (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files calls rendered_streams (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files references component_template (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-component-template-885eb7c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files calls rendered_rules (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-rules-705379db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files calls ndjson (api.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ndjson-de87ebad"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-block-29f872a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_block calls data_value (hcl.py) via _encoded",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-block-29f872a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-value-e61d2c87"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-block-29f872a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-block-3954a8ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_block calls data_value (hcl.py) via _encoded",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-block-3954a8ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-value-e61d2c87"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-block-3954a8ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "snapshot_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-snapshot-block-e8e8904e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "snapshot_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-snapshot-block-e8e8904e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-block-2bf52cbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-block-2bf52cbc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls ilm_policy (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ilm-policy-f9d4d414"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls slm_policy (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-slm-policy-5215be6d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls rendered_streams (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-streams-a27ee304"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls component_template (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-component-template-885eb7c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls rendered_rules (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-rules-705379db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls lifecycle_block (terraform.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifecycle-block-29f872a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls template_block (terraform.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-block-3954a8ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls snapshot_block (terraform.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-snapshot-block-e8e8904e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls rule_block (terraform.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-block-2bf52cbc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls note (notes.py) via _team_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-87b3811f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls lifecycle_notes (lifecycle.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-87b3811f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls rendered_rules (detections.py) via _team_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-87b3811f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-rules-705379db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls detection_notes (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-87b3811f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-notes-8ba389c4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls shipping_notes (shipping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-87b3811f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls kept_streams (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-710afa69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls elastic_detections (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-710afa69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-detections-22954636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls api_files (api.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-710afa69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-api-files-4b85f510"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls terraform_files (terraform.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-710afa69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls render_notes (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-710afa69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-render-notes-87b3811f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_elasticsearch calls resource (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-elasticsearch-5c27bd0d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_elasticsearch calls is_stream (naming.py) via _streams",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-elasticsearch-5c27bd0d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-stream-181c58f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_elasticsearch calls custom_template (naming.py) via _policy_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-elasticsearch-5c27bd0d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-template-fde2faf5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_elasticsearch calls es_days (read.py) via _archive",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-elasticsearch-5c27bd0d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-es-days-b280075f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_resource calls resource (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_resource calls realization_roles (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realization-roles-28fd6455"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_resource calls realized_in (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-in-b4720b55"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_resource calls is_stream (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-stream-181c58f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_resource calls source_of (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-of-5b3be030"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_resource calls base_query (detections.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-base-query-7ee85e5a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_kibana calls resource (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-kibana-85613d5d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_kibana calls rule_resource (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-kibana-85613d5d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-resource-5bb03b85"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_elasticsearch calls layout_import (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-elasticsearch-63c20ff3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-layout-import-eeb7e644"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_elasticsearch references keeps (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-elasticsearch-63c20ff3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeps-59f2aeb7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_elasticsearch references parse_elasticsearch (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-elasticsearch-63c20ff3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parse-elasticsearch-5c27bd0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_elasticsearch calls own_notices (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-elasticsearch-63c20ff3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kibana calls layout_import (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kibana-8e9d6200"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-layout-import-eeb7e644"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kibana references keeps (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kibana-8e9d6200"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeps-59f2aeb7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kibana references parse_kibana (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kibana-8e9d6200"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parse-kibana-85613d5d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kibana calls own_notices (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kibana-8e9d6200"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elasticsearch_steps calls credential (collect.py) via _get",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elasticsearch-steps-44c82aa2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-14cc3c6e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "elasticsearch_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-elasticsearch-steps-44c82aa2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-44006a09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kibana_steps calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kibana-steps-ca7e153a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kibana_steps calls credential (collect.py) via _get",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kibana-steps-ca7e153a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-14cc3c6e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kibana_steps calls page_path (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kibana-steps-ca7e153a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-52b97ab9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kibana_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kibana-steps-ca7e153a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-44006a09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "problems_of calls source_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-of-53655719"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-problems-04375cae"
+      }
+    },
+    {
+      "attributes": {
+        "description": "readable_source calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-readable-source-44006a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-04375cae"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_language calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-language-61c81caf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_notices calls env_dn (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-dn-e280afb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_notices calls rdn_value (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_notices calls get (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_notices calls env_model (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_notices calls of_class (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own_notices calls detection_index (siem.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-own-notices-0ae8b548"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/adapter.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2e-follow-ups-siem-detections-forwardi-af713894"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/detections.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/collection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/siem.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/observability.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/live.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/formats.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/cloud_gcp.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/observability.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/infrastructure.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-security-as-a-siem-adapter-cbcfae5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls rdn_value (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls detection_index (siem.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls env_dn (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-env-dn-e280afb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls rdn_value (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls get (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls env_model (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls of_class (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls detection_index (siem.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls index_name (naming.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rest_steps calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rest-steps-a7f4f898"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-5cfd013f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    }
+  ],
+  "warnings": []
+}
