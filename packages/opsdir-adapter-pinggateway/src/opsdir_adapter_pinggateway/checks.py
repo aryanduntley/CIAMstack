@@ -1,13 +1,19 @@
 """PingGateway planner checks: every route can work in the target (its backend role is bound there, the client it
-signs users in as and the OpenID provider it trusts are in the record); a route to a fixed backend is an action."""
+signs users in as and the OpenID provider it trusts are in the record); a route to a fixed backend is an action. Fix: a
+protected application the source enforces and nothing in the target would (the web access domain's blocker) can be
+taken over by the target's gateways (protect:pinggateway/<application>); what PingGateway can't express of it reaches
+the plan as the render's notes (takeover.py)."""
 
 from opsdir.core.directory import children, one, rdn_value
 from opsdir.core.environment import bound_nowhere
 from opsdir.core.findings import findings, merge_findings, responsible
 from opsdir.core.jsondata import held_json
 from opsdir.domains.federation.services import identity_services, integrations
+from opsdir.domains.compute.workloads import runs_here
 from opsdir.domains.infrastructure.external import external_host_fix
-from .naming import ROUTES
+from opsdir.domains.webaccess.apps import enforcer, protected_apps
+from opsdir.domains.webaccess.checks import protect_fix
+from .naming import ROUTES, SERVER_ROLES
 from .routes import backend, client_ids, issuers
 
 
@@ -42,10 +48,21 @@ def _route(ctx, r):
         fixes=[fix] if fix else [])
 
 
+def _protect(ctx):
+    """The fixes having the target's gateways protect what the source enforces and nothing in the target would."""
+    role = SERVER_ROLES[0]
+    return findings(fixes=[protect_fix(ctx.dst, a, role, "PingGateway", "pinggateway")
+                           for a in protected_apps(ctx.src.d) for src, dst in ((enforcer(ctx.src, a),
+                                                                                 enforcer(ctx.dst, a)),)
+                           if src and runs_here(ctx.src, src) and not (dst and runs_here(ctx.dst, dst))]) \
+        if runs_here(ctx.dst, role) else findings()
+
+
 def check_routes(ctx):
-    """Routes the target can't serve are blockers; a route to a fixed backend is an action."""
+    """Routes the target can't serve are blockers; a route to a fixed backend is an action; the fixes having the
+    gateways protect what nothing in the target would."""
     routes = children(ctx.d, ROUTES, "pinggwRoute")
-    found = merge_findings([_route(ctx, r) for r in routes])
+    found = merge_findings([_protect(ctx), *(_route(ctx, r) for r in routes)])
     counted = "The gateway route signs" if len(routes) == 1 else f"All {len(routes)} gateway routes sign"
     return found if found.blockers or not routes else found._replace(
         ok=(*found.ok, f"{counted} users in with clients and OpenID providers the record has."))

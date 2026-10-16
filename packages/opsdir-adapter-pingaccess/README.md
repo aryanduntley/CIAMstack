@@ -35,6 +35,40 @@ Per environment (`render.py`); nothing environment-neutral.
 - **Not rendered**: environment-bound objects (`paEnvironmentBound`: certificates, trusted certificate groups, key pairs, HTTPS and engine listeners, engines, the admin node and replica admins, agents, sideband clients), created in each environment from its own key material, CAs and nodes; a server profile's `data.json` (the export's envelope is unverified, and importing one replaces the whole configuration); the nodes' own files (`run.properties`, `bootstrap.properties`, `pa.jwk`, `fips-mode.properties`, the log configuration: capture them with `opsdir capture`); the license.
 - **`problems`**: secrets withheld with no credential role; references naming an object the record doesn't hold; roles the environment doesn't bind.
 
+### Applications PingAccess takes over (`takeover.py`)
+
+The neutral protected-application layer (core domain `webaccess`; opsdir's README, Protected web applications) holds
+what any product protects. An environment can have PingAccess enforce an application another product (or an
+operator) recorded: its override of the application's `ciamEnforcedByRole` is `pa-engine`. PingAccess then renders it
+in that environment, with every object named after it:
+- a site `<app>-backend` (targets from `ciamBackendRole`, its port, `secure` from `ciamBackendTls`);
+- a virtual host `<role>:443` per published role (one the record's PingAccess already has is reused);
+- a web session `<app>-session`:
+  - the client id of `ciamSignInAs`;
+  - the credentials type its token endpoint methods allow;
+  - the client secret from `ciamCredentialRole`;
+  - PKCE when the integration requires it;
+  - the idle and maximum timeouts in minutes;
+- a header identity mapping `<app>-headers` (each header contract's attribute or claim);
+- the access rules it can test:
+  - a web session attribute, OAuth scope or network range rule (negated for a denial);
+  - rule sets for several tests or included rules;
+  - a signed-in user is the session itself;
+- the application (`contextRoot` from the base path) and its resources (path patterns, a prefix as a wildcard;
+  methods; anonymous or unprotected; their rules).
+
+A PingAccess application whose neutral application another role enforces in the environment is left out of its render
+there (the product taking it over renders it). What PingAccess can't express of a taken-over application is a render
+note for its owners:
+- a rule it can't test (a directory group, a user, an LDAP filter, an IPv6 range, a custom rule) is a **blocker**:
+  rendered without it, the application would admit more than the record says;
+- sign-on PingAccess doesn't do itself (a form, a certificate, custom code: the identity service must offer it) is an
+  action;
+- a translated pattern is a note;
+- a secret with no credential role is a blocker.
+
+The plan's `protect:pa/<application>` fix writes the target's override for an application nothing there would protect.
+
 ### Render notes (`Adapter.notes`, as data in `NOTES.md` / `NOTES.json`)
 
 | Severity | Subject | Says |
@@ -65,6 +99,32 @@ opsdir import --change CHG-… pingaccess/export export/
 ```
 
 The export needs an Administrator (no read-only role may export), so opsdir never collects it: an administrator saves it. Its envelope is taken as `{"version", "data": {section: [items]}}` or the sections at the top level; sections map to collections by name (`api.EXPORT_SECTIONS`, both spellings where the documentation varies); resources in a section of their own (with their application's id) or inside their application. The export's encryption material (`encryptionKey`, `masterKeys`, ...: what `PORTABLE_INSECURE` exports embed, or anything key-like beside the sections) is dropped and named in a notice, never stored. Several exports of different versions read at once record no source version, and say so.
+
+### The neutral layer (`neutral.py`)
+
+Every import also projects PingAccess's applications, resources and rules onto the neutral protected-application
+layer (`ciamProjectedFrom` names the PingAccess entry):
+- An application becomes `ciamProtectedApp`, enforced by `pa-engine`:
+  - the context root is its base path;
+  - its virtual hosts' service roles are what it is published as;
+  - its site gives the backend role, port and TLS;
+  - sign-on: `oidc` through its web session's integration, served by the identity service of the session's issuer
+    (an API application: `token`);
+  - the session's idle and maximum timeouts become seconds;
+  - its identity mappings give the header contracts it sets;
+  - its Web (or API) policy gives its rules.
+- A resource becomes `ciamPathResource`: path patterns (wildcard or regex; older path prefixes as prefix), methods
+  (`*` as every method), anonymous or unprotected, its policy.
+- A rule becomes `ciamAccessRule`:
+  - a web session attribute rule tests an attribute, an OAuth scope rule a scope, a network range rule a network
+    (negated: deny);
+  - a rule set includes its members, all or any;
+  - any other rule is `custom`.
+
+What the record adds to the neutral entries (an owner, a credential role) is kept; another product's or an operator's
+entry at the same name is never changed (the import names the differences). The read-back of a render leaves out the
+requests rendered for taken-over applications and adds back those of applications handed to another product in that
+environment (`render.own_requests`), so a render still reads back unchanged.
 
 ### What is recorded
 
@@ -148,6 +208,14 @@ Import of a configuration export is a restore: Ping documents it from the same o
 - **Not validated against a live PingAccess**: the requests follow the documented JSON; applying them in a test PingAccess is part of the testing plan (milestone 7.2).
 - **Environment-bound objects are held, not rendered**: key pairs, certificates, trust groups, listeners, engines, the admin and replica nodes, agents and sideband clients are created per environment.
 - **No server profile**: `data.json` isn't rendered (its placement differs between Ping's profile documentation and its baseline repository, and the envelope is unverified).
+- **Neutral projection and takeover forms are unverified** (research note 3133; deferred note on `api.py`).
+  - Ping's 9.1 documentation describes resource access, wildcard and regex patterns, rule sets succeeding on all or
+    any, negation and web session timeouts, but not their JSON names. Acceptance items: `pathPatterns`/`pathPrefixes`,
+    `WILDCARD`/`REGEX`, `methods`, `anonymous`, `unprotected`, the `negate` key, the rule class names, the success
+    criteria values, `caseSensitivePath`, `applicationType`, `idleTimeoutInMinutes`/`sessionTimeoutInMinutes` and
+    resource ordering (not projected: most specific first).
+  - Applications sharing a web session share its timeouts.
+  - A governed edit of a PingAccess entry doesn't change its neutral projection until the next import.
 - **Logs as documented, not observed**: the log files come from Ping's 8.2-9.1 documentation (research 2026-10-16), whose Logging page says `logs/` in its prose and `log/` in its `log4j2.xml` example; the adapter follows the example (Ping's shipped `log4j2.xml` wasn't found to check). Confirm on a real install, with the default `conf/log4j2.xml`, which files each role writes (a replica admin's is unstated). The server log's stack traces have no documented first-line pattern, so a multi-line record is read line by line. The garbage-collection log (on by default; `GC_FILE` in `bin/run.sh`) isn't declared, since its path isn't documented. HAR audit logs aren't declared either: they can hold credentials.
 - **One OpenID provider**: the issuer of the token provider's settings (`pingfederate/runtime`, else `oidc/provider`) is recorded on every web session.
 - **Agents** are held as is, their shared secrets withheld; their configuration downloads are never read.

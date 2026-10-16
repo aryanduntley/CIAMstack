@@ -1,0 +1,6 @@
+CHG-2081: add cn=crew-portal,ou=integrations,dc=ciam-ops
+CHG-2081: add cn=svc-crew,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2081: add cn=crew-app,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2081: add cn=pa-crew-client-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2081: add cn=pa-crew-client-secret,ou=credentials,dc=ciam-ops
+exit 0

@@ -36,6 +36,9 @@ def test_ids_as_azure_gives_them():
                        SUB) == f"/subscriptions/{SUB}/providers/Microsoft.Security/pricings/CloudPosture"
     assert resource_id("azurerm_resource_group", "main", None, {"name": "rg-ciam"}, SUB) == group
     assert "/opsdirSynthetic/" in resource_id("azurerm_something_new", "x", 2, {}, SUB)
+    lb = f"{group}/providers/Microsoft.Network/loadBalancers/lb-a"
+    assert resource_id("azurerm_lb_backend_address_pool", "a", None, {"name": "servers", "loadbalancer_id": lb},
+                       SUB) == f"{lb}/backendAddressPools/servers"           # two load balancers' pools stay apart
 
 
 def test_a_realized_binding_keeps_its_reference_and_client_id():

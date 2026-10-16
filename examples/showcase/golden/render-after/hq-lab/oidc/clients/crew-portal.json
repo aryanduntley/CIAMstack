@@ -1,0 +1,15 @@
+{
+  "client_id": "crew-portal-web",
+  "client_name": "crew-portal",
+  "redirect_uris": [
+    "https://crew.example-aero.test/crew/pa/oidc/cb"
+  ],
+  "grant_types": [
+    "authorization_code"
+  ],
+  "response_types": [
+    "code"
+  ],
+  "token_endpoint_auth_method": "client_secret_basic",
+  "scope": "openid profile"
+}

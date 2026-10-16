@@ -14,7 +14,7 @@ from opsdir.connectors.registry import ADAPTERS, core_fragments
 from opsdir.connectors.roundtrip import read_back
 from opsdir.core.contract import PlanContext
 from opsdir.core.directory import get, make_directory, one, values
-from opsdir.core.environment import env_model
+from opsdir.core.environment import as_seen, env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
 from opsdir_adapter_pingaccess.adapter import ADAPTER
@@ -300,3 +300,158 @@ def test_the_logs_its_servers_write():
     assert all("sideband.http.enabled" in logs[("pa-engine", p)][2]
                for p in ("log/pingaccess_sideband_client_audit.log", "log/pingaccess_sideband_audit.log"))
     assert all(s.on == "servers" and s.line_start is None and s.versions is None for s in ADAPTER.logs)
+
+
+# ------------------------------------------------------------------ the neutral protected-application layer
+APPS = "ou=protected-applications,dc=ciam-ops"
+RULES = f"ou=access-rules,{APPS}"
+CREW = f"cn=crew,{APPS}"
+# an application recorded by hand (no product holds it), enforced by an agent alpha runs; beta has PingAccess take it
+# over, and has the gateways (another role) take the portal over from PingAccess
+TAKEN = f"""dn: {APPS}
+objectClass: top
+objectClass: organizationalUnit
+ou: protected-applications
+
+dn: {RULES}
+objectClass: top
+objectClass: organizationalUnit
+ou: access-rules
+
+dn: cn=crew-group,{RULES}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAccessRule
+cn: crew-group
+ciamEffect: allow
+ciamWho: group cn=crew,ou=groups,dc=example,dc=test
+
+dn: cn=no-contractors,{RULES}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAccessRule
+cn: no-contractors
+ciamEffect: deny
+ciamWho: attribute employeeType=contractor
+
+dn: {CREW}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamProtectedApp
+cn: crew
+ciamBasePath: /crew/
+ciamEnforcedByRole: old-agent
+ciamPublishedAs: portal-service
+ciamBackendRole: portal-backend
+ciamBackendPort: 8443
+ciamSignOn: form
+ciamSignInAs: {PORTAL_WEB}
+ciamIdleTimeout: 1800
+ciamRuleRef: cn=no-contractors,{RULES}
+
+dn: cn=pages,{CREW}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPathResource
+cn: pages
+ciamPathPattern: /pages/
+ciamMatchKind: prefix
+ciamRuleRef: cn=crew-group,{RULES}
+
+dn: ou=overrides,{BETA}
+objectClass: top
+objectClass: organizationalUnit
+ou: overrides
+
+dn: cn=crew-enforcer,ou=overrides,{BETA}
+objectClass: top
+objectClass: ciamOverride
+cn: crew-enforcer
+ciamOverrides: {CREW}
+ciamOverrideAttribute: ciamEnforcedByRole
+ciamOverrideValue: pa-engine
+"""
+PORTAL_TO_GATEWAY = parse(f"""dn: cn=portal-enforcer,ou=overrides,{BETA}
+changetype: add
+objectClass: top
+objectClass: ciamOverride
+cn: portal-enforcer
+ciamOverrides: cn=portal,{APPS}
+ciamOverrideAttribute: ciamEnforcedByRole
+ciamOverrideValue: ig
+""")
+
+
+def test_applications_resources_and_rules_are_projected_onto_the_neutral_layer(after):
+    d, _ = after
+    portal = get(d, f"cn=portal,{APPS}")
+    assert (one(portal, "ciamBasePath"), one(portal, "ciamEnforcedByRole"), values(portal, "ciamPublishedAs"),
+            one(portal, "ciamBackendRole"), one(portal, "ciamBackendPort"), one(portal, "ciamSignOn"),
+            one(portal, "ciamSignInAs"), one(portal, "ciamServedBy"), one(portal, "ciamMaxSessionTime"),
+            values(portal, "ciamRuleRef"), one(portal, "ciamProjectedFrom")) == (
+        "/", "pa-engine", ("portal-service",), "portal-backend", "8443", "oidc", PORTAL_WEB,
+        "cn=login,ou=identity-services,dc=ciam-ops", "14400", (f"cn=staff-on-corp,{RULES}",),
+        entry_dn("application", "portal"))
+    docs = get(d, f"cn=docs,cn=portal,{APPS}")
+    assert (values(docs, "ciamPathPattern"), one(docs, "ciamMatchKind"), values(docs, "ciamHttpMethod"),
+            one(docs, "ciamAccessMode")) == (("/docs/*",), "wildcard", ("GET",), "unprotected")
+    assert values(get(d, f"cn=Root Resource,cn=portal,{APPS}"), "ciamHttpMethod") == ()      # '*': every method
+    rule_set = get(d, f"cn=staff-on-corp,{RULES}")
+    assert (one(rule_set, "ciamRuleMatch"), values(rule_set, "ciamIncludesRule")) == (
+        "all", (f"cn=staff-only,{RULES}", f"cn=corp-network,{RULES}"))
+    assert values(get(d, f"cn=staff-only,{RULES}"), "ciamWho") == ("attribute groups=staff",)
+    assert values(get(d, f"cn=corp-network,{RULES}"), "ciamWho") == ("network 10.0.0.0/8",)
+
+
+def seen_render(d, env):
+    """The requests as `opsdir render` gives them: the environment's overrides applied."""
+    return json.loads(render_env(as_seen(env_model(d, env)), None)[OUTPUT])
+
+
+def taken_over(changes=()):
+    base = build_directory(REGISTRY, parse(mini_estate.LDIF + "\n" + EXTRA + "\n" + TAKEN), ())
+    import_changes, _ = preview_import(base, "pingaccess/admin-api", files_of(ADMIN_API), (ADAPTER,))
+    return build_directory(REGISTRY, parse(mini_estate.LDIF + "\n" + EXTRA + "\n" + TAKEN),
+                           (*import_changes, *changes))
+
+
+def test_an_application_taken_over_renders_from_the_neutral_layer_where_pingaccess_enforces_it():
+    d = taken_over()
+    alpha = {r["path"]: r["body"] for r in seen_render(d, "alpha/prod")["requests"]}
+    assert not any("crew" in p for p in alpha)                       # alpha keeps its agent: nothing of it here
+    beta = {r["path"]: r["body"] for r in seen_render(d, "beta/prod")["requests"]}
+    app = beta["/applications/${pingaccess-id:applications/crew}"]
+    assert (app["contextRoot"], app["siteId"], app["virtualHostIds"], app["webSessionId"]) == (
+        "/crew/", "${pingaccess-id:sites/crew-backend}", ["${pingaccess-id:virtualhosts/portal-service:443}"],
+        "${pingaccess-id:webSessions/crew-session}")
+    assert app["policy"]["Web"] == [{"type": "Rule", "id": "${pingaccess-id:rules/no-contractors}"}]
+    assert beta["/rules/${pingaccess-id:rules/no-contractors}"]["configuration"] == {
+        "attributeName": "employeeType", "attributeValue": "contractor", "negate": True}
+    assert "/rules/${pingaccess-id:rules/crew-group}" not in beta                # a directory group: not testable
+    session = beta["/webSessions/${pingaccess-id:webSessions/crew-session}"]
+    assert (session["clientCredentials"]["clientId"], session["idleTimeoutInMinutes"]) == ("portal-web", 30)
+    resource = "/applications/${pingaccess-id:applications/crew}/resources"
+    pages = beta[f"{resource}/${{pingaccess-id:{resource[1:]}/pages}}"]
+    assert pages["pathPatterns"] == [{"type": "WILDCARD", "pattern": "/pages/*"}] and pages["methods"] == ["*"]
+    notes = {(n.severity, n.text.split(",")[0]) for n in render_notes(as_seen(env_model(d, "beta/prod")), None)
+             if n.subject == "protected application `crew`"}
+    assert ("blocker", "rule `crew-group` admits `group cn=crew") in notes
+    assert ("action", "users sign in with form today; PingAccess signs them in through the identity service") in notes
+
+
+def test_an_application_another_role_enforces_is_left_out_and_still_reads_back():
+    d = taken_over(PORTAL_TO_GATEWAY)
+    beta = [r["path"] for r in seen_render(d, "beta/prod")["requests"]]
+    assert "/applications/${pingaccess-id:applications/portal}" not in beta
+    assert "/applications/${pingaccess-id:applications/portal}" in [r["path"] for r in seen_render(d, "alpha/prod")
+                                                                     ["requests"]]
+    seen = as_seen(env_model(d, "beta/prod"))
+    (rt,) = read_back(seen.d, ADAPTER, render_env(seen, None), (ADAPTER,), environment="beta/prod")
+    assert rt.files and rt.changes == ()
+
+
+def test_pingaccess_offers_to_protect_what_nothing_in_the_target_would():
+    d = build_directory(REGISTRY, parse(mini_estate.LDIF + "\n" + EXTRA + "\n" + TAKEN.split(f"dn: ou=overrides")[0]
+                                        + "\n" + server(ALPHA, "agent-1", "old-agent", "8.3.6")), ())
+    fix = next(x for x in plan(d).fixes if x.key == "protect:pa/crew")
+    assert fix.records[-1].attrs["ciamOverrideValue"] == ("pa-engine",)

@@ -26,6 +26,40 @@
       "bulk-config"
     ]
   },
+  "overrides": [
+    {
+      "entry": "cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops",
+      "attribute": "ciamEnforcedByRole",
+      "values": [
+        "pa-engine"
+      ],
+      "from": "target/prod"
+    },
+    {
+      "entry": "cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops",
+      "attribute": "ciamSetByRole",
+      "values": [
+        "pa-engine"
+      ],
+      "from": "target/prod"
+    },
+    {
+      "entry": "cn=techpubs,ou=protected-applications,dc=ciam-ops",
+      "attribute": "ciamEnforcedByRole",
+      "values": [
+        "ig"
+      ],
+      "from": "target/prod"
+    },
+    {
+      "entry": "cn=techpubs-user,ou=header-contracts,dc=ciam-ops",
+      "attribute": "ciamSetByRole",
+      "values": [
+        "ig"
+      ],
+      "from": "target/prod"
+    }
+  ],
   "files": {
     "am/global/Realms/partners.json": {
       "scope": "environment-neutral",
@@ -278,6 +312,11 @@
       "format": "json",
       "sha256": "cd1beac9ef8c5d82f87547ed1f8f3865b8e86ca0ae12aa7cbda38ff57e0f096f"
     },
+    "forgeops/config-profiles/ciam/ig/config-profiles/opsdir/config/routes/techpubs.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "6a71120fcbb975578864cf2ab61f3df1e36570754b306d35e36f4bd08d73b92a"
+    },
     "forgeops/helm/ciam/identity-platform-values.yaml": {
       "scope": "environment-specific",
       "format": "yaml",
@@ -403,6 +442,11 @@
       "format": "ldif",
       "sha256": "ebe0e8a50905a8bb95003372251836c2a30bd4c8436ba59ac8ad56b8273fc017"
     },
+    "oidc/clients/crew-portal.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "ac3b13739885081f5f22ed7acc7734dee374a1ec09e3347f415047a2d1531686"
+    },
     "oidc/clients/mobile-ops.json": {
       "scope": "environment-neutral",
       "format": "json",
@@ -451,7 +495,7 @@
     "ping-devops/server-profile/ciam/pingfederate/instance/bulk-config/data.json.subst": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "6fe4dc4290498f84677ec8ae86ea814987a3614702c4c64ab6bce38c4eaa5af7"
+      "sha256": "1f2a51eafb11642cc6edbf6f4f887d2ee2d6c2c2e77dba00b238c88a7a65cab7"
     },
     "ping-devops/server-profile/ciam/pingfederate/instance/server/default/data/atm/default-atm.json": {
       "scope": "environment-specific",
@@ -461,12 +505,12 @@
     "pingaccess/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "a7fb007800f604064a341986b229def6ca066924083c53e1948b7eda4f4c4843"
+      "sha256": "7926a9e849926338375e29258fc837e27014b1a983dd4cdfab6fc4784a5ab260"
     },
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "0a3a189bd59127741f9885b1f57b09244870dd4eb41dd458933e866e6d36b7bf"
+      "sha256": "7d58c4b61e04fe30c2db9e0a88a3997f1882d5ed47b7d76b6cabd8071e418c3f"
     },
     "pingfederate/bulk-config-problems.json": {
       "scope": "environment-specific",
@@ -476,12 +520,12 @@
     "pingfederate/bulk-config/data.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "2402f48223c0916999f211a7af6ef2fa03c737e87a42113417e13904766b1271"
+      "sha256": "99c814472fd7d49559d04b632b0d60265b1d341d26de9e5c800755977f52f071"
     },
     "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "2dacbca9ca96e06dde7a33ebd9e1fc8c98e7f82bee4345ba8c68bb03a008c214"
+      "sha256": "59d3c7e15b5e81820c881bd43f2d625371d8a6f221a8c03beb8b5a40cd2b4dfa"
     },
     "pingfederate/terraform/variables.tf": {
       "scope": "environment-specific",
@@ -497,6 +541,11 @@
       "scope": "environment-specific",
       "format": "json",
       "sha256": "cd1beac9ef8c5d82f87547ed1f8f3865b8e86ca0ae12aa7cbda38ff57e0f096f"
+    },
+    "pinggateway/routes/techpubs.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "6a71120fcbb975578864cf2ab61f3df1e36570754b306d35e36f4bd08d73b92a"
     },
     "pingidm/conf/managed.json": {
       "scope": "environment-neutral",
@@ -591,7 +640,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "5e495f2aeb62657a11a22c28c123a1f4e61c1e61193cde46c5911585efe6f60f"
+      "sha256": "4736eb41f42121ce31f71b772ff3a8a4ffb36fb4c7a65f19773ca71f27a8197a"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

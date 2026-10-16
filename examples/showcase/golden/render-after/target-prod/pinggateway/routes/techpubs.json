@@ -1,0 +1,80 @@
+{
+  "name": "techpubs",
+  "condition": "${find(request.uri.host, '^UNBOUND:techpubs-service$')}",
+  "baseURI": "https://techpubs-app.az.internal.example-aero.test:8443",
+  "session": {
+    "type": "JwtSessionManager",
+    "config": {
+      "sessionTimeout": "3600 seconds"
+    }
+  },
+  "handler": {
+    "type": "Chain",
+    "config": {
+      "filters": [
+        {
+          "name": "techpubs-sign-in",
+          "type": "AuthorizationCodeOAuth2ClientFilter",
+          "config": {
+            "clientEndpoint": "/openid",
+            "requireHttps": true,
+            "registrations": [
+              {
+                "name": "techpubs",
+                "type": "ClientRegistration",
+                "config": {
+                  "clientId": "tech-pubs-web",
+                  "issuer": {
+                    "type": "Issuer",
+                    "config": {
+                      "wellKnownEndpoint": "https://sso.example-aero.test/.well-known/openid-configuration"
+                    }
+                  },
+                  "scopes": [
+                    "openid",
+                    "profile",
+                    "email"
+                  ],
+                  "secretsProvider": "SystemAndEnvSecretStore-1"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "AllowOnlyFilter",
+          "config": {
+            "rules": [
+              {
+                "name": "Root Resource",
+                "destination": {
+                  "paths": [
+                    "^/.*$"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "ConditionEnforcementFilter",
+          "config": {
+            "condition": "${contains(contexts.oauth2Info.userInfo['groups'], 'techpubs-readers')}"
+          }
+        },
+        {
+          "type": "HeaderFilter",
+          "config": {
+            "messageType": "REQUEST",
+            "replace": {
+              "X-TechPubs-User": [
+                "${contexts.oauth2Info.userInfo['sub']}"
+              ]
+            }
+          }
+        }
+      ],
+      "handler": "ReverseProxyHandler"
+    }
+  }
+}

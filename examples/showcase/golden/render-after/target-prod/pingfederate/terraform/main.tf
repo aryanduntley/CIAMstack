@@ -416,6 +416,20 @@ resource "pingfederate_oauth_server_settings" "oauth_authserversettings" {
   depends_on = [pingfederate_openid_connect_policy.default_oidc]
 }
 
+resource "pingfederate_oauth_client" "crew_portal_web" {
+  # not taken by the provider: pingfederate_oauth_client.clientAuthentication
+  client_id                           = "crew-portal-web"
+  name                                = "crew-portal"
+  enabled                             = true
+  redirect_uris                       = ["https://crew.example-aero.test/crew/pa/oidc/cb"]
+  grant_types                         = ["AUTHORIZATION_CODE"]
+  require_proof_key_for_code_exchange = true
+  require_dpop                        = false
+  restrict_scopes                     = true
+  restricted_scopes                   = ["openid", "profile"]
+  depends_on                          = [pingfederate_oauth_server_settings.oauth_authserversettings]
+}
+
 resource "pingfederate_oauth_client" "mobile_ops" {
   client_auth = {
     type = "NONE"
@@ -550,7 +564,7 @@ resource "pingfederate_idp_sp_connection" "aog_parts_exchange" {
       },
     ]
   }
-  depends_on = [pingfederate_oauth_client.mobile_ops, pingfederate_oauth_client.reports_api, pingfederate_oauth_client.tech_pubs_web]
+  depends_on = [pingfederate_oauth_client.crew_portal_web, pingfederate_oauth_client.mobile_ops, pingfederate_oauth_client.reports_api, pingfederate_oauth_client.tech_pubs_web]
 }
 
 resource "pingfederate_idp_sp_connection" "customer_portal" {
@@ -667,7 +681,7 @@ resource "pingfederate_idp_sp_connection" "customer_portal" {
       },
     ]
   }
-  depends_on = [pingfederate_oauth_client.mobile_ops, pingfederate_oauth_client.reports_api, pingfederate_oauth_client.tech_pubs_web]
+  depends_on = [pingfederate_oauth_client.crew_portal_web, pingfederate_oauth_client.mobile_ops, pingfederate_oauth_client.reports_api, pingfederate_oauth_client.tech_pubs_web]
 }
 
 resource "pingfederate_idp_sp_connection" "supplier_portal" {
@@ -774,7 +788,7 @@ resource "pingfederate_idp_sp_connection" "supplier_portal" {
       },
     ]
   }
-  depends_on = [pingfederate_oauth_client.mobile_ops, pingfederate_oauth_client.reports_api, pingfederate_oauth_client.tech_pubs_web]
+  depends_on = [pingfederate_oauth_client.crew_portal_web, pingfederate_oauth_client.mobile_ops, pingfederate_oauth_client.reports_api, pingfederate_oauth_client.tech_pubs_web]
 }
 
 resource "pingfederate_sp_idp_connection" "harbor_mro_federation" {

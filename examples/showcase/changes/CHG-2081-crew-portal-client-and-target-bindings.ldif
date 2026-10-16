@@ -1,0 +1,69 @@
+# CHG-2081 (approved): before the target's PingAccess takes the crew portal over from SiteMinder (CHG-2082), the platform
+# team registers the portal's OpenID Connect client with single sign-on (sso serves it, so every environment's
+# PingFederate renders it), and the target binds what the portal needs there: the name crew members reach it at, the
+# crew application's own server behind the gateway, and the client secret's reference (each environment's PingFederate
+# registers the client with its own secret).
+dn: cn=crew-portal,ou=integrations,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIntegration
+cn: crew-portal
+ciamProtocolType: oidc-client
+ciamClientId: crew-portal-web
+ciamGrantType: authorization_code
+ciamPkceRequired: TRUE
+ciamRedirectUri: https://crew.example-aero.test/crew/pa/oidc/cb
+ciamScope: openid
+ciamScope: profile
+ciamTokenAuthMethod: client_secret_basic
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
+ciamCriticality: medium
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: The crew portal, signed in through PingAccess once it replaces SiteMinder's web agent
+ciamChangeRef: cn=CHG-2081,ou=changes,dc=ciam-ops
+
+dn: cn=svc-crew,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-crew
+ciamBindingRole: crew-service
+ciamDnsZone: example-aero.test
+ciamFqdn: crew.example-aero.test
+ciamFrontendIp: 198.51.100.80
+ciamPort: 443
+ciamProviderRef: pip-ciam-crew-prod
+ciamTargetRole: pa-engine
+ciamChangeRef: cn=CHG-2081,ou=changes,dc=ciam-ops
+
+dn: cn=crew-app,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamExternalHost
+cn: crew-app
+ciamBindingRole: crew-app
+ciamFqdn: crew-app.az.internal.example-aero.test
+ciamPort: 8443
+ciamChangeRef: cn=CHG-2081,ou=changes,dc=ciam-ops
+
+dn: cn=pa-crew-client-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamSecretRef
+cn: pa-crew-client-secret
+ciamBindingRole: pa-crew-client-secret
+ciamRefUri: azkv://kv-ciam-prod/pa-crew-client-secret
+ciamChangeRef: cn=CHG-2081,ou=changes,dc=ciam-ops
+
+dn: cn=pa-crew-client-secret,ou=credentials,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamCredential
+cn: pa-crew-client-secret
+ciamBindingRole: pa-crew-client-secret
+ciamContinuity: per-environment
+ciamContinuityReason: each environment's PingFederate registers the crew-portal-web client with its own secret
+ciamCredentialType: client-secret
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2081,ou=changes,dc=ciam-ops

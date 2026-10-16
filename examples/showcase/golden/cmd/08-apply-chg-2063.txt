@@ -1,5 +1,5 @@
 new integration aog-parts-exchange (saml2-sp), not in the record before: give it an owner
 5 sensitive setting(s) withheld, never stored: SharedSecret of crew-web-agent, Secret of Crew Badge, Password of Example Aero Directory, SharedSecret of crew-web-1, BackchannelPassword of AOG Parts Exchange. An XPSExport made with -npass holds them in CLEAR TEXT, one made with -pass encrypted: treat the export file as a secret, and re-provision each in the target
 1 generated runtime object(s) (CA.SM::SAMLv2SP) are their partnerships' own: not read twice
-CHG-2063: 31 change(s) applied, the import run among them
+CHG-2063: 36 change(s) applied, the import run among them
 exit 0

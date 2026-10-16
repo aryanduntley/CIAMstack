@@ -47,17 +47,20 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2004  insert  cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=pingidm.project.shared.s1-957fd2a5ac158146,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  ou=pinggateway,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=ig.config.config.json,ou=config-files,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  cn=partner-portal,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  ou=routes,ou=pinggateway,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=28d37a64d1f2098a,cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=887d2ebf8ef77e5d,cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=888008336f97ff04,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=a3b1079cf9030063,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  cn=all,cn=partner-portal,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=d82debf6eb335a9d,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=fbf19b7efd8b212b,cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 <TIMESTAMP>          CHG-2004  insert  cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
-<TIMESTAMP>          CHG-2004  insert  cn=pinggateway.config.shared.s1-33a1aefb0be2ee0c,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2004  insert  cn=pinggateway.config.shared.s1-e5c4434378bd8203,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops
 <TIMESTAMP>          CHG-2006  insert  snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
@@ -544,6 +547,9 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2060  insert  cn=pa-techpubs-client-secret,ou=credentials,dc=ciam-ops
 <TIMESTAMP>          CHG-2060  update  env=stage,cloud=source,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs,ou=protected-applications,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-media,ou=protected-applications,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=access-rules,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  ou=applications,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  ou=held,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  ou=identity-mappings,ou=pingaccess,dc=ciam-ops
@@ -551,10 +557,13 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2061  insert  ou=sites,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  ou=web-sessions,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=Root Resource,cn=techpubs,ou=protected-applications,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=Root Resource,cn=techpubs-media,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs,ou=applications,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs-app,ou=sites,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs-media,ou=applications,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs-media-cdn,ou=sites,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-readers,ou=access-rules,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs-readers,ou=rules,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs-service:443,ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
@@ -569,13 +578,15 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2061  insert  cn=Root Resource,cn=techpubs-media,ou=applications,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=settings,ou=pingfederate.runtime,ou=held,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2061  insert  cn=techpubs-tls,ou=keyPairs,ou=held,ou=pingaccess,dc=ciam-ops
-<TIMESTAMP>          CHG-2061  insert  cn=pingaccess.admin-api.shared.s1-8c453bda03536cce,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=pingaccess.admin-api.shared.s1-7bc4a38c9476907c,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2062  update  cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
 <TIMESTAMP>          CHG-2062  insert  cn=techpubs-user,ou=header-contracts,dc=ciam-ops
 <TIMESTAMP>          CHG-2062  update  cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2062  update  cn=techpubs,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  ou=siteminder,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  ou=source-objects,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+<TIMESTAMP>          CHG-2063  insert  cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=siteminder,ou=identity-services,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  ou=agents,ou=siteminder,dc=ciam-ops
@@ -586,12 +597,16 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2063  insert  cn=aco-crew-aco,ou=siteminder,ou=source-objects,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=cookie-crew-portal-crew-identity-crewbase,ou=siteminder,ou=source-objects,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=crew-badge,ou=auth-schemes,ou=siteminder,dc=ciam-ops
+<TIMESTAMP>          CHG-2063  insert  cn=crew-pages,cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+<TIMESTAMP>          CHG-2063  insert  cn=crew-portal-all-crew,ou=access-rules,ou=protected-applications,dc=ciam-ops
+<TIMESTAMP>          CHG-2063  insert  cn=crew-portal-roster-admins,ou=access-rules,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=crew-web-agent,ou=agents,ou=siteminder,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=custom-scheme-crew-badge,ou=siteminder,ou=source-objects,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=example-aero-directory,ou=user-directories,ou=siteminder,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=hco-defaulthostsettings,ou=siteminder,ou=source-objects,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=keys,ou=siteminder,ou=source-objects,dc=ciam-ops
+<TIMESTAMP>          CHG-2063  insert  cn=roster-admin,cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=trusted-host-crew-web-1,ou=siteminder,ou=source-objects,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  ou=claims,cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=company,ou=claims,cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
@@ -603,7 +618,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2063  insert  cn=roster-admins,ou=policies,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=crew-pages,cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
 <TIMESTAMP>          CHG-2063  insert  cn=roster-admin,cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
-<TIMESTAMP>          CHG-2063  insert  cn=siteminder.xps.shared.s1-076f97b6e4eb37ec,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2063  insert  cn=siteminder.xps.shared.s1-08e328ae14587526,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2064  update  cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
 <TIMESTAMP>          CHG-2064  update  cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
 <TIMESTAMP>          CHG-2064  update  cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
@@ -628,8 +643,20 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2076  update  cn=pa-engine,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2076  insert  cn=pa-admin-aws,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2076  insert  cn=pa-engine-aws,ou=baselines,dc=ciam-ops
+<TIMESTAMP>          CHG-2081  insert  cn=crew-portal,ou=integrations,dc=ciam-ops
+<TIMESTAMP>          CHG-2081  insert  cn=svc-crew,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2081  insert  cn=crew-app,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2081  insert  cn=pa-crew-client-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2081  insert  cn=pa-crew-client-secret,ou=credentials,dc=ciam-ops
+<TIMESTAMP>          CHG-2082  update  cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops
+<TIMESTAMP>          CHG-2082  insert  ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2082  insert  cn=crew-portal-crew-enforcer,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2082  insert  cn=crew-portal-sm_user-setter,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2083  update  cn=techpubs,ou=protected-applications,dc=ciam-ops
+<TIMESTAMP>          CHG-2083  insert  cn=techpubs-enforcer,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2083  insert  cn=techpubs-user-setter,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
 <TIMESTAMP>          CHG-2086  update  cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops
 <TIMESTAMP>          CHG-2086  update  cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
 <TIMESTAMP>          CHG-2086  update  cn=User,ou=certificate-templates,dc=ciam-ops
 <TIMESTAMP>          CHG-2086  insert  cn=adcs.inventory.shared.s1-ec43948a9827141f,ou=imports,dc=ciam-ops
-(632 rows)
+(659 rows)

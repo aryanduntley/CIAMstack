@@ -44,3 +44,31 @@ def backend(route):
         return None
     parts = urlsplit(base)
     return parts.scheme, parts.hostname, parts.port
+
+
+# ------------------------------------------------------------------ the neutral protected-application layer
+# What the projection (neutral.py) reads and the takeover render (takeover.py) writes, from PingGateway's 2026
+# reference (research note 3133): the route's condition (a Boolean expression; find() over request.uri.path or .host),
+# AllowOnlyFilter (rules ORed, a rule's destination paths Java regular expressions and methods ANDed; the reference
+# marks `from` required while its own example omits it, and its prose calls a path a prefix while its example is a
+# regex: unverified), ConditionEnforcementFilter (a condition; refuses with 403), ConditionalFilter (a condition and
+# the delegate it runs when true), HeaderFilter (REQUEST; add, replace, remove), the session managers (one timeout:
+# no separate idle and maximum), and the sign-in's claims in contexts.oauth2Info.userInfo (a map in Ping's examples,
+# an array of maps in the context's reference: unverified).
+ALLOW_ONLY, ENFORCE, CONDITIONAL, HEADERS = "AllowOnlyFilter", "ConditionEnforcementFilter", "ConditionalFilter", \
+    "HeaderFilter"
+SESSION_TIMEOUTS = (("JwtSessionManager", "sessionTimeout"), ("InMemorySessionManager", "timeout"),
+                    ("JwtSession", "sessionTimeout"))
+USERINFO = "contexts.oauth2Info.userInfo"
+PATH_TEST = r"(?:find|matchesWithRegex)\(\s*request\.uri\.path\s*,\s*'([^']*)'\s*\)"
+HOST_TEST = r"(?:find|matchesWithRegex)\(\s*request\.uri\.host\s*,\s*'([^']*)'\s*\)"
+# a claim test: userInfo.<claim> == 'v', userInfo['<claim>'] == 'v', or contains(userInfo['<claim>'], 'v')
+CLAIM_TEST = (r"^\$\{\s*(not\s*\(?)?\s*(?:contains\(\s*)?" + USERINFO.replace(".", r"\.")
+              + r"(?:\.(\w+)|\['([^']+)'\])\s*(?:==\s*|,\s*)'([^']*)'\s*\)?\s*\)?\s*\}$")
+DURATION = r"^\s*(\d+)\s*(second|minute|hour|day)s?\s*$"
+DURATION_SECONDS = {"second": 1, "minute": 60, "hour": 3600, "day": 86400}
+
+
+def filters(route, kind):
+    """Every filter (or heap object) of a kind anywhere in a route, in document order."""
+    return tuple(o for o in objects(route) if o.get("type") == kind)

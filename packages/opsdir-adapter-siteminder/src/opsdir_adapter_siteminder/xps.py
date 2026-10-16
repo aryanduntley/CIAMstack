@@ -68,6 +68,18 @@ FIELDS = MappingProxyType({
 NAME = "Name"                     # what any object is called (the classes above that have one)
 VERSION_ATTRIBUTES = ("ProductVersion", "Version")    # where the root <XPS> element may say the release it is from
 
+# The neutral protected-application projection (neutral.py; milestone 110), UNVERIFIED like the rest: Broadcom's REST
+# examples (KB 380127) name a realm's ProtectAll, and spell a rule's regex flag RegularExpression and its actions
+# ["Get", "Post"] where the XPS names above say IsRegex and "GET,POST" (research note 3133): acceptance items.
+PROTECT_ALL = "ProtectAll"        # a realm's: false leaves its resources unprotected (read from its other settings)
+# an authentication scheme's type (case aside, first match) -> how users sign in (opsdir.domains.webaccess SIGN_ONS)
+SCHEME_SIGN_ONS = (("html form", "form"), ("form", "form"), ("basic", "basic"), ("x.509", "certificate"),
+                   ("x509", "certificate"), ("certificate", "certificate"), ("saml", "federated"),
+                   ("jwt", "federated"), ("openid", "federated"), ("custom", "custom"))
+# a user selection's kind (smSubject's second word, case aside) -> a neutral subject kind; others aren't expressed
+SUBJECT_KINDS = MappingProxyType({"user": "user", "group": "group", "filter": "filter", "query": "filter",
+                                  "all": "authenticated"})
+
 # Response attributes that are an HTTP header (the standard header contract) or a cookie (no standard equivalent)
 HEADER_RESPONSE = "WebAgent-HTTP-Header-Variable"
 COOKIE_RESPONSE = "WebAgent-HTTP-Cookie-Variable"

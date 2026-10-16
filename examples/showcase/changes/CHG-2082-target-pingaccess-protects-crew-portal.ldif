@@ -1,0 +1,61 @@
+# CHG-2082 (approved): the target's PingAccess takes the crew portal over from SiteMinder's web agent. Its protected
+# application (projected from the realm by CHG-2063's import) records what the export couldn't say: the name crew
+# members reach it at, the application behind the gateway, the client PingAccess signs users in as (CHG-2081) and its
+# secret role. The target's own overrides have PingAccess enforce it and set the SM_USER header the portal trusts (the
+# plan's fixes protect:pa/crew-portal-crew and enforcer-header:crew-portal-sm_user); the source keeps SiteMinder
+# until cutover. What PingAccess can't express of it (the crew groups, the custom badge sign-on) stays in the plan.
+dn: cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops
+changetype: modify
+add: ciamPublishedAs
+ciamPublishedAs: crew-service
+-
+add: ciamBackendRole
+ciamBackendRole: crew-app
+-
+add: ciamBackendTls
+ciamBackendTls: TRUE
+-
+add: ciamSignInAs
+ciamSignInAs: cn=crew-portal,ou=integrations,dc=ciam-ops
+-
+add: ciamServedBy
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
+-
+add: ciamCredentialRole
+ciamCredentialRole: pa-crew-client-secret
+-
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2082,ou=changes,dc=ciam-ops
+
+dn: ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: organizationalUnit
+ou: overrides
+
+dn: cn=crew-portal-crew-enforcer,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamOverride
+cn: crew-portal-crew-enforcer
+ciamOverrides: cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops
+ciamOverrideAttribute: ciamEnforcedByRole
+ciamOverrideValue: pa-engine
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: PingAccess protects the crew portal in the target, where SiteMinder doesn't run
+ciamChangeRef: cn=CHG-2082,ou=changes,dc=ciam-ops
+
+dn: cn=crew-portal-sm_user-setter,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamOverride
+cn: crew-portal-sm_user-setter
+ciamOverrides: cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
+ciamOverrideAttribute: ciamSetByRole
+ciamOverrideValue: pa-engine
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: PingAccess's engines set SM_USER for the crew portal in the target
+ciamChangeRef: cn=CHG-2082,ou=changes,dc=ciam-ops

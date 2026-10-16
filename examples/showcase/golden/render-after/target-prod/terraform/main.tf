@@ -986,6 +986,66 @@ resource "azurerm_application_gateway" "svc_apps" {
 
 # `apps.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
 
+data "azurerm_public_ip" "svc_crew" {
+  name                = "pip-ciam-crew-prod"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
+resource "azurerm_lb" "svc_crew" {
+  name                = "lb-ciam-prod-svc-crew"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  sku                 = "Standard"
+  frontend_ip_configuration {
+    name                 = "frontend"
+    public_ip_address_id = data.azurerm_public_ip.svc_crew.id
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Service     = "crew.example-aero.test"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_lb_backend_address_pool" "svc_crew" {
+  name            = "servers"
+  loadbalancer_id = azurerm_lb.svc_crew.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "svc_crew_pa_engine_1" {
+  network_interface_id    = azurerm_network_interface.pa_engine_1.id
+  ip_configuration_name   = "primary"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_crew.id
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "svc_crew_pa_engine_2" {
+  network_interface_id    = azurerm_network_interface.pa_engine_2.id
+  ip_configuration_name   = "primary"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.svc_crew.id
+}
+
+resource "azurerm_lb_probe" "svc_crew_443" {
+  name            = "tcp-443"
+  loadbalancer_id = azurerm_lb.svc_crew.id
+  protocol        = "Tcp"
+  port            = 443
+}
+
+resource "azurerm_lb_rule" "svc_crew_443" {
+  name                           = "tcp-443"
+  loadbalancer_id                = azurerm_lb.svc_crew.id
+  protocol                       = "Tcp"
+  frontend_port                  = 443
+  backend_port                   = 443
+  frontend_ip_configuration_name = "frontend"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.svc_crew.id]
+  probe_id                       = azurerm_lb_probe.svc_crew_443.id
+}
+
+# `crew.example-aero.test` is in a zone corporate-dns runs: not rendered here (the plan drafts the request to them)
+
 resource "azurerm_lb" "svc_ldaps" {
   name                = "lb-ciam-prod-svc-ldaps"
   location            = data.azurerm_resource_group.main.location
@@ -3153,6 +3213,10 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
   # names only: no secret value enters Terraform state
   key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
   lifecycle {
+    postcondition {
+      condition     = contains(self.names, "pa-crew-client-secret")
+      error_message = "Key Vault kv-ciam-prod has no secret pa-crew-client-secret (role pa-crew-client-secret)"
+    }
     postcondition {
       condition     = contains(self.names, "pa-techpubs-client-secret")
       error_message = "Key Vault kv-ciam-prod has no secret pa-techpubs-client-secret (role pa-techpubs-client-secret)"

@@ -126,6 +126,10 @@ def resource_id(type_, name, index, configured, subscription):
                                            f"roleAssignments/{guid('assignment', name, index)}",
         "azurerm_storage_container": lambda: f"{configured.get('storage_account_id')}/blobServices/default/"
                                              f"containers/{named}",
+        # a load balancer's pool, under its load balancer: two load balancers' pools may share a name
+        "azurerm_lb_backend_address_pool": lambda: f"{configured.get('loadbalancer_id')}/backendAddressPools/{named}"
+        if configured.get("loadbalancer_id") else f"{group}/providers/Microsoft.Resources/opsdirSynthetic/"
+                                                    f"lb_backend_address_pool.{named}",
         "azurerm_monitor_aad_diagnostic_setting": lambda: f"/providers/Microsoft.AADIAM/diagnosticSettings/{named}",
         "azuread_conditional_access_policy": lambda: guid("conditional-access", name, index)}
     if type_ in placed:

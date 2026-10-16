@@ -59,6 +59,18 @@
     },
     {
       "method": "PUT",
+      "path": "/sites/${pingaccess-id:sites/crew-portal-crew-backend}",
+      "createWith": "POST /sites",
+      "body": {
+        "name": "crew-portal-crew-backend",
+        "targets": [
+          "crew-app.az.internal.example-aero.test:8443"
+        ],
+        "secure": true
+      }
+    },
+    {
+      "method": "PUT",
       "path": "/virtualhosts/${pingaccess-id:virtualhosts/techpubs-service:443}",
       "createWith": "POST /virtualhosts",
       "body": {
@@ -66,6 +78,15 @@
         "keyPairId": "${pingaccess-id:keyPairs/techpubs-tls}",
         "port": 443,
         "trustedCertificateGroupId": 0
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/virtualhosts/${pingaccess-id:virtualhosts/crew-service:443}",
+      "createWith": "POST /virtualhosts",
+      "body": {
+        "host": "crew.example-aero.test",
+        "port": 443
       }
     },
     {
@@ -81,6 +102,23 @@
               "attributeName": "sub",
               "headerName": "X-TechPubs-User",
               "subject": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/identityMappings/${pingaccess-id:identityMappings/crew-portal-crew-headers}",
+      "createWith": "POST /identityMappings",
+      "body": {
+        "name": "crew-portal-crew-headers",
+        "className": "com.pingidentity.pa.identitymappings.HeaderIdentityMapping",
+        "configuration": {
+          "attributeHeaderMappings": [
+            {
+              "attributeName": "uid",
+              "headerName": "SM_USER"
             }
           ]
         }
@@ -115,31 +153,26 @@
     },
     {
       "method": "PUT",
-      "path": "/applications/${pingaccess-id:applications/techpubs}",
-      "createWith": "POST /applications",
+      "path": "/webSessions/${pingaccess-id:webSessions/crew-portal-crew-session}",
+      "createWith": "POST /webSessions",
       "body": {
-        "name": "techpubs",
-        "contextRoot": "/",
-        "applicationType": "Web",
-        "destination": "Site",
-        "enabled": true,
-        "identityMappingIds": {
-          "Web": "${pingaccess-id:identityMappings/techpubs-user}"
+        "name": "crew-portal-crew-session",
+        "audience": "crew-portal-crew",
+        "clientCredentials": {
+          "clientId": "crew-portal-web",
+          "credentialsType": "SECRET",
+          "clientSecret": {
+            "value": "${secret:azkv://kv-ciam-prod/pa-crew-client-secret}"
+          }
         },
-        "policy": {
-          "API": [],
-          "Web": [
-            {
-              "id": "${pingaccess-id:rules/techpubs-readers}",
-              "type": "Rule"
-            }
-          ]
-        },
-        "siteId": "${pingaccess-id:sites/techpubs-app}",
-        "virtualHostIds": [
-          "${pingaccess-id:virtualhosts/techpubs-service:443}"
+        "oidcLoginType": "Code",
+        "pkceChallengeType": "SHA256",
+        "scopes": [
+          "openid",
+          "profile"
         ],
-        "webSessionId": "${pingaccess-id:webSessions/techpubs-session}"
+        "idleTimeoutInMinutes": 30,
+        "sessionTimeoutInMinutes": 600
       }
     },
     {
@@ -166,24 +199,25 @@
     },
     {
       "method": "PUT",
-      "path": "/applications/${pingaccess-id:applications/techpubs}/resources/${pingaccess-id:applications/${pingaccess-id:applications/techpubs}/resources/Root Resource}",
-      "createWith": "POST /applications/${pingaccess-id:applications/techpubs}/resources",
+      "path": "/applications/${pingaccess-id:applications/crew-portal-crew}",
+      "createWith": "POST /applications",
       "body": {
-        "name": "Root Resource",
-        "methods": [
-          "*"
+        "name": "crew-portal-crew",
+        "contextRoot": "/crew/",
+        "applicationType": "Web",
+        "destination": "Site",
+        "siteId": "${pingaccess-id:sites/crew-portal-crew-backend}",
+        "virtualHostIds": [
+          "${pingaccess-id:virtualhosts/crew-service:443}"
         ],
-        "pathPatterns": [
-          {
-            "pattern": "/*",
-            "type": "WILDCARD"
-          }
-        ],
-        "policy": {
-          "API": [],
-          "Web": []
+        "webSessionId": "${pingaccess-id:webSessions/crew-portal-crew-session}",
+        "identityMappingIds": {
+          "Web": "${pingaccess-id:identityMappings/crew-portal-crew-headers}"
         },
-        "rootResource": true
+        "policy": {
+          "Web": [],
+          "API": []
+        }
       }
     },
     {
@@ -206,6 +240,50 @@
           "Web": []
         },
         "rootResource": true
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/crew-portal-crew}/resources/${pingaccess-id:applications/${pingaccess-id:applications/crew-portal-crew}/resources/roster-admin}",
+      "createWith": "POST /applications/${pingaccess-id:applications/crew-portal-crew}/resources",
+      "body": {
+        "name": "roster-admin",
+        "pathPatterns": [
+          {
+            "type": "REGEX",
+            "pattern": "^/roster/(publish|swap-approve)"
+          }
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "policy": {
+          "Web": [],
+          "API": []
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/crew-portal-crew}/resources/${pingaccess-id:applications/${pingaccess-id:applications/crew-portal-crew}/resources/crew-pages}",
+      "createWith": "POST /applications/${pingaccess-id:applications/crew-portal-crew}/resources",
+      "body": {
+        "name": "crew-pages",
+        "pathPatterns": [
+          {
+            "type": "WILDCARD",
+            "pattern": "/*"
+          }
+        ],
+        "methods": [
+          "GET",
+          "POST"
+        ],
+        "policy": {
+          "Web": [],
+          "API": []
+        }
       }
     }
   ]

@@ -7,7 +7,8 @@ Pure.
   config/*.json      -> captured config files (config.json, admin.json: the gateway's own settings)
   anything else      -> named in a notice
 
-The importer owns what it reads; what the record adds to a route (owners) is kept.
+The importer owns what it reads; what the record adds to a route (owners) is kept. Each route is also projected onto
+the neutral protected-application layer (neutral.py).
 """
 
 from opsdir.core.contract import Imported, Importer
@@ -20,7 +21,9 @@ from opsdir.core.sources import json_document
 from opsdir.domains.configuration.naming import CONFIG_FILES
 from opsdir.domains.configuration.record import captured_file
 from opsdir.domains.federation.services import integrations
+from opsdir.domains.webaccess.projection import after_import, merged_import
 from .naming import PINGGATEWAY, ROUTES, SERVER_ROLES, route_dn
+from .neutral import projection
 from .routes import backend, client_ids, issuers
 
 OWNED = ("cn", "pinggwCondition", "pinggwBackendRole", "pinggwBackendScheme", "pinggwIntegration", "pinggwIssuer",
@@ -69,7 +72,13 @@ def _captured(path, text, patterns):
 
 
 def read_config(files, d, patterns, at=None):
-    """Imported from a gateway configuration directory."""
+    """Imported from a gateway configuration directory, its routes also projected onto the neutral protected-application
+    layer (neutral.py)."""
+    own = _read_config(files, d, patterns)
+    return merged_import(own, projection(after_import(d, own)))
+
+
+def _read_config(files, d, patterns):
     routes = tuple((p, json_document(t, dict)) for p, t in sorted(files.items())
                    if p.startswith("routes/") and p.endswith(".json"))
     named = tuple((r.get("name") or p[len("routes/"):-5], r) for p, r in routes if r is not None)

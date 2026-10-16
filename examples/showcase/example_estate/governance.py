@@ -155,6 +155,12 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2076", "Scope the PingAccess baselines' AWS agents to AWS environments", "approved", "CAB 2026-09-18",
      "2026-09-24"),
+    ("CHG-2081", "Register the crew portal's OpenID Connect client with single sign-on, and bind its name, application "
+     "and client secret in the target", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2082", "Have the target's PingAccess protect the crew portal in place of SiteMinder's web agent",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2083", "Have the target's gateways (PingGateway) protect Tech Pubs in place of PingAccess", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2086", "Record the forest's certificate templates again, collected over LDAPS with who may enroll",
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),

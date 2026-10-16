@@ -1,0 +1,40 @@
+# CHG-2083 (approved): in the target, the gateways (PingGateway) take Tech Pubs over from PingAccess; its media
+# application stays with PingAccess. Tech Pubs' protected application (projected from PingAccess by CHG-2061) records
+# the secret role of the client it signs in as, and the target's own overrides have the gateways enforce it and set
+# X-TechPubs-User (the plan's fix enforcer-header:techpubs-user). The target's PingAccess render leaves Tech Pubs out
+# and its PingGateway render gives it a route; what PingGateway can't express of it (the session's maximum lifetime)
+# stays in the plan.
+dn: cn=techpubs,ou=protected-applications,dc=ciam-ops
+changetype: modify
+add: ciamCredentialRole
+ciamCredentialRole: pa-techpubs-client-secret
+-
+add: ciamOwner
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2083,ou=changes,dc=ciam-ops
+
+dn: cn=techpubs-enforcer,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamOverride
+cn: techpubs-enforcer
+ciamOverrides: cn=techpubs,ou=protected-applications,dc=ciam-ops
+ciamOverrideAttribute: ciamEnforcedByRole
+ciamOverrideValue: ig
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+description: The target's gateways protect Tech Pubs; its media application stays with PingAccess
+ciamChangeRef: cn=CHG-2083,ou=changes,dc=ciam-ops
+
+dn: cn=techpubs-user-setter,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamOverride
+cn: techpubs-user-setter
+ciamOverrides: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+ciamOverrideAttribute: ciamSetByRole
+ciamOverrideValue: ig
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+description: The gateways set X-TechPubs-User for Tech Pubs in the target
+ciamChangeRef: cn=CHG-2083,ou=changes,dc=ciam-ops

@@ -12,8 +12,8 @@ from opsdir.connectors.importing import preview_import
 from opsdir.connectors.registry import ADAPTERS, core_fragments
 from opsdir.connectors.roundtrip import read_back
 from opsdir.core.contract import PlanContext
-from opsdir.core.directory import get, make_directory, one
-from opsdir.core.environment import env_model
+from opsdir.core.directory import children, get, make_directory, one, rdn_value, values
+from opsdir.core.environment import as_seen, env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.core.standard import registry_ldif
 from opsdir_adapter_pinggateway.adapter import ADAPTER
@@ -151,3 +151,171 @@ def test_what_an_upgrade_of_the_gateway_touches_in_its_routes():
                        "the>=2026.3": None, "ClientHandler>=2026.9": ("docs", "portal"),
                        "UmaService>=2026.9": ("legacy",)}
     assert all(c.touches(d, None, "am") == () for c in ADAPTER.version_changes if c.touches)
+
+
+# ------------------------------------------------------------------ the neutral protected-application layer
+APPS = "ou=protected-applications,dc=ciam-ops"
+BETA = "env=prod,cloud=beta,ou=environments,dc=ciam-ops"
+CREW = f"cn=crew,{APPS}"
+
+
+def server(env, name, role):
+    return f"dn: cn={name},{env}\nobjectClass: top\nobjectClass: ciamServer\ncn: {name}\nciamServerRole: {role}\n" \
+           f"ciamHostname: {name}.example.test\nciamSubnet: cn=net,ou=bindings,{env}\n"
+
+
+def override(env, name, entry, value):
+    return f"dn: cn={name},ou=overrides,{env}\nobjectClass: top\nobjectClass: ciamOverride\ncn: {name}\n" \
+           f"ciamOverrides: {entry}\nciamOverrideAttribute: ciamEnforcedByRole\nciamOverrideValue: {value}\n"
+
+
+# an application recorded by hand, enforced by an agent alpha runs; beta runs gateways and publishes the crew portal
+CREW_APP = f"""{server(ALPHA, "agent-1", "old-agent")}
+{server(BETA, "ig-1", "ig")}
+dn: cn=svc-crew,ou=bindings,{BETA}
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-crew
+ciamBindingRole: crew-service
+ciamFqdn: crew.example.test
+ciamPort: 443
+ciamTargetRole: ig
+
+dn: cn=crew-app,ou=bindings,{BETA}
+objectClass: top
+objectClass: ciamExternalHost
+cn: crew-app
+ciamBindingRole: crew-app
+ciamFqdn: crew-app.example.test
+ciamPort: 8443
+
+dn: ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: header-contracts
+
+dn: cn=crew-user,ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: ciamHeaderContract
+cn: crew-user
+ciamHeaderName: X-Crew-User
+ciamHeaderKind: identity
+ciamSetByRole: old-agent
+ciamHeaderValue: claim sub
+
+dn: {APPS}
+objectClass: top
+objectClass: organizationalUnit
+ou: protected-applications
+
+dn: ou=access-rules,{APPS}
+objectClass: top
+objectClass: organizationalUnit
+ou: access-rules
+
+dn: cn=crew-staff,ou=access-rules,{APPS}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamAccessRule
+cn: crew-staff
+ciamEffect: allow
+ciamWho: attribute groups=crew
+
+dn: {CREW}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamProtectedApp
+cn: crew
+ciamBasePath: /crew/
+ciamEnforcedByRole: old-agent
+ciamPublishedAs: crew-service
+ciamBackendRole: crew-app
+ciamSignOn: oidc
+ciamSignInAs: {PORTAL_WEB}
+ciamServedBy: {LOGIN}
+ciamIdleTimeout: 1800
+ciamMaxSessionTime: 28800
+ciamSetsHeader: cn=crew-user,ou=header-contracts,dc=ciam-ops
+ciamRuleRef: cn=crew-staff,ou=access-rules,{APPS}
+
+dn: cn=pages,{CREW}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPathResource
+cn: pages
+ciamPathPattern: /*
+ciamMatchKind: wildcard
+ciamHttpMethod: GET
+
+dn: cn=public,{CREW}
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamPathResource
+cn: public
+ciamPathPattern: /public/
+ciamMatchKind: prefix
+ciamAccessMode: anonymous
+"""
+MOVED = f"dn: ou=overrides,{BETA}\nobjectClass: top\nobjectClass: organizationalUnit\nou: overrides\n\n" \
+        + override(BETA, "crew-enforcer", CREW, "ig")
+
+
+def with_crew(*extra):
+    text = "\n".join((mini_estate.LDIF, EXTRA, CREW_APP, *extra))
+    base = build_directory(REGISTRY, parse(text), ())
+    import_changes, _ = preview_import(base, "pinggateway", files_of(CONFIG), (ADAPTER,))
+    return build_directory(REGISTRY, parse(text), import_changes)
+
+
+def test_routes_are_projected_onto_the_neutral_layer(after):
+    d, notices = after
+    portal = get(d, f"cn=portal,{APPS}")
+    assert (one(portal, "ciamBasePath"), one(portal, "ciamEnforcedByRole"), one(portal, "ciamBackendRole"),
+            one(portal, "ciamBackendTls"), one(portal, "ciamSignOn"), one(portal, "ciamSignInAs"),
+            one(portal, "ciamServedBy"), one(portal, "ciamProjectedFrom")) == (
+        "/", "ig", "portal-backend", "TRUE", "oidc", PORTAL_WEB, LOGIN, route_dn("portal"))
+    (everything,) = children(d, portal.dn, "ciamPathResource")
+    assert (rdn_value(everything), values(everything, "ciamPathPattern"), one(everything, "ciamMatchKind")) == (
+        "all", ("/",), "prefix")
+    assert one(get(d, f"cn=docs,{APPS}"), "ciamBasePath") == "/docs"
+
+
+def seen(d, env):
+    return as_seen(env_model(d, env))
+
+
+def test_an_application_taken_over_renders_as_a_route_where_the_gateways_enforce_it():
+    d = with_crew(MOVED)
+    assert "pinggateway/routes/crew.json" not in render_env(seen(d, "alpha/prod"), None)
+    route = json.loads(render_env(seen(d, "beta/prod"), None)["pinggateway/routes/crew.json"])
+    assert route["condition"] == ("${find(request.uri.host, '^crew\\\\.example\\\\.test$') and "
+                                  "find(request.uri.path, '^/crew(?:/|$)')}")
+    assert route["baseURI"] == "https://crew-app.example.test:8443"
+    assert route["session"] == {"type": "JwtSessionManager", "config": {"sessionTimeout": "1800 seconds"}}
+    filters = route["handler"]["config"]["filters"]
+    assert [f["type"] for f in filters] == ["ConditionalFilter", "AllowOnlyFilter", "ConditionEnforcementFilter",
+                                            "HeaderFilter"]
+    assert filters[0]["config"]["condition"] == "${not (find(request.uri.path, '^/crew/public/'))}"
+    assert filters[0]["config"]["delegate"]["config"]["registrations"][0]["config"]["clientId"] == "portal-web"
+    assert filters[1]["config"]["rules"] == [            # most specific first
+        {"name": "public", "destination": {"paths": ["^/crew/public/"]}},
+        {"name": "pages", "destination": {"paths": ["^/crew/.*$"], "methods": ["GET"]}}]
+    assert filters[2]["config"]["condition"] == "${contains(contexts.oauth2Info.userInfo['groups'], 'crew')}"
+    assert filters[3]["config"]["replace"] == {"X-Crew-User": ["${contexts.oauth2Info.userInfo['sub']}"]}
+    notes = [n.text for n in ADAPTER.notes(seen(d, "beta/prod"), None)]
+    assert any(t.startswith("its max session limit (28800s) isn't enforced by PingGateway") for t in notes)
+
+
+def test_a_route_another_role_enforces_is_left_out_and_the_render_still_reads_back():
+    d = with_crew(MOVED, override(BETA, "portal-enforcer", f"cn=portal,{APPS}", "pa-engine"))
+    files = render_env(seen(d, "beta/prod"), None)
+    assert "pinggateway/routes/portal.json" not in files and "pinggateway/routes/crew.json" in files
+    (rt,) = read_back(seen(d, "beta/prod").d, ADAPTER, files, (ADAPTER,), environment="beta/prod")
+    assert rt.changes == ()
+
+
+def test_the_gateways_offer_to_protect_what_nothing_in_the_target_would():
+    d = with_crew()
+    ctx = PlanContext(d, seen(d, "alpha/prod"), seen(d, "beta/prod"), None, dt.date(2026, 9, 1), {}, {}, ())
+    fix = next(x for x in check_routes(ctx).fixes if x.key == "protect:pinggateway/crew")
+    assert fix.records[-1].attrs["ciamOverrideValue"] == ("ig",)

@@ -3,7 +3,7 @@
   "as_of": "2026-09-23",
   "history_point": {
     "change": "CHG-2044",
-    "entry": 438
+    "entry": 441
   },
   "controls": [
     {
@@ -83,8 +83,8 @@
           "source": "search",
           "dn": "ou=changes,dc=ciam-ops",
           "files": {
-            "nist-800-53-r5_CM-3/cm-3-approved-changes.csv": "170898bdb2551fa5f94f3175cea671154105144b8711f075624cd7dd105e6794",
-            "nist-800-53-r5_CM-3/cm-3-approved-changes.json": "db9a305fa95636762aafd6b4b21ad2a46fb2603aaf612c8d84d55a1e8696ea7e"
+            "nist-800-53-r5_CM-3/cm-3-approved-changes.csv": "af3a5a45274fe7b726c14d965d69449c8828a6f7da533d7891727c33248a9149",
+            "nist-800-53-r5_CM-3/cm-3-approved-changes.json": "c1ed8a835bf6aca91f49dd3f10c979a57289aabe94caa53b4a9d2e143eaf7162"
           }
         },
         {

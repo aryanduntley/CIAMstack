@@ -379,6 +379,24 @@
       "approved"
     ],
     [
+      "cn=CHG-2081,ou=changes,dc=ciam-ops",
+      "Register the crew portal's OpenID Connect client with single sign-on, and bind its name, application and client secret in the target",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2082,ou=changes,dc=ciam-ops",
+      "Have the target's PingAccess protect the crew portal in place of SiteMinder's web agent",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2083,ou=changes,dc=ciam-ops",
+      "Have the target's gateways (PingGateway) protect Tech Pubs in place of PingAccess",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
       "cn=CHG-2086,ou=changes,dc=ciam-ops",
       "Record the forest's certificate templates again, collected over LDAPS with who may enroll",
       "CAB 2026-09-18",

@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 61   expected now 35   detected 35   missed 0   unexpected 0
+  blockers planted 64   expected now 36   detected 36   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -26,6 +26,8 @@ Expected findings check (after changes)
            B39  cleared by CHG-2034: the target has no data discovery binding: Macie examines the source's backups → gone
            B33  cleared by CHG-2029: production is held to DFARS 252.204-7012 (72-hour reporting on DIBNet); the target to no reporting obligation → gone
            B44  cleared by CHG-2044: nobody knows yet whether Skyline Air accepts the target's new signing certificate without re-onboarding: an open question the move waits for, owned by the partner → gone
+           B71  cleared by CHG-2082: nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop (until the target's PingAccess takes it over) → gone
+           B73  cleared by CHG-2082: the crew portal's header-based sign-on has no setter in the target (until PingAccess's engines set it there) → gone
            B47  raised by CHG-2047: the target's PAM copy of the directory root password was vaulted under another name: the safe, listed whole, has no `ds-root-password`, so rotating the password wouldn't update it → reported
            B55  raised by CHG-2050: the PKI team renewed the directory's LDAPS certificate (request 1342) and revoked the old one, which the record and its servers still use: clients checking revocation refuse it → reported
            B60  raised by CHG-2056: the record approves CHG-2004 (the partner realm's PingAM import), but the CAB rejected its ticket → reported
@@ -33,16 +35,17 @@ Expected findings check (after changes)
            B65  raised by CHG-2061: PingAccess signs Tech Pubs users in with a client secret, but the record registers tech-pubs-web as a public client (none): the target's PingFederate, rendered from the record, refuses the token request → reported
            B66  raised by CHG-2061: Tech Pubs is published at techpubs.example-aero.test in the source only: the target's PingAccess has no name to answer as → reported
            B67  raised by CHG-2060: the same missing service name, from the core role check (its fix binds it like the source does) → reported
-           B71  raised by CHG-2063: nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop → reported
            B72  raised by CHG-2063: the crew badge sign-on is SiteMinder custom code (library crewbadgeauth): rebuilt before the portal moves → reported
-           B73  raised by CHG-2063: the crew portal's header-based sign-on has no setter in the target → reported
            B74  raised by CHG-2063: SiteMinder's federation address has no service name in the record: nothing shows the partners keep it → reported
            B75  raised by CHG-2067: the tech-pubs team's Cognito user pool relies on the platform's sign-on from production's account: where it is after the move isn't recorded → reported
            B76  raised by CHG-2066: External ID isn't in the in-scope list of the Azure authorization the target relies on → reported
            B77  raised by CHG-2066: the partner portal refreshes its tokens: Microsoft's External ID pages don't say the grant is supported there; the question is proposed → reported
            B78  raised by CHG-2066: partners keep the partner realm's sign-in host; whether an external tenant serves a custom domain isn't documented in what was read → reported
            B79  raised by CHG-2066: applications hold the realm's issuer; whether an external tenant issues under a custom one isn't documented in what was read → reported
-  actions  planted 172   expected now 139   detected 139   missed 0   unexpected 0
+           B80  raised by CHG-2083: the gateways taking Tech Pubs over have no name to answer as in the target → reported
+           B81  raised by CHG-2082: PingAccess tests no directory groups: the crew group must reach it as a claim → reported
+           B82  raised by CHG-2082: the roster admins group must reach PingAccess as a claim → reported
+  actions  planted 179   expected now 146   detected 146   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -109,6 +112,13 @@ Expected findings check (after changes)
            A202 raised by CHG-2066: the realm's journeys become user flows, recreated by hand → reported
            A203 raised by CHG-2066: External ID imports no password hashes: the partner users reset or move just in time → reported
            A204 raised by CHG-2086: client authentication added to the web server template, which takes the subject from the request and lets Domain Users enroll: its renewal owner, the platform team → reported
+           A205 raised by CHG-2082: the target has PingAccess enforce the crew portal, the source SiteMinder → reported
+           A206 raised by CHG-2082: PingAccess's engines set SM_USER in the target → reported
+           A207 raised by CHG-2083: the target has its gateways enforce Tech Pubs, the source PingAccess → reported
+           A208 raised by CHG-2083: the gateways set X-TechPubs-User in the target → reported
+           A209 raised by CHG-2082: the crew badge sign-on is SiteMinder custom code: the identity service PingAccess signs users in through must offer it → reported
+           A210 raised by CHG-2083: the route's client secret comes from the gateway's own secrets provider, filled from the credential role's reference; the route's filters are unverified against a running gateway → reported
+           A211 raised by CHG-2083: PingGateway has one session timeout: Tech Pubs' eight-hour maximum is the identity service's to hold → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

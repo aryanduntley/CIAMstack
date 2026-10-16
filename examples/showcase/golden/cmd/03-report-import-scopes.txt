@@ -57,9 +57,10 @@ pingfederate/node-files   shared       s1-168143bf0b3f0f54  20260920030000Z  cn=
 pingfederate/node-files   source/prod  s1-2b15de89fb4541e2  20260920030000Z  cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 pingfederate/node-files   source/prod  s1-2b15de89fb4541e2  20260920030000Z  cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
 pingfederate/node-files   source/prod  s1-2b15de89fb4541e2  20260920030000Z  cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
-pinggateway/config        shared       s1-33a1aefb0be2ee0c  20260920030000Z  cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
-pinggateway/config        shared       s1-33a1aefb0be2ee0c  20260920030000Z  cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
-pinggateway/config        shared       s1-33a1aefb0be2ee0c  20260920030000Z  cn=ig.config.config.json,ou=config-files,dc=ciam-ops
+pinggateway/config        shared       s1-e5c4434378bd8203  20260920030000Z  cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
+pinggateway/config        shared       s1-e5c4434378bd8203  20260920030000Z  cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
+pinggateway/config        shared       s1-e5c4434378bd8203  20260920030000Z  cn=ig.config.config.json,ou=config-files,dc=ciam-ops
+pinggateway/config        shared       s1-e5c4434378bd8203  20260920030000Z  cn=partner-portal,ou=protected-applications,dc=ciam-ops
 pingidm/project           shared       s1-957fd2a5ac158146  20260920030000Z  cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops
 pingidm/project           shared       s1-957fd2a5ac158146  20260920030000Z  cn=role,ou=managed-objects,ou=pingidm,dc=ciam-ops
 pingidm/project           shared       s1-957fd2a5ac158146  20260920030000Z  cn=hr_managedUser,ou=mappings,ou=pingidm,dc=ciam-ops
@@ -68,5 +69,5 @@ pingidm/project           shared       s1-957fd2a5ac158146  20260920030000Z  cn=
 pingidm/project           shared       s1-957fd2a5ac158146  20260920030000Z  cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
 pingidm/project           shared       s1-957fd2a5ac158146  20260920030000Z  cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 pingidm/project           shared       s1-957fd2a5ac158146  20260920030000Z  cn=idm.conf.audit.json,ou=config-files,dc=ciam-ops
-(68 rows)
+(69 rows)
 exit 0

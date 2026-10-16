@@ -207,6 +207,11 @@
       "format": "ldif",
       "sha256": "ebe0e8a50905a8bb95003372251836c2a30bd4c8436ba59ac8ad56b8273fc017"
     },
+    "oidc/clients/crew-portal.json": {
+      "scope": "environment-neutral",
+      "format": "json",
+      "sha256": "ac3b13739885081f5f22ed7acc7734dee374a1ec09e3347f415047a2d1531686"
+    },
     "oidc/clients/mobile-ops.json": {
       "scope": "environment-neutral",
       "format": "json",
@@ -230,7 +235,7 @@
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "916de2ae08832b6246e1b427b0cac502412733e311567b9fc933ea06bcee18d4"
+      "sha256": "8ad52d5c1e89157197601e8d7c47e1a08c15ae6114ca31666c624ee9a0512e8a"
     },
     "pingfederate/cluster/jgroups.properties": {
       "scope": "environment-specific",
@@ -240,7 +245,7 @@
     "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "1dbc2e8df3d79f31aeeeb7a5a82b432981fbe02a66c054674292c04809e0a48e"
+      "sha256": "c16926a15bf5f2737ffedfa2ad76a796037c88eb68b93e6e95fcb77758f78386"
     },
     "pingfederate/terraform/variables.tf": {
       "scope": "environment-specific",

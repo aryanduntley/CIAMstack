@@ -1,0 +1,5 @@
+CHG-2082: modify cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops
+CHG-2082: add ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2082: add cn=crew-portal-crew-enforcer,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2082: add cn=crew-portal-sm_user-setter,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+exit 0

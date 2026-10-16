@@ -632,6 +632,36 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Scope the PingAccess baselines' AWS agents to AWS environments
 
+dn: cn=CHG-2081,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2081
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Register the crew portal's OpenID Connect client with single sign-o
+ n, and bind its name, application and client secret in the target
+
+dn: cn=CHG-2082,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2082
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Have the target's PingAccess protect the crew portal in place of Si
+ teMinder's web agent
+
+dn: cn=CHG-2083,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2083
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Have the target's gateways (PingGateway) protect Tech Pubs in place
+  of PingAccess
+
 dn: cn=CHG-2086,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

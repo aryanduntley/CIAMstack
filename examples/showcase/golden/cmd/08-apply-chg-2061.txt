@@ -3,5 +3,5 @@ not an Admin API response, not imported: README.md
 identityMappings techpubs-user: it sets header X-TechPubs-User, which no header contract in the record names
 sites techpubs-media-cdn: its targets are no single service name in the record, so it sends requests to the same place from every environment
 webSessions techpubs-session: its secrets are withheld; set paCredentialRole to the secret role that holds them
-CHG-2061: 27 change(s) applied, the import run among them
+CHG-2061: 33 change(s) applied, the import run among them
 exit 0

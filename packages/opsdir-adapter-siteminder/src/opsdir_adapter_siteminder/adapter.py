@@ -3,7 +3,7 @@ Gateway), as the source of a migration away from it. It renders nothing: it read
 the planner's checks for a plan from such an environment (source_checks)."""
 from opsdir.core.contract import Adapter
 from opsdir.domains.compute.workloads import runs_product
-from .checks import check_realms, check_user_directories
+from .checks import check_user_directories
 from .importer import VERSIONS, XPS
 from .naming import PRODUCT, SERVER_ROLES
 from .schema import FRAGMENT
@@ -22,4 +22,4 @@ ADAPTER = Adapter(name="siteminder", kind="product", applies=applies, required_r
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=(), products=PRODUCTS, secret_patterns=(), importers=(XPS,), profile_terms=None,
                   access=None, roles=(("server", SERVER_ROLES),),
-                  source_checks=(check_realms, check_user_directories))
+                  source_checks=(check_user_directories,))

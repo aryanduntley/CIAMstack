@@ -1,9 +1,9 @@
 {
   "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
   "counts": {
-    "blocker": 2,
-    "action": 8,
-    "note": 13,
+    "blocker": 4,
+    "action": 11,
+    "note": 14,
     "to_review": 0
   },
   "notes": [
@@ -24,9 +24,39 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2255
+          "line": 2315
         }
       ]
+    },
+    {
+      "area": "PingAccess",
+      "severity": "blocker",
+      "subject": "protected application `crew-portal-crew`",
+      "text": "rule `crew-portal-all-crew` admits `group cn=crew,ou=groups,dc=partners,dc=example-aero,dc=test`, which PingAccess can't test, so the render leaves the rule out and admits every signed-in user: release it as a claim of the sign-in integration and test that (attribute <claim>=<value>)",
+      "how": [
+        "Decide how PingAccess protects `crew-portal-crew` without it, and record that (the application's resources and rules), or keep it with its current product."
+      ],
+      "entry": "cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
+      "area": "PingAccess",
+      "severity": "blocker",
+      "subject": "protected application `crew-portal-crew`",
+      "text": "rule `crew-portal-roster-admins` admits `group cn=roster-admins,ou=groups,dc=partners,dc=example-aero,dc=test`, which PingAccess can't test, so the render leaves the rule out and admits every signed-in user: release it as a claim of the sign-in integration and test that (attribute <claim>=<value>)",
+      "how": [
+        "Decide how PingAccess protects `crew-portal-crew` without it, and record that (the application's resources and rules), or keep it with its current product."
+      ],
+      "entry": "cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
     },
     {
       "area": "Network",
@@ -66,7 +96,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 3267
+          "line": 3331
         }
       ]
     },
@@ -109,7 +139,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2584
+          "line": 2644
         }
       ]
     },
@@ -130,7 +160,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 1770
+          "line": 1830
         }
       ]
     },
@@ -150,7 +180,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2559
+          "line": 2619
         }
       ]
     },
@@ -187,6 +217,21 @@
       "places": []
     },
     {
+      "area": "PingAccess",
+      "severity": "action",
+      "subject": "protected application `crew-portal-crew`",
+      "text": "users sign in with custom today; PingAccess signs them in through the identity service, which must offer that sign-on (the source's own code: rebuilt there)",
+      "how": [
+        "Decide how PingAccess protects `crew-portal-crew` without it, and record that (the application's resources and rules), or keep it with its current product."
+      ],
+      "entry": "cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
       "area": "Quotas",
       "severity": "action",
       "subject": "quota request (vcpus)",
@@ -202,9 +247,39 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 3150
+          "line": 3210
         }
       ]
+    },
+    {
+      "area": "PingGateway",
+      "severity": "action",
+      "subject": "pinggateway/routes/techpubs.json",
+      "text": "the sign-in's client secret is read from the gateway's secrets provider (SystemAndEnvSecretStore-1): put ${secret:azkv://kv-ciam-prod/pa-techpubs-client-secret} there for registration `techpubs`; the filters follow PingGateway's 2026 reference and are unverified against a running gateway",
+      "how": [
+        "Check the route against the gateway's version (a test gateway, or its admin endpoints) before deploying it."
+      ],
+      "entry": "cn=techpubs,ou=protected-applications,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "tech-pubs-team"
+      ],
+      "places": []
+    },
+    {
+      "area": "PingGateway",
+      "severity": "action",
+      "subject": "protected application `techpubs`",
+      "text": "its max session limit (28800s) isn't enforced by PingGateway: the identity service's session must hold it",
+      "how": [
+        "Decide how PingGateway protects `techpubs` without it, and record that, or keep it with its current product."
+      ],
+      "entry": "cn=techpubs,ou=protected-applications,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "tech-pubs-team"
+      ],
+      "places": []
     },
     {
       "area": "Logs",
@@ -222,7 +297,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2305
+          "line": 2365
         }
       ]
     },
@@ -260,7 +335,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2586
+          "line": 2646
         }
       ]
     },
@@ -280,7 +355,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2588
+          "line": 2648
         }
       ]
     },
@@ -439,6 +514,21 @@
           "line": 53
         }
       ]
+    },
+    {
+      "area": "PingGateway",
+      "severity": "note",
+      "subject": "protected application `techpubs`",
+      "text": "resource `Root Resource` matches by wildcard, rendered as regex",
+      "how": [
+        "Decide how PingGateway protects `techpubs` without it, and record that, or keep it with its current product."
+      ],
+      "entry": "cn=techpubs,ou=protected-applications,dc=ciam-ops",
+      "scope": null,
+      "owners": [
+        "tech-pubs-team"
+      ],
+      "places": []
     }
   ]
 }

@@ -7,7 +7,7 @@ from .importer import ADMIN_API, EXPORT
 from .listeners import listeners
 from .logs import LOGS
 from .naming import ENDPOINTS, SERVER_ROLES
-from .render import FORMATS, render_env, render_notes
+from .render import FORMATS, own_requests, render_env, render_notes
 from .schema import FRAGMENT
 from .versions import VERSION_CHANGES
 
@@ -27,4 +27,5 @@ ADAPTER = Adapter(name="pingaccess", kind="product", applies=applies, required_r
                   secret_patterns=(), importers=(ADMIN_API, EXPORT), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners, collectors=COLLECTORS, notes=render_notes, logs=LOGS,
                   version_changes=VERSION_CHANGES,
-                  reads_back=(ReadBack("admin-api", "pingaccess/admin-api/*.json", "pingaccess/admin-api/"),))
+                  reads_back=(ReadBack("admin-api", "pingaccess/admin-api/*.json", "pingaccess/admin-api/",
+                                       prepare=own_requests),))

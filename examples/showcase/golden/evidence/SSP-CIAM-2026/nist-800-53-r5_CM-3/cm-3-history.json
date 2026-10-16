@@ -292,6 +292,12 @@
       "<TIMESTAMP>",
       "CHG-2004",
       "insert",
+      "ou=protected-applications,dc=ciam-ops"
+    ],
+    [
+      "<TIMESTAMP>",
+      "CHG-2004",
+      "insert",
       "cn=ig.config.admin.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -299,6 +305,12 @@
       "CHG-2004",
       "insert",
       "cn=ig.config.config.json,ou=config-files,dc=ciam-ops"
+    ],
+    [
+      "<TIMESTAMP>",
+      "CHG-2004",
+      "insert",
+      "cn=partner-portal,ou=protected-applications,dc=ciam-ops"
     ],
     [
       "<TIMESTAMP>",
@@ -334,6 +346,12 @@
       "<TIMESTAMP>",
       "CHG-2004",
       "insert",
+      "cn=all,cn=partner-portal,ou=protected-applications,dc=ciam-ops"
+    ],
+    [
+      "<TIMESTAMP>",
+      "CHG-2004",
+      "insert",
       "cn=d82debf6eb335a9d,cn=ig.config.config.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -352,7 +370,7 @@
       "<TIMESTAMP>",
       "CHG-2004",
       "insert",
-      "cn=pinggateway.config.shared.s1-33a1aefb0be2ee0c,ou=imports,dc=ciam-ops"
+      "cn=pinggateway.config.shared.s1-e5c4434378bd8203,ou=imports,dc=ciam-ops"
     ],
     [
       "<TIMESTAMP>",

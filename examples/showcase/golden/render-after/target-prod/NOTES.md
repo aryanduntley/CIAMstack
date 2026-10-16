@@ -5,18 +5,32 @@
 -->
 # Render notes: target/prod
 
-**2 blockers, 8 actions, 13 notes, 0 to review**
+**4 blockers, 11 actions, 14 notes, 0 to review**
 
 ## Blockers
 
 ### alert rule login-failures (Monitoring)
 
 - **What:** not rendered: its alarm is a log query alert and the record holds no query
-- **Where:** terraform/main.tf:2255; target/prod
+- **Where:** terraform/main.tf:2315; target/prod
 - **Who:** ciam-platform
 - **How:**
   1. Record alarm pf-login-failures in a form the cloud's alarms take (its alarm is a log query alert and the record holds no query), under an approved change, and re-render
   2. Or evaluate the rule another way: a Prometheus signal a product declares, or an alert made by hand
+
+### protected application `crew-portal-crew` (PingAccess)
+
+- **What:** rule `crew-portal-all-crew` admits `group cn=crew,ou=groups,dc=partners,dc=example-aero,dc=test`, which PingAccess can't test, so the render leaves the rule out and admits every signed-in user: release it as a claim of the sign-in integration and test that (attribute <claim>=<value>)
+- **Where:** not written in any file
+- **Who:** ciam-platform
+- **How:** Decide how PingAccess protects `crew-portal-crew` without it, and record that (the application's resources and rules), or keep it with its current product.
+
+### protected application `crew-portal-crew` (PingAccess)
+
+- **What:** rule `crew-portal-roster-admins` admits `group cn=roster-admins,ou=groups,dc=partners,dc=example-aero,dc=test`, which PingAccess can't test, so the render leaves the rule out and admits every signed-in user: release it as a claim of the sign-in integration and test that (attribute <claim>=<value>)
+- **Where:** not written in any file
+- **Who:** ciam-platform
+- **How:** Decide how PingAccess protects `crew-portal-crew` without it, and record that (the application's resources and rules), or keep it with its current product.
 
 ### interconnect `link-source` (Network)
 
@@ -30,7 +44,7 @@
 ### external tenant partners-external-id (Identity)
 
 - **What:** Entra External ID isn't rendered: the external tenant running `partners` and its app registrations are created by hand (partner-portal (oidc-client: https://partners.example-aero.test/callback))
-- **Where:** terraform/main.tf:3267; target/prod
+- **Where:** terraform/main.tf:3331; target/prod
 - **Who:** ciam-platform
 - **How:**
   1. Create the external tenant (public cloud) and record its tenant ID as the binding's ciamProviderRef under an approved change, and re-render
@@ -51,14 +65,14 @@
 ### check jobs (Monitoring)
 
 - **What:** whoever may start one can override its image, command and environment and use its identity and secrets (Microsoft's jobs documentation): keep that right to identities trusted with them; the built-in Container Apps Jobs Operator and Contributor roles can also read the jobs' secrets
-- **Where:** terraform/main.tf:2584; role assignments on target/prod's jobs
+- **Where:** terraform/main.tf:2644; role assignments on target/prod's jobs
 - **Who:** ciam-platform
 - **How:** Give operators a custom role with only Microsoft.App/jobs/read, jobs/start/action, jobs/stop/action, jobs/stop/execution/action, jobs/executions/read, jobs/execution/read and Microsoft.App/managedEnvironments/read (not the Microsoft.App/jobs/*/action wildcard), assigned only to those trusted with the jobs' identities
 
 ### forwarder `fwd-corp-ad` (Network)
 
 - **What:** runs on DNS servers 10.100.0.4, 10.100.0.5 (virtual machines), not the managed resolver: they forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, and the network's DNS servers point at them; not managed here
-- **Where:** terraform/main.tf:1770; target/prod
+- **Where:** terraform/main.tf:1830; target/prod
 - **Who:** ciam-platform
 - **How:**
   1. Configure DNS servers 10.100.0.4, 10.100.0.5 to forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, by hand
@@ -67,7 +81,7 @@
 ### subnet snet-checks (Network)
 
 - **What:** must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied
-- **Where:** terraform/main.tf:2559; virtual network of target/prod
+- **Where:** terraform/main.tf:2619; virtual network of target/prod
 - **Who:** ciam-platform
 - **How:** Have the network's keeper delegate subnet snet-checks to Microsoft.App/environments (and move anything else out of it), then apply
 
@@ -89,19 +103,40 @@
   1. Create them from the environment's own key material, CAs, listeners and nodes (the record holds their settings, never their keys).
   2. The requests name them by ${pingaccess-id:...}: record each one's id in the pipeline before applying.
 
+### protected application `crew-portal-crew` (PingAccess)
+
+- **What:** users sign in with custom today; PingAccess signs them in through the identity service, which must offer that sign-on (the source's own code: rebuilt there)
+- **Where:** not written in any file
+- **Who:** ciam-platform
+- **How:** Decide how PingAccess protects `crew-portal-crew` without it, and record that (the application's resources and rules), or keep it with its current product.
+
 ### quota request (vcpus) (Quotas)
 
 - **What:** raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2: azurerm has no resource for it
-- **Where:** terraform/main.tf:3150; subscription 00000000-0000-0000-0000-000000000000
+- **Where:** terraform/main.tf:3210; subscription 00000000-0000-0000-0000-000000000000
 - **Who:** ciam-platform
 - **How:** Request it through the Quota API (`az quota update`, Microsoft.Quota) or a support request; Microsoft's pages don't say whether the Quota API serves Azure Government
+
+### pinggateway/routes/techpubs.json (PingGateway)
+
+- **What:** the sign-in's client secret is read from the gateway's secrets provider (SystemAndEnvSecretStore-1): put ${secret:azkv://kv-ciam-prod/pa-techpubs-client-secret} there for registration `techpubs`; the filters follow PingGateway's 2026 reference and are unverified against a running gateway
+- **Where:** not written in any file
+- **Who:** tech-pubs-team
+- **How:** Check the route against the gateway's version (a test gateway, or its admin endpoints) before deploying it.
+
+### protected application `techpubs` (PingGateway)
+
+- **What:** its max session limit (28800s) isn't enforced by PingGateway: the identity service's session must hold it
+- **Where:** not written in any file
+- **Who:** tech-pubs-team
+- **How:** Decide how PingGateway protects `techpubs` without it, and record that, or keep it with its current product.
 
 ## Notes
 
 ### log destination siem (Logs)
 
 - **What:** keeps logs 365 days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's retention unless set by hand
-- **Where:** terraform/main.tf:2305; target/prod
+- **Where:** terraform/main.tf:2365; target/prod
 - **Who:** ciam-platform
 - **How:** Set the total retention of the workspace's other tables that must keep logs as long, by hand
 
@@ -114,14 +149,14 @@
 ### check jobs (Monitoring)
 
 - **What:** the first runs may fail to post their results (403) until Azure has propagated each job's identity's Monitoring Metrics Publisher role (minutes)
-- **Where:** terraform/main.tf:2586; Application Insights of target/prod
+- **Where:** terraform/main.tf:2646; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** If the first runs' availability results are missing, wait for the role assignment to propagate; nothing to change
 
 ### check jobs (Monitoring)
 
 - **What:** their results are posted as Microsoft.ApplicationInsights.Availability items with an Entra token, a form not yet confirmed against a live Application Insights
-- **Where:** terraform/main.tf:2588; Application Insights of target/prod
+- **Where:** terraform/main.tf:2648; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log
 
@@ -180,3 +215,10 @@
 - **What:** 0.0.0.0/0 nat: not a next hop in Azure (subnets reach it without a route): not rendered
 - **Where:** terraform/landing-zone/network-security/network.tf:53; target/prod
 - **Who:** network-security
+
+### protected application `techpubs` (PingGateway)
+
+- **What:** resource `Root Resource` matches by wildcard, rendered as regex
+- **Where:** not written in any file
+- **Who:** tech-pubs-team
+- **How:** Decide how PingGateway protects `techpubs` without it, and record that, or keep it with its current product.

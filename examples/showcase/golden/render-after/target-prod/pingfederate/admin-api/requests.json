@@ -475,6 +475,34 @@
     },
     {
       "method": "PUT",
+      "path": "/oauth/clients/crew-portal-web",
+      "createWith": "POST /oauth/clients",
+      "body": {
+        "clientId": "crew-portal-web",
+        "name": "crew-portal",
+        "enabled": true,
+        "redirectUris": [
+          "https://crew.example-aero.test/crew/pa/oidc/cb"
+        ],
+        "grantTypes": [
+          "AUTHORIZATION_CODE"
+        ],
+        "requireProofKeyForCodeExchange": true,
+        "requireDpop": false,
+        "clientAuthentication": {
+          "clientSecret": {
+            "enabled": true
+          }
+        },
+        "restrictScopes": true,
+        "restrictedScopes": [
+          "openid",
+          "profile"
+        ]
+      }
+    },
+    {
+      "method": "PUT",
       "path": "/oauth/clients/mobile-ops",
       "createWith": "POST /oauth/clients",
       "body": {

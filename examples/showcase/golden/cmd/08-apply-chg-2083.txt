@@ -1,0 +1,4 @@
+CHG-2083: modify cn=techpubs,ou=protected-applications,dc=ciam-ops
+CHG-2083: add cn=techpubs-enforcer,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2083: add cn=techpubs-user-setter,ou=overrides,env=prod,cloud=target,ou=environments,dc=ciam-ops
+exit 0

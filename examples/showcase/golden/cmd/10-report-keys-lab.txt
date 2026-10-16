@@ -17,6 +17,7 @@ idm-ds-bind-password       password       idm-ds-bind-password                  
 idm-hrdb-password          password       idm-hrdb-password                                                                                                                                 not used here: only PingIDM uses it
 idm-keystore               keystore       idm-keystore                                                                                                                                      not used here: only PingIDM requires it
 ig-keystore                keystore       ig-keystore                                                                                                                                       not used here: only PingGateway requires it
+pa-crew-client-secret      client-secret  pa-crew-client-secret                                                                                                                             not used here: nothing here requires it
 pa-techpubs-client-secret  client-secret  pa-techpubs-client-secret                                                                                                                         not used here: nothing here requires it
 panorama-hq-login          password       panorama-hq-login          cyberark  cyberark://ciam-lab/CIAM-Lab/panorama-hq                                                                     ok
 pf-admin-password          password       pf-admin-password          cyberark  cyberark://ciam-lab/CIAM-Lab/pf-admin-password                                                               ok
@@ -30,5 +31,5 @@ pf-smtp-password           password       pf-smtp-password           cyberark  c
 sso-tls-certificate        private-key    sso-tls-certificate                                                                                                                               not used here: nothing here requires it
 sso-tls-keystore           keystore       sso-tls-keystore           cyberark  cyberark://ciam-lab/CIAM-Lab/sso-tls-keystore                                                                ok
 sso-tls-keystore-password  password       sso-tls-keystore-password  cyberark  cyberark://ciam-lab/CIAM-Lab/sso-tls-keystore-password                                                       ok
-(30 rows)
+(31 rows)
 exit 0

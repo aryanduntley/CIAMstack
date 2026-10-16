@@ -10,7 +10,7 @@ pingds/config             shared       s1-69128b08d45c6a2a  4       202609200300
 pingfederate/bulk         shared       s1-bc89833b4efcd403  29      20260920030000Z  CHG-2008
 pingfederate/node-files   shared       s1-168143bf0b3f0f54  1       20260920030000Z  CHG-2008
 pingfederate/node-files   source/prod  s1-2b15de89fb4541e2  3       20260920030000Z  CHG-2008
-pinggateway/config        shared       s1-33a1aefb0be2ee0c  3       20260920030000Z  CHG-2004
+pinggateway/config        shared       s1-e5c4434378bd8203  4       20260920030000Z  CHG-2004
 pingidm/project           shared       s1-957fd2a5ac158146  8       20260920030000Z  CHG-2004
 (12 rows)
 exit 0

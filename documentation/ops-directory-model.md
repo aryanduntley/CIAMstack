@@ -64,6 +64,8 @@ dc=ciam-ops
 │                                           an environment may run one on a cloud-managed service: a
 │                                           ciamManagedIdentity binding realizing it (or a neighbour: ciamPartnerOf)
 ├── ou=integrations                         ciamIntegration (SAML / OIDC / LDAP) -> ou=claims (ciamClaimMap)
+├── ou=protected-applications               ciamProtectedApp -> ciamPathResource; ou=access-rules (ciamAccessRule): what a
+│                                           gateway or agent protects, in neutral terms (products project onto it)
 ├── ou=certificates                         ciamCertificate: public facts only (fingerprint, dates, SANs, key role)
 ├── ou=credentials                          ciamCredential: what a key or secret is, how it rotates, where it is used
 ├── ou=external-allowlists                  ciamExternalAllowlist: other parties' allowlists holding our addresses

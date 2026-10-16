@@ -2,7 +2,8 @@
 # client secret is the one role pa-techpubs-client-secret references in each environment (CHG-2060), so each render
 # gives the secret's reference, never its value; and the header Tech Pubs trusts for who the user is, set by the
 # engines, as a header contract the identity mapping names. Whether PingAccess removes a client's own X-TechPubs-User
-# from incoming requests isn't confirmed yet, so ciamStripsInbound stays unset (the edge check names it).
+# from incoming requests isn't confirmed yet, so ciamStripsInbound stays unset (the edge check names it). Tech Pubs'
+# protected application (projected by the import) names the header too, as PingAccess's next import would.
 dn: cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
 changetype: modify
 add: paCredentialRole
@@ -32,6 +33,14 @@ dn: cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
 changetype: modify
 add: paHeaderContract
 paHeaderContract: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops
+
+dn: cn=techpubs,ou=protected-applications,dc=ciam-ops
+changetype: modify
+add: ciamSetsHeader
+ciamSetsHeader: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
 -
 add: ciamChangeRef
 ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops

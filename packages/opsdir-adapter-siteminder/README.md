@@ -47,27 +47,58 @@ Integrations the record already holds (matched by entity ID or client ID) keep w
 
 `opsdir report source-objects` lists them; the core planner check (`check_source_objects`) makes each an action for its owner, or a blocker when the move waits for it, for a target that doesn't run the role holding it.
 
+### The neutral layer (`neutral.py`)
+
+Every import also projects the policy store onto the neutral protected-application layer (core domain `webaccess`),
+so a plan can move what SiteMinder protects to a product the target runs:
+- A realm becomes `ciamProtectedApp` `<domain>-<realm>`:
+  - its resource filter is the base path;
+  - enforced by its agent's role, with no backend (a web agent runs in the application's own web server);
+  - sign-on from its authentication scheme's type (`xps.SCHEME_SIGN_ONS`: HTML form, basic, X.509 certificate, a
+    SAML/JWT/OpenID journey as `federated`, custom);
+  - its idle and maximum timeouts;
+  - the header contracts of the responses its granting policies return.
+- Each enabled rule becomes a `ciamPathResource`:
+  - its resource below the realm's (`*` a wildcard, `?` making it a regex, a regex as written with a leading copy of
+    the realm's filter dropped);
+  - the HTTP methods among its actions (event actions are named in a notice);
+  - unprotected when the realm's `ProtectAll` is false;
+  - the access rules of the enabled policies granting it.
+- Each enabled policy becomes `ciamAccessRule` `<domain>-<policy>`:
+  - it allows its user selections (group, user, filter; every user of a directory: `authenticated`);
+  - `<domain>-<policy>-deny` holds the deny rules it grants;
+  - a selection of another kind makes the rule `custom`.
+
+The service names clients reach a realm at, the application behind a gateway that takes it over, and the integration
+that gateway signs users in as aren't in an export: the record adds them, and the import keeps them.
+
 ## Secrets
 
 Never stored, neither the value nor its ciphertext. `XPSExport -npass` writes sensitive settings in **clear text**; `-pass` encrypts them with a passphrase: either way the import withholds them. A setting is withheld when its name is a sensitive one (password, secret, passphrase, private key: SiteMinder publishes no per-class list), when its value looks encrypted (a `{cipher}` prefix) or when the store's secret patterns match it; a header response's fixed value too. The entry records only that it existed, what it is and that the target re-provisions it (`smWithheld`, e.g. `Password: the bind password of the connection; re-provision in the target`), and every import says how many it withheld and that the export file must be treated as a secret. Agent keys, the session key and federation keys aren't in an XPSExport at all (`smkeyexport`, `smkeytool`): the `keys` source object says so.
 
 ## Planner checks
 
-Run when the adapter applies to a plan's **source** (`source_checks`):
+Run when the adapter applies to a plan's **source** (`source_checks`). What stops being protected when the target doesn't run the agents (a realm's rules, policies, sign-on and headers) is the web access domain's check over the projected realms, and a product the target runs offers to take the realm over (`protect:<adapter>/<domain>-<realm>`):
 
-- `check_realms`: a **blocker** for every realm whose agent's role the source runs and the target doesn't: its rules, the policies granting them, its sign-on scheme and the headers the application trusts stop. Protect those resources with a gateway or access product the target runs, then retire the realm.
 - `check_user_directories`: an **action** for every user directory binding as an account no directory consumer records.
 
 The core checks the rest: integrations still served by SiteMinder's identity service (federation: blocks until re-homed), its header contracts (edge: a setter the target doesn't run blocks; a client-sendable identity header is an action), its source objects (governance) and its bind account (directory consumers).
 
 ## Schema
 
-Under this package's OID arc `1.3.6.1.4.1.32473.3.6` (prefix `sm`, `schema.py`): 24 attributes, classes `smObject` (auxiliary), `smPolicyDomain`, `smRealm`, `smRule`, `smPolicy`, `smAuthScheme`, `smUserDirectory`, `smAgent`. They map one to one onto the planned neutral protected-web-application layer (realm: an application's path, enforcement point, sign-on and session; rule: a path rule with methods and an effect; policy: who it admits, and the headers it sets), which PingAccess and PingGateway will share.
+Under this package's OID arc `1.3.6.1.4.1.32473.3.6` (prefix `sm`, `schema.py`): 24 attributes, classes `smObject` (auxiliary), `smPolicyDomain`, `smRealm`, `smRule`, `smPolicy`, `smAuthScheme`, `smUserDirectory`, `smAgent`. Realms, rules and policies are projected onto the core's neutral protected-application layer, which PingAccess and PingGateway share (above).
 
 ## Known limits
 
 - **The XPS names are unverified for 12.8 and 12.9.** The layout and the class and property names come from Broadcom's archived 12.51 XPS reference and knowledge-base articles quoting 12.8 exports; Broadcom's current XPSExport page wasn't readable. Every name the adapter reads is data in `xps.py` (`KINDS`, `FIELDS`, the response types, `VERSION_ATTRIBUTES`), so a real export that names them otherwise is fixed there. The tests and the showcase's export are built from the documented shapes, not taken from a real policy store. **Acceptance items** (a real 12.8 SP and 12.9.1 `-xb` export, with `-pass` and with `-npass`): the root element's version attribute; the property names of realms, rules, policies and their links, user policies, responses and response attributes (in particular whether the agent type of a response attribute is a link to an `AgentTypeAttr` object rather than a name), user directories, authentication schemes, agents and agent types, partnerships (local and remote entities, ACS and SSO endpoints, bindings, NameID, assertion attributes, certificates), OIDC clients; the IdP-side partnership class name; how `-pass` writes an encrypted value (the `{cipher}` prefix is assumed) and which properties it marks sensitive; federation objects `-xp` may leave out (a 12.52 SP1 limitation: select `PartnershipBase*` XIDs).
-- **Policy objects stay in this package's schema** until the neutral protected-web-application layer exists (a later milestone): no target product renders them yet, so `check_realms` blocks until something the target runs protects those resources.
+- **The neutral projection is unverified like the rest.**
+  - Broadcom's REST examples (KB 380127) name a realm's `ProtectAll` and spell a rule's regex flag `RegularExpression`
+    and its actions `["Get", "Post"]`, where `xps.py` reads `IsRegex` and `GET,POST`: acceptance items for the
+    real exports.
+  - So are a policy's exclusion and AND flags and user selections of other kinds (`organizationalUnit`, roles): not
+    read, so a policy using them is `custom`.
+  - Also whether a regex rule is matched against the whole path (assumed) and the 12.8/12.9 deny-over-allow precedence
+    (documented for 12.51).
 - **Not read**: the admin policy REST API (`/ca/api/sso/services/policy/v1/`: needs a legacy administrator; its coverage is unverified), Web Agent files (`WebAgent.conf`, `SmHost.conf`), Access Gateway proxy rules (`proxyrules.xml`: carried as a blocking source object), the key store, the session and audit stores, the certificate data store's contents (certificates are linked only when the record holds them).
 - **Responses' other types, variables, active rules and expressions** beyond `userattr` and `userdn` are kept as source objects to review or in `smConfig`, not interpreted.
 - **One identity service per export**: partnerships of several local entities are served by the first (a notice names the others).

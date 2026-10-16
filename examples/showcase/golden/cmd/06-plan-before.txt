@@ -296,6 +296,7 @@ Record changes these findings can make (`opsdir fix show FROM TO KEY`; propose o
 - Header contract `client-address-login` kept: `X-Forwarded-For` set by `am-service` in target/prod.
 - Header contract `client-address-sso` kept: `X-Forwarded-For` set by `pf-sso-service` in target/prod.
 - Header contract `partner-user` kept: `X-Partner-User` set by `ig` in target/prod.
+- Protected application `partner-portal` stays with `ig` in target/prod.
 - source/prod: 12 flow(s) of the ports matrix get through.
 - Evidence not compared between source/prod and target/prod (history, searches, and reports without an environment column): `ac-2-principals`, `cm-3-approved-changes`, `cm-3-history`, `sc-12-credentials`, `sc-12-keys`.
 - `ds` in target/prod: PingDS 7.5.1 → PingDS 8.1.2, an upgrade within the versions pingds supports (PingDS >=7.2,<9); 4 changes pingds declares lie between them; 4 apply to this record (named below).

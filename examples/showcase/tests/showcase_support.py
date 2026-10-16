@@ -92,6 +92,9 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2069", SHOWCASE / "changes" / "CHG-2069-issuing-ca-certificate.ldif"),
             ("CHG-2075", ImportStep("linux/baseline", SHOWCASE / "exports" / "hosts-pingaccess", "20260923090000Z")),
             ("CHG-2076", SHOWCASE / "changes" / "CHG-2076-pingaccess-scoped-agents.ldif"),
+            ("CHG-2081", SHOWCASE / "changes" / "CHG-2081-crew-portal-client-and-target-bindings.ldif"),
+            ("CHG-2082", SHOWCASE / "changes" / "CHG-2082-target-pingaccess-protects-crew-portal.ldif"),
+            ("CHG-2083", SHOWCASE / "changes" / "CHG-2083-target-pinggateway-protects-tech-pubs.ldif"),
             ("CHG-2086", ImportStep("adcs/inventory", SHOWCASE / "exports" / "adcs-templates", "20260923090000Z",
                                     take=("all",))))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
