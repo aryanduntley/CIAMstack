@@ -63,6 +63,12 @@ variable "pf_captcha_secret" {
   sensitive   = true
 }
 
+variable "crew_portal_web_withheld" {
+  description = "a secret of crew_portal_web no credential role supplies yet (set pingfedCredentialRole)"
+  type        = string
+  sensitive   = true
+}
+
 variable "reports_api_withheld" {
   description = "a secret of reports_api no credential role supplies yet (set pingfedCredentialRole)"
   type        = string

@@ -486,7 +486,8 @@
         "requireProofKeyForCodeExchange": true,
         "requireDpop": false,
         "clientAuth": {
-          "type": "SECRET"
+          "type": "SECRET",
+          "secret": "${withheld}"
         },
         "restrictScopes": true,
         "restrictedScopes": [

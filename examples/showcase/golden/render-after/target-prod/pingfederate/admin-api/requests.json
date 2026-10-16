@@ -492,7 +492,8 @@
         "clientAuthentication": {
           "clientSecret": {
             "enabled": true
-          }
+          },
+          "secret": "${withheld}"
         },
         "restrictScopes": true,
         "restrictedScopes": [

@@ -225,3 +225,13 @@ def test_a_legacy_client_keeps_its_shape_until_it_lists_several_methods():
     d2 = _with(cert, (*_pf_server("13.1.3"), *more))
     assert _client(d2)["clientAuthentication"] == {
         "certificate": {"enabled": True, "clientCertIssuerDn": "CN=Issuing CA"}, "privateKeyJwt": {"enabled": True}}
+
+
+def test_a_secret_client_holding_no_secret_names_the_withheld_one():
+    from opsdir.core.jsondata import WITHHELD
+    from opsdir_adapter_pingfederate.connections import with_secret
+    assert with_secret({"type": "SECRET"}, True) == {"type": "SECRET", "secret": WITHHELD}
+    assert with_secret({"clientSecret": {"enabled": True}}, True) == {"clientSecret": {"enabled": True},
+                                                                     "secret": WITHHELD}
+    assert with_secret({"type": "SECRET", "encryptedSecret": "x"}, True) == {"type": "SECRET", "encryptedSecret": "x"}
+    assert with_secret({"type": "NONE"}, False) == {"type": "NONE"}

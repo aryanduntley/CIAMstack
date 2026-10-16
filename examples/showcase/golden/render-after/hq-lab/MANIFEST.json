@@ -235,7 +235,7 @@
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "8ad52d5c1e89157197601e8d7c47e1a08c15ae6114ca31666c624ee9a0512e8a"
+      "sha256": "6c728f625ad95e0f000d8ce7d2a6777e90a6570c51113d68fb14e34555a09480"
     },
     "pingfederate/cluster/jgroups.properties": {
       "scope": "environment-specific",
@@ -245,12 +245,12 @@
     "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "c16926a15bf5f2737ffedfa2ad76a796037c88eb68b93e6e95fcb77758f78386"
+      "sha256": "ead6451ad70b2d01d75810f6b1b72e9c94d7eb3c73dc6f3dd1c69f35d9e960bf"
     },
     "pingfederate/terraform/variables.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "0e85c573a439947a765612cea762873b7354ee48b01b40eb092f009996ccbdf0"
+      "sha256": "28e1d516692c4d14a8f27da19718c4a853268ccb8c347725b7bd5cb7f95a2e88"
     },
     "pingfederate/terraform/versions.tf": {
       "scope": "environment-specific",

@@ -421,7 +421,8 @@ resource "pingfederate_oauth_client" "crew_portal_web" {
   require_proof_key_for_code_exchange = true
   require_dpop                        = false
   client_auth = {
-    type = "SECRET"
+    type   = "SECRET"
+    secret = var.crew_portal_web_withheld
   }
   restrict_scopes   = true
   restricted_scopes = ["openid", "profile"]

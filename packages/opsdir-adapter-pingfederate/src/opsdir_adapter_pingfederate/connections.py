@@ -21,7 +21,7 @@ identity mapping and JIT repository, say) is named by the render's problems, nev
 from types import MappingProxyType
 
 from opsdir.core.directory import get, one, rdn_value, values
-from opsdir.core.jsondata import held_json
+from opsdir.core.jsondata import WITHHELD, held_json
 from opsdir.domains.directory.user_schema import attribute_records
 from opsdir.domains.federation.services import claims, identity_services, integrations_served
 from .naming import SERVER_ROLES
@@ -53,6 +53,8 @@ AUTH_METHODS = MappingProxyType({"none": "none", "client_secret_basic": "clientS
                                  "self_signed_tls_client_auth": "certificate"})
 MULTI_AUTH = ">=13.1"                       # the versions taking clientAuthentication
 SHARED_AUTH = ("secret", "encryptedSecret", "secondarySecrets")
+# the methods authenticating with the client secret (legacy type / 13.1 method key)
+SECRET_METHODS = ("SECRET", "CLIENT_SECRET_JWT", "clientSecret", "clientSecretJwt")
 METHOD_SETTINGS = MappingProxyType({"clientSecretJwt": ("enforceReplayPrevention", "tokenEndpointAuthSigningAlgorithm"),
                                     "privateKeyJwt": ("enforceReplayPrevention", "tokenEndpointAuthSigningAlgorithm"),
                                     "certificate": ("clientCertIssuerDn", "clientCertSubjectDn")})
@@ -145,6 +147,15 @@ def _scope_restriction(i, held):
     return {"restrictScopes": False, "restrictedScopes": []} if held.get("restrictScopes") else {}
 
 
+def with_secret(auth, uses_secret):
+    """A client authentication shape that authenticates with the client secret but holds none (a client the record
+    holds no PingFederate settings for) with the withheld placeholder as its secret, so a render names the secret
+    still to supply (a Terraform variable, the Admin API's ${withheld}) instead of leaving it out; unchanged
+    otherwise."""
+    held = any(auth.get(k) for k in ("secret", "encryptedSecret"))
+    return {**auth, "secret": WITHHELD} if uses_secret and not held else auth
+
+
 def _authentication(held, methods):
     """13.1's clientAuthentication: the held one (or one made from a held legacy clientAuth), each recorded method
     enabled, every other method the held settings name disabled (as held when the record lists none)."""
@@ -182,8 +193,13 @@ def client_authentication(m, i, held):
         return {}
     multi = runs_in(m, MULTI_AUTH) and (bool(held.get("clientAuthentication")) or len(methods) > 1
                                         or not held.get("clientAuth"))
-    return {"clientAuthentication": _authentication(held, methods)} if multi else \
-        {"clientAuth": _legacy(held, methods)}
+    new = not (held.get("clientAuth") or held.get("clientAuthentication"))     # held shapes render as exported
+    if multi:
+        shape = _authentication(held, methods)
+        return {"clientAuthentication": with_secret(shape, new and any((shape.get(k) or {}).get("enabled")
+                                                                         for k in SECRET_METHODS))}
+    shape = _legacy(held, methods)
+    return {"clientAuth": with_secret(shape, new and shape.get("type") in SECRET_METHODS)}
 
 
 def oauth_client(m, i):
