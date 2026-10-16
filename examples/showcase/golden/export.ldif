@@ -241,6 +241,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: permission-sets
 
+dn: ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: pingaccess
+
 dn: ou=pingam,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -1571,6 +1576,37 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the linked ServiceNow tickets as evidence (state, approval, pl
  anned and actual windows)
+
+dn: cn=CHG-2060,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2060
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Run PingAccess in front of Tech Pubs in both environments: its admi
+ n node and engines, Tech Pubs' service name, the application's host and the w
+ eb session's secret reference
+
+dn: cn=CHG-2061,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2061
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read PingAccess's configuration (Admin API reads, secrets withheld)
+  into the record
+
+dn: cn=CHG-2062,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2062
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the PingAccess web session's credential role and the header 
+ Tech Pubs trusts for who the user is
 
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
@@ -3258,6 +3294,18 @@ ciamTagKey: Owner
 ciamTagSource: owner
 description: Every rendered resource carries Owner
 
+dn: cn=pa-techpubs-client-secret,ou=credentials,dc=ciam-ops
+objectClass: top
+objectClass: ciamCredential
+cn: pa-techpubs-client-secret
+ciamBindingRole: pa-techpubs-client-secret
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamContinuity: per-environment
+ciamContinuityReason: each environment's PingFederate registers the tech-pubs-
+ web client with its own secret
+ciamCredentialType: client-secret
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+
 dn: cn=panorama-hq-login,ou=credentials,dc=ciam-ops
 objectClass: top
 objectClass: ciamCredential
@@ -3699,6 +3747,25 @@ ciamKeyUsage: authentication
 ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
+
+dn: cn=pingaccess.admin-api.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingaccess.admin-api.shared
+ciamChangeRef: cn=CHG-2061,ou=changes,dc=ciam-ops
+ciamImportScope: ou=rules,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=sites,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=web-sessions,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=applications,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=certificates,ou=held,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=trustedCertificateGroups,ou=held,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=keyPairs,ou=held,ou=pingaccess,dc=ciam-ops
+ciamImportScope: ou=pingfederate.runtime,ou=held,ou=pingaccess,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: pingaccess/admin-api
 
 dn: cn=pingam.amster.shared,ou=imports,dc=ciam-ops
 objectClass: top
@@ -4600,6 +4667,20 @@ cn: tech-pubs-team
 ciamOwnerKind: team
 mail: tech-pubs@example-aero.test
 
+dn: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHeaderContract
+cn: techpubs-user
+ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops
+ciamHeaderKind: identity
+ciamHeaderName: X-TechPubs-User
+ciamHeaderValue: attribute sub (PingAccess identity mapping techpubs-user)
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+ciamSetByRole: pa-engine
+description: Who the user is, for the Tech Pubs application behind PingAccess 
+ (header-based sign-on)
+
 dn: cn=telephoneNumber,ou=user-schema,dc=ciam-ops
 objectClass: top
 objectClass: ciamUserAttribute
@@ -4800,6 +4881,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: access-token-managers
 
+dn: ou=applications,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: applications
+
 dn: ou=authentication-policies,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -4835,6 +4921,16 @@ objectClass: top
 objectClass: organizationalUnit
 ou: declared
 description: Desired, environment-neutral DS configuration
+
+dn: ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: held
+
+dn: ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: identity-mappings
 
 dn: ou=idp-adapters,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -4892,6 +4988,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: routes
 
+dn: ou=rules,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: rules
+
 dn: ou=schedules,ou=pingidm,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -4906,6 +5007,21 @@ dn: ou=settings,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: settings
+
+dn: ou=sites,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: sites
+
+dn: ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: virtual-hosts
+
+dn: ou=web-sessions,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: web-sessions
 
 dn: cn=031021627bad8f98,cn=default-atm.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -6285,6 +6401,116 @@ pingfedConfig: {"clients":{"implementation":"org.sourceid.oauth20.domain.Clien
  tManagerJdbcImpl","storage":"JDBC"},"grants":{"implementation":"org.sourceid.
  oauth20.token.AccessGrantManagerJdbcImpl","storage":"JDBC"}}
 
+dn: cn=techpubs,ou=applications,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paApplication
+cn: techpubs
+paConfig: {"applicationType":"Web","destination":"Site","enabled":true,"identi
+ tyMappingIds":{"Web":"${pingaccess-id:identityMappings/techpubs-user}"},"name
+ ":"techpubs","policy":{"API":[],"Web":[{"id":"${pingaccess-id:rules/techpubs-
+ readers}","type":"Rule"}]},"siteId":"${pingaccess-id:sites/techpubs-app}","vi
+ rtualHostIds":["${pingaccess-id:virtualhosts/techpubs-service:443}"],"webSess
+ ionId":"${pingaccess-id:webSessions/techpubs-session}"}
+paContextRoot: /
+paSourceVersion: 8.3.6
+paUses: cn=techpubs-app,ou=sites,ou=pingaccess,dc=ciam-ops
+paUses: cn=techpubs-readers,ou=rules,ou=pingaccess,dc=ciam-ops
+paUses: cn=techpubs-service:443,ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
+paUses: cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
+paUses: cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+
+dn: cn=techpubs-app,ou=sites,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paSite
+cn: techpubs-app
+paBackendRole: techpubs-app
+paConfig: {"maxConnections":200,"name":"techpubs-app","secure":true,"trustedCe
+ rtificateGroupId":"${pingaccess-id:trustedCertificateGroups/Example Aero corp
+ orate}"}
+paPort: 8443
+paSourceVersion: 8.3.6
+paUses: cn=Example Aero corporate,ou=trustedCertificateGroups,ou=held,ou=pinga
+ ccess,dc=ciam-ops
+
+dn: cn=techpubs-media,ou=applications,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paApplication
+cn: techpubs-media
+paConfig: {"applicationType":"Web","destination":"Site","enabled":true,"identi
+ tyMappingIds":{},"name":"techpubs-media","policy":{"API":[],"Web":[]},"siteId
+ ":"${pingaccess-id:sites/techpubs-media-cdn}","virtualHostIds":["${pingaccess
+ -id:virtualhosts/techpubs-service:443}"],"webSessionId":"${pingaccess-id:webS
+ essions/techpubs-session}"}
+paContextRoot: /media
+paSourceVersion: 8.3.6
+paUses: cn=techpubs-media-cdn,ou=sites,ou=pingaccess,dc=ciam-ops
+paUses: cn=techpubs-service:443,ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
+paUses: cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
+
+dn: cn=techpubs-media-cdn,ou=sites,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paSite
+cn: techpubs-media-cdn
+paConfig: {"name":"techpubs-media-cdn","secure":true,"targets":["media.techpub
+ s-cdn.example.net:443"],"trustedCertificateGroupId":0}
+paSourceVersion: 8.3.6
+
+dn: cn=techpubs-readers,ou=rules,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paRule
+cn: techpubs-readers
+paConfig: {"className":"com.pingidentity.pa.policy.WebSessionAttributeRule","c
+ onfiguration":{"attributeName":"groups","attributeValue":"techpubs-readers"},
+ "name":"techpubs-readers"}
+paRuleKind: rule
+paSourceVersion: 8.3.6
+
+dn: cn=techpubs-service:443,ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paVirtualHost
+cn: techpubs-service:443
+paConfig: {"keyPairId":"${pingaccess-id:keyPairs/techpubs-tls}","port":443,"tr
+ ustedCertificateGroupId":0}
+paServiceRole: techpubs-service
+paSourceVersion: 8.3.6
+paUses: cn=techpubs-tls,ou=keyPairs,ou=held,ou=pingaccess,dc=ciam-ops
+
+dn: cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paWebSession
+cn: techpubs-session
+ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+paConfig: {"audience":"techpubs","clientCredentials":{"clientSecret":{"value":
+ null},"credentialsType":"SECRET"},"httpOnlyCookie":true,"idleTimeoutInMinutes
+ ":60,"name":"techpubs-session","oidcLoginType":"Code","pkceChallengeType":"SH
+ A256","scopes":["openid","profile","email"],"secureCookie":true,"sessionTimeo
+ utInMinutes":480}
+paCredentialRole: pa-techpubs-client-secret
+paIntegration: cn=tech-pubs,ou=integrations,dc=ciam-ops
+paIssuer: https://sso.example-aero.test
+paSourceVersion: 8.3.6
+paWithheld: /clientCredentials/clientSecret/value
+
+dn: cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paIdentityMapping
+cn: techpubs-user
+ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops
+paConfig: {"className":"com.pingidentity.pa.identitymappings.HeaderIdentityMap
+ ping","configuration":{"attributeHeaderMappings":[{"attributeName":"sub","hea
+ derName":"X-TechPubs-User","subject":true}]},"name":"techpubs-user"}
+paHeaderContract: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+paSourceVersion: 8.3.6
+
 dn: cn=uksouth,cn=azure,ou=regions,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloudRegion
@@ -6458,6 +6684,7 @@ objectClass: top
 objectClass: ciamEnvironment
 objectClass: ciamEnvironmentPlacement
 env: stage
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
 ciamDataClassification: internal
 ciamDropsRole: fw-consumer-customer-portal-svc
 ciamDropsRole: fw-consumer-supplier-portal-svc
@@ -6485,6 +6712,10 @@ ciamDropsRole: quota-vcpus
 ciamDropsRole: quota-public-ips
 ciamDropsRole: quota-database-instances
 ciamDropsRole: budget
+ciamDropsRole: fw-pa-cluster
+ciamDropsRole: techpubs-service
+ciamDropsRole: techpubs-app
+ciamDropsRole: pa-techpubs-client-secret
 ciamLifecycle: active
 ciamOverlayOf: env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
@@ -6506,6 +6737,11 @@ dn: ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: branches
+
+dn: ou=certificates,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: certificates
 
 dn: ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -6532,6 +6768,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: connection-handlers
 
+dn: ou=keyPairs,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: keyPairs
+
 dn: ou=log-publishers,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -6552,6 +6793,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: password-policies
 
+dn: ou=pingfederate.runtime,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: pingfederate.runtime
+
 dn: ou=replication,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -6561,6 +6807,11 @@ dn: ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: serverSettings
+
+dn: ou=trustedCertificateGroups,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: trustedCertificateGroups
 
 dn: snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
@@ -7149,6 +7400,31 @@ cn: entitlements
 ciamClaimName: entitlements
 ciamSourceAttribute: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 
+dn: cn=Example Aero corporate,ou=trustedCertificateGroups,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paHeld
+cn: Example Aero corporate
+paConfig: {"certificateIds":["${pingaccess-id:certificates/example-aero-root-c
+ a}"],"name":"Example Aero corporate","skipCertificateDateCheck":false,"useJav
+ aTrustStore":false}
+paEnvironmentBound: TRUE
+paObjectType: trustedCertificateGroups
+paSourceVersion: 8.3.6
+paUses: cn=example-aero-root-ca,ou=certificates,ou=held,ou=pingaccess,dc=ciam-
+ ops
+
+dn: cn=example-aero-root-ca,ou=certificates,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paHeld
+cn: example-aero-root-ca
+paConfig: {"alias":"example-aero-root-ca","expires":1956528000000,"sha256Finge
+ rprint":"9C:41:7E:22","subjectDn":"CN=Example Aero Root CA"}
+paEnvironmentBound: TRUE
+paObjectType: certificates
+paSourceVersion: 8.3.6
+
 dn: cn=example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -7430,6 +7706,111 @@ ciamHolderCount: 5
 ciamLargestValueBytes: 16
 ciamLdapName: ou
 ciamMostValues: 1
+
+dn: cn=pa-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pa-admin-1
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamHostname: pa-admin-1.aws.internal.example-aero.test
+ciamImageRef: ami-0d4e5f6a7b8c90456
+ciamInstallRoot: /opt/ping/pingaccess
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.10.41
+ciamProductVersion: PingAccess 8.3.6
+ciamServerRole: pa-admin
+ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=pa-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pa-admin-1
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamHostname: pa-admin-1.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingaccess-9.1.1-rhel9
+ciamInstallRoot: /opt/ping/pingaccess
+ciamInstanceSize: Standard_D2s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.10.41
+ciamProductVersion: PingAccess 9.1.1
+ciamServerRole: pa-admin
+ciamSubnet: cn=snet-ig,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
+ciamZone: 1
+
+dn: cn=pa-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pa-engine-1
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamHostname: pa-engine-1.aws.internal.example-aero.test
+ciamImageRef: ami-0d4e5f6a7b8c90456
+ciamInstallRoot: /opt/ping/pingaccess
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.10.42
+ciamProductVersion: PingAccess 8.3.6
+ciamServerRole: pa-engine
+ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=pa-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pa-engine-1
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamHostname: pa-engine-1.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingaccess-9.1.1-rhel9
+ciamInstallRoot: /opt/ping/pingaccess
+ciamInstanceSize: Standard_D2s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.10.42
+ciamProductVersion: PingAccess 9.1.1
+ciamServerRole: pa-engine
+ciamSubnet: cn=snet-ig,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
+ciamZone: 1
+
+dn: cn=pa-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pa-engine-2
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamHostname: pa-engine-2.aws.internal.example-aero.test
+ciamImageRef: ami-0d4e5f6a7b8c90456
+ciamInstallRoot: /opt/ping/pingaccess
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.10.43
+ciamProductVersion: PingAccess 8.3.6
+ciamServerRole: pa-engine
+ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=pa-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: pa-engine-2
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamHostname: pa-engine-2.az.internal.example-aero.test
+ciamImageRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGrou
+ ps/rg-ciam-images/providers/Microsoft.Compute/images/pingaccess-9.1.1-rhel9
+ciamInstallRoot: /opt/ping/pingaccess
+ciamInstanceSize: Standard_D2s_v5
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.60.10.43
+ciamProductVersion: PingAccess 9.1.1
+ciamServerRole: pa-engine
+ciamSubnet: cn=snet-ig,ou=bindings,env=prod,cloud=target,ou=environments,dc=ci
+ am-ops
+ciamZone: 2
 
 dn: cn=panorama-hq,cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 objectClass: top
@@ -7796,6 +8177,24 @@ objectClass: ciamPasswordPolicy
 cn: Root Password Policy
 ciamStorageScheme: PBKDF2-HMAC-SHA256
 
+dn: cn=Root Resource,cn=techpubs,ou=applications,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paResource
+cn: Root Resource
+paConfig: {"methods":["*"],"name":"Root Resource","pathPatterns":[{"pattern":"
+ /*","type":"WILDCARD"}],"policy":{"API":[],"Web":[]},"rootResource":true}
+paSourceVersion: 8.3.6
+
+dn: cn=Root Resource,cn=techpubs-media,ou=applications,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paResource
+cn: Root Resource
+paConfig: {"methods":["GET"],"name":"Root Resource","pathPatterns":[{"pattern"
+ :"/*","type":"WILDCARD"}],"policy":{"API":[],"Web":[]},"rootResource":true}
+paSourceVersion: 8.3.6
+
 dn: cn=service-accounts,ou=password-policies,ou=declared,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamPasswordPolicy
@@ -7814,6 +8213,19 @@ ciamClassCount: simpleSecurityObject=5
 ciamClassCount: top=5
 ciamEntryCount: 5
 ciamProfiledBranch: ou=service-accounts,dc=partners,dc=example-aero,dc=test
+
+dn: cn=settings,ou=pingfederate.runtime,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paHeld
+cn: settings
+paConfig: {"issuer":"https://sso.example-aero.test","skipHostnameVerification"
+ :false,"trustedCertificateGroupId":"${pingaccess-id:trustedCertificateGroups/
+ Example Aero corporate}","useSlo":false}
+paObjectType: pingfederate/runtime
+paSourceVersion: 8.3.6
+paUses: cn=Example Aero corporate,ou=trustedCertificateGroups,ou=held,ou=pinga
+ ccess,dc=ciam-ops
 
 dn: cn=settings,ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -7908,6 +8320,17 @@ ciamClassCount: person=60
 ciamClassCount: top=60
 ciamEntryCount: 60
 ciamProfiledBranch: ou=suppliers,ou=people,dc=partners,dc=example-aero,dc=test
+
+dn: cn=techpubs-tls,ou=keyPairs,ou=held,ou=pingaccess,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: paHeld
+cn: techpubs-tls
+paConfig: {"alias":"techpubs-tls","hsmProviderId":0,"subjectDn":"CN=techpubs.e
+ xample-aero.test"}
+paEnvironmentBound: TRUE
+paObjectType: keyPairs
+paSourceVersion: 8.3.6
 
 dn: cn=telephonenumber,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
@@ -8193,6 +8616,28 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-pingam
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: access
+
+dn: cn=access-gateway,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: access-gateway
+ciamAdapter: pingaccess
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingaccess
+ciamAdapterVersion: >=0.1,<1
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamStackRole: access-gateway
+
+dn: cn=access-gateway,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: access-gateway
+ciamAdapter: pingaccess
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-pingaccess
+ciamAdapterVersion: >=0.1,<1
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamStackRole: access-gateway
 
 dn: cn=acl-ds,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
@@ -9508,6 +9953,53 @@ ciamRulePriority: 170
 ciamSourceCidr: 10.40.12.0/24
 ciamTargetRole: ds
 
+dn: cn=fw-pa-cluster,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pa-cluster
+ciamBindingRole: fw-pa-cluster
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamPort: 9090
+ciamProtocol: tcp
+ciamSourceCidr: 10.20.10.0/24
+ciamTargetRole: pa-admin
+
+dn: cn=fw-pa-cluster,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pa-cluster
+ciamBindingRole: fw-pa-cluster
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamPort: 9090
+ciamProtocol: tcp
+ciamRulePriority: 220
+ciamSourceCidr: 10.60.10.0/24
+ciamTargetRole: pa-admin
+
+dn: cn=fw-pa-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pa-engine
+ciamBindingRole: fw-pa-engine
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamPort: 3000
+ciamProtocol: tcp
+ciamRulePriority: 240
+ciamSourceCidr: 10.60.250.0/24
+ciamTargetRole: pa-engine
+
+dn: cn=fw-pa-rotation,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamFirewallRule
+cn: fw-pa-rotation
+ciamBindingRole: fw-pa-rotation
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamPort: 9095
+ciamProtocol: tcp
+ciamRulePriority: 230
+ciamSourceCidr: 10.60.10.0/24
+ciamTargetRole: pa-admin
+
 dn: cn=fw-pf-cluster,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamFirewallRule
@@ -10760,6 +11252,23 @@ ciamGuardrailKind: policy-assignment
 ciamOwner: cn=cloud-landing-zone,ou=owners,dc=ciam-ops
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/providers
  /Microsoft.Authorization/policyAssignments
+
+dn: cn=pa-techpubs-client-secret,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: pa-techpubs-client-secret
+ciamBindingRole: pa-techpubs-client-secret
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamRefUri: aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam
+ /prod/pa-techpubs-client-secret
+
+dn: cn=pa-techpubs-client-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSecretRef
+cn: pa-techpubs-client-secret
+ciamBindingRole: pa-techpubs-client-secret
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamRefUri: azkv://kv-ciam-prod/pa-techpubs-client-secret
 
 dn: cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top
@@ -13007,6 +13516,21 @@ ciamPort: 443
 ciamProviderRef: eipalloc-0a1b2c3d4e5f60002
 ciamTargetRole: pf-engine
 
+dn: cn=svc-techpubs,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServiceName
+cn: svc-techpubs
+ciamBindingRole: techpubs-service
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamDnsZone: example-aero.test
+ciamDnsZoneRef: Z0EXAMPLE2PUBLIC
+ciamExposure: internet
+ciamFqdn: techpubs.example-aero.test
+ciamFrontendIp: 198.51.100.40
+ciamPort: 443
+ciamTargetRole: pa-engine
+ciamTtlSeconds: 300
+
 dn: cn=tech-pubs-token,ou=overrides,env=stage,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamOverride
@@ -13016,6 +13540,24 @@ ciamOverrideValue: 5
 ciamOverrides: cn=tech-pubs,ou=integrations,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: short tokens to test refresh
+
+dn: cn=techpubs-app,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalHost
+cn: techpubs-app
+ciamBindingRole: techpubs-app
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamFqdn: techpubs-app.aws.internal.example-aero.test
+ciamPort: 8443
+
+dn: cn=techpubs-app,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamExternalHost
+cn: techpubs-app
+ciamBindingRole: techpubs-app
+ciamChangeRef: cn=CHG-2060,ou=changes,dc=ciam-ops
+ciamFqdn: techpubs-app.az.internal.example-aero.test
+ciamPort: 8443
 
 dn: cn=time,ou=bindings,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top

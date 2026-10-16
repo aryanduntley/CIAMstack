@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "host": "portal.example.test",
+      "port": 443,
+      "keyPairId": 5,
+      "trustedCertificateGroupId": 0
+    }
+  ]
+}

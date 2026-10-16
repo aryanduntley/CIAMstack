@@ -2,8 +2,8 @@
   "environment": "env=prod,cloud=target,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 2,
-    "action": 5,
-    "note": 11,
+    "action": 7,
+    "note": 13,
     "to_review": 0
   },
   "notes": [
@@ -24,7 +24,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2018
+          "line": 2255
         }
       ]
     },
@@ -87,7 +87,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2347
+          "line": 2584
         }
       ]
     },
@@ -108,7 +108,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 1533
+          "line": 1770
         }
       ]
     },
@@ -128,9 +128,41 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2322
+          "line": 2559
         }
       ]
+    },
+    {
+      "area": "PingAccess",
+      "severity": "action",
+      "subject": "`pingaccess/admin-api/requests.json`",
+      "text": "the Admin API paths and fields follow Ping's documentation and are unverified for PingAccess 9.1.1: check the requests against /pa-admin-api/v3/api-docs/pa/api-docs-v2.json on the admin node before applying them",
+      "how": [
+        "Fetch the OpenAPI document from the environment's admin node (an Auditor can read it).",
+        "Validate each request's path and body against it; report a difference so the adapter's api.py is corrected."
+      ],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
+      "area": "PingAccess",
+      "severity": "action",
+      "subject": "environment-bound objects",
+      "text": "not rendered: create certificates `example-aero-root-ca`; trustedCertificateGroups `Example Aero corporate`; keyPairs `techpubs-tls` in target/prod before applying the requests",
+      "how": [
+        "Create them from the environment's own key material, CAs, listeners and nodes (the record holds their settings, never their keys).",
+        "The requests name them by ${pingaccess-id:...}: record each one's id in the pipeline before applying."
+      ],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
     },
     {
       "area": "Quotas",
@@ -148,7 +180,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2913
+          "line": 3150
         }
       ]
     },
@@ -168,7 +200,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2068
+          "line": 2305
         }
       ]
     },
@@ -206,7 +238,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2349
+          "line": 2586
         }
       ]
     },
@@ -226,7 +258,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2351
+          "line": 2588
         }
       ]
     },
@@ -262,7 +294,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 73
+          "line": 103
         }
       ]
     },
@@ -280,7 +312,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 120
+          "line": 150
         }
       ]
     },
@@ -298,7 +330,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 139
+          "line": 214
         }
       ]
     },
@@ -316,7 +348,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 137
+          "line": 212
         }
       ]
     },
@@ -334,9 +366,39 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 171
+          "line": 246
         }
       ]
+    },
+    {
+      "area": "PingAccess",
+      "severity": "note",
+      "subject": "node files",
+      "text": "run.properties, bootstrap.properties, pa.jwk, fips-mode.properties and the log configuration are not rendered",
+      "how": [
+        "Capture them as config files (`opsdir capture`): their secrets stay references."
+      ],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
+    },
+    {
+      "area": "PingAccess",
+      "severity": "note",
+      "subject": "server profile",
+      "text": "a server profile's data.json is not rendered: the export's envelope is unverified, and importing it replaces the whole configuration",
+      "how": [
+        "Apply the requests instead."
+      ],
+      "entry": null,
+      "scope": null,
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": []
     },
     {
       "area": "Network",

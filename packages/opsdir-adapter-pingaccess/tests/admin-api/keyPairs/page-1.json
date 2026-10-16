@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "id": 5,
+      "alias": "portal-tls",
+      "subjectDn": "CN=portal.example.test",
+      "hsmProviderId": 0
+    }
+  ]
+}

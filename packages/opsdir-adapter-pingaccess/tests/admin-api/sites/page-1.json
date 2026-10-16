@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "portal-backend",
+      "targets": [
+        "portal-backend.example.test:8443"
+      ],
+      "secure": true,
+      "trustedCertificateGroupId": 2,
+      "availabilityProfileId": 1,
+      "siteAuthenticatorIds": [
+        1
+      ]
+    },
+    {
+      "id": 2,
+      "name": "docs-cdn",
+      "targets": [
+        "cdn.docs.example.net:443"
+      ],
+      "secure": true,
+      "trustedCertificateGroupId": 0
+    }
+  ]
+}

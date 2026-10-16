@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "techpubs-user",
+      "className": "com.pingidentity.pa.identitymappings.HeaderIdentityMapping",
+      "configuration": {
+        "attributeHeaderMappings": [
+          {
+            "attributeName": "sub",
+            "headerName": "X-TechPubs-User",
+            "subject": true
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "items": [
+    {
+      "id": 2,
+      "name": "Root Resource",
+      "pathPatterns": [
+        {
+          "type": "WILDCARD",
+          "pattern": "/*"
+        }
+      ],
+      "methods": [
+        "GET"
+      ],
+      "rootResource": true,
+      "policy": {
+        "Web": [],
+        "API": []
+      }
+    }
+  ]
+}

@@ -259,6 +259,13 @@ echo "   change_request and its approval records, as the Table API answers): wha
 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif
 od import --change CHG-2056 --at 20260923090000Z servicenow/change-requests exports/servicenow
 od report tickets
+echo "-- PingAccess in front of Tech Pubs in both environments (CHG-2060); its configuration, read from the Admin API as"
+echo "   an Auditor collects it, objects named by name and the client secret withheld whole (CHG-2061); the session's"
+echo "   secret role and the header Tech Pubs trusts for who the user is (CHG-2062)"
+od modify --change CHG-2060 changes/CHG-2060-pingaccess-servers.ldif
+od import --change CHG-2061 --at 20260923090000Z pingaccess/admin-api exports/pingaccess
+od modify --change CHG-2062 changes/CHG-2062-pingaccess-session-and-header.ldif
+od report header-contracts
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

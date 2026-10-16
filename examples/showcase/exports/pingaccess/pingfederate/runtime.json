@@ -1,0 +1,6 @@
+{
+  "issuer": "https://sso.example-aero.test",
+  "trustedCertificateGroupId": 1,
+  "skipHostnameVerification": false,
+  "useSlo": false
+}

@@ -512,6 +512,37 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the linked ServiceNow tickets as evidence (state, approval, pl
  anned and actual windows)
 
+dn: cn=CHG-2060,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2060
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Run PingAccess in front of Tech Pubs in both environments: its admi
+ n node and engines, Tech Pubs' service name, the application's host and the w
+ eb session's secret reference
+
+dn: cn=CHG-2061,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2061
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read PingAccess's configuration (Admin API reads, secrets withheld)
+  into the record
+
+dn: cn=CHG-2062,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2062
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the PingAccess web session's credential role and the header 
+ Tech Pubs trusts for who the user is
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

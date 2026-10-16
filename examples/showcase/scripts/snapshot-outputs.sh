@@ -149,6 +149,10 @@ cap 08-report-issued-certificates od report issued-certificates
 cap 08-apply-chg-2055 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif
 cap 08-apply-chg-2056 od import --change CHG-2056 --at 20260923090000Z servicenow/change-requests exports/servicenow
 cap 08-report-tickets od report tickets
+cap 08-apply-chg-2060 od modify --change CHG-2060 changes/CHG-2060-pingaccess-servers.ldif
+cap 08-apply-chg-2061 od import --change CHG-2061 --at 20260923090000Z pingaccess/admin-api exports/pingaccess
+cap 08-apply-chg-2062 od modify --change CHG-2062 changes/CHG-2062-pingaccess-session-and-header.ldif
+cap 08-report-header-contracts od report header-contracts
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

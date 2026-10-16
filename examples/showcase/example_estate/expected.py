@@ -129,6 +129,19 @@ EXPECTED = MappingProxyType({
         ("B61", "Change tickets", "ITSM says its ticket servicenow:CHG0030108 (read 2026-09-23) was **cancelled**",
          "the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled", None,
          "CHG-2056"),
+        # PingAccess in front of Tech Pubs (6.1a: CHG-2060 runs it in both environments, CHG-2061 reads its
+        # configuration, CHG-2062 records the session's secret role and the header Tech Pubs trusts)
+        ("B65", "PingAccess", "Web session `techpubs-session` can't sign users in: it authenticates to the token "
+         "endpoint as client_secret_basic or client_secret_post (SECRET), but integration `tech-pubs` is registered "
+         "for none", "PingAccess signs Tech Pubs users in with a client secret, but the record registers tech-pubs-web "
+         "as a public client (none): the target's PingFederate, rendered from the record, refuses the token request",
+         None, "CHG-2061"),
+        ("B66", "PingAccess", "Virtual host `techpubs-service:443` answers as role `techpubs-service`, which "
+         "target/prod doesn't bind", "Tech Pubs is published at techpubs.example-aero.test in the source only: the "
+         "target's PingAccess has no name to answer as", None, "CHG-2061"),
+        ("B67", "Binding", "Role `techpubs-service` is bound in source/prod but not in target/prod",
+         "the same missing service name, from the core role check (its fix binds it like the source does)", None,
+         "CHG-2060"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -517,6 +530,27 @@ EXPECTED = MappingProxyType({
         ("A152", "Logs", "Log route `security-events` must keep logs 365 days; source/prod's `siem` keeps them 180 "
          "already", "Splunk keeps production's security events 180 days, short of the 365 the route needs", None,
          "CHG-2049"),
+        # PingAccess in front of Tech Pubs (6.1a)
+        ("A181", "Edge", "Clients can send header `X-TechPubs-User` themselves (contract `techpubs-user`)",
+         "nobody has confirmed PingAccess removes a client's own X-TechPubs-User, which Tech Pubs trusts for who the "
+         "user is", None, "CHG-2062"),
+        ("A182", "PingAccess", "Site `techpubs-media-cdn` sends requests to `media.techpubs-cdn.example.net:443` from "
+         "every environment", "the media application's CDN is reached at the same host from every environment", None,
+         "CHG-2061"),
+        ("A183", "PingAccess", "target/prod: environment-bound objects: not rendered: create certificates "
+         "`example-aero-root-ca`; trustedCertificateGroups `Example Aero corporate`; keyPairs `techpubs-tls` in "
+         "target/prod", "PingAccess's key pair, trust group and CA certificate are created in each environment, never "
+         "rendered", None, "CHG-2061"),
+        ("A184", "Upgrade", "`pa-admin`, `pa-engine` in target/prod: rotating the cluster's certificates uses a "
+         "temporary port, 9095", "the move upgrades PingAccess 8.3.6 -> 9.1.1, which rotates cluster certificates "
+         "over a temporary port", None, "CHG-2060"),
+        ("A185", "PingAccess", "target/prod: `pingaccess/admin-api/requests.json`: the Admin API paths and fields "
+         "follow Ping's documentation and are unverified for PingAccess 9.1.1",
+         "the adapter's Admin API forms aren't verified against 9.1.1's own schema yet", None, "CHG-2061"),
+        ("A186", "Host", "Server role `pa-admin` has no host baseline that applies in target/prod",
+         "the PingAccess servers were recorded without their hosts' baselines", None, "CHG-2060"),
+        ("A187", "Host", "Server role `pa-engine` has no host baseline that applies in target/prod",
+         "the PingAccess servers were recorded without their hosts' baselines", None, "CHG-2060"),
     ],
 })
 

@@ -1,0 +1,20 @@
+CHG-2060: add cn=pa-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=svc-techpubs,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=techpubs-app,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-techpubs-client-secret,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=access-gateway,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=techpubs-app,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-techpubs-client-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=access-gateway,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=fw-pa-cluster,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+CHG-2060: add cn=fw-pa-cluster,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=fw-pa-rotation,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=fw-pa-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2060: add cn=pa-techpubs-client-secret,ou=credentials,dc=ciam-ops
+CHG-2060: modify env=stage,cloud=source,ou=environments,dc=ciam-ops
+exit 0

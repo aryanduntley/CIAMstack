@@ -5,14 +5,14 @@
 -->
 # Render notes: target/prod
 
-**2 blockers, 5 actions, 11 notes, 0 to review**
+**2 blockers, 7 actions, 13 notes, 0 to review**
 
 ## Blockers
 
 ### alert rule login-failures (Monitoring)
 
 - **What:** not rendered: its alarm is a log query alert and the record holds no query
-- **Where:** terraform/main.tf:2018; target/prod
+- **Where:** terraform/main.tf:2255; target/prod
 - **Who:** ciam-platform
 - **How:**
   1. Record alarm pf-login-failures in a form the cloud's alarms take (its alarm is a log query alert and the record holds no query), under an approved change, and re-render
@@ -41,14 +41,14 @@
 ### check jobs (Monitoring)
 
 - **What:** whoever may start one can override its image, command and environment and use its identity and secrets (Microsoft's jobs documentation): keep that right to identities trusted with them; the built-in Container Apps Jobs Operator and Contributor roles can also read the jobs' secrets
-- **Where:** terraform/main.tf:2347; role assignments on target/prod's jobs
+- **Where:** terraform/main.tf:2584; role assignments on target/prod's jobs
 - **Who:** ciam-platform
 - **How:** Give operators a custom role with only Microsoft.App/jobs/read, jobs/start/action, jobs/stop/action, jobs/stop/execution/action, jobs/executions/read, jobs/execution/read and Microsoft.App/managedEnvironments/read (not the Microsoft.App/jobs/*/action wildcard), assigned only to those trusted with the jobs' identities
 
 ### forwarder `fwd-corp-ad` (Network)
 
 - **What:** runs on DNS servers 10.100.0.4, 10.100.0.5 (virtual machines), not the managed resolver: they forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, and the network's DNS servers point at them; not managed here
-- **Where:** terraform/main.tf:1533; target/prod
+- **Where:** terraform/main.tf:1770; target/prod
 - **Who:** ciam-platform
 - **How:**
   1. Configure DNS servers 10.100.0.4, 10.100.0.5 to forward corp.example-aero.internal to 10.40.0.53, 10.40.0.54 and everything else to the platform's resolver, by hand
@@ -57,14 +57,32 @@
 ### subnet snet-checks (Network)
 
 - **What:** must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied
-- **Where:** terraform/main.tf:2322; virtual network of target/prod
+- **Where:** terraform/main.tf:2559; virtual network of target/prod
 - **Who:** ciam-platform
 - **How:** Have the network's keeper delegate subnet snet-checks to Microsoft.App/environments (and move anything else out of it), then apply
+
+### `pingaccess/admin-api/requests.json` (PingAccess)
+
+- **What:** the Admin API paths and fields follow Ping's documentation and are unverified for PingAccess 9.1.1: check the requests against /pa-admin-api/v3/api-docs/pa/api-docs-v2.json on the admin node before applying them
+- **Where:** not written in any file
+- **Who:** ciam-platform
+- **How:**
+  1. Fetch the OpenAPI document from the environment's admin node (an Auditor can read it).
+  2. Validate each request's path and body against it; report a difference so the adapter's api.py is corrected.
+
+### environment-bound objects (PingAccess)
+
+- **What:** not rendered: create certificates `example-aero-root-ca`; trustedCertificateGroups `Example Aero corporate`; keyPairs `techpubs-tls` in target/prod before applying the requests
+- **Where:** not written in any file
+- **Who:** ciam-platform
+- **How:**
+  1. Create them from the environment's own key material, CAs, listeners and nodes (the record holds their settings, never their keys).
+  2. The requests name them by ${pingaccess-id:...}: record each one's id in the pipeline before applying.
 
 ### quota request (vcpus) (Quotas)
 
 - **What:** raise it to 96 for subscription 00000000-0000-0000-0000-000000000000 in eastus2: azurerm has no resource for it
-- **Where:** terraform/main.tf:2913; subscription 00000000-0000-0000-0000-000000000000
+- **Where:** terraform/main.tf:3150; subscription 00000000-0000-0000-0000-000000000000
 - **Who:** ciam-platform
 - **How:** Request it through the Quota API (`az quota update`, Microsoft.Quota) or a support request; Microsoft's pages don't say whether the Quota API serves Azure Government
 
@@ -73,7 +91,7 @@
 ### log destination siem (Logs)
 
 - **What:** keeps logs 365 days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's retention unless set by hand
-- **Where:** terraform/main.tf:2068; target/prod
+- **Where:** terraform/main.tf:2305; target/prod
 - **Who:** ciam-platform
 - **How:** Set the total retention of the workspace's other tables that must keep logs as long, by hand
 
@@ -86,14 +104,14 @@
 ### check jobs (Monitoring)
 
 - **What:** the first runs may fail to post their results (403) until Azure has propagated each job's identity's Monitoring Metrics Publisher role (minutes)
-- **Where:** terraform/main.tf:2349; Application Insights of target/prod
+- **Where:** terraform/main.tf:2586; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** If the first runs' availability results are missing, wait for the role assignment to propagate; nothing to change
 
 ### check jobs (Monitoring)
 
 - **What:** their results are posted as Microsoft.ApplicationInsights.Availability items with an Entra token, a form not yet confirmed against a live Application Insights
-- **Where:** terraform/main.tf:2351; Application Insights of target/prod
+- **Where:** terraform/main.tf:2588; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log
 
@@ -106,32 +124,46 @@
 ### firewall rule `fw-apps-public` (Network)
 
 - **What:** reaches role `ig`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
-- **Where:** terraform/main.tf:73; target/prod
+- **Where:** terraform/main.tf:103; target/prod
 - **Who:** ciam-platform
 
 ### firewall rule `fw-login-public` (Network)
 
 - **What:** reaches role `am`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
-- **Where:** terraform/main.tf:120; target/prod
+- **Where:** terraform/main.tf:150; target/prod
 - **Who:** ciam-platform
 
 ### firewall rule `fw-pf-cluster-admin` (Network)
 
 - **What:** reaches role `pf-admin`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
-- **Where:** terraform/main.tf:139; target/prod
+- **Where:** terraform/main.tf:214; target/prod
 - **Who:** ciam-platform
 
 ### firewall rule `fw-pf-cluster` (Network)
 
 - **What:** reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
-- **Where:** terraform/main.tf:137; target/prod
+- **Where:** terraform/main.tf:212; target/prod
 - **Who:** ciam-platform
 
 ### firewall rule `fw-sso-public` (Network)
 
 - **What:** reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
-- **Where:** terraform/main.tf:171; target/prod
+- **Where:** terraform/main.tf:246; target/prod
 - **Who:** ciam-platform
+
+### node files (PingAccess)
+
+- **What:** run.properties, bootstrap.properties, pa.jwk, fips-mode.properties and the log configuration are not rendered
+- **Where:** not written in any file
+- **Who:** ciam-platform
+- **How:** Capture them as config files (`opsdir capture`): their secrets stay references.
+
+### server profile (PingAccess)
+
+- **What:** a server profile's data.json is not rendered: the export's envelope is unverified, and importing it replaces the whole configuration
+- **Where:** not written in any file
+- **Who:** ciam-platform
+- **How:** Apply the requests instead.
 
 ### route table `rt-private` (Network)
 

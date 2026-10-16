@@ -1,0 +1,37 @@
+# CHG-2062 (approved): after PingAccess's import (CHG-2061), record what its reads can't say. The web session's
+# client secret is the one role pa-techpubs-client-secret references in each environment (CHG-2060), so each render
+# gives the secret's reference, never its value; and the header Tech Pubs trusts for who the user is, set by the
+# engines, as a header contract the identity mapping names. Whether PingAccess removes a client's own X-TechPubs-User
+# from incoming requests isn't confirmed yet, so ciamStripsInbound stays unset (the edge check names it).
+dn: cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
+changetype: modify
+add: paCredentialRole
+paCredentialRole: pa-techpubs-client-secret
+-
+add: ciamOwner
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops
+
+dn: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamHeaderContract
+cn: techpubs-user
+ciamHeaderKind: identity
+ciamHeaderName: X-TechPubs-User
+ciamHeaderValue: attribute sub (PingAccess identity mapping techpubs-user)
+ciamOwner: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+ciamSetByRole: pa-engine
+description: Who the user is, for the Tech Pubs application behind PingAccess (header-based sign-on)
+ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops
+
+dn: cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+changetype: modify
+add: paHeaderContract
+paHeaderContract: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2062,ou=changes,dc=ciam-ops

@@ -1,0 +1,4 @@
+CHG-2062: modify cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
+CHG-2062: add cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+CHG-2062: modify cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+exit 0

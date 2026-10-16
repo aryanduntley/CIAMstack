@@ -37,6 +37,12 @@ data "azurerm_subnet" "snet_edge" {
   resource_group_name  = data.azurerm_resource_group.main.name
 }
 
+data "azurerm_subnet" "snet_ig" {
+  name                 = "snet-ig"
+  virtual_network_name = "vnet-ciam-prod"
+  resource_group_name  = data.azurerm_resource_group.main.name
+}
+
 data "azurerm_subnet" "snet_pf" {
   name                 = "snet-pf"
   virtual_network_name = "vnet-ciam-prod"
@@ -45,6 +51,30 @@ data "azurerm_subnet" "snet_pf" {
 
 resource "azurerm_network_security_group" "ds" {
   name                = "nsg-ciam-prod-ds"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_network_security_group" "pa_admin" {
+  name                = "nsg-ciam-prod-pa-admin"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_network_security_group" "pa_engine" {
+  name                = "nsg-ciam-prod-pa-engine"
   location            = data.azurerm_resource_group.main.location
   resource_group_name = data.azurerm_resource_group.main.name
   tags = {
@@ -132,6 +162,51 @@ resource "azurerm_network_security_rule" "fw_mro_batch" {
   destination_address_prefix  = "*"
   resource_group_name         = data.azurerm_resource_group.main.name
   network_security_group_name = azurerm_network_security_group.ds.name
+}
+
+resource "azurerm_network_security_rule" "fw_pa_cluster" {
+  name                        = "fw-pa-cluster"
+  description                 = "fw-pa-cluster"
+  priority                    = 220
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["9090"]
+  source_address_prefixes     = ["10.60.10.0/24"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.pa_admin.name
+}
+
+resource "azurerm_network_security_rule" "fw_pa_engine" {
+  name                        = "fw-pa-engine"
+  description                 = "fw-pa-engine"
+  priority                    = 240
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["3000"]
+  source_address_prefixes     = ["10.60.250.0/24"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.pa_engine.name
+}
+
+resource "azurerm_network_security_rule" "fw_pa_rotation" {
+  name                        = "fw-pa-rotation"
+  description                 = "fw-pa-rotation"
+  priority                    = 230
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["9095"]
+  source_address_prefixes     = ["10.60.10.0/24"]
+  destination_address_prefix  = "*"
+  resource_group_name         = data.azurerm_resource_group.main.name
+  network_security_group_name = azurerm_network_security_group.pa_admin.name
 }
 
 # NOTE: firewall rule `fw-pf-cluster`: reaches role `pf-engine`, which runs only on Kubernetes in target/prod: the cluster's ingress and network policies serve it there; not rendered
@@ -554,6 +629,168 @@ resource "azurerm_virtual_machine_data_disk_attachment" "ds_3_vol_ds_data" {
   virtual_machine_id = azurerm_linux_virtual_machine.ds_3.id
   lun                = 0
   caching            = "None"
+}
+
+resource "azurerm_network_interface" "pa_admin_1" {
+  name                = "nic-pa-admin-1"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  ip_configuration {
+    name                          = "primary"
+    subnet_id                     = data.azurerm_subnet.snet_ig.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.60.10.41"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pa-admin"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "pa_admin_1" {
+  network_interface_id      = azurerm_network_interface.pa_admin_1.id
+  network_security_group_id = azurerm_network_security_group.pa_admin.id
+}
+
+resource "azurerm_linux_virtual_machine" "pa_admin_1" {
+  name                  = "pa-admin-1"
+  computer_name         = "pa-admin-1"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  size                  = "Standard_D2s_v5"
+  zone                  = "1"
+  admin_username        = "ciamadmin"
+  network_interface_ids = [azurerm_network_interface.pa_admin_1.id]
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingaccess-9.1.1-rhel9"
+  admin_ssh_key {
+    username   = "ciamadmin"
+    public_key = var.admin_ssh_public_key
+  }
+  os_disk {
+    caching                = "ReadWrite"
+    storage_account_type   = "Premium_LRS"
+    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pa-admin"
+    Hostname    = "pa-admin-1.az.internal.example-aero.test"
+    Product     = "PingAccess 9.1.1"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface" "pa_engine_1" {
+  name                = "nic-pa-engine-1"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  ip_configuration {
+    name                          = "primary"
+    subnet_id                     = data.azurerm_subnet.snet_ig.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.60.10.42"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pa-engine"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "pa_engine_1" {
+  network_interface_id      = azurerm_network_interface.pa_engine_1.id
+  network_security_group_id = azurerm_network_security_group.pa_engine.id
+}
+
+resource "azurerm_linux_virtual_machine" "pa_engine_1" {
+  name                  = "pa-engine-1"
+  computer_name         = "pa-engine-1"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  size                  = "Standard_D2s_v5"
+  zone                  = "1"
+  admin_username        = "ciamadmin"
+  network_interface_ids = [azurerm_network_interface.pa_engine_1.id]
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingaccess-9.1.1-rhel9"
+  admin_ssh_key {
+    username   = "ciamadmin"
+    public_key = var.admin_ssh_public_key
+  }
+  os_disk {
+    caching                = "ReadWrite"
+    storage_account_type   = "Premium_LRS"
+    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pa-engine"
+    Hostname    = "pa-engine-1.az.internal.example-aero.test"
+    Product     = "PingAccess 9.1.1"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface" "pa_engine_2" {
+  name                = "nic-pa-engine-2"
+  location            = data.azurerm_resource_group.main.location
+  resource_group_name = data.azurerm_resource_group.main.name
+  ip_configuration {
+    name                          = "primary"
+    subnet_id                     = data.azurerm_subnet.snet_ig.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.60.10.43"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pa-engine"
+    ManagedBy   = "opsdir"
+  }
+}
+
+resource "azurerm_network_interface_security_group_association" "pa_engine_2" {
+  network_interface_id      = azurerm_network_interface.pa_engine_2.id
+  network_security_group_id = azurerm_network_security_group.pa_engine.id
+}
+
+resource "azurerm_linux_virtual_machine" "pa_engine_2" {
+  name                  = "pa-engine-2"
+  computer_name         = "pa-engine-2"
+  resource_group_name   = data.azurerm_resource_group.main.name
+  location              = data.azurerm_resource_group.main.location
+  size                  = "Standard_D2s_v5"
+  zone                  = "2"
+  admin_username        = "ciamadmin"
+  network_interface_ids = [azurerm_network_interface.pa_engine_2.id]
+  source_image_id       = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-images/providers/Microsoft.Compute/images/pingaccess-9.1.1-rhel9"
+  admin_ssh_key {
+    username   = "ciamadmin"
+    public_key = var.admin_ssh_public_key
+  }
+  os_disk {
+    caching                = "ReadWrite"
+    storage_account_type   = "Premium_LRS"
+    disk_encryption_set_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam-prod/providers/Microsoft.Compute/diskEncryptionSets/des-ciam-prod"
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "pa-engine"
+    Hostname    = "pa-engine-2.az.internal.example-aero.test"
+    Product     = "PingAccess 9.1.1"
+    ManagedBy   = "opsdir"
+  }
 }
 
 # Vault 'ciam-backups': a locked vault keeps each recovery point as long as its policy says; 35 days isn't a setting of its own
@@ -2916,6 +3153,10 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
   # names only: no secret value enters Terraform state
   key_vault_id = data.azurerm_key_vault.kv_ciam_prod.id
   lifecycle {
+    postcondition {
+      condition     = contains(self.names, "pa-techpubs-client-secret")
+      error_message = "Key Vault kv-ciam-prod has no secret pa-techpubs-client-secret (role pa-techpubs-client-secret)"
+    }
     postcondition {
       condition     = contains(self.names, "am-admin-password")
       error_message = "Key Vault kv-ciam-prod has no secret am-admin-password (role am-admin-password)"

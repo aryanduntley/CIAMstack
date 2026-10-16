@@ -1,0 +1,8 @@
+contract              header           kind       set by          trusted by      value from                                                 strips inbound
+--------------------  ---------------  ---------  --------------  --------------  ---------------------------------------------------------  --------------
+client-address-login  X-Forwarded-For  client-ip  am-service      am              the client's address                                       yes
+client-address-sso    X-Forwarded-For  client-ip  pf-sso-service  pf-engine       the client's address                                       yes
+partner-user          X-Partner-User   identity   ig              partner-portal  claim sub
+techpubs-user         X-TechPubs-User  identity   pa-engine                       attribute sub (PingAccess identity mapping techpubs-user)
+(4 rows)
+exit 0

@@ -1,0 +1,23 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "techpubs-app",
+      "targets": [
+        "techpubs-app.aws.internal.example-aero.test:8443"
+      ],
+      "secure": true,
+      "trustedCertificateGroupId": 1,
+      "maxConnections": 200
+    },
+    {
+      "id": 2,
+      "name": "techpubs-media-cdn",
+      "targets": [
+        "media.techpubs-cdn.example.net:443"
+      ],
+      "secure": true,
+      "trustedCertificateGroupId": 0
+    }
+  ]
+}

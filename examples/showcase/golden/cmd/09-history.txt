@@ -524,4 +524,53 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2056  insert  cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2056  insert  cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2056  insert  cn=servicenow.change-requests.shared,ou=imports,dc=ciam-ops
-(524 rows)
+<TIMESTAMP>          CHG-2060  insert  cn=pa-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=svc-techpubs,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=techpubs-app,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-techpubs-client-secret,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=access-gateway,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-admin-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-engine-1,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-engine-2,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=techpubs-app,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-techpubs-client-secret,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=access-gateway,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=fw-pa-cluster,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=fw-pa-cluster,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=fw-pa-rotation,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=fw-pa-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  insert  cn=pa-techpubs-client-secret,ou=credentials,dc=ciam-ops
+<TIMESTAMP>          CHG-2060  update  env=stage,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=applications,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=rules,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=sites,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=web-sessions,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs,ou=applications,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-app,ou=sites,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-media,ou=applications,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-media-cdn,ou=sites,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-readers,ou=rules,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-service:443,ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=certificates,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=keyPairs,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=pingfederate.runtime,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  ou=trustedCertificateGroups,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=Example Aero corporate,ou=trustedCertificateGroups,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=example-aero-root-ca,ou=certificates,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=Root Resource,cn=techpubs,ou=applications,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=Root Resource,cn=techpubs-media,ou=applications,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=settings,ou=pingfederate.runtime,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=techpubs-tls,ou=keyPairs,ou=held,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2061  insert  cn=pingaccess.admin-api.shared,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2062  update  cn=techpubs-session,ou=web-sessions,ou=pingaccess,dc=ciam-ops
+<TIMESTAMP>          CHG-2062  insert  cn=techpubs-user,ou=header-contracts,dc=ciam-ops
+<TIMESTAMP>          CHG-2062  update  cn=techpubs-user,ou=identity-mappings,ou=pingaccess,dc=ciam-ops
+(573 rows)

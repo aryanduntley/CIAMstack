@@ -1,0 +1,12 @@
+{
+  "items": [
+    {
+      "id": 2,
+      "name": "Corporate",
+      "certificateIds": [
+        1
+      ],
+      "useJavaTrustStore": false
+    }
+  ]
+}

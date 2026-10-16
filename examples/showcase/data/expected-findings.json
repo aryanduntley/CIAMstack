@@ -343,6 +343,30 @@
       "planted": "the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled",
       "cleared_by": null,
       "raised_by": "CHG-2056"
+    },
+    {
+      "id": "B65",
+      "area": "PingAccess",
+      "match": "Web session `techpubs-session` can't sign users in: it authenticates to the token endpoint as client_secret_basic or client_secret_post (SECRET), but integration `tech-pubs` is registered for none",
+      "planted": "PingAccess signs Tech Pubs users in with a client secret, but the record registers tech-pubs-web as a public client (none): the target's PingFederate, rendered from the record, refuses the token request",
+      "cleared_by": null,
+      "raised_by": "CHG-2061"
+    },
+    {
+      "id": "B66",
+      "area": "PingAccess",
+      "match": "Virtual host `techpubs-service:443` answers as role `techpubs-service`, which target/prod doesn't bind",
+      "planted": "Tech Pubs is published at techpubs.example-aero.test in the source only: the target's PingAccess has no name to answer as",
+      "cleared_by": null,
+      "raised_by": "CHG-2061"
+    },
+    {
+      "id": "B67",
+      "area": "Binding",
+      "match": "Role `techpubs-service` is bound in source/prod but not in target/prod",
+      "planted": "the same missing service name, from the core role check (its fix binds it like the source does)",
+      "cleared_by": null,
+      "raised_by": "CHG-2060"
     }
   ],
   "actions": [
@@ -1452,6 +1476,62 @@
       "planted": "Splunk keeps production's security events 180 days, short of the 365 the route needs",
       "cleared_by": null,
       "raised_by": "CHG-2049"
+    },
+    {
+      "id": "A181",
+      "area": "Edge",
+      "match": "Clients can send header `X-TechPubs-User` themselves (contract `techpubs-user`)",
+      "planted": "nobody has confirmed PingAccess removes a client's own X-TechPubs-User, which Tech Pubs trusts for who the user is",
+      "cleared_by": null,
+      "raised_by": "CHG-2062"
+    },
+    {
+      "id": "A182",
+      "area": "PingAccess",
+      "match": "Site `techpubs-media-cdn` sends requests to `media.techpubs-cdn.example.net:443` from every environment",
+      "planted": "the media application's CDN is reached at the same host from every environment",
+      "cleared_by": null,
+      "raised_by": "CHG-2061"
+    },
+    {
+      "id": "A183",
+      "area": "PingAccess",
+      "match": "target/prod: environment-bound objects: not rendered: create certificates `example-aero-root-ca`; trustedCertificateGroups `Example Aero corporate`; keyPairs `techpubs-tls` in target/prod",
+      "planted": "PingAccess's key pair, trust group and CA certificate are created in each environment, never rendered",
+      "cleared_by": null,
+      "raised_by": "CHG-2061"
+    },
+    {
+      "id": "A184",
+      "area": "Upgrade",
+      "match": "`pa-admin`, `pa-engine` in target/prod: rotating the cluster's certificates uses a temporary port, 9095",
+      "planted": "the move upgrades PingAccess 8.3.6 -> 9.1.1, which rotates cluster certificates over a temporary port",
+      "cleared_by": null,
+      "raised_by": "CHG-2060"
+    },
+    {
+      "id": "A185",
+      "area": "PingAccess",
+      "match": "target/prod: `pingaccess/admin-api/requests.json`: the Admin API paths and fields follow Ping's documentation and are unverified for PingAccess 9.1.1",
+      "planted": "the adapter's Admin API forms aren't verified against 9.1.1's own schema yet",
+      "cleared_by": null,
+      "raised_by": "CHG-2061"
+    },
+    {
+      "id": "A186",
+      "area": "Host",
+      "match": "Server role `pa-admin` has no host baseline that applies in target/prod",
+      "planted": "the PingAccess servers were recorded without their hosts' baselines",
+      "cleared_by": null,
+      "raised_by": "CHG-2060"
+    },
+    {
+      "id": "A187",
+      "area": "Host",
+      "match": "Server role `pa-engine` has no host baseline that applies in target/prod",
+      "planted": "the PingAccess servers were recorded without their hosts' baselines",
+      "cleared_by": null,
+      "raised_by": "CHG-2060"
     }
   ]
 }

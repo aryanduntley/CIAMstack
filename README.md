@@ -98,6 +98,7 @@ Adapters are separate installable packages. Installing one registers it with the
 - `opsdir-adapter-pingam`: PingAM / ForgeRock AM 7–8: realms, OAuth2/OIDC clients, SAML, authentication journeys and policy sets as Amster entities; **imports Amster exports**.
 - `opsdir-adapter-pingidm`: PingIDM / ForgeRock IDM 7–8: managed objects, connectors, sync mappings and schedules as project files, each connector pointing at the right host in every environment; **imports IDM projects**.
 - `opsdir-adapter-pinggateway`: PingGateway 2023–2026 / ForgeRock IG 7: routes rendered per environment and linked to the client and issuer they rely on; **imports gateway configurations**.
+- `opsdir-adapter-pingaccess`: PingAccess 8.2–9.x: applications, resources, sites, virtual hosts, web sessions (linked to the OIDC client they sign in as), identity mappings (linked to header contracts) and rules as Admin API requests per environment, objects named by name, environment-bound keys, trust and nodes held apart; **imports Admin API reads (collected read-only as an Auditor) and configuration exports**, secrets and the export's key material never stored.
 
 **Clouds**
 - `opsdir-adapter-aws`: Terraform for AWS (VPC, subnets, instances, load balancers, security groups, DNS); Secrets Manager, KMS, Certificate Manager and S3 references; **imports Terraform state, AWS CLI output and CloudFormation stacks** into the environment's servers and bindings.

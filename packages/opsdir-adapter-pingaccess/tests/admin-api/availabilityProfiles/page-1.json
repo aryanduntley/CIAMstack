@@ -1,0 +1,13 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Default",
+      "className": "com.pingidentity.pa.ha.availability.ondemand.OnDemandAvailabilityPlugin",
+      "configuration": {
+        "connectTimeout": 10000,
+        "maxRetries": 2
+      }
+    }
+  ]
+}

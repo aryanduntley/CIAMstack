@@ -1,0 +1,47 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "techpubs",
+      "contextRoot": "/",
+      "applicationType": "Web",
+      "destination": "Site",
+      "siteId": 1,
+      "virtualHostIds": [
+        1
+      ],
+      "webSessionId": 1,
+      "identityMappingIds": {
+        "Web": 1
+      },
+      "policy": {
+        "Web": [
+          {
+            "type": "Rule",
+            "id": 1
+          }
+        ],
+        "API": []
+      },
+      "enabled": true
+    },
+    {
+      "id": 2,
+      "name": "techpubs-media",
+      "contextRoot": "/media",
+      "applicationType": "Web",
+      "destination": "Site",
+      "siteId": 2,
+      "virtualHostIds": [
+        1
+      ],
+      "webSessionId": 1,
+      "identityMappingIds": {},
+      "policy": {
+        "Web": [],
+        "API": []
+      },
+      "enabled": true
+    }
+  ]
+}

@@ -305,6 +305,24 @@
       "Read the linked ServiceNow tickets as evidence (state, approval, planned and actual windows)",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2060,ou=changes,dc=ciam-ops",
+      "Run PingAccess in front of Tech Pubs in both environments: its admin node and engines, Tech Pubs' service name, the application's host and the web session's secret reference",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2061,ou=changes,dc=ciam-ops",
+      "Read PingAccess's configuration (Admin API reads, secrets withheld) into the record",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2062,ou=changes,dc=ciam-ops",
+      "Record the PingAccess web session's credential role and the header Tech Pubs trusts for who the user is",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

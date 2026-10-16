@@ -1,0 +1,212 @@
+{
+  "pingAccess": "PingAccess 9.1.1",
+  "adminApi": "v3",
+  "verified": false,
+  "openApi": "/pa-admin-api/v3/api-docs/pa/api-docs-v2.json",
+  "problems": [
+    "role `techpubs-service` isn't bound in target/prod"
+  ],
+  "requests": [
+    {
+      "method": "PUT",
+      "path": "/pingfederate/runtime",
+      "body": {
+        "issuer": "https://sso.example-aero.test",
+        "skipHostnameVerification": false,
+        "trustedCertificateGroupId": "${pingaccess-id:trustedCertificateGroups/Example Aero corporate}",
+        "useSlo": false
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/rules/${pingaccess-id:rules/techpubs-readers}",
+      "createWith": "POST /rules",
+      "body": {
+        "name": "techpubs-readers",
+        "className": "com.pingidentity.pa.policy.WebSessionAttributeRule",
+        "configuration": {
+          "attributeName": "groups",
+          "attributeValue": "techpubs-readers"
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/sites/${pingaccess-id:sites/techpubs-app}",
+      "createWith": "POST /sites",
+      "body": {
+        "name": "techpubs-app",
+        "targets": [
+          "techpubs-app.az.internal.example-aero.test:8443"
+        ],
+        "maxConnections": 200,
+        "secure": true,
+        "trustedCertificateGroupId": "${pingaccess-id:trustedCertificateGroups/Example Aero corporate}"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/sites/${pingaccess-id:sites/techpubs-media-cdn}",
+      "createWith": "POST /sites",
+      "body": {
+        "name": "techpubs-media-cdn",
+        "secure": true,
+        "targets": [
+          "media.techpubs-cdn.example.net:443"
+        ],
+        "trustedCertificateGroupId": 0
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/virtualhosts/${pingaccess-id:virtualhosts/techpubs-service:443}",
+      "createWith": "POST /virtualhosts",
+      "body": {
+        "host": "UNBOUND:techpubs-service",
+        "keyPairId": "${pingaccess-id:keyPairs/techpubs-tls}",
+        "port": 443,
+        "trustedCertificateGroupId": 0
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/identityMappings/${pingaccess-id:identityMappings/techpubs-user}",
+      "createWith": "POST /identityMappings",
+      "body": {
+        "name": "techpubs-user",
+        "className": "com.pingidentity.pa.identitymappings.HeaderIdentityMapping",
+        "configuration": {
+          "attributeHeaderMappings": [
+            {
+              "attributeName": "sub",
+              "headerName": "X-TechPubs-User",
+              "subject": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/webSessions/${pingaccess-id:webSessions/techpubs-session}",
+      "createWith": "POST /webSessions",
+      "body": {
+        "name": "techpubs-session",
+        "audience": "techpubs",
+        "clientCredentials": {
+          "clientId": "tech-pubs-web",
+          "clientSecret": {
+            "value": "${secret:azkv://kv-ciam-prod/pa-techpubs-client-secret}"
+          },
+          "credentialsType": "SECRET"
+        },
+        "httpOnlyCookie": true,
+        "idleTimeoutInMinutes": 60,
+        "oidcLoginType": "Code",
+        "pkceChallengeType": "SHA256",
+        "scopes": [
+          "openid",
+          "profile",
+          "email"
+        ],
+        "secureCookie": true,
+        "sessionTimeoutInMinutes": 480
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/techpubs}",
+      "createWith": "POST /applications",
+      "body": {
+        "name": "techpubs",
+        "contextRoot": "/",
+        "applicationType": "Web",
+        "destination": "Site",
+        "enabled": true,
+        "identityMappingIds": {
+          "Web": "${pingaccess-id:identityMappings/techpubs-user}"
+        },
+        "policy": {
+          "API": [],
+          "Web": [
+            {
+              "id": "${pingaccess-id:rules/techpubs-readers}",
+              "type": "Rule"
+            }
+          ]
+        },
+        "siteId": "${pingaccess-id:sites/techpubs-app}",
+        "virtualHostIds": [
+          "${pingaccess-id:virtualhosts/techpubs-service:443}"
+        ],
+        "webSessionId": "${pingaccess-id:webSessions/techpubs-session}"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/techpubs-media}",
+      "createWith": "POST /applications",
+      "body": {
+        "name": "techpubs-media",
+        "contextRoot": "/media",
+        "applicationType": "Web",
+        "destination": "Site",
+        "enabled": true,
+        "identityMappingIds": {},
+        "policy": {
+          "API": [],
+          "Web": []
+        },
+        "siteId": "${pingaccess-id:sites/techpubs-media-cdn}",
+        "virtualHostIds": [
+          "${pingaccess-id:virtualhosts/techpubs-service:443}"
+        ],
+        "webSessionId": "${pingaccess-id:webSessions/techpubs-session}"
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/techpubs}/resources/${pingaccess-id:applications/${pingaccess-id:applications/techpubs}/resources/Root Resource}",
+      "createWith": "POST /applications/${pingaccess-id:applications/techpubs}/resources",
+      "body": {
+        "name": "Root Resource",
+        "methods": [
+          "*"
+        ],
+        "pathPatterns": [
+          {
+            "pattern": "/*",
+            "type": "WILDCARD"
+          }
+        ],
+        "policy": {
+          "API": [],
+          "Web": []
+        },
+        "rootResource": true
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/applications/${pingaccess-id:applications/techpubs-media}/resources/${pingaccess-id:applications/${pingaccess-id:applications/techpubs-media}/resources/Root Resource}",
+      "createWith": "POST /applications/${pingaccess-id:applications/techpubs-media}/resources",
+      "body": {
+        "name": "Root Resource",
+        "methods": [
+          "GET"
+        ],
+        "pathPatterns": [
+          {
+            "pattern": "/*",
+            "type": "WILDCARD"
+          }
+        ],
+        "policy": {
+          "API": [],
+          "Web": []
+        },
+        "rootResource": true
+      }
+    }
+  ]
+}
