@@ -113,8 +113,9 @@ echo "-- what the source cloud runs against the record: its Terraform state (--d
 od import --dry-run aws/terraform-state exports/cloud
 echo "-- applied, it waits for a decision on each conflict: take the live value or keep the record's (nothing applied)"
 od import --change CHG-2004 --at 20260920030000Z aws/terraform-state exports/cloud
-echo "-- when each part of the record was last read back from the live system"
+echo "-- when each part of the record was last read back from the live system, and the scopes of each set read"
 od report imports
+od report import-scopes
 echo "-- the second environment, from the Azure CLI (roles.json gives the new subnet its role)"
 od import --dry-run azure/cli-inventory exports/cloud
 echo "-- the warm standby, from a Cloud Asset Inventory export and gcloud (project numbers read as its ID)"

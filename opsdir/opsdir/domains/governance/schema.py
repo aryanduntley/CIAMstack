@@ -170,10 +170,11 @@ CLASSES = (
     ClassDef(91, 'ciamImportRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamImportScope',
                                                                'ciamImportedAt'),
              ('ciamCollectionIdentity', 'ciamCollectedCall', 'ciamCollectionCredential'),
-             'The last import by one importer of one environment (or of what environments share): when the live '
-             'system was read back, what it read and under which change (ciamChangeRef), and when opsdir collected '
-             'the export itself, how (the identity the provider saw, each call and the hash of what it returned, '
-             'the credential references used); what a fix that needs a fresh read checks'),
+             'The last import by one importer of one scope set (ciamImportScope) in one environment (or of what '
+             'environments share), named by the set: when the live system was read back, what it read and under '
+             'which change (ciamChangeRef), and when opsdir collected the export itself, how (the identity the '
+             'provider saw, each call and the hash of what it returned, the credential references used); what a fix '
+             'that needs a fresh read checks'),
     ClassDef(128, 'ciamCollectionSource', 'ciamBinding', 'STRUCTURAL', ('ciamImporter',),
              ('ciamSourceRef', 'ciamTargetRole', 'ciamPort', 'ciamCredentialRole', 'ciamCaRole', 'ciamLoginName',
               'ciamCredentialScheme'),

@@ -573,11 +573,11 @@ ciamJustification: Supplier portal account lookup
 ciamOwner: cn=supplier-portal-team,ou=owners,dc=ciam-ops
 ciamReviewedOn: 20260302000000Z
 
-dn: cn=adcs.inventory.shared,ou=imports,dc=ciam-ops
+dn: cn=adcs.inventory.shared.s1-4d9c34b27c6d2949,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: adcs.inventory.shared
+cn: adcs.inventory.shared.s1-4d9c34b27c6d2949
 ciamChangeRef: cn=CHG-2050,ou=changes,dc=ciam-ops
 ciamImportScope: ou=certificate-templates,dc=ciam-ops
 ciamImportScope: cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ci
@@ -873,21 +873,21 @@ ciamControlRef: nist-800-53-r5:SC-12
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamResponsibility: inherited
 
-dn: cn=aws.quotas.shared,ou=imports,dc=ciam-ops
+dn: cn=aws.quotas.shared.s1-4bed36db6d564cf2,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: aws.quotas.shared
+cn: aws.quotas.shared.s1-4bed36db6d564cf2
 ciamChangeRef: cn=CHG-2025,ou=changes,dc=ciam-ops
 ciamImportScope: cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: aws/quotas
 
-dn: cn=aws.regions.shared,ou=imports,dc=ciam-ops
+dn: cn=aws.regions.shared.s1-5adb217e0a2d5536,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: aws.regions.shared
+cn: aws.regions.shared.s1-5adb217e0a2d5536
 ciamChangeRef: cn=CHG-2020,ou=changes,dc=ciam-ops
 ciamImportScope: cn=aws,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
@@ -985,22 +985,22 @@ ciamImplementation: FIPS-validated modules of Key Vault Premium (HSM-backed ke
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamResponsibility: shared
 
-dn: cn=azure.quotas.shared,ou=imports,dc=ciam-ops
+dn: cn=azure.quotas.shared.s1-60d2177c2aeb65cb,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: azure.quotas.shared
+cn: azure.quotas.shared.s1-60d2177c2aeb65cb
 ciamChangeRef: cn=CHG-2026,ou=changes,dc=ciam-ops
 ciamImportScope: cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quot
  as,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: azure/quotas
 
-dn: cn=azure.regions.shared,ou=imports,dc=ciam-ops
+dn: cn=azure.regions.shared.s1-eaa7c3c9727dd948,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: azure.regions.shared
+cn: azure.regions.shared.s1-eaa7c3c9727dd948
 ciamChangeRef: cn=CHG-2021,ou=changes,dc=ciam-ops
 ciamImportScope: cn=azure,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
@@ -2084,11 +2084,11 @@ ciamCostCenter: CC-2040
 ciamOwnerKind: team
 mail: customer-portal@example-aero.test
 
-dn: cn=cyberark.accounts.shared,ou=imports,dc=ciam-ops
+dn: cn=cyberark.accounts.shared.s1-7c67bdddad14fee0,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: cyberark.accounts.shared
+cn: cyberark.accounts.shared.s1-7c67bdddad14fee0
 ciamChangeRef: cn=CHG-2047,ou=changes,dc=ciam-ops
 ciamImportScope: cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 ciamImportScope: cn=CIAM-PROD,ou=cyberark,ou=secret-inventory,dc=ciam-ops
@@ -2663,11 +2663,11 @@ ciamOnServer: cn=ds-2,env=prod,cloud=source,ou=environments,dc=ciam-ops
 ciamRepoPath: opt/scripts/nightly-export.sh
 ciamSha256: b0deff05a91717b60751d8acf4bfeb90280cc77b83632aedc54aa33710d29bb8
 
-dn: cn=fedramp.cpo.shared,ou=imports,dc=ciam-ops
+dn: cn=fedramp.cpo.shared.s1-9cb52d59c16997a9,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: fedramp.cpo.shared
+cn: fedramp.cpo.shared.s1-9cb52d59c16997a9
 ciamChangeRef: cn=CHG-2031,ou=changes,dc=ciam-ops
 ciamImportScope: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
@@ -2720,32 +2720,32 @@ objectClass: ciamRegionCatalog
 cn: gcp
 ciamCloudProvider: gcp
 
-dn: cn=gcp.frameworks.shared,ou=imports,dc=ciam-ops
+dn: cn=gcp.frameworks.shared.s1-1aea003074ed5544,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: gcp.frameworks.shared
+cn: gcp.frameworks.shared.s1-1aea003074ed5544
 ciamChangeRef: cn=CHG-2041,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: gcp/frameworks
 
-dn: cn=gcp.quotas.shared,ou=imports,dc=ciam-ops
+dn: cn=gcp.quotas.shared.s1-514e55d8b1821204,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: gcp.quotas.shared
+cn: gcp.quotas.shared.s1-514e55d8b1821204
 ciamChangeRef: cn=CHG-2027,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=cia
  m-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: gcp/quotas
 
-dn: cn=gcp.regions.shared,ou=imports,dc=ciam-ops
+dn: cn=gcp.regions.shared.s1-9e7d0bf19cce860e,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: gcp.regions.shared
+cn: gcp.regions.shared.s1-9e7d0bf19cce860e
 ciamChangeRef: cn=CHG-2022,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
@@ -2784,11 +2784,11 @@ ciamSchedule: 15 1 * * *
 ciamSecretName: DS_BACKUP_PASSWORD
 ciamTrigger: manual
 
-dn: cn=github-actions.workflows.shared,ou=imports,dc=ciam-ops
+dn: cn=github-actions.workflows.shared.s1-c8ae32ff91c391f6,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: github-actions.workflows.shared
+cn: github-actions.workflows.shared.s1-c8ae32ff91c391f6
 ciamChangeRef: cn=CHG-2010,ou=changes,dc=ciam-ops
 ciamImportScope: cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-o
  ps
@@ -3212,11 +3212,11 @@ ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.24
 ciamPiiClass: low
 ciamPurpose: Inactivity detection for lifecycle cleanup
 
-dn: cn=ldap.data-profile.shared,ou=imports,dc=ciam-ops
+dn: cn=ldap.data-profile.shared.s1-549f37b893288643,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: ldap.data-profile.shared
+cn: ldap.data-profile.shared.s1-549f37b893288643
 ciamChangeRef: cn=CHG-2014,ou=changes,dc=ciam-ops
 ciamImportScope: cn=source-prod,ou=data-profile,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
@@ -3264,22 +3264,37 @@ ciamSubtreeRead: ou=people,dc=partners,dc=example-aero,dc=test
 ciamTlsOnly: FALSE
 ciamUnindexedSearchesPerDay: 12
 
-dn: cn=linux.baseline.shared,ou=imports,dc=ciam-ops
+dn: cn=linux.baseline.shared.s1-038a3ac92ac32c93,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: linux.baseline.shared
+cn: linux.baseline.shared.s1-038a3ac92ac32c93
 ciamChangeRef: cn=CHG-2075,ou=changes,dc=ciam-ops
 ciamImportScope: cn=pa-admin,ou=baselines,dc=ciam-ops
 ciamImportScope: cn=pa-engine,ou=baselines,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: linux/baseline
 
-dn: cn=linux.jobs.shared,ou=imports,dc=ciam-ops
+dn: cn=linux.baseline.shared.s1-1d2dbc81da8060e1,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: linux.jobs.shared
+cn: linux.baseline.shared.s1-1d2dbc81da8060e1
+ciamChangeRef: cn=CHG-2012,ou=changes,dc=ciam-ops
+ciamImportScope: cn=am,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=ds,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=idm,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=ig,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=pf-admin,ou=baselines,dc=ciam-ops
+ciamImportScope: cn=pf-engine,ou=baselines,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: linux/baseline
+
+dn: cn=linux.jobs.shared.s1-0696946eb7e2ab71,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: linux.jobs.shared.s1-0696946eb7e2ab71
 ciamChangeRef: cn=CHG-2010,ou=changes,dc=ciam-ops
 ciamImportScope: cn=ds-nightly-export,ou=jobs,dc=ciam-ops
 ciamImportScope: cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
@@ -3437,11 +3452,11 @@ objectClass: ciamRegionCatalog
 cn: onprem
 ciamCloudProvider: onprem
 
-dn: cn=onprem.sites.shared,ou=imports,dc=ciam-ops
+dn: cn=onprem.sites.shared.s1-134abd6ded0ba1e6,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: onprem.sites.shared
+cn: onprem.sites.shared.s1-134abd6ded0ba1e6
 ciamChangeRef: cn=CHG-2035,ou=changes,dc=ciam-ops
 ciamImportScope: cn=onprem,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
@@ -3563,11 +3578,11 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
 
-dn: cn=panos.running-config.hq.lab,ou=imports,dc=ciam-ops
+dn: cn=panos.running-config.hq.lab.s1-af4597385d3db132,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: panos.running-config.hq.lab
+cn: panos.running-config.hq.lab.s1-af4597385d3db132
 ciamChangeRef: cn=CHG-2048,ou=changes,dc=ciam-ops
 ciamImportScope: cn=fw-pf-ds-svc,ou=bindings,env=lab,cloud=hq,ou=environments,
  dc=ciam-ops
@@ -3588,11 +3603,11 @@ ciamImportScope: cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,d
 ciamImportedAt: 20260923090000Z
 ciamImporter: panos/running-config
 
-dn: cn=panos.running-config.shared,ou=imports,dc=ciam-ops
+dn: cn=panos.running-config.shared.s1-8b75c6e05f1918a7,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: panos.running-config.shared
+cn: panos.running-config.shared.s1-8b75c6e05f1918a7
 ciamChangeRef: cn=CHG-2048,ou=changes,dc=ciam-ops
 ciamImportScope: cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
@@ -3992,11 +4007,11 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
 
-dn: cn=pingaccess.admin-api.shared,ou=imports,dc=ciam-ops
+dn: cn=pingaccess.admin-api.shared.s1-8c453bda03536cce,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingaccess.admin-api.shared
+cn: pingaccess.admin-api.shared.s1-8c453bda03536cce
 ciamChangeRef: cn=CHG-2061,ou=changes,dc=ciam-ops
 ciamImportScope: ou=rules,ou=pingaccess,dc=ciam-ops
 ciamImportScope: ou=sites,ou=pingaccess,dc=ciam-ops
@@ -4011,11 +4026,11 @@ ciamImportScope: ou=pingfederate.runtime,ou=held,ou=pingaccess,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: pingaccess/admin-api
 
-dn: cn=pingam.amster.shared,ou=imports,dc=ciam-ops
+dn: cn=pingam.amster.shared.s1-69aee79932a0f6f9,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingam.amster.shared
+cn: pingam.amster.shared.s1-69aee79932a0f6f9
 ciamChangeRef: cn=CHG-2004,ou=changes,dc=ciam-ops
 ciamImportScope: cn=partner-portal,ou=integrations,dc=ciam-ops
 ciamImportScope: cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops
@@ -4038,11 +4053,11 @@ ciamPrincipalKind: workload
 ciamReviewedOn: 20260601000000Z
 ciamTargetRole: ds
 
-dn: cn=pingds.access-log.shared,ou=imports,dc=ciam-ops
+dn: cn=pingds.access-log.shared.s1-ed7bbd9124f132c7,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingds.access-log.shared
+cn: pingds.access-log.shared.s1-ed7bbd9124f132c7
 ciamChangeRef: cn=CHG-2007,ou=changes,dc=ciam-ops
 ciamImportScope: cn=idm-sync,ou=consumers,dc=ciam-ops
 ciamImportScope: cn=mro-batch-export,ou=consumers,dc=ciam-ops
@@ -4053,11 +4068,11 @@ ciamImportScope: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
 ciamImporter: pingds/access-log
 
-dn: cn=pingds.config.shared,ou=imports,dc=ciam-ops
+dn: cn=pingds.config.shared.s1-69128b08d45c6a2a,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingds.config.shared
+cn: pingds.config.shared.s1-69128b08d45c6a2a
 ciamChangeRef: cn=CHG-2006,ou=changes,dc=ciam-ops
 ciamImportScope: snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,d
  c=ciam-ops
@@ -4094,31 +4109,75 @@ ciamPrincipalKind: workload
 ciamReviewedOn: 20260601000000Z
 ciamTargetRole: pf-admin
 
-dn: cn=pingfederate.bulk.shared,ou=imports,dc=ciam-ops
+dn: cn=pingfederate.bulk.shared.s1-457adc96c2c2e7e9,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingfederate.bulk.shared
+cn: pingfederate.bulk.shared.s1-457adc96c2c2e7e9
 ciamChangeRef: cn=CHG-2065,ou=changes,dc=ciam-ops
 ciamImportScope: cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: pingfederate/bulk
 
-dn: cn=pingfederate.node-files.shared,ou=imports,dc=ciam-ops
+dn: cn=pingfederate.bulk.shared.s1-bc89833b4efcd403,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingfederate.node-files.shared
+cn: pingfederate.bulk.shared.s1-bc89833b4efcd403
+ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
+ciamImportScope: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
+ciamImportScope: cn=customer-portal,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=supplier-portal,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=mobile-ops,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=tech-pubs,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=reports-api,ou=integrations,dc=ciam-ops
+ciamImportScope: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=c
+ iam-ops
+ciamImportScope: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=cia
+ m-ops
+ciamImportScope: cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-op
+ s
+ciamImportScope: cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-op
+ s
+ciamImportScope: cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam
+ -ops
+ciamImportScope: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=oauth-auth-server,ou=settings,ou=pingfederate,dc=ciam-ops
+ciamImportScope: ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
+ciamImportScope: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc
+ =ciam-ops
+ciamImportScope: cn=noreply@example-aero.test,ou=mail-senders,dc=ciam-ops
+ciamImportScope: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
+ciamImportedAt: 20260920030000Z
+ciamImporter: pingfederate/bulk
+
+dn: cn=pingfederate.node-files.shared.s1-168143bf0b3f0f54,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: pingfederate.node-files.shared.s1-168143bf0b3f0f54
 ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
 ciamImportScope: cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
 ciamImporter: pingfederate/node-files
 
-dn: cn=pingfederate.node-files.source.prod,ou=imports,dc=ciam-ops
+dn: cn=pingfederate.node-files.source.prod.s1-2b15de89fb4541e2,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingfederate.node-files.source.prod
+cn: pingfederate.node-files.source.prod.s1-2b15de89fb4541e2
 ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
 ciamImportScope: cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-o
  ps
@@ -4129,11 +4188,11 @@ ciamImportScope: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-
 ciamImportedAt: 20260920030000Z
 ciamImporter: pingfederate/node-files
 
-dn: cn=pinggateway.config.shared,ou=imports,dc=ciam-ops
+dn: cn=pinggateway.config.shared.s1-33a1aefb0be2ee0c,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pinggateway.config.shared
+cn: pinggateway.config.shared.s1-33a1aefb0be2ee0c
 ciamChangeRef: cn=CHG-2004,ou=changes,dc=ciam-ops
 ciamImportScope: cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
 ciamImportScope: cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
@@ -4141,11 +4200,11 @@ ciamImportScope: cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
 ciamImporter: pinggateway/config
 
-dn: cn=pingidm.project.shared,ou=imports,dc=ciam-ops
+dn: cn=pingidm.project.shared.s1-957fd2a5ac158146,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: pingidm.project.shared
+cn: pingidm.project.shared.s1-957fd2a5ac158146
 ciamChangeRef: cn=CHG-2004,ou=changes,dc=ciam-ops
 ciamImportScope: cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops
 ciamImportScope: cn=role,ou=managed-objects,ou=pingidm,dc=ciam-ops
@@ -4386,11 +4445,11 @@ objectClass: ciamEstateSetting
 cn: servicenow-standard-state-models
 ciamEstateValue: 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
 
-dn: cn=servicenow.change-requests.shared,ou=imports,dc=ciam-ops
+dn: cn=servicenow.change-requests.shared.s1-0bef15abf18dfe0c,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: servicenow.change-requests.shared
+cn: servicenow.change-requests.shared.s1-0bef15abf18dfe0c
 ciamChangeRef: cn=CHG-2056,ou=changes,dc=ciam-ops
 ciamImportScope: cn=CHG0029931,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030101,ou=servicenow,ou=tickets,dc=ciam-ops
@@ -4457,11 +4516,11 @@ ciamMigrationStatus: identified
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamReviewedOn: 20260302000000Z
 
-dn: cn=siteminder.xps.shared,ou=imports,dc=ciam-ops
+dn: cn=siteminder.xps.shared.s1-076f97b6e4eb37ec,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: siteminder.xps.shared
+cn: siteminder.xps.shared.s1-076f97b6e4eb37ec
 ciamChangeRef: cn=CHG-2063,ou=changes,dc=ciam-ops
 ciamImportScope: cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
 ciamImportScope: cn=crew-web-agent,ou=agents,ou=siteminder,dc=ciam-ops
@@ -4631,11 +4690,11 @@ ciamPasswordAge: never=6
 ciamPendingCount: 11
 ciamProfiledEnvironment: env=prod,cloud=source,ou=environments,dc=ciam-ops
 
-dn: cn=splunk.rest.source.prod,ou=imports,dc=ciam-ops
+dn: cn=splunk.rest.source.prod.s1-180ad0ad95ff904b,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
-cn: splunk.rest.source.prod
+cn: splunk.rest.source.prod.s1-180ad0ad95ff904b
 ciamChangeRef: cn=CHG-2049,ou=changes,dc=ciam-ops
 ciamImportScope: cn=siem,ou=bindings,env=prod,cloud=source,ou=environments,dc=
  ciam-ops
