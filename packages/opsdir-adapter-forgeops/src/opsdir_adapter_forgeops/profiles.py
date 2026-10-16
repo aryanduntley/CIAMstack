@@ -18,11 +18,13 @@ PingGateway and Amster fill from the environment variable OPSDIR_<ROLE> (slot_en
 key the record maps on the workload (ciamWorkloadSecret <secret>/OPSDIR_<ROLE> <- <role>; amster reads
 amster-env-secrets whole, so its keys go there): the values and the overlay add the variable to IDM's, AM's and
 PingGateway's containers. A README per namespace lists each token, its variable, its role and whether the record
-maps it (the planner names the unmapped ones). Pure."""
+maps it (the planner names the unmapped ones). DS has no config profile: its image's inputs (custom schema, LDAP
+entries per backend) are ds_profile.py's, in the same namespace folder. Pure."""
 from opsdir.core.formats import DOCKERFILE, MARKDOWN
 from opsdir.core.manifest import header
 from opsdir.core.profiles import slot_env, slot_token, slotted
 from .components import image_of, placements, slot_envs
+from .ds_profile import ds_context
 from .release import CONFIG_PROFILES, PROFILE_BUILDS, PROFILE_NAME, VERSION
 
 _DOCKERFILE = {
@@ -57,28 +59,38 @@ def component_profile(m, p, component, product, how, dest, tree):
             tuple((slot_token(r), slot_env(r), r, slot_env(r) in mapped) for r in roles))
 
 
-def _readme(m, p, slots):
+_DS = ("## DS\n\n`ds/` holds the inputs of ForgeOps' DS image (one image for ds-idrepo and ds-cts): "
+       "`config/schema/` (the record's schema definitions) and `ldif-ext/<backend>/` (the record's entries below "
+       "that backend's base DN), as in ForgeOps' `docker/ds`. Build it with its Dockerfile from the DS image built "
+       "from ForgeOps' `docker/ds`, or copy the two folders into a ForgeOps checkout's `docker/ds` and run "
+       "`forgeops build ds`. A pod loads them only when it sets up an empty volume: on a running deployment, apply "
+       "the PingDS render's `ldap/schema.ldif` and `ldap/dit.ldif` online. The record's DS configuration and ACIs "
+       "are applied online (the render's notes say how).\n\n")
+
+
+def _readme(m, p, slots, ds=False):
     rows = "".join(f"| {c} | `&{{{t}}}` | `{v}` | {r} | {'yes' if ok else '**no**'} |\n" for c, (t, v, r, ok) in slots)
     where = (f"Each variable comes from the Secret key the record maps on the component's workload "
              f"(`ciamWorkloadSecret <secret>/<variable> <- <role>`; amster's in `amster-env-secrets`).")
     return header(m, f"ForgeOps {VERSION} config profiles for namespace {p.namespace}", MARKDOWN) + (
         f"# Config profiles, namespace {p.namespace}\n\nOne folder per component: build it and push the image the "
-        "Dockerfile names; the Helm values and the overlay run it.\n\n"
+        "Dockerfile names; the Helm values and the overlay run it.\n\n" + (_DS if ds else "")
         + (f"## Secrets\n\n{where}\n\n| component | token | variable | role | mapped |\n|---|---|---|---|---|\n{rows}"
            if slots else "No profile holds a secret.\n"))
 
 
 def namespace_profiles(m, p, profiles):
-    """{path: text}: the build contexts of the components on in a placement whose product has files, and the
-    namespace's README."""
+    """{path: text}: the build contexts of the components on in a placement whose product has files, DS's image
+    inputs (ds_profile.ds_context), and the namespace's README."""
     built = [(component, component_profile(m, p, component, product, how, dest, profiles[product]))
              for component, product, how, dest in PROFILE_BUILDS
              if component in p.on and profiles.get(product)]
-    if not built:
+    ds = ds_context(m, p, profiles)
+    if not built and not ds:
         return {}
     files = {path: text for _, (fs, _) in built for path, text in fs.items()}
     slots = [(component, s) for component, (_, ss) in built for s in ss]
-    return {**files, f"forgeops/{CONFIG_PROFILES}/{p.namespace}/README.md": _readme(m, p, slots)}
+    return {**files, **ds, f"forgeops/{CONFIG_PROFILES}/{p.namespace}/README.md": _readme(m, p, slots, bool(ds))}
 
 
 def render_profiles(m, profiles, targets):

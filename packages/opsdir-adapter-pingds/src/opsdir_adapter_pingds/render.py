@@ -6,10 +6,14 @@ Environment-specific (hostnames, peers, secret refs):   ds/setup-<server>.sh
 
 Command and property names follow the PingDS 7.x documentation; verify them against the exact
 target version before use.
+
+Its product profile (core.profiles) is its standard LDAP files, under their render paths: DS has no instance tree a
+kit copies over, so a deployment kit places each (ForgeOps: the schema and the tree's entries in its DS image).
 """
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import joins
-from opsdir_base_ds.config import neutral_files
+from opsdir.core.profiles import ProductProfile
+from opsdir_base_ds.config import neutral_files, shipped_notes
 from opsdir_base_ds.product import DsProduct
 from opsdir_base_ds.replication import REPLICATION_PORT, peer_ds_hosts
 from opsdir_base_ds.setup import ADMIN_PORT, port, setup_inputs
@@ -19,8 +23,13 @@ PINGDS = DsProduct(
     dsconfig_apply=(f"# Apply: dsconfig --hostname <ds> --port {ADMIN_PORT} --bindDN uid=admin "
                     "--bindPasswordFile <file> \\",
                     "#          --usePkcs12TrustStore <truststore> --batchFilePath dsconfig.batch --no-prompt"),
-    handler_names={}, builtin_policies=("Default Password Policy", "Root Password Policy"))
+    handler_names={}, builtin_policies=("Default Password Policy", "Root Password Policy"),
+    # the lineage's own vendors' arcs, under which PingDS ships schema (docs.pingidentity.com pingds/8.1 schemaref:
+    # ds-sync-generation-id 1.3.6.1.4.1.26027.1.1.405 in 02-config.ldif, fr-idm-uuid 1.3.6.1.4.1.36733.2.3.1.27 in
+    # 60-repo-schema.ldif). Not Sun's or Netscape's: PingDS ships only some definitions under those (and RFC ones).
+    shipped_arcs=("1.3.6.1.4.1.26027", "1.3.6.1.4.1.36733"))
 SETUP_SECRET_ROLES = ("ds-deployment-id", "ds-deployment-password", "ds-root-password")
+PROFILE = ProductProfile("PingDS", (("ldap/", "ldap/"),))
 
 
 def _setup_script(m, x):
@@ -69,3 +78,8 @@ def setup_scripts(m, services):
 
 def render_neutral(d):
     return neutral_files(PINGDS, d)
+
+
+def render_notes(m, services):
+    """Adapter.notes: the record's schema definitions the render leaves out because PingDS ships them."""
+    return shipped_notes(PINGDS, m.d)

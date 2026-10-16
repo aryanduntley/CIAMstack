@@ -90,3 +90,29 @@ def test_a_target_that_doesn_t_join_gets_the_fix_declaring_it():
     assert (fix.key, fix.records[0].dn, fix.records[0].mods) == (
         "replication:joins", dst.dn, (("replace", "ciamJoinsDeploymentOf", (src.dn,)),))
     assert fix.risks[0].startswith("If b/prod is meant as a fresh topology")
+
+
+def _schema_directory():
+    from opsdir.domains.directory.naming import USER_SCHEMA
+    attr = (lambda name, oid: (f"cn={name},{USER_SCHEMA}", ("top", "ciamUserAttribute"),
+                               {"cn": [name], "ciamLdapName": [name], "ciamPiiClass": ["low"], "ciamLdapOid": [oid],
+                                "ciamLdapSyntax": ["1.3.6.1.4.1.1466.115.121.1.15"]}))
+    return make_directory((), {}, (attr("badge", "1.2.3.1.1"), attr("vendorThing", "1.9.99.7.1")))
+
+
+def test_the_schema_leaves_out_what_the_product_s_servers_ship_and_says_so():
+    from opsdir.core.notes import note_comment
+    from opsdir_base_ds.config import shipped_definitions, shipped_notes
+    from opsdir_base_ds.product import shipped_arc
+    shipping = PRODUCT._replace(shipped_arcs=("1.9.99",))
+    d = _schema_directory()
+    assert (shipped_arc(shipping, "1.9.99.7.1"), shipped_arc(shipping, "1.9.990.1"), shipped_arc(PRODUCT, "1.9.99.7.1")
+            ) == ("1.9.99", None, None)                                    # under the arc, not a longer sibling
+    schema = neutral_files(shipping, d)["ldap/schema.ldif"]
+    assert "NAME 'badge'" in schema and "NAME 'vendorThing'" not in schema
+    (n,) = shipped_notes(shipping, d)
+    assert [e.dn for e, _ in shipped_definitions(shipping, d)] == [n.entry]
+    assert (n.severity, n.subject) == ("note", "schema vendorThing") and "1.9.99.7.1" in n.text
+    assert f"# {note_comment(n)}" in schema                                 # its comment, its place
+    assert "NAME 'vendorThing'" in neutral_files(PRODUCT, d)["ldap/schema.ldif"]     # no arcs: all of it
+    assert shipped_notes(PRODUCT, d) == ()

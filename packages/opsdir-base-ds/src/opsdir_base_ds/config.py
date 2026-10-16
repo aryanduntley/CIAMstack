@@ -1,6 +1,8 @@
 """Environment-neutral configuration of a DS-lineage server, rendered from the directory domain: the standard LDAP
 files (schema, tree), the dsconfig batch (backends and indexes, password policies, connection handlers, log
-publishers, replication) and the ACIs in the lineage's ACI syntax.
+publishers, replication) and the ACIs in the lineage's ACI syntax. The schema leaves out the record's definitions
+under the vendor arcs the product's servers ship (DsProduct.shipped_arcs): adding them again clashes with the
+server's own; each one left out is a render note (shipped_notes) and its comment in ldap/schema.ldif.
 
 Command and property names follow the products' documentation; verify them against the exact target version.
 """
@@ -8,9 +10,11 @@ from itertools import chain
 
 from opsdir.core.contract import Format
 from opsdir.core.directory import children, follow, get, one, rdn_value, subtree, values
+from opsdir.core.notes import note, note_comment
 from opsdir.domains.directory.naming import ACIS, DECLARED as DECL
+from opsdir.domains.directory.user_schema import defined_attributes, defined_classes
 from opsdir_adapter_ldap.adapter import FORMATS as LDAP_FORMATS, render_standard
-from .product import handler_name
+from .product import handler_name, shipped_arc
 
 # The lineage's batch syntax: dsconfig subcommands, one per line (registered under opsdir.formats).
 DSCONFIG_BATCH = Format(name="dsconfig-batch", title="DS lineage dsconfig batch file", media_type="text/plain",
@@ -111,6 +115,30 @@ def acis_ldif(d):
     return "\n".join((*head, *body))
 
 
+def shipped_definitions(product, d):
+    """((user-schema record, arc), ...): the record's defined attributes, then classes, under a vendor arc the
+    product's servers ship (DsProduct.shipped_arcs)."""
+    return tuple((e, arc) for e in (*defined_attributes(d), *defined_classes(d))
+                 for arc in (shipped_arc(product, one(e, "ciamLdapOid")),) if arc)
+
+
+def shipped_notes(product, d):
+    """A render note per definition the product's schema render leaves out because its servers ship it
+    (shipped_definitions): to the record's owners, how to add it where the servers lack it."""
+    return tuple(note("Directory", "note", f"schema {one(e, 'ciamLdapName')}",
+                      f"{product.name} ships {one(e, 'ciamLdapName')} ({one(e, 'ciamLdapOid')}, under its vendor arc "
+                      f"{arc}): ldap/schema.ldif leaves the record's definition out, so loading it doesn't clash with "
+                      "the servers' own",
+                      ("nothing, where the servers' schema has it (their db/schema)",
+                       "where it doesn't (a setup profile the servers don't run), add the record's definition by "
+                       "hand"), entry=e.dn)
+                 for e, arc in shipped_definitions(product, d))
+
+
 def neutral_files(product, d):
-    """Every environment-neutral file of a DS-lineage server: the standard LDAP files, then the lineage's own."""
-    return {**render_standard(d), "ds/dsconfig.batch": dsconfig_batch(product, d), "ds/acis.ldif": acis_ldif(d)}
+    """Every environment-neutral file of a DS-lineage server: the standard LDAP files (the schema without what the
+    product's servers ship, each such definition's note comment after it), then the lineage's own."""
+    standard = render_standard(d, keep=lambda e: not shipped_arc(product, one(e, "ciamLdapOid")))
+    left_out = "".join(f"# {note_comment(n)}\n" for n in shipped_notes(product, d))
+    return {**standard, "ldap/schema.ldif": standard["ldap/schema.ldif"] + left_out,
+            "ds/dsconfig.batch": dsconfig_batch(product, d), "ds/acis.ldif": acis_ldif(d)}
