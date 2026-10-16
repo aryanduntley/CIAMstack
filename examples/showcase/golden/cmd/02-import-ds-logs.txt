@@ -1,4 +1,5 @@
 8 identities only authenticated (binds, e.g. end users whose passwords were checked); not recorded
+consumer siteminder-ps (uid=siteminder-ps,ou=service-accounts,dc=partners,dc=example-aero,dc=test) not seen in these logs; unchanged
 9 anonymous operations (no bound identity); not attributed
 CHG-2007: 7 change(s) applied, the import run among them
 exit 0

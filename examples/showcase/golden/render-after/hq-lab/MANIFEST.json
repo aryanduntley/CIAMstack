@@ -230,7 +230,7 @@
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "a944b776eb9d3cdb27876aacb26169f6894ad562842cdd8b243e3ff1060d62e1"
+      "sha256": "916de2ae08832b6246e1b427b0cac502412733e311567b9fc933ea06bcee18d4"
     },
     "pingfederate/cluster/jgroups.properties": {
       "scope": "environment-specific",
@@ -240,7 +240,7 @@
     "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "e8111b35ca3fb5f557401f8a5cbeb4f90dd99c6d1238fe3e97944599178ed9d7"
+      "sha256": "1dbc2e8df3d79f31aeeeb7a5a82b432981fbe02a66c054674292c04809e0a48e"
     },
     "pingfederate/terraform/variables.tf": {
       "scope": "environment-specific",
@@ -271,6 +271,11 @@
       "scope": "environment-neutral",
       "format": "xml",
       "sha256": "6a7c98a9160a8c56c5952d837594aa3ed09c53eca16029e6882c4570b0429ddd"
+    },
+    "saml/sp/aog-parts-exchange.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "0e12c027c5bccf4abd024c70c3ea038f74ef3c4ce835e04b116dcef45551c6e4"
     },
     "saml/sp/customer-portal.xml": {
       "scope": "environment-neutral",

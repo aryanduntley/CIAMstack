@@ -451,7 +451,7 @@
     "ping-devops/server-profile/ciam/pingfederate/instance/bulk-config/data.json.subst": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "623e6621f638e3e78ccc3013b261dd8d14b7df195905b1054e1b3512698c8e48"
+      "sha256": "6fe4dc4290498f84677ec8ae86ea814987a3614702c4c64ab6bce38c4eaa5af7"
     },
     "ping-devops/server-profile/ciam/pingfederate/instance/server/default/data/atm/default-atm.json": {
       "scope": "environment-specific",
@@ -466,22 +466,22 @@
     "pingfederate/admin-api/requests.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "9193a4195af1219972837dd476e51e95d9f36d13f47ef528166c1caf78ea00db"
+      "sha256": "0a3a189bd59127741f9885b1f57b09244870dd4eb41dd458933e866e6d36b7bf"
     },
     "pingfederate/bulk-config-problems.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "0c18b96fa42c230d82196be6e794568d0801abdfc1ab0ae36b0a39bf8dceb41e"
+      "sha256": "c67f0affae1e3c1fb6f0f296da2c03629cfff89d53c15bca6ffc504469b570e6"
     },
     "pingfederate/bulk-config/data.json": {
       "scope": "environment-specific",
       "format": "json",
-      "sha256": "29f5c0884174fc935f8b6ba1db6b65a3be2561de0003a6bef576568bf3dfe1da"
+      "sha256": "2402f48223c0916999f211a7af6ef2fa03c737e87a42113417e13904766b1271"
     },
     "pingfederate/terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "68e397a696d59d987044937e596ad951a3c79cd2d93bbe548a7fe68f0642d58a"
+      "sha256": "2dacbca9ca96e06dde7a33ebd9e1fc8c98e7f82bee4345ba8c68bb03a008c214"
     },
     "pingfederate/terraform/variables.tf": {
       "scope": "environment-specific",
@@ -547,6 +547,11 @@
       "scope": "environment-neutral",
       "format": "xml",
       "sha256": "6a7c98a9160a8c56c5952d837594aa3ed09c53eca16029e6882c4570b0429ddd"
+    },
+    "saml/sp/aog-parts-exchange.xml": {
+      "scope": "environment-neutral",
+      "format": "xml",
+      "sha256": "0e12c027c5bccf4abd024c70c3ea038f74ef3c4ce835e04b116dcef45551c6e4"
     },
     "saml/sp/customer-portal.xml": {
       "scope": "environment-neutral",

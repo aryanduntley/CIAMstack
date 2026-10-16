@@ -1,0 +1,106 @@
+# CHG-2064 (approved): after the SiteMinder import (CHG-2063), the platform team owns what SiteMinder holds until it is
+# retired, and AOG Parts Exchange moves to PingFederate first: its partnership is re-homed from SiteMinder's identity
+# service to sso (ciamServedBy), so the target renders it as an SP connection and the supplier takes sso's metadata.
+# The crew portal's realm, its custom badge sign-on and its SM_USER header stay open: no target product protects them
+# yet (they block the move until a gateway takes the portal over).
+dn: cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=example-aero-directory,ou=user-directories,ou=siteminder,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=aco-crew-aco,ou=siteminder,ou=source-objects,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=cookie-crew-portal-crew-identity-crewbase,ou=siteminder,ou=source-objects,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=custom-scheme-crew-badge,ou=siteminder,ou=source-objects,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=hco-defaulthostsettings,ou=siteminder,ou=source-objects,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=keys,ou=siteminder,ou=source-objects,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=trusted-host-crew-web-1,ou=siteminder,ou=source-objects,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-
+
+dn: cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+changetype: modify
+add: ciamOwner
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+-
+replace: ciamServedBy
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
+-
+add: ciamChangeRef
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+-

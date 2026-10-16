@@ -1,4 +1,4 @@
-rendered 51 files for env=lab,cloud=hq,ou=environments,dc=ciam-ops (onprem) → <OUT>/render-after/hq-lab
+rendered 52 files for env=lab,cloud=hq,ou=environments,dc=ciam-ops (onprem) → <OUT>/render-after/hq-lab
 notes: 3 blockers, 0 actions, 2 notes, 0 to review (see <OUT>/render-after/hq-lab/NOTES.md)
   BLOCKER canary directory-bind: not rendered: no adapter in hq/lab's stack renders synthetic checks (its provider: onprem) [ciam-platform]
   BLOCKER canary portal-sso: not rendered: no adapter in hq/lab's stack renders synthetic checks (its provider: onprem) [ciam-platform]

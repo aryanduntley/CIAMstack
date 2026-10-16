@@ -1,4 +1,4 @@
-# Problem: held settings exported from PingFederate 12.1.4.0, rendered for 13.1.3: 21 objects (Customers, corp-directory, customer-portal, default, default-apc, default-oidc, defaultjwt, grant-store, harbor-mro-federation, htmlform, mobile-ops, oauth-auth-server, pcvcustomers, recaptcha, reports-api, settings, skyline-air-federation, smtp, supplier-portal, tech-pubs, user-directory): nothing is migrated between the versions; review them against the changes named, or upgrade a copy of PingFederate 12.1.4.0 and export it again
+# Problem: held settings exported from PingFederate 12.1.4.0, rendered for 13.1.3: 22 objects (Customers, aog-parts-exchange, corp-directory, customer-portal, default, default-apc, default-oidc, defaultjwt, grant-store, harbor-mro-federation, htmlform, mobile-ops, oauth-auth-server, pcvcustomers, recaptcha, reports-api, settings, skyline-air-federation, smtp, supplier-portal, tech-pubs, user-directory): nothing is migrated between the versions; review them against the changes named, or upgrade a copy of PingFederate 12.1.4.0 and export it again
 # Problem: PingFederate >=13.1: a pushed authorization request's request_uri can be used again until the PAR Reference Timeout expires (when no consent details are shown): oauth-auth-server: Review the PAR Reference Timeout and consent settings against that window.
 # Problem: PingFederate >=13.1.3: the Admin API validates JDBC data stores' driver class and URL: grant-store: Check each store's driver and URL against the drivers 13.1.3 allows before the cutover: the Admin API rejects the others.
 
@@ -474,6 +474,85 @@ resource "pingfederate_oauth_client" "tech_pubs_web" {
   depends_on                          = [pingfederate_oauth_server_settings.oauth_authserversettings]
 }
 
+resource "pingfederate_idp_sp_connection" "aog_parts_exchange" {
+  connection_id = "aog-parts-exchange"
+  active        = true
+  contact_info = {
+    company = "ciam-platform"
+  }
+  credentials = {
+    signing_settings = {
+      algorithm = "SHA256withRSA"
+      signing_key_pair_ref = {
+        id = "signing-2025"
+      }
+    }
+  }
+  entity_id = "https://parts.aog-exchange.test/saml/sp"
+  name      = "aog-parts-exchange"
+  sp_browser_sso = {
+    adapter_mappings = [
+      {
+        attribute_contract_fulfillment = {
+          SAML_SUBJECT = {
+            source = {
+              id   = "user-directory"
+              type = "LDAP_DATA_STORE"
+            }
+            value = "uid"
+          }
+          company = {
+            source = {
+              id   = "user-directory"
+              type = "LDAP_DATA_STORE"
+            }
+            value = "companyId"
+          }
+          email = {
+            source = {
+              id   = "user-directory"
+              type = "LDAP_DATA_STORE"
+            }
+            value = "mail"
+          }
+        }
+        idp_adapter_ref = {
+          id = "htmlform"
+        }
+      },
+    ]
+    assertion_lifetime = {
+      minutes_after  = 5
+      minutes_before = 5
+    }
+    attribute_contract = {
+      core_attributes = [
+        {
+          name = "SAML_SUBJECT"
+        },
+      ]
+      extended_attributes = [
+        {
+          name = "company"
+        },
+        {
+          name = "email"
+        },
+      ]
+    }
+    enabled_profiles = ["SP_INITIATED_SSO"]
+    protocol         = "SAML20"
+    sso_service_endpoints = [
+      {
+        binding    = "POST"
+        is_default = true
+        url        = "https://parts.aog-exchange.test/saml/acs"
+      },
+    ]
+  }
+  depends_on = [pingfederate_oauth_client.mobile_ops, pingfederate_oauth_client.reports_api, pingfederate_oauth_client.tech_pubs_web]
+}
+
 resource "pingfederate_idp_sp_connection" "customer_portal" {
   connection_id = "customer-portal"
   active        = true
@@ -772,7 +851,7 @@ resource "pingfederate_sp_idp_connection" "harbor_mro_federation" {
     protocol = "SAML20"
   }
   name       = "harbor-mro-federation"
-  depends_on = [pingfederate_idp_sp_connection.customer_portal, pingfederate_idp_sp_connection.supplier_portal]
+  depends_on = [pingfederate_idp_sp_connection.aog_parts_exchange, pingfederate_idp_sp_connection.customer_portal, pingfederate_idp_sp_connection.supplier_portal]
 }
 
 resource "pingfederate_sp_idp_connection" "skyline_air_federation" {
@@ -849,7 +928,7 @@ resource "pingfederate_sp_idp_connection" "skyline_air_federation" {
     protocol = "SAML20"
   }
   name       = "skyline-air-federation"
-  depends_on = [pingfederate_idp_sp_connection.customer_portal, pingfederate_idp_sp_connection.supplier_portal]
+  depends_on = [pingfederate_idp_sp_connection.aog_parts_exchange, pingfederate_idp_sp_connection.customer_portal, pingfederate_idp_sp_connection.supplier_portal]
 }
 
 resource "pingfederate_server_settings" "serversettings" {

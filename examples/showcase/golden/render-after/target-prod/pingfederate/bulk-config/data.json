@@ -562,6 +562,86 @@
         {
           "active": true,
           "contactInfo": {
+            "company": "ciam-platform"
+          },
+          "credentials": {
+            "signingSettings": {
+              "algorithm": "SHA256withRSA",
+              "signingKeyPairRef": {
+                "id": "signing-2025"
+              }
+            }
+          },
+          "entityId": "https://parts.aog-exchange.test/saml/sp",
+          "id": "aog-parts-exchange",
+          "name": "aog-parts-exchange",
+          "spBrowserSso": {
+            "adapterMappings": [
+              {
+                "attributeContractFulfillment": {
+                  "SAML_SUBJECT": {
+                    "source": {
+                      "id": "user-directory",
+                      "type": "LDAP_DATA_STORE"
+                    },
+                    "value": "uid"
+                  },
+                  "company": {
+                    "source": {
+                      "id": "user-directory",
+                      "type": "LDAP_DATA_STORE"
+                    },
+                    "value": "companyId"
+                  },
+                  "email": {
+                    "source": {
+                      "id": "user-directory",
+                      "type": "LDAP_DATA_STORE"
+                    },
+                    "value": "mail"
+                  }
+                },
+                "idpAdapterRef": {
+                  "id": "htmlform"
+                }
+              }
+            ],
+            "assertionLifetime": {
+              "minutesAfter": 5,
+              "minutesBefore": 5
+            },
+            "attributeContract": {
+              "coreAttributes": [
+                {
+                  "name": "SAML_SUBJECT"
+                }
+              ],
+              "extendedAttributes": [
+                {
+                  "name": "company"
+                },
+                {
+                  "name": "email"
+                }
+              ]
+            },
+            "enabledProfiles": [
+              "SP_INITIATED_SSO"
+            ],
+            "protocol": "SAML20",
+            "ssoServiceEndpoints": [
+              {
+                "binding": "POST",
+                "isDefault": true,
+                "url": "https://parts.aog-exchange.test/saml/acs"
+              }
+            ]
+          },
+          "type": "SP"
+        },
+        {
+          "active": true,
+          "contactInfo": {
             "company": "customer-portal-team"
           },
           "credentials": {

@@ -84,6 +84,24 @@ resource "aws_security_group" "pf_engine" {
   }
 }
 
+resource "aws_security_group" "sm_agent" {
+  name        = "ciam-stage-sm-agent"
+  description = "CIAM sm-agent (source/stage)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_security_group" "sm_policy_server" {
+  name        = "ciam-stage-sm-policy-server"
+  description = "CIAM sm-policy-server (source/stage)"
+  vpc_id      = data.aws_vpc.main.id
+  tags = {
+    ManagedBy = "opsdir"
+  }
+}
+
 resource "aws_vpc_security_group_ingress_rule" "fw_admin_0_4444" {
   security_group_id = aws_security_group.ds.id
   cidr_ipv4         = "10.20.9.0/28"
@@ -448,6 +466,25 @@ resource "aws_instance" "am_s1" {
   }
 }
 
+resource "aws_instance" "crew_web_s1" {
+  ami                    = "ami-0d3e4f5a6b7c80234"
+  instance_type          = "m6i.large"
+  subnet_id              = data.aws_subnet.subnet_ig_a.id
+  private_ip             = "10.20.10.52"
+  vpc_security_group_ids = [aws_security_group.sm_agent.id]
+  root_block_device {
+    encrypted  = true
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  }
+  tags = {
+    Name      = "crew-web-s1"
+    Role      = "sm-agent"
+    Hostname  = "crew-web-s1.aws.internal.example-aero.test"
+    Product   = "SiteMinder Web Agent 12.8.8"
+    ManagedBy = "opsdir"
+  }
+}
+
 resource "aws_instance" "ds_s1" {
   ami                    = "ami-0abcdef1234567890"
   instance_type          = "m6i.large"
@@ -542,6 +579,25 @@ resource "aws_instance" "pf_engine_s1" {
     Role      = "pf-engine"
     Hostname  = "pf-engine-s1.aws.internal.example-aero.test"
     Product   = "PingFederate 12.1.4"
+    ManagedBy = "opsdir"
+  }
+}
+
+resource "aws_instance" "sm_ps_s1" {
+  ami                    = "ami-0d3e4f5a6b7c80234"
+  instance_type          = "m6i.large"
+  subnet_id              = data.aws_subnet.subnet_ig_a.id
+  private_ip             = "10.20.10.51"
+  vpc_security_group_ids = [aws_security_group.sm_policy_server.id]
+  root_block_device {
+    encrypted  = true
+    kms_key_id = "arn:aws:kms:us-east-1:111122223333:key/mrk-1234abcd12ab34cd56ef1234567890ab"
+  }
+  tags = {
+    Name      = "sm-ps-s1"
+    Role      = "sm-policy-server"
+    Hostname  = "sm-ps-s1.aws.internal.example-aero.test"
+    Product   = "SiteMinder 12.8.8"
     ManagedBy = "opsdir"
   }
 }

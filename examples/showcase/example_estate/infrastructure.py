@@ -29,6 +29,9 @@ DS_V, PF_V, AM_V, IDM_V, IG_V = ("PingDS 7.5.1", "PingFederate 12.1.4", "PingAM 
                                  "PingGateway 2024.11.0")
 DS_N, PF_N, AM_N, IDM_N, IG_N = ("PingDS 8.1.2", "PingFederate 13.1.3", "PingAM 8.1.1", "PingIDM 8.1.2",
                                  "PingGateway 2026.9.0")
+# production still runs SiteMinder for the crew portal: a Policy Server and the portal's web server with its Web Agent
+# (the move retires both: the target runs neither)
+SM_V, WA_V = "SiteMinder 12.8.8", "SiteMinder Web Agent 12.8.8"
 # where each role's product is installed on its servers (ciamInstallRoot): the base its log files are found under
 # (PingFederate's carries its version)
 INSTALL_ROOTS = {"ds": "/opt/ping/opendj", "am": "/opt/ping/am", "idm": "/opt/ping/openidm", "ig": "/opt/ping/ig"}
@@ -43,7 +46,7 @@ IMG = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ci
 SOURCE = MappingProxyType({
     "stack": (("provider", "aws"), ("configuration-management", "ansible"), ("directory", "pingds"),
               ("federation", "pingfederate"), ("access", "pingam"), ("identity-management", "pingidm"),
-              ("gateway", "pinggateway"), ("siem", "splunk")),
+              ("gateway", "pinggateway"), ("siem", "splunk"), ("legacy-access", "siteminder")),
     "net": ("vpc", "vpc-0a1b2c3d4e5f67890", "10.20.0.0/16"),
     "subnets": [("subnet-ds-a", "subnet-ds", "subnet-0a11b22c33d44e55a", "10.20.1.0/24", "us-east-1a"),
                 ("subnet-ds-b", "subnet-ds", "subnet-0a11b22c33d44e55b", "10.20.2.0/24", "us-east-1b"),
@@ -141,7 +144,11 @@ SOURCE = MappingProxyType({
                 ("idm-1", "idm", "idm-1.aws.internal.example-aero.test", "10.20.6.21", "us-east-1a", "m6i.large",
                  "ami-0b1c2d3e4f5a60987", "subnet-idm-a", IDM_V),
                 ("ig-1", "ig", "ig-1.aws.internal.example-aero.test", "10.20.10.21", "us-east-1a", "m6i.large",
-                 "ami-0c2d3e4f5a6b70123", "subnet-ig-a", IG_V)],
+                 "ami-0c2d3e4f5a6b70123", "subnet-ig-a", IG_V),
+                ("sm-ps-1", "sm-policy-server", "sm-ps-1.aws.internal.example-aero.test", "10.20.10.41", "us-east-1a",
+                 "m6i.large", "ami-0d3e4f5a6b7c80234", "subnet-ig-a", SM_V),
+                ("crew-web-1", "sm-agent", "crew-web-1.aws.internal.example-aero.test", "10.20.10.42", "us-east-1a",
+                 "m6i.large", "ami-0d3e4f5a6b7c80234", "subnet-ig-a", WA_V)],
 })
 TARGET = MappingProxyType({
     # AM, IDM, PingGateway and PingFederate run on AKS here (compute: ForgeOps and ping-devops deploy them); the
@@ -566,7 +573,12 @@ STAGE_SERVERS = (("ds-s1", "ds", "10.20.1.31", "us-east-1a", "subnet-ds-a", "ami
                  ("pf-admin-s1", "pf-admin", "10.20.4.32", "us-east-1a", "subnet-pf-a", "ami-0fedcba9876543210", PF_V),
                  ("am-s1", "am", "10.20.7.31", "us-east-1a", "subnet-am-a", "ami-0a9b8c7d6e5f40321", AM_V),
                  ("idm-s1", "idm", "10.20.6.31", "us-east-1a", "subnet-idm-a", "ami-0b1c2d3e4f5a60987", IDM_V),
-                 ("ig-s1", "ig", "10.20.10.31", "us-east-1a", "subnet-ig-a", "ami-0c2d3e4f5a6b70123", IG_V))
+                 ("ig-s1", "ig", "10.20.10.31", "us-east-1a", "subnet-ig-a", "ami-0c2d3e4f5a6b70123", IG_V),
+                 # stage's own SiteMinder for the crew portal (it inherits production's stack)
+                 ("sm-ps-s1", "sm-policy-server", "10.20.10.51", "us-east-1a", "subnet-ig-a", "ami-0d3e4f5a6b7c80234",
+                  SM_V),
+                 ("crew-web-s1", "sm-agent", "10.20.10.52", "us-east-1a", "subnet-ig-a", "ami-0d3e4f5a6b7c80234",
+                  WA_V))
 # consumers reach production only (its firewall rules, its LDAPS endpoint service); the private endpoint and the egress
 # firewall are the shared VPC's, kept by production's root; stage's disks aren't snapshotted or backed up (stage is
 # rebuilt, and a backup selection by tag in the shared account would back up production's volumes twice); the

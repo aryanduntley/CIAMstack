@@ -3,6 +3,7 @@ import pytest
 from opsdir.connectors.registry import environment, required_roles
 from opsdir.core.environment import (by_role, env_dn, env_model, joins, of_class, one_role, secret, servers_with_role,
                                      subnet_of, with_required_roles)
+from example_estate.infrastructure import SOURCE
 
 
 def test_env_dn_expands_specs_and_passes_full_dns_through():
@@ -18,7 +19,7 @@ def test_unknown_environment_exits(estate):
 def test_env_model_resolves_cloud_servers_and_bindings(estate):
     m = env_model(estate["before"], "source/prod")
     assert (m.provider, m.label, m.unbound) == ("aws", "source/prod", ())
-    assert len(m.servers) == 10 and all("ciamServer" in s.classes for s in m.servers)
+    assert len(m.servers) == len(SOURCE["servers"]) and all("ciamServer" in s.classes for s in m.servers)
     assert one_role(m, "network").dn.startswith("cn=vpc,")
     assert one_role(m, "no-such-role") is None
     assert len(by_role(m, "subnet-ds")) == 3
@@ -43,10 +44,12 @@ def test_required_roles_decide_what_is_unbound(estate):
 
 def test_adapters_are_chosen_from_directory_data(estate):
     kits = ("forgeops", "kubernetes", "ping-devops", "prometheus")    # AM, IDM, IG and PingFederate on AKS; its rules
-    for spec, provider, platform in (("source/prod", "aws", ("ansible", "splunk")), ("target/prod", "azure", kits)):
+    # production still runs SiteMinder (the crew portal); the target doesn't
+    for spec, provider, platform, legacy in (("source/prod", "aws", ("ansible", "splunk"), ("siteminder",)),
+                                             ("target/prod", "azure", kits, ())):
         m, adapters = environment(estate["before"], spec)
         assert [a.name for a in adapters] == [provider, *platform, "pingam", "pingds", "pingfederate", "pinggateway",
-                                              "pingidm"]
+                                              "pingidm", *legacy]
         assert m.unbound == (("backup-target",) if provider == "azure" else ())
         assert "backup-target" in required_roles(adapters)
 

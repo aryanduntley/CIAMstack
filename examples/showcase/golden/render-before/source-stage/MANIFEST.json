@@ -148,10 +148,25 @@
       "format": "yaml",
       "sha256": "72bcddd10741ec443c0fdf24c7e20901789b808252a25b392f522044cc1a4434"
     },
+    "ansible/inventory/group_vars/sm_agent.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "d4ad3627438c691122b9e9ddb36440aec95123eb02ec154c80cc1136ca7f6bcc"
+    },
+    "ansible/inventory/group_vars/sm_policy_server.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "9c6e505796855d3e16f3d60a9ba3c60bf664206791bf771baefc53d12297ac83"
+    },
     "ansible/inventory/host_vars/am-s1.aws.internal.example-aero.test.yml": {
       "scope": "environment-specific",
       "format": "yaml",
       "sha256": "6b30ea8d89ada8cf8f596035785902411906fc2f410cdc7f5e3cea9f4feed99d"
+    },
+    "ansible/inventory/host_vars/crew-web-s1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "f780c61b44daf241dfe84f208a4350e75b52c362ae9c1bbda84835932178b22c"
     },
     "ansible/inventory/host_vars/ds-s1.aws.internal.example-aero.test.yml": {
       "scope": "environment-specific",
@@ -178,10 +193,15 @@
       "format": "yaml",
       "sha256": "aca77e69784b4fe0904e3afee5a9298d8365f21aa9bd22b99657a72c078e4ac4"
     },
+    "ansible/inventory/host_vars/sm-ps-s1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "2a2cf6df52f998f2284aabe82b7472bea7c85726bbfe34200a906d4dff8b88c2"
+    },
     "ansible/inventory/hosts.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "9fc1be645bad0ca1f7682a2b9cdf86786d77d98978d37f18cc855f43314ad1ea"
+      "sha256": "595e4b118278cf8c84b186671a5cb2e9c0ba882706da005fbb71e26f7a8c84c4"
     },
     "ansible/requirements.yml": {
       "scope": "environment-specific",
@@ -412,7 +432,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "87a7fa772f29418930d7e3c848c8314cb8eef6fa2fcc6fafe6c16e182d207090"
+      "sha256": "f7877f864dc941036c6430cad24ef3eb91861f1789ee81218b06c8c1623b7145"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

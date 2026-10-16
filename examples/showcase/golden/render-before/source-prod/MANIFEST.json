@@ -122,6 +122,16 @@
       "format": "yaml",
       "sha256": "8a788894e1c84a4f42d718a84d7ee33ccf47fb59ccdd5ca9bb8b2868443f3e8a"
     },
+    "ansible/inventory/group_vars/sm_agent.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "625702be9f5e7357b077d4565caee7df31bc6b7c55e49f10a13d690ad12a604b"
+    },
+    "ansible/inventory/group_vars/sm_policy_server.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "1624ffbcdab405a95ebd978e6258fd2f9213ecdcce4e0f14564d4251f7458413"
+    },
     "ansible/inventory/host_vars/am-1.aws.internal.example-aero.test.yml": {
       "scope": "environment-specific",
       "format": "yaml",
@@ -131,6 +141,11 @@
       "scope": "environment-specific",
       "format": "yaml",
       "sha256": "dcaca23904058b9a57faa06954a2c71d7955d959516e6ba48749df3d4f367be9"
+    },
+    "ansible/inventory/host_vars/crew-web-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "45eec281dc4604bb05bc54aa3371ebf8c13019acc1c870ba7c74215ef3a9a7f2"
     },
     "ansible/inventory/host_vars/ds-1.aws.internal.example-aero.test.yml": {
       "scope": "environment-specific",
@@ -172,10 +187,15 @@
       "format": "yaml",
       "sha256": "d72eb9cfd6e423c657e45706368dfdf9b823acfae2941c12399afa8c16fb6de2"
     },
+    "ansible/inventory/host_vars/sm-ps-1.aws.internal.example-aero.test.yml": {
+      "scope": "environment-specific",
+      "format": "yaml",
+      "sha256": "5c2510fef96f8cf89d553319eecdb373620e38172221b0650d3ec1b4e62aab46"
+    },
     "ansible/inventory/hosts.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "6842311d16a697a0a26c33df8efb95f27325e8a100bd0c3ec444399e75cac693"
+      "sha256": "d0af1efbbf53ee118b30765f212ae68c47b63a9f091b0e5683ecdc6afbe17aed"
     },
     "ansible/requirements.yml": {
       "scope": "environment-specific",
@@ -441,7 +461,7 @@
     "terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "2fe84029f64f501a0c9666554b7c5c351d4c61717b70c36ad8d82174ff478fae"
+      "sha256": "1e91788095ee5558190f61b2e37d7b623cedf40d354614ebb34241466ba60024"
     },
     "terraform/providers.tf": {
       "scope": "environment-specific",

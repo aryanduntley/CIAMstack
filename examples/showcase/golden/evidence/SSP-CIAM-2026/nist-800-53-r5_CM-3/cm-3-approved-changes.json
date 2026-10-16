@@ -323,6 +323,24 @@
       "Record the PingAccess web session's credential role and the header Tech Pubs trusts for who the user is",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2063,ou=changes,dc=ciam-ops",
+      "Read the SiteMinder policy store's export (the crew portal and the AOG Parts Exchange partnership) into the record, its secrets withheld",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2064,ou=changes,dc=ciam-ops",
+      "Own what SiteMinder holds until it is retired; move AOG Parts Exchange to PingFederate (sso)",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2065,ou=changes,dc=ciam-ops",
+      "Read back PingFederate's AOG Parts Exchange SP connection as the platform team configured it",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

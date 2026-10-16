@@ -23,7 +23,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2367
+          "line": 2423
         }
       ]
     },
@@ -44,7 +44,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2029
+          "line": 2085
         }
       ]
     },
@@ -64,7 +64,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 733
+          "line": 789
         }
       ]
     },
@@ -84,11 +84,11 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 1356
+          "line": 1412
         },
         {
           "path": "terraform/main.tf",
-          "line": 1658
+          "line": 1714
         }
       ]
     },
@@ -149,7 +149,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2333
+          "line": 2389
         }
       ]
     },
@@ -169,7 +169,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2362
+          "line": 2418
         }
       ]
     },
@@ -189,7 +189,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2388
+          "line": 2444
         }
       ]
     },
@@ -209,7 +209,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2530
+          "line": 2586
         }
       ]
     },
@@ -229,7 +229,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2428
+          "line": 2484
         }
       ]
     },
@@ -249,7 +249,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 1710
+          "line": 1766
         }
       ]
     },
@@ -269,7 +269,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 1712
+          "line": 1768
         }
       ]
     },
@@ -327,7 +327,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 2083
+          "line": 2139
         }
       ]
     }

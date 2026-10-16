@@ -1,4 +1,4 @@
-rendered 88 files for env=prod,cloud=source,ou=environments,dc=ciam-ops (aws) → <OUT>/render-before/source-prod
+rendered 92 files for env=prod,cloud=source,ou=environments,dc=ciam-ops (aws) → <OUT>/render-before/source-prod
 notes: 1 blocker, 13 actions, 2 notes, 0 to review (see <OUT>/render-before/source-prod/NOTES.md)
   BLOCKER guardduty: runs in every region, but the region catalog holds no aws regions (`opsdir prerequisites`): only us-east-1 renders [ciam-platform]
 exit 0

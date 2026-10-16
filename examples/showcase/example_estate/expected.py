@@ -142,6 +142,22 @@ EXPECTED = MappingProxyType({
         ("B67", "Binding", "Role `techpubs-service` is bound in source/prod but not in target/prod",
          "the same missing service name, from the core role check (its fix binds it like the source does)", None,
          "CHG-2060"),
+        # SiteMinder still protects the crew portal in production (CHG-2063 reads its policy store): the target runs
+        # none of it; CHG-2064 moves its one partnership, AOG Parts Exchange, to PingFederate
+        ("B70", "Consumer", "Consumer `siteminder-ps`",
+         "SiteMinder's directory bind account is only 'identified': it retires with SiteMinder, which nobody has "
+         "recorded against the target", None),
+        ("B71", "SiteMinder", "Realm `crew-portal/crew` (resources `/crew/`) is protected by `sm-agent` servers",
+         "nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop",
+         None, "CHG-2063"),
+        ("B72", "Source objects", "Source object `custom-scheme-crew-badge`",
+         "the crew badge sign-on is SiteMinder custom code (library crewbadgeauth): rebuilt before the portal moves",
+         None, "CHG-2063"),
+        ("B73", "Edge", "Header `SM_USER` (contract `crew-portal-sm_user`) is set by `sm-agent` servers",
+         "the crew portal's header-based sign-on has no setter in the target", None, "CHG-2063"),
+        ("B74", "Identity service", "`siteminder` publishes `wam.example-aero.test`",
+         "SiteMinder's federation address has no service name in the record: nothing shows the partners keep it",
+         None, "CHG-2063"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -551,6 +567,21 @@ EXPECTED = MappingProxyType({
          "the PingAccess servers were recorded without their hosts' baselines", None, "CHG-2060"),
         ("A187", "Host", "Server role `pa-engine` has no host baseline that applies in target/prod",
          "the PingAccess servers were recorded without their hosts' baselines", None, "CHG-2060"),
+        # what SiteMinder holds that no standard entry does (CHG-2063): source objects for their owners (CHG-2064)
+        ("A191", "Source objects", "Source object `aco-crew-aco`",
+         "the crew web agent's settings (cookie domain, logout, ignored extensions) are rebuilt in a gateway", None,
+         "CHG-2063"),
+        ("A192", "Source objects", "Source object `cookie-crew-portal-crew-identity-crewbase`",
+         "the crew portal's CREWBASE cookie has no standard equivalent", None, "CHG-2063"),
+        ("A193", "Source objects", "Source object `hco-defaulthostsettings`",
+         "the agents' host configuration retires with SiteMinder", None, "CHG-2063"),
+        ("A194", "Source objects", "Source object `keys`",
+         "SiteMinder's agent, session and federation keys are never in the export: the target makes its own", None,
+         "CHG-2063"),
+        ("A195", "Source objects", "Source object `trusted-host-crew-web-1`",
+         "the crew web server's trusted-host registration doesn't carry over", None, "CHG-2063"),
+        ("A196", "Edge", "Clients can send header `SM_USER` themselves",
+         "nothing records that SiteMinder's agent strips the client's own SM_USER header", None, "CHG-2063"),
     ],
 })
 

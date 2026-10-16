@@ -338,6 +338,16 @@ objectClass: organizationalUnit
 ou: settings
 description: Estate settings the platform's managers give a value
 
+dn: ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: siteminder
+
+dn: ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: source-objects
+
 dn: ou=tag-policy,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -756,6 +766,40 @@ ciamSkeleton:: ewogICJtZXRhZGF0YSI6IHsKICAgICJyZWFsbSI6ICR77oCAL21ldGFkYXRhL3J
  cHBvcnRlZElEVG9rZW5TaWduaW5nQWxnb3JpdGhtcy8w7oCBfQogICAgICBdCiAgICB9CiAgfQp9C
  g==
 ciamTargetRole: am
+
+dn: cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamIntegration
+objectClass: smObject
+objectClass: pingfedHeldSettings
+cn: aog-parts-exchange
+ciamAcsUrl: https://parts.aog-exchange.test/saml/acs
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamEntityId: https://parts.aog-exchange.test/saml/sp
+ciamNameIdFormat: emailAddress
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProtocolType: saml2-sp
+ciamSamlBinding: HTTP-POST
+ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
+pingfedConfig: {"active":true,"contactInfo":{"company":"ciam-platform"},"crede
+ ntials":{"signingSettings":{"algorithm":"SHA256withRSA","signingKeyPairRef":{
+ "id":"signing-2025"}}},"entityId":"https://parts.aog-exchange.test/saml/sp","
+ id":"aog-parts-exchange","name":"aog-parts-exchange","spBrowserSso":{"adapter
+ Mappings":[{"attributeContractFulfillment":{"SAML_SUBJECT":{"source":{"id":"u
+ ser-directory","type":"LDAP_DATA_STORE"},"value":"uid"},"company":{"source":{
+ "id":"user-directory","type":"LDAP_DATA_STORE"},"value":"companyId"},"email":
+ {"source":{"id":"user-directory","type":"LDAP_DATA_STORE"},"value":"mail"}},"
+ idpAdapterRef":{"id":"htmlform"}}],"assertionLifetime":{"minutesAfter":5,"min
+ utesBefore":5},"attributeContract":{"coreAttributes":[{"name":"SAML_SUBJECT"}
+ ],"extendedAttributes":[{"name":"company"},{"name":"email"}]},"enabledProfile
+ s":["SP_INITIATED_SSO"],"protocol":"SAML20","ssoServiceEndpoints":[{"binding"
+ :"POST","isDefault":true,"url":"https://parts.aog-exchange.test/saml/acs"}]},
+ "type":"SP"}
+pingfedSourceVersion: 12.1.4.0
+smClass: CA.FED::SPPartnership
+smWithheld: BackchannelPassword: the password of the partnership's back channe
+ l; re-provision in the target
+smXid: CA.FED::SPPartnership@32-d6f13a85-aog
 
 dn: cn=appEntitlement,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -1608,6 +1652,36 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the PingAccess web session's credential role and the header 
  Tech Pubs trusts for who the user is
 
+dn: cn=CHG-2063,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2063
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the SiteMinder policy store's export (the crew portal and the 
+ AOG Parts Exchange partnership) into the record, its secrets withheld
+
+dn: cn=CHG-2064,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2064
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Own what SiteMinder holds until it is retired; move AOG Parts Excha
+ nge to PingFederate (sso)
+
+dn: cn=CHG-2065,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2065
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read back PingFederate's AOG Parts Exchange SP connection as the pl
+ atform team configured it
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1800,6 +1874,20 @@ cn: cost-center
 ciamTagKey: CostCenter
 ciamTagSource: cost-center
 description: Every rendered resource carries CostCenter
+
+dn: cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
+objectClass: top
+objectClass: ciamHeaderContract
+objectClass: smObject
+cn: crew-portal-sm_user
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamHeaderKind: identity
+ciamHeaderName: SM_USER
+ciamHeaderValue: attribute uid
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSetByRole: sm-agent
+smClass: CA.SM::ResponseAttr
+smXid: CA.SM::ResponseAttr@0b-0f93c2a7-sm-user
 
 dn: cn=customer-portal,ou=applications,dc=ciam-ops
 objectClass: top
@@ -3855,43 +3943,9 @@ objectClass: top
 objectClass: ciamObject
 objectClass: ciamImportRun
 cn: pingfederate.bulk.shared
-ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
-ciamImportScope: cn=pf-signing-2025,ou=certificates,dc=ciam-ops
-ciamImportScope: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
-ciamImportScope: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
-ciamImportScope: cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops
-ciamImportScope: cn=customer-portal-sp-signing,ou=certificates,dc=ciam-ops
-ciamImportScope: cn=supplier-portal-sp-signing,ou=certificates,dc=ciam-ops
-ciamImportScope: cn=customer-portal,ou=integrations,dc=ciam-ops
-ciamImportScope: cn=supplier-portal,ou=integrations,dc=ciam-ops
-ciamImportScope: cn=harbor-mro-federation,ou=integrations,dc=ciam-ops
-ciamImportScope: cn=skyline-air-federation,ou=integrations,dc=ciam-ops
-ciamImportScope: cn=mobile-ops,ou=integrations,dc=ciam-ops
-ciamImportScope: cn=tech-pubs,ou=integrations,dc=ciam-ops
-ciamImportScope: cn=reports-api,ou=integrations,dc=ciam-ops
-ciamImportScope: cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=c
- iam-ops
-ciamImportScope: cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=cia
- m-ops
-ciamImportScope: cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-op
- s
-ciamImportScope: cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-op
- s
-ciamImportScope: cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam
- -ops
-ciamImportScope: cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=oauth-auth-server,ou=settings,ou=pingfederate,dc=ciam-ops
-ciamImportScope: ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops
-ciamImportScope: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc
- =ciam-ops
-ciamImportScope: cn=noreply@example-aero.test,ou=mail-senders,dc=ciam-ops
-ciamImportScope: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
-ciamImportedAt: 20260920030000Z
+ciamChangeRef: cn=CHG-2065,ou=changes,dc=ciam-ops
+ciamImportScope: cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
 ciamImporter: pingfederate/bulk
 
 dn: cn=pingfederate.node-files.shared,ou=imports,dc=ciam-ops
@@ -4226,6 +4280,53 @@ ciamWafExclusion: core-rules on saml-post body:SAMLResponse
 ciamWafMode: block
 description: What protects sign-on: managed rules, bots, sign-in and token rat
  e limits
+
+dn: cn=siteminder,ou=identity-services,dc=ciam-ops
+objectClass: top
+objectClass: ciamIdentityService
+cn: siteminder
+ciamBaseUrl: https://wam.example-aero.test
+ciamEntityId: https://wam.example-aero.test/affwebservices/public/saml2sso
+ciamTargetRole: sm-policy-server
+
+dn: cn=siteminder-ps,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: siteminder-ps
+ciamBindDn: uid=siteminder-ps,ou=service-accounts,dc=partners,dc=example-aero,
+ dc=test
+ciamCriticality: high
+ciamFirstSeen: 20190604000000Z
+ciamMigrationStatus: identified
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReviewedOn: 20260302000000Z
+
+dn: cn=siteminder.xps.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: siteminder.xps.shared
+ciamChangeRef: cn=CHG-2063,ou=changes,dc=ciam-ops
+ciamImportScope: cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+ciamImportScope: cn=crew-web-agent,ou=agents,ou=siteminder,dc=ciam-ops
+ciamImportScope: cn=crew-badge,ou=auth-schemes,ou=siteminder,dc=ciam-ops
+ciamImportScope: cn=example-aero-directory,ou=user-directories,ou=siteminder,d
+ c=ciam-ops
+ciamImportScope: cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
+ciamImportScope: cn=aco-crew-aco,ou=siteminder,ou=source-objects,dc=ciam-ops
+ciamImportScope: cn=hco-defaulthostsettings,ou=siteminder,ou=source-objects,dc
+ =ciam-ops
+ciamImportScope: cn=trusted-host-crew-web-1,ou=siteminder,ou=source-objects,dc
+ =ciam-ops
+ciamImportScope: cn=cookie-crew-portal-crew-identity-crewbase,ou=siteminder,ou
+ =source-objects,dc=ciam-ops
+ciamImportScope: cn=custom-scheme-crew-badge,ou=siteminder,ou=source-objects,d
+ c=ciam-ops
+ciamImportScope: cn=keys,ou=siteminder,ou=source-objects,dc=ciam-ops
+ciamImportScope: cn=siteminder,ou=identity-services,dc=ciam-ops
+ciamImportScope: cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: siteminder/xps
 
 dn: cn=skyline-air,ou=owners,dc=ciam-ops
 objectClass: top
@@ -4881,10 +4982,20 @@ objectClass: top
 objectClass: organizationalUnit
 ou: access-token-managers
 
+dn: ou=agents,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: agents
+
 dn: ou=applications,ou=pingaccess,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: applications
+
+dn: ou=auth-schemes,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: auth-schemes
 
 dn: ou=authentication-policies,ou=pingfederate,dc=ciam-ops
 objectClass: top
@@ -4921,6 +5032,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: declared
 description: Desired, environment-neutral DS configuration
+
+dn: ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: domains
 
 dn: ou=held,ou=pingaccess,dc=ciam-ops
 objectClass: top
@@ -5008,10 +5124,20 @@ objectClass: top
 objectClass: organizationalUnit
 ou: settings
 
+dn: ou=siteminder,ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: siteminder
+
 dn: ou=sites,ou=pingaccess,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: sites
+
+dn: ou=user-directories,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: user-directories
 
 dn: ou=virtual-hosts,ou=pingaccess,dc=ciam-ops
 objectClass: top
@@ -5433,6 +5559,26 @@ ciamLocator: /heap/0/name
 ciamSettingRaw: "SystemAndEnvSecretStore-1"
 ciamSettingValue: SystemAndEnvSecretStore-1
 
+dn: cn=aco-crew-aco,ou=siteminder,ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSourceObject
+objectClass: smObject
+cn: aco-crew-aco
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamHandling: rebuild
+ciamHow: the agent settings it holds (cookie domain, logout, ignored extension
+ s, URL checks, caching) become the settings of the gateway or agent that prot
+ ects these resources in the target
+ciamImportedAt: 20260923090000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSourceClass: CA.SM::AgentConfig
+ciamSourceFact: Parameters CookieDomain=.example-aero.test, LogOffUri=/crew/lo
+ gout, IgnoreExt=.gif,.png,.css,.js
+ciamTargetRole: sm-agent
+smClass: CA.SM::AgentConfig
+smXid: CA.SM::AgentConfig@25-8c3f5d10-crew-aco
+
 dn: cn=ad3d342eed225ff6,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops
 objectClass: top
 objectClass: ciamOccurrence
@@ -5787,6 +5933,26 @@ cn: CIAM-TARGET
 ciamInventoryAt: 20260923090000Z
 ciamInventoryState: complete
 
+dn: cn=cookie-crew-portal-crew-identity-crewbase,ou=siteminder,ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSourceObject
+objectClass: smObject
+cn: cookie-crew-portal-crew-identity-crewbase
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamHandling: rebuild
+ciamHow: set the cookie from the identity mapping of the gateway that protects
+  the realm in the target
+ciamImportedAt: 20260923090000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSourceClass: CA.SM::ResponseAttr
+ciamSourceFact: AgentTypeAttr WebAgent-HTTP-Cookie-Variable
+ciamSourceFact: Name CREWBASE
+ciamSourceFact: Value attribute companyId
+ciamTargetRole: sm-agent
+smClass: CA.SM::ResponseAttr
+smXid: CA.SM::ResponseAttr@0b-6a24d8e1-crew-base
+
 dn: cn=cores,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
 objectClass: top
 objectClass: ciamQuotaLimit
@@ -5819,6 +5985,46 @@ ciamQuotaKind: vcpus
 ciamQuotaUsage: 12
 ciamQuotaValue: 72
 
+dn: cn=crew-badge,ou=auth-schemes,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smAuthScheme
+objectClass: smObject
+cn: crew-badge
+smClass: CA.SM::AuthScheme
+smConfig: {"Param":["badge+pin;fallback=/crew/login"]}
+smLibrary: crewbadgeauth
+smProtectionLevel: 20
+smSchemeType: Custom Template
+smWithheld: Secret: a secret the object is configured with; re-provision in th
+ e target
+smXid: CA.SM::AuthScheme@0d-6b2e91f3-crew-badge
+
+dn: cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smPolicyDomain
+objectClass: smObject
+cn: crew-portal
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+description: Crew scheduling and roster swaps
+smClass: CA.SM::Domain
+smXid: CA.SM::Domain@03-7a1e2c9b-crew
+
+dn: cn=crew-web-agent,ou=agents,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smAgent
+objectClass: smObject
+cn: crew-web-agent
+ciamTargetRole: sm-agent
+smAgentType: Web Agent
+smClass: CA.SM::Agent
+smWithheld: SharedSecret: the shared secret an agent or trusted host signs its
+  requests with; re-provision in the target
+smXid: CA.SM::Agent@01-4f1c7a2e-crew-web
+
 dn: cn=crl-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -5838,6 +6044,33 @@ cn: crl-2
 ciamEndpointUrl: http://pki.example-aero.test/CertEnroll/Example Aero Issuing 
  CA 2.crl
 ciamRevocationKind: crl
+
+dn: cn=custom-scheme-crew-badge,ou=siteminder,ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSourceObject
+objectClass: smObject
+cn: custom-scheme-crew-badge
+ciamBlocking: TRUE
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamConcerns: cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=cia
+ m-ops
+ciamHandling: rebuild
+ciamHow: its library runs the operator's own sign-on code: rebuild that sign-o
+ n in the target's federation or access product before the realms using it mov
+ e
+ciamImportedAt: 20260923090000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSourceClass: CA.SM::AuthScheme
+ciamSourceFact: Level 20
+ciamSourceFact: Library crewbadgeauth
+ciamSourceFact: Param badge+pin;fallback=/crew/login
+ciamSourceFact: Type Custom Template
+ciamTargetRole: sm-policy-server
+smClass: CA.SM::AuthScheme
+smWithheld: Secret: a secret the object is configured with; re-provision in th
+ e target
+smXid: CA.SM::AuthScheme@0d-6b2e91f3-crew-badge
 
 dn: cn=d3463ecca0c1772f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
@@ -6088,6 +6321,24 @@ ciamEvidenceQueryRef: cn=cm-3-history,ou=evidence-queries,dc=ciam-ops
 ciamEvidenceQueryRef: cn=sc-12-credentials,ou=evidence-queries,dc=ciam-ops
 ciamEvidenceQueryRef: cn=sc-12-keys,ou=evidence-queries,dc=ciam-ops
 
+dn: cn=example-aero-directory,ou=user-directories,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smUserDirectory
+objectClass: smObject
+cn: example-aero-directory
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+smClass: CA.SM::UserDirectory
+smConfig: {"SearchRoot":["ou=people,dc=partners,dc=example-aero,dc=test"]}
+smConsumer: cn=siteminder-ps,ou=consumers,dc=ciam-ops
+smNamespace: LDAP:
+smPort: 1636
+smServiceRole: ds-ldaps-service
+smWithheld: Password: the bind password of the connection; re-provision in the
+  target
+smXid: CA.SM::UserDirectory@0e-2a9d7c41-partners
+
 dn: cn=f5a2dd8fd1c7a4e2,cn=default-atm.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -6128,6 +6379,25 @@ pingfedSourceVersion: 12.1.4.0
 pingfedStoreType: JDBC
 pingfedTargetRole: pf-grants-db
 pingfedWithheld: /password
+
+dn: cn=hco-defaulthostsettings,ou=siteminder,ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSourceObject
+objectClass: smObject
+cn: hco-defaulthostsettings
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamHandling: retire
+ciamHow: it tells agents which policy servers to ask; the target's gateways an
+ d agents find their own policy decision point, nothing carries over
+ciamImportedAt: 20260923090000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSourceClass: CA.SM::HostConfig
+ciamSourceFact: EnableFailOver true
+ciamSourceFact: PolicyServer 10.20.10.41,44441,44442,44443
+ciamTargetRole: sm-agent
+smClass: CA.SM::HostConfig
+smXid: CA.SM::HostConfig@26-1e7b4a92-default
 
 dn: cn=hq-dc1,cn=onprem,ou=regions,dc=ciam-ops
 objectClass: top
@@ -6206,6 +6476,24 @@ cn: IN_USE_ADDRESSES
 ciamQuotaKind: public-ips
 ciamQuotaUsage: 2
 ciamQuotaValue: 8
+
+dn: cn=keys,ou=siteminder,ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSourceObject
+cn: keys
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamHandling: re-provision
+ciamHow: agent keys and the session key (smkeyexport) and federation keys (the
+  certificate data store, smkeytool) are never in an XPSExport: the target mak
+ es its own, and partners are given its new certificates
+ciamImportedAt: 20260923090000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSourceClass: SiteMinder key store
+ciamSourceFact: AgentKeys smkeyexport
+ciamSourceFact: SessionKey smkeyexport
+ciamSourceFact: FederationKeys certificate data store
+ciamTargetRole: sm-policy-server
 
 dn: cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 objectClass: top
@@ -6511,6 +6799,26 @@ paConfig: {"className":"com.pingidentity.pa.identitymappings.HeaderIdentityMap
 paHeaderContract: cn=techpubs-user,ou=header-contracts,dc=ciam-ops
 paSourceVersion: 8.3.6
 
+dn: cn=trusted-host-crew-web-1,ou=siteminder,ou=source-objects,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamSourceObject
+objectClass: smObject
+cn: trusted-host-crew-web-1
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamHandling: re-register
+ciamHow: the web server registers anew with whatever protects it in the target
+ ; its shared secret is not carried
+ciamImportedAt: 20260923090000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSourceClass: CA.SM::TrustedHost
+ciamSourceFact: IPAddr 10.20.10.42
+ciamTargetRole: sm-agent
+smClass: CA.SM::TrustedHost
+smWithheld: SharedSecret: the shared secret an agent or trusted host signs its
+  requests with; re-provision in the target
+smXid: CA.SM::TrustedHost@27-5d0a8e63-crew-web-1
+
 dn: cn=uksouth,cn=azure,ou=regions,dc=ciam-ops
 objectClass: top
 objectClass: ciamCloudRegion
@@ -6742,6 +7050,11 @@ dn: ou=certificates,ou=held,ou=pingaccess,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
 ou: certificates
+
+dn: ou=claims,cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: claims
 
 dn: ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -7023,6 +7336,13 @@ ciamLargestValueBytes: 22
 ciamLdapName: cn
 ciamMostValues: 1
 
+dn: cn=company,ou=claims,cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: company
+ciamClaimName: company
+ciamSourceAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
 dn: cn=company,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
 objectClass: ciamClaimMap
@@ -7047,6 +7367,36 @@ ciamLargestValueBytes: 5
 ciamLdapName: companyid
 ciamMostValues: 1
 ciamProfiledAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
+
+dn: cn=crew-web-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: crew-web-1
+ciamHostname: crew-web-1.aws.internal.example-aero.test
+ciamImageRef: ami-0d3e4f5a6b7c80234
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.10.42
+ciamProductVersion: SiteMinder Web Agent 12.8.8
+ciamServerRole: sm-agent
+ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=crew-web-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: crew-web-s1
+ciamHostname: crew-web-s1.aws.internal.example-aero.test
+ciamImageRef: ami-0d3e4f5a6b7c80234
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.10.52
+ciamProductVersion: SiteMinder Web Agent 12.8.8
+ciamServerRole: sm-agent
+ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
+ciamZone: us-east-1a
 
 dn: cn=crmcontactid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
@@ -7364,6 +7714,13 @@ ciamLastVerified: 20260920020000Z
 ciamRotationManaged: TRUE
 ciamRotationStatus: success
 ciamStoreModified: 20251103020000Z
+
+dn: cn=email,ou=claims,cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+objectClass: top
+objectClass: ciamClaimMap
+cn: email
+ciamClaimName: email
+ciamSourceAttribute: cn=mail,ou=user-schema,dc=ciam-ops
 
 dn: cn=email,ou=claims,cn=customer-portal,ou=integrations,dc=ciam-ops
 objectClass: top
@@ -8239,6 +8596,36 @@ pingfedConfig: {"contactInfo":{"company":"Example Aero","email":"ciam-platform
 pingfedResourceType: /serverSettings
 pingfedSourceVersion: 12.1.4.0
 
+dn: cn=sm-ps-1,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: sm-ps-1
+ciamHostname: sm-ps-1.aws.internal.example-aero.test
+ciamImageRef: ami-0d3e4f5a6b7c80234
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.10.41
+ciamProductVersion: SiteMinder 12.8.8
+ciamServerRole: sm-policy-server
+ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
+ciamZone: us-east-1a
+
+dn: cn=sm-ps-s1,env=stage,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamServer
+cn: sm-ps-s1
+ciamHostname: sm-ps-s1.aws.internal.example-aero.test
+ciamImageRef: ami-0d3e4f5a6b7c80234
+ciamInstanceSize: m6i.large
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamPrivateIp: 10.20.10.51
+ciamProductVersion: SiteMinder 12.8.8
+ciamServerRole: sm-policy-server
+ciamSubnet: cn=subnet-ig-a,ou=bindings,env=prod,cloud=source,ou=environments,d
+ c=ciam-ops
+ciamZone: us-east-1a
+
 dn: cn=sn,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -8494,6 +8881,16 @@ objectClass: top
 objectClass: organizationalUnit
 ou: password-policies
 
+dn: ou=policies,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: policies
+
+dn: ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: realms
+
 dn: ou=stack,env=lab,cloud=hq,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -8719,6 +9116,23 @@ ciamBindingRole: alerts-page
 ciamChannelKind: action-group
 ciamProviderRef: /subscriptions/00000000-0000-0000-0000-000000000000/resourceG
  roups/rg-ciam-prod/providers/Microsoft.Insights/actionGroups/ag-ciam-page
+
+dn: cn=all-crew,ou=policies,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smPolicy
+objectClass: smObject
+cn: all-crew
+smClass: CA.SM::Policy
+smEnabled: TRUE
+smResponse: cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
+smResponse: cn=cookie-crew-portal-crew-identity-crewbase,ou=siteminder,ou=sour
+ ce-objects,dc=ciam-ops
+smRule: cn=crew-pages,cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminde
+ r,dc=ciam-ops
+smSubject: Example Aero Directory group cn=crew,ou=groups,dc=partners,dc=examp
+ le-aero,dc=test
+smXid: CA.SM::Policy@08-c1f7e392-all-crew
 
 dn: cn=am,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -9174,6 +9588,22 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
  s/opsdir-adapter-ansible
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: configuration-management
+
+dn: cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smRealm
+objectClass: smObject
+cn: crew
+ciamChangeRef: cn=CHG-2064,ou=changes,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+smAgent: cn=crew-web-agent,ou=agents,ou=siteminder,dc=ciam-ops
+smAuthScheme: cn=crew-badge,ou=auth-schemes,ou=siteminder,dc=ciam-ops
+smClass: CA.SM::Realm
+smIdleTimeout: 1800
+smMaxTimeout: 36000
+smResourceFilter: /crew/
+smXid: CA.SM::Realm@06-3c8f1b27-crew
 
 dn: cn=cross-cloud-replication,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops
 objectClass: top
@@ -10954,6 +11384,16 @@ objectClass: ciamConnectionHandler
 cn: LDIF
 ciamEnabled: FALSE
 
+dn: cn=legacy-access,ou=stack,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamStackComponent
+cn: legacy-access
+ciamAdapter: siteminder
+ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
+ s/opsdir-adapter-siteminder
+ciamAdapterVersion: >=0.1,<1
+ciamStackRole: legacy-access
+
 dn: cn=link-source,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamInterconnect
@@ -11798,6 +12238,23 @@ objectClass: top
 objectClass: ciamPasswordPolicy
 cn: Root Password Policy
 ciamStorageScheme: PBKDF2-HMAC-SHA256
+
+dn: cn=roster-admins,ou=policies,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smPolicy
+objectClass: smObject
+cn: roster-admins
+smClass: CA.SM::Policy
+smEnabled: TRUE
+smResponse: cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
+smResponse: cn=cookie-crew-portal-crew-identity-crewbase,ou=siteminder,ou=sour
+ ce-objects,dc=ciam-ops
+smRule: cn=roster-admin,cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=sitemin
+ der,dc=ciam-ops
+smSubject: Example Aero Directory group cn=roster-admins,ou=groups,dc=partners
+ ,dc=example-aero,dc=test
+smXid: CA.SM::Policy@08-4e0b8c6d-roster-admins
 
 dn: cn=routes,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops
 objectClass: top
@@ -13829,6 +14286,20 @@ cn: companyId
 ciamIndexType: equality
 ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
+dn: cn=crew-pages,cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smRule
+objectClass: smObject
+cn: crew-pages
+smAction: GET
+smAction: POST
+smAllow: TRUE
+smClass: CA.SM::Rule
+smEnabled: TRUE
+smResourceFilter: *
+smXid: CA.SM::Rule@07-9e2d4f81-crew-pages
+
 dn: cn=description,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top
 objectClass: ciamIndex
@@ -13912,6 +14383,21 @@ objectClass: ciamIndex
 cn: registrationStatus
 ciamIndexType: equality
 ciamIndexedAttribute: cn=registrationStatus,ou=user-schema,dc=ciam-ops
+
+dn: cn=roster-admin,cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: smRule
+objectClass: smObject
+cn: roster-admin
+smAction: GET
+smAction: POST
+smAllow: TRUE
+smClass: CA.SM::Rule
+smEnabled: TRUE
+smRegex: TRUE
+smResourceFilter: ^/crew/roster/(publish|swap-approve)
+smXid: CA.SM::Rule@07-b47a0c35-roster-admin
 
 dn: cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top

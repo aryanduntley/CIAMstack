@@ -153,6 +153,10 @@ cap 08-apply-chg-2060 od modify --change CHG-2060 changes/CHG-2060-pingaccess-se
 cap 08-apply-chg-2061 od import --change CHG-2061 --at 20260923090000Z pingaccess/admin-api exports/pingaccess
 cap 08-apply-chg-2062 od modify --change CHG-2062 changes/CHG-2062-pingaccess-session-and-header.ldif
 cap 08-report-header-contracts od report header-contracts
+cap 08-apply-chg-2063 od import --change CHG-2063 --at 20260923090000Z siteminder/xps exports/siteminder
+cap 08-apply-chg-2064 od modify --change CHG-2064 changes/CHG-2064-siteminder-owners-and-aog-to-sso.ldif
+cap 08-apply-chg-2065 od import --change CHG-2065 --at 20260923090000Z pingfederate/bulk exports/pingfederate-aog
+cap 08-report-source-objects od report source-objects
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

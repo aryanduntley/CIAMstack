@@ -2,7 +2,7 @@
   "pingFederate": "PingFederate 13.1.3",
   "adminApi": "13.1.0.5",
   "problems": [
-    "held settings exported from PingFederate 12.1.4.0, rendered for 13.1.3: 21 objects (Customers, corp-directory, customer-portal, default, default-apc, default-oidc, defaultjwt, grant-store, harbor-mro-federation, htmlform, mobile-ops, oauth-auth-server, pcvcustomers, recaptcha, reports-api, settings, skyline-air-federation, smtp, supplier-portal, tech-pubs, user-directory): nothing is migrated between the versions; review them against the changes named, or upgrade a copy of PingFederate 12.1.4.0 and export it again",
+    "held settings exported from PingFederate 12.1.4.0, rendered for 13.1.3: 22 objects (Customers, aog-parts-exchange, corp-directory, customer-portal, default, default-apc, default-oidc, defaultjwt, grant-store, harbor-mro-federation, htmlform, mobile-ops, oauth-auth-server, pcvcustomers, recaptcha, reports-api, settings, skyline-air-federation, smtp, supplier-portal, tech-pubs, user-directory): nothing is migrated between the versions; review them against the changes named, or upgrade a copy of PingFederate 12.1.4.0 and export it again",
     "PingFederate >=13.1: a pushed authorization request's request_uri can be used again until the PAR Reference Timeout expires (when no consent details are shown): oauth-auth-server: Review the PAR Reference Timeout and consent settings against that window.",
     "PingFederate >=13.1.3: the Admin API validates JDBC data stores' driver class and URL: grant-store: Check each store's driver and URL against the drivers 13.1.3 allows before the cutover: the Admin API rejects the others."
   ],
@@ -560,6 +560,91 @@
           "profile",
           "email"
         ]
+      }
+    },
+    {
+      "method": "PUT",
+      "path": "/idp/spConnections/aog-parts-exchange",
+      "createWith": "POST /idp/spConnections",
+      "body": {
+        "active": true,
+        "contactInfo": {
+          "company": "ciam-platform"
+        },
+        "credentials": {
+          "signingSettings": {
+            "algorithm": "SHA256withRSA",
+            "signingKeyPairRef": {
+              "id": "signing-2025"
+            }
+          }
+        },
+        "entityId": "https://parts.aog-exchange.test/saml/sp",
+        "id": "aog-parts-exchange",
+        "name": "aog-parts-exchange",
+        "spBrowserSso": {
+          "adapterMappings": [
+            {
+              "attributeContractFulfillment": {
+                "SAML_SUBJECT": {
+                  "source": {
+                    "id": "user-directory",
+                    "type": "LDAP_DATA_STORE"
+                  },
+                  "value": "uid"
+                },
+                "company": {
+                  "source": {
+                    "id": "user-directory",
+                    "type": "LDAP_DATA_STORE"
+                  },
+                  "value": "companyId"
+                },
+                "email": {
+                  "source": {
+                    "id": "user-directory",
+                    "type": "LDAP_DATA_STORE"
+                  },
+                  "value": "mail"
+                }
+              },
+              "idpAdapterRef": {
+                "id": "htmlform"
+              }
+            }
+          ],
+          "assertionLifetime": {
+            "minutesAfter": 5,
+            "minutesBefore": 5
+          },
+          "attributeContract": {
+            "coreAttributes": [
+              {
+                "name": "SAML_SUBJECT"
+              }
+            ],
+            "extendedAttributes": [
+              {
+                "name": "company"
+              },
+              {
+                "name": "email"
+              }
+            ]
+          },
+          "enabledProfiles": [
+            "SP_INITIATED_SSO"
+          ],
+          "protocol": "SAML20",
+          "ssoServiceEndpoints": [
+            {
+              "binding": "POST",
+              "isDefault": true,
+              "url": "https://parts.aog-exchange.test/saml/acs"
+            }
+          ]
+        },
+        "type": "SP"
       }
     },
     {

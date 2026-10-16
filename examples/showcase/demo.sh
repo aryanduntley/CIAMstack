@@ -266,6 +266,13 @@ od modify --change CHG-2060 changes/CHG-2060-pingaccess-servers.ldif
 od import --change CHG-2061 --at 20260923090000Z pingaccess/admin-api exports/pingaccess
 od modify --change CHG-2062 changes/CHG-2062-pingaccess-session-and-header.ldif
 od report header-contracts
+echo "-- production's SiteMinder still protects the crew portal: its policy store export read in (CHG-2063, secrets"
+echo "   withheld), what has no standard equivalent carried as source objects, and AOG Parts Exchange moved to"
+echo "   PingFederate's sso (CHG-2064), whose SP connection the platform team then configures and reads back (CHG-2065)"
+od import --change CHG-2063 --at 20260923090000Z siteminder/xps exports/siteminder
+od modify --change CHG-2064 changes/CHG-2064-siteminder-owners-and-aog-to-sso.ldif
+od import --change CHG-2065 --at 20260923090000Z pingfederate/bulk exports/pingfederate-aog
+od report source-objects
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

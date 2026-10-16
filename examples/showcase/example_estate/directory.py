@@ -77,6 +77,9 @@ CONSUMERS = (
      "identified", None),
     ("legacy-rptuser", "uid=rptuser,ou=customers,ou=people", "2021-03-09", None, None, "unknown", None),
     ("idm-sync", "uid=idm-sync,ou=service-accounts", "2024-01-03", "ciam-platform", "high", "tested", "2026-03-02"),
+    # SiteMinder's user directory binds as it (the crew portal's sign-on): it retires with SiteMinder
+    ("siteminder-ps", "uid=siteminder-ps,ou=service-accounts", "2019-06-04", "ciam-platform", "high", "identified",
+     "2026-03-02"),
 )
 ACIS = (
     ("aci-pf-read", "pf-ds-svc",

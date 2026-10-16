@@ -1,5 +1,8 @@
 """governance domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import AttributeDef, ClassDef, fragment
+from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
+
+# How a source object is handled when its product is retired (governance.source_objects)
+HANDLINGS = ("rebuild", "re-provision", "re-register", "replace", "retire", "review")
 
 ATTRIBUTES = (
     AttributeDef(110, 'ciamTitle', 'string', 'meta', True,
@@ -135,6 +138,19 @@ ATTRIBUTES = (
     AttributeDef(749, 'ciamTicketFact', 'string', 'meta', False,
                  'Another field of the ticket as its system gave it: "<field> <raw value>" (type, model, close code, '
                  'assignment group, configuration item, requester, correlation, last update)'),
+    # source objects (milestone 6.1): what a product a migration retires holds that the standard model has no
+    # equivalent for, carried as data so the plan says what each needs (ciamSourceObject under ou=source-objects)
+    AttributeDef(760, 'ciamSourceClass', 'string', 'observed', True,
+                 'The product\'s own type of a source object, as the product names it'),
+    AttributeDef(761, 'ciamSourceFact', 'string', 'observed', False,
+                 'What a source object holds, as "<setting> <value>" (never a secret: sensitive settings are named '
+                 'by the importer as withheld, not kept)'),
+    AttributeDef(762, 'ciamHandling', enum_type(HANDLINGS), 'meta', True,
+                 'What a source object needs when its product is retired: rebuilt in the target\'s products, its '
+                 'secrets re-provisioned, its hosts re-registered, replaced by what the target already does, retired '
+                 '(nothing in the target needs it) or reviewed (what it does isn\'t known yet)'),
+    AttributeDef(763, 'ciamHow', 'string', 'meta', True,
+                 'How a source object is handled, in words: what the target needs instead and where'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -191,6 +207,13 @@ CLASSES = (
              'approval, planned and actual windows, approval records and other fields, with the system\'s own '
              'identifier (ciamProviderRef) and address (ciamDocUrl). Evidence compared with the record, never an '
              'approval opsdir acts on'),
+    ClassDef(163, 'ciamSourceObject', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamSourceClass', 'ciamTargetRole',
+                                                                   'ciamHandling'),
+             ('ciamSourceFact', 'ciamHow', 'ciamBlocking', 'ciamConcerns', 'ciamImportedAt'),
+             'What a product a migration retires holds that the standard model has no equivalent for (under '
+             'ou=source-objects, below a branch per importer): its own type and facts, the server role that holds it '
+             '(ciamTargetRole), how it is handled and whether a move waits for that (ciamBlocking), the entries it '
+             'concerns; the planner makes each an action, or a blocker, for a target that doesn\'t run the role'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

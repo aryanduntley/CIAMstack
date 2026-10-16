@@ -215,7 +215,8 @@ def render_summary(adapters):
 
 def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requester=None):
     """Plan moving src to dst with the installed adapters: render both (the target whole, its MANIFEST naming
-    requester when given: who runs the migration), run every check, collect the findings."""
+    requester when given: who runs the migration), run every check (the target's adapters' and domains', then the
+    source checks of the adapters applying to the source: a product the move retires), collect the findings."""
     src, src_adapters, src_neutral, src_specific, src_targets = render_parts(d, src_spec, installed)
     dst, adapters, dst_neutral, dst_specific, dst_targets = render_parts(d, dst_spec, installed,   # every target
                                                                          scope=ENVIRONMENT)
@@ -227,6 +228,7 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requ
                       dst_files,
                       tuple(src_neutral))
     f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),
+                        *(run_check(check, ctx) for a in src_adapters for check in a.source_checks),
                         run_check(access_check(src_adapters, adapters), ctx),
                         run_check(edge_check(src_adapters, adapters), ctx),
                         run_check(network_check(src_adapters, adapters), ctx),

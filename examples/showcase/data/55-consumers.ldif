@@ -66,3 +66,15 @@ ciamFirstSeen: 20240103000000Z
 ciamMigrationStatus: tested
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamReviewedOn: 20260302000000Z
+
+dn: cn=siteminder-ps,ou=consumers,dc=ciam-ops
+objectClass: top
+objectClass: ciamConsumer
+cn: siteminder-ps
+ciamBindDn: uid=siteminder-ps,ou=service-accounts,dc=partners,dc=example-aero,
+ dc=test
+ciamCriticality: high
+ciamFirstSeen: 20190604000000Z
+ciamMigrationStatus: identified
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamReviewedOn: 20260302000000Z

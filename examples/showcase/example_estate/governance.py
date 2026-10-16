@@ -137,6 +137,12 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2062", "Record the PingAccess web session's credential role and the header Tech Pubs trusts for who the user "
      "is", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2063", "Read the SiteMinder policy store's export (the crew portal and the AOG Parts Exchange partnership) "
+     "into the record, its secrets withheld", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2064", "Own what SiteMinder holds until it is retired; move AOG Parts Exchange to PingFederate (sso)",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2065", "Read back PingFederate's AOG Parts Exchange SP connection as the platform team configured it",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

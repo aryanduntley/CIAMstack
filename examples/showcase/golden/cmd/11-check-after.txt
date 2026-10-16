@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 51   expected now 25   detected 25   missed 0   unexpected 0
+  blockers planted 56   expected now 30   detected 30   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -33,7 +33,11 @@ Expected findings check (after changes)
            B65  raised by CHG-2061: PingAccess signs Tech Pubs users in with a client secret, but the record registers tech-pubs-web as a public client (none): the target's PingFederate, rendered from the record, refuses the token request → reported
            B66  raised by CHG-2061: Tech Pubs is published at techpubs.example-aero.test in the source only: the target's PingAccess has no name to answer as → reported
            B67  raised by CHG-2060: the same missing service name, from the core role check (its fix binds it like the source does) → reported
-  actions  planted 162   expected now 131   detected 131   missed 0   unexpected 0
+           B71  raised by CHG-2063: nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop → reported
+           B72  raised by CHG-2063: the crew badge sign-on is SiteMinder custom code (library crewbadgeauth): rebuilt before the portal moves → reported
+           B73  raised by CHG-2063: the crew portal's header-based sign-on has no setter in the target → reported
+           B74  raised by CHG-2063: SiteMinder's federation address has no service name in the record: nothing shows the partners keep it → reported
+  actions  planted 168   expected now 137   detected 137   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -90,6 +94,12 @@ Expected findings check (after changes)
            A185 raised by CHG-2061: the adapter's Admin API forms aren't verified against 9.1.1's own schema yet → reported
            A186 raised by CHG-2060: the PingAccess servers were recorded without their hosts' baselines → reported
            A187 raised by CHG-2060: the PingAccess servers were recorded without their hosts' baselines → reported
+           A191 raised by CHG-2063: the crew web agent's settings (cookie domain, logout, ignored extensions) are rebuilt in a gateway → reported
+           A192 raised by CHG-2063: the crew portal's CREWBASE cookie has no standard equivalent → reported
+           A193 raised by CHG-2063: the agents' host configuration retires with SiteMinder → reported
+           A194 raised by CHG-2063: SiteMinder's agent, session and federation keys are never in the export: the target makes its own → reported
+           A195 raised by CHG-2063: the crew web server's trusted-host registration doesn't carry over → reported
+           A196 raised by CHG-2063: nothing records that SiteMinder's agent strips the client's own SM_USER header → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

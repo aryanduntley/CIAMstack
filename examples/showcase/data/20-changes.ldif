@@ -543,6 +543,36 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the PingAccess web session's credential role and the header 
  Tech Pubs trusts for who the user is
 
+dn: cn=CHG-2063,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2063
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the SiteMinder policy store's export (the crew portal and the 
+ AOG Parts Exchange partnership) into the record, its secrets withheld
+
+dn: cn=CHG-2064,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2064
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Own what SiteMinder holds until it is retired; move AOG Parts Excha
+ nge to PingFederate (sso)
+
+dn: cn=CHG-2065,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2065
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read back PingFederate's AOG Parts Exchange SP connection as the pl
+ atform team configured it
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

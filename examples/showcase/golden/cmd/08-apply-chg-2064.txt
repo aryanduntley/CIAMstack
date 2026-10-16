@@ -1,0 +1,12 @@
+CHG-2064: modify cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+CHG-2064: modify cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
+CHG-2064: modify cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops
+CHG-2064: modify cn=example-aero-directory,ou=user-directories,ou=siteminder,dc=ciam-ops
+CHG-2064: modify cn=aco-crew-aco,ou=siteminder,ou=source-objects,dc=ciam-ops
+CHG-2064: modify cn=cookie-crew-portal-crew-identity-crewbase,ou=siteminder,ou=source-objects,dc=ciam-ops
+CHG-2064: modify cn=custom-scheme-crew-badge,ou=siteminder,ou=source-objects,dc=ciam-ops
+CHG-2064: modify cn=hco-defaulthostsettings,ou=siteminder,ou=source-objects,dc=ciam-ops
+CHG-2064: modify cn=keys,ou=siteminder,ou=source-objects,dc=ciam-ops
+CHG-2064: modify cn=trusted-host-crew-web-1,ou=siteminder,ou=source-objects,dc=ciam-ops
+CHG-2064: modify cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
+exit 0

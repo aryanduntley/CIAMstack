@@ -12,7 +12,7 @@
 ### Shield Advanced (Edge)
 
 - **What:** its protections need the account's subscription
-- **Where:** terraform/main.tf:941, terraform/main.tf:1237
+- **Where:** terraform/main.tf:997, terraform/main.tf:1293
 - **Who:** ciam-platform
 - **How:** Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it
 
@@ -35,5 +35,5 @@
 ### alert rule admin-login-failures (Monitoring)
 
 - **What:** not rendered: no alarm in source/stage realizes it (a ciamAlarmBinding with ciamRealizes admin-login-failures): record the one the cloud runs, or let Prometheus evaluate it
-- **Where:** terraform/main.tf:1364; source/stage
+- **Where:** terraform/main.tf:1420; source/stage
 - **Who:** security-operations

@@ -5,6 +5,7 @@ idm-sync             uid=idm-sync,ou=service-accounts,dc=partners,dc=example-aer
 legacy-rptuser       uid=rptuser,ou=customers,ou=people,dc=partners,dc=example-aero,dc=test                                     unknown     no        10.40.7.22/32               12             3       2026-09-22              no owner; no criticality; plain-text connections; 12 unindexed searches/day; reads high-PII attributes: challengeAnswer, exportScreeningStatus; never reviewed
 mro-batch-export     uid=mro-export,ou=service-accounts,dc=partners,dc=example-aero,dc=test  mro-analytics-team    medium       identified  yes       10.40.12.0/24               4              6       2026-09-22              4 unindexed searches/day; reads high-PII attributes: exportScreeningStatus; never reviewed
 pf-ds-svc            uid=pf-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=test      ciam-platform         critical     tested      yes       10.20.4.0/24, 10.20.5.0/24  0              20      2026-09-22  2026-03-02
+siteminder-ps        uid=siteminder-ps,ou=service-accounts,dc=partners,dc=example-aero,dc=t  ciam-platform         high         identified                                                                           2026-03-02  no ACI grants its access; never seen in access logs
 supplier-portal-svc  uid=supplier-svc,ou=service-accounts,dc=partners,dc=example-aero,dc=te  supplier-portal-team  high         contacted   yes       10.31.2.0/24                0              4       2026-09-22  2026-01-15
-(6 rows)
+(7 rows)
 exit 0

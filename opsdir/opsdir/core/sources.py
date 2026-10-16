@@ -1,6 +1,7 @@
 """Reading the files an importer is given: tolerant parsing (a file that isn't the expected format is named by the
 importer, not raised) and an import's files grouped by folder. Importers in every package share these. Pure."""
 import json
+import xml.etree.ElementTree as ET
 
 
 def parsed(load, text, errors=(ValueError,), kind=None):
@@ -16,6 +17,18 @@ def parsed(load, text, errors=(ValueError,), kind=None):
 def json_document(text, kind=None):
     """A JSON text's value, or None when it isn't JSON (or isn't of kind)."""
     return parsed(json.loads, text, (ValueError,), kind)
+
+
+def xml_document(text):
+    """(root element, None) for an XML text, or (None, why not): a document declaring a DOCTYPE or an entity is
+    refused before it is parsed (an export never needs one, and entity expansion is how XML files attack their
+    readers), one that isn't well-formed is named with the parser's message."""
+    if "<!DOCTYPE" in text or "<!ENTITY" in text:
+        return None, "a DOCTYPE or entity declaration: refused"
+    try:
+        return ET.fromstring(text), None
+    except ET.ParseError as e:
+        return None, f"not XML ({e})"
 
 
 def json_records(text):

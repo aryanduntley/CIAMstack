@@ -12,7 +12,7 @@
 ### guardduty (Security)
 
 - **What:** runs in every region, but the region catalog holds no aws regions (`opsdir prerequisites`): only us-east-1 renders
-- **Where:** terraform/main.tf:2367; every region of source/prod but us-east-1
+- **Where:** terraform/main.tf:2423; every region of source/prod but us-east-1
 - **Who:** ciam-platform
 - **How:** Fetch the region catalog (`opsdir prerequisites`), then re-render
 
@@ -21,7 +21,7 @@
 ### audit trail cloudtrail (Audit)
 
 - **What:** bucket example-aero-ciam-prod-cloudtrail (audit-archive) must let cloudtrail.amazonaws.com s3:GetBucketAcl on arn:aws:s3:::example-aero-ciam-prod-cloudtrail; s3:PutObject on arn:aws:s3:::example-aero-ciam-prod-cloudtrail/AWSLogs/111122223333/* (s3:x-amz-acl bucket-owner-full-control on writes; aws:SourceArn arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod): its policy isn't rendered: the bucket exists already (ciamProviderRef)
-- **Where:** terraform/main.tf:2029; bucket example-aero-ciam-prod-cloudtrail
+- **Where:** terraform/main.tf:2085; bucket example-aero-ciam-prod-cloudtrail
 - **Who:** ciam-platform
 - **How:**
   1. Add these statements to bucket example-aero-ciam-prod-cloudtrail's policy: [{"Sid":"AWSCloudTrailAclCheck","Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"s3:GetBucketAcl","Resource":"arn:aws:s3:::example-aero-ciam-prod-cloudtrail","Condition":{"StringEquals":{"aws:SourceArn":"arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod"}}},{"Sid":"AWSCloudTrailWrite","Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"s3:PutObject","Resource":"arn:aws:s3:::example-aero-ciam-prod-cloudtrail/AWSLogs/111122223333/*","Condition":{"StringEquals":{"aws:SourceArn":"arn:aws:cloudtrail:us-east-1:111122223333:trail/ciam-prod","s3:x-amz-acl":"bucket-owner-full-control"}}}]
@@ -30,14 +30,14 @@
 ### asg-pf-engine (Compute)
 
 - **What:** exists: applying gives it launch template ciam-prod-pf-engine, which its instances run when they are next replaced
-- **Where:** terraform/main.tf:733
+- **Where:** terraform/main.tf:789
 - **Who:** ciam-platform
 - **How:** After applying, start an instance refresh on autoscaling group ciam-prod-pf-engine so its instances run the new template
 
 ### Shield Advanced (Edge)
 
 - **What:** its protections need the account's subscription
-- **Where:** terraform/main.tf:1356, terraform/main.tf:1658
+- **Where:** terraform/main.tf:1412, terraform/main.tf:1714
 - **Who:** ciam-platform
 - **How:** Before applying, make sure the account subscribes to AWS Shield Advanced (a paid subscription with a one-year commitment): the protections fail without it
 
@@ -60,49 +60,49 @@
 ### guardduty's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2333; source/prod
+- **Where:** terraform/main.tf:2389; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
 ### guardduty's incidents to security-incidents (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2362; source/prod
+- **Where:** terraform/main.tf:2418; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security-incidents's access policy (aws:SourceArn the rule's ARN)
 
 ### inspector's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2388; source/prod
+- **Where:** terraform/main.tf:2444; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
 ### macie-backups's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2530; source/prod
+- **Where:** terraform/main.tf:2586; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
 ### security-hub's findings to security-findings (Security)
 
 - **What:** its resource policy must let events.amazonaws.com deliver to it
-- **Where:** terraform/main.tf:2428; source/prod
+- **Where:** terraform/main.tf:2484; source/prod
 - **Who:** ciam-platform
 - **How:** Allow events.amazonaws.com sns:Publish in topic arn:aws:sns:us-east-1:111122223333:ciam-prod-security's access policy (aws:SourceArn the rule's ARN)
 
 ### egress firewall `egress-firewall` (Network)
 
 - **What:** reference this rule group from its firewall policy (arn:aws:network-firewall:us-east-1:111122223333:firewall-policy/ciam-prod-egress) (stateful_rule_group_reference)
-- **Where:** terraform/main.tf:1710; source/prod
+- **Where:** terraform/main.tf:1766; source/prod
 - **Who:** network-security
 - **How:** After applying, add the rule group to the firewall policy's stateful rule group references (whoever keeps the policy)
 
 ### egress firewall `egress-firewall` (Network)
 
 - **What:** a domain list matches TLS SNI and HTTP Host only: email-smtp.us-east-1.amazonaws.com:587 isn't web traffic, so the policy's other stateful rules decide it
-- **Where:** terraform/main.tf:1712; source/prod
+- **Where:** terraform/main.tf:1768; source/prod
 - **Who:** network-security
 - **How:** Allow email-smtp.us-east-1.amazonaws.com:587 in the firewall policy's other stateful rules
 
@@ -125,5 +125,5 @@
 ### alert rule admin-login-failures (Monitoring)
 
 - **What:** not rendered: no alarm in source/prod realizes it (a ciamAlarmBinding with ciamRealizes admin-login-failures): record the one the cloud runs, or let Prometheus evaluate it
-- **Where:** terraform/main.tf:2083; source/prod
+- **Where:** terraform/main.tf:2139; source/prod
 - **Who:** security-operations

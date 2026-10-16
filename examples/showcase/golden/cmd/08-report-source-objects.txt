@@ -1,0 +1,10 @@
+object                                     class                 held by           handling      blocking  owner          how                                                                     facts
+-----------------------------------------  --------------------  ----------------  ------------  --------  -------------  ----------------------------------------------------------------------  ----------------------------------------------------------------------
+aco-crew-aco                               CA.SM::AgentConfig    sm-agent          rebuild       no        ciam-platform  the agent settings it holds (cookie domain, logout, ignored extensions  Parameters CookieDomain=.example-aero.test, LogOffUri=/crew/logout, IgnoreExt=.gif,.png,.css,.js
+cookie-crew-portal-crew-identity-crewbase  CA.SM::ResponseAttr   sm-agent          rebuild       no        ciam-platform  set the cookie from the identity mapping of the gateway that protects   AgentTypeAttr WebAgent-HTTP-Cookie-Variable; Name CREWBASE; Value attribute companyId
+custom-scheme-crew-badge                   CA.SM::AuthScheme     sm-policy-server  rebuild       yes       ciam-platform  its library runs the operator's own sign-on code: rebuild that sign-on  Level 20; Library crewbadgeauth; Param badge+pin;fallback=/crew/login; Type Custom Template
+hco-defaulthostsettings                    CA.SM::HostConfig     sm-agent          retire        no        ciam-platform  it tells agents which policy servers to ask; the target's gateways and  EnableFailOver true; PolicyServer 10.20.10.41,44441,44442,44443
+keys                                       SiteMinder key store  sm-policy-server  re-provision  no        ciam-platform  agent keys and the session key (smkeyexport) and federation keys (the   AgentKeys smkeyexport; SessionKey smkeyexport; FederationKeys certificate data store
+trusted-host-crew-web-1                    CA.SM::TrustedHost    sm-agent          re-register   no        ciam-platform  the web server registers anew with whatever protects it in the target;  IPAddr 10.20.10.42
+(6 rows)
+exit 0

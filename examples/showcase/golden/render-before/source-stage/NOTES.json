@@ -23,11 +23,11 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 941
+          "line": 997
         },
         {
           "path": "terraform/main.tf",
-          "line": 1237
+          "line": 1293
         }
       ]
     },
@@ -80,7 +80,7 @@
       "places": [
         {
           "path": "terraform/main.tf",
-          "line": 1364
+          "line": 1420
         }
       ]
     }
