@@ -1,0 +1,5 @@
+{
+  "issuer": "https://login.example.test/as",
+  "trustedCertificateGroupId": 2,
+  "skipHostnameVerification": false
+}

@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "portal-session",
+      "audience": "portal",
+      "clientCredentials": {
+        "clientId": "portal-web",
+        "credentialsType": "SECRET",
+        "clientSecret": {
+          "value": null,
+          "encryptedValue": "c2VjcmV0LWNpcGhlcnRleHQ="
+        }
+      },
+      "oidcLoginType": "Code",
+      "pkceChallengeType": "SHA256",
+      "scopes": [
+        "openid",
+        "profile"
+      ],
+      "sessionTimeoutInMinutes": 240
+    }
+  ]
+}

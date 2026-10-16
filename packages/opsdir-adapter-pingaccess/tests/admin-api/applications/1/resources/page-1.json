@@ -1,0 +1,45 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Root Resource",
+      "pathPatterns": [
+        {
+          "type": "WILDCARD",
+          "pattern": "/*"
+        }
+      ],
+      "methods": [
+        "*"
+      ],
+      "rootResource": true,
+      "policy": {
+        "Web": [],
+        "API": []
+      }
+    },
+    {
+      "id": 2,
+      "name": "docs",
+      "pathPatterns": [
+        {
+          "type": "WILDCARD",
+          "pattern": "/docs/*"
+        }
+      ],
+      "methods": [
+        "GET"
+      ],
+      "unprotected": true,
+      "policy": {
+        "Web": [
+          {
+            "type": "Rule",
+            "id": 2
+          }
+        ],
+        "API": []
+      }
+    }
+  ]
+}

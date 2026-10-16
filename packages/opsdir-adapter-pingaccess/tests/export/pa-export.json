@@ -1,0 +1,244 @@
+{
+  "id": "export-1",
+  "version": "8.3.6",
+  "encryptionKey": "cG9ydGFibGUtZXhwb3J0LWtleQ==",
+  "data": {
+    "applications": [
+      {
+        "id": 1,
+        "name": "portal",
+        "contextRoot": "/",
+        "applicationType": "Web",
+        "destination": "Site",
+        "siteId": 1,
+        "virtualHostIds": [
+          1
+        ],
+        "webSessionId": 1,
+        "identityMappingIds": {
+          "Web": 1
+        },
+        "policy": {
+          "Web": [
+            {
+              "type": "Ruleset",
+              "id": 1
+            }
+          ],
+          "API": []
+        },
+        "enabled": true,
+        "resources": [
+          {
+            "id": 1,
+            "name": "Root Resource",
+            "pathPatterns": [
+              {
+                "type": "WILDCARD",
+                "pattern": "/*"
+              }
+            ],
+            "methods": [
+              "*"
+            ],
+            "rootResource": true,
+            "policy": {
+              "Web": [],
+              "API": []
+            }
+          },
+          {
+            "id": 2,
+            "name": "docs",
+            "pathPatterns": [
+              {
+                "type": "WILDCARD",
+                "pattern": "/docs/*"
+              }
+            ],
+            "methods": [
+              "GET"
+            ],
+            "unprotected": true,
+            "policy": {
+              "Web": [
+                {
+                  "type": "Rule",
+                  "id": 2
+                }
+              ],
+              "API": []
+            }
+          }
+        ]
+      }
+    ],
+    "sites": [
+      {
+        "id": 1,
+        "name": "portal-backend",
+        "targets": [
+          "portal-backend.example.test:8443"
+        ],
+        "secure": true,
+        "trustedCertificateGroupId": 2,
+        "availabilityProfileId": 1,
+        "siteAuthenticatorIds": [
+          1
+        ]
+      },
+      {
+        "id": 2,
+        "name": "docs-cdn",
+        "targets": [
+          "cdn.docs.example.net:443"
+        ],
+        "secure": true,
+        "trustedCertificateGroupId": 0
+      }
+    ],
+    "virtualHosts": [
+      {
+        "id": 1,
+        "host": "portal.example.test",
+        "port": 443,
+        "keyPairId": 5,
+        "trustedCertificateGroupId": 0
+      }
+    ],
+    "webSessions": [
+      {
+        "id": 1,
+        "name": "portal-session",
+        "audience": "portal",
+        "clientCredentials": {
+          "clientId": "portal-web",
+          "credentialsType": "SECRET",
+          "clientSecret": {
+            "value": null,
+            "encryptedValue": "c2VjcmV0LWNpcGhlcnRleHQ="
+          }
+        },
+        "oidcLoginType": "Code",
+        "pkceChallengeType": "SHA256",
+        "scopes": [
+          "openid",
+          "profile"
+        ],
+        "sessionTimeoutInMinutes": 240
+      }
+    ],
+    "identityMappings": [
+      {
+        "id": 1,
+        "name": "portal-headers",
+        "className": "com.pingidentity.pa.identitymappings.HeaderIdentityMapping",
+        "configuration": {
+          "attributeHeaderMappings": [
+            {
+              "attributeName": "sub",
+              "headerName": "X-Portal-User",
+              "subject": true
+            }
+          ]
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": 1,
+        "name": "staff-only",
+        "className": "com.pingidentity.pa.policy.WebSessionAttributeRule",
+        "configuration": {
+          "attributeName": "groups",
+          "attributeValue": "staff"
+        }
+      },
+      {
+        "id": 2,
+        "name": "corp-network",
+        "className": "com.pingidentity.pa.policy.CIDRPolicyInterceptor",
+        "configuration": {
+          "cidrNotation": "10.0.0.0/8"
+        }
+      }
+    ],
+    "ruleSets": [
+      {
+        "id": 1,
+        "name": "staff-on-corp",
+        "elementType": "Rule",
+        "policy": [
+          1,
+          2
+        ],
+        "successCriteria": "SuccessIfAllSucceed"
+      }
+    ],
+    "availabilityProfiles": [
+      {
+        "id": 1,
+        "name": "Default",
+        "className": "com.pingidentity.pa.ha.availability.ondemand.OnDemandAvailabilityPlugin",
+        "configuration": {
+          "connectTimeout": 10000,
+          "maxRetries": 2
+        }
+      }
+    ],
+    "siteAuthenticators": [
+      {
+        "id": 1,
+        "name": "backend-basic",
+        "className": "com.pingidentity.pa.siteauthenticators.BasicAuthTargetSiteAuthenticator",
+        "configuration": {
+          "username": "svc-pa",
+          "password": {
+            "value": null,
+            "encryptedValue": "ZW5jcnlwdGVkLWJ5LXRoZS1kZXBsb3ltZW50"
+          }
+        }
+      }
+    ],
+    "trustedCertificateGroups": [
+      {
+        "id": 2,
+        "name": "Corporate",
+        "certificateIds": [
+          1
+        ],
+        "useJavaTrustStore": false
+      }
+    ],
+    "certificates": [
+      {
+        "id": 1,
+        "alias": "corp-root",
+        "sha256Fingerprint": "5E:4A:91:0C",
+        "expires": 1893456000000
+      }
+    ],
+    "keyPairs": [
+      {
+        "id": 5,
+        "alias": "portal-tls",
+        "subjectDn": "CN=portal.example.test",
+        "hsmProviderId": 0
+      }
+    ],
+    "pingFederateRuntime": {
+      "issuer": "https://login.example.test/as",
+      "trustedCertificateGroupId": 2,
+      "skipHostnameVerification": false
+    },
+    "masterKeys": [
+      {
+        "keyId": "k1",
+        "encryptedKey": "bWFzdGVyLWtleS1jaXBoZXJ0ZXh0"
+      }
+    ],
+    "licenseFeatures": {
+      "note": "held elsewhere"
+    }
+  }
+}

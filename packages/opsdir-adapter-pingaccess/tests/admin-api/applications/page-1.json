@@ -1,0 +1,29 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "portal",
+      "contextRoot": "/",
+      "applicationType": "Web",
+      "destination": "Site",
+      "siteId": 1,
+      "virtualHostIds": [
+        1
+      ],
+      "webSessionId": 1,
+      "identityMappingIds": {
+        "Web": 1
+      },
+      "policy": {
+        "Web": [
+          {
+            "type": "Ruleset",
+            "id": 1
+          }
+        ],
+        "API": []
+      },
+      "enabled": true
+    }
+  ]
+}

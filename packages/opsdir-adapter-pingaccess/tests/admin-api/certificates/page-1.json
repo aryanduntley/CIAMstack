@@ -1,0 +1,10 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "alias": "corp-root",
+      "sha256Fingerprint": "5E:4A:91:0C",
+      "expires": 1893456000000
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "backend-basic",
+      "className": "com.pingidentity.pa.siteauthenticators.BasicAuthTargetSiteAuthenticator",
+      "configuration": {
+        "username": "svc-pa",
+        "password": {
+          "value": null,
+          "encryptedValue": "ZW5jcnlwdGVkLWJ5LXRoZS1kZXBsb3ltZW50"
+        }
+      }
+    }
+  ]
+}

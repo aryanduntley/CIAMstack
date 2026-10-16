@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "staff-on-corp",
+      "elementType": "Rule",
+      "policy": [
+        1,
+        2
+      ],
+      "successCriteria": "SuccessIfAllSucceed"
+    }
+  ]
+}

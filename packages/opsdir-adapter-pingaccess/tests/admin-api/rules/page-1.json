@@ -1,0 +1,21 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "staff-only",
+      "className": "com.pingidentity.pa.policy.WebSessionAttributeRule",
+      "configuration": {
+        "attributeName": "groups",
+        "attributeValue": "staff"
+      }
+    },
+    {
+      "id": 2,
+      "name": "corp-network",
+      "className": "com.pingidentity.pa.policy.CIDRPolicyInterceptor",
+      "configuration": {
+        "cidrNotation": "10.0.0.0/8"
+      }
+    }
+  ]
+}
