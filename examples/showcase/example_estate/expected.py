@@ -129,6 +129,11 @@ EXPECTED = MappingProxyType({
         ("B61", "Change tickets", "ITSM says its ticket servicenow:CHG0030108 (read 2026-09-23) was **cancelled**",
          "the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled", None,
          "CHG-2056"),
+        # (CHG-2099 reads the Jira Service Management tickets CHG-2098 links): the CAB declined an approval step
+        ("B95", "Change tickets", "ITSM says its ticket jira-sm:ITOPS-43 (read 2026-09-23) was **rejected**",
+         "the record approves CHG-2082 (the target's PingAccess protecting the crew portal), but its ticket's approval "
+         "step was declined: Jira has no request-wide approval, so the step's own decision is the evidence", None,
+         "CHG-2099"),
         # PingAccess in front of Tech Pubs (6.1a: CHG-2060 runs it in both environments, CHG-2061 reads its
         # configuration, CHG-2062 records the session's secret role and the header Tech Pubs trusts)
         ("B65", "PingAccess", "Web session `techpubs-session` can't sign users in: it authenticates to the token "
@@ -564,6 +569,9 @@ EXPECTED = MappingProxyType({
          "its legacy change model's state is kept native)", None, "CHG-2056"),
         ("A175", "Change tickets", "names ticket servicenow:CHG0030107, but no import has read it",
          "CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed", None, "CHG-2056"),
+        ("A236", "Change tickets", "the approval of its ticket jira-sm:ITOPS-42 (read 2026-09-23) is requested",
+         "the record approves CHG-2081, but its ticket's CAB step is still pending (one CAB member approved: not the "
+         "step's decision, and the change manager's earlier step doesn't approve the change)", None, "CHG-2099"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "

@@ -1,0 +1,40 @@
+# CHG-2098 (approved): the platform team's changes tracked in Jira Service Management (the ITOPS project on the
+# Data Center site jira.example-aero.test) name their tickets (ciamTicketRef jira-sm:<key>, the operator's link), and
+# the estate settings map the site's change workflow and fields: which status means which state (by status id or
+# name; Declined is left unmapped, so it is kept as Jira gives it) and which custom fields hold the planned and
+# actual windows, the change type and the risk (by field id or name, as GET /rest/api/2/field lists them). Nothing
+# here is ticket evidence: CHG-2099 reads the tickets into ou=tickets, and no ticket ever changes a change record's
+# status.
+dn: cn=jira-sm-status-states,ou=settings,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEstateSetting
+cn: jira-sm-status-states
+ciamEstateValue: 10010=assess, Awaiting CAB approval=authorize, 10012=schedu
+ led, Implementing=implement, Completed=closed, Canceled=cancelled
+
+dn: cn=jira-sm-change-fields,ou=settings,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEstateSetting
+cn: jira-sm-change-fields
+ciamEstateValue: planned-start=Planned start, planned-end=Planned end, work-
+ start=Change start date, work-end=customfield_10073, change-type=Change typ
+ e, risk=Change risk
+
+dn: cn=CHG-2060,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: jira-sm:ITOPS-41
+
+dn: cn=CHG-2081,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: jira-sm:ITOPS-42
+
+dn: cn=CHG-2082,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: jira-sm:ITOPS-43

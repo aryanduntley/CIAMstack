@@ -83,7 +83,8 @@ def test_a_linked_ticket_is_read_as_evidence_under_ou_tickets():
         "cn": ("CHG0001",), "ciamImportedAt": ("20260923090000Z",), "ciamTitle": ("Ticket CHG0001",),
         "ciamProviderRef": ("s1",), "ciamDocUrl": (f"https://{HOST}/api/now/table/change_request/s1",),
         "ciamTicketState": ("scheduled",), "ciamTicketApproval": ("approved",),
-        "ciamTicketNativeState": ("-2 label -2",), "ciamTicketPlannedStart": ("20260924020000Z",),
+        "ciamTicketNativeState": ("-2 label -2",), "ciamTicketChangeType": ("normal",),
+        "ciamTicketPlannedStart": ("20260924020000Z",),
         "ciamTicketPlannedEnd": ("20260924060000Z",), "ciamTicketApprover": ("approved u9 updated 20260921100000Z",),
         "ciamTicketFact": ("type normal", f"chg_model {NORMAL}", "assignment_group g1", "requested_by u1",
                            "sys_updated_on 2026-09-22 10:00:00")}

@@ -23,6 +23,7 @@ What a ticket says:
                           mean none was needed)
   ciamTicketApprover      each sysapproval_approver record of it, detail only: "<state> <approver sys_id> updated
                           <sys_updated_on>" (identifiers, never names; the update time is not when it was approved)
+  ciamTicketChangeType    type (normal, standard, emergency), also kept as a fact
   planned / work window   start_date and end_date (planned), work_start and work_end (actual)
   ciamTicketFact          type, chg_model, close_code, assignment_group, cmdb_ci, requested_by, correlation_id,
                           correlation_display and sys_updated_on, raw (reference fields keep their sys_ids)
@@ -42,6 +43,7 @@ from opsdir.core.directory import gtime, ou_entry
 from opsdir.core.naming import rdn_safe
 from opsdir.core.settings import setting_value
 from opsdir.domains.governance.naming import TICKETS
+from opsdir.domains.governance.schema import TICKET_CHANGE_TYPES
 from opsdir.domains.governance.tickets import adapter_dn, linked_numbers, ticket_entry, ticket_group
 
 SYSTEM = "servicenow"
@@ -175,6 +177,7 @@ def ticket_facts(r, approvers, host, models):
             "ciamTicketState": state,
             "ciamTicketApproval": APPROVALS.get(_raw(r.get("approval"))),
             "ciamTicketNativeState": f"{code} {label}".strip() or None,
+            "ciamTicketChangeType": _raw(r.get("type")) if _raw(r.get("type")) in TICKET_CHANGE_TYPES else None,
             **{attr: _time(_raw(r.get(f))) for f, attr in WINDOW},
             "ciamTicketApprover": approvers,
             "ciamTicketFact": tuple(f"{f} {_raw(r.get(f))}" for f in FACT_FIELDS if _raw(r.get(f))) or None}

@@ -1,0 +1,34 @@
+{
+ "fields": {
+  "created": "2026-09-16T11:00:00.000+0000",
+  "customfield_10005": {
+   "id": "10200",
+   "value": "Normal"
+  },
+  "customfield_10006": {
+   "id": "10210",
+   "value": "High"
+  },
+  "customfield_10070": "2026-09-24T02:00:00.000+0000",
+  "customfield_10071": "2026-09-24T08:00:00.000+0000",
+  "customfield_10072": null,
+  "customfield_10073": null,
+  "issuetype": {
+   "id": "10101",
+   "name": "Change"
+  },
+  "resolution": null,
+  "status": {
+   "id": "10014",
+   "name": "Declined",
+   "statusCategory": {
+    "key": "done"
+   }
+  },
+  "summary": "Target PingAccess protects the crew portal in place of the SiteMinder web agent",
+  "updated": "2026-09-22T17:20:00.000+0000"
+ },
+ "id": "10043",
+ "key": "ITOPS-43",
+ "self": "https://jira.example-aero.test/rest/api/2/issue/10043"
+}

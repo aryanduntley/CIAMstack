@@ -702,6 +702,26 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the crew portal web server's SiteMinder agent files (its Web
   Agent, policy servers, trusted host)
 
+dn: cn=CHG-2098,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2098
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Link the platform team's changes to their Jira Service Management t
+ ickets; map the site's change workflow statuses and fields
+
+dn: cn=CHG-2099,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2099
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the linked Jira Service Management tickets as evidence (state,
+  approval steps, planned window)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

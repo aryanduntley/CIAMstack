@@ -31,6 +31,7 @@ The instance's host folder gives each ticket its address, `ciamDocUrl` = `https:
 |---|---|
 | `number`, `sys_id`, `short_description` | `cn`, `ciamProviderRef`, `ciamTitle` |
 | `state` (with `chg_model`) | `ciamTicketState` from `STATE_MODELS["standard"]` (-5 new, -4 assess, -3 authorize, -2 scheduled, -1 implement, 0 review, 3 closed, 4 cancelled) when the model is named in the setting; `ciamTicketNativeState` always: the raw code and its label |
+| `type` | `ciamTicketChangeType` (`normal`, `standard`, `emergency`; any other value only as the fact below) |
 | `approval` | `ciamTicketApproval` (`not requested`, `requested`, `approved`, `rejected` → not-requested, requested, approved, rejected): **the** approval evidence |
 | `start_date`, `end_date` | `ciamTicketPlannedStart`, `ciamTicketPlannedEnd` |
 | `work_start`, `work_end` | `ciamTicketWorkStart`, `ciamTicketWorkEnd` |
