@@ -138,15 +138,16 @@ a container whose inventory can't show rotation (Vault KV metadata) is said once
 ### ITSM tickets (change evidence)
 
 A change record names the ITSM ticket its change management tracks it by: `ciamTicketRef` `<add-on>:<number>`
-(`servicenow:CHG0030101`, `jira-sm:ITOPS-42`), the operator's link. An ITSM add-on's importer
-(`servicenow/change-requests`, `jira-sm/change-requests`, and their read-only collectors) reads the linked tickets
-into their own entries, `ciamTicket` at `cn=<number>,ou=<add-on>, ou=tickets` (the governance domain): the state in
-neutral terms (`ciamTicketState`, only when the add-on knows the ticket's state model; `ciamTicketNativeState` keeps
-what the system said), the overall approval (`ciamTicketApproval`; where the system approves by workflow steps, as
-Jira Service Management does, the add-on derives it from the steps' own decisions, kept in `ciamTicketApprovalStep`),
-the kind of change (`ciamTicketChangeType`: standard, normal or emergency), the planned and actual windows, each
-approval record as detail only (`ciamTicketApprover`, identifiers, never names), other fields raw (`ciamTicketFact`),
-the system's id (`ciamProviderRef`) and address (`ciamDocUrl`). All of it is EVIDENCE: nothing is written under
+(`servicenow:CHG0030101`, `jira-sm:ITOPS-42`, `bmc-helix:CRQ000000001201`), the operator's link. An ITSM add-on's
+importer (`servicenow/change-requests`, `jira-sm/change-requests`, `bmc-helix/change-requests`, and their read-only
+collectors) reads the linked tickets into their own entries, `ciamTicket` at `cn=<number>,ou=<add-on>, ou=tickets`
+(the governance domain): the state in neutral terms (`ciamTicketState`, only when the add-on knows the ticket's state
+model; `ciamTicketNativeState` keeps what the system said), the overall approval (`ciamTicketApproval`; where the
+system approves by steps, as Jira Service Management and BMC Helix ITSM do, the add-on derives it from the steps' own
+decisions, kept in `ciamTicketApprovalStep`), the kind of change (`ciamTicketChangeType`: standard, normal or
+emergency), the planned and actual windows, each approval record as detail only (`ciamTicketApprover`, identifiers,
+never names), other fields raw (`ciamTicketFact`), the system's id (`ciamProviderRef`) and address (`ciamDocUrl`). All
+of it is EVIDENCE: nothing is written under
 `ou=changes`, a ticket never changes a change's status or approver, and the store's rule that every write needs an
 approved change record is untouched (a ticket can't authorize anything). Each import replaces only the tickets it
 read; a linked ticket the export lacks is never removed. `opsdir report tickets` lists every linked change with its

@@ -134,6 +134,10 @@ EXPECTED = MappingProxyType({
          "the record approves CHG-2082 (the target's PingAccess protecting the crew portal), but its ticket's approval "
          "step was declined: Jira has no request-wide approval, so the step's own decision is the evidence", None,
          "CHG-2099"),
+        # (CHG-2106 reads the BMC Helix ITSM change requests CHG-2105 links): the business approval was rejected
+        ("B105", "Change tickets", "ITSM says its ticket bmc-helix:CRQ000000001202 (read 2026-09-23) was **rejected**",
+         "the record approves CHG-2086 (the forest's certificate templates over LDAPS), but its change request is "
+         "Rejected (Schedule Conflicts): the security CAB rejected its business approval", None, "CHG-2106"),
         # PingAccess in front of Tech Pubs (6.1a: CHG-2060 runs it in both environments, CHG-2061 reads its
         # configuration, CHG-2062 records the session's secret role and the header Tech Pubs trusts)
         ("B65", "PingAccess", "Web session `techpubs-session` can't sign users in: it authenticates to the token "
@@ -572,6 +576,9 @@ EXPECTED = MappingProxyType({
         ("A236", "Change tickets", "the approval of its ticket jira-sm:ITOPS-42 (read 2026-09-23) is requested",
          "the record approves CHG-2081, but its ticket's CAB step is still pending (one CAB member approved: not the "
          "step's decision, and the change manager's earlier step doesn't approve the change)", None, "CHG-2099"),
+        ("A250", "Change tickets", "ITSM says the work on its ticket bmc-helix:CRQ000000001203 (read 2026-09-23) ran",
+         "CHG-2092's expedited change request is being implemented: its rollout started 2026-09-22, before the "
+         "planned window opens on 2026-09-24", None, "CHG-2106"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "

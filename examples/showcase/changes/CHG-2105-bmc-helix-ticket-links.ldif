@@ -1,0 +1,19 @@
+# CHG-2105 (approved): the security operations team tracks its changes in BMC Helix ITSM (Helix SaaS; its AR System
+# REST server helix-restapi.example-aero.test), and its changes name their change requests (ciamTicketRef
+# bmc-helix:<Infrastructure Change ID>, the operator's link). BMC's Change Request Status list is the add-on's default
+# map (bmc-helix-status-states), so no setting is needed. Nothing here is ticket evidence: CHG-2106 reads the change
+# requests into ou=tickets, and no ticket ever changes a change record's status.
+dn: cn=CHG-2049,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: bmc-helix:CRQ000000001201
+
+dn: cn=CHG-2086,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: bmc-helix:CRQ000000001202
+
+dn: cn=CHG-2092,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: bmc-helix:CRQ000000001203

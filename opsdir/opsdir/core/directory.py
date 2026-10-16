@@ -80,6 +80,22 @@ def gtime_of_iso(text):
         return None
 
 
+DATE_TIME = re.compile(r"\d{4}-\d{2}-\d{2}T")
+DATE_ONLY = re.compile(r"\d{4}-\d{2}-\d{2}")
+DATE_WITHOUT_TIME = "a date without a time (its time zone is unknown)"
+
+
+def iso_date_time(text):
+    """(GeneralizedTime, None) of an ISO 8601 date-time (its offset converted to UTC; none is UTC), or (None, why
+    not): a date without a time is refused (its time zone is unknown), as is anything else."""
+    text = str(text or "")
+    if DATE_TIME.match(text) and gtime_of_iso(text):
+        return gtime_of_iso(text), None
+    if DATE_ONLY.fullmatch(text):
+        return None, DATE_WITHOUT_TIME
+    return None, f"`{text}` isn't a date-time"
+
+
 def fingerprint(v):
     """A certificate fingerprint as the record writes it: uppercase hex pairs joined by colons."""
     h = re.sub(r"[^0-9A-Fa-f]", "", v or "").upper()

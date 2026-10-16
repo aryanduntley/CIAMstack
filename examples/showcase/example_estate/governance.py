@@ -175,6 +175,10 @@ CHANGES = (
      "workflow statuses and fields", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2099", "Read the linked Jira Service Management tickets as evidence (state, approval steps, planned window)",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2105", "Link the security operations team's changes to their BMC Helix ITSM change requests", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2106", "Read the linked BMC Helix ITSM change requests as evidence (status, approval signatures, windows)",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

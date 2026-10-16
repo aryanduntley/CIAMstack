@@ -1,0 +1,31 @@
+{
+ "entries": [
+  {
+   "_links": {
+    "self": [
+     {
+      "href": "https://helix-restapi.example-aero.test/api/arsys/v1/entry/CHG%3AInfrastructure%20Change/000000000001202"
+     }
+    ]
+   },
+   "values": {
+    "Actual End Date": null,
+    "Actual Start Date": null,
+    "Change Request Status": "Rejected",
+    "Change Timing": "Normal",
+    "Change Type": "Change",
+    "Description": "Collect the forest's certificate templates over LDAPS",
+    "Impact": "3-Moderate/Limited",
+    "Infrastructure Change ID": "CRQ000000001202",
+    "Last Modified Date": "2026-09-22T15:30:00.000+0000",
+    "Priority": "Medium",
+    "Request ID": "000000000001202",
+    "Risk Level": "Risk Level 2",
+    "Scheduled End Date": "2026-09-24T12:00:00.000+0000",
+    "Scheduled Start Date": "2026-09-24T09:00:00.000+0000",
+    "Status Reason": "Schedule Conflicts",
+    "Urgency": "3-Medium"
+   }
+  }
+ ]
+}

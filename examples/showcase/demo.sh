@@ -325,6 +325,10 @@ echo "-- the platform team's changes name their Jira Service Management tickets 
 echo "   mapped (CHG-2098); the tickets and their approval steps are read as evidence (CHG-2099: as the REST APIs answer)"
 od modify --change CHG-2098 changes/CHG-2098-jira-sm-ticket-links.ldif
 od import --change CHG-2099 --at 20260923090000Z jira-sm/change-requests exports/jira-sm
+echo "-- the security operations team's changes name their BMC Helix ITSM change requests (CHG-2105); the change requests"
+echo "   and their approval signatures are read as evidence (CHG-2106: as the AR System REST API answers)"
+od modify --change CHG-2105 changes/CHG-2105-bmc-helix-ticket-links.ldif
+od import --change CHG-2106 --at 20260923090000Z bmc-helix/change-requests exports/bmc-helix
 od report tickets
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
