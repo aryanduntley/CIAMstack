@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "id": "opsdir-standby-prod-pf-engine",
+      "name": "opsdir-standby-prod-pf-engine",
+      "namespace": "standby",
+      "description": "opsdir: Elastic Agent on role pf-engine's servers in standby/prod",
+      "monitoring_enabled": [
+        "logs",
+        "metrics"
+      ]
+    },
+    {
+      "id": "opsdir-standby-prod-pf-admin",
+      "name": "opsdir-standby-prod-pf-admin",
+      "namespace": "standby",
+      "description": "opsdir: Elastic Agent on role pf-admin's servers in standby/prod",
+      "monitoring_enabled": [
+        "logs",
+        "metrics"
+      ]
+    }
+  ]
+}

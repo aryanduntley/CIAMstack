@@ -113,6 +113,16 @@
       "format": "ndjson",
       "sha256": "26f27eddfb04a422270108c2fbdd5eadde42b51b73ae34263d7bc36c38b68d53"
     },
+    "elastic/api/fleet-agent-policies.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "630446479f5c081a845ef68a2e4ce12c4cf06ac3e29e1d5250b5fc3c21df8a9a"
+    },
+    "elastic/api/fleet-package-policies.json": {
+      "scope": "environment-specific",
+      "format": "json",
+      "sha256": "418639dc55196de194d5debb897c4c427bf00a2aabfe3c5b534d659265ce1073"
+    },
     "elastic/api/ilm-policies.json": {
       "scope": "environment-specific",
       "format": "json",
@@ -126,7 +136,7 @@
     "elastic/terraform/main.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "e8507516bf784303c5f9f7e851abc583fff27d34ad1c8f4485e98f9f84772c1a"
+      "sha256": "f5165ed238eac4ead7bad32498d5309920ff1367feaf552daad17d0ede2e46ed"
     },
     "elastic/terraform/versions.tf": {
       "scope": "environment-specific",

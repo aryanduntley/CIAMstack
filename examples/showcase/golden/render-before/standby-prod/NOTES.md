@@ -5,7 +5,7 @@
 -->
 # Render notes: standby/prod
 
-**6 blockers, 14 actions, 1 note, 0 to review**
+**6 blockers, 15 actions, 1 note, 0 to review**
 
 ## Blockers
 
@@ -92,18 +92,23 @@
 - **Who:** ciam-platform
 - **How:** Ask Google's account team whether the Ops Agent, log sinks and GKE workload logging may be used under the workload's compliance regime before relying on them
 
-### Elastic Agent (Logs)
+### Elastic Agent on role pf-admin (Logs)
 
-- **What:** the routes' logs on the servers reach the Elastic data streams through Elastic Agent (a Fleet policy), which the Elastic team keeps; opsdir doesn't render it
+- **What:** its servers' log files reach the Elastic data streams through the Fleet agent policy opsdir-standby-prod-pf-admin (rendered); enrolling the servers is the Elastic team's, and the Fleet Server URL and the policy's enrollment token are Fleet's, never rendered
+- **Where:** elastic/terraform/main.tf:7; standby/prod
+- **Who:** ciam-platform
+- **How:**
+  1. Install Elastic Agent on pf-admin-1 enrolled in opsdir-standby-prod-pf-admin: elastic-agent install --url <Fleet Server URL> --enrollment-token <its enrollment token>
+  2. Applying the API documents: install the filestream integration package 2.5.1 first (POST /api/fleet/epm/packages/filestream/2.5.1); the Terraform installs it
+
+### Elastic Agent on role pf-engine (Logs)
+
+- **What:** its servers' log files reach the Elastic data streams through the Fleet agent policy opsdir-standby-prod-pf-engine (rendered); enrolling the servers is the Elastic team's, and the Fleet Server URL and the policy's enrollment token are Fleet's, never rendered
 - **Where:** elastic/terraform/main.tf:6; standby/prod
 - **Who:** ciam-platform
 - **How:**
-  1. Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/audit.log on role pf-engine (pf-engine-1, pf-engine-2) into logs-ciam.security-standby
-  2. Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/provisioner-audit.log on role pf-engine (pf-engine-1, pf-engine-2) into logs-ciam.security-standby
-  3. Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby
-  4. Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-event-detail.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby
-  5. Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-api.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby
-  6. Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-request.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby
+  1. Install Elastic Agent on pf-engine-1, pf-engine-2 enrolled in opsdir-standby-prod-pf-engine: elastic-agent install --url <Fleet Server URL> --enrollment-token <its enrollment token>
+  2. Applying the API documents: install the filestream integration package 2.5.1 first (POST /api/fleet/epm/packages/filestream/2.5.1); the Terraform installs it
 
 ### Elastic data stream logs-ciam.security-standby (Logs)
 

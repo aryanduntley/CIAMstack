@@ -691,4 +691,12 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2099  insert  cn=ITOPS-42,ou=jira-sm,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2099  insert  cn=ITOPS-43,ou=jira-sm,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2099  insert  cn=jira-sm.change-requests.shared.s1-0390c675eef2312e,ou=imports,dc=ciam-ops
-(691 rows)
+<TIMESTAMP>          CHG-2105  update  cn=CHG-2049,ou=changes,dc=ciam-ops
+<TIMESTAMP>          CHG-2105  update  cn=CHG-2086,ou=changes,dc=ciam-ops
+<TIMESTAMP>          CHG-2105  update  cn=CHG-2092,ou=changes,dc=ciam-ops
+<TIMESTAMP>          CHG-2106  insert  ou=bmc-helix,ou=tickets,dc=ciam-ops
+<TIMESTAMP>          CHG-2106  insert  cn=CRQ000000001201,ou=bmc-helix,ou=tickets,dc=ciam-ops
+<TIMESTAMP>          CHG-2106  insert  cn=CRQ000000001202,ou=bmc-helix,ou=tickets,dc=ciam-ops
+<TIMESTAMP>          CHG-2106  insert  cn=CRQ000000001203,ou=bmc-helix,ou=tickets,dc=ciam-ops
+<TIMESTAMP>          CHG-2106  insert  cn=bmc-helix.change-requests.shared.s1-325755823c4d1f7d,ou=imports,dc=ciam-ops
+(699 rows)

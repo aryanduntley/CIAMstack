@@ -1,0 +1,178 @@
+{
+  "items": [
+    {
+      "id": "opsdir-standby-prod-pf-engine-pingfederate-log-audit-log",
+      "name": "opsdir-standby-prod-pf-engine-pingfederate-log-audit-log",
+      "description": "opsdir: pingfederate/log/audit.log on role pf-engine into logs-ciam.security-standby (log route security-events)",
+      "namespace": "standby",
+      "policy_ids": [
+        "opsdir-standby-prod-pf-engine"
+      ],
+      "package": {
+        "name": "filestream",
+        "version": "2.5.1"
+      },
+      "inputs": {
+        "filestream-filestream": {
+          "enabled": true,
+          "streams": {
+            "filestream.filestream": {
+              "enabled": true,
+              "vars": {
+                "paths": [
+                  "/opt/ping/pingfederate-13.1.3/pingfederate/log/audit.log"
+                ],
+                "data_stream.dataset": "ciam.security"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "opsdir-standby-prod-pf-engine-pingfederate-log-provisioner-audit-log",
+      "name": "opsdir-standby-prod-pf-engine-pingfederate-log-provisioner-audit-log",
+      "description": "opsdir: pingfederate/log/provisioner-audit.log on role pf-engine into logs-ciam.security-standby (log route security-events)",
+      "namespace": "standby",
+      "policy_ids": [
+        "opsdir-standby-prod-pf-engine"
+      ],
+      "package": {
+        "name": "filestream",
+        "version": "2.5.1"
+      },
+      "inputs": {
+        "filestream-filestream": {
+          "enabled": true,
+          "streams": {
+            "filestream.filestream": {
+              "enabled": true,
+              "vars": {
+                "paths": [
+                  "/opt/ping/pingfederate-13.1.3/pingfederate/log/provisioner-audit.log"
+                ],
+                "data_stream.dataset": "ciam.security"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-log",
+      "name": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-log",
+      "description": "opsdir: pingfederate/log/admin.log on role pf-admin into logs-ciam.security-standby (log route security-events)",
+      "namespace": "standby",
+      "policy_ids": [
+        "opsdir-standby-prod-pf-admin"
+      ],
+      "package": {
+        "name": "filestream",
+        "version": "2.5.1"
+      },
+      "inputs": {
+        "filestream-filestream": {
+          "enabled": true,
+          "streams": {
+            "filestream.filestream": {
+              "enabled": true,
+              "vars": {
+                "paths": [
+                  "/opt/ping/pingfederate-13.1.3/pingfederate/log/admin.log"
+                ],
+                "data_stream.dataset": "ciam.security"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-event-detail-log",
+      "name": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-event-detail-log",
+      "description": "opsdir: pingfederate/log/admin-event-detail.log on role pf-admin into logs-ciam.security-standby (log route security-events)",
+      "namespace": "standby",
+      "policy_ids": [
+        "opsdir-standby-prod-pf-admin"
+      ],
+      "package": {
+        "name": "filestream",
+        "version": "2.5.1"
+      },
+      "inputs": {
+        "filestream-filestream": {
+          "enabled": true,
+          "streams": {
+            "filestream.filestream": {
+              "enabled": true,
+              "vars": {
+                "paths": [
+                  "/opt/ping/pingfederate-13.1.3/pingfederate/log/admin-event-detail.log"
+                ],
+                "data_stream.dataset": "ciam.security"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-api-log",
+      "name": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-api-log",
+      "description": "opsdir: pingfederate/log/admin-api.log on role pf-admin into logs-ciam.security-standby (log route security-events)",
+      "namespace": "standby",
+      "policy_ids": [
+        "opsdir-standby-prod-pf-admin"
+      ],
+      "package": {
+        "name": "filestream",
+        "version": "2.5.1"
+      },
+      "inputs": {
+        "filestream-filestream": {
+          "enabled": true,
+          "streams": {
+            "filestream.filestream": {
+              "enabled": true,
+              "vars": {
+                "paths": [
+                  "/opt/ping/pingfederate-13.1.3/pingfederate/log/admin-api.log"
+                ],
+                "data_stream.dataset": "ciam.security"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-request-log",
+      "name": "opsdir-standby-prod-pf-admin-pingfederate-log-admin-request-log",
+      "description": "opsdir: pingfederate/log/admin-request.log on role pf-admin into logs-ciam.security-standby (log route security-events)",
+      "namespace": "standby",
+      "policy_ids": [
+        "opsdir-standby-prod-pf-admin"
+      ],
+      "package": {
+        "name": "filestream",
+        "version": "2.5.1"
+      },
+      "inputs": {
+        "filestream-filestream": {
+          "enabled": true,
+          "streams": {
+            "filestream.filestream": {
+              "enabled": true,
+              "vars": {
+                "paths": [
+                  "/opt/ping/pingfederate-13.1.3/pingfederate/log/admin-request.log"
+                ],
+                "data_stream.dataset": "ciam.security"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

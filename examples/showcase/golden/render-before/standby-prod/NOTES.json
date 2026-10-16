@@ -2,7 +2,7 @@
   "environment": "env=prod,cloud=standby,ou=environments,dc=ciam-ops",
   "counts": {
     "blocker": 6,
-    "action": 14,
+    "action": 15,
     "note": 1,
     "to_review": 0
   },
@@ -221,15 +221,32 @@
     {
       "area": "Logs",
       "severity": "action",
-      "subject": "Elastic Agent",
-      "text": "the routes' logs on the servers reach the Elastic data streams through Elastic Agent (a Fleet policy), which the Elastic team keeps; opsdir doesn't render it",
+      "subject": "Elastic Agent on role pf-admin",
+      "text": "its servers' log files reach the Elastic data streams through the Fleet agent policy opsdir-standby-prod-pf-admin (rendered); enrolling the servers is the Elastic team's, and the Fleet Server URL and the policy's enrollment token are Fleet's, never rendered",
       "how": [
-        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/audit.log on role pf-engine (pf-engine-1, pf-engine-2) into logs-ciam.security-standby",
-        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/provisioner-audit.log on role pf-engine (pf-engine-1, pf-engine-2) into logs-ciam.security-standby",
-        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby",
-        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-event-detail.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby",
-        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-api.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby",
-        "Collect /opt/ping/pingfederate-13.1.3/pingfederate/log/admin-request.log on role pf-admin (pf-admin-1) into logs-ciam.security-standby"
+        "Install Elastic Agent on pf-admin-1 enrolled in opsdir-standby-prod-pf-admin: elastic-agent install --url <Fleet Server URL> --enrollment-token <its enrollment token>",
+        "Applying the API documents: install the filestream integration package 2.5.1 first (POST /api/fleet/epm/packages/filestream/2.5.1); the Terraform installs it"
+      ],
+      "entry": null,
+      "scope": "standby/prod",
+      "owners": [
+        "ciam-platform"
+      ],
+      "places": [
+        {
+          "path": "elastic/terraform/main.tf",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "area": "Logs",
+      "severity": "action",
+      "subject": "Elastic Agent on role pf-engine",
+      "text": "its servers' log files reach the Elastic data streams through the Fleet agent policy opsdir-standby-prod-pf-engine (rendered); enrolling the servers is the Elastic team's, and the Fleet Server URL and the policy's enrollment token are Fleet's, never rendered",
+      "how": [
+        "Install Elastic Agent on pf-engine-1, pf-engine-2 enrolled in opsdir-standby-prod-pf-engine: elastic-agent install --url <Fleet Server URL> --enrollment-token <its enrollment token>",
+        "Applying the API documents: install the filestream integration package 2.5.1 first (POST /api/fleet/epm/packages/filestream/2.5.1); the Terraform installs it"
       ],
       "entry": null,
       "scope": "standby/prod",

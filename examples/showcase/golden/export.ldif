@@ -1068,6 +1068,18 @@ ciamMaterialFormat: text
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 90
 
+dn: cn=bmc-helix.change-requests.shared.s1-325755823c4d1f7d,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: bmc-helix.change-requests.shared.s1-325755823c4d1f7d
+ciamChangeRef: cn=CHG-2106,ou=changes,dc=ciam-ops
+ciamImportScope: cn=CRQ000000001201,ou=bmc-helix,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CRQ000000001202,ou=bmc-helix,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CRQ000000001203,ou=bmc-helix,ou=tickets,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: bmc-helix/change-requests
+
 dn: cn=break-glass-root,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1619,6 +1631,7 @@ cn: CHG-2049
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
+ciamTicketRef: bmc-helix:CRQ000000001201
 ciamTitle: Read the security team's Splunk retention and detections into the r
  ecord
 
@@ -1822,6 +1835,7 @@ cn: CHG-2086
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
+ciamTicketRef: bmc-helix:CRQ000000001202
 ciamTitle: Record the forest's certificate templates again, collected over LDA
  PS with who may enroll
 
@@ -1852,6 +1866,7 @@ cn: CHG-2092
 ciamApprovedBy: CAB 2026-09-18
 ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
+ciamTicketRef: bmc-helix:CRQ000000001203
 ciamTitle: Record what the issuing CA's revocation endpoints answer, observed 
  from the data center
 
@@ -1884,6 +1899,26 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the linked Jira Service Management tickets as evidence (state,
   approval steps, planned window)
+
+dn: cn=CHG-2105,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2105
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Link the security operations team's changes to their BMC Helix ITSM
+  change requests
+
+dn: cn=CHG-2106,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2106
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the linked BMC Helix ITSM change requests as evidence (status,
+  approval signatures, windows)
 
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
@@ -5579,6 +5614,11 @@ objectClass: top
 objectClass: organizationalUnit
 ou: authentication-policies
 
+dn: ou=bmc-helix,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: bmc-helix
+
 dn: ou=captcha-providers,ou=pingfederate,dc=ciam-ops
 objectClass: top
 objectClass: organizationalUnit
@@ -6715,6 +6755,85 @@ ciamNextUpdate: 20260929180000Z
 ciamRevocationKind: crl
 ciamSignatureCheck: invalid
 ciamThisUpdate: 20260922060000Z
+
+dn: cn=CRQ000000001201,ou=bmc-helix,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CRQ000000001201
+ciamDocUrl: https://helix-restapi.example-aero.test/api/arsys/v1/entry/CHG%3AI
+ nfrastructure%20Change/000000000001201
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 000000000001201
+ciamTicketChangeType: standard
+ciamTicketFact: change-type Change
+ciamTicketFact: risk-level Risk Level 1
+ciamTicketFact: impact 4-Minor/Localized
+ciamTicketFact: urgency 4-Low
+ciamTicketFact: priority Low
+ciamTicketFact: last-modified 2026-09-21T10:00:00.000+0000
+ciamTicketNativeState: Scheduled
+ciamTicketPlannedEnd: 20260924160000Z
+ciamTicketPlannedStart: 20260924140000Z
+ciamTicketState: scheduled
+ciamTitle: Read the security team's Splunk retention and detections
+
+dn: cn=CRQ000000001202,ou=bmc-helix,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CRQ000000001202
+ciamDocUrl: https://helix-restapi.example-aero.test/api/arsys/v1/entry/CHG%3AI
+ nfrastructure%20Change/000000000001202
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 000000000001202
+ciamTicketApproval: rejected
+ciamTicketApprovalStep: approved 000000000000411 created 20260918090000Z
+ciamTicketApprovalStep: declined 000000000000412 created 20260919090000Z
+ciamTicketApprover: approved mtorres step 000000000000411 updated 202609181300
+ 00Z phase Review
+ciamTicketApprover: rejected secops-cab step 000000000000412 updated 202609221
+ 53000Z phase Business Approval
+ciamTicketChangeType: normal
+ciamTicketFact: change-type Change
+ciamTicketFact: status-reason Schedule Conflicts
+ciamTicketFact: risk-level Risk Level 2
+ciamTicketFact: impact 3-Moderate/Limited
+ciamTicketFact: urgency 3-Medium
+ciamTicketFact: priority Medium
+ciamTicketFact: last-modified 2026-09-22T15:30:00.000+0000
+ciamTicketNativeState: Rejected
+ciamTicketPlannedEnd: 20260924120000Z
+ciamTicketPlannedStart: 20260924090000Z
+ciamTitle: Collect the forest's certificate templates over LDAPS
+
+dn: cn=CRQ000000001203,ou=bmc-helix,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CRQ000000001203
+ciamDocUrl: https://helix-restapi.example-aero.test/api/arsys/v1/entry/CHG%3AI
+ nfrastructure%20Change/000000000001203
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 000000000001203
+ciamTicketApproval: approved
+ciamTicketApprovalStep: approved 000000000000413 created 20260919090000Z
+ciamTicketApprover: approved secops-cab step 000000000000413 updated 202609201
+ 00000Z phase Business Approval
+ciamTicketFact: change-type Change
+ciamTicketFact: status-reason In Rollout
+ciamTicketFact: risk-level Risk Level 2
+ciamTicketFact: impact 3-Moderate/Limited
+ciamTicketFact: urgency 3-Medium
+ciamTicketFact: priority Medium
+ciamTicketFact: last-modified 2026-09-22T16:00:00.000+0000
+ciamTicketFact: change-timing Expedited
+ciamTicketNativeState: Implementation In Progress
+ciamTicketPlannedEnd: 20260924180000Z
+ciamTicketPlannedStart: 20260924080000Z
+ciamTicketState: implement
+ciamTicketWorkStart: 20260922193000Z
+ciamTitle: Observe the issuing CA's revocation endpoints from the data center
 
 dn: cn=custom-scheme-crew-badge,ou=siteminder,ou=source-objects,dc=ciam-ops
 objectClass: top

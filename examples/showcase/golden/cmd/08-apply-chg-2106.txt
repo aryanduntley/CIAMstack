@@ -1,0 +1,5 @@
+CRQ000000001203: Change Timing `Expedited` isn't Emergency, Normal or Standard: kept as a fact
+status Rejected isn't mapped in bmc-helix-status-states: the state of CRQ000000001202 is kept as BMC gives it (neutral state unknown)
+3 ticket(s) read from helix-restapi.example-aero.test
+CHG-2106: 5 change(s) applied, the import run among them
+exit 0
