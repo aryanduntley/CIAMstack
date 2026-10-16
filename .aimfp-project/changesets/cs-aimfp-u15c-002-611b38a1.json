@@ -1,0 +1,85 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/hcl_reader.py",
+        "id_in_name": 1,
+        "name": "read_hcl",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true, \"description\": \"a .tf file's text\"}]",
+        "purpose": "The top-level items of a Terraform file as hcl.py writes it, in order: TfBlocks and ('#', comment) lines; blank lines are dropped. The text is cut into logical lines at newlines outside strings, comments and brackets, with recursion only into nested bodies. block(*b) writes each block read back byte for byte (checked over every golden cloud .tf). Raises ValueError naming the real line on anything else: a line that is no block, attribute, nested block or comment (inside nested blocks and multi-line objects too, the starting line threaded through value_of), and unbalanced brackets (detected by depth; the bracket blamed by matching kinds: one closing nothing, else the one a wrong closing bracket meets, else the innermost left open). Pure.",
+        "returns": "{\"type\": \"tuple[TfBlock | tuple[str, str]]\"}",
+        "source_hash": "b6cd9a8c9bc6151a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-hcl-dd868074"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/hcl_reader.py",
+        "id_in_name": 1,
+        "name": "value_of",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true, \"description\": \"one HCL expression's text\"}, {\"name\": \"line\", \"type\": \"int\", \"required\": false, \"description\": \"the line text starts on, for the line an error inside a multi-line object names (default 1: text's own first line; read_hcl passes the attribute's line)\"}]",
+        "purpose": "The model value of one HCL expression as hcl() writes it: a quoted string without interpolation -> str (\\\\ and \\\" unescaped); true/false -> bool; numbers -> int/float; a one-line [..] -> tuple of values (except a for expression, [for ...], which is one expression); a multi-line {..} -> dict of 'key = value' lines (keys as written; a line it can't read is a ValueError naming its real line, counted from line); anything else (a reference, function call, conditional, quoted ${} template, multi-line jsonencode, a for expression [for ...] or one-line {for ...}) -> '${<text>}', the raw form block()/hcl() take, so it writes back unchanged. Pure.",
+        "returns": "{\"type\": \"str | int | float | bool | tuple | dict\"}",
+        "source_hash": "72214b4cd7bfd023"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-value-of-df86ad8a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Found by worker-3 in task 510: hcl_reader.py:67, value_of's multi-line object branch calls _pairs(..., 0), so a line it can't read inside a multi-line object value is reported as 'line 0' in read_hcl's ValueError instead of its real line. Fix so the error names the real line (thread the value's starting line through, or re-raise with the offset), with a test. Error text only: no change to what reads successfully. Package opsdir-format-terraform (src, tests, README if it states the behaviour). Also fixed in the same pass (error text only, found while fixing): a nested block's body lines were reported one line early; unbalanced brackets named no line though the README said every error does (now the line of the bracket to blame, located by matching kinds once depth counting has found the imbalance, so detection and what reads are unchanged).",
+        "flows": [
+          "Cloud Infrastructure Render"
+        ],
+        "name": "U.15 d: hcl_reader error line inside a multi-line object",
+        "parent": {
+          "slug": "milestone-u-15-code-fixes-found-by-the-u-4-readme-054bce73"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-15-d-hcl-reader-error-line-inside-a-mu-1189dd81"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "0030fb7",
+    "branch": "aimfp-u15c-002",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/hcl_reader.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-d-hcl-reader-error-line-inside-a-mu-1189dd81"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-d-hcl-reader-error-line-inside-a-mu-1189dd81"
+      }
+    }
+  ],
+  "warnings": []
+}

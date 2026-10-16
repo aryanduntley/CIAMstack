@@ -1,0 +1,2495 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "Where externally kept infrastructure goes. A party's ciamTakesGeneratedInfra says whether it takes generated Terraform (absent: it is asked). The core's keepers decide who keeps each entry's blocks (the landing zone keeps its identities, guardrails, plumbing and GCP budgets by nature) and the root that gives: the stack's, a taking keeper's terraform/landing-zone[/<party>]/, or named and asked. Renderers stamp each entry's blocks with their origin, comment tails anchored to it. The Terraform format library splits a root N ways (imports follow their targets, lookups and providers copied where read, cross-root references become inputs plus outputs, cycles refused), regroups each root's files, prunes unused providers, lists asked keepers' resources and carries the files a keeper root reads. The clouds share its keeper-aware placement: roots by who keeps what, headers naming the cloud and the keeper, a keeper's network plumbing gathered from its bindings; each cloud passes only its title and its keeper roots' provider adjustment (AWS without the account pin, Google's project provider, Azure's providers.tf registrations). Every kept kind is placed by keeper on AWS, Azure and GCP: plumbing, landing zone, databases, object stores, volumes, snapshot policies, backups, audit trails, monitors, security services, suppressions, discovery, budgets. Asked keepers get one stack comment per entry. Scoped renders: flow 39."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Keeper Root Placement"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/state.py",
+        "id_in_name": 0,
+        "name": "state_resources",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}, {\"name\": \"skipped\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"read_pairs\", \"type\": \"Callable[[list], tuple]\", \"required\": true, \"description\": \"the cloud's pairs_resources\"}, {\"name\": \"names\", \"type\": \"Callable[[str, Mapping], Mapping]\", \"required\": false}, {\"name\": \"skipped_first\", \"type\": \"bool\", \"required\": false}]",
+        "purpose": "(resources, notices) of a Terraform state (format-terraform, shared by the cloud importers): state_pairs read by the cloud's read_pairs(pairs) -> (resources, notices); the skipped types' notices after the reader's, or before them with skipped_first (Azure).",
+        "returns": "{\"type\": \"tuple[tuple[Resource], tuple[str]]\"}",
+        "source_hash": "210b048667c9bc94"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-state-resources-832b559f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/plumbing.py",
+        "id_in_name": 0,
+        "name": "render_plumbing",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"keeper\", \"type\": \"Keeper\", \"required\": true}]",
+        "purpose": "AWS: Rendered of what a keeper keeps of environment m's plumbing: format-terraform placing.keeper_rendered with the AWS RENDERERS and network_data(m) (VPC and subnet data sources).",
+        "returns": "{\"type\": \"Rendered\", \"description\": \"Terraform items; variables and shared blocks once each (distinct)\"}",
+        "source_hash": "b1df6ec48e657ea4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-plumbing-5e02e406"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/plumbing.py",
+        "id_in_name": 0,
+        "name": "render_plumbing",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"keeper\", \"type\": \"Keeper\", \"required\": true}]",
+        "purpose": "Azure: Rendered of what a keeper keeps of environment m's plumbing: format-terraform placing.keeper_rendered with the Azure RENDERERS and network_data(m) (resource group, VNet and subnet data sources).",
+        "returns": "{\"type\": \"Rendered\", \"description\": \"Terraform items; variables and shared blocks once each (distinct)\"}",
+        "source_hash": "b1df6ec48e657ea4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-plumbing-d92d5faa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/plumbing.py",
+        "id_in_name": 0,
+        "name": "render_plumbing",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"keeper\", \"type\": \"Keeper\", \"required\": true}]",
+        "purpose": "GCP: Rendered of what a keeper keeps of environment m's plumbing: format-terraform placing.keeper_rendered with the GCP RENDERERS and network_data(m) (network and subnetwork data sources).",
+        "returns": "{\"type\": \"Rendered\", \"description\": \"Terraform items; variables and shared blocks once each (distinct)\"}",
+        "source_hash": "b1df6ec48e657ea4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-plumbing-49f8be8d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py",
+        "id_in_name": 0,
+        "name": "inventory_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of aws/cli-inventory: the exact AWS CLI calls still to make, in rounds (listings in the environment's VPC and region, then item details: listeners, tags, health, records, keys, schedules, backup plans and selections, the launch template versions autoscaling groups use (projected: no user data), EKS clusters/node groups/add-ons, alarm/log group/topic tags saved by name (tags_path), security services (GuardDuty detectors by id, Inspector status, Config recorders/channels/retention, Security Hub hub/standards; each service's describe-organization-configuration absent on the generic error its API documents outside the delegated administrator, NOT_ADMIN), permission sets), projected where outputs could carry secret material (canaries too); budgets (describe-budgets per account, notifications, SNS-only subscribers, tags under budgets/<account>/<budget>/; us-east-1, never FIPS: AWS Budgets has no FIPS endpoint) for the environment's own account, or in GovCloud for ciamBillingAccountRef through the billing profile; profile sources: each one's get-caller-identity first, then profile_purposes routes the billing one to budgets and the other to the organization's policies under --profile (describe-organization must be ciamOrganizationRef, else a problem step; the account's parents up to the root, list-policies-for-target per target and type, describe-policy once each -> org/<id>.json); a second profile for one purpose a problem step; () without a VPC",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "a7cecf4cf060159a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-inventory-steps-07016e35"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py",
+        "id_in_name": 0,
+        "name": "state_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "AWS collector step: the terraform-state calls through format-terraform state.state_steps (importer aws/terraform-state, s3:// locations fetched with `aws s3 cp <loc> -` via _aws; --terraform-dir: terraform state pull).",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "a91606a712aa20ac"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-state-steps-2cf138a3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/collect.py",
+        "id_in_name": 0,
+        "name": "inventory_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of azure/cli-inventory: exact az calls in rounds scoped to the environment's resource group, VNet, region, vaults and storage accounts (listings, then record sets, keys, functions, Front Door, forwarding rules, private endpoint zone groups, rule collection groups, DB parameters, backup policies/instances, federated credentials, recorded vaults); monitoring the cli_monitor reader reads (metric and scheduled-query alerts, action groups, Log Analytics workspaces, App Insights web tests in the resource group; the subscription's policy exemptions and Defender alert suppression rules); Defender plans, continuous exports (projected: no connection string or Logic App URI), the machines' VA setting (az rest, absent on Not Found) and consumption budgets of the subscription and resource group (az rest, api 2026-06-01); az rest GETs against the cloud's management endpoint; VPN connections, action groups (no receivers) and web tests (no request headers) projected; () without a resource group",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "517bc841db48e3e7"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-inventory-steps-43494f16"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/collect.py",
+        "id_in_name": 0,
+        "name": "state_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Azure collector step: the terraform-state calls through format-terraform state.state_steps (importer azure/terraform-state, azblob://<account>/<container>/<blob> locations downloaded with az storage blob download (_blob; incomplete locations left out); --terraform-dir: terraform state pull).",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "286b9d981815a007"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-state-steps-be979d33"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py",
+        "id_in_name": 0,
+        "name": "inventory_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of gcp/cli-inventory: the gcloud calls in rounds naming the project (CAI resources, the Shared VPC host's networks, instances with trimmed metadata, backend health, record sets per zone, schedules, channels, databases, disks, backup vaults and plans, edge and network depth, tag values/bindings, IAM: searched policies, service accounts, roles, pools and providers, deny policies, effective org policies; security services: SCC notification configs (v2, location global) and asset feeds of the project and of the organization the cloud records, enabled services; the budgets of the billing account the cloud records), secret-bearing outputs trimmed in memory; () without a project",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "14c3f5709b1aa176"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-inventory-steps-10298a47"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py",
+        "id_in_name": 0,
+        "name": "state_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "GCP collector step: the terraform-state calls through format-terraform state.state_steps (importer gcp/terraform-state, gs:// locations read with gcloud storage cat; --terraform-dir: terraform state pull).",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "9ecec39c4643c5a5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-state-steps-547a524f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py",
+        "id_in_name": 0,
+        "name": "stack_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of aws/cloudformation: for each stack the environment's collection sources name in the cloud's account, describe-stacks (projected: no Outputs), list-stack-resources and get-template --template-stage Processed into <cloud>/<env>/<stack>/; then each created nested stack (AWS::CloudFormation::Stack in a collected resources.json) the same way",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "cd1e4735373ef771"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-stack-steps-7c4f7c63"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/state.py",
+        "id_in_name": 0,
+        "name": "state_pairs",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}, {\"name\": \"skipped\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"the cloud's secret-bearing and unmodeled resource types\"}, {\"name\": \"names\", \"type\": \"Callable[[str, Mapping], Mapping]\", \"required\": false, \"description\": \"default: attributes unchanged\"}]",
+        "purpose": "((Terraform resource type, attributes) pairs, notices) of a Terraform state (format-terraform, shared by the cloud importers): read_state's instances, names(type, attributes) giving the attributes under the cloud's readers' names (Azure: reader_names), the types in skipped counted and named 'not read (holds secret values, or isn't modeled yet)'; a state that isn't one: (), (problem,).",
+        "returns": "{\"type\": \"tuple[tuple[tuple[str, Mapping]], tuple[str]]\"}",
+        "source_hash": "ea7b792ec2cc8a85"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-state-pairs-f18c5e18"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/placing.py",
+        "id_in_name": 0,
+        "name": "keeper_head",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"root\", \"type\": \"str\", \"required\": true, \"description\": \"the root: the landing zone's or another party's\"}, {\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"file name\"}, {\"name\": \"keeper\", \"type\": \"str\", \"required\": true, \"description\": \"who keeps the root\"}, {\"name\": \"cloud\", \"type\": \"str\", \"required\": true, \"description\": \"the cloud's name as the headers write it (AWS, Azure, Google Cloud)\"}]",
+        "purpose": "The header of file name in a keeper's Terraform root (format-terraform placing, shared by the clouds): providers.tf 'Providers and inputs (landing zone)'; the network file '<cloud> network kept by <keeper> ...'; the landing zone's root '<cloud> landing zone ... kept by <keeper> ...'; else '<cloud> infrastructure kept by <keeper> ...' (core.manifest.header, HCL format).",
+        "returns": "{\"type\": \"str\", \"description\": \"the file's header\"}",
+        "source_hash": "c576dc0f2fe5ddc3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-keeper-head-cbf44605"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/landing.py",
+        "id_in_name": 0,
+        "name": "placed_roots",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"parts\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"landing_dns\", \"type\": \"frozenset[str]\", \"required\": true}, {\"name\": \"stack_head\", \"type\": \"Callable[[str], str]\", \"required\": true}]",
+        "purpose": "AWS: {path: TfFile} of environment m's Terraform roots: format-terraform placing.keeper_roots with cloud 'AWS' and adjust _unpinned(m) (a keeper's root takes the platform's providers less the allowed_account_ids pin; the standard account's aliases keep theirs).",
+        "returns": "{\"type\": \"dict[str, TfFile]\"}",
+        "source_hash": "560fb3b02f39324a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/landing.py",
+        "id_in_name": 0,
+        "name": "placed_roots",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"parts\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"landing_dns\", \"type\": \"frozenset[str]\", \"required\": true}, {\"name\": \"stack_head\", \"type\": \"Callable[[str], str]\", \"required\": true}]",
+        "purpose": "Azure: {path: TfFile} of environment m's Terraform roots: format-terraform placing.keeper_roots with cloud 'Azure' and providers _providers(m): each root's providers.tf with its registrations' render notes as comments; a keeper's root's azurerm provider (the landing zone's registering the resource providers every rendered root needs) and its subscription input described.",
+        "returns": "{\"type\": \"dict[str, TfFile]\"}",
+        "source_hash": "6cef51c569b465d1"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/landing.py",
+        "id_in_name": 0,
+        "name": "placed_roots",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"parts\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"landing_dns\", \"type\": \"frozenset[str]\", \"required\": true}, {\"name\": \"stack_head\", \"type\": \"Callable[[str], str]\", \"required\": true}]",
+        "purpose": "Google Cloud: {path: TfFile} of environment m's Terraform roots: format-terraform placing.keeper_roots with cloud 'Google Cloud' and adjust _keeper_providers(m) (a keeper's root takes the Google provider in the environment's project, budget quota project where it keeps budgets, its project input described, region input only when read).",
+        "returns": "{\"type\": \"dict[str, TfFile]\"}",
+        "source_hash": "8146873180df4d4e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-placed-roots-9983b665"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/landing.py",
+        "id_in_name": 0,
+        "name": "placed_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"parts\", \"type\": \"tuple\", \"required\": true, \"description\": \"((file name, items[, origin]), ...)\"}, {\"name\": \"landing_dns\", \"type\": \"frozenset[str]\", \"required\": true}]",
+        "purpose": "The render notes of environment m's render parts as placed_roots writes them: the parts placed the same way (format-terraform placing.keeper_placed), then each in-scope root's providers.tf registrations.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "653295e166c5f342"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-placed-notes-f553df7f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/placing.py",
+        "id_in_name": 0,
+        "name": "keeper_placed",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"parts\", \"type\": \"tuple\", \"required\": true, \"description\": \"((file name, items[, origin]), ...) of the render as one root\"}, {\"name\": \"landing_dns\", \"type\": \"frozenset[str]\", \"required\": true, \"description\": \"the landing zone's entries\"}, {\"name\": \"adjust\", \"type\": \"Callable[[str, tuple], tuple]\", \"required\": false, \"description\": \"a root's items as its provider configuration wants them; default unchanged\"}]",
+        "purpose": "Placed of environment m's Terraform render parts by who keeps what: place_roots with governance.keepers.placement(m, landing_dns), the stack's root 'terraform' as default, named_keeper (a named keeper's roots left out), source_label for inputs, and the caller's adjust (a keeper's root's provider configuration).",
+        "returns": "{\"type\": \"Placed\"}",
+        "source_hash": "e3c2b83aea94c23a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keeper-placed-11cc90ce"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/placing.py",
+        "id_in_name": 0,
+        "name": "keeper_roots",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"parts\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"landing_dns\", \"type\": \"frozenset[str]\", \"required\": true}, {\"name\": \"stack_head\", \"type\": \"Callable[[str], str]\", \"required\": true, \"description\": \"the stack's files' headers by file name\"}, {\"name\": \"cloud\", \"type\": \"str\", \"required\": true, \"description\": \"the cloud's name as headers write it\"}, {\"name\": \"adjust\", \"type\": \"Callable[[str, tuple], tuple]\", \"required\": false}, {\"name\": \"providers\", \"type\": \"Callable[[Placed], Callable[[str, tuple], tuple]]\", \"required\": false, \"description\": \"each root's providers.tf items as the cloud writes them; default unchanged\"}]",
+        "purpose": "{path: TfFile} of environment m's Terraform roots (shared by the clouds): keeper_placed parts; headers: the stack's from stack_head(name), a slice's ('<cloud> infrastructure ..., <scope>: a slice rendered on request'), a keeper's keeper_head(root_keeper); providers.tf items through providers(placed)(root, items) (Azure: registrations, azurerm provider, subscription input); asked_lines comments at the end of the stack's main.tf; only in-scope roots.",
+        "returns": "{\"type\": \"dict[str, TfFile]\"}",
+        "source_hash": "e0bb9491024650be"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/placing.py",
+        "id_in_name": 0,
+        "name": "keeper_rendered",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"keeper\", \"type\": \"Keeper\", \"required\": true, \"description\": \"opsdir.domains.network.plumbing.Keeper\"}, {\"name\": \"renderers\", \"type\": \"tuple[tuple[str, Callable]]\", \"required\": true, \"description\": \"((object class, fn(m, binding, the keeper's DNs) -> Rendered), ...)\"}, {\"name\": \"data\", \"type\": \"tuple\", \"required\": true, \"description\": \"the cloud's network data sources (network_data(m))\"}]",
+        "purpose": "Rendered of what a keeper keeps of environment m's network plumbing (shared by the clouds' render_plumbing): each binding rendered by the first renderer whose object class it has, its blocks stamped with its entry (from_entry), variables distinct, shared = the cloud's network data sources then the bindings' shared blocks distinct, stamped with the keeper's first binding.",
+        "returns": "{\"type\": \"Rendered\"}",
+        "source_hash": "a51f629987b2c934"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/state.py",
+        "id_in_name": 0,
+        "name": "state_steps",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"importer\", \"type\": \"str\", \"required\": true, \"description\": \"'<adapter>/terraform-state'\"}, {\"name\": \"scheme\", \"type\": \"str\", \"required\": true, \"description\": \"s3://, azblob://, gs://\"}, {\"name\": \"fetch\", \"type\": \"Callable[[str], Command|None]\", \"required\": true}, {\"name\": \"options\", \"type\": \"Mapping\", \"required\": true, \"description\": \"the collect options (terraform_dir)\"}]",
+        "purpose": "The terraform-state collection steps of environment m ((path, Command), ...), shared by the cloud collectors: `terraform state pull` in options' terraform_dir when given; else for each location of the importer's collection sources (governance.collection.collection_sources) starting with scheme, fetch(location) (None: left out), saved as <env label>/<the location's last segment, else terraform.tfstate>.",
+        "returns": "{\"type\": \"tuple[tuple[str, Command]]\"}",
+        "source_hash": "2b5aebf6c8a846ef"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-state-steps-1f41735a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/sources.py",
+        "id_in_name": 0,
+        "name": "env_relative",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true, \"description\": \"only its label is read\"}, {\"name\": \"files\", \"type\": \"Mapping[str, str]\", \"required\": true}]",
+        "purpose": "files ({path: text}) with environment m's '<cloud>/<env>/' folder (m.label) taken off the paths inside it, other paths (a collector's _work/ lists, other environments') kept unchanged (unlike under, which drops them): what a collector's steps name when reading earlier rounds' outputs. Shared by the cloud collectors (was each one's _local).",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "7197d8d641ae5e68"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-env-relative-8ba5722f"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-state-resources-d0abd28d"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-state-resources-4f345707"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-state-pairs-dcb8f03a"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-state-pairs-b6b8fcb7"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-keeper-head-1b7f7c8d"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-keeper-head-b6a31066"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"NamedTuple\", \"fields\": {\"blocks\": \"tuple\", \"variables\": \"tuple\", \"shared\": \"tuple\"}}",
+        "description": "What a cloud renders of a network plumbing binding, or of all a keeper keeps (format-terraform placing, shared by the clouds' plumbing renderers): blocks (what the binding renders), variables (inputs only its keeper knows), shared (data sources and resources rendered once in the root, however many bindings use them).",
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/placing.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Rendered"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "kind": "types",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    },
+    {
+      "kind": "types",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Audit 3001, rules 3002-brief (decision note on milestone 68) + 2991. U14-01: placed_roots and keeper_head once in opsdir-format-terraform placing.py (cloud title, adjust hook, providers rewrite for Azure passed in); aws/azure/gcp landing.py and terraform.py call sites switch. U14-06: state_steps(m, importer, scheme, fetch, options) in format-terraform, _local shared, env_relative in core opsdir/opsdir/connectors/collecting.py; the three clouds' collect.py switch. U14-10: Rendered + keeper_rendered and state_pairs/state_resources shared (format-terraform; Azure's reader_names passed in); the clouds' plumbing.py, landing.py and inventory.py switch. Output byte-identical. Boundary: packages/opsdir-format-terraform, packages/opsdir-adapter-aws|azure|gcp (landing.py, terraform.py call sites only, collect.py, plumbing.py, inventory.py, their tests/READMEs), opsdir/opsdir/connectors/collecting.py (+ its tests).",
+        "flows": [
+          "Cloud Infrastructure Render",
+          "Cloud Inventory Import",
+          "Keeper Root Placement"
+        ],
+        "name": "U.14 b: cloud Terraform roots, state collection and plumbing shared (U14-01, 06, 10)",
+        "parent": {
+          "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "format-terraform placing.py: one placed_roots/keeper_head (cloud title, adjust hook, Azure's providers rewrite passed in); aws/azure/gcp landing.py and terraform.py call sites switch; duplicates deleted with repoint + manifest notes",
+        "name": "U14-01 placed_roots and keeper_head shared",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-01-placed-roots-and-keeper-head-shar-f2b156c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "format-terraform state_steps(m, importer, scheme, fetch, options) and the shared _local; env_relative in core connectors/collecting.py; the three clouds' collect.py switch",
+        "name": "U14-06 terraform-state collection shared",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-06-terraform-state-collection-shared-71f5bf50"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Rendered + keeper_rendered (render_plumbing) and state_pairs/state_resources in format-terraform (Azure's reader_names passed in); plumbing.py, landing.py, inventory.py switch",
+        "name": "U14-10 plumbing render and state pairs shared",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-10-plumbing-render-and-state-pairs-s-862879a6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "format-terraform README + tests for new public helpers; opsdir/README.md line for env_relative; targeted tests + test_line_length.py pass; byte-identical output",
+        "name": "READMEs, shared-API table, tests",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-readmes-shared-api-table-tests-9d6dd3ad"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "15d4fb0",
+    "branch": "aimfp-u14a-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "Azure's read_pairs callback (partial in opsdir_adapter_azure.inventory)",
+        "is_indirect": 1
+      },
+      "from": {
+        "entity_key": "fn-state-resources-832b559f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pairs-resources-a2b38536"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 1
+      },
+      "from": {
+        "entity_key": "fn-state-resources-832b559f"
+      },
+      "interaction_type": "pipe",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pairs-resources-3d44b077"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every state resource read in the readers' names",
+        "is_indirect": 1
+      },
+      "from": {
+        "entity_key": "fn-state-pairs-f18c5e18"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reader-names-be0e083a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the side root's state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-arm-resources-b4ea36e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-state-pairs-f18c5e18"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_together reads each state's pairs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-terraform-state-1e61354f"
+      },
+      "interaction_type": "compose",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-state-pairs-f18c5e18"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_together reads each state's pairs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-terraform-state-843291e7"
+      },
+      "interaction_type": "compose",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-state-pairs-f18c5e18"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_plumbing calls keeper_rendered (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-5e02e406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_plumbing calls keeper_rendered (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-d92d5faa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_plumbing calls keeper_rendered (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-49f8be8d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "state_steps calls terraform_state_steps (state.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-steps-2cf138a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-state-steps-1f41735a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "state_steps calls terraform_state_steps (state.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-steps-be979d33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-state-steps-1f41735a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "state_steps calls terraform_state_steps (state.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-steps-547a524f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-state-steps-1f41735a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls keeper_roots (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls keeper_roots (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls keeper_roots (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_notes calls keeper_placed (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-notes-f553df7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-placed-11cc90ce"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_placed calls place_roots (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-placed-11cc90ce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-place-roots-475c0d4c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_placed calls placement (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-placed-11cc90ce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placement-facd72cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_placed references named_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-placed-11cc90ce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-keeper-78e423e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_placed references source_label (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-placed-11cc90ce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-label-d0a65a04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls keeper_head (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-head-cbf44605"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls asked_lines (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-asked-lines-46ed7619"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls root_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-root-keeper-97dc74c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls in_scope (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-in-scope-83423eda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls scope_title (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scope-title-6cc25b53"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_roots calls keeper_placed (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-roots-9916061e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-placed-11cc90ce"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_rendered calls is_kind (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_rendered calls distinct (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-distinct-de38c453"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_rendered calls from_entry (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-from-entry-7471a268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "state_steps calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-steps-1f41735a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls env_relative (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-07016e35"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-relative-8ba5722f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls env_relative (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-43494f16"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-relative-8ba5722f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls env_relative (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-10298a47"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-relative-8ba5722f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "stack_steps calls env_relative (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-stack-steps-7c4f7c63"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-relative-8ba5722f"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-egress-9369e9a4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-route-table-66d2e6cf"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-network-acl-1146771e"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-interconnect-ddb4ba24"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-flow-log-d13d8ee9"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kept-elsewhere-cf76a019"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-render-plumbing-d92d5faa"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-egress-33f5e22a"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-route-table-bf90c70f"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-network-acl-5a561ae6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-interconnect-d4cf0e53"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-flow-log-55c2a200"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kept-elsewhere-ccbfbed9"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-render-plumbing-49f8be8d"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-keeper-rendered-fdbe7af4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-4cfb79da"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/state.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/sources.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/landing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/placing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/landing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/landing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/state.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/plumbing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/plumbing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/plumbing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/sources.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-b-cloud-terraform-roots-state-colle-6a9c323e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-resources-d0abd28d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-pairs-resources-a2b38536"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-pairs-b6b8fcb7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-read-state-ada5d79a"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-resources-4f345707"
+      },
+      "interaction_type": "pipe",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-pairs-resources-3d44b077"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_head calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-head-1b7f7c8d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper_head calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeper-head-b6a31066"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "RENDERERS by class",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-5e02e406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-49f8be8d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-d92d5faa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform-state sources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-steps-2cf138a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform-state sources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-steps-be979d33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform-state sources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-steps-547a524f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every state resource read in the readers' names",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-pairs-dcb8f03a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-reader-names-be0e083a"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-5e02e406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-distinct-de38c453"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-d92d5faa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-distinct-de38c453"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-49f8be8d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-distinct-de38c453"
+      }
+    },
+    {
+      "attributes": {
+        "description": "state_resources reads state_pairs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-resources-d0abd28d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-state-pairs-dcb8f03a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the side root's state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-arm-resources-b4ea36e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-state-pairs-dcb8f03a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-pairs-dcb8f03a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-read-state-ada5d79a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pairs of one state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-state-resources-4f345707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-state-pairs-b6b8fcb7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_together reads each state's pairs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-terraform-state-1e61354f"
+      },
+      "interaction_type": "compose",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-state-pairs-dcb8f03a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_together reads each state's pairs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-terraform-state-843291e7"
+      },
+      "interaction_type": "compose",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-state-pairs-b6b8fcb7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_plumbing calls from_entry (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-5e02e406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-from-entry-7471a268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls comment (hcl.py) via _named_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls place_roots (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-place-roots-475c0d4c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls placement (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-placement-facd72cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots references named_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-named-keeper-78e423e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls keeper_head (landing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-keeper-head-cbf44605"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_plumbing calls from_entry (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-d92d5faa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-from-entry-7471a268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots references source_label (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-source-label-d0a65a04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls asked_lines (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-asked-lines-46ed7619"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls root_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-root-keeper-97dc74c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls place_roots (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-place-roots-475c0d4c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls placement (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-placement-facd72cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots references named_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-named-keeper-78e423e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots references source_label (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-source-label-d0a65a04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls asked_lines (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-asked-lines-46ed7619"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls root_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-root-keeper-97dc74c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls keeper_head (landing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-keeper-head-1b7f7c8d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_plumbing calls from_entry (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-plumbing-49f8be8d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-from-entry-7471a268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls place_roots (placing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-place-roots-475c0d4c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls placement (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-placement-facd72cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots references named_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-named-keeper-78e423e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots references source_label (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-source-label-d0a65a04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls asked_lines (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-asked-lines-46ed7619"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls root_keeper (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-root-keeper-97dc74c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls keeper_head (landing.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-keeper-head-b6a31066"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls in_scope (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-in-scope-83423eda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls scope_title (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-aa1399b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-scope-title-6cc25b53"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls in_scope (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-in-scope-83423eda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls scope_title (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-8adb0965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-scope-title-6cc25b53"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls in_scope (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-in-scope-83423eda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_roots calls scope_title (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-roots-9983b665"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-scope-title-6cc25b53"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_notes calls place_roots (placing.py) via _placed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-notes-f553df7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-place-roots-475c0d4c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_notes calls placement (keepers.py) via _placed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-notes-f553df7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-placement-facd72cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_notes references named_keeper (keepers.py) via _placed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-notes-f553df7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-named-keeper-78e423e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placed_notes references source_label (keepers.py) via _placed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placed-notes-f553df7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-source-label-d0a65a04"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-state-resources-d0abd28d"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-resource-38cc4db6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-egress-33f5e22a"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-route-table-bf90c70f"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-network-acl-5a561ae6"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-interconnect-d4cf0e53"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-flow-log-55c2a200"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kept-elsewhere-ccbfbed9"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-render-plumbing-49f8be8d"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-07a0e1e3"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-egress-9369e9a4"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-route-table-66d2e6cf"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-network-acl-1146771e"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-interconnect-ddb4ba24"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-flow-log-d13d8ee9"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kept-elsewhere-cf76a019"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-render-plumbing-d92d5faa"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rendered-fce1bbdf"
+      }
+    }
+  ],
+  "warnings": []
+}

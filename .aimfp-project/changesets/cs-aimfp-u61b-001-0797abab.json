@@ -1,0 +1,5364 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "source_objects.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/governance/source_objects.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "served.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/federation/served.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "naming.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "schema.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "xps.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "entries.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "policies.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "federation.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "responses.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "carried.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "importer.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "checks.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": "[\"SiteMinder XPSExport XML (XPSDeployment / XPSPolicyData shapes, archived 12.51 reference)\"]",
+        "path": "packages/opsdir-adapter-siteminder/",
+        "purpose": "Broadcom SiteMinder product adapter, as a migration SOURCE: importer siteminder/xps reads XPSExport XML (every XPS name as data in xps.py, unverified for 12.8/12.9) into its own arc .3.6 (policy domains, realms, rules, policies, auth schemes, user directories linked to consumers, agents), partnerships/OIDC clients as standard integrations served by its identity service, header responses as edge header contracts, the rest as core source objects; sensitive settings withheld (smWithheld); source checks (realms the target leaves unprotected, user directories with no consumer). Renders nothing."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-siteminder"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.0,
+        "description": "What a migration's SOURCE holds that its target won't run: source objects (ciamSourceObject: a source product's objects with no standard equivalent, carried as what/where/who/how data with a handling), the core check and report over them, the planner hook running the checks of adapters that apply only to the source (Adapter.source_checks), and the federation check for integrations served by an identity service the target doesn't run. A source-only product adapter (SiteMinder first) fills the data and adds its own source checks."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Source Product Retirement Planning"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.0,
+        "description": "A web access manager's policy store read into the record as a migration source: SiteMinder's XPSExport XML (siteminder/xps) -> policy domains, realms, rules, policies, auth schemes, user directories (linked to directory consumers) and agents in the product's own arc; federation partnerships as standard SAML/OIDC integrations; header responses as edge header contracts; what has no equivalent as source objects (flow 63). Sensitive properties are dropped (presence, purpose and re-provision recorded); XML read through core.sources.xml_document (DOCTYPE/ENTITY refused). Maps onto the planned neutral protected-web-application layer later."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Web Access Policy Capture"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/plan.py",
+        "id_in_name": 0,
+        "name": "plan",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"src_spec\", \"type\": \"str\"}, {\"name\": \"dst_spec\", \"type\": \"str\"}, {\"name\": \"as_of\", \"type\": \"date\"}, {\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false, \"description\": \"default registry.ADAPTERS\"}, {\"name\": \"domains\", \"type\": \"Sequence[Domain]\", \"required\": false, \"description\": \"default registry.DOMAINS\"}, {\"name\": \"requester\", \"type\": \"str|None\", \"required\": false, \"description\": \"who runs the migration, recorded in the target's MANIFEST\"}]",
+        "purpose": "Migration plan with the given installed adapters (default: discovered) and domains: render both environments (the target whole, scope ENVIRONMENT, its MANIFEST naming requester when given), build a PlanContext, run cross-domain, adapter and domain checks, then the source_checks of the adapters applying to the source (a product the move retires), and the connector checks (access, edge, network, evidence, signals, log collection, SIEM indexes nothing keeps: siem_check, proxies, upgrades, secret-store inventory with the installed adapters' locators), merge Findings into a Plan",
+        "returns": "{\"type\": \"Plan\"}",
+        "source_hash": "c5e6ffd2ba171c0e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-plan-b824361b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/sources.py",
+        "id_in_name": 0,
+        "name": "xml_document",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "Parse an imported XML text: (root element, None), or (None, why not): a DOCTYPE or entity declaration refused before parsing, a malformed document named with the parser's message",
+        "returns": "{\"type\": \"tuple[Element|None, str|None]\"}",
+        "source_hash": "06b2a9404e2f0ac5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-xml-document-2f437afd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/source_objects.py",
+        "id_in_name": 0,
+        "name": "source_objects",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "Every source object (ciamSourceObject under ou=source-objects) in DN order",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "3137c54c09a60be8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-objects-6379952f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/source_objects.py",
+        "id_in_name": 0,
+        "name": "check_source_objects",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check: for every source object a role of the source holds, in place when the target still runs the role, else an action for its owner by the cutover, or a blocker when ciamBlocking says the move waits for its handling",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "e66e38a812c50f12"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/source_objects.py",
+        "id_in_name": 0,
+        "name": "source_object_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Report source-objects: one row per source object (name, product class, role, handling, blocking, owner, how, facts)",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "502a5b465792b2a0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-object-rows-caee21be"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/served.py",
+        "id_in_name": 0,
+        "name": "check_served_integrations",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check: a blocker for every integration registered (ciamServedBy) with an identity service whose server role the source runs and the target doesn't, naming the target's running services to re-home to; silent otherwise",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "44d18d984e4a6d35"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py",
+        "id_in_name": 0,
+        "name": "applies",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Whether the SiteMinder adapter applies: the environment runs a SiteMinder product (servers' or workloads' ciamProductVersion)",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "1e0bb1f02481dee4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-applies-c8203ddb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py",
+        "id_in_name": 0,
+        "name": "name_of",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "A SiteMinder name as an entry name: lower case, unsafe characters as '-' (automation.pipelines.slug)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "a47ec6f6f9c306c4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py",
+        "id_in_name": 0,
+        "name": "named",
+        "parameters": "[{\"name\": \"base\", \"type\": \"str\"}, {\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "The DN cn=<name>,<base>",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "cf1a4338ba02c13a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-named-513ab67f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "export_objects",
+        "parameters": "[{\"name\": \"root\", \"type\": \"Element\"}]",
+        "purpose": "An XPSExport document as plain objects: every Object element depth first (class, XID, properties by their name after the last dot, links resolved through LinkValue and XREF/ReferenceValue, parent XID, child XIDs), and the release the root element says it is from",
+        "returns": "{\"type\": \"tuple[tuple[Obj], str|None]\"}",
+        "source_hash": "2f64584b427b7a62"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-export-objects-645b7757"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "kind",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "The kind the adapter maps an XPS object's class to (KINDS), or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "9fc6ec9ef2b43f24"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "field_name",
+        "parameters": "[{\"name\": \"k\", \"type\": \"str|None\"}, {\"name\": \"field\", \"type\": \"str\"}]",
+        "purpose": "The XPS property a field of a kind is read from (FIELDS; any kind's name: Name; else the field itself)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "f3272272a282c23b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-field-name-b0073878"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "values_of",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}, {\"name\": \"field\", \"type\": \"str\"}]",
+        "purpose": "The values of an object's field",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "037b5d67cc3869d6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "value_of",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}, {\"name\": \"field\", \"type\": \"str\"}]",
+        "purpose": "The first value of an object's field, or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "bb861900f544da7f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "links_of",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}, {\"name\": \"field\", \"type\": \"str\"}]",
+        "purpose": "The XIDs an object's link field names",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "1d1e598fcd118143"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-links-of-ba1da254"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "link_of",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}, {\"name\": \"field\", \"type\": \"str\"}]",
+        "purpose": "The first XID an object's link field names, or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "9a2e42857b82d99e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-link-of-58fba560"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "name",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "What an XPS object is called: its Name, else its XID after the class",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "d0c08beacc8f121a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "is_true",
+        "parameters": "[{\"name\": \"v\", \"type\": \"str|None\"}]",
+        "purpose": "Whether an XPS boolean text is true",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "18a49120cfa24252"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-true-dbbdf33f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "sensitive",
+        "parameters": "[{\"name\": \"prop\", \"type\": \"str\"}, {\"name\": \"vals\", \"type\": \"tuple[str]\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}, {\"name\": \"scan\", \"type\": \"Callable\", \"description\": \"core.secrets.scan\"}]",
+        "purpose": "Whether a property is withheld: a sensitive name (SENSITIVE), an encrypted-looking value (ENCRYPTED) or a value the store's secret patterns match",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "020a1aa0dae16c79"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sensitive-b595eb16"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "name": "purpose",
+        "parameters": "[{\"name\": \"prop\", \"type\": \"str\"}]",
+        "purpose": "What a withheld setting is, in words (PURPOSES, else generic)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "edee0ce40d04e0e4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-purpose-da6b5a90"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "name": "cleaned",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}]",
+        "purpose": "An object's settings the record may hold and the withheld ones as '<property>: <what it is>; re-provision in the target'",
+        "returns": "{\"type\": \"tuple[dict, tuple[str]]\"}",
+        "source_hash": "28eb996c50b680e7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cleaned-53cfb43d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "name": "config",
+        "parameters": "[{\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "smConfig JSON of an object's settings the import doesn't map to their own attribute, or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "adc4345a6c829f33"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-config-e166a0f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "name": "sm_attrs",
+        "parameters": "[{\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "The smObject attributes every imported entry carries: XID, class, config, withheld",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "ff53808634935805"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "name": "facts",
+        "parameters": "[{\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "An object's kept settings as source-object facts '<property> <values>', in property order",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "af3f9bac919a4ea2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-facts-f0b0b1d6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "name": "unique",
+        "parameters": "[{\"name\": \"base\", \"type\": \"str\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"taken\", \"type\": \"frozenset\"}]",
+        "purpose": "A name made unique under a base among the names already taken (name, name-2, ...)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "5becbf9bb55fa1dc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unique-b0ca42c0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "name": "entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str\"}, {\"name\": \"classes\", \"type\": \"tuple[str]\"}, {\"name\": \"owned\", \"type\": \"dict\"}]",
+        "purpose": "An imported entry merged with what the record holds: owned attributes replaced, the rest and its other classes kept",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "118b878ae28e2fb7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "name": "with_rest",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str\"}, {\"name\": \"entries\", \"type\": \"tuple[Entry]\"}]",
+        "purpose": "An import group (dn, entries) with the record's other entries below dn kept",
+        "returns": "{\"type\": \"tuple[str, tuple[Entry]]\"}",
+        "source_hash": "dc779b4c2404d662"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-with-rest-7ecdf8db"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "agent_role",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "The server role an agent runs on from its type: sm-access-gateway for SPS/Access Gateway, else sm-agent",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "ce3dab81d3b43f9c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-agent-role-41edca6d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "is_custom_scheme",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "Whether an authentication scheme runs the operator's own library (its type says Custom)",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "b409fddf7531eddf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-custom-scheme-d1357963"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "agent_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "The smAgent entry of an agent (its type, server role unless the record set one)",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "e3e76d4a0156bd42"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "scheme_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "The smAuthScheme entry of an authentication scheme (type, protection level, library)",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "ee7f8cf29d9635dd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-scheme-entry-2ebb009f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "directory_servers",
+        "parameters": "[{\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "The host[:port] values a user directory's Server setting names",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "c4bb1b44d5756098"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-directory-servers-51751cc2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "directory_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "(smUserDirectory entry, notices): namespace, the role and port of its servers (hosts_role), the consumer it binds as (consumer_by_bind_dn), notices for an unrecorded consumer, hosts of no single role, no TLS",
+        "returns": "{\"type\": \"tuple[Entry, tuple[str]]\"}",
+        "source_hash": "4f025407d2384db5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-directory-entry-908211d2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "subject",
+        "parameters": "[{\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"up\", \"type\": \"Obj\"}]",
+        "purpose": "A policy's user selection as '<user directory> <kind> <value>'",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "2dd91feecae2f853"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-subject-c0bd964d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "realms_of",
+        "parameters": "[{\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"domain\", \"type\": \"Obj\"}]",
+        "purpose": "Every realm of a policy domain, nested ones too, in document order",
+        "returns": "{\"type\": \"tuple[Obj]\"}",
+        "source_hash": "02eacf965b575b73"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-realms-of-a11b4148"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py",
+        "id_in_name": 0,
+        "name": "domain_group",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "(domain DN, entries): a policy domain with its realms (agent, scheme, timeouts), their rules and its policies (rules, responses, user selections), the import owning the domain's subtree",
+        "returns": "{\"type\": \"tuple[str, tuple[Entry]]\"}",
+        "source_hash": "e3468004fb922945"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-domain-group-aea947d7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "binding",
+        "parameters": "[{\"name\": \"v\", \"type\": \"str|None\"}]",
+        "purpose": "The standard SAML binding a SiteMinder binding value names (URN, HTTP-POST, POST, ...), or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "4baf4689bdf70676"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-binding-01ff6458"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "nameid",
+        "parameters": "[{\"name\": \"v\", \"type\": \"str|None\"}]",
+        "purpose": "The standard NameID format a URN names (its last part), or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "437c05368477a912"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-nameid-0c913dfe"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "match_key",
+        "parameters": "[{\"name\": \"k\", \"type\": \"str\"}, {\"name\": \"o\", \"type\": \"Obj\"}]",
+        "purpose": "What an integration is matched by: (protocol, partner entity ID) for SAML, ('oidc-client', client ID) for OIDC",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "c6f686bfe79c76f9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-match-key-c037f317"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "held_integrations",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "{match key: integration the record holds}",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "8b0801ca032fc409"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-held-integrations-8bbec004"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "local_entities",
+        "parameters": "[{\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"partnerships\", \"type\": \"tuple[Obj]\"}]",
+        "purpose": "The local entity IDs of the SAML partnerships, each once",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "d7ac92fe6b5c5d58"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-local-entities-48e9cc79"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "service_for",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"partnerships\", \"type\": \"tuple[Obj]\"}]",
+        "purpose": "(the identity service new integrations are served by, its entry when the import makes cn=siteminder, notices): the record's service with the local entity ID, else cn=siteminder from the local entity and base URL (role sm-policy-server)",
+        "returns": "{\"type\": \"tuple[str|None, Entry|None, tuple[str]]\"}",
+        "source_hash": "b2b91f6b6dcd3ddf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-service-for-98022e57"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "place",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"objects\", \"type\": \"tuple[tuple[str, Obj]]\"}]",
+        "purpose": "({XID: (integration DN,)}, {XID: held integration}): a held integration keeps its DN, a new one is named after the partnership, unique",
+        "returns": "{\"type\": \"tuple[dict, dict]\"}",
+        "source_hash": "5e405ae8cebcd660"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-place-f5c40cd1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py",
+        "id_in_name": 0,
+        "name": "integration_groups",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"objects\", \"type\": \"tuple[tuple[str, Obj]]\"}, {\"name\": \"held\", \"type\": \"dict\"}, {\"name\": \"served\", \"type\": \"str|None\"}]",
+        "purpose": "(groups, notices): an integration for every partnership and OIDC client (entity ID, ACS/SSO URL, binding, NameID, certificate by fingerprint, claims linked to user-schema records, served by SiteMinder's service); those the record holds kept as they are with smObject added",
+        "returns": "{\"type\": \"tuple[tuple, tuple[str]]\"}",
+        "source_hash": "515b4da3bf1ab2b6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-integration-groups-981718c1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py",
+        "id_in_name": 0,
+        "name": "parts",
+        "parameters": "[{\"name\": \"a\", \"type\": \"Obj\"}]",
+        "purpose": "(response type, name, expression) of a response attribute '<name>=<expression>'",
+        "returns": "{\"type\": \"tuple[str, str, str]\"}",
+        "source_hash": "18996f0ab40fbd3c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parts-8bb718dd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py",
+        "id_in_name": 0,
+        "name": "is_header",
+        "parameters": "[{\"name\": \"a\", \"type\": \"Obj\"}]",
+        "purpose": "Whether a response attribute is an HTTP header the agent sets under a name a header contract can hold",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "33f41ec0f830796e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-header-6136b76e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py",
+        "id_in_name": 0,
+        "name": "header_value",
+        "parameters": "[{\"name\": \"expr\", \"type\": \"str\"}]",
+        "purpose": "(ciamHeaderKind, ciamHeaderValue, withheld) of a header expression: a user attribute or the user DN is identity; a fixed value is withheld like a shared secret",
+        "returns": "{\"type\": \"tuple[str, str, tuple[str]]\"}",
+        "source_hash": "88d7a0e9318d0aa3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-header-value-414fab3f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py",
+        "id_in_name": 0,
+        "name": "header_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"a\", \"type\": \"Obj\"}, {\"name\": \"dn\", \"type\": \"str\"}]",
+        "purpose": "The header contract a header response attribute becomes: set by sm-agent unless the record says otherwise, trust and stripping left to the record",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "604154947e04a14e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-header-entry-0752eb33"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py",
+        "id_in_name": 0,
+        "name": "carried_name",
+        "parameters": "[{\"name\": \"k\", \"type\": \"str\"}, {\"name\": \"o\", \"type\": \"Obj|None\"}]",
+        "purpose": "What a source object is called before it is made unique: '<kind>-<SiteMinder name>' (the keys: 'keys')",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "c20e062ec28107d3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-carried-name-b77e8923"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py",
+        "id_in_name": 0,
+        "name": "carried_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"x\", \"type\": \"Export\"}, {\"name\": \"k\", \"type\": \"str\"}, {\"name\": \"o\", \"type\": \"Obj|None\"}, {\"name\": \"dn\", \"type\": \"str\"}, {\"name\": \"at\", \"type\": \"datetime|None\"}, {\"name\": \"concerns\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "The ciamSourceObject of kind k (CARRY: handling, role, blocking, how) for object o (None: the key store), its facts, concerns and import time; a recorded one keeps the record's handling",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "317712d05ab813c5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py",
+        "id_in_name": 0,
+        "name": "placements",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"objects\", \"type\": \"Mapping[str, Obj]\"}, {\"name\": \"order\", \"type\": \"tuple[Obj]\"}]",
+        "purpose": "({XID: DNs} of every object that becomes entries, XID#<kind> for the source object an auth scheme or gateway agent also is; {XID: held integration})",
+        "returns": "{\"type\": \"tuple[Mapping, dict]\"}",
+        "source_hash": "455bbf9da6b52230"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-placements-27b69da1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py",
+        "id_in_name": 0,
+        "name": "release",
+        "parameters": "[{\"name\": \"v\", \"type\": \"str\"}]",
+        "purpose": "A SiteMinder version as PEP 440: a two-digit minor (12.52) split as a service pack of its release (12.5.2)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "33eae29f45eb069e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-release-2edc1e71"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py",
+        "id_in_name": 0,
+        "name": "read_export",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer siteminder/xps: Imported from XPSExport XML files (DOCTYPE refused, other releases refused): policy domains, realms, rules, policies, schemes, user directories, agents in ou=siteminder; partnerships as integrations; header responses as header contracts; the rest as source objects; sensitive settings withheld with notices",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "8c9339ef1c6b5f7c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-export-0062a93a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py",
+        "id_in_name": 0,
+        "name": "realm_role",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"realm\", \"type\": \"Entry\"}]",
+        "purpose": "The server role a realm's agent runs on (sm-agent when it names none)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "934a804b8b3580cf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-realm-role-bef9c8a8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py",
+        "id_in_name": 0,
+        "name": "check_realms",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Source check: a blocker for every realm protected by agents the source runs and the target doesn't (its rules, granting policies, sign-on scheme and headers stop)",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "e88d968f222ad286"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py",
+        "id_in_name": 0,
+        "name": "check_user_directories",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Source check: an action for every user directory binding as an account no directory consumer records",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "9faf6ab617ea0d97"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-user-directories-22a3a965"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"collections.namedtuple (endpoints/prerequisites/collectors/render_targets default (), listeners/proxy_settings/workload_identity/secret_delivery default None)\", \"fields\": {\"name\": \"str\", \"kind\": \"provider|platform|product|host|delivery|secret-store|compliance\", \"applies\": \"(EnvModel) -> bool | None\", \"required_roles\": \"tuple[str]\", \"render_neutral\": \"(Directory) -> {path: text} | None\", \"render_env\": \"(EnvModel, Services[, targets]) -> {path: text} | None\", \"checks\": \"tuple[(PlanContext) -> Findings]\", \"ref_schemes\": \"tuple[str]\", \"secret_schemes\": \"{scheme: (rest) -> shell command}\", \"renders\": \"str|None\", \"neutral_label\": \"str|None\", \"vocabulary\": \"{vocab attribute: tuple[values]}\", \"schema\": \"SchemaFragment|None\", \"formats\": \"tuple[(glob, format)]\", \"products\": \"tuple[(product, range)]\", \"secret_patterns\": \"tuple[SecretPattern]\", \"importers\": \"tuple[Importer]\", \"profile_terms\": \"Terms|None\", \"access\": \"AccessModel|None\", \"endpoints\": \"tuple[Endpoint]\", \"listeners\": \"(EnvModel) -> Listeners | None\", \"proxy_settings\": \"(EnvModel, ProxySettings) -> ProxySettings | None\", \"prerequisites\": \"tuple[Prerequisite]\", \"collectors\": \"tuple[Collector]\", \"render_targets\": \"tuple[(name, what[, False])]\", \"workload_identity\": \"(EnvModel, identity binding) -> K8sIdentity | None\", \"secret_delivery\": \"{scheme: SecretDelivery} | None\"}, \"registered_via\": \"entry points group opsdir.adapters\"}",
+        "description": "An installable adapter's declaration (core contract): name, kind, applies, required roles, renderers, planner checks, schemes, vocabulary, schema, formats, products, importers, collectors, render targets, Kubernetes and edge hooks, settings, signals, logs, host files, version changes, read-backs, profiles, notes, roles used, product roles (roles), for a deployment kit what its chart answers for its products' cluster discovery (cluster_discovery -> DiscoveryAnswers), SIEM indexes it keeps (siem_indexes), and source_checks (last field, default ()): planner checks it runs when it applies to the SOURCE environment of a plan (a product the move retires).",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Adapter"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-adapter-ec60b0e6"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One XPSExport Object as plain data: class, XID, properties and links by their name after the last dot, parent and child XIDs",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Obj"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One SiteMinder XPSExport read: its objects, each object's settings the record may hold and what was withheld, and the DNs each object becomes",
+        "file": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Export"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "attributes": {
+        "description": "New product adapter package for Broadcom SiteMinder: import the policy store export (XPSExport XML, passphrase-protected secrets never stored; alternatively the admin policy REST API read-only) as a migration SOURCE: domains, realms, rules, policies, responses, user directories, authentication schemes, agents/ACOs, federation partnerships, mapped onto the standard bases (SAML/OIDC connections, web access policy, identity header mappings) with what has no equivalent carried as migration findings; planner checks; showcase. Research note 3077. Built by an InterComm worker; design escalated before coding.",
+        "flows": [
+          "Product & Host Config Capture",
+          "Source Product Retirement Planning",
+          "Web Access Policy Capture"
+        ],
+        "name": "6.1b SiteMinder adapter (import for migration planning)",
+        "parent": {
+          "slug": "milestone-6-1-conditional-product-adapters-43ded1f6"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Contract field source_checks appended last, default (), comment exactly as master's spec; plan() runs the source adapters' source_checks after the target adapters' checks, same PlanContext.",
+        "name": "Core: Adapter.source_checks + plan() runs them",
+        "parent": {
+          "key": {
+            "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-adapter-source-checks-plan-runs-the-4e80a97d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Governance class 163 + attrs 760-763; check_source_objects (blocker if ciamBlocking else action; ok when the role still runs in target); report source-objects. Neutral wording.",
+        "name": "Core: ciamSourceObject class, check, report",
+        "parent": {
+          "key": {
+            "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-ciamsourceobject-class-check-report-f9c6d0e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Shared XML parse helper refusing DOCTYPE/ENTITY; documented, tested, opsdir README shared-API row.",
+        "name": "Core: core.sources.xml_document",
+        "parent": {
+          "key": {
+            "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-core-sources-xml-document-9b536dba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Integrations served by an identity service the target doesn't run -> blocker; silent when ok; own module, checks.py only registers it.",
+        "name": "Core: federation served-by check",
+        "parent": {
+          "key": {
+            "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-federation-served-by-check-b7b9f789"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Arc .3.6 prefix sm; xps data table; importer siteminder/xps; secrets withheld; source checks; README with Known limits; tests.",
+        "name": "opsdir-adapter-siteminder package",
+        "parent": {
+          "key": {
+            "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-opsdir-adapter-siteminder-package-b01bfcbe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sm-ps-1 + crew-web-1 on source/prod; exports/siteminder/policy-store.xml; consumer siteminder-ps; aog-parts-exchange; demo.sh, snapshot-outputs.sh, showcase_support APPROVED, governance.py; expected findings B70-B74 / A191+.",
+        "name": "Showcase: SiteMinder source (CHG-2063/2064)",
+        "parent": {
+          "key": {
+            "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-showcase-siteminder-source-chg-2063-2064-a51d6320"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Root README adapter/report rows; opsdir README shared-API row and contract field; package README.",
+        "name": "Docs: README rows, ops-directory-model, Known limits",
+        "parent": {
+          "key": {
+            "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docs-readme-rows-ops-directory-model-kno-86a4b582"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "81fd052",
+    "branch": "aimfp-u61b-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "source_objects calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-objects-6379952f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls one (directory.py) via _how",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls values (directory.py) via _what",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls rdn_value (directory.py) via _what",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls findings (findings.py) via _object",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls responsible (findings.py) via _object",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls runs_here (workloads.py) via _object",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-here-4528dee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_source_objects calls source_objects (source_objects.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-source-objects-5004f04a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-objects-6379952f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_object_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-object-rows-caee21be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_object_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-object-rows-caee21be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_object_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-object-rows-caee21be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_object_rows calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-object-rows-caee21be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_object_rows calls source_objects (source_objects.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-object-rows-caee21be"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-objects-6379952f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls rdn_value (directory.py) via _left_behind",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls findings (findings.py) via _left_behind",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls responsible (findings.py) via _left_behind",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls integrations (services.py) via _left_behind",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integrations-463318b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls identity_services (services.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-identity-services-cfc03923"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls serves (services.py) via _left_behind",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serves-82fcfc7d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_served_integrations calls runs_here (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-served-integrations-90803c74"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-here-4528dee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "applies calls runs_product (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-applies-c8203ddb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-product-50156a60"
+      }
+    },
+    {
+      "attributes": {
+        "description": "name_of calls slug (pipelines.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-slug-c7c00c04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "values_of calls kind (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "values_of calls field_name (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-name-b0073878"
+      }
+    },
+    {
+      "attributes": {
+        "description": "value_of calls values_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-value-of-18ce89d6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "links_of calls kind (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-links-of-ba1da254"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "links_of calls field_name (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-links-of-ba1da254"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-name-b0073878"
+      }
+    },
+    {
+      "attributes": {
+        "description": "link_of calls links_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-link-of-58fba560"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-links-of-ba1da254"
+      }
+    },
+    {
+      "attributes": {
+        "description": "name calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-name-88886555"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cleaned references scan (secrets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cleaned-53cfb43d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scan-9c7ff825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cleaned calls sensitive (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cleaned-53cfb43d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sensitive-b595eb16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cleaned calls purpose (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cleaned-53cfb43d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-purpose-da6b5a90"
+      }
+    },
+    {
+      "attributes": {
+        "description": "config calls canonical (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-config-e166a0f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-canonical-206598e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "config calls kind (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-config-e166a0f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sm_attrs calls config (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-config-e166a0f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entry calls make_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entry calls merged_attrs (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "with_rest calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-with-rest-7ecdf8db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "with_rest calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-with-rest-7ecdf8db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_role calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-role-41edca6d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_custom_scheme calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-custom-scheme-d1357963"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_entry calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_entry calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_entry calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_entry calls sm_attrs (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_entry calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_entry calls agent_role (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-role-41edca6d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scheme_entry calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scheme-entry-2ebb009f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scheme_entry calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scheme-entry-2ebb009f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scheme_entry calls sm_attrs (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scheme-entry-2ebb009f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "scheme_entry calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-scheme-entry-2ebb009f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_servers calls values_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-servers-51751cc2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls consumer_by_bind_dn (consumers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-consumer-by-bind-dn-5fc3122e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls hosts_role (external.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-hosts-role-00de60ea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls name (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls is_true (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-true-dbbdf33f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls sm_attrs (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_entry calls directory_servers (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-directory-servers-51751cc2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "subject calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-subject-c0bd964d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "subject calls link_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-subject-c0bd964d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-link-of-58fba560"
+      }
+    },
+    {
+      "attributes": {
+        "description": "subject calls name (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-subject-c0bd964d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realms_of calls kind (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realms-of-a11b4148"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls kind (xps.py) via _below",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls values_of (xps.py) via _rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls links_of (xps.py) via _policy",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-links-of-ba1da254"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls is_true (xps.py) via _bool",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-true-dbbdf33f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls sm_attrs (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls subject (policies.py) via _policy",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subject-c0bd964d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "domain_group calls realms_of (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realms-of-a11b4148"
+      }
+    },
+    {
+      "attributes": {
+        "description": "match_key calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-match-key-c037f317"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "held_integrations calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-held-integrations-8bbec004"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "held_integrations calls integrations (services.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-held-integrations-8bbec004"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integrations-463318b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "local_entities calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-local-entities-48e9cc79"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_for calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_for calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_for calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_for calls identity_services (services.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-identity-services-cfc03923"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_for calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_for calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_for calls local_entities (federation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-local-entities-48e9cc79"
+      }
+    },
+    {
+      "attributes": {
+        "description": "place calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-place-f5c40cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "place calls integrations (services.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-place-f5c40cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integrations-463318b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "place calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-place-f5c40cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "place calls name_of (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-place-f5c40cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "place calls name (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-place-f5c40cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "place calls match_key (federation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-place-f5c40cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-match-key-c037f317"
+      }
+    },
+    {
+      "attributes": {
+        "description": "place calls held_integrations (federation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-place-f5c40cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-integrations-8bbec004"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls make_entry (directory.py) via _claims",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls one (directory.py) via _served_by",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls rdn_value (directory.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls get (directory.py) via _served_by",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls attribute_records (user_schema.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-attribute-records-8dacccf3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls fingerprint (directory.py) via _certificate",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls rdn_of (directory.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls ou_entry (directory.py) via _claims",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls certificates_by_fingerprint (credentials.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificates-by-fingerprint-da69cd4e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls name_of (naming.py) via _claims",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls values_of (xps.py) via _claims",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls value_of (xps.py) via _certificate",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls link_of (xps.py) via _certificate",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-link-of-58fba560"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls name (xps.py) via _certificate",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls is_true (xps.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-true-dbbdf33f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls sm_attrs (entries.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls entry (entries.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls with_rest (entries.py) via _integration",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-rest-7ecdf8db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups calls binding (federation.py) via _owned",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-binding-01ff6458"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_groups references nameid (federation.py) via _owned",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-nameid-0c913dfe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parts calls value_of (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parts-8bb718dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-of-18ce89d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_header calls parts (responses.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-header-6136b76e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parts-8bb718dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_entry calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_entry calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_entry calls sm_attrs (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_entry calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_entry calls parts (responses.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parts-8bb718dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_entry calls header_value (responses.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-value-414fab3f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_name calls name (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-name-b77e8923"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls facts (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-facts-f0b0b1d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls entry (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-5bd3a6ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls parts (responses.py) via _response_facts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parts-8bb718dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "carried_entry calls header_value (responses.py) via _response_facts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-value-414fab3f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls rdn_of (directory.py) via _place",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls name_of (naming.py) via _extra",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-of-9d7a9ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls named (naming.py) via _taken",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-513ab67f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls kind (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls name (xps.py) via _place",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls unique (entries.py) via _taken",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unique-b0ca42c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls agent_role (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-role-41edca6d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls is_custom_scheme (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-custom-scheme-d1357963"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls place (federation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-place-f5c40cd1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls parts (responses.py) via _place_response",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parts-8bb718dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls is_header (responses.py) via _place_response",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-header-6136b76e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placements calls carried_name (carried.py) via _extra",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placements-27b69da1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-carried-name-b77e8923"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls in_range (versions.py) via _version_refused",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-in-range-dddda73f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls parsed (versions.py) via _version_refused",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parsed-f9ef5d77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls xml_document (sources.py) via _read",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xml-document-2f437afd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls named (naming.py) via _carried_groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-named-513ab67f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls export_objects (xps.py) via _read",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-export-objects-645b7757"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls kind (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kind-8d2899cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls links_of (xps.py) via _concerning",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-links-of-ba1da254"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls name (xps.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-88886555"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls cleaned (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cleaned-53cfb43d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls with_rest (entries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-rest-7ecdf8db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls agent_entry (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls scheme_entry (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-entry-2ebb009f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls directory_entry (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-directory-entry-908211d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls domain_group (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-domain-group-aea947d7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls service_for (federation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-service-for-98022e57"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls integration_groups (federation.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integration-groups-981718c1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls parts (responses.py) via _notices",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parts-8bb718dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls is_header (responses.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-header-6136b76e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls header_value (responses.py) via _notices",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-value-414fab3f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls header_entry (responses.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-entry-0752eb33"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls carried_entry (carried.py) via _carried_groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls placements (importer.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placements-27b69da1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls release (importer.py) via _version_refused",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-0062a93a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-release-2edc1e71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realm_role calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realm-role-bef9c8a8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realm_role calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realm-role-bef9c8a8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls one (directory.py) via _headers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls values (directory.py) via _granting",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls rdn_value (directory.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls get (directory.py) via _domain",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls follow (directory.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls children (directory.py) via _granting",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls findings (findings.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls responsible (findings.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls runs_here (workloads.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-here-4528dee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_realms calls realm_role (checks.py) via _realm",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-realms-e5b0a93b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realm-role-bef9c8a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_user_directories calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-user-directories-22a3a965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_user_directories calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-user-directories-22a3a965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_user_directories calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-user-directories-22a3a965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_user_directories calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-user-directories-22a3a965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_user_directories calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-user-directories-22a3a965"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-export-objects-645b7757"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kind-8d2899cc"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-values-of-bdc8b5ec"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-value-of-18ce89d6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-links-of-ba1da254"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-link-of-58fba560"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-name-88886555"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-cleaned-53cfb43d"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-agent-role-41edca6d"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-is-custom-scheme-d1357963"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-directory-servers-51751cc2"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-match-key-c037f317"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-parts-8bb718dd"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-is-header-6136b76e"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-obj-5e0a640e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-config-e166a0f1"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-sm-attrs-5cda45ee"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-facts-f0b0b1d6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-agent-entry-09345e3b"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-scheme-entry-2ebb009f"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-directory-entry-908211d2"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-subject-c0bd964d"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-realms-of-a11b4148"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-domain-group-aea947d7"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-integration-groups-981718c1"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-header-entry-0752eb33"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-carried-entry-9596d3ab"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-service-for-98022e57"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-local-entities-48e9cc79"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-export-5f831114"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/source_objects.py"
+      },
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/source_objects.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/served.py"
+      },
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/served.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      },
+      "flow": {
+        "name": "Schema Bootstrap"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      },
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      },
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/source_objects.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-governance"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/served.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-federation"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-siteminder"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Keys, Secrets & PKI Metadata"
+      }
+    },
+    {
+      "flow": {
+        "name": "Source Product Retirement Planning"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-1-conditional-product-adapters-43ded1f6"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Web Access Policy Capture"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-1-conditional-product-adapters-43ded1f6"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/source_objects.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/served.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/sources.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/sources.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/source_objects.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/served.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/xps.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/entries.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/policies.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/federation.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/responses.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/carried.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-siteminder/src/opsdir_adapter_siteminder/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/infrastructure.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/directory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1b-siteminder-adapter-import-for-migra-851caaac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    }
+  ],
+  "warnings": []
+}

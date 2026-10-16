@@ -1,0 +1,194 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-terraform/src/opsdir_format_terraform/hcl_reader.py",
+        "id_in_name": 1,
+        "name": "value_of",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The model value of one HCL expression as hcl() writes it: a quoted string without interpolation -> str (\\\\ and \\\" unescaped); true/false -> bool; numbers -> int/float; a one-line [..] -> tuple of values (except a for expression, [for ...], which is one expression); a multi-line {..} -> dict of 'key = value' lines (keys as written); anything else (a reference, function call, conditional, quoted ${} template, multi-line jsonencode, a for expression [for ...] or one-line {for ...}) -> '${<text>}', the raw form block()/hcl() take, so it writes back unchanged. Pure.",
+        "returns": "{\"type\": \"str | int | float | bool | tuple | dict\"}",
+        "source_hash": "d3d24f057a8044aa"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-value-of-df86ad8a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 99 items 8-11 (brief: decision note on milestone 99; deferred notes 2988, 2989, 2990). (8) opsdir-format-arm template.py:9-10, 37-38: correct the comments to what arm_json.py writes (existing resources left out, comments Bicep-only); the writer is right (bicep build equality tests prove the ARM JSON); don't change output. (9) opsdir-format-terraform hcl_reader: a bracketed for expression ([for a in b : a]) reads as one raw expression '${[for ...]}', like the {for ...} object form and other expressions (user decision 2026-10-15, option A, replacing the original ValueError plan); callers checked; test round-trips through block(). (10) opsdir-adapter-kubernetes tests/test_kubernetes_gateway.py:187: mark the validate-kubernetes.sh test kubernetes (as the other tool tests are marked) so the default suite doesn't run it. (11) opsdir-base-ds tests/test_ds_collect.py: empty: delete it or give it the shared collector tests that belong there (check test_pingds_collect.py / test_opendj_collect.py for duplication first). Packages: opsdir-format-arm, opsdir-format-terraform, opsdir-adapter-kubernetes (tests), opsdir-base-ds (tests); their READMEs' Known limits.",
+        "flows": [
+          "ARM / Bicep Render",
+          "Cloud Infrastructure Render",
+          "Showcase & Verification"
+        ],
+        "name": "U.15 c: format and test hygiene fixes",
+        "parent": {
+          "slug": "milestone-u-15-code-fixes-found-by-the-u-4-readme-054bce73"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "note 2988; no output change",
+        "name": "format-arm template.py comments match arm_json.py",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-format-arm-template-py-comments-match-ar-8ca33a2b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "User decision 2026-10-15 (option A, replacing ValueError): [for ...] reads as '${[for ...]}', lossless; test round-trips both forms through block(); callers checked (note 2989)",
+        "name": "hcl_reader reads bracketed for expressions as one raw expression",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-hcl-reader-refuses-bracketed-for-express-b42a4a60"
+      }
+    },
+    {
+      "attributes": {
+        "description": "test_kubernetes_gateway.py:187 (note 2990)",
+        "name": "Kubernetes gateway validation test marked kubernetes",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-kubernetes-gateway-validation-test-marke-d69cf42e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "delete or fill without duplicating (note 2990)",
+        "name": "base-ds empty test_ds_collect.py resolved",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-base-ds-empty-test-ds-collect-py-resolve-d309fc05"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Known limits updated",
+        "name": "READMEs for the touched packages",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-readmes-for-the-touched-packages-79c31e27"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "a9c6447",
+    "branch": "aimfp-u15c-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "file": {
+        "path": "packages/opsdir-format-arm/src/opsdir_format_arm/template.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-kubernetes/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-base-ds/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/hcl_reader.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-c-format-and-test-hygiene-fixes-b7d8f995"
+      }
+    }
+  ],
+  "warnings": []
+}

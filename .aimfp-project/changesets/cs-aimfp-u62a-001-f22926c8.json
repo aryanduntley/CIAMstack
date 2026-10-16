@@ -1,0 +1,2461 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "evidence.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/estate/evidence.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "evidence.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/connectors/evidence.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "mask-evidence.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "examples/showcase/scripts/mask-evidence.py"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/estate.py",
+        "id_in_name": 0,
+        "name": "entries",
+        "parameters": "[]",
+        "purpose": "The showcase's tag policy (15-tag-policy), its incident reporting obligation dfars-7012 (16-reporting-obligations), its compliance record (compliance(): 17-compliance), its authorizations (authorizations(): 18-authorizations) and its evidence queries (evidence(): 26-evidence)",
+        "returns": "{\"type\": \"tuple[Spec, ...]\"}",
+        "source_hash": "588c8abb1b37975f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-entries-526463bc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/authorizations.py",
+        "id_in_name": 0,
+        "name": "check_authorization",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check (decision 2035) of the target: no authorization / broken ref / below required level / not standing / equivalent without evidence = blockers where data is restricted, a level is required or regulated data is held (the missing-authorization blocker says which: _why_held); stale in-scope list, unmet required configurations, target outside the source's SSP boundary = actions; CRM delta (customer on the target, inherited/shared on the source, unmet) = blockers",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "c23eee1c70a0d0e1"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-authorization-3153b6f5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/estate.py",
+        "id_in_name": 0,
+        "name": "authorizations",
+        "parameters": "[]",
+        "purpose": "Specs of the showcase's cloud authorizations (AGENCYAMAZONEW stub, Azure F1209051525 and Google FR1805751477 with in-scope subsets), system boundary SSP-CIAM-2026 and the control responsibilities (18-authorizations): SC-12 on AWS and Azure, and the controls Azure leaves to or shares with the platform (AC-2, AU-2, AU-11, CM-3, IA-2, SC-13) with how it meets them",
+        "returns": "{\"type\": \"tuple[Spec, ...]\"}",
+        "source_hash": "b751691d489c3111"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-authorizations-3ad77651"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/authorizations.py",
+        "id_in_name": 0,
+        "name": "boundaries_holding",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"env_dn\", \"type\": \"str\", \"required\": true, \"description\": \"the environment's DN\"}]",
+        "purpose": "The system boundaries (ciamSystemBoundary) an environment is inside",
+        "returns": "{\"type\": \"list[Entry]\", \"description\": \"boundaries naming the environment in ciamAffectedEnvironment\"}",
+        "source_hash": "e492c35515b90f83"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-boundaries-holding-fc83cf91"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/authorizations.py",
+        "id_in_name": 0,
+        "name": "responsibilities_under",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"auth\", \"type\": \"Entry|None\", \"required\": true}]",
+        "purpose": "The control responsibilities recorded under an authorization (none for None)",
+        "returns": "{\"type\": \"list[Entry]\", \"description\": \"ciamControlResponsibility entries whose ciamAuthorizationRef is auth\"}",
+        "source_hash": "d339eb2c7e72cb2b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-responsibilities-under-b4f8ea3d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "evidence_queries",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every evidence query (ciamEvidenceQuery under ou=evidence-queries), by name",
+        "returns": "{\"type\": \"list[Entry]\"}",
+        "source_hash": "7f5f53083c68adfb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-evidence-queries-8bcd0186"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "queries_for",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"control\", \"type\": \"str\", \"required\": true, \"description\": \"framework:control\"}]",
+        "purpose": "The evidence queries naming a control, by name",
+        "returns": "{\"type\": \"list[Entry]\"}",
+        "source_hash": "f12c3e755519bb61"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-queries-for-d31acbff"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "boundary_named",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A system boundary by its cn or DN, or None",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "a2415dbc6fb0af8a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-boundary-named-1e955026"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "boundary_labels",
+        "parameters": "[{\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The cloud/env labels of the environments inside a boundary, in recorded order",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "d4a8103afc123902"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-boundary-labels-b9ad28ed"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "controls_covered",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"env_dns\", \"type\": \"iterable[str]\", \"required\": true}]",
+        "purpose": "The controls the authorizations these environments rely on leave to the operator (customer or shared), each with its responsibility entries",
+        "returns": "{\"type\": \"dict[str, tuple[Entry]]\", \"description\": \"{control: (responsibility, ...)} in recorded order\"}",
+        "source_hash": "462449632bb0a6aa"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "package_plan",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"wanted\", \"type\": \"tuple[str]\", \"required\": false, \"description\": \"controls to keep; empty: all\"}]",
+        "purpose": "The controls of a boundary's scope some evidence query names (only wanted when given), each with its queries",
+        "returns": "{\"type\": \"tuple[(str, tuple[Entry])]\"}",
+        "source_hash": "3d79c1681c8d8e8b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-package-plan-1c985fc4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "control_folder",
+        "parameters": "[{\"name\": \"control\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A control's package folder name: framework_control",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "99b7a24285dc12f9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-control-folder-90f92acf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "scoped_rows",
+        "parameters": "[{\"name\": \"headers\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"rows\", \"type\": \"iterable[tuple]\", \"required\": true}, {\"name\": \"labels\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "A report's rows cut to the labelled environments when it has an environment column, else all",
+        "returns": "{\"type\": \"tuple[tuple]\"}",
+        "source_hash": "519b7bd33e36cdfb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-scoped-rows-553030b5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "search_table",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"q\", \"type\": \"Entry\", \"required\": true, \"description\": \"the evidence query\"}]",
+        "purpose": "(headers, rows) of an evidence query's LDAP search: the DN, then each attribute it shows",
+        "returns": "{\"type\": \"(tuple[str], tuple[tuple])\"}",
+        "source_hash": "7eda2cf50bb184c5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-table-5ac1b32b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "table_csv",
+        "parameters": "[{\"name\": \"headers\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"rows\", \"type\": \"iterable[tuple]\", \"required\": true}]",
+        "purpose": "A table as CSV text (header row, then rows)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "af8a610a719071e1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-table-csv-a4c95d09"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "table_json",
+        "parameters": "[{\"name\": \"headers\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"rows\", \"type\": \"iterable[tuple]\", \"required\": true}]",
+        "purpose": "A table as JSON text {headers, rows}",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "efaf7e2c45c5bfce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-table-json-9b34b20b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "sha256",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The SHA-256 of a text (UTF-8), in hex",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "6e761b9cb04b41bc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sha256-867aa93d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "package_files",
+        "parameters": "[{\"name\": \"plan\", \"type\": \"tuple\", \"required\": true, \"description\": \"package_plan\"}, {\"name\": \"outputs\", \"type\": \"dict[str, (headers, rows)]\", \"required\": true, \"description\": \"by query DN\"}]",
+        "purpose": "A package's outputs: per control a folder holding each query's output as CSV and JSON",
+        "returns": "{\"type\": \"dict[str, str]\", \"description\": \"{path: text}\"}",
+        "source_hash": "915b85abf9e117cd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-package-files-8ab16ad8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "manifest",
+        "parameters": "[{\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"history_point\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"plan\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}]",
+        "purpose": "MANIFEST.json of a package: boundary, as_of day, history point, and per control its queries and files' SHA-256",
+        "returns": "{\"type\": \"str\", \"description\": \"JSON text\"}",
+        "source_hash": "b7936e7aaa43613b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-manifest-43b58563"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "run_dn",
+        "parameters": "[{\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The DN of a boundary's evidence run (cn=evidence under it)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "644b1c8bf4f469f4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-run-dn-83404dd3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "last_run",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "A boundary's last recorded evidence run, or None",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "62a2c5ac0a08a8a5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-last-run-58c28225"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "run_records",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"plan\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"change_id\", \"type\": \"str\", \"required\": true}, {\"name\": \"kept_at\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "The change records recording a boundary's evidence run under a change: taken as of a day (midnight UTC), each file's SHA-256, the queries, where kept; a new entry or the held one replaced",
+        "returns": "{\"type\": \"tuple[LdifRecord]\"}",
+        "source_hash": "6a1606068b82ef0e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-run-records-b2905339"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "collected_at",
+        "parameters": "[{\"name\": \"run\", \"type\": \"Entry|None\", \"required\": true}]",
+        "purpose": "The day a run's evidence was taken, or None",
+        "returns": "{\"type\": \"date|None\"}",
+        "source_hash": "372e9d8ac8c9c7bb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-collected-at-3663d201"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "due",
+        "parameters": "[{\"name\": \"taken\", \"type\": \"date|None\", \"required\": true}, {\"name\": \"cadence\", \"type\": \"int|str|None\", \"required\": true}]",
+        "purpose": "When evidence taken on a day is due again (None: never collected or no cadence)",
+        "returns": "{\"type\": \"date|None\"}",
+        "source_hash": "cdff2274b030f951"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-due-11584aca"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/evidence.py",
+        "id_in_name": 0,
+        "name": "evidence_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"as_of\", \"type\": \"date|None\", \"required\": false}]",
+        "purpose": "The evidence report: per control and query, its source, DN, cadence, keeper, when boundaries last collected it, and status as of the day",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "5951f0679e37175a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/evidence.py",
+        "id_in_name": 0,
+        "name": "history_point",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}]",
+        "purpose": "Effect (reads the store): the last governed change and the number of governed history entries",
+        "returns": "{\"type\": \"dict|None\", \"description\": \"{change, entry}, None before any\"}",
+        "source_hash": "f204c7c19981fa8d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-history-point-23c13c6c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/evidence.py",
+        "id_in_name": 0,
+        "name": "query_output",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"q\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"reports\", \"type\": \"dict|None\", \"required\": false, \"description\": \"the catalogue (computed when not given)\"}]",
+        "purpose": "Effect (reads the store): (headers, rows) of one evidence query as of a day: a catalogue report, the change history or an LDAP search",
+        "returns": "{\"type\": \"(tuple[str], tuple[tuple])\"}",
+        "source_hash": "ad11ad06c0f44cb9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-query-output-b853ba81"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/evidence.py",
+        "id_in_name": 0,
+        "name": "evidence_package",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"wanted\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Effect (reads the store): a boundary's evidence package as of a day: assemble_package over the store (each query's output from query_output, the store's history point)",
+        "returns": "{\"type\": \"Package\", \"description\": \"(plan, files, manifest, history_point)\"}",
+        "source_hash": "c89dfea6b75ec05a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-evidence-package-fd6d3233"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/evidence.py",
+        "id_in_name": 0,
+        "name": "evidence_check",
+        "parameters": "[]",
+        "purpose": "The planner check of evidence over the report catalogue: a control without a query, an unknown report, a missing or old package, evidence that changes between source and target",
+        "returns": "{\"type\": \"Callable[[PlanContext], Findings]\"}",
+        "source_hash": "7f156ef109ce5a96"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "evidence",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"boundary\", \"type\": \"str\", \"required\": true, \"description\": \"cn or DN\"}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"controls\", \"type\": \"tuple[str]\", \"required\": false}, {\"name\": \"change_id\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"kept_at\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Effect: a system boundary's evidence package as of a day, its run recorded on the boundary under an approved change when given; ValueError for an unknown boundary or a query naming no report",
+        "returns": "{\"type\": \"Evidence\", \"description\": \"(boundary DN, files incl. MANIFEST.json, applied or None)\"}",
+        "source_hash": "7d29c2891916497f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-evidence-592b8162"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/scripts/mask-evidence.py",
+        "id_in_name": 0,
+        "name": "history_files",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The package paths of its history queries' outputs, from MANIFEST.json",
+        "returns": "{\"type\": \"set[str]\"}",
+        "source_hash": "59ef7a7197906a6b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-history-files-482ffdfb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/scripts/mask-evidence.py",
+        "id_in_name": 0,
+        "name": "masked_manifest",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"dict\", \"required\": true}, {\"name\": \"paths\", \"type\": \"set[str]\", \"required\": true}]",
+        "purpose": "The manifest with these files' hashes masked",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "2821e30589803488"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-masked-manifest-9ba59ee8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/scripts/mask-evidence.py",
+        "id_in_name": 0,
+        "name": "logical_lines",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "LDIF's logical lines, each as its physical lines",
+        "returns": "{\"type\": \"list[str]\"}",
+        "source_hash": "8b87efb02b5b4cd1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-logical-lines-5aaaccdf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/scripts/mask-evidence.py",
+        "id_in_name": 0,
+        "name": "masked_export",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true, \"description\": \"an `opsdir export` LDIF\"}]",
+        "purpose": "An export with every ciamEvidenceOutput's hash masked (<SHA256>), refolded as opsdir folds it; every other line as it is",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "7f3f50bbe4430d5c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-masked-export-8b340088"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/scripts/mask-evidence.py",
+        "id_in_name": 0,
+        "name": "main",
+        "parameters": "[{\"name\": \"package\", \"type\": \"str\", \"required\": true}, {\"name\": \"export\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Effect: mask the history files' times and their manifest hashes in a package, and every evidence run hash in an export",
+        "returns": "{\"type\": \"int\", \"description\": \"exit status\"}",
+        "source_hash": "640a855e60aba17b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-main-4d85c60c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/cli.py",
+        "id_in_name": 0,
+        "name": "_cmd_evidence",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"a\", \"type\": \"argparse.Namespace\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "The `opsdir evidence` command: the boundary's package written under -o, the run recorded with --change; exits with the error on an unknown boundary or report",
+        "returns": "{\"type\": \"str\", \"description\": \"what was written and recorded\"}",
+        "source_hash": "0b916b50a828650c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cmd-evidence-8ccac1f6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/estate.py",
+        "id_in_name": 0,
+        "name": "evidence",
+        "parameters": "[]",
+        "purpose": "The showcase's evidence queries (26-evidence): AC-2, SC-12/SC-13, AU-2/AU-11 and CM-3 by reports, history and a search; IA-2 planted without one",
+        "returns": "{\"type\": \"tuple[Spec]\"}",
+        "source_hash": "768a6e1160c56049"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-evidence-0730706d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/evidence.py",
+        "id_in_name": 0,
+        "name": "directory_output",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"q\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"reports\", \"type\": \"dict[str, Report]\", \"required\": true}]",
+        "purpose": "(headers, rows) of an evidence query the directory alone answers (a directory report of the catalogue, or a search), or None (the change history, a report the store runs)",
+        "returns": "{\"type\": \"(tuple[str], tuple[tuple])|None\"}",
+        "source_hash": "e4b2b49654d55a6b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-directory-output-216154ae"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/evidence.py",
+        "id_in_name": 0,
+        "name": "assemble_package",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"boundary\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"wanted\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"output\", \"type\": \"Callable[[Entry], (headers, rows)]\", \"required\": true}, {\"name\": \"point\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"reports\", \"type\": \"dict[str, Report]\", \"required\": true}]",
+        "purpose": "A boundary's evidence package as of a day from each query's output (output(query) -> (headers, rows)) and the history point; ValueError for a query naming no report, before any query runs",
+        "returns": "{\"type\": \"Package\"}",
+        "source_hash": "80519d3750d23745"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 28 (6.2a; read its description and decision 3029, proposal 3024). Core estate domain: ciamEvidenceQuery (ou=evidence-queries) and ciamEvidenceRun, RESERVED numbers attributes 680-689 and classes 143-144 only (reuse existing attributes first: ciamControlRef, ciamManagedBy, ciamEvidenceRef, ciamChangeRef...). Operation `evidence` in operations.py + CLI `opsdir evidence --boundary B [--control C]... [--as-of] -o DIR`: per control a folder of each query's output (CSV + JSON as the report renders it) and MANIFEST.json (control, query, as-of, record history point, SHA-256 per output); deterministic; names and DNs allowed (user), never secrets; the run recorded as a governed ciamEvidenceRun under a change. check_evidence (customer/shared control in a boundary's authorization without a query = action; a query naming an unknown report = blocker; evidence older than its cadence = action), report `evidence`, and the migration planner naming controls whose evidence changes on the target. Showcase: Example Aero's boundary (FedRAMP Moderate / CMMC L2): AC-2 -> principals + access-paths; SC-12/SC-13 -> credentials/keys; AU-2/AU-11 -> audit-trails + log-routes; CM-3 -> change history; evidence package output in golden (snapshot-outputs.sh must produce it: update the script, not only demo.sh). Showcase ids: CHG-2046+, B46+/A140+, data file 25+ (6.3 used 2044/B44/A138/23; 6.4 has 2045/B45/A139/24). Design choices with more than one answer: escalate with a recommendation (the master answers). Rules 2991 + 3002. Boundary: core estate domain, operations.py + CLI command registration for `evidence`, the planner's migration comparison where it names controls, schema LDIF regeneration, docs, examples/showcase, tests. NOT opsdir-format-oscal (worker-1's task), not 6.4's files (worker-2: operations application/graph/summary, governance applications).",
+        "flows": [
+          "Compliance Evidence & OSCAL"
+        ],
+        "name": "6.2a-1: evidence queries, evidence runs, `opsdir evidence`, check and report, showcase",
+        "parent": {
+          "slug": "milestone-6-2-itsm-cmdb-grc-sync-810c6d25"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "c473938",
+    "branch": "aimfp-u62a-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "boundaries_holding calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundaries-holding-fc83cf91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundaries_holding calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundaries-holding-fc83cf91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_authorization: the boundaries holding source and target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-authorization-3153b6f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundaries-holding-fc83cf91"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_authorization (_crm_delta): responsibilities under source and target authorizations",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-authorization-3153b6f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsibilities-under-b4f8ea3d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "queries naming a control",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-queries-for-d31acbff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-queries-8bcd0186"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environment labels",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-labels-b9ad28ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "responsibilities under each authorization relied on",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsibilities-under-b4f8ea3d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the boundary's covered controls",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-plan-1c985fc4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "controls some query names",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-plan-1c985fc4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-queries-8bcd0186"
+      }
+    },
+    {
+      "attributes": {
+        "description": "each control's queries",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-plan-1c985fc4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-queries-for-d31acbff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the LDAP search",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-table-5ac1b32b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-562a84ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "package folder",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-files-8ab16ad8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-folder-90f92acf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "CSV output",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-files-8ab16ad8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-table-csv-a4c95d09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "JSON output",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-files-8ab16ad8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-table-json-9b34b20b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file hashes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-manifest-43b58563"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sha256-867aa93d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "files per query",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-manifest-43b58563"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-folder-90f92acf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run DN",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-last-run-58c28225"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-run-dn-83404dd3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file hashes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-b2905339"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sha256-867aa93d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "held run",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-b2905339"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-last-run-58c28225"
+      }
+    },
+    {
+      "attributes": {
+        "description": "new run DN",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-b2905339"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-run-dn-83404dd3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "new run entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-b2905339"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-new-entry-f9df7ccc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ciamEvidenceAt",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-b2905339"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ciamEvidenceAt as a day",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-collected-at-3663d201"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every query",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-queries-8bcd0186"
+      }
+    },
+    {
+      "attributes": {
+        "description": "each boundary's last run",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-last-run-58c28225"
+      }
+    },
+    {
+      "attributes": {
+        "description": "when collected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collected-at-3663d201"
+      }
+    },
+    {
+      "attributes": {
+        "description": "when due",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-due-11584aca"
+      }
+    },
+    {
+      "attributes": {
+        "description": "governed history",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-history-point-23c13c6c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fetch-history-07f3bb38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "history source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-query-output-b853ba81"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fetch-history-07f3bb38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-query-output-b853ba81"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-table-5ac1b32b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "report catalogue",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-query-output-b853ba81"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-catalogue-efd485ca"
+      }
+    },
+    {
+      "attributes": {
+        "description": "report source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-query-output-b853ba81"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-run-report-b942222b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assemble_package calls package_plan (evidence.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-package-plan-1c985fc4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "report catalogue",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-package-fd6d3233"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-catalogue-efd485ca"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assemble_package calls boundary_labels (evidence.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-labels-b9ad28ed"
+      }
+    },
+    {
+      "attributes": {
+        "description": "each query's output",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-package-fd6d3233"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-query-output-b853ba81"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assemble_package calls package_files (evidence.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-package-files-8ab16ad8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "history point",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-package-fd6d3233"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-history-point-23c13c6c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assemble_package calls manifest (evidence.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-manifest-43b58563"
+      }
+    },
+    {
+      "attributes": {
+        "description": "report catalogue",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-catalogue-efd485ca"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every query",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-queries-8bcd0186"
+      }
+    },
+    {
+      "attributes": {
+        "description": "covered controls of source and target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "target's boundaries",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundaries-holding-fc83cf91"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary's last run",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-last-run-58c28225"
+      }
+    },
+    {
+      "attributes": {
+        "description": "when collected",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collected-at-3663d201"
+      }
+    },
+    {
+      "attributes": {
+        "description": "when due",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-due-11584aca"
+      }
+    },
+    {
+      "attributes": {
+        "description": "finding owners",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan joins the evidence check",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-b824361b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary by name",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-592b8162"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-named-1e955026"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the package",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-592b8162"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-package-fd6d3233"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run records under a change",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-592b8162"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-run-records-b2905339"
+      }
+    },
+    {
+      "attributes": {
+        "description": "apply under the change",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-592b8162"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-modify-a6f0e1ff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the operation",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cmd-evidence-8ccac1f6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-592b8162"
+      }
+    },
+    {
+      "attributes": {
+        "description": "write the package",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cmd-evidence-8ccac1f6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-write-tree-2d71f822"
+      }
+    },
+    {
+      "attributes": {
+        "description": "logical lines",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-masked-export-8b340088"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-logical-lines-5aaaccdf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "refold masked lines",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-masked-export-8b340088"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fold-d8d630fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "history files",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-main-4d85c60c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-history-files-482ffdfb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "masked manifest",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-main-4d85c60c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-masked-manifest-9ba59ee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "masked export",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-main-4d85c60c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-masked-export-8b340088"
+      }
+    },
+    {
+      "attributes": {
+        "description": "estate entries include the evidence queries",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entries-526463bc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-evidence-0730706d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entry specs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-0730706d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-e-65fcabe6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundaries_holding calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundaries-holding-fc83cf91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "responsibilities_under calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-responsibilities-under-b4f8ea3d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "responsibilities_under calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-responsibilities-under-b4f8ea3d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "responsibilities_under calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-responsibilities-under-b4f8ea3d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_queries references rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-queries-8bcd0186"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_queries calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-queries-8bcd0186"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "queries_for calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-queries-for-d31acbff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_named calls is_a (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-named-1e955026"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-a-2af81559"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_named calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-named-1e955026"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_named calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-named-1e955026"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_named calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-named-1e955026"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_labels calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-labels-b9ad28ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "controls_covered calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "controls_covered calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "controls_covered calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "controls_covered calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-controls-covered-271d78b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "package_plan calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-plan-1c985fc4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_table calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-table-5ac1b32b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_table calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-table-5ac1b32b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "package_files calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-files-8ab16ad8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "manifest calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-manifest-43b58563"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "manifest calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-manifest-43b58563"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "last_run calls is_a (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-last-run-58c28225"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-a-2af81559"
+      }
+    },
+    {
+      "attributes": {
+        "description": "last_run calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-last-run-58c28225"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_records calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-records-b2905339"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_rows calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_rows calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_rows calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-rows-6ab53394"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "query_output calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-query-output-b853ba81"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_output calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-output-216154ae"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assemble_package calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_check calls one (directory.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_check calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_check calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_check calls get (directory.py) via _missing",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-check-eb960c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence calls load_directory (postgres.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-592b8162"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-load-directory-3e335e6f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "main dispatches `evidence` through COMMANDS",
+        "is_indirect": 1
+      },
+      "from": {
+        "entity_key": "fn-main-be5f6682"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cmd-evidence-8ccac1f6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "evidence_package calls assemble_package (evidence.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-evidence-package-fd6d3233"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      }
+    },
+    {
+      "attributes": {
+        "description": "directory_output calls search_table (evidence.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-directory-output-216154ae"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-table-5ac1b32b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assemble_package calls one (directory.py) via _known",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assemble_package calls scoped_rows (evidence.py) via _cut",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assemble-package-9d233a15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scoped-rows-553030b5"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/evidence.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/evidence.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/mask-evidence.py"
+      },
+      "flow": {
+        "name": "Showcase & Verification"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/mask-evidence.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/evidence.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-estate"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/evidence.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "connectors"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/mask-evidence.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "showcase"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/evidence.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/evidence.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/mask-evidence.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/authorizations.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/cli.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/estate.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/operations.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-1-evidence-queries-evidence-runs-op-2eb27371"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundaries, responsibilities",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-authorization-3153b6f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "norm_dn",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-authorization-3153b6f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,3709 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "common.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "record.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "poam.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/poam.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "ssp.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/ssp.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "results.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/results.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "readers.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "format.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/format.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-format-oscal/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Reads the core estate domain's boundaries, POA&M items, exceptions, assessments and control responsibilities; defines no schema. The evidence-package MANIFEST hook (assessment_results_document evidence=) is for task 526's `opsdir evidence`.",
+        "external_dependencies": "[\"NIST OSCAL 1.2.3 JSON schema (validation test only, tools/oscal/1.2.3 from fetch-tools.sh)\", \"jsonschema (validation test only)\"]",
+        "path": "packages/opsdir-format-oscal/",
+        "purpose": "OSCAL for opsdir (written against OSCAL 1.2.3, readers accept 1.x): the oscal-json format; pure writers of a system boundary's POA&M and SSP and of a compliance assessment's assessment results (UNBOUND fields named in notes, uuid5 ids, deterministic); readers of OSCAL POA&Ms, assessment results (per-document containers, record items merged in place, never deleted) and catalogs (checked, not imported); the declaration-only `oscal` compliance adapter rendering oscal/*.json."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "format-oscal"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "uid",
+        "parameters": "[{\"name\": \"*parts\", \"type\": null, \"required\": false, \"kind\": \"var_positional\"}]",
+        "purpose": "A version-5 UUID of the parts (opsdir's OSCAL namespace): the same parts give the same id.",
+        "returns": "{\"type\": \"str\", \"description\": \"UUID text\"}",
+        "source_hash": "b1cb12245c668ad6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-uid-f1dba289"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "entry_uid",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"more\", \"type\": \"str (varargs)\", \"required\": false}]",
+        "purpose": "The UUID of what an entry is written as (kind: poam-item, risk, finding, ...), by its normalized DN and more parts: the same entry is the same object in every document and revision.",
+        "returns": "{\"type\": \"str\", \"description\": \"UUID text\"}",
+        "source_hash": "6a31953bef7d658b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-entry-uid-e196a29e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "unbound",
+        "parameters": "[{\"name\": \"what\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The UNBOUND:<what> mark written where OSCAL requires a value the record doesn't hold.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "46eaa560aea97fe1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unbound-b611e8f6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "slug",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A file or container name of free text: lower case, runs of other characters as '-' (unnamed when empty).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "d2534b6021381ebc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-slug-a1324db4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "iso",
+        "parameters": "[{\"name\": \"gt\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The OSCAL date-time of a GeneralizedTime (20261102000000Z -> 2026-11-02T00:00:00Z), or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "ab4c1bb1e7998683"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-iso-ed17b0cd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "day_iso",
+        "parameters": "[{\"name\": \"day\", \"type\": \"datetime.date|None\", \"required\": true}]",
+        "purpose": "The OSCAL date-time (midnight UTC) of a day, or None when not a date.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "97bf66f55cbfeba0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-day-iso-a7614044"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "last_modified",
+        "parameters": "[{\"name\": \"entries\", \"type\": \"iterable[Entry]\", \"required\": true}, {\"name\": \"attrs\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"datetime.date|None\", \"required\": false}]",
+        "purpose": "When documented entries last changed as the record dates them (latest of the attrs), else the day given, else EPOCH: never the time of writing.",
+        "returns": "{\"type\": \"str\", \"description\": \"OSCAL date-time\"}",
+        "source_hash": "97e55a39399e1a98"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-last-modified-c4d2ecc0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "metadata",
+        "parameters": "[{\"name\": \"title\", \"type\": \"str\", \"required\": true}, {\"name\": \"modified\", \"type\": \"str\", \"required\": true}, {\"name\": \"version\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "An OSCAL metadata block (title, last-modified, version: the given one else last-modified, oscal-version OSCAL_VERSION).",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "b9b7dec5694cb794"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-metadata-2dc2417b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "prop",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true}, {\"name\": \"value\", \"type\": \"object\", \"required\": true}]",
+        "purpose": "An opsdir OSCAL property (namespace NS) of a name and value.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "bc0fa6935aba22f8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-prop-7bba14a8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "props",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"iterable[tuple[str, object]]\", \"required\": true}]",
+        "purpose": "opsdir properties of (name, value) pairs whose value is held, in order.",
+        "returns": "{\"type\": \"list[dict]\"}",
+        "source_hash": "5f45bd7f73588566"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-props-1fb3af3e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "prop_values",
+        "parameters": "[{\"name\": \"obj\", \"type\": \"dict\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The values of an OSCAL object's properties of a name in opsdir's namespace (or none).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "dfae8401834006ab"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-prop-values-fdadd712"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "prop_value",
+        "parameters": "[{\"name\": \"obj\", \"type\": \"dict\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The first value of an OSCAL object's opsdir property of a name, or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "0e4249302f383251"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-prop-value-88b21d52"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "is_53",
+        "parameters": "[{\"name\": \"framework\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a framework's controls are SP 800-53's (nist-800-53-*, fedramp-*).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "aee300f9ab93f129"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-53-2cfa06d0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "control_id",
+        "parameters": "[{\"name\": \"ref\", \"type\": \"str\", \"required\": true, \"description\": \"framework:control\"}]",
+        "purpose": "(framework, OSCAL control id) of a record control ref: SP 800-53 lower case with enhancements dotted (AC-2(1) -> ac-2.1), digit-led ids behind '_' (interim), others as recorded.",
+        "returns": "{\"type\": \"tuple[str, str]\"}",
+        "source_hash": "6193c6cfd5e7d87b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-control-id-0b2d384e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "control_ref",
+        "parameters": "[{\"name\": \"framework\", \"type\": \"str\", \"required\": true}, {\"name\": \"oscal\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The record control ref of an OSCAL control id under a framework: control_id's inverse.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e24610d5639f98bb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-control-ref-474b7539"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "is_token",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether text is an OSCAL token (XML NCName), what a control id must be.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "d6257d237acaede1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-token-e338d796"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "oscal_version_major",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The major OSCAL version an OSCAL document's metadata states, or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "f468d1557c289f0c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-oscal-version-major-43a6f395"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 1,
+        "name": "unbound_note",
+        "parameters": "[{\"name\": \"subject\", \"type\": \"str\", \"required\": true}, {\"name\": \"entry\", \"type\": \"str\", \"required\": true, \"description\": \"DN\"}, {\"name\": \"fields\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"how\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "The action RenderNote naming the UNBOUND fields of a document, for the owner of the entry it documents.",
+        "returns": "{\"type\": \"RenderNote\"}",
+        "source_hash": "163bf72549c90458"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unbound-note-22912d76"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "boundaries",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The operator's system boundaries (ciamSystemBoundary under ou=boundaries), by name.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "59f7679f98f2fdce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-boundaries-ff4dd672"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "environments",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The normalized DNs of the environments an entry names (ciamAffectedEnvironment).",
+        "returns": "{\"type\": \"frozenset[str]\"}",
+        "source_hash": "c8868d1d550b803f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-environments-f47f733e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "labels",
+        "parameters": "[{\"name\": \"dns\", \"type\": \"iterable[str]\", \"required\": true}]",
+        "purpose": "The sorted cloud/env labels of environment DNs.",
+        "returns": "{\"type\": \"list[str]\"}",
+        "source_hash": "550c6d13798922c4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-labels-fc766dec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "system_id",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The id a boundary's OSCAL documents carry: its ciamSspRef, else its name.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "22969b0ebffd293a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-system-id-b85dd252"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "boundary_items",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The POA&M items naming an environment inside a boundary, by name.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "dffb338529e4fc7c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-boundary-items-d215ba01"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "boundary_exceptions",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The requested or approved exceptions (deviations) naming an environment inside a boundary, by name.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "65eb4ec33ae455d1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-boundary-exceptions-7db3c419"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "item_exceptions",
+        "parameters": "[{\"name\": \"exceptions\", \"type\": \"tuple[Entry]\", \"required\": true}, {\"name\": \"item\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The exceptions belonging to a POA&M item (ciamPoamRef).",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "a55436d34a4362d2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-item-exceptions-106b1a92"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "boundary_responsibilities",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "(authorization, responsibility) for each control responsibility under an authorization an environment inside the boundary relies on (ciamAuthorizationRef), by authorization and name.",
+        "returns": "{\"type\": \"tuple[tuple[Entry, Entry]]\"}",
+        "source_hash": "c38f4a7ec7dffbaa"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "assessments",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The compliance assessments (ciamComplianceAssessment), by name.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "e245b78db491abc6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-assessments-1191e859"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py",
+        "id_in_name": 1,
+        "name": "assessment_items",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"a\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "An assessment's open POA&M items: those whose ciamAssessmentRef is its name or its own reference.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "128e24c38bf66c1c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-assessment-items-c410c61c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/poam.py",
+        "id_in_name": 1,
+        "name": "poam_document",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true, \"description\": \"the ciamSystemBoundary\"}, {\"name\": \"as_of\", \"type\": \"datetime.date|None\", \"required\": false}]",
+        "purpose": "OscalDoc of a system boundary's OSCAL POA&M: poam-items and one risk each (status, deadline, milestone tasks), its requested/approved exceptions as deviation risks, system-id from ciamSspRef; refused without an item.",
+        "returns": "{\"type\": \"OscalDoc\"}",
+        "source_hash": "1b968d589fbb5868"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/ssp.py",
+        "id_in_name": 1,
+        "name": "has_ssp",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether a system boundary has an SSP to write: a control responsibility (OSCAL-token id) under an authorization its environments rely on.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "b45b4039aec82f63"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-has-ssp-7e829347"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/ssp.py",
+        "id_in_name": 1,
+        "name": "ssp_document",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"datetime.date|None\", \"required\": false}]",
+        "purpose": "OscalDoc of a system boundary's OSCAL SSP: system characteristics, this-system and authorization components, one implemented requirement per control with by-components by responsibility; UNBOUND profile, information types, status; refused without a requirement.",
+        "returns": "{\"type\": \"OscalDoc\"}",
+        "source_hash": "ffd0307deae5c122"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ssp-document-17546df3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/results.py",
+        "id_in_name": 1,
+        "name": "assessment_results_document",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"a\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"datetime.date|None\", \"required\": false}, {\"name\": \"evidence\", \"type\": \"tuple[tuple[str, str]]\", \"required\": false, \"description\": \"(path, sha256) of an evidence package's MANIFEST\"}]",
+        "purpose": "OscalDoc of a compliance assessment's OSCAL assessment results: one result (framework, kind, score, status props), its open POA&M items as not-satisfied findings, evidence package files (SHA-256) and ciamEvidenceRef as back-matter; UNBOUND import-ap.",
+        "returns": "{\"type\": \"OscalDoc\"}",
+        "source_hash": "ef82fa6ffe4993ed"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py",
+        "id_in_name": 1,
+        "name": "read_poam",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer oscal/poam: each OSCAL 1.x POA&M's items as POA&M items of the system boundary its system-id names (refused when none); new ones in ou=oscal-poam-<system id>,ou=poam, record-owned ones merged in place, never deleted.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "87b16283225195fe"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-poam-8336f32e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py",
+        "id_in_name": 1,
+        "name": "read_assessment_results",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer oscal/assessment-results: results stating framework and kind as compliance assessments, not-satisfied findings as open POA&M items, in per-document containers under ou=assessments and ou=poam.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "d96d960c56540a7e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py",
+        "id_in_name": 1,
+        "name": "catalog_ids",
+        "parameters": "[{\"name\": \"node\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The ids of every control in an OSCAL catalog (groups' and controls' controls at any depth).",
+        "returns": "{\"type\": \"frozenset[str]\"}",
+        "source_hash": "1a41f612408ce458"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-catalog-ids-edbc8628"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py",
+        "id_in_name": 1,
+        "name": "read_catalog",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer oscal/catalog: imports nothing; notices name, per framework whose controls the catalog holds, the record's controls it doesn't.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "ebf89c076cab0a7a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-catalog-b197ce39"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/adapter.py",
+        "id_in_name": 1,
+        "name": "oscal_documents",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "{path: OscalDoc} of every OSCAL document the record gives: oscal/<boundary>/poam.json and ssp.json where they have content, oscal/assessment-results-<assessment>.json.",
+        "returns": "{\"type\": \"dict[str, OscalDoc]\"}",
+        "source_hash": "81d83eb6fda96782"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/adapter.py",
+        "id_in_name": 1,
+        "name": "render_oscal",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The oscal adapter's environment-neutral render: every OSCAL document the record gives, as indented JSON.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "49dc030feb507fa6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-oscal-94ed8f77"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/adapter.py",
+        "id_in_name": 1,
+        "name": "oscal_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": null, \"required\": true}, {\"name\": \"services\", \"type\": null, \"required\": true}]",
+        "purpose": "The oscal adapter's render notes (Adapter.notes): each document's UNBOUND notes, the documents not written, the frameworks with interim control ids.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "7fd53eee8eaaa538"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"NamedTuple\", \"fields\": {\"document\": \"dict\", \"notes\": \"tuple[RenderNote]\"}}",
+        "description": "A document opsdir wrote as OSCAL: the OSCAL JSON value and the RenderNotes naming what it holds UNBOUND or leaves out.",
+        "file": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "OscalDoc"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-oscaldoc-fa4e4b79"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 28 (6.2a; decision 3029, proposal 3024). New package packages/opsdir-format-oscal (no vendor named; like opsdir-format-arm/-cloudformation: registered format(s) under opsdir.formats). Writers from the record: OSCAL POA&M from ciamPoamItem (+ risk exceptions as deviations/risks), SSP control implementations from ciamControlResponsibility + ciamSystemBoundary (+ evidence queries once task 6.2a-1 lands: design the hook, link by control id), assessment-results back-matter linking an evidence package MANIFEST. Readers: assessment-results and POA&M imported into ciamComplianceAssessment / ciamPoamItem (matched by control id + the tool's object id as ciamFindingRef provider:kind:id; a sync never deletes record-owned items; preview with take/keep conflicts as every importer), catalog/profile reader validating control ids. OSCAL VERSION AND SCHEMA: the master is researching the current OSCAL release with Codex; design against OSCAL's model as you know it, escalate the version question, and validate against the official JSON schema once the master pins and fetches it (fetch-tools.sh, SHA-256 pinned, like the AS3 schema). Deterministic output (sorted, stable UUIDs derived from DNs, e.g. uuid5) for golden. Rules 2991 + 3002. Escalate design choices with a recommendation (the master answers). Boundary: packages/opsdir-format-oscal (src, tests, README, pyproject), opsdir/scripts/dev-install picks it up automatically; the estate domain only to read existing classes (no schema changes: worker-3's task owns them). NOT operations.py/CLI (worker-3 wires `evidence`; you expose functions the CLI/import machinery can call), not 6.4's files.",
+        "flows": [
+          "Compliance Evidence & OSCAL"
+        ],
+        "name": "6.2a-2: opsdir-format-oscal package (writers and readers)",
+        "parent": {
+          "slug": "milestone-6-2-itsm-cmdb-grc-sync-810c6d25"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "format.py FORMAT (oscal-json, application/json); common.py OSCAL_VERSION=1.2.3 per master's pin (msg 89f13467), NS urn:opsdir:oscal, uuid5 ids, iso times, metadata, control ids (800-53 lower/dotted, digit-led '_' interim), UNBOUND notes.",
+        "name": "oscal-json format + OSCAL_VERSION 1.2.3",
+        "parent": {
+          "key": {
+            "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-oscal-json-format-oscal-version-1-2-3-f91b0ffd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "POA&M per system boundary (items + one risk each, deviation risks from requested/approved exceptions, milestones as remediation tasks); SSP (this-system + authorization components, implemented requirements with by-components by responsibility); AR (one result, open items as not-satisfied findings, evidence MANIFEST hook as back-matter with SHA-256). All validate against NIST's OSCAL 1.2.3 complete schema.",
+        "name": "Writers: poam_document, ssp_document, assessment_results_document",
+        "parent": {
+          "key": {
+            "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-writers-poam-document-ssp-document-asses-b54762dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Per-document containers ou=oscal-poam-<system id>,ou=poam and ou=oscal-ar-<doc uuid> under ou=assessments/ou=poam; record items matched by record-dn or ciamFindingRef oscal:<kind>:<uuid>, merged in place, never deleted; own export re-imported changes nothing; catalog checked, not imported; secrets withheld.",
+        "name": "Readers: oscal/poam, oscal/assessment-results, oscal/catalog",
+        "parent": {
+          "key": {
+            "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-readers-oscal-poam-oscal-assessment-resu-76d7b0a7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_neutral writes oscal/<boundary>/poam.json, ssp.json, oscal/assessment-results-<assessment>.json; notes: UNBOUND fields, documents not written, interim control ids per framework.",
+        "name": "oscal adapter (declaration-only, compliance)",
+        "parent": {
+          "key": {
+            "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-oscal-adapter-declaration-only-complianc-e2085139"
+      }
+    },
+    {
+      "attributes": {
+        "description": "test_writers.py, test_readers.py (incl. estate poam_rows/assessment_rows/check_poam see container items: subtree), test_oscal_schema.py (marker oscal, registered in the package conftest; skipped without tools/oscal/1.2.3). README with Known limits (1.2.3, not FedRAMP CR26 output, interim 800-171 ids, UNBOUND fields).",
+        "name": "Tests, README, nested-container CHECK",
+        "parent": {
+          "key": {
+            "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-readme-nested-container-check-486a4004"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "c473938",
+    "branch": "aimfp-u62b-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "entry_uid calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entry-uid-e196a29e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entry_uid calls uid (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entry-uid-e196a29e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-uid-f1dba289"
+      }
+    },
+    {
+      "attributes": {
+        "description": "iso calls gtime_at (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-iso-ed17b0cd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-at-675ef8b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "last_modified calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-last-modified-c4d2ecc0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "last_modified calls iso (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-last-modified-c4d2ecc0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-ed17b0cd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "last_modified calls day_iso (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-last-modified-c4d2ecc0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-day-iso-a7614044"
+      }
+    },
+    {
+      "attributes": {
+        "description": "props calls prop (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-props-1fb3af3e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-prop-7bba14a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "prop_value calls prop_values (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-prop-value-88b21d52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-prop-values-fdadd712"
+      }
+    },
+    {
+      "attributes": {
+        "description": "control_id calls is_53 (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-control-id-0b2d384e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-53-2cfa06d0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "control_ref calls is_53 (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-control-ref-474b7539"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-53-2cfa06d0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unbound_note calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unbound-note-22912d76"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundaries references rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundaries-ff4dd672"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundaries calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundaries-ff4dd672"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environments calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environments-f47f733e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environments calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environments-f47f733e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "labels calls env_label (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-labels-fc766dec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "system_id calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-system-id-b85dd252"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "system_id calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-system-id-b85dd252"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_items references rdn_value (directory.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-items-d215ba01"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_items calls subtree (directory.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-items-d215ba01"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_items calls environments (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-items-d215ba01"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environments-f47f733e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_exceptions calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-exceptions-7db3c419"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_exceptions references rdn_value (directory.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-exceptions-7db3c419"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_exceptions calls subtree (directory.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-exceptions-7db3c419"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_exceptions calls environments (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-exceptions-7db3c419"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environments-f47f733e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "item_exceptions calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-item-exceptions-106b1a92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "item_exceptions calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-item-exceptions-106b1a92"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_responsibilities calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_responsibilities calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_responsibilities calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_responsibilities calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_responsibilities calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_responsibilities calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "boundary_responsibilities calls environments (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environments-f47f733e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessments references rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessments-1191e859"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessments calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessments-1191e859"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_items calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-items-c410c61c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_items calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-items-c410c61c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_items calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-items-c410c61c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_items calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-items-c410c61c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls values (directory.py) via _deviation_risk",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls gtime_of_iso (directory.py) via _milestone",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls entry_uid (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-uid-e196a29e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls unbound (common.py) via _deviation_risk",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unbound-b611e8f6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls iso (common.py) via _deviation_risk",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-ed17b0cd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls last_modified (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-last-modified-c4d2ecc0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls metadata (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-metadata-2dc2417b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls props (common.py) via _deviation_risk",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-props-1fb3af3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls unbound_note (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unbound-note-22912d76"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls environments (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environments-f47f733e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls labels (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-labels-fc766dec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls system_id (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-system-id-b85dd252"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls boundary_items (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-items-d215ba01"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls boundary_exceptions (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-exceptions-7db3c419"
+      }
+    },
+    {
+      "attributes": {
+        "description": "poam_document calls item_exceptions (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-item-exceptions-106b1a92"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls one (directory.py) via _by_components",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls values (directory.py) via _requirements",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls rdn_value (directory.py) via _by_components",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls entry_uid (common.py) via _by_components",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-uid-e196a29e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls unbound (common.py) via _how",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unbound-b611e8f6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls props (common.py) via _by_components",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-props-1fb3af3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls control_id (common.py) via _requirements",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-id-0b2d384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls is_token (common.py) via _requirements",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-token-e338d796"
+      }
+    },
+    {
+      "attributes": {
+        "description": "has_ssp calls boundary_responsibilities (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-has-ssp-7e829347"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls values (directory.py) via _requirements",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls entry_uid (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-uid-e196a29e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls unbound (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unbound-b611e8f6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls last_modified (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-last-modified-c4d2ecc0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls metadata (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-metadata-2dc2417b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls props (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-props-1fb3af3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls control_id (common.py) via _requirements",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-id-0b2d384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls is_token (common.py) via _requirements",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-token-e338d796"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls unbound_note (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unbound-note-22912d76"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls environments (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environments-f47f733e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls labels (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-labels-fc766dec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls system_id (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-system-id-b85dd252"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ssp_document calls boundary_responsibilities (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-responsibilities-07ef6b90"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls uid (common.py) via _resources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-uid-f1dba289"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls entry_uid (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-uid-e196a29e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls unbound (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unbound-b611e8f6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls iso (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-ed17b0cd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls last_modified (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-last-modified-c4d2ecc0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls metadata (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-metadata-2dc2417b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls props (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-props-1fb3af3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls control_id (common.py) via _target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-id-0b2d384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls is_token (common.py) via _target",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-token-e338d796"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls unbound_note (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unbound-note-22912d76"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls environments (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environments-f47f733e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls labels (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-labels-fc766dec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "assessment_results_document calls assessment_items (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-assessment-items-c410c61c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls make_entry (directory.py) via _merged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls values (directory.py) via _indexed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls is_a (directory.py) via _held",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-a-2af81559"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls rdn_value (directory.py) via _boundary_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls get (directory.py) via _groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls subtree (directory.py) via _indexed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls scan (secrets.py) via _clean",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scan-9c7ff825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls merged_attrs (directory.py) via _merged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls json_document (sources.py) via _documents",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls within (directory.py) via _placed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls gtime_of_iso (directory.py) via _item_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls uid (common.py) via _poam_import",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-uid-f1dba289"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls slug (common.py) via _poam_import",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-slug-a1324db4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls prop_values (common.py) via _item_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-prop-values-fdadd712"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls prop_value (common.py) via _held",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-prop-value-88b21d52"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls oscal_version_major (common.py) via _documents",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-oscal-version-major-43a6f395"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls boundaries (record.py) via _boundary_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundaries-ff4dd672"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_poam calls system_id (record.py) via _boundary_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-poam-8336f32e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-system-id-b85dd252"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls make_entry (directory.py) via _merged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls one (directory.py) via _result_import",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls values (directory.py) via _indexed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls is_a (directory.py) via _held",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-a-2af81559"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls rdn_value (directory.py) via _result_import",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls get (directory.py) via _groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls subtree (directory.py) via _indexed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls scan (secrets.py) via _clean",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scan-9c7ff825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls merged_attrs (directory.py) via _merged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls json_document (sources.py) via _documents",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls within (directory.py) via _placed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls gtime_of_iso (directory.py) via _assessment_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls uid (common.py) via _result_import",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-uid-f1dba289"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls slug (common.py) via _results_import",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-slug-a1324db4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls prop_values (common.py) via _assessment_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-prop-values-fdadd712"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls prop_value (common.py) via _assessment_attrs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-prop-value-88b21d52"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls control_ref (common.py) via _finding_controls",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-ref-474b7539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_assessment_results calls oscal_version_major (common.py) via _documents",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-assessment-results-71959276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-oscal-version-major-43a6f395"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_catalog calls values (directory.py) via _record_refs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-catalog-b197ce39"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_catalog calls json_document (sources.py) via _documents",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-catalog-b197ce39"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_catalog calls control_id (common.py) via _catalog_notices",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-catalog-b197ce39"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-id-0b2d384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_catalog calls oscal_version_major (common.py) via _documents",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-catalog-b197ce39"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-oscal-version-major-43a6f395"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_catalog calls catalog_ids (readers.py) via _catalog_notices",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-catalog-b197ce39"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-catalog-ids-edbc8628"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls slug (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-slug-a1324db4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls boundaries (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundaries-ff4dd672"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls boundary_items (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-items-d215ba01"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls assessments (record.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-assessments-1191e859"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls poam_document (poam.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls has_ssp (ssp.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-has-ssp-7e829347"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls ssp_document (ssp.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ssp-document-17546df3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_documents calls assessment_results_document (results.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_oscal calls indented (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-oscal-94ed8f77"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-indented-8956ec35"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_oscal calls oscal_documents (adapter.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-oscal-94ed8f77"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls values (directory.py) via _interim",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls rdn_value (directory.py) via _unwritten",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls subtree (directory.py) via _interim",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls note (notes.py) via _interim",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls control_id (common.py) via _interim",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-control-id-0b2d384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls boundaries (record.py) via _unwritten",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundaries-ff4dd672"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls boundary_items (record.py) via _unwritten",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-boundary-items-d215ba01"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls has_ssp (ssp.py) via _unwritten",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-has-ssp-7e829347"
+      }
+    },
+    {
+      "attributes": {
+        "description": "oscal_notes calls oscal_documents (adapter.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-poam-document-0eb4e105"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-oscaldoc-fa4e4b79"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ssp-document-17546df3"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-oscaldoc-fa4e4b79"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-assessment-results-document-0c4a9abe"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-oscaldoc-fa4e4b79"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-oscal-documents-5e342e03"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "combinator",
+      "type": {
+        "entity_key": "ty-oscaldoc-fa4e4b79"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-render-oscal-94ed8f77"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-oscaldoc-fa4e4b79"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-oscal-notes-746921d1"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-oscaldoc-fa4e4b79"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/poam.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/ssp.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/results.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/adapter.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/format.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/__init__.py"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/README.md"
+      },
+      "flow": {
+        "name": "Compliance Evidence & OSCAL"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/poam.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/ssp.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/results.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/format.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "format-oscal"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/common.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/record.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/poam.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/ssp.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/results.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/readers.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/format.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/src/opsdir_format_oscal/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-oscal/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2a-2-opsdir-format-oscal-package-write-62523fbe"
+      }
+    }
+  ],
+  "warnings": []
+}

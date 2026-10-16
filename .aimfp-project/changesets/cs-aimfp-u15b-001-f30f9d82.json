@@ -1,0 +1,652 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingidm/src/opsdir_adapter_pingidm/project.py",
+        "id_in_name": 0,
+        "name": "read_project",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"description\": \"import time (unused)\", \"required\": false}]",
+        "purpose": "Imported from an IDM project directory: conf/ files (managed objects, connectors, mappings, schedules as entries; every other conf/ file captured) and resolver/*.properties (boot.properties: ports, hosts, the HTTP client's proxy switch) captured as config files; a managed object, mapping, connector or schedule whose name can't be a record name (DN special character, or none) named in a notice and not imported; code named for `opsdir bundle`; anything else named as not imported.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "18a7a4630df99e86"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-project-7c85982e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/automation/pipelines.py",
+        "id_in_name": 0,
+        "name": "pipeline_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"p\", \"type\": \"FoundPipeline\", \"required\": true}, {\"name\": \"taken\", \"type\": \"set[str]\", \"required\": true}]",
+        "purpose": "The ciamJob (kind pipeline) entry for one FoundPipeline: the record's (same repo URL and definition path) or a new one, named SYSTEM-REPO-FILE made unique. The import owns its name as the system shows it (ciamJobName), its CI system (ciamCiSystem), schedules, triggers, runners (ciamRuntime), secret names, environments, and repo URL/path; what the record adds is kept.",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "959ce42ed60779a0"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-pipeline-entry-e86bf5a2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/automation/pipelines.py",
+        "id_in_name": 0,
+        "name": "pipeline_groups",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"pipelines\", \"type\": \"Sequence[FoundPipeline]\", \"required\": true}, {\"name\": \"read\", \"type\": \"Sequence[ReadRepository]\", \"description\": \"the repositories the import read; () removes nothing\", \"required\": false}]",
+        "purpose": "Importer groups and removal notices for one CI import, shared by every CI package. Each found pipeline is placed once with a unique name: (DN, (entry,)). Each gone_pipelines entry of the read repositories (same CI system, a repository read, not found again, not at an unread path) becomes an empty group (DN, ()) with a notice naming it, so the import's deletion is the operator's conflict to take or keep.",
+        "returns": "{\"type\": \"tuple[tuple, tuple[str]]\", \"description\": \"(groups, notices naming the removed pipelines)\"}",
+        "source_hash": "d9add2fa9de91e35"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-pipeline-groups-258465c6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-github-actions/src/opsdir_adapter_github_actions/workflows.py",
+        "id_in_name": 0,
+        "name": "read_workflows",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Importer github-actions/workflows: repository folders' .github/workflows/*.yml -> pipeline jobs named by the workflow's name: (else its file name). A workflow the record has from a repository folder read here that the folder no longer defines is removed with a notice; a file that isn't a workflow this time keeps its pipeline. Notices also name non-workflow files and repository folders without workflows.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "b83acd57eda70062"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-workflows-5de89134"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/automation/pipelines.py",
+        "id_in_name": 0,
+        "name": "stored_path",
+        "parameters": "[{\"name\": \"p\", \"type\": \"FoundPipeline\", \"required\": true}]",
+        "purpose": "A pipeline definition's path as the record keeps it: the path in the repo when the repo URL is known, else repo/path, so same-named files of two repos stay apart. Shares its rule with the unread-path check in gone_pipelines (private _stored).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "dcc2f829740035bd"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-stored-path-afea3e1f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gitlab-ci/src/opsdir_adapter_gitlab_ci/pipelines.py",
+        "id_in_name": 0,
+        "name": "project_pipeline",
+        "parameters": "[{\"name\": \"project\", \"type\": \"str\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}]",
+        "purpose": "(FoundPipeline or None, notices) of one GitLab project folder: the project's name, schedules, workflow-rule triggers (push by default), runner tags and images, environments, secret names, and web_url (project_url)",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "928bdef895ef8381"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-project-pipeline-e7d8f6f3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gitlab-ci/src/opsdir_adapter_gitlab_ci/pipelines.py",
+        "id_in_name": 0,
+        "name": "read_pipelines",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Importer gitlab-ci/pipelines: project folders -> pipeline jobs via the core placement, each named by its project. A pipeline the record has from a project folder read here whose .gitlab-ci.yml is gone is removed with a notice; a definition that can't be read this time keeps it. Notices for the rest.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "4f6ed1360e2d2b8e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-pipelines-0f61f2a2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure-devops/src/opsdir_adapter_azure_devops/pipelines.py",
+        "id_in_name": 0,
+        "name": "repository_pipelines",
+        "parameters": "[{\"name\": \"repo\", \"type\": \"str\", \"required\": true}, {\"name\": \"texts\", \"type\": \"dict[str, str]\", \"required\": true}]",
+        "purpose": "(pipelines, templates counted, notices, ReadRepository) of one Azure DevOps repository folder (repository.json URL optional); the ReadRepository lists the YAML files that couldn't be parsed as unread",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(tuple[FoundPipeline], int, tuple[str], ReadRepository)\"}",
+        "source_hash": "1b2b88c431c8f13e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-repository-pipelines-ad530bfb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure-devops/src/opsdir_adapter_azure_devops/pipelines.py",
+        "id_in_name": 0,
+        "name": "read_pipelines",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Importer azure-devops/pipelines: repository folders -> pipeline jobs via the core placement, each named by its file. A pipeline the record has from a repository folder read here that the folder no longer defines (the file is gone, or is a template now) is removed with a notice; a file that isn't YAML this time keeps it. Notices for non-YAML files and repos without pipelines; templates counted.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "4c72454ca5c83a30"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-pipelines-adf75f8e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/automation/pipelines.py",
+        "id_in_name": 0,
+        "name": "gone_pipelines",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"found_dns\", \"type\": \"set[str]\", \"description\": \"normalized DNs of the pipelines found again\", \"required\": true}, {\"name\": \"read\", \"type\": \"Sequence[ReadRepository]\", \"description\": \"the repositories the import read\", \"required\": true}]",
+        "purpose": "The pipelines the record has that the read repositories no longer define: ciamJob kind pipeline whose ciamCiSystem is a ReadRepository's system, in that repository (same ciamRepoUrl, else a repo/-qualified path with no URL), not among the pipelines found again and not at one of its unread definition paths; in record order",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "bc25b7d8e03e4d2f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-gone-pipelines-1c9cdbce"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gitlab-ci/src/opsdir_adapter_gitlab_ci/pipelines.py",
+        "id_in_name": 0,
+        "name": "project_url",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"description\": \"the project folder's files\", \"required\": true}]",
+        "purpose": "A GitLab project folder's web_url from its project.json (None when absent or not a string)",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "1f5429e579b9d8c3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-project-url-354e91e8"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"system\": \"str\", \"repo\": \"str\", \"repo_url\": \"Optional[str]\", \"unread\": \"tuple[str]\"}}",
+        "description": "A repository a CI package's import read: its CI system, folder, URL (None when unknown) and the definition paths in it that couldn't be read this time. pipeline_groups removes the system's held pipelines that the repository no longer defines, but keeps any held at an unread path.",
+        "file": "opsdir/opsdir/domains/automation/pipelines.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "ReadRepository"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-readrepository-3d56e6a5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 99 items 5-7 (brief: decision note on milestone 99; deferred notes 2984, 2985, 2986, 2987). (5) core opsdir/opsdir/domains/automation/pipelines.py:50-62: record FoundPipeline.name, and remove pipelines deleted upstream on a re-import. Both change what the record holds (which attribute, how removal is scoped per repository/project), so escalate the design (needs_user) before building. Callers: opsdir-adapter-github-actions, -gitlab-ci, -azure-devops. (6) opsdir-adapter-pingidm project.py:134-138: DN-unsafe managed object/mapping/connector/schedule names give a notice (match how other importers report rdn_safe failures), never dropped silently. (7) opsdir-adapter-pingfederate: pyproject.toml declares opsdir-format-terraform; remove or use generic.py:21 OUTPUT. Scope: that core file (and its domain's schema/tests if the approved design needs them), those packages' src/tests/README/pyproject.",
+        "flows": [
+          "Product & Host Config Capture"
+        ],
+        "name": "U.15 b: capture fixes (pipelines, PingIDM, PingFederate packaging)",
+        "parent": {
+          "slug": "milestone-u-15-code-fixes-found-by-the-u-4-readme-054bce73"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Attribute for the pipeline name; scope of removing upstream-deleted pipelines (note 2984)",
+        "name": "Pipeline design escalated and approved",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-pipeline-design-escalated-and-approved-5cefe957"
+      }
+    },
+    {
+      "attributes": {
+        "description": "core automation/pipelines.py + GitHub/GitLab/Azure DevOps importers, tests",
+        "name": "Pipelines record their name and drop upstream-deleted ones",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-pipelines-record-their-name-and-drop-ups-2f8dab1a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "project.py:134-138 (note 2985)",
+        "name": "PingIDM DN-unsafe names give notices",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-pingidm-dn-unsafe-names-give-notices-6b2ba9f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pyproject.toml, generic.py:21 (notes 2986, 2987)",
+        "name": "PingFederate packaging: format-terraform dependency, unused OUTPUT",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-pingfederate-packaging-format-terraform-5a981663"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Known limits updated",
+        "name": "READMEs for the touched packages",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-readmes-for-the-touched-packages-6095b50a"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "a9c6447",
+    "branch": "aimfp-u15b-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "project_url calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-project-url-354e91e8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pipeline_groups calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pipeline-groups-258465c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pipeline_groups calls gone_pipelines (pipelines.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pipeline-groups-258465c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gone-pipelines-1c9cdbce"
+      }
+    },
+    {
+      "attributes": {
+        "description": "project_pipeline calls project_url (pipelines.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-project-pipeline-e7d8f6f3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-project-url-354e91e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_pipelines calls project_url (pipelines.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-pipelines-0f61f2a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-project-url-354e91e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gone_pipelines calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gone-pipelines-1c9cdbce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gone_pipelines calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gone-pipelines-1c9cdbce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-gone-pipelines-1c9cdbce"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-readrepository-3d56e6a5"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-pipeline-groups-258465c6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-readrepository-3d56e6a5"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-repository-pipelines-ad530bfb"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-readrepository-3d56e6a5"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-workflows-5de89134"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-readrepository-3d56e6a5"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-pipelines-0f61f2a2"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-readrepository-3d56e6a5"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-pipelines-adf75f8e"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-readrepository-3d56e6a5"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingidm/src/opsdir_adapter_pingidm/project.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingidm/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/generic.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gitlab-ci/src/opsdir_adapter_gitlab_ci/pipelines.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/automation/pipelines.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-github-actions/src/opsdir_adapter_github_actions/workflows.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure-devops/src/opsdir_adapter_azure_devops/pipelines.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/automation/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-github-actions/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gitlab-ci/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure-devops/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-b-capture-fixes-pipelines-pingidm-p-c82e38b3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "project_pipeline calls json_document",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-project-pipeline-e7d8f6f3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    }
+  ],
+  "warnings": []
+}

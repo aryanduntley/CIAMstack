@@ -1,0 +1,365 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-haproxy/src/opsdir_adapter_haproxy/config.py",
+        "id_in_name": 0,
+        "name": "haproxy_cfg",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"endpoints\", \"type\": \"tuple[Endpoint]\", \"required\": false}]",
+        "purpose": "haproxy.cfg text for env m's service names: per service name and port a frontend (bind frontend IP or *, TLS terminate with bundle + ssl-min-ver, mode http/tcp by EdgeSpec) and backend (target role's servers; a server without address commented UNBOUND; httpchk, with check-ssl when TLS passes through, probing 'port <n>' when the product declares its own health port; cookie stickiness only in mode http, source-ip as balance source, else roundrobin; idle timeouts, re-encryption verify @system-ca unless backend_validation none); a frontend clashing with an earlier one (clashes) commented, not rendered.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "49be3b65d7d49f7e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-haproxy-cfg-0b8db40e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-f5/src/opsdir_adapter_f5/as3.py",
+        "id_in_name": 0,
+        "name": "declaration",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"endpoints\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"appliance\", \"type\": \"Entry|None\", \"required\": false}]",
+        "purpose": "AS3 request (class AS3, deploy, persist; ADC schema 3.54.0) of env m's service names: per service name an Application, per port Service_TCP (passthrough) or Service_HTTPS (TLS_Server w/ BIG-IP-held cert/key refs, TLS versions under min off, TLS_Client on reencrypt, policyWAF /Common/<protection policy>), persistenceMethods always explicit (cookie on Service_HTTPS only, source-ip -> source-address, else [] so AS3's defaults don't apply), pool of target role server addresses + the policy's HTTP(S) monitor in either mode (targetPort = the product's own health port when declared) else tcp; UNBOUND for missing addresses.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "ba1ba9e19ac9cdca"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-declaration-65ac8e1a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-windows-dns/src/opsdir_adapter_windows_dns/render.py",
+        "id_in_name": 0,
+        "name": "render",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "Windows DNS add-on render_env: ansible/inventory/ad-dns.yml (psrp https hosts, login via output.login, ciam_dns_server scope), ansible/ad-dns.yml (win_dns_record for A/AAAA/CNAME/TXT/PTR/NS with all values, SRV with shared priority/weight/port; per platform zone a ShouldProcess PowerShell clean-up removing only records whose data matches a stale ledger value (normalised as win_dns_record compares: trailing dot on CNAME/NS/PTR/SRV; sha256:<16 hex> digests compared by hash), ledger entries without a value left and named in the result; then the ledger TXT rewritten; others named), requirements-ad-dns.yml.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "dc8b82db9e065df6"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-250698b8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-windows-dns/src/opsdir_adapter_windows_dns/render.py",
+        "id_in_name": 0,
+        "name": "ledger",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Name of environment m's ledger TXT records in each zone (Windows DNS add-on): _opsdir-<cloud>-<env>; each value '<type> <name> <value>' of one value it wrote (an SRV record's target), or '<type> <name> sha256:<16 hex>' of the value as compared when the entry would exceed a 255-byte TXT string.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "02d8a2b258ef68e4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ledger-2a0f7371"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/edge/resolve.py",
+        "id_in_name": 0,
+        "name": "check_stickiness",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check (edge domain): an action per service name (source and target, one per name and traffic policy, naming the environments) whose front's traffic policy asks for cookie stickiness while TLS passes through the load balancer (rendered_edges spec not layer 7; a cluster gateway's front terminates, so it isn't named). No load balancer can set a cookie there, so none is rendered. Fix: terminate or reencrypt TLS, or use stickiness source-ip. Owner: the traffic policy's.",
+        "returns": "{\"type\": \"Findings\", \"description\": \"actions (area Edge, text, owner, None)\"}",
+        "source_hash": "0c745473bf29209f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-stickiness-42d7bd13"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 99 items 1-4 (brief: decision note on milestone 99; deferred notes 2981, 2982, 2983). (1) F5 as3.py:73 cookie persistence on Service_TCP; (2) HAProxy config.py:40,75 cookie stickiness on mode tcp; for both, handle passthrough + ciamStickiness cookie the way the cloud fronts do for the same EdgeSpec (check the AWS/Azure/GCP renderers first) or escalate. (3) F5 as3.py:45 _monitor and HAProxy config.py:32 _server follow EdgeSpec.health.port as the cloud renderers do (health_port). (4) windows-dns render.py:33: the tidy removes only records it wrote (its ledger / the values it recorded), never another party's at the same name. Packages: opsdir-adapter-f5, opsdir-adapter-haproxy, opsdir-adapter-windows-dns (src, tests, README). Expect golden changes in render-after/hq-lab/ansible/f5/as3-CIAM_Lab.json and ad-dns.yml only if the showcase hits these cases: say so.",
+        "flows": [
+          "Load Balancer Add-ons",
+          "DNS Add-ons"
+        ],
+        "name": "U.15 a: load balancer and DNS add-on fixes",
+        "parent": {
+          "slug": "milestone-u-15-code-fixes-found-by-the-u-4-readme-054bce73"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "as3.py:73; mirror the cloud fronts' handling (note 2981)",
+        "name": "F5 cookie persistence on passthrough services",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-f5-cookie-persistence-on-passthrough-ser-4f4fd489"
+      }
+    },
+    {
+      "attributes": {
+        "description": "config.py:40,75 (note 2982)",
+        "name": "HAProxy cookie stickiness on mode tcp",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-haproxy-cookie-stickiness-on-mode-tcp-1506255e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "as3.py:45 _monitor, config.py:32 _server use EdgeSpec.health.port",
+        "name": "F5 and HAProxy follow the health port",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-f5-and-haproxy-follow-the-health-port-e6146f03"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render.py:33 (note 2983)",
+        "name": "Windows DNS tidy removes only its own records",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-windows-dns-tidy-removes-only-its-own-re-a3036bdf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Known limits updated; targeted tests pass",
+        "name": "READMEs and tests for f5, haproxy, windows-dns",
+        "parent": {
+          "key": {
+            "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-readmes-and-tests-for-f5-haproxy-windows-bd7dee8d"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "a9c6447",
+    "branch": "aimfp-u15a-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "the spec each front renders (a cluster gateway's front terminates)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-stickiness-42d7bd13"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-edges-7dbed43d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-stickiness-42d7bd13"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the traffic policy's owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-stickiness-42d7bd13"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-stickiness-42d7bd13"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-stickiness-42d7bd13"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/resolve.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-f5/src/opsdir_adapter_f5/as3.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-haproxy/src/opsdir_adapter_haproxy/config.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-windows-dns/src/opsdir_adapter_windows_dns/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-f5/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-haproxy/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-windows-dns/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-15-a-load-balancer-and-dns-add-on-fixe-007020ff"
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,2039 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge.py",
+        "id_in_name": 0,
+        "name": "_subnet_mapping",
+        "parameters": "[{\"name\": \"svc\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"ip\", \"type\": \"str\", \"required\": true}, {\"name\": \"internal\", \"type\": \"bool\", \"required\": true}, {\"name\": \"i\", \"type\": \"int\", \"required\": true}, {\"name\": \"sub\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "AWS (edge.py, network_lb's): an NLB subnet_mapping for one subnet: an internal one's recorded frontend address when the subnet's CIDR holds it; a public one's first mapping the Elastic IP allocation its provider ref names.",
+        "returns": "{\"type\": \"tuple[str, Block]\"}",
+        "source_hash": "ae81ab239362de11"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-subnet-mapping-f726aeab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge.py",
+        "id_in_name": 0,
+        "name": "_listener",
+        "parameters": "[{\"name\": \"m\", \"type\": null, \"required\": true}, {\"name\": \"n\", \"type\": null, \"required\": true}, {\"name\": \"svc\", \"type\": null, \"required\": true}, {\"name\": \"port\", \"type\": null, \"required\": true}, {\"name\": \"targets\", \"type\": null, \"required\": true}, {\"name\": \"spec\", \"type\": null, \"required\": false, \"default\": \"None\"}]",
+        "purpose": "AWS (edge.py, network_lb's): a TCP target group per port over the role's servers (instance targets, the policy's health check, stickiness and deregistration delay; a TCP check without a policy), its attachments and the NLB's TCP listener forwarding to it.",
+        "returns": "{\"type\": \"tuple[str, ...]\"}",
+        "source_hash": "54c0763748f82da3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-listener-d58d5052"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/terraform.py",
+        "id_in_name": 0,
+        "name": "_service",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"svc\", \"type\": \"Entry\"}, {\"name\": \"endpoints\", \"type\": \"tuple[Endpoint]\", \"required\": false}]",
+        "purpose": "A stable service name as AWS Terraform: what fronts it is the core's edge.gateways.front_choice (a note comment; the ALB before its cluster's gateway, ingress.gateway_front; else its role's servers), then an ALB with web ACL when its traffic policy terminates TLS (edge.alb_service) or a Network Load Balancer (edge.network_lb) in the deduplicated, name-sorted subnets of the role's servers and own compute groups; CloudFront when a CDN fronts it, else its Route 53 alias record. Groups register in its target groups themselves (compute_groups, target_group_arns).",
+        "returns": "{\"type\": \"tuple[str, ...]\"}",
+        "source_hash": "996feae46746220e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-service-249c0894"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge.py",
+        "id_in_name": 0,
+        "name": "_lb_frontend",
+        "parameters": "[{\"name\": \"m\", \"type\": null, \"required\": true}, {\"name\": \"svc\", \"type\": null, \"required\": true}, {\"name\": \"n\", \"type\": null, \"required\": true}, {\"name\": \"ip\", \"type\": null, \"required\": true}, {\"name\": \"internal\", \"type\": null, \"required\": true}, {\"name\": \"subnets\", \"type\": null, \"required\": true}]",
+        "purpose": "Azure: (data sources needed, frontend_ip_configuration body) of a service name's Standard load balancer: an internal one in the first of its targets' subnets (UNBOUND:<role>-subnet without one), its recorded address static else dynamic, zones 1-3; a public one the public IP read as data (public_ip_name).",
+        "returns": "{\"type\": \"tuple[tuple[str], tuple]\"}",
+        "source_hash": "fb3b669ab268a5d6"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-frontend-0a81427d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge.py",
+        "id_in_name": 0,
+        "name": "_lb_port",
+        "parameters": "[{\"name\": \"n\", \"type\": null, \"required\": true}, {\"name\": \"port\", \"type\": null, \"required\": true}, {\"name\": \"spec\", \"type\": null, \"required\": false, \"default\": \"None\"}]",
+        "purpose": "Azure (edge.py, network_lb's): a load balancer probe and rule for one port: the probe's protocol/path/interval from the policy (TCP without one) on a product's own health port when declared, the rule's idle timeout (4-30 minutes) and SourceIP distribution as the policy asks.",
+        "returns": "{\"type\": \"tuple[str, str]\"}",
+        "source_hash": "7918335134792213"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-lb-port-e6ab8f71"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py",
+        "id_in_name": 0,
+        "name": "_service",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"svc\", \"type\": \"Entry\"}, {\"name\": \"endpoints\", \"type\": \"tuple[Endpoint]\", \"required\": false}]",
+        "purpose": "A stable service name as Azure Terraform: what fronts it is the core's edge.gateways.front_choice (a note comment; the Application Gateway before its cluster's gateway, ingress.gateway_front; else its role's servers), then an Application Gateway v2 with WAF policy when its traffic policy terminates TLS (edge.gateway_service) or a Standard load balancer (edge.network_lb; an internal frontend in the role's servers' subnets, else its own compute groups'); Front Door when a CDN fronts it; its (private) DNS A record. Scale sets join its pools themselves (compute_groups via _pools).",
+        "returns": "{\"type\": \"tuple[str, ...]\"}",
+        "source_hash": "7fc48433d62dd8a6"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-service-fa63ee95"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/edge/gateways.py",
+        "id_in_name": 0,
+        "name": "front_choice",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"svc\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamServiceName binding\"}]",
+        "purpose": "What a cloud fronts a service name of environment m with, decided once for every cloud: ('note', text) when no front is rendered (its target role runs only on Kubernetes in a cluster without a gateway: note_comment(kubernetes_note); its exposure isn't recorded: exposure_unknown), ('gateway', the cluster's gateway binding: role_gateway) for a role run only on Kubernetes in a cluster with one, else ('servers', servers_with_role, (their subnets then the role's own compute groups' subnets, in order, repeats kept)).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"('note', str) | ('gateway', Entry) | ('servers', tuple[Entry], tuple[Entry])\"}",
+        "source_hash": "3adb568b59278b08"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-front-choice-3305c54b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge.py",
+        "id_in_name": 0,
+        "name": "network_lb",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"svc\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"EdgeSpec|None\", \"required\": true}, {\"name\": \"targets\", \"type\": \"tuple[Entry]\", \"required\": true, \"description\": \"the role's servers\"}, {\"name\": \"subnets\", \"type\": \"tuple[Entry]\", \"required\": true, \"description\": \"subnet bindings, deduplicated and sorted by name\"}]",
+        "purpose": "AWS: a Network Load Balancer for a service name whose TLS passes through (or with no policy): aws_lb in its subnet mappings (_subnet_mapping: an internal one's recorded address in the subnet holding it, a public one's first mapping the Elastic IP its provider ref names), TCP target groups/attachments/listeners per port over the role's servers (_listener: the policy's health check, stickiness, draining), probe_ingress for a product's own health port, Shield Advanced (shield) without a CDN, the planner's inspection note as a comment when the protection policy asks for request inspection.",
+        "returns": "{\"type\": \"tuple[TfBlock]\"}",
+        "source_hash": "982703d7a382b300"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-network-lb-6532d450"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge.py",
+        "id_in_name": 0,
+        "name": "network_lb",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"svc\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"EdgeSpec|None\", \"required\": true}, {\"name\": \"targets\", \"type\": \"tuple[Entry]\", \"required\": true}, {\"name\": \"subnets\", \"type\": \"tuple[Entry]\", \"required\": true, \"description\": \"servers' then compute groups' subnets in order (front_choice)\"}]",
+        "purpose": "Azure: a Standard load balancer for a service name whose TLS passes through (or with no policy): its frontend (_lb_frontend), the inspection note (no CDN) and ddos_note, azurerm_lb, a backend pool with the role's servers' NIC associations, and per port a probe and rule (_lb_port: the policy's health check on a product's own health port, idle timeout, SourceIP distribution).",
+        "returns": "{\"type\": \"tuple[TfBlock]\"}",
+        "source_hash": "7eb384198768ab54"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/edge.py",
+        "id_in_name": 0,
+        "name": "network_lb",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"svc\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"EdgeSpec|None\", \"required\": true}, {\"name\": \"groups\", \"type\": \"tuple[TfBlock]\", \"required\": true, \"description\": \"the zonal instance group blocks\"}, {\"name\": \"backends\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"instance group refs (zonal, then managed groups')\"}, {\"name\": \"frontend\", \"type\": \"tuple\", \"required\": true, \"description\": \"(data sources, address) of the service's frontend\"}, {\"name\": \"placement\", \"type\": \"tuple\", \"required\": true, \"description\": \"an internal one's network and subnetwork settings\"}]",
+        "purpose": "Google Cloud: a passthrough network load balancer for a service name whose TLS passes through (or with no policy): the frontend's data sources, the inspection note, the zonal instance groups (given), a regional health check (the policy's protocol/path/thresholds, a product's own health port: _checked, _l4_tuning) and the firewall rule its probes need (_health_check_rule: a policy rule under the policy model), a regional backend service over backends (EXTERNAL: port_name, capacity) with affinity and draining, a forwarding rule (at most five ports, else all; internal placement), network_ddos on an external one.",
+        "returns": "{\"type\": \"tuple[TfBlock]\"}",
+        "source_hash": "1dd2515a9d8ae072"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Audit 3001 U14-02, rules 3002 + 2991. Core opsdir/opsdir/domains/edge: front_choice(m, svc) -> ('note', text) | ('gateway', gw) | ('servers', targets, subnets), next to gateways.role_gateway, replacing the same 9-line prelude in aws terraform.py _service (:140), azure (:172), gcp (:174). Each cloud maps the choice; its inline L4 balancer is extracted into network_lb(...) in its edge.py beside alb_service / gateway_service / application_lb. Output byte-identical (every service-name render on 3 clouds; CloudFormation and Bicep translations too). Boundary: opsdir/opsdir/domains/edge/ (+ its tests), the aws/azure/gcp adapters' terraform.py and edge.py (+ tests, READMEs), opsdir/README.md shared-API line. NOT azure arm_types/arm_render/check_jobs/rendered_state/arm.py (worker-2, task 516); NOT core contract/registry/environment/stack (worker-3, task 515).",
+        "flows": [
+          "Cloud Infrastructure Render",
+          "Cluster Ingress Edge"
+        ],
+        "name": "U.14 e: one front choice in the core edge domain; per-cloud L4 builders (U14-02)",
+        "parent": {
+          "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice(m, svc) -> ('note', text) | ('gateway', gw) | ('servers', targets, subnets); unit tests; README shared-API line",
+        "name": "Core front_choice in edge.gateways",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-front-choice-in-edge-gateways-a2303f80"
+      }
+    },
+    {
+      "attributes": {
+        "description": "NLB, listeners/target groups, probe ingress and Shield moved from terraform.py (_subnet_mapping, _listener) into edge.network_lb",
+        "name": "AWS: _service maps the choice; network_lb in edge.py",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-aws-service-maps-the-choice-network-lb-i-fc1e079f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Load balancer, pool, associations and per-port probes/rules (_lb_frontend, _probe_body, _probed, _lb_port) into edge.network_lb",
+        "name": "Azure: _service maps the choice; network_lb in edge.py",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-azure-service-maps-the-choice-network-lb-cae9c168"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Health check, its firewall rule, backend service, forwarding rule, DDoS (_health_check_rule, _checked, _l4_tuning) into edge.network_lb",
+        "name": "GCP: _service maps the choice; network_lb in edge.py",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-gcp-service-maps-the-choice-network-lb-i-ca889f27"
+      }
+    },
+    {
+      "attributes": {
+        "description": "HEAD vs new renders (showcase all envs, CFN/Bicep, every cloud sample) identical; targeted tests; READMEs; AIMFP moves with repoint/manifest",
+        "name": "Byte-identical proof, tests, READMEs, tracking",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-byte-identical-proof-tests-readmes-track-f1e2f619"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "af215f9",
+    "branch": "aimfp-u14a-002",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "_service calls front_choice (gateways.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-front-choice-3305c54b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls network_lb (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-network-lb-6532d450"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls front_choice (gateways.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-front-choice-3305c54b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls network_lb (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_files calls front_choice (gateways.py) via _service",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-front-choice-3305c54b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_files calls network_lb (edge.py) via _service",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls servers_with_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-servers-with-role-b3e6ef7a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls subnet_of (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subnet-of-afa76dd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls only_on_kubernetes (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-only-on-kubernetes-06a83cda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls kubernetes_note (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kubernetes-note-b51a76da"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls role_gateway (gateways.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-gateway-a94f7d0a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls service_exposure (exposure.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-service-exposure-9b157b3d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls exposure_unknown (exposure.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-exposure-unknown-ccdcfb12"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls group_subnets (hosts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-group-subnets-fe79ed77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls own_groups (hosts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-groups-ed1fa3ac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "front_choice calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-front-choice-3305c54b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls _subnet_mapping (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subnet-mapping-f726aeab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls _listener (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listener-d58d5052"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls inspected (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inspected-dc04cd86"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls shield (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shield-e463ae94"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls is_internal (exposure.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-internal-76b22f71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls probe_ingress (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-probe-ingress-7ffaa1fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls tf_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls inspection_note (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-6532d450"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inspection-note-e95c454a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls ref (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ref-018f1ed3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls _lb_frontend (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-frontend-0a81427d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls _lb_port (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lb-port-e6ab8f71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls inspected (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inspected-dc04cd86"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls ddos_note (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ddos-note-5761618b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls tagged (account.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tagged-9a9e3bdb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls is_internal (exposure.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-internal-76b22f71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls tf_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls inspection_note (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-0eff3f7f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inspection-note-e95c454a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls ref (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ref-018f1ed3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls probe_ranges (health_checks.py) via _health_check_rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-probe-ranges-595e342e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls inspected (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inspected-dc04cd86"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls network_ddos (edge.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-network-ddos-f7ef13f0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls network_tag (names.py) via _health_check_rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-network-tag-c1cc0e32"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls label (names.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-label-ed0e8b22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls firewall_model (stack.py) via _health_check_rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-firewall-model-31fb708f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls health_check_rule (firewall_policy.py) via _health_check_rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-health-check-rule-b90cc4c1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls is_internal (exposure.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-internal-76b22f71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls tf_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "network_lb calls inspection_note (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-network-lb-f1d6da48"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inspection-note-e95c454a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/edge.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/gateways.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-e-one-front-choice-in-the-core-edge-d3804616"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-servers-with-role-b3e6ef7a"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-subnet-of-afa76dd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-subnet-mapping-f726aeab"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-listener-d58d5052"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls subnet_of (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-subnet-of-afa76dd0"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-ref-018f1ed3"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-servers-with-role-b3e6ef7a"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-frontend-0a81427d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-lb-port-e6ab8f71"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-servers-with-role-b3e6ef7a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "each service's health-check firewall rule takes the probe ranges for its scheme",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-probe-ranges-595e342e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-shield-e463ae94"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-inspected-dc04cd86"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-ddos-note-5761618b"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-inspected-dc04cd86"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-network-ddos-f7ef13f0"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-inspected-dc04cd86"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the role's cluster gateway",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-role-gateway-a94f7d0a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the role's cluster gateway",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-role-gateway-a94f7d0a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _service: the role's gateway",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-role-gateway-a94f7d0a"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-exposure-unknown-ccdcfb12"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-exposure-unknown-ccdcfb12"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-is-internal-76b22f71"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-kubernetes-note-b51a76da"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-only-on-kubernetes-06a83cda"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-service-exposure-9b157b3d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-tagged-9a9e3bdb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "probe_ingress",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-probe-ingress-7ffaa1fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_internal",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-is-internal-76b22f71"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kubernetes_note",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-kubernetes-note-b51a76da"
+      }
+    },
+    {
+      "attributes": {
+        "description": "only_on_kubernetes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-only-on-kubernetes-06a83cda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "exposure_unknown",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-exposure-unknown-ccdcfb12"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_exposure",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-service-exposure-9b157b3d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls tf_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls tf_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls group_subnets (hosts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-group-subnets-fe79ed77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls own_groups (hosts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-own-groups-ed1fa3ac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls group_subnets (hosts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-group-subnets-fe79ed77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls own_groups (hosts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-own-groups-ed1fa3ac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_files calls group_subnets (hosts.py) via _service",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-group-subnets-fe79ed77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls inspection_note (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-249c0894"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-inspection-note-e95c454a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_service calls inspection_note (resolve.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-fa63ee95"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-inspection-note-e95c454a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_files calls inspection_note (resolve.py) via _service",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-01446a09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-inspection-note-e95c454a"
+      }
+    }
+  ],
+  "warnings": []
+}

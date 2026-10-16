@@ -1,0 +1,1626 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "graph.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/connectors/graph.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "application.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/connectors/application.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "summary.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/connectors/summary.py"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/build.py",
+        "id_in_name": 0,
+        "name": "specs",
+        "parameters": "[]",
+        "purpose": "Every entry spec of the estate, in within-file order",
+        "returns": "{\"type\": \"tuple[Spec, ...]\"}",
+        "source_hash": "1f716c959d505e4a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-specs-4a938b46"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "role_attributes",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The attributes naming a binding role (or, ciamTargetRole, a server role): every ...Role attribute in the record's registry but an entry's own role (ciamBindingRole, ciamServerRole), and a canary's ciamCheckedService.",
+        "returns": "{\"type\": \"frozenset[str]\"}",
+        "source_hash": "f94fe80e30d65a39"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-role-attributes-9bb8a187"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "owners_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The names of an entry's owners (ciamOwner parties' RDN values, else the DN), comma-joined; '' for none.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "d2ed40f12cc42667"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-owners-of-fa0e11e5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "entry_kind",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "An entry's kind as a graph node or view row shows it: its most specific object class (the longest superclass line; an auxiliary class sits right under top).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "429849a27218c905"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-entry-kind-37911c9c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "node_label",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "An entry's label: its RDN value, plus [cloud/env] for an entry under an environment (bindings and servers repeat their names per environment).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "1582953e9eb72cae"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-node-label-92db4b89"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "dependency_graph",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": true}, {\"name\": \"direction\", \"type\": \"str\", \"description\": \"down, up or both\", \"required\": false}, {\"name\": \"depth\", \"type\": \"int\", \"required\": false}, {\"name\": \"m\", \"type\": \"EnvModel|None\", \"description\": \"the environment roles are bound in\", \"required\": false}]",
+        "purpose": "The Graph around an entry: what it depends on (down: what it names by dn-valued attributes and by role attributes, a role node linked to its bindings in environment model m), what depends on it (up: dn references to it, entries naming a role it realizes) or both, depth steps (1..MAX_DEPTH) breadth first; owners, change refs, incidents and rotation work instructions are no edges. Nodes and edges sorted. SystemExit for an unknown entry, direction or depth.",
+        "returns": "{\"type\": \"Graph\"}",
+        "source_hash": "f84064d6fb9efdfb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "graph_document",
+        "parameters": "[{\"name\": \"g\", \"type\": \"Graph\", \"required\": true}]",
+        "purpose": "A Graph as a JSON-ready document: root, direction, depth, environment, nodes and edges as objects (sorted: stable diffs).",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "fd4434cb0f6d4eaf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-graph-document-9040cc40"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "graph_dot",
+        "parameters": "[{\"name\": \"g\", \"type\": \"Graph\", \"required\": true}]",
+        "purpose": "A Graph in Graphviz DOT: a digraph, a box per entry (label name and class, the root bold), an ellipse per role, an edge per reference labelled by its attribute, role and binding edges dashed.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "5c8e873beb97d757"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-graph-dot-cc1bdf11"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "name": "graph_lines",
+        "parameters": "[{\"name\": \"g\", \"type\": \"Graph\", \"required\": true}]",
+        "purpose": "A Graph as an indented text tree: what the root depends on (->), then what depends on it (<-), each node expanded once (a repeat marked (above)).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "9ea7513431f81e76"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-graph-lines-1695c4b6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/application.py",
+        "id_in_name": 0,
+        "name": "environment_of_entry",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The cloud/env label of the environment an entry is in ('' for an estate-wide entry).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "a8a7e2dc87715cf4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-environment-of-entry-3d79155c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/application.py",
+        "id_in_name": 0,
+        "name": "view_parts",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "(the DNs a view of an entry starts from, the binding roles it adds): an application's ciamApplicationPart and ciamUsesRole, else the entry itself and no roles.",
+        "returns": "{\"type\": \"tuple[tuple[str], tuple[str]]\"}",
+        "source_hash": "18a903ffd69b3e9a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-view-parts-c1043893"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/application.py",
+        "id_in_name": 0,
+        "name": "application_view",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel|None\", \"required\": false}]",
+        "purpose": "The ApplicationView of an entry on a date: what the dependency graph reaches from each part (both ways, VIEW_DEPTH), the bindings of the roles those entries name or the application uses, and the canary/alarm bindings realizing what it holds, in sections (identity, directory, edge and service names, secrets and keys, certificates with days left, network, monitoring, changes and incidents, owners), each row (HEADERS) ending with its evidence DN; given environment model m only that environment's bindings. SystemExit for an unknown entry.",
+        "returns": "{\"type\": \"ApplicationView\"}",
+        "source_hash": "94878d2f0f6cf505"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-application-view-47783ab9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/application.py",
+        "id_in_name": 0,
+        "name": "view_document",
+        "parameters": "[{\"name\": \"view\", \"type\": \"ApplicationView\", \"required\": true}]",
+        "purpose": "An ApplicationView as a JSON-ready document: root, name, parts, roles, environment, and each section's rows as objects keyed by HEADERS.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "fe44cd69a3a7f94b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-view-document-0f68c6a7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/summary.py",
+        "id_in_name": 0,
+        "name": "expiring_certificates",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "The certificates whose ciamNotAfter is no later than as_of plus the estate's certificate-expiry-margin-days (expired included).",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "f82d750427dff988"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-expiring-certificates-208d40ad"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/summary.py",
+        "id_in_name": 0,
+        "name": "estate_counts",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "(Count, ...) of the record on a date: applications, integrations, directory consumers, expiring certificates, pending changes (proposed/approved), incidents, entries awaiting import (ciamVerifyPending); each with the DNs counted as evidence. Never percentages.",
+        "returns": "{\"type\": \"tuple[Count]\"}",
+        "source_hash": "4c94610dbd0a3f74"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/summary.py",
+        "id_in_name": 0,
+        "name": "plan_counts",
+        "parameters": "[{\"name\": \"p\", \"type\": \"Plan\", \"required\": true}]",
+        "purpose": "(Count, ...) of a plan: its blockers, actions and ok lines, evidenced by the opsdir plan command that lists them.",
+        "returns": "{\"type\": \"tuple[Count]\"}",
+        "source_hash": "a890636f63b088ee"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-plan-counts-e2f31cb7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "application",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"description\": \"a DN, or an application's name\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"env\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Operation (reads the record): the application view of an entry (connectors.application.ApplicationView; a bare name is an application's, cn=NAME,ou=applications), its roles realized in environment env (CLOUD/ENV) when given, else in every one.",
+        "returns": "{\"type\": \"ApplicationView\"}",
+        "source_hash": "e0a2ea596e39c01a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-application-7bdda75b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "dependencies",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": true}, {\"name\": \"direction\", \"type\": \"str\", \"required\": false}, {\"name\": \"depth\", \"type\": \"int\", \"required\": false}, {\"name\": \"env\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Operation (reads the record): the dependency graph around an entry (connectors.graph.Graph; a bare name is an application's): down, up or both, depth steps; role nodes linked to their bindings in environment env when given.",
+        "returns": "{\"type\": \"Graph\"}",
+        "source_hash": "5324889fe88d1d35"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-dependencies-33353977"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "summary",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"src\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"dst\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Operation (reads the record): the estate in counts with their evidence (connectors.summary.estate_counts) and, given src and dst, the plan's blockers, actions and ok lines (plan_counts). No percentages.",
+        "returns": "{\"type\": \"tuple[Count]\"}",
+        "source_hash": "e838bc79227fa826"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-summary-a1d23644"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/governance.py",
+        "id_in_name": 0,
+        "name": "applications",
+        "parameters": "[]",
+        "purpose": "Showcase fixture (97-applications): the ou=applications container and the APPLICATIONS (customer-portal, supplier-portal, skyline-air-partner) as ciamApplication specs with their parts, roles, criticality and owner.",
+        "returns": "{\"type\": \"tuple[Spec]\"}",
+        "source_hash": "b631f7bde706b8cc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-applications-615a1bef"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"id\": \"str\", \"kind\": \"str\", \"label\": \"str\", \"owner\": \"str\"}}",
+        "description": "A dependency graph node: id (an entry's DN, role:<name> or server-role:<name>), kind (object class or role/server-role), label, owner.",
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Node"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-node-7891e34d"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"source\": \"str\", \"target\": \"str\", \"via\": \"str\", \"kind\": \"str\"}}",
+        "description": "A dependency graph edge: source names target via an attribute; kind dn, role (an entry naming a role) or binding (a role realized).",
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Edge"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-edge-559af7ee"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"root\": \"str\", \"direction\": \"str\", \"depth\": \"int\", \"environment\": \"str|None\", \"nodes\": \"tuple[Node]\", \"edges\": \"tuple[Edge]\"}}",
+        "description": "The dependency graph around an entry: root, direction, depth, environment label (or None), sorted nodes and edges.",
+        "file": "opsdir/opsdir/connectors/graph.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Graph"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-graph-2938b204"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"name\": \"str\", \"rows\": \"tuple[tuple[str, str, str, str, str, str]]\"}}",
+        "description": "One section of an application view: its name and rows (environment, kind, name, detail, owner, evidence DN).",
+        "file": "opsdir/opsdir/connectors/application.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Section"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-section-418d8449"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"root\": \"str\", \"name\": \"str\", \"parts\": \"tuple[str]\", \"roles\": \"tuple[str]\", \"environment\": \"str|None\", \"sections\": \"tuple[Section]\"}}",
+        "description": "Everything an entry (or an application's parts) touches, in sections: root DN, name, parts, roles, environment label, sections.",
+        "file": "opsdir/opsdir/connectors/application.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "ApplicationView"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-applicationview-53b495d9"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"what\": \"str\", \"count\": \"int\", \"evidence\": \"tuple[str]\"}}",
+        "description": "An estate count: what is counted, how many, and its evidence (the DNs counted, or the command that shows them).",
+        "file": "opsdir/opsdir/connectors/summary.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Count"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-count-cc624b7f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 6.4 (id 72; read its description in full). Started 2026-10-15 at the user's request to keep idle workers busy. FIRST, design and escalate (kind decision, needs_user=true: the milestone says to settle it with the user): what an 'application' is in the record (a new class vs a view over existing entries: federation connection / OIDC client / consumer / service name), with a recommendation and its trade-offs, plus the operation's shape in the operations layer (2.8) and the graph's JSON/DOT form. Build only after the answer. Then (1) the application report/operation (sections per the milestone: identity, directory consumer and ACIs, edge and service names, secrets/keys as references, certificates with expiry, network paths and allowlists, monitors and synthetic checks, recent changes and incidents, owners), built from relations the record already has (blast-radius, dependents, rotation-impact, consumers, canaries, monitors, history); (2) dependency graph JSON + DOT for a component (what depends on it, what it depends on); (3) planner/estate summaries as counts with evidence links (no invented percentages). Everything through the operations layer so 7.1/7.4/7.6 reuse it. RESERVED NUMBERS if a new class is chosen: core attributes 670-679, object classes 140-142 (another worker uses 661-669/137-139). Acceptance per the milestone: report and graph for the showcase's applications, targeted tests, golden diff (the master re-baselines when it is what you predicted), docs. Rules 2991 + 3002. Boundary: the operations layer and the core domain(s) the design picks, CLI command registration for the new report/graph, docs, their tests. Not: cloud adapters, kits, format packages, core environment.py, the planner verdict code (task 523 changes it).",
+        "flows": [
+          "Showcase & Verification"
+        ],
+        "name": "6.4 a: application view and dependency graph: design, then the CLI report",
+        "parent": {
+          "slug": "milestone-6-4-application-view-and-dependency-grap-3f53e50a"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "94d2f5f",
+    "branch": "aimfp-u64-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "specs calls applications (governance.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-specs-4a938b46"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-applications-615a1bef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "owners_of calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-owners-of-fa0e11e5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "owners_of calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-owners-of-fa0e11e5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "owners_of calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-owners-of-fa0e11e5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "node_label calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-node-label-92db4b89"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "node_label calls env_label (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-node-label-92db4b89"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls values (directory.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls value_type (directory.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-type-eda31137"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls referrers (directory.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls by_role (environment.py) via _bindings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-by-role-4fdc461d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls servers_with_role (environment.py) via _bindings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-servers-with-role-b3e6ef7a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls role_attributes (graph.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-attributes-9bb8a187"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls owners_of (graph.py) via _node",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-of-fa0e11e5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls entry_kind (graph.py) via _node",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-kind-37911c9c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependency_graph calls node_label (graph.py) via _node",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-node-label-92db4b89"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environment_of_entry calls node_label (graph.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environment-of-entry-3d79155c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-node-label-92db4b89"
+      }
+    },
+    {
+      "attributes": {
+        "description": "view_parts calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-view-parts-c1043893"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "view_parts calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-view-parts-c1043893"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "view_parts calls is_kind (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-view-parts-c1043893"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls gtime_date (directory.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-916f2b7b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls one (directory.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls values (directory.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls value_type (directory.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-type-eda31137"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls referrers (directory.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls by_role (environment.py) via _realized_by",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-by-role-4fdc461d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls is_kind (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls role_attributes (graph.py) via _related",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-attributes-9bb8a187"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls owners_of (graph.py) via _changes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-of-fa0e11e5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls entry_kind (graph.py) via _row",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-kind-37911c9c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls dependency_graph (graph.py) via _related",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls environment_of_entry (application.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-entry-3d79155c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application_view calls view_parts (application.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-view-parts-c1043893"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expiring_certificates calls gtime_date (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expiring-certificates-208d40ad"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-916f2b7b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expiring_certificates calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expiring-certificates-208d40ad"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expiring_certificates calls is_kind (directory.py) via _of_class",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expiring-certificates-208d40ad"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "expiring_certificates calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-expiring-certificates-208d40ad"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "estate_counts calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "estate_counts calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "estate_counts calls is_kind (directory.py) via _of_class",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-kind-4258e4ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "estate_counts calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "estate_counts calls expiring_certificates (summary.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-expiring-certificates-208d40ad"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application calls load_directory (postgres.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-7bdda75b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-load-directory-3e335e6f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application calls env_model (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-7bdda75b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "application calls application_view (application.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-application-7bdda75b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-application-view-47783ab9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependencies calls load_directory (postgres.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependencies-33353977"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-load-directory-3e335e6f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependencies calls env_model (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependencies-33353977"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependencies calls dependency_graph (graph.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependencies-33353977"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "summary calls plan (plan.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-summary-a1d23644"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-plan-b824361b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "summary calls load_directory (postgres.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-summary-a1d23644"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-load-directory-3e335e6f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "summary calls estate_counts (summary.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-summary-a1d23644"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "summary calls plan_counts (summary.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-summary-a1d23644"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-plan-counts-e2f31cb7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "applications calls spec (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-applications-615a1bef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-e-65fcabe6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "applications calls ou (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-applications-615a1bef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-2f47b252"
+      }
+    },
+    {
+      "attributes": {
+        "description": "applications calls owner (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-applications-615a1bef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owner-ded37f0b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-dependency-graph-c26137bf"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-graph-2938b204"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-graph-document-9040cc40"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-graph-2938b204"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-graph-dot-cc1bdf11"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-graph-2938b204"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-graph-lines-1695c4b6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-graph-2938b204"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-application-view-47783ab9"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-applicationview-53b495d9"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-view-document-0f68c6a7"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-applicationview-53b495d9"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-estate-counts-f0aff92b"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-count-cc624b7f"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-plan-counts-e2f31cb7"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-count-cc624b7f"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-dependencies-33353977"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-graph-2938b204"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-application-7bdda75b"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-applicationview-53b495d9"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-summary-a1d23644"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-count-cc624b7f"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/graph.py"
+      },
+      "flow": {
+        "name": "Application View & Dependency Graph"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/application.py"
+      },
+      "flow": {
+        "name": "Application View & Dependency Graph"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/summary.py"
+      },
+      "flow": {
+        "name": "Application View & Dependency Graph"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/graph.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "connectors"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/application.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "connectors"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/summary.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "connectors"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/graph.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/application.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/summary.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/operations.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/cli.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/build.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-4-a-application-view-and-dependency-gr-a70a36e1"
+      }
+    }
+  ],
+  "warnings": []
+}

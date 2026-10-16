@@ -1,0 +1,1665 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "retention.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/observability/retention.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-pingds (import opsdir_adapter_pingds), registered via entry point opsdir.adapters:pingds; depends on opsdir and opsdir-base-ds (and, through it, opsdir-adapter-ldap).\n- adapter.py, ADAPTER:\n  - kind product; applies via opsdir_base_ds.product.runs; products PingDS >=7.2,<9.\n  - Required roles: subnet-ds, ds-ldaps-service, backup-target, ds-deployment-id, ds-deployment-password, ds-root-password, ds-tls-keystore.\n  - The lineage's importers pingds/config, declared, access-log, rendered and schema, with reads_back; the lineage's config collectors.\n  - Formats add ds/setup-*.sh.\n- render.py: PINGDS product data; render_neutral (ldap/schema.ldif, ldap/dit.ldif, ds/dsconfig.batch, ds/acis.ldif); setup_scripts (ds/setup-<server>.sh).\n- replication.py: check_replication (the target joins the source's deployment, and the replication path, through opsdir_base_ds.replication).\n- logs.py LOGS, signals.py SIGNALS, versions.py VERSION_CHANGES.",
+        "external_dependencies": "[\"PingDS setup (run by the rendered ds/setup-<server>.sh scripts)\", \"PingDS ldapsearch (opsdir collect of cn=config over LDAPS)\"]",
+        "path": "packages/opsdir-adapter-pingds/",
+        "purpose": "PingDS (ForgeRock DS lineage) product adapter: a thin layer on opsdir-base-ds for environments whose servers run PingDS >=7.2,<9.\n- Renders the directory domain as the standard schema and tree LDIF, a dsconfig batch, ACI LDIF and per-server setup scripts that join the existing replication deployment.\n- Reads back server configuration snapshots, the declared configuration, JSON access logs (consumers) and its own render.\n- Collects cn=config over LDAPS with PingDS's ldapsearch.\n- Declares the ds server role's listeners, logs, Prometheus signals and release changes, and the replication-continuity planner check."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-pingds"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-pingfederate (import opsdir_adapter_pingfederate), registered via entry point opsdir.adapters:pingfederate; depends on opsdir, opsdir-base-saml, opsdir-base-oidc and opsdir-format-terraform.\n- Render targets: admin-api and terraform (default); terraform-imports and bulk-config (on request).\n- Rendering: render.py, admin_api.py, admin_api_spec.py (vendored specs 12.1-13.1), terraform_target.py (provider schemas 1.8.1 and 1.10.0), bulk.py, connections.py, keypairs.py, discovery.py.\n- Importers: pingfederate/bulk (importer.py; datastores, plugins, policies, oauth, messaging, generic resources held as is), pingfederate/node-files (nodes.py), pingfederate/cluster (discovery_import.py).\n- Collector: bulk (collect.py).\n- Schema prefix pingfed (schema.py).\n- Seven planner checks (checks.py).\n- Listeners, logs, proxy settings and version changes (versions.py); secrets withheld (withheld.py).",
+        "external_dependencies": "[\"PingFederate Admin API (/pf-admin-api/v1; bulk export read-only)\", \"Terraform provider pingidentity/pingfederate (1.8.1, 1.10.0)\", \"Ping pingfederate-go-client OpenAPI specs (vendored, Apache-2.0)\", \"JGroups discovery (TCPPING, NATIVE_S3_PING, DNS_PING)\", \"pyyaml (scripts/vendor-admin-api-specs.py only)\", \"Terraform CLI (scripts/vendor-provider-schemas.py; validation)\"]",
+        "path": "packages/opsdir-adapter-pingfederate/",
+        "purpose": "PingFederate product adapter (PingFederate >=11,<14; server roles pf-engine and pf-admin).\n- Renders each environment's configuration as Admin API requests checked against vendored version specs, as Terraform for the pingidentity/pingfederate provider, or, on request, as a bulk import document. It also renders JGroups cluster discovery and the standard SAML/OIDC documents at PingFederate's paths.\n- Imports the Admin API bulk export (also collected live), the nodes' own files and the discovery file.\n- Planner checks cover data stores, references, clustering, client and SMTP auth, service roles, JDBC drivers and version upgrades."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-pingfederate"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-aws (import opsdir_adapter_aws), registered via entry point opsdir.adapters:aws; depends on opsdir, opsdir-format-terraform, opsdir-format-cloudformation and pyyaml.\n- Network: VPC/subnet data, security groups.\n- Landing zone: plumbing (NAT, route tables, NACLs, peering, transit, VPN, flow logs), OIDC deployer roles, Identity Center permission sets, SCP guardrails.\n- Compute: EC2 instances and Auto Scaling groups.\n- Edge: NLBs, ALBs with WAFv2 and Shield, CloudFront (from the standard account in GovCloud), Route 53 and Resolver rules, VPC endpoints, Network Firewall allowlists.\n- Data: RDS and Aurora, S3, EBS, DLM, AWS Backup.\n- Identity: IAM roles.\n- Security: CloudTrail, GuardDuty, Inspector, Config, Security Hub, Macie, suppressions.\n- Observability: CloudWatch alarms and log groups, Synthetics canaries, Fluent Bit on EKS.\n- Budgets.\n- Importers: aws/terraform-state, aws/cli-inventory, aws/cloudformation, aws/regions, aws/quotas. Collectors for the first three.\n- Planner checks: boundary, regulated placement, discovery availability, server inputs.",
+        "external_dependencies": "[\"terraform CLI (applies the rendered roots; terraform state pull for collect --terraform-dir)\", \"hashicorp/aws Terraform provider (~> 6.68)\", \"hashicorp/archive Terraform provider (~> 2.8; canary and Macie scheduler packaging)\", \"AWS CloudFormation (render target cloudformation; stacks read by aws/cloudformation)\", \"AWS CLI (aws-sm resolution, opsdir collect, aws/regions and aws/quotas runs)\", \"amazon.aws Ansible collection (secretsmanager_secret lookup via opsdir-adapter-ansible)\", \"Amazon CloudWatch agent and aws-for-fluent-bit (configured, not installed)\", \"AWS Load Balancer Controller (TargetGroupBinding for cluster gateways)\", \"cfn-lint (CloudFormation validation script and tests only)\"]",
+        "path": "packages/opsdir-adapter-aws/",
+        "purpose": "Amazon Web Services provider adapter (ciamCloudProvider aws, ciamCloudEnvironment public; a us-gov-* ciamRegion selects GovCloud (US) and the aws-us-gov partition).\n- Renders an environment's infrastructure bindings as Terraform for hashicorp/aws, or as AWS CloudFormation translated from the same Terraform data; what CloudFormation can't express stays in a Terraform root.\n- Reads them back from Terraform state, AWS CLI JSON and CloudFormation stacks, and collects all three read-only under the operator's AWS CLI login.\n- Owns the aws-sm, aws-kms, aws-acm and s3 reference schemes and refuses AWS credential forms.\n- Supplies the AWS access model, EKS IRSA and secret delivery, CloudWatch agent host files, and region and quota prerequisites."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-aws"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-format-terraform (import opsdir_format_terraform), registered via entry point opsdir.formats:hcl (format.FORMAT); depends on opsdir. Used by opsdir-adapter-aws, -azure, -gcp and -pingfederate.\n- hcl.py: tf_name, TfBlock/tf_block, block, hcl, ref, jsonencoded, comment, tf_import, TfFile/hcl_file, written, data_block/data_value, blocks_of, mentions, as_text, ANCHOR/from_entry.\n- hcl_reader.py: read_hcl, value_of.\n- state.py: read_state.\n- state_builder.py: tf_state, root_states.\n- realized.py: realized.\n- translate.py: roots, parse_ref/TfRef, partition, split_root, output_variable, no_native_note.\n- placing.py: place_roots, carried_files.\n- native.py: Native/Merge tables, read_root, resolver, translate, data_answer, placements, placements_document/placements_of, side_inputs.",
+        "external_dependencies": "[]",
+        "path": "packages/opsdir-format-terraform/",
+        "purpose": "Terraform format library shared by the opsdir adapters. It knows HCL and Terraform, not any cloud provider or product.\n- Writes HCL as data, laid out like terraform fmt, and reads back the subset it writes.\n- Reads Terraform state (format 4, sensitive attributes dropped) and builds the state an apply would record from a render.\n- Maps a block to the binding it realizes.\n- Places a render in the roots of its keepers (origins, partition, placing).\n- Runs the target-neutral engine that translates a Terraform root into another IaC language (AWS CloudFormation, Azure Bicep/ARM), keeping what has no native form in a side Terraform root."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "format-terraform"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-kubernetes (import opsdir_adapter_kubernetes), registered via entry point opsdir.adapters:kubernetes; depends on opsdir and pyyaml.\n- Declares: scheme k8s-secret (with an Ansible kubernetes.core.k8s lookup), render targets external-secrets and csi, estate setting kubernetes-gateway-implementation, vocabulary ciamGatewayImplementation and importer kubernetes/workloads. No schema, required roles or planner checks.\n- render.py: namespace, service accounts, network policies, ExternalSecrets, SecretProviderClasses, CSI sync pods, secrets-required.yaml.\n- gateway.py: Gateway, HTTPRoutes, BackendTLSPolicy, backend CA and cookie stickiness per implementation (istio by default, envoy-gateway).\n- workloads.py, gateway_import.py: the importer.\n- kits.py, names.py: helpers and marks shared with the deployment-kit adapters.\n- secrets.py: k8s-secret resolution.",
+        "external_dependencies": "[\"pyyaml\", \"kubectl (k8s-secret:// resolution)\", \"Ansible kubernetes.core collection (k8s lookup)\", \"Gateway API v1.6.1 standard channel\", \"Istio 1.31.1 (default gateway implementation)\", \"Envoy Gateway v1.9.2\", \"External Secrets Operator (external-secrets.io/v1)\", \"Secrets Store CSI driver (secrets-store.csi.x-k8s.io/v1)\", \"kustomize and kubeconform (validation only)\"]",
+        "path": "packages/opsdir-adapter-kubernetes/",
+        "purpose": "Kubernetes platform adapter. For environments that run workloads on Kubernetes it renders per-namespace kustomizations: the namespace with its pod-security level, service accounts annotated with the provider's workload identity, network policies from the deployment kits' or products' listeners, Secret delivery (render targets external-secrets and csi) and a secrets-required list. It also renders the in-cluster Gateway API gateway behind a cloud's front (Istio or Envoy Gateway), resolves k8s-secret:// references, and imports workloads, workload bindings, CronJobs and Gateways from manifests (kubernetes/workloads)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-kubernetes"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-gcp (import opsdir_adapter_gcp), registered via entry point opsdir.adapters:gcp; depends on opsdir and opsdir-format-terraform.\n- Network: Shared VPC network data; firewall rules by network tag, or a network firewall policy by secure tag; Private Service Connect; egress allowlists.\n- Landing zone: plumbing (Cloud NAT, routes, peering, HA VPN), workload identity federation, org-policy guardrails, Assured Workloads, budgets.\n- Compute: Compute Engine instances and regional managed instance groups.\n- Edge: passthrough and Application load balancers with Cloud Armor, Cloud CDN and Cloud DNS.\n- Data: Cloud SQL, buckets, disks, snapshot schedules, Backup and DR.\n- Identity: service accounts and IAM members.\n- Security: audit sinks, Security Command Center, Compliance Manager, mute rules, Sensitive Data Protection.\n- Observability: alert policies, log buckets and sinks, uptime checks, synthetic monitors.\n- Importers: gcp/terraform-state, gcp/cli-inventory, gcp/regions, gcp/quotas, gcp/frameworks.\n- Collectors: cli-inventory, terraform-state.\n- Planner checks: priorities, boundary, regulated placement, server inputs, discovery cadence.",
+        "external_dependencies": "[\"terraform CLI (applies the rendered roots; terraform state pull for collect --terraform-dir)\", \"hashicorp/google Terraform provider (~> 8.6)\", \"hashicorp/archive Terraform provider (~> 2.8; synthetic monitor source packaging)\", \"gcloud CLI (gcp-sm resolution, opsdir collect, gcp/regions, gcp/quotas and gcp/frameworks runs, Policy Troubleshooter in access/evaluate.sh)\", \"Google Cloud Ops Agent (configured, not installed)\"]",
+        "path": "packages/opsdir-adapter-gcp/",
+        "purpose": "Google Cloud provider adapter (ciamCloudProvider gcp, ciamCloudEnvironment public).\n- Renders an environment's infrastructure bindings as Terraform for hashicorp/google, in platform, landing-zone and per-keeper roots.\n- Reads them back from Terraform state and from Cloud Asset Inventory and gcloud JSON, and collects both read-only under the operator's gcloud login.\n- Owns the gcp-sm, gcp-kms, gcp-cert and gs reference schemes (gcp-sm resolved with gcloud) and refuses Google Cloud credential forms.\n- Supplies the Google Cloud access model, GKE workload identity and secret delivery, Ops Agent host files, region, quota and compliance-framework prerequisites, and Assured Workloads boundary checks."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-gcp"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/checks.py",
+        "id_in_name": 0,
+        "name": "_allowlist",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"xa\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Finding for one external allowlist: role unbound (blocker), already covered (ok), or dated request (action + request)",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "6276010223452a0c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-allowlist-f4fc9676"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/checks.py",
+        "id_in_name": 0,
+        "name": "check_data_stores",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: data stores with withheld credentials but no credential role, or needing roles the target doesn't bind, are blockers; a fixed host or an LDAP store without TLS is an action; an ok line when every store is fine; nothing when there are no data stores",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "4d2298755f8800c4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-data-stores-128b1ded"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/automation/jobs.py",
+        "id_in_name": 0,
+        "name": "check_jobs",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check over the jobs that apply in the source (core environment.applies_in): those also applying in the target are checked (no servers of their role, roles nobody binds -> blockers; no owner / nowhere to run -> actions); those that don't apply in the target are an action each (it won't run there; scope it too if it should).",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "25f14b00a6e2b97f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-jobs-b3d5cdca"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/compute/hosts.py",
+        "id_in_name": 0,
+        "name": "check_hosts",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: per baseline applying in the source or target, truststore certificates the record lacks and pinned hosts; roles the target runs (and the source too) with no baseline applying in the target; weaker/less spread target compute groups (with fixes).",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "46ef927b1f41ce96"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-hosts-f11dcd01"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/compute/workloads.py",
+        "id_in_name": 0,
+        "name": "check_workloads",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: blockers for a workload the source runs on Kubernetes that the target neither runs there (workload binding) nor has servers of its role, a target workload binding without its cluster, identity or Secret-filling roles neither environment binds; actions for a role moving servers<->Kubernetes (host baseline into the image, or back) and privileged workloads; ok line otherwise.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "0dd51dacecb9ed36"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-workloads-4dd2ea57"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/messaging/services.py",
+        "id_in_name": 0,
+        "name": "check_services",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: target names missing from a service's allowed domains, roles a service or sender uses that nobody binds, target sending identities without DKIM/SPF or for another domain are blockers; services without owner, weaker DMARC, senders without bounce handling are actions.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "8255683463578371"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-services-caa76641"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/alerts.py",
+        "id_in_name": 0,
+        "name": "check_alerts",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: alert rules whose delivering role, and canaries whose checked service or credential roles, neither environment binds are blockers; alert rules without a runbook or owner and canaries feeding no alert rule are actions; an ok line otherwise",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "b45d2d3e2ddd401b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-alerts-f5d53518"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/logs.py",
+        "id_in_name": 0,
+        "name": "check_logs",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: a route whose destination role neither environment binds, or whose target destination keeps logs fewer days than the route's obligation (0 = indefinite meets any), is a blocker (the latter with a fix setting the target destination's ciamRetentionDays); unknown target retention, a source already short, and legal-hold logs are actions; an ok line otherwise.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "7d11f499c585bb06"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-logs-c8e71fec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/network/checks.py",
+        "id_in_name": 0,
+        "name": "check_egress",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: partner-ingress allowlists of the target's egress binding must name a fixed public address the routes use (actions dated by cutover).",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "3d15d7ce53d122f3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-egress-c9e2a294"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/network/checks.py",
+        "id_in_name": 0,
+        "name": "check_sites",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check: required outside sites the target's egress proxy/firewall doesn't allow (an action for its owner, and a request per site, topic network, to the party ciamManagedBy names when one is recorded: any brand of proxy or a hub firewall, no file format needed); firewalls with domain rules no default route sends egress through.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "795390c920b7ae49"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-sites-4ad0f534"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/network/stack.py",
+        "id_in_name": 0,
+        "name": "kept_by",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Name of who keeps a binding the stack doesn't (the ciamManagedBy party's RDN, else its DN).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "439d8627c1f2eda8"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-kept-by-44974692"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/data/storage.py",
+        "id_in_name": 0,
+        "name": "object_store_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "The object-stores report (OBJECT_STORE_HEADERS): one row per object store of every environment (backup targets among them), sorted by environment and role: environment, role, kind, location, versioning, immutability (mode and days), encrypted by, lifecycle, public blocked, replica, retention days, kept by",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "028a5f9d93d2d38f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-object-store-rows-4e8fabc8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/audit.py",
+        "id_in_name": 0,
+        "name": "coverage",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"trails\", \"type\": \"tuple[Entry]\", \"required\": true}]",
+        "purpose": "What environment m's audit trails cover together: events recorded (AUDIT_EVENTS order), any all-regions, the best integrity grade (integrity: UNPROTECTED 0 / UNLOCKED 1 / PROTECTED 2), the longest destination retention (0 = forever, None unknown)",
+        "returns": "{\"type\": \"Coverage\"}",
+        "source_hash": "9fe30a85832b617f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-coverage-82a72558"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/audit.py",
+        "id_in_name": 0,
+        "name": "audit_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "audit-trails report: one row per trail of every environment: scope, events, all regions, integrity (validated / locked immutable store / unlocked immutable store / no / ''), destination role, retention days (forever), keeper (platform unless ciamManagedBy)",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "6c920b5e82322eac"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-audit-rows-b27292d2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/security.py",
+        "id_in_name": 0,
+        "name": "service_coverage",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"list[Entry]\", \"required\": true}]",
+        "purpose": "What environment m's services (usually of one kind) give together (SecurityCoverage): areas watched, frameworks and provider baselines assessed, organization scope, all regions, findings routed, longest records kept (own ciamRetentionDays or findings destination's).",
+        "returns": "{\"type\": \"SecurityCoverage\"}",
+        "source_hash": "403b406c7afbd529"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-service-coverage-d8f207c7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/security.py",
+        "id_in_name": 0,
+        "name": "security_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str | None\", \"required\": false}]",
+        "purpose": "Report security-services: one row per security service of every environment (kind, scope, all regions, areas, standards + baselines, findings role, keep days, keeper).",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "ff04a80f59cd108b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-security-rows-b527dc7a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/budgets.py",
+        "id_in_name": 0,
+        "name": "budget_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "Report budgets: one row per budget of every environment: amount+currency, period, alert thresholds spent/forecast, alert role, keeper",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"rows under BUDGET_HEADERS\"}",
+        "source_hash": "7ef2ec1219acf71a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-budget-rows-1ae3d2d9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/discovery.py",
+        "id_in_name": 0,
+        "name": "discovery_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Report data-discovery: one row per data discovery service of every environment (stores examined, own data types by name, rescan days, findings to, results to, kept by)",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "a7a67ee0eec2e7b8"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-discovery-rows-de47eb5b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/keepers.py",
+        "id_in_name": 0,
+        "name": "managed_by",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The party entry an entry's ciamManagedBy names, or None when it names none or the record has no such entry (core directory.follow): who keeps the entry when the stack doesn't. Shared by every domain that asks who keeps a binding (U14-09).",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "db698374c8ad1ab2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-by-b720825f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/keepers.py",
+        "id_in_name": 0,
+        "name": "managed_by_name",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"default\", \"type\": \"str | None\", \"description\": \"the name when no party entry is named\", \"required\": false}]",
+        "purpose": "The name of who keeps an entry as reports and findings show it: the RDN value of the party its ciamManagedBy names (managed_by), else default. Callers pass 'platform', '?', or the DN named.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "40c110ab7f3ea453"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/findings.py",
+        "id_in_name": 0,
+        "name": "all_clear",
+        "parameters": "[{\"name\": \"parts\", \"type\": \"Sequence[Findings]\", \"required\": true}, {\"name\": \"ok_line\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A check's parts (Findings) merged (merge_findings), with ok_line, the check's one line saying all it looked at holds, added to what is fine when none of the parts is a blocker or an action. The shared end of the domain checks (U14-11).",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "c2f086973e9fa8d3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-all-clear-6668dec1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/findings.py",
+        "id_in_name": 0,
+        "name": "each_checked",
+        "parameters": "[{\"name\": \"items\", \"type\": \"Sequence\", \"required\": true}, {\"name\": \"judge\", \"type\": \"Callable[[item], Findings]\", \"required\": true}, {\"name\": \"ok_line\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A check over items: no findings when there are none; else judge(item) (Findings) for each, merged, with ok_line added when nothing is a blocker or an action (all_clear).",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "39d347edc769e8cb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-each-checked-a34de986"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/retention.py",
+        "id_in_name": 0,
+        "name": "retention_days",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry | None\", \"required\": true}]",
+        "purpose": "How many days a binding keeps what it is sent (ciamRetentionDays as an int; INDEFINITE, 0, means forever), or None when the binding is None or records none. Shared by the audit, logs and security reports and checks (U14-12).",
+        "returns": "{\"type\": \"int | None\"}",
+        "source_hash": "fba7815dfa467f8b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/retention.py",
+        "id_in_name": 0,
+        "name": "longest_retention",
+        "parameters": "[{\"name\": \"days\", \"type\": \"Iterable[int | None]\", \"required\": true}]",
+        "purpose": "The longest of several retentions (retention_days values): INDEFINITE when any keeps forever, else the most days; None when none is recorded.",
+        "returns": "{\"type\": \"int | None\"}",
+        "source_hash": "eec305a438fd300e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-longest-retention-7095bc16"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/retention.py",
+        "id_in_name": 0,
+        "name": "yes_no",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"attr\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A report's cell for a boolean attribute of an entry: 'yes' for TRUE, 'no' for FALSE, '' when not recorded.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "961c981f799d9cfb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-yes-no-e3e5e77f"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-trail-keeper-eb24c1a2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Audit 3001, rules (decision note on milestone 68) + 2991. U14-09: managed_by(d, e) / managed_by_name(d, e, default) in opsdir/opsdir/domains/governance/keepers.py; callers in estate (budgets, discovery, security), network (stack, checks), data (storage), observability (audit), infrastructure (checks) switch where the text stays identical. U14-11: core findings.each_checked(items, judge, ok_line); the 7 checks switch (compute workloads/hosts, observability logs/alerts, messaging services, automation jobs, pingfederate checks.py). U14-12 core part only: shared retention helper for _days/_longest/_yes in observability; incidents.py _at -> directory.date_of; discovery.py destination -> directory.follow. U14-13 (DB only): update_module texts of modules 29, 13, 12, 17, 42, 14 to what the code does now. Output byte-identical (finding texts unchanged). Boundary: opsdir/opsdir/core/findings.py, opsdir/opsdir/domains/** (not edge, not connectors), packages/opsdir-adapter-pingfederate/src/.../checks.py, their tests, opsdir/README.md shared-API table.",
+        "flows": [
+          "Keeper Root Placement",
+          "Showcase & Verification"
+        ],
+        "name": "U.14 c: core keepers, check combinator, core helpers, module texts (U14-09, 11, 12, 13)",
+        "parent": {
+          "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Callers in estate (budgets, discovery, security), network (stack, checks), data (storage), observability (audit), infrastructure (checks) switch where text stays identical",
+        "name": "U14-09 managed_by / managed_by_name in governance/keepers.py",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-09-managed-by-managed-by-name-in-gov-4f9e8618"
+      }
+    },
+    {
+      "attributes": {
+        "description": "compute workloads/hosts, observability logs/alerts, messaging services, automation jobs, pingfederate checks.py switch",
+        "name": "U14-11 findings.each_checked combinator",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-11-findings-each-checked-combinator-d01047e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shared retention helper for _days/_longest/_yes; incidents.py _at -> directory.date_of; discovery.py destination -> directory.follow",
+        "name": "U14-12 core helpers",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-12-core-helpers-ba7c01eb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "update_module texts of modules 29, 13, 12, 17, 42, 14 (DB only)",
+        "name": "U14-13 module texts",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-13-module-texts-4ca417db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir/README.md lines for new core helpers; targeted tests + test_line_length",
+        "name": "README shared-API table and tests",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-readme-shared-api-table-and-tests-8eccd92a"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "15d4fb0",
+    "branch": "aimfp-u14b-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-audit-rows-b27292d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_allowlist calls managed_by (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-allowlist-f4fc9676"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-b720825f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_egress calls managed_by_name (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-egress-c9e2a294"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_sites calls managed_by (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-sites-4ad0f534"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-b720825f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_by calls managed_by_name (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-by-44974692"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "object_store_rows calls managed_by_name (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-store-rows-4e8fabc8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "security_rows calls managed_by_name (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-security-rows-b527dc7a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "budget_rows calls managed_by_name (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-budget-rows-1ae3d2d9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "discovery_rows calls managed_by_name (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-rows-de47eb5b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_by calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-by-b720825f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_by_name calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_by_name calls managed_by (keepers.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-by-name-ca44a40d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-by-b720825f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_data_stores calls each_checked (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-data-stores-128b1ded"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-each-checked-a34de986"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_jobs calls all_clear (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-jobs-b3d5cdca"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-all-clear-6668dec1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_hosts calls all_clear (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-hosts-f11dcd01"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-all-clear-6668dec1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_workloads calls each_checked (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-workloads-4dd2ea57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-each-checked-a34de986"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_services calls all_clear (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-services-caa76641"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-all-clear-6668dec1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_alerts calls all_clear (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-alerts-f5d53518"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-all-clear-6668dec1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_logs calls each_checked (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-logs-c8e71fec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-each-checked-a34de986"
+      }
+    },
+    {
+      "attributes": {
+        "description": "all_clear calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-all-clear-6668dec1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "each_checked calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-each-checked-a34de986"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "each_checked calls all_clear (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-each-checked-a34de986"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-all-clear-6668dec1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_logs calls retention_days (retention.py) via _route",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-logs-c8e71fec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "coverage calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-coverage-82a72558"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "coverage calls longest_retention (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-coverage-82a72558"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-longest-retention-7095bc16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "audit_rows calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-audit-rows-b27292d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "audit_rows calls yes_no (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-audit-rows-b27292d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-yes-no-e3e5e77f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_coverage calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-coverage-d8f207c7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_coverage calls longest_retention (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-coverage-d8f207c7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-longest-retention-7095bc16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "security_rows calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-security-rows-b527dc7a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "security_rows calls longest_retention (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-security-rows-b527dc7a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-longest-retention-7095bc16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "security_rows calls yes_no (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-security-rows-b527dc7a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-yes-no-e3e5e77f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "retention_days calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "yes_no calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-yes-no-e3e5e77f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-all-clear-6668dec1"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "combinator",
+      "type": {
+        "entity_key": "ty-findings-0b43a876"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-each-checked-a34de986"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "combinator",
+      "type": {
+        "entity_key": "ty-findings-0b43a876"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/retention.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/retention.py"
+      },
+      "flow": {
+        "name": "Query & Report"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/retention.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-observability"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/keepers.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/findings.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/retention.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/automation/jobs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/compute/hosts.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/compute/workloads.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/data/storage.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/budgets.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/discovery.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/security.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/messaging/services.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/stack.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/alerts.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/audit.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/logs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-c-core-keepers-check-combinator-cor-247b9f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-allowlist-f4fc9676"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_hosts calls merge_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-hosts-f11dcd01"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_workloads calls merge_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-workloads-4dd2ea57"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_services calls merge_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-services-caa76641"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-alerts-f5d53518"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-logs-c8e71fec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_jobs calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-jobs-b3d5cdca"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-egress-c9e2a294"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-by-44974692"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-by-44974692"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the keeping party",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-sites-4ad0f534"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeper party",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-store-rows-4e8fabc8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-store-rows-4e8fabc8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-keeper-eb24c1a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-keeper-eb24c1a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-audit-rows-b27292d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-trail-keeper-eb24c1a2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "get",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-rows-de47eb5b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "security_rows calls get (directory.py) via _keeper",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-security-rows-b527dc7a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "budget_rows calls get (directory.py) via _keeper",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-budget-rows-1ae3d2d9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    }
+  ],
+  "warnings": []
+}

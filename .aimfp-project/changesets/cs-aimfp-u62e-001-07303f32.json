@@ -1,0 +1,4726 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "siem.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/observability/siem.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package build config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "naming.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "conf.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/conf.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "render.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "read.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "sentinel.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": "[\"Splunk indexes.conf / savedsearches.conf / inputs.conf format\", \"Splunk management REST API (/services/data/indexes, /servicesNS/-/-/saved/searches)\", \"Splunk Universal Forwarder\"]",
+        "path": "packages/opsdir-adapter-splunk/",
+        "purpose": "SIEM add-on: the Splunk indexes an environment keeps logs in (searchable and archived retention), its detections as scheduled saved searches, Universal Forwarder inputs placed by Ansible; read back from the opsdir_ciam app's .conf files (round trip) and the management API (read-only collector)."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-splunk"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "A SIEM as a log destination (milestone 6.2e, decision 3046). Core: a ciamLogDestination of kind siem-index keeps logs searchable (ciamRetentionDays) and in all, archive included (ciamTotalRetentionDays, 710); check_logs holds the total to the route's obligation (archived-only action); a detection is a ciamAlarmBinding naming the SIEM index it searches (ciamLogDestinationRole) with its search in ciamMetric, rendered with the rule's count-per-window condition (alarms.detection_specs / detection_condition; cloud alarm_specs leave detections out); domains/observability/siem check_siem (lost/broken detections, legal hold on a SIEM); contract Adapter.siem_indexes + Services.siem_keeper (a provider adapter leaves a destination another adapter keeps to it) and connectors.observability.siem_check (a SIEM index nothing keeps); log-routes report per environment with searchable and total days. Splunk: opsdir-adapter-splunk (stack role siem) renders the opsdir_ciam app's indexes.conf (frozenTimePeriodInSecs, archiver.*) and savedsearches.conf, Universal Forwarder inputs.conf per role and install root as HostFiles (Ansible places them), forwarding (outputs.conf) a render note for the Splunk team; reads back its confs (round trip) and the REST API's indexes and saved searches (read-only bearer collector). Sentinel: opsdir-adapter-azure on a siem-index whose ref is a Log Analytics workspace (onboarding, analytics rules, table total retention), read back."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "SIEM Integration"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/plan.py",
+        "id_in_name": 0,
+        "name": "plan",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"src_spec\", \"type\": \"str\"}, {\"name\": \"dst_spec\", \"type\": \"str\"}, {\"name\": \"as_of\", \"type\": \"date\"}, {\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false, \"description\": \"default registry.ADAPTERS\"}, {\"name\": \"domains\", \"type\": \"Sequence[Domain]\", \"required\": false, \"description\": \"default registry.DOMAINS\"}, {\"name\": \"requester\", \"type\": \"str|None\", \"required\": false, \"description\": \"who runs the migration, recorded in the target's MANIFEST\"}]",
+        "purpose": "Migration plan with the given installed adapters (default: discovered) and domains: render both environments (the target whole, scope ENVIRONMENT, its MANIFEST naming requester when given), build a PlanContext, run cross-domain, adapter and domain checks (access, edge, network, evidence, signals, log collection, SIEM indexes nothing keeps: siem_check, proxies, upgrades), merge Findings into a Plan",
+        "returns": "{\"type\": \"Plan\"}",
+        "source_hash": "66f039a2bd28c345"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-plan-b824361b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "services",
+        "parameters": "[{\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false}, {\"name\": \"targets\", \"type\": \"dict[str, tuple[str]]|None\", \"required\": false, \"description\": \"the render targets chosen in this render (none outside a render)\"}]",
+        "purpose": "What connectors provide to adapters while rendering (Services), resolved against the installed adapters (their callable logs resolved: resolved_logs): secret commands, endpoints, listeners, workload identity, secret delivery, routes, gateway plugs, ansible lookups, deployable config, signals, logs, host files, render targets chosen, mounts_secrets, installed_logs, and siem_keeper (siem_keeper_of: which declared adapter keeps a SIEM index).",
+        "returns": "{\"type\": \"Services\"}",
+        "source_hash": "0b5ed8b5e3ba5535"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-services-f2431578"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/inventory.py",
+        "id_in_name": 0,
+        "name": "layout_import",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"provider\", \"type\": \"str\"}, {\"name\": \"label\", \"type\": \"str\"}, {\"name\": \"parse\", \"type\": \"Callable[[dict], (tuple[Resource], tuple[str])]\", \"description\": \"folder parser over {path within the folder: text}; read_together(file_pairs, pairs_resources) reads every file as one environment\"}, {\"name\": \"suffix\", \"type\": \"str | tuple[str]\"}, {\"name\": \"what\", \"type\": \"str\"}, {\"name\": \"example\", \"type\": \"str\"}, {\"name\": \"summarize\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "Imported: each <cloud>/<env>/ folder's files ending in suffix, parsed together by parse({path within folder: text}) -> (resources, notices), placed into that environment's servers and bindings (environment_groups, role map applied); environments whose cloud's ciamCloudProvider isn't provider (unless provider is None: a source beside the clouds such as a SIEM) and files outside the layout are named, not imported.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "5a882c64335763b5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-layout-import-eeb7e644"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/inventory.py",
+        "id_in_name": 0,
+        "name": "pairs_resources",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"list[tuple[str, dict]]\"}]",
+        "purpose": "(resources, notices) of (Terraform resource type, attributes) pairs: what every Azure source is read into, access control included (iam_resources), the network depth (network_resources: route tables, private endpoints, Private Link Services, Firewall policy allowlists, peering/VPN/hub links, flow logs), managed databases, blob containers (object_store_resources), Activity Log diagnostic settings as audit trails (trail_resources), security services, Log Analytics workspaces (a SIEM index when Sentinel is onboarded) and Sentinel scheduled analytics rules as detections (sentinel_resources), consumption budgets, NAT allocation static.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(tuple[Resource], tuple[str])\"}",
+        "source_hash": "85d11ca4a333a104"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-pairs-resources-a2b38536"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/logs.py",
+        "id_in_name": 0,
+        "name": "log_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str | None\", \"required\": false}]",
+        "purpose": "The log-routes report: one row per log route and environment binding its destination role (one row with the environment's cells empty when none does): what the route must keep (kinds, roles, destination role, days, legal hold) and what each environment's destination keeps (environment, kind, searchable days, total days via total_days/days_text).",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"rows under LOG_HEADERS (10 columns)\"}",
+        "source_hash": "cad7550d16c8fb75"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-log-rows-767f21b6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/logs.py",
+        "id_in_name": 0,
+        "name": "check_logs",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check for log routes: kept nowhere, or kept fewer days in the target than they must be in all (total_days: searchable and archived) are blockers with a Fix raising ciamTotalRetentionDays when recorded else ciamRetentionDays; a target recording no retention, one keeping them long enough only in its archive (searchable fewer days), a source already short, and legal-hold sources are actions.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "7d11f499c585bb06"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-logs-c8e71fec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/observability.py",
+        "id_in_name": 0,
+        "name": "entries",
+        "parameters": "[]",
+        "purpose": "Showcase fixture (79-observability): alert rules replication-lag, login-failures (no runbook, planted) and admin-login-failures (security operations, soc-alerts, realized by SIEM detections), log routes audit-logs (400 days, legal hold), access-logs and security-events (pf-engine/pf-admin audit and admin logs to the SIEM, 365 days), three canaries feeding login-failures; MONITORING holds each environment's channels, destinations, alarms and checks (source: Splunk index ciam_security, its retention read in under CHG-2049; target: Sentinel workspace law-ciam-prod-sentinel 90/365 days and the admin-login detection; Container Apps jobs; standby: gs:// sources; planted: target audit retention 90, ds-disk-free alarm nobody described)",
+        "returns": "{\"type\": \"tuple[Spec, ...]\"}",
+        "source_hash": "3e14de1ac4ae7af0"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-entries-403fad50"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/alarms.py",
+        "id_in_name": 0,
+        "name": "alarm_specs",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "An environment's alert rules it delivers, as AlarmSpecs (rule, alarm binding, channel, keeper, why not rendered), in record order; those a SIEM detection realizes (detection_specs: the alarm names a SIEM index in ciamLogDestinationRole) left out: they are the SIEM adapter's.",
+        "returns": "{\"type\": \"tuple[AlarmSpec]\"}",
+        "source_hash": "59dae20eb700209f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-alarm-specs-fbb778e7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/log_agent.py",
+        "id_in_name": 0,
+        "name": "host_shipments",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "The Shipments of an environment from its servers (its log routes and the LogSources its adapters declare), but those to a SIEM index another adapter keeps (sources.own_shipments with Services.siem_keeper).",
+        "returns": "{\"type\": \"tuple[Shipment, ...]\"}",
+        "source_hash": "5185539a612b52ed"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-host-shipments-7f36072f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/fluent_bit.py",
+        "id_in_name": 0,
+        "name": "fluent_bit_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "The render notes (RenderNote, blockers) of the container logs environment m's routes can't ship to CloudWatch, but those to a SIEM index another adapter keeps (sources.own_shipments): a destination that isn't a log group, or a role on Kubernetes in no cluster the environment binds; each once.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "1fabe79b0c6d1e2c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-fluent-bit-notes-2c0e4522"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/observability.py",
+        "id_in_name": 0,
+        "name": "workspace_id",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry | None\", \"required\": true}]",
+        "purpose": "The ID Terraform gives a log destination on a Log Analytics workspace (holds_logs: kind workspace, or a SIEM index on a workspace: Sentinel): a reference to the workspace when the render writes it in some root (another root's through an input), else (an overlay's inherited one, or one an asked keeper keeps) its recorded resource ID; None for another kind or no workspace ID.",
+        "returns": "{\"type\": \"str | Ref | None\"}",
+        "source_hash": "42096626ef3615ed"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-workspace-id-411de1d6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/log_collection.py",
+        "id_in_name": 0,
+        "name": "log_collection_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "The render notes (RenderNote) of environment m's servers' log routes, but those to a SIEM index another adapter keeps (sources.own_shipments): a destination that isn't a Log Analytics workspace (a blocker), records spanning lines arriving line by line and an agent its host baseline brings (notes), in Azure Government custom text log collection to confirm (an action); each once.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "ebcf2dc1cdfb7f67"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-log-collection-notes-493091c8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/container_logs.py",
+        "id_in_name": 0,
+        "name": "container_log_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}]",
+        "purpose": "The render notes (RenderNote) of the container output environment m's routes don't ship to Log Analytics, but those to a SIEM index another adapter keeps (sources.own_shipments): a destination that isn't a workspace (or Sentinel on one), a role in no bound cluster, a cluster needing more multitenant logging rules than Container insights takes (blockers); in Azure Government multitenant logging to confirm (an action); each once.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "ea9a57dc36205a1a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-container-log-notes-7bd90869"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services|None\", \"required\": true}]",
+        "purpose": "Adapter notes (flow 43): what environment m's Azure render leaves out or to a person, as data: synthetic checks, check jobs, security services', audit trails', data discovery's, suppressions', guardrails', alert rules', workspaces', Sentinel's (sentinel_notes), identities', Kubernetes-only roles', unpinned priorities', budgets, FIPS, forwarders, backups, databases, volumes, groups, edges, quotas, network depth and plumbing notes, the landing zone's placed notes and log shipping's (servers, containers); each written as its comment.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "6afed64fe614e169"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-695c25af"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py",
+        "id_in_name": 0,
+        "name": "terraform_parts",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services | None\", \"required\": true}]",
+        "purpose": "(parts, landing_dns, interconnect lines, scripts, container files) of environment m's Azure Terraform before it is placed: the stack's providers and main items (network, servers, groups, backups, services, databases, object stores, DNS, trails, workspaces, log collection, container logs, alerts, Sentinel onboarding and analytics rules: render_sentinel, web tests, check jobs, security, discovery, Purview, suppressions, budgets, quota requests, Key Vault secrets) and the landing zone's and plumbing keepers' parts.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(parts, landing_dns, interconnect header lines, check scripts {path: text}, container files {path: text})\"}",
+        "source_hash": "20b21ae82e1ec82f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "is_siem",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry | None\", \"description\": \"a binding\"}]",
+        "purpose": "Whether a binding is a log destination of kind siem-index.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "916052f9e3338a56"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "siem_destinations",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "An environment's log destinations that are SIEM indexes, in record order.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "6eb5fa1e7b74cfc6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "detections",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "An environment's detections: alarm bindings naming the log destination their search runs on (ciamLogDestinationRole).",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "8a56a45bbadfad2d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detections-adaec54d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "detection_index",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"b\", \"type\": \"Entry\", \"description\": \"a detection (alarm binding)\"}]",
+        "purpose": "The SIEM index of an environment a detection searches (the destination its ciamLogDestinationRole names when it is a SIEM index), or None.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "f160a8326519c5b9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "detection_for",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"rule\", \"type\": \"str\", \"description\": \"alert rule name\"}]",
+        "purpose": "An environment's detection realizing an alert rule (by name), or None.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "909a46a0d0e7d7f7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-for-fac6c273"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "check_siem",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check: detections the source's SIEM runs that the target records none of, target detections searching nothing or recording no search, and logs under legal hold a SIEM keeps in the target are actions.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "afcbde1147a2a4fb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/retention.py",
+        "id_in_name": 0,
+        "name": "total_days",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry | None\"}]",
+        "purpose": "How many days a binding keeps what it is sent in all (searchable and archived): ciamTotalRetentionDays when recorded, else retention_days; None when b is None or records neither.",
+        "returns": "{\"type\": \"int | None\"}",
+        "source_hash": "f2d4b6b64b174c09"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-total-days-8164404c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/retention.py",
+        "id_in_name": 0,
+        "name": "days_text",
+        "parameters": "[{\"name\": \"days\", \"type\": \"int | None\"}]",
+        "purpose": "A report's cell for a number of days kept: '' when not recorded, 'forever' for INDEFINITE, else the number.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "9f01154584c599e8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-days-text-dbdf2b68"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "siem_keeper_of",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"b\", \"type\": \"Entry\", \"description\": \"ciamLogDestination binding\"}, {\"name\": \"installed\", \"type\": \"tuple[Adapter]\", \"required\": false}]",
+        "purpose": "The name of the adapter rendering an environment (its declared stack's) that keeps a log destination that is a SIEM index (Adapter.siem_indexes), or None; Services.siem_keeper.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "3adcb500f43b1d36"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-siem-keeper-of-bdeca847"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/observability.py",
+        "id_in_name": 0,
+        "name": "siem_check",
+        "parameters": "[{\"name\": \"dst_adapters\", \"type\": \"tuple[Adapter]\"}]",
+        "purpose": "The planner check for the target's SIEM indexes that no adapter rendering it keeps (Adapter.siem_indexes): an action per index.",
+        "returns": "{\"type\": \"Callable[[PlanContext], Findings]\"}",
+        "source_hash": "032c0fd4a3393c39"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-siem-check-8b1c9d6e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py",
+        "id_in_name": 0,
+        "name": "index_name",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry | None\"}]",
+        "purpose": "The Splunk index a log destination names (its ciamProviderRef), or None when it isn't a SIEM index or its reference isn't a Splunk index name.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "5f74208ef2840476"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py",
+        "id_in_name": 0,
+        "name": "keeps",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "Adapter siem_indexes: whether a log destination of an environment is a Splunk index (index_name).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "5c9af89f807038d0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keeps-9a25816f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py",
+        "id_in_name": 0,
+        "name": "kept_indexes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "An environment's Splunk indexes its render writes: those it doesn't inherit from a base environment.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "223cf6e28aeeee49"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-indexes-bb27c850"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/conf.py",
+        "id_in_name": 0,
+        "name": "write_conf",
+        "parameters": "[{\"name\": \"head\", \"type\": \"str\"}, {\"name\": \"stanzas\", \"type\": \"tuple[(str, tuple[(str, str)])]\"}]",
+        "purpose": "A Splunk .conf file's text: head then each stanza ([name] and key = value lines), a blank line between; values holding a newline written over continued lines.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "b252d17caff4cd2f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-write-conf-c9ac78e7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/conf.py",
+        "id_in_name": 0,
+        "name": "read_conf",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "The stanzas of a Splunk .conf file's text in file order (settings before the first stanza under default), comments and blank lines left out, continued lines joined.",
+        "returns": "{\"type\": \"tuple[(str, tuple[(str, str)])]\"}",
+        "source_hash": "8f46882611ca0cc9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-conf-90374e9f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/conf.py",
+        "id_in_name": 0,
+        "name": "setting",
+        "parameters": "[{\"name\": \"stanza\", \"type\": \"(str, tuple)\"}, {\"name\": \"key\", \"type\": \"str\"}, {\"name\": \"default\", \"type\": \"str | None\", \"required\": false}]",
+        "purpose": "A stanza's value of a key, or a default.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "65a1fa96cc593179"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-setting-6aae0238"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "splunk_shipments",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "An environment's Shipments whose destination is a Splunk index.",
+        "returns": "{\"type\": \"tuple[Shipment]\"}",
+        "source_hash": "40c140ade1219018"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-splunk-shipments-b3ab6eb5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "index_stanza",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "The indexes.conf stanza of a Splunk index log destination: $SPLUNK_DB paths, frozenTimePeriodInSecs from searchable days, archiver.enableDataArchive/coldStorageRetentionPeriod when its total days are longer.",
+        "returns": "{\"type\": \"(str, tuple[(str, str)])\"}",
+        "source_hash": "dcbd650e355f9bd0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-index-stanza-1edda024"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "cron_schedule",
+        "parameters": "[{\"name\": \"seconds\", \"type\": \"int\"}]",
+        "purpose": "(cron schedule running every N seconds, None) or (None, why it can't be): every N minutes dividing an hour, or every N hours dividing a day.",
+        "returns": "{\"type\": \"(str | None, str | None)\"}",
+        "source_hash": "303c09472b492ad7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cron-schedule-437337ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "detection_search",
+        "parameters": "[{\"name\": \"metric\", \"type\": \"str\"}, {\"name\": \"rule\", \"type\": \"Entry\"}, {\"name\": \"c\", \"type\": \"Condition\"}]",
+        "purpose": "The scheduled SPL of a detection: its search counted per window (bin/stats), each window compared with the rule's threshold, a row when every window of the period breaches.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "84abafabea08d424"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-search-a588699c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "splunk_detections",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "An environment's detection AlarmSpecs on a Splunk index it renders (not another SIEM's or a base environment's).",
+        "returns": "{\"type\": \"tuple[AlarmSpec]\"}",
+        "source_hash": "989860c44d94d1fd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-splunk-detections-3a759135"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "search_stanza",
+        "parameters": "[{\"name\": \"s\", \"type\": \"AlarmSpec\"}]",
+        "purpose": "The savedsearches.conf stanza of a detection spec (description naming the rule, wrapped search, cron schedule, dispatch window, alert settings), or None when it isn't rendered.",
+        "returns": "{\"type\": \"(str, tuple) | None\"}",
+        "source_hash": "eaf480e91c2daa52"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-stanza-2811c406"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "detection_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Render notes of an environment's Splunk detections not rendered: no search recorded (note), a condition a saved search can't count (blocker).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "6db4fc1ce6478d6b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-notes-0515df6a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Adapter notes: what an environment's Splunk render leaves out or to a person (app install, forwarding, alert actions, retention Splunk can't express, detections not rendered, container output, files shipped whole, multi-line records, a file two routes send to different indexes).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "b257493ba18c36fb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "render",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Adapter render_env: the opsdir_ciam app when the environment keeps logs in a Splunk index or runs a detection on one: indexes.conf (the render notes as comments at its top), and savedsearches.conf when a detection renders.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "d245445e1aaaccfe"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-d5a1f5c4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "sourcetype",
+        "parameters": "[{\"name\": \"x\", \"type\": \"Shipment\"}]",
+        "purpose": "A server Shipment's sourcetype: _json for a JSON-lines file, else ciam:<role>:<file stem>.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "c982d994fbff9ef4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sourcetype-cb63dfa2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "inputs_conf",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"found\", \"type\": \"tuple[Shipment]\"}]",
+        "purpose": "The forwarder inputs.conf text for server Shipments sharing an install root: a monitor stanza per file (index, sourcetype), the first route shipping it naming the index.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "15ad803722c83a88"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inputs-conf-9dc8cb0f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py",
+        "id_in_name": 0,
+        "name": "host_files",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Adapter host_files: one forwarder inputs.conf per server role and install root shipping logs to a Splunk index, at <forwarder home>/etc/apps/opsdir_ciam/local/inputs.conf, restarting the forwarder.",
+        "returns": "{\"type\": \"tuple[HostFile]\"}",
+        "source_hash": "4392a481370432eb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-host-files-48cf69db"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "base_search",
+        "parameters": "[{\"name\": \"search\", \"type\": \"str | None\"}]",
+        "purpose": "A saved search's own search: the one the render wrapped with a rule's condition, else the search as written.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "21d4ce0f63979376"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-base-search-b8af0f90"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "index_resource",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"settings\", \"type\": \"dict\"}]",
+        "purpose": "(Resource of kind logs, notices) of one Splunk index's settings: siem-index, searchable days from frozenTimePeriodInSecs, total days from the archive when enabled.",
+        "returns": "{\"type\": \"(Resource, tuple[str])\"}",
+        "source_hash": "c627ad43109c25b5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-index-resource-e8e7e24b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "search_resource",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"settings\", \"type\": \"dict\"}]",
+        "purpose": "The Resource of kind alarm of one saved search: realizes the rule its description names (role alarm-<rule>), ciamMetric its base search, linked to the index its search names first.",
+        "returns": "{\"type\": \"Resource\"}",
+        "source_hash": "eed0ca19021b5365"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-resource-bd9a5cd1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "resources_of",
+        "parameters": "[{\"name\": \"indexes\", \"type\": \"tuple[(str, dict)]\"}, {\"name\": \"searches\", \"type\": \"tuple[(str, dict)]\"}]",
+        "purpose": "(resources, notices) of an environment's indexes (Splunk's own underscore indexes left out) and saved searches.",
+        "returns": "{\"type\": \"(tuple[Resource], tuple[str])\"}",
+        "source_hash": "ce6545c2d739eca0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resources-of-63f76553"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "parse_rest",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}]",
+        "purpose": "(resources, notices) of one environment's management API answers (indexes.json, saved-searches.json).",
+        "returns": "{\"type\": \"(tuple[Resource], tuple[str])\"}",
+        "source_hash": "f3450d463db9aedd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parse-rest-88ba0b93"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "parse_conf",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}]",
+        "purpose": "(resources, notices) of one environment's indexes.conf and savedsearches.conf.",
+        "returns": "{\"type\": \"(tuple[Resource], tuple[str])\"}",
+        "source_hash": "931e8ff30aa227f5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parse-conf-5c689749"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "read_rest",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false}]",
+        "purpose": "Importer splunk/rest: the management API's indexes and saved searches per <cloud>/<env>/ placed into the environments (layout_import, provider None), other bindings' notices left out, indexes' size limits named.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "cdf4a74e0cb55011"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py",
+        "id_in_name": 0,
+        "name": "read_conf_files",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false}]",
+        "purpose": "Importer splunk/conf: indexes.conf and savedsearches.conf per <cloud>/<env>/ (the render read back, or an app's own).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "7dc8cf7fb6d206a9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py",
+        "id_in_name": 0,
+        "name": "rest_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: the two read-only GETs (indexes, saved searches) against the first location of the environment's first readable splunk/rest collection source, with its credential (bearer or basic) and CA.",
+        "returns": "{\"type\": \"tuple[(str, Request)]\"}",
+        "source_hash": "e7bbeb35bb6deb04"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rest-steps-a7f4f898"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Why the splunk/rest collection sources can't be read (unbound credential or trust anchor, no location).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "1d36fc3ad78ec19c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-5cfd013f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/alarms.py",
+        "id_in_name": 0,
+        "name": "detection_specs",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "An environment's alert rules it delivers that a SIEM detection realizes (alarm binding naming the SIEM index its search runs on: ciamLogDestinationRole), as AlarmSpecs.",
+        "returns": "{\"type\": \"tuple[AlarmSpec]\"}",
+        "source_hash": "54c754d5d6a2c0ab"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/alarms.py",
+        "id_in_name": 0,
+        "name": "detection_condition",
+        "parameters": "[{\"name\": \"rule\", \"type\": \"Entry\"}]",
+        "purpose": "(Condition, None) of a rule as a SIEM evaluates it (count per window, compared gt/ge, every window of the period breaching), or (None, why it can't be).",
+        "returns": "{\"type\": \"(Condition | None, str | None)\"}",
+        "source_hash": "3cd607cf60c5cff7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/sources.py",
+        "id_in_name": 0,
+        "name": "own_shipments",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"found\", \"type\": \"tuple[Shipment]\"}, {\"name\": \"keeper\", \"type\": \"Callable\"}, {\"name\": \"me\", \"type\": \"str\"}]",
+        "purpose": "The Shipments whose destination no adapter but me keeps (keeper: Services.siem_keeper): a provider adapter leaves the others to the adapter keeping them.",
+        "returns": "{\"type\": \"tuple[Shipment]\"}",
+        "source_hash": "85f782ab351fc5be"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-own-shipments-ac9650cf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "is_sentinel",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry | None\"}]",
+        "purpose": "Whether a log destination is a SIEM index on a Log Analytics workspace (Microsoft Sentinel): kind siem-index, its ciamProviderRef a workspace ID.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "b89a10d34abccccf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-sentinel-e0e7d86b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "keeps",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"b\", \"type\": \"Entry\"}]",
+        "purpose": "Azure Adapter siem_indexes: whether a log destination of an environment is Sentinel on a workspace.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "2eb00c73fcd6925d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keeps-bf59dbb7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "sentinel_detections",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "An environment's detection AlarmSpecs on a Sentinel workspace it renders (not a base environment's).",
+        "returns": "{\"type\": \"tuple[AlarmSpec]\"}",
+        "source_hash": "1e41b57cb7781bd5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sentinel-detections-c5c1542b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "detection_query",
+        "parameters": "[{\"name\": \"metric\", \"type\": \"str\"}, {\"name\": \"rule\", \"type\": \"Entry\"}, {\"name\": \"c\", \"type\": \"Condition\"}]",
+        "purpose": "A scheduled analytics rule's KQL: the detection's query counted per window (summarize by bin), each window compared with the rule's threshold, a row when every window of the period breaches.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "dd57992f124ee7d0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detection-query-ff5b35ee"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "base_query",
+        "parameters": "[{\"name\": \"query\", \"type\": \"str | None\"}]",
+        "purpose": "A scheduled rule's own query: the one the render wrapped with a rule's condition, else the query as written.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "34b87fc53cb8c167"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-base-query-45843ed4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "render_sentinel",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "HCL (and comments) for an environment's Sentinel: each Sentinel workspace it renders onboarded (azurerm_sentinel_log_analytics_workspace_onboarding), each detection on one as azurerm_sentinel_alert_rule_scheduled; the notes as comments.",
+        "returns": "{\"type\": \"tuple[TfBlock | str]\"}",
+        "source_hash": "3b7c98a74170333e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "sentinel_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Render notes of an environment's Sentinel: detections not rendered (note/blocker), the total retention of tables opsdir doesn't render (note), in Azure Government what Microsoft doesn't state is available (action).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "2d6b9414bb6bdb2d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "onboarded",
+        "parameters": "[{\"name\": \"found\", \"type\": \"pairs\"}]",
+        "purpose": "The workspace IDs (lowercased) a source's Sentinel onboardings name.",
+        "returns": "{\"type\": \"frozenset[str]\"}",
+        "source_hash": "1286c10861654169"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-onboarded-6e3df53f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py",
+        "id_in_name": 0,
+        "name": "sentinel_resources",
+        "parameters": "[{\"name\": \"found\", \"type\": \"pairs\"}]",
+        "purpose": "Scheduled analytics rules as detections (kind alarm): the rule each realizes (its description), its query without the render's condition, the workspace it runs in as the SIEM index it searches.",
+        "returns": "{\"type\": \"tuple[Resource]\"}",
+        "source_hash": "435889f5cf89c693"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sentinel-resources-e7b2fff8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/observability.py",
+        "id_in_name": 0,
+        "name": "holds_logs",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry | None\"}]",
+        "purpose": "Whether a log destination is a Log Analytics workspace the Azure render may ship to: kind workspace, or a SIEM index whose ciamProviderRef is a workspace ID (Sentinel).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "66b67bd0f4961610"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-holds-logs-a9241a5c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/log_collection.py",
+        "id_in_name": 0,
+        "name": "total_retention",
+        "parameters": "[{\"name\": \"dest\", \"type\": \"Entry\"}]",
+        "purpose": "A route's custom table total retention items for a destination recording ciamTotalRetentionDays (total_retention_in_days, the longest a table keeps for indefinitely or more, with a comment); () when none recorded.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "e02884939108dcc2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-total-retention-13f8f252"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "described",
+        "parameters": "[{\"name\": \"rule\", \"type\": \"str\"}]",
+        "purpose": "The description a SIEM adapter gives the detection it renders for an alert rule ('opsdir: realizes alert rule <rule>'), which its importer reads back (realized_in).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "5e72b3ce420a3605"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-described-493bb060"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/siem.py",
+        "id_in_name": 0,
+        "name": "realized_in",
+        "parameters": "[{\"name\": \"description\", \"type\": \"str | None\"}]",
+        "purpose": "The alert rule (by name) a detection's description says it realizes (described), or None.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "ee8505141d208d11"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-realized-in-b4720b55"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 104 (6.2e; read it and proposal 3024). A SIEM as a log destination kind: render the SIEM-side inputs/forwarding from log routes, detections from alert rules, and read the SIEM's retention (and detections) back against obligations. STEP 1 (now, before vendor facts): survey (AIMFP DB first) the observability domain (ciamLogRoute, ciamLogDestination, ciamAuditTrail, ciamAlertRule/AlarmBinding, ciamEventStream, retention obligations, legal hold, log collection checks/reports), how each cloud renders log routing today (aws/azure/gcp observability + log routing, prometheus rules), and draft the design. STEP 2: the master sends the Codex research (Splunk HEC/forwarder/indexes/retention REST/saved searches, Sentinel DCR/Logs Ingestion/table retention/analytics rules, Elastic, Sigma/OCSF/ECS, government clouds) as a file path; then escalate the design (kind decision, recommendation first): which SIEMs first (adapter packages, e.g. opsdir-adapter-splunk / Sentinel inside the Azure adapter or its own), neutral model (reuse destination kinds; RESERVED core numbers 710-719, classes 149-150), render outputs, the retention/detection read-back (importer + read-only collector), planner check/report, showcase story (fixtures, no live calls). Build after the answer. Rules 2991 + 3002. Boundary: core observability domain, new SIEM adapter package(s), the cloud adapters' observability/log-routing files only where a SIEM destination must be wired, docs, examples/showcase (ids CHG-2049+, B49+/A150+, data file 28+), tests. NOT the pki domain, cyberark/vault adapters, governance credential schemes, live.py (worker on task 528), NOT infrastructure/network firewall parts or the panos adapter (worker on task 529).",
+        "flows": [
+          "Observability Render",
+          "SIEM Integration"
+        ],
+        "name": "6.2e-1: SIEM as a log destination: survey, design, then build",
+        "parent": {
+          "slug": "milestone-6-2e-siem-integration-c69c9638"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "D1/D5: attr 710 MAY on ciamLogDestination; check_logs compares obligation with total when recorded; action when searchable < obligation <= total; legal hold on a SIEM-kept route action; siem-index destination nothing in the stack renders = action; rule delivered to a SIEM without a realizing detection = action; schema LDIF regenerated; README shared API.",
+        "name": "1 core: ciamTotalRetentionDays (710), retention/check_logs total + archived action, log-routes 'total (days)' column, check_siem",
+        "parent": {
+          "key": {
+            "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-1-core-ciamtotalretentiondays-710-retent-d39edd9b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "D2/D3: detections from alarm binding ciamMetric wrapped with alarms.Condition; importer notices for maxTotalDataSizeMB; README Known limits.",
+        "name": "2 opsdir-adapter-splunk: render indexes.conf, savedsearches.conf, UF inputs.conf HostFiles, outputs note; rest importer + conf ReadBack; read-only collector",
+        "parent": {
+          "key": {
+            "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-2-opsdir-adapter-splunk-render-indexes-c-b36a9eed"
+      }
+    },
+    {
+      "attributes": {
+        "description": "D4: DCR/AKS routing accepts siem-index workspace refs; workspace + sentinel onboarding; custom table total retention; azurerm_sentinel_alert_rule_scheduled; read back from state/CLI; Government parity render note; README.",
+        "name": "3 Azure: Sentinel on a siem-index workspace destination",
+        "parent": {
+          "key": {
+            "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-3-azure-sentinel-on-a-siem-index-workspa-6afb28fb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "D6",
+        "name": "4 showcase: security-events route, source Splunk (CHG-2049 import of REST fixtures), target Sentinel; demo.sh + snapshot-outputs.sh + showcase_support APPROVED; expected findings B49-B51/A150-A159",
+        "parent": {
+          "key": {
+            "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-4-showcase-security-events-route-source-fb699ba3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "README same task; follow-up list for master's new milestone.",
+        "name": "5 docs + tracking: READMEs, opsdir README, AIMFP coding loop, audit_tracking clean, commit",
+        "parent": {
+          "key": {
+            "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-5-docs-tracking-readmes-opsdir-readme-ai-aa13a973"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "06e4416",
+    "branch": "aimfp-u62e-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "plan calls siem_check (observability.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-b824361b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-siem-check-8b1c9d6e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "services references siem_keeper_of (registry.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-services-f2431578"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-siem-keeper-of-bdeca847"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_rows calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-rows-767f21b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_rows calls env_model (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-rows-767f21b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_rows calls one_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-rows-767f21b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_rows calls branch (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-rows-767f21b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-branch-1b5e8b28"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_rows calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-rows-767f21b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_rows calls total_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-rows-767f21b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-total-days-8164404c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_rows calls days_text (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-rows-767f21b6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-days-text-dbdf2b68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_logs calls total_days (retention.py) via _archived",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-logs-c8e71fec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-total-days-8164404c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_logs calls days_text (retention.py) via _archived",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-logs-c8e71fec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-days-text-dbdf2b68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_siem calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "siem_destinations calls of_class (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "siem_destinations calls is_siem (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detections calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detections-adaec54d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detections calls of_class (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detections-adaec54d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_index calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_index calls is_siem (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_for calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-for-fac6c273"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_for calls detections (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-for-fac6c273"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detections-adaec54d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls one (directory.py) via _broken",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls one_role (environment.py) via _held",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls responsible (findings.py) via _broken",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls alert_rules (alerts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-alert-rules-e38c1c96"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls log_routes (logs.py) via _held",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-log-routes-c199f9a9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls is_siem (siem.py) via _held",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls detections (siem.py) via _broken",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detections-adaec54d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls detection_index (siem.py) via _broken",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_siem calls detection_for (siem.py) via _lost",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-siem-6cb0d506"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-for-fac6c273"
+      }
+    },
+    {
+      "attributes": {
+        "description": "total_days calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-total-days-8164404c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "total_days calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-total-days-8164404c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "siem_keeper_of calls declared_adapters (stack.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-siem-keeper-of-bdeca847"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-declared-adapters-d0e11f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "siem_check calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-siem-check-8b1c9d6e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "siem_check calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-siem-check-8b1c9d6e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "siem_check calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-siem-check-8b1c9d6e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "siem_check calls siem_destinations (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-siem-check-8b1c9d6e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host_shipments calls own_shipments (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-host-shipments-7f36072f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-shipments-ac9650cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "fluent_bit_notes calls own_shipments (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-fluent-bit-notes-2c0e4522"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-shipments-ac9650cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_collection_notes calls own_shipments (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-collection-notes-493091c8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-shipments-ac9650cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_log_notes calls own_shipments (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-log-notes-7bd90869"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-shipments-ac9650cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "log_sink_notes calls own_shipments (sources.py) via _not_bucket",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-log-sink-notes-7360a78e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-own-shipments-ac9650cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "index_name calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-index-name-039ddea0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "index_name calls is_siem (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-index-name-039ddea0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeps calls index_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeps-9a25816f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_indexes calls keeper_of (realized.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-indexes-bb27c850"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-of-660beca4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_indexes calls siem_destinations (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-indexes-bb27c850"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_indexes calls index_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-indexes-bb27c850"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "splunk_shipments calls log_routes (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-splunk-shipments-b3ab6eb5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-log-routes-c199f9a9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "splunk_shipments calls shipments (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-splunk-shipments-b3ab6eb5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipments-a7760481"
+      }
+    },
+    {
+      "attributes": {
+        "description": "splunk_shipments calls index_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-splunk-shipments-b3ab6eb5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "index_stanza calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-index-stanza-1edda024"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "index_stanza calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-index-stanza-1edda024"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "index_stanza calls index_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-index-stanza-1edda024"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_search calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-search-a588699c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "splunk_detections calls detection_index (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-splunk-detections-3a759135"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "splunk_detections calls index_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-splunk-detections-3a759135"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "splunk_detections calls detection_specs (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-splunk-detections-3a759135"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_stanza calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-stanza-2811c406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_stanza calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-stanza-2811c406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_stanza calls cron_schedule (render.py) via _detection",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-stanza-2811c406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cron-schedule-437337ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_stanza calls detection_search (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-stanza-2811c406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-search-a588699c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_stanza calls detection_condition (alarms.py) via _detection",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-stanza-2811c406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls alarm_note (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-0515df6a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-alarm-note-a5555062"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls cron_schedule (render.py) via _detection",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-0515df6a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cron-schedule-437337ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls splunk_detections (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-0515df6a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-splunk-detections-3a759135"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_notes calls detection_condition (alarms.py) via _detection",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-notes-0515df6a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls one (directory.py) via _retention_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls rdn_value (directory.py) via _route_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls note (notes.py) via _retention_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls index_name (naming.py) via _retention_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls kept_indexes (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-indexes-bb27c850"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls splunk_shipments (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-splunk-shipments-b3ab6eb5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls splunk_detections (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-splunk-detections-3a759135"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls search_stanza (render.py) via _team_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-stanza-2811c406"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls detection_notes (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-notes-0515df6a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render calls note_comment (notes.py) via _comments",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render calls kept_indexes (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-indexes-bb27c850"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render calls write_conf (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-write-conf-c9ac78e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render calls index_stanza (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-stanza-1edda024"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render calls splunk_detections (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-splunk-detections-3a759135"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render references search_stanza (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-stanza-2811c406"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render calls render_notes (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-d5a1f5c4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-render-notes-ac0ee00f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inputs_conf calls header (manifest.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inputs-conf-9dc8cb0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-b50ea6c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inputs_conf calls index_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inputs-conf-9dc8cb0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inputs_conf calls write_conf (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inputs-conf-9dc8cb0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-write-conf-c9ac78e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inputs_conf calls sourcetype (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inputs-conf-9dc8cb0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sourcetype-cb63dfa2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host_files calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-host-files-48cf69db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host_files calls splunk_shipments (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-host-files-48cf69db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-splunk-shipments-b3ab6eb5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host_files calls inputs_conf (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-host-files-48cf69db"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inputs-conf-9dc8cb0f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "index_resource calls resource (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-index-resource-e8e7e24b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_resource calls resource (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-resource-bd9a5cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_resource calls realization_roles (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-resource-bd9a5cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realization-roles-28fd6455"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_resource calls base_search (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-resource-bd9a5cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-base-search-b8af0f90"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resources_of calls index_resource (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resources-of-63f76553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-resource-e8e7e24b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resources_of calls search_resource (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resources-of-63f76553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-resource-bd9a5cd1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_rest calls resources_of (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-rest-88ba0b93"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resources-of-63f76553"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_conf calls read_conf (conf.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-conf-5c689749"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-conf-90374e9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "parse_conf calls resources_of (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parse-conf-5c689749"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resources-of-63f76553"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls env_dn (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-dn-e280afb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls rdn_value (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls get (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls env_model (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls of_class (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls layout_import (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-layout-import-eeb7e644"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls detection_index (siem.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest calls index_name (naming.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_rest references parse_rest (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rest-e974a1ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parse-rest-88ba0b93"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls env_dn (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-dn-e280afb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls rdn_value (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls get (directory.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls env_model (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls of_class (environment.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls layout_import (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-layout-import-eeb7e644"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls detection_index (siem.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files calls index_name (naming.py) via _others",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-index-name-039ddea0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_conf_files references parse_conf (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-conf-files-7d7becb1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parse-conf-5c689749"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rest_steps calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rest-steps-a7f4f898"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-5cfd013f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_specs calls one (directory.py) via _detects",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_specs calls rdn_value (directory.py) via _why_not",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_specs calls one_role (environment.py) via _specs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_specs calls alert_rules (alerts.py) via _specs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-alert-rules-e38c1c96"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_specs calls alarm_for (signals.py) via _specs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-alarm-for-db08d299"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_specs calls keeper_of (realized.py) via _specs",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-of-660beca4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_condition calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_condition calls condition (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-condition-c0841666"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pairs_resources calls onboarded (sentinel.py) via _log_destinations",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pairs-resources-a2b38536"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-onboarded-6e3df53f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pairs_resources calls sentinel_resources (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pairs-resources-a2b38536"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sentinel-resources-e7b2fff8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_workspaces calls holds_logs (observability.py) via _workspace",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-workspaces-f4fb1d23"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-holds-logs-a9241a5c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "workspace_id calls holds_logs (observability.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-workspace-id-411de1d6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-holds-logs-a9241a5c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_log_collection calls total_retention (log_collection.py) via _route_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-log-collection-f172752f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-total-retention-13f8f252"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls sentinel_notes (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-695c25af"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_parts calls render_sentinel (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_sentinel calls workspace_name (observability.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-sentinel-e0e7d86b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workspace-name-6fcccc24"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_sentinel calls is_siem (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-sentinel-e0e7d86b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-siem-ce357c5b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keeps calls is_sentinel (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keeps-bf59dbb7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-sentinel-e0e7d86b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_detections calls detection_index (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-detections-c5c1542b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_detections calls detection_specs (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-detections-c5c1542b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-specs-36f0a723"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_detections calls is_sentinel (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-detections-c5c1542b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-sentinel-e0e7d86b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detection_query calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detection-query-ff5b35ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls ref (hcl.py) via _workspace_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ref-018f1ed3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls one (directory.py) via _rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls iso_duration (observability.py) via _rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-duration-e345f9f0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls keeper_of (realized.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-of-660beca4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls workspace_id (observability.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workspace-id-411de1d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls tf_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls from_entry (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-from-entry-7471a268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls siem_destinations (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls detection_index (siem.py) via _rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-index-bfa5fc04"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls detection_condition (alarms.py) via _rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls is_sentinel (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-sentinel-e0e7d86b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls sentinel_detections (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sentinel-detections-c5c1542b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls detection_query (sentinel.py) via _rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-query-ff5b35ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls sentinel_notes (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls keeper_of (realized.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-keeper-of-660beca4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls alarm_note (alarms.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-alarm-note-a5555062"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls unstated_note (account.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unstated-note-f439d3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls siem_destinations (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-siem-destinations-0e0b3082"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls detection_condition (alarms.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detection-condition-cd78b45f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls is_sentinel (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-sentinel-e0e7d86b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_notes calls sentinel_detections (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-notes-ee8c37f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sentinel-detections-c5c1542b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "onboarded calls of_types (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-onboarded-6e3df53f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-types-3c844a4e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_resources calls resource (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-resources-e7b2fff8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_resources calls of_types (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-resources-e7b2fff8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-types-3c844a4e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_resources calls realization_roles (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-resources-e7b2fff8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realization-roles-28fd6455"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_resources calls base_query (sentinel.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-resources-e7b2fff8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-base-query-45843ed4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "holds_logs calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-holds-logs-a9241a5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "holds_logs calls workspace_name (observability.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-holds-logs-a9241a5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workspace-name-6fcccc24"
+      }
+    },
+    {
+      "attributes": {
+        "description": "total_retention calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-total-retention-13f8f252"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_stanza calls described (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-stanza-2811c406"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-described-493bb060"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_resource calls realized_in (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-resource-bd9a5cd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-in-b4720b55"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_sentinel calls described (siem.py) via _rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-sentinel-ab89319c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-described-493bb060"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sentinel_resources calls realized_in (siem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sentinel-resources-e7b2fff8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-in-b4720b55"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/siem.py"
+      },
+      "flow": {
+        "name": "Observability Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/siem.py"
+      },
+      "flow": {
+        "name": "Log Routing Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/README.md"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/conf.py"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py"
+      },
+      "flow": {
+        "name": "Log Routing Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/adapter.py"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py"
+      },
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py"
+      },
+      "flow": {
+        "name": "Observability Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/siem.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-observability"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/conf.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-splunk"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-azure"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "SIEM Integration"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2e-siem-integration-c69c9638"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/siem.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/retention.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/observability.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/logs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/conf.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/read.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-splunk/src/opsdir_adapter_splunk/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/sources.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/alarms.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/log_agent.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/sentinel.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/observability.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/log_collection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/observability.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/fluent_bit.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/container_logs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2e-1-siem-as-a-log-destination-survey-7af33fe6"
+      }
+    }
+  ],
+  "warnings": []
+}

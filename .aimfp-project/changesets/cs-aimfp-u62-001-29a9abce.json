@@ -1,0 +1,84 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "description": "Milestone 6.2 (id 28; read it in full): vendor-neutral models + parsers/adapters for ITSM/CMDB (change sync by ticket id, CI publishing), GRC (control -> query evidence), SIEM (inputs, detections, retention), PAM (safes/accounts/rotation refs), PKI/CA (issuers, templates, CRL/OCSP), firewall managers (rule import/export); the vendor is a value in the DB, adding one means adding a parser. Started 2026-10-15 (user asked to keep idle workers busy). THIS TASK IS READ-ONLY: no source changes. Survey what the record already holds for each family (governance change records/incidents/approvals, estate controls/frameworks/POA&M/exceptions/responsibilities, observability log destinations/streams/alerts, secret references + CyberArk/Vault adapters, pki domain, infrastructure firewall + PAN-OS/F5 appliance add-ons, external services), what the operations layer and import/collect contracts already offer, and propose: (1) how to split 6.2 into sub-milestones (one per family or by shared mechanism), ordered by value and dependency (7.1/7.4/7.7 interplay noted); (2) for the first slice: the neutral model (classes/attributes, reusing existing ones first; say which core domain), the parser/adapter contract (import format, what is matched, what a sync writes, governed writes), what a vendor adapter package would contain, the reports/planner checks, and a showcase story; (3) what needs vendor facts that must be researched (the master routes research). Deliver the proposal in your done message (it goes to the user); write no notes on your branch except tracking. Rules 2991. Boundary: read anything; AIMFP DB items on task only. No web research.",
+        "flows": [
+          "Showcase & Verification"
+        ],
+        "name": "6.2 a: survey and design proposal for vendor-neutral enterprise tool integrations (read-only)",
+        "parent": {
+          "slug": "milestone-6-2-itsm-cmdb-grc-sync-810c6d25"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2-a-survey-and-design-proposal-for-ven-e510ba27"
+      }
+    },
+    {
+      "attributes": {
+        "description": "governance, estate, observability, pki, infrastructure, messaging classes; adapters and contracts",
+        "name": "Survey: what the record holds per family",
+        "parent": {
+          "key": {
+            "slug": "task-6-2-a-survey-and-design-proposal-for-ven-e510ba27"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-survey-what-the-record-holds-per-family-fe0766ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sub-milestones by family with value, dependency and 7.1/7.4/7.7/6.4 interplay",
+        "name": "Split and order proposal",
+        "parent": {
+          "key": {
+            "slug": "task-6-2-a-survey-and-design-proposal-for-ven-e510ba27"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-split-and-order-proposal-6320ec0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "GRC evidence + OSCAL: model, contracts, package, checks/reports, showcase; vendor facts to research",
+        "name": "First slice design and research list",
+        "parent": {
+          "key": {
+            "slug": "task-6-2-a-survey-and-design-proposal-for-ven-e510ba27"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-first-slice-design-and-research-list-36562758"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "889f2dd",
+    "branch": "aimfp-u62-001",
+    "worker_id": "worker-3"
+  },
+  "references": [],
+  "warnings": []
+}

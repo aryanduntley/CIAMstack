@@ -1,0 +1,851 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Azure Bicep and ARM template JSON translated from the Azure Terraform data on the native engine (flow 34). arm_render writes a template per deployment scope (resource groups, subscription, tenant): lookups as existing resources, extension scopes from Terraform's id paths, secure parameters for ephemeral secrets, a module at the group an input's ID names for an extension resource scoped by such an input (arm_types.INPUT_SCOPES), what has no form or no known group in a side Terraform root with its reason, placements.json per root. arm_types is the table (every Azure type the renderers write, built-in role GUIDs, API versions from the Bicep type index, KEPT, NO_NATIVE); format-arm the template model, the Bicep writer (module files shared under modules/) and the ARM JSON bicep build compiles to (nested deployments). Read back from the ARM JSON: rendered_deployments makes each template a deployment folder, read by azure/arm with the side root's state (modules where they deploy), giving the same record as the Terraform read-back."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "ARM / Bicep Render"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py",
+        "id_in_name": 1,
+        "name": "rendered_states",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"environment\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The Azure ReadBack's prepare: an environment's rendered Terraform roots as the states applying them would record ({<cloud>/<env>/<root>.tfstate: text}), via root_states with azure_assigned over the environment's model in record d; inputs: INPUTS and a synthetic ID for each declared input naming a resource by its ID (input_ids).",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "7b5f20ab842c3d81"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-rendered-states-35dd8490"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/template.py",
+        "id_in_name": 0,
+        "name": "indexed",
+        "parameters": "[{\"name\": \"t\", \"type\": \"ArmTemplate\"}]",
+        "purpose": "An ArmTemplate's resources and modules by symbol, checked: known scope, unique symbols, parent/scope/depends_on held, a module never a parent or scope, parent's type the child's parent type, each module's template a resource group's without modules (checked too); ValueError otherwise.",
+        "returns": "{\"type\": \"dict[str, ArmResource | ArmModule]\"}",
+        "source_hash": "eaba9eb5c8a8210d"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-indexed-d245ca39"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/arm_json.py",
+        "id_in_name": 0,
+        "name": "arm_expr",
+        "parameters": "[{\"name\": \"index\", \"type\": \"dict\"}, {\"name\": \"scope\", \"type\": \"str\"}, {\"name\": \"v\", \"type\": \"value\"}]",
+        "purpose": "A value inside an ARM template expression (no brackets), as Bicep compiles it: parameters(), resourceId-family ids, names, reference(id, api).path, function calls, format() interpolation, Member (value.path), createArray/createObject.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "27478a8eb1721285"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-arm-expr-1691c732"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/arm_json.py",
+        "id_in_name": 0,
+        "name": "referenced",
+        "parameters": "[{\"name\": \"v\", \"type\": \"value\"}]",
+        "purpose": "The symbols a value refers to (ids, names, properties; through calls, interpolations, members, objects and arrays), in order of first mention.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "0ba289acc83ae8b7"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-referenced-298f2297"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/arm_json.py",
+        "id_in_name": 0,
+        "name": "dependencies",
+        "parameters": "[{\"name\": \"index\", \"type\": \"dict\"}, {\"name\": \"r\", \"type\": \"ArmResource\"}]",
+        "purpose": "The template resources and modules a resource or module must follow, as Bicep infers them: those its name, parent, scope, fields, properties (a module's subscription, group and params) and explicit depends_on refer to; deployed ones only, never itself, sorted by symbol.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "f1516782eb47353a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-dependencies-f7c71d56"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/arm_json.py",
+        "id_in_name": 0,
+        "name": "template_doc",
+        "parameters": "[{\"name\": \"t\", \"type\": \"ArmTemplate\"}]",
+        "purpose": "The ARM template document of a template as bicep build gives it for the Bicep writer's file (but for Bicep's generator stamps): $schema, contentVersion, metadata description, parameters, resources (existing ones left out) then modules as nested deployments (Microsoft.Resources/deployments 2025-04-01, inner expression scope, parameters as values, template inline), outputs.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "c68e2ce2bf6fa2de"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-template-doc-0c881b45"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/bicep.py",
+        "id_in_name": 0,
+        "name": "bicep_expr",
+        "parameters": "[{\"name\": \"v\", \"type\": \"value\"}]",
+        "purpose": "An expression (or a scalar) in Bicep syntax: Param (its name), ResourceId/ResourceName/Prop (symbol.id/.name/.properties.path), Call (function(args)), Interp ('...${expr}...'), Member (value.path), literals.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "4075dd11cb6c3765"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-bicep-expr-badf53ea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/bicep.py",
+        "id_in_name": 0,
+        "name": "as_bicep",
+        "parameters": "[{\"name\": \"t\", \"type\": \"ArmTemplate\", \"required\": true}, {\"name\": \"module_path\", \"type\": \"Callable[[ArmModule], str]\", \"description\": \"the path a module statement names, relative to the file (default ./modules/<file>.bicep)\", \"required\": false}]",
+        "purpose": "An ArmTemplate as a Bicep file: comments, targetScope, metadata description, params with decorators, resources (existing/parent/scope), modules (module <symbol> '<module_path(m)>' = {name, scope: resourceGroup(sub, group), params, dependsOn}), outputs.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "388e82e969ca5efa"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-as-bicep-d80ec709"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_render.py",
+        "id_in_name": 0,
+        "name": "translation",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"types\", \"type\": \"dict[str, Native]\", \"required\": true}, {\"name\": \"no_native\", \"type\": \"frozenset\", \"required\": true}, {\"name\": \"data\", \"type\": \"dict\", \"required\": true}, {\"name\": \"what\", \"type\": \"str\", \"required\": true}, {\"name\": \"kept\", \"type\": \"dict|None\", \"required\": false}, {\"name\": \"apis\", \"type\": \"dict|None\", \"required\": false, \"description\": \"ARM type -> API version of existing resources read by literal id or name\"}, {\"name\": \"input_scopes\", \"type\": \"Mapping[str, tuple[str, str]]|None\", \"required\": false, \"description\": \"input name pattern -> (ARM type, API version) of inputs naming a resource by its ID: an extension resource scoped by one is an ArmModule at the group the ID names (task 518)\"}]",
+        "purpose": "The ARM Translation of an environment's Azure Terraform render by a table, on format-terraform's native engine: per root, one ArmTemplate per deployment scope (resource groups by resource_group_name, a child's parent's or an extension's target's group, a variable's; the subscription and the tenant for types deployed there or extensions on the subscription; a resource group itself for extensions on it; an extension resource scoped by an input naming a resource by ID (input_scopes) in its grantee's template as an ArmModule at the ID's group, what it reads of the template its parameters; a resource whose group isn't known statically stays Terraform with UNPLACED, its Layout.unplaced), lookups as existing resources, children under parents, extension scopes from Terraform's id values and paths resolved to template resources or existing ones, role definitions by built-in GUID, parts inline with self-references by resourceId(), merges, a row's own tags under Terraform's, ephemeral secrets as secure parameters, only the parameters used, cross-scope values as parameters/outputs, the root's notes in its main template; the side Terraform root with each kept resource's reason; placements.",
+        "returns": "{\"type\": \"Translation (arm_render)\"}",
+        "source_hash": "b3733004f4035f4a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-translation-8c9c4c9b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_render.py",
+        "id_in_name": 0,
+        "name": "translated",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"types\", \"type\": \"dict\", \"required\": true}, {\"name\": \"no_native\", \"type\": \"frozenset\", \"required\": true}, {\"name\": \"data\", \"type\": \"dict\", \"required\": true}, {\"name\": \"what\", \"type\": \"str\", \"required\": true}, {\"name\": \"targets\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"kept\", \"type\": \"dict|None\", \"required\": false}, {\"name\": \"apis\", \"type\": \"dict|None\", \"required\": false}, {\"name\": \"input_scopes\", \"type\": \"Mapping[str, tuple[str, str]]|None\", \"required\": false}]",
+        "purpose": "{path: TfFile | text} of an environment's ARM templates for each target asked (bicep: .bicep under bicep/ with each root's module files under bicep/<rest>/modules/, each distinct module template once across the root's templates; arm: ARM JSON under arm/, modules inline as nested deployments; each with the generated-file header its format takes), each with its side Terraform root (terraform/main.tf beside the templates) and its placements.json (native.placements_document, the files named with that target's extension).",
+        "returns": "{\"type\": \"dict[str, TfFile|str]\"}",
+        "source_hash": "8407fe1e49ef69ae"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-translated-40973e64"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_types.py",
+        "id_in_name": 0,
+        "name": "arm_files",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict[str, TfFile|str]\", \"required\": true, \"description\": \"the Azure Terraform render (terraform.render_files)\"}, {\"name\": \"what\", \"type\": \"str\", \"required\": true}, {\"name\": \"targets\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"bicep and/or arm\"}]",
+        "purpose": "{path: TfFile | text} of environment m's ARM templates from its Azure Terraform render, for the targets asked (bicep: .bicep under bicep/ with module files under modules/, arm: ARM JSON under arm/), each with its side Terraform root: arm_render.translated by this table (TYPES, NO_NATIVE, DATA, KEPT, APIS, INPUT_SCOPES). The table covers every type the Azure renderers write; KEPT names the subnet associations, the hub connection, the forwarding rule, the management group's part and object replication with their reasons; an extension resource on what an INPUT_SCOPES input names (the check jobs' grants) is a module.",
+        "returns": "{\"type\": \"dict[str, TfFile|str]\"}",
+        "source_hash": "1d721a495e919b12"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-arm-files-0c9d12e7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_types.py",
+        "id_in_name": 0,
+        "name": "arm_translation",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict[str, TfFile|str]\", \"required\": true}, {\"name\": \"what\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The arm_render.Translation (templates per root and deployment scope with their modules, side Terraform roots, placements) of environment m's Azure Terraform render by this table (TYPES, NO_NATIVE, DATA, KEPT, APIS, INPUT_SCOPES).",
+        "returns": "{\"type\": \"Translation (arm_render)\"}",
+        "source_hash": "daeb0a4bf819d371"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-arm-translation-0d837e20"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py",
+        "id_in_name": 0,
+        "name": "rendered_deployments",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"description\": \"{<cloud>/<env>/...: text} of the rendered arm/ files (templates, placements.json, side root .tf)\"}, {\"name\": \"d\", \"type\": \"Directory\", \"description\": \"the record\"}, {\"name\": \"environment\", \"type\": \"str\", \"description\": \"the environment spec (cloud/env)\"}]",
+        "purpose": "The ARM ReadBack's prepare: an environment's rendered ARM JSON as applying it would record: each template a deployment folder (in the record's subscription; its parameters from INPUTS, input_ids for inputs naming a resource by ID, and their defaults), each Terraform root kept beside them its state (inputs the same plus the templates' outputs).",
+        "returns": "{\"type\": \"dict[str, str]\", \"description\": \"{path: text} of deployment folders and .tfstate files\"}",
+        "source_hash": "5b60502f5ac74bbf"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-rendered-deployments-7361b74b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_render.py",
+        "id_in_name": 0,
+        "name": "input_scope",
+        "parameters": "[{\"name\": \"v\", \"type\": \"str\", \"description\": \"a Terraform value\", \"required\": true}, {\"name\": \"input_scopes\", \"type\": \"Mapping[str, tuple[str, str]]\", \"required\": true}]",
+        "purpose": "(the input's name, the ARM type and API version of the resource it names) when a Terraform value is one input naming a resource by its ID, matched against input_scopes {name pattern: (ARM type, API version)}; else None. An extension resource scoped by such an input is deployed in a module at the group the ID names.",
+        "returns": "{\"type\": \"tuple[str, str, str] | None\"}",
+        "source_hash": "878983c8ee6ffc94"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-input-scope-675d6424"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_types.py",
+        "id_in_name": 0,
+        "name": "input_type",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"description\": \"an input variable's name\", \"required\": true}]",
+        "purpose": "The ARM type of the resource an input names by its ID (INPUT_SCOPES: application_insights_id, registry_<host>_id), else None.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "cf56805770260cc3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-input-type-1692c099"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py",
+        "id_in_name": 0,
+        "name": "input_ids",
+        "parameters": "[{\"name\": \"names\", \"type\": \"Iterable[str]\", \"required\": true}, {\"name\": \"subscription\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "{input: a synthetic ID} for the inputs among names that name a resource by its ID (arm_types.input_type): the resource of that type, named after the input, in group INPUT_GROUP (rg-inputs) of the subscription. Both the Terraform and the ARM read-back give them, so a grant on such a resource reads back the same.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "ccb16382228ec0ec"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-input-ids-b8615597"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/bicep.py",
+        "id_in_name": 0,
+        "name": "module_files",
+        "parameters": "[{\"name\": \"modules\", \"type\": \"Sequence[ArmModule]\", \"required\": true}]",
+        "purpose": "({module symbol: file stem}, {file stem: Bicep text}) of modules' templates: one file per distinct template (deduplicated by content), named by its module's file, a later different template of the same name numbered -2, -3, ...",
+        "returns": "{\"type\": \"tuple[dict[str, str], dict[str, str]]\"}",
+        "source_hash": "a2ee92cd82dc1760"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-module-files-729328a4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/bicep.py",
+        "id_in_name": 0,
+        "name": "bicep_files",
+        "parameters": "[{\"name\": \"t\", \"type\": \"ArmTemplate\", \"required\": true}, {\"name\": \"path\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "{path: Bicep text} of a template written at path: the template (its module statements naming ./modules/<stem>.bicep) and its modules' templates under modules/ beside it, each distinct one once (module_files).",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "387e7db35f93e940"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-bicep-files-1d0f284c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/template.py",
+        "id_in_name": 0,
+        "name": "is_module",
+        "parameters": "[{\"name\": \"x\", \"type\": \"ArmResource | ArmModule\", \"required\": true}]",
+        "purpose": "Whether a template member is an ArmModule (a nested deployment) rather than an ArmResource.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "c3c909db6d3a0c79"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-module-41faaf1b"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A whole ARM template as data at one scope (resourceGroup|subscription|managementGroup|tenant): description, resources, parameters, outputs, comments (Bicep only), and modules (ArmModule, deployed after its resources); written by as_bicep/bicep_files and as_arm_json.",
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/template.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "ArmTemplate"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-armtemplate-50c6ef48"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"symbol\": \"str\", \"name\": \"value\", \"template\": \"ArmTemplate\", \"subscription\": \"value\", \"resource_group\": \"value\", \"params\": \"dict[str, value]\", \"file\": \"str\", \"depends_on\": \"tuple[str] = ()\", \"comment\": \"str|None = None\"}}",
+        "description": "A Bicep module / ARM nested deployment: a template of its own (a resource group's, without modules) deployed at the group the subscription and resource_group expressions name, its parameters given params. file is the stem of its Bicep file (shared by equal templates). A resource may depend on it. Task 518.",
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/template.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "ArmModule"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-armmodule-fbe43f9c"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"value\": \"value\", \"index\": \"value\"}}",
+        "description": "A template expression: an element of an array value, written value[index] in both Bicep and ARM JSON (split(id, '/')[4]).",
+        "file": "packages/opsdir-format-arm/src/opsdir_format_arm/template.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Index"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-index-aaab9335"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Follow-up the user approved with option C (decision 3005). The check jobs' Monitoring Metrics Publisher and AcrPull role assignments are scoped to input ids (application_insights_id, registry_<host>_id), so arm_render's Layout.unplaced keeps them (and the jobs waiting on them) in the side Terraform root. Make them native: a Bicep module (and its ARM JSON nested deployment, as bicep build compiles it) scoped by resourceGroup(split(id,'/')[2], split(id,'/')[4]), holding the role assignment on an existing resource named split(id,'/')[8] of the input's type; the job then deploys natively (its depends_on on the grants met inside the template). Needs module support in the opsdir-format-arm template model and writers, and in the native engine (opsdir-format-terraform native.py / translate), plus azure arm_types/arm_render rows. Any other input-scoped resource that would benefit is named, not changed. Read-back: the module's resources read back (rendered_deployments; azure/arm) with ARM = Terraform parity (test_arm_coverage). bicep build/lint must pass (bicep marker: the master runs it). Golden: none expected (no Bicep in golden). Rules: brief 2991 + 3002. Boundary: packages/opsdir-format-arm, packages/opsdir-format-terraform (native.py, translate and their tests), packages/opsdir-adapter-azure arm_types.py, arm_render.py, check_jobs.py, rendered_state.py, arm.py (+ tests, README). NOT terraform.py/edge.py of any cloud (worker-1, task 517).",
+        "flows": [
+          "ARM / Bicep Render"
+        ],
+        "name": "U.16 b: check jobs' input-scoped grants native via Bicep modules (note 2880, option B)",
+        "parent": {
+          "slug": "milestone-u-16-deferred-follow-ups-taken-in-parall-dd5525b4"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template.py ArmModule + indexed; arm_json nested deployment; bicep module + bicep_files dedup under modules/; tests",
+        "name": "format-arm: ArmModule in the model and both writers",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-format-arm-armmodule-in-the-model-and-bo-f2f056d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "arm_types INPUT_SCOPES; arm_render places them in modules; jobs follow natively; placements",
+        "name": "azure: INPUT_SCOPES and input-scoped extension resources as modules",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-azure-input-scopes-and-input-scoped-exte-1e39a545"
+      }
+    },
+    {
+      "attributes": {
+        "description": "arm.py evaluates module params and inner resources at their scope; rendered_state produced resources; parity",
+        "name": "azure: read-back of nested deployments",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-azure-read-back-of-nested-deployments-d359e800"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_generator normalized at every level in the bicep helpers; arm_render/check_jobs tests; README",
+        "name": "tests, bicep helpers, README",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-bicep-helpers-readme-8433256e"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "d3f59d9",
+    "branch": "aimfp-u16b-002",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "rendered_states calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-states-35dd8490"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_states calls input_ids (rendered_state.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-states-35dd8490"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-input-ids-b8615597"
+      }
+    },
+    {
+      "attributes": {
+        "description": "indexed calls is_module (template.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-indexed-d245ca39"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-module-41faaf1b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "arm_expr calls is_module (template.py) via _id",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-arm-expr-1691c732"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-module-41faaf1b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "dependencies calls is_module (template.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-dependencies-f7c71d56"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-module-41faaf1b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_doc calls is_module (template.py) via _id",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-doc-0c881b45"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-module-41faaf1b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "translation calls referenced (arm_json.py) via _outer",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-translation-8c9c4c9b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referenced-298f2297"
+      }
+    },
+    {
+      "attributes": {
+        "description": "translation calls value_refs (translate.py) via _grantee_group",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-translation-8c9c4c9b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-value-refs-6019078f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "translation calls input_scope (arm_render.py) via _input_scoped",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-translation-8c9c4c9b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-input-scope-675d6424"
+      }
+    },
+    {
+      "attributes": {
+        "description": "translated calls module_files (bicep.py) via _bicep_modules",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-translated-40973e64"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-module-files-729328a4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered_deployments calls input_ids (rendered_state.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-deployments-7361b74b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-input-ids-b8615597"
+      }
+    },
+    {
+      "attributes": {
+        "description": "input_scope calls template_parts (translate.py) via _single_ref",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-input-scope-675d6424"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-parts-33ed7fff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "input_ids calls input_type (arm_types.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-input-ids-b8615597"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-input-type-1692c099"
+      }
+    },
+    {
+      "attributes": {
+        "description": "module_files calls as_bicep (bicep.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-module-files-729328a4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-as-bicep-d80ec709"
+      }
+    },
+    {
+      "attributes": {
+        "description": "bicep_files calls as_bicep (bicep.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-bicep-files-1d0f284c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-as-bicep-d80ec709"
+      }
+    },
+    {
+      "attributes": {
+        "description": "bicep_files calls module_files (bicep.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-bicep-files-1d0f284c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-module-files-729328a4"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-is-module-41faaf1b"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-armmodule-fbe43f9c"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-module-files-729328a4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-armmodule-fbe43f9c"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-bicep-files-1d0f284c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-armtemplate-50c6ef48"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_types.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-arm/src/opsdir_format_arm/template.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-arm/src/opsdir_format_arm/bicep.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-arm/src/opsdir_format_arm/arm_json.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-arm/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-b-check-jobs-input-scoped-grants-na-eb523269"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the side root's state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-arm-resources-b4ea36e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-state-pairs-f18c5e18"
+      }
+    }
+  ],
+  "warnings": []
+}

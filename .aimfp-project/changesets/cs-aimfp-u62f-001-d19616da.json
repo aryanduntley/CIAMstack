@@ -1,0 +1,2026 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "parties.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/governance/parties.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "tickets.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "changes.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "empty package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package config (entry point)"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-servicenow/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-servicenow/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/governance/",
+        "purpose": "Owners (parties: parties.py display_name/operator), change records, incidents and work instructions; import runs and collection attempts; the unknowns register (ciamUnknown questions the planner counts: check_unknowns, report unknowns); ITSM ticket evidence (tickets.py: ciamTicketRef on ciamChange, observed ciamTicket under ou=<adapter>,ou=tickets, drift states, check_tickets, report tickets; never an approval); stale-runbook view and report."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "domain-governance"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-servicenow (import opsdir_adapter_servicenow), registered via entry point opsdir.adapters:servicenow; depends on opsdir.",
+        "external_dependencies": "[\"ServiceNow Table API (GET /api/now/table/change_request, /api/now/table/sysapproval_approver, read-only)\"]",
+        "path": "packages/opsdir-adapter-servicenow/",
+        "purpose": "ServiceNow as an ITSM add-on (kind itsm): reads the change tickets the record's change records link (servicenow:<number>) as evidence (importer servicenow/change-requests from Table API answers or JSON list exports of change_request + sysapproval_approver, raw UTC values, state map keyed by change model via setting servicenow-standard-state-models); read-only collector paging GET /api/now/table/... until an empty page with basic or bearer credentials."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-servicenow"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.0,
+        "description": "Read-only linkage of recorded changes (ciamChange.ciamTicketRef '<adapter>:<number>') to their ITSM tickets: an ITSM add-on's importer (offline export or read-only collector via ciamCollectionSource) records each linked ticket as observed evidence (ciamTicket under cn=<number>,ou=<adapter>,ou=tickets: neutral state, aggregate approval, planned/work windows, approver rows, raw facts, provider id), never under ou=changes and never as an approval opsdir acts on; governance/tickets.py reconciles record vs ticket (in-step, not-imported, rejected, cancelled, unapproved, closed-pending, live-but-rejected, window-differs, outside-window): planner check check_tickets (blockers rejected/cancelled, actions otherwise, silent with no tickets) and report `tickets`. ServiceNow first (opsdir-adapter-servicenow, kind itsm)."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "ITSM Ticket Evidence"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/parties.py",
+        "id_in_name": 0,
+        "name": "display_name",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamParty entry\"}]",
+        "purpose": "How a party is named in correspondence: its ciamDisplayName, else its RDN value.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "f66fc9086bc6aa2c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-display-name-e509a88c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/parties.py",
+        "id_in_name": 0,
+        "name": "operator",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The party under ou=owners that operates the platform (ciamOwnerKind operator), or None.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "fab9a1a16179d8a1"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-operator-9f163a38"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_ref",
+        "parameters": "[{\"name\": \"change\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamChange entry\"}]",
+        "purpose": "The (adapter, number) a change record's ciamTicketRef '<adapter>:<number>' names, or None.",
+        "returns": "{\"type\": \"tuple | None\", \"description\": \"(adapter, number) or None\"}",
+        "source_hash": "7e1ec34755ae0441"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-ref-193f9c8a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "adapter_dn",
+        "parameters": "[{\"name\": \"adapter\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "DN of the branch holding the tickets one ITSM add-on read (ou=<adapter>,ou=tickets).",
+        "returns": "{\"type\": \"str\", \"description\": \"DN\"}",
+        "source_hash": "63f16b904b48b5a8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-adapter-dn-ea2a1858"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_dn",
+        "parameters": "[{\"name\": \"adapter\", \"type\": \"str\", \"required\": true}, {\"name\": \"number\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "DN of a ticket an ITSM add-on read (cn=<number>,ou=<adapter>,ou=tickets).",
+        "returns": "{\"type\": \"str\", \"description\": \"DN\"}",
+        "source_hash": "cfeebf5e10e66dda"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-dn-0e132770"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "linked_changes",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every change record under ou=changes naming a ticket (ciamTicketRef), by name.",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"linked ciamChange entries\"}",
+        "source_hash": "ed100cddf63886f8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-linked-changes-fe4a049c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "linked_numbers",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"adapter\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The ticket numbers the record's changes name for one ITSM add-on, each once, in change order: what its importer reads and its collector requests.",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"ticket numbers\"}",
+        "source_hash": "8185ca3f61d425e1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "tickets",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every ciamTicket the record holds under ou=tickets (as last read).",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"ticket entries\"}",
+        "source_hash": "7500da94c60cdf3e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-tickets-7d17721d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"adapter\", \"type\": \"str\", \"required\": true}, {\"name\": \"number\", \"type\": \"str\", \"required\": true}, {\"name\": \"at\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime the export was taken\"}, {\"name\": \"facts\", \"type\": \"dict\", \"required\": true, \"description\": \"{attribute of TICKET_ATTRS: value, tuple for multi-valued, None when unsaid}\"}]",
+        "purpose": "A ticket's ciamTicket entry as an importer read it at a time: the ticket attributes it owns (TICKET_ATTRS) from facts, anything else the record adds (owners) kept; never a change record attribute.",
+        "returns": "{\"type\": \"Entry\", \"description\": \"the ticket entry\"}",
+        "source_hash": "7f4997fc86c72d82"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_group",
+        "parameters": "[{\"name\": \"entry\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The import group of one ticket: its own DN and entry, so an import replaces only that ticket and never removes another.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(scope DN, (entry,))\"}",
+        "source_hash": "6facdeda7c01e6e0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-group-28c07413"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "window_differs",
+        "parameters": "[{\"name\": \"change\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"ticket\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether the UTC day the record plans the change (ciamPlannedAt) is outside the days of the ticket's planned window (an end the ticket doesn't give is open).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "045c72fdec8291e6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-window-differs-b0aac3b5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "outside_window",
+        "parameters": "[{\"name\": \"ticket\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether ITSM says the work ran outside the ticket's own planned window: actual start before planned start, or actual end after planned end (exact UTC times).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "0ba1329ea15a436d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-outside-window-665f05b4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "drift_states",
+        "parameters": "[{\"name\": \"change\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"ticket\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The drift states of a change record against its ticket as read (rejected, cancelled, unapproved, closed-pending, live-but-rejected, window-differs, outside-window), or in-step alone; approval judged only from the ticket's overall approval.",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"drift states\"}",
+        "source_hash": "dd33cdc22b3d0fdf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "linked",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every linked change compared with its ticket (Linked): drift states, not-imported when the ticket wasn't read but its system's tickets were, nothing when that system was never read.",
+        "returns": "{\"type\": \"tuple[Linked]\", \"description\": \"by change name\"}",
+        "source_hash": "ec94354ceb267f72"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-linked-ea9b0f62"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "finding_text",
+        "parameters": "[{\"name\": \"link\", \"type\": \"Linked\", \"required\": true}, {\"name\": \"state\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "What one drift state of a linked change says in words ('ITSM says': evidence, never the record's approval).",
+        "returns": "{\"type\": \"str\", \"description\": \"finding text\"}",
+        "source_hash": "b5d1f116afb711d4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "check_tickets",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Governance planner check: blockers for linked changes whose ticket ITSM says was rejected or cancelled while the record approves them, actions (for the change's owner, else the operator) for the other drift, in-step changes as fine; silent while the record holds no ticket; no fixes.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "9e1d25d99029be59"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "Rows of the `tickets` report: per linked change, its record status and planned day, the ticket, ITSM's state (with native), approval, planned and work windows, when read and the drift.",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"report rows (TICKET_HEADERS)\"}",
+        "source_hash": "0d9e2e8d795548e3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-rows-a12f7088"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "answer_rows",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The records of one ServiceNow answer ({'result': [...]} Table API or {'records': [...]} JSON list export), or none and why (an error answer, not an answer).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(rows, problem or None)\"}",
+        "source_hash": "e49b8ce1bb5eebd3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-answer-rows-efc6c971"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "display_only",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true, \"description\": \"a change_request record\"}]",
+        "purpose": "Why a change_request record can't be compared: its state or window times are display text (unknown time zone) rather than raw values; None when raw.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "649446c38b4ebc75"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-display-only-78761d79"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "neutral_state",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true}, {\"name\": \"models\", \"type\": \"frozenset[str]\", \"required\": true, \"description\": \"models named in servicenow-standard-state-models\"}]",
+        "purpose": "A ticket's neutral state from the standard state model map when its chg_model (sys_id or name) is one the operator names as standard, else None and the model's description for a notice.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(neutral state or None, unnamed model text or None)\"}",
+        "source_hash": "db63774258325ab5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-neutral-state-0c31aa16"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "approver_rows",
+        "parameters": "[{\"name\": \"rows\", \"type\": \"list[dict]\", \"required\": true}, {\"name\": \"change_sys_id\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The sysapproval_approver records of one change as ciamTicketApprover values '<state> <approver sys_id> updated <time>' (IDs, never names), sorted.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "5d2003b093d92f1d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-approver-rows-4203a9ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "ticket_facts",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true}, {\"name\": \"approvers\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"host\", \"type\": \"str | None\", \"required\": true}, {\"name\": \"models\", \"type\": \"frozenset[str]\", \"required\": true}]",
+        "purpose": "The ticket attributes (governance TICKET_ATTRS) of one raw change_request record: title, sys_id as ciamProviderRef, Table API record URL when the instance is known, neutral state, overall approval, native state, windows, approver rows, raw facts.",
+        "returns": "{\"type\": \"dict\", \"description\": \"{attribute: value or tuple or None}\"}",
+        "source_hash": "d75748b17ae8179d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-facts-9a963364"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "read_changes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the export was taken (required)\"}]",
+        "purpose": "Importer servicenow/change-requests: each ticket the record links that the export holds, its own import group under ou=servicenow,ou=tickets; notices for unlinked tickets, linked ones missing (never removed), display-only records, unknown models, fields never carried, error answers, several instances.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "f924421d6a1fb37c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-changes-aefcd434"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py",
+        "id_in_name": 0,
+        "name": "answer_fields",
+        "parameters": "[{\"name\": \"fields\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "A Request keep function: what opsdir collect keeps of a Table API answer, each record's requested fields only (non-answers kept as they are).",
+        "returns": "{\"type\": \"callable\", \"description\": \"(text) -> text\"}",
+        "source_hash": "b721b4aa72f427d8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-answer-fields-ed60eb77"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py",
+        "id_in_name": 0,
+        "name": "page_path",
+        "parameters": "[{\"name\": \"host\", \"type\": \"str\", \"required\": true}, {\"name\": \"table\", \"type\": \"str\", \"required\": true}, {\"name\": \"chunk\", \"type\": \"int\", \"required\": true}, {\"name\": \"offset\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "Export path of one collected page: <host>/<table>/<chunk>-<offset>.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "a0b9a7c35534c3c4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-page-path-a2795ccc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py",
+        "id_in_name": 0,
+        "name": "change_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps: each chunk of linked tickets' change_request pages (each page after a non-empty one), then, once every chunk ended on an empty page, the sysapproval_approver pages of the sys_ids found; GETs only.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Request), ...)\"}",
+        "source_hash": "003c089a2f716aab"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why the environment's servicenow/change-requests collection sources can't be read: their own problems, or a credential scheme other than basic or bearer.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "1fa3430258d6f20c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-00106d0a"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A linked change compared with its ticket: the ciamChange, the adapter and number its ciamTicketRef names, the ticket entry as last read (None: not read) and its drift states (none: that system's tickets were never read).",
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Linked"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-linked-7816e596"
+      }
+    },
+    {
+      "attributes": {
+        "description": "f1 of 6.2f: link recorded changes (ciamChange) to their ITSM tickets (ciamTicketRef or equivalent), import ticket status/approval/planned and actual windows as EVIDENCE only (never an approval opsdir acts on), find drift between the record and the ticket (approved vs not, closed while pending, window differs); ServiceNow first, Jira Service Management if cheap; importer from offline export + read-only collector; planner check + report; showcase. f2 (approval mirroring, CMDB CI publishing) stays out: needs 7.7/7.1/6.4. Built by an InterComm worker; design escalated to the master before coding; vendor research by Codex (6.2f report).",
+        "flows": [
+          "ITSM Ticket Evidence",
+          "Governed Change"
+        ],
+        "name": "6.2f.1 ITSM ticket linkage, read-only (ServiceNow first)",
+        "parent": {
+          "slug": "milestone-6-2f-itsm-cmdb-integration-33ea2f8e"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "schema attrs 740-749 + class 156 ciamTicket, ciamTicketRef on ciamChange, TICKETS branch, governance/tickets.py (reconcile states, check_tickets, report tickets), KIND_ORDER itsm, schema LDIF regen, unit tests",
+        "name": "Core governance ticket model",
+        "parent": {
+          "key": {
+            "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-governance-ticket-model-dd32efeb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-servicenow: importer servicenow/change-requests (Table API answers, raw UTC, model-keyed state map, approval aggregate + approver rows, field validation), read-only collector (paged until empty page), setting servicenow-standard-state-models, README, tests",
+        "name": "ServiceNow add-on package",
+        "parent": {
+          "key": {
+            "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-servicenow-add-on-package-e89fb457"
+      }
+    },
+    {
+      "attributes": {
+        "description": "CHG-2055 links + setting, CHG-2056 import, exports/servicenow fixtures, demo.sh, snapshot-outputs.sh, showcase_support APPROVED, governance.py, expected findings B60/B61 A171-A175, report tickets",
+        "name": "Showcase",
+        "parent": {
+          "key": {
+            "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-showcase-3511c293"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir README / model docs for tickets, package README Known limits, showcase README",
+        "name": "Docs",
+        "parent": {
+          "key": {
+            "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docs-9e86438c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "decision note on task 532, research note pointer, Jira/BMC follow-up milestone note, done message with full texts",
+        "name": "Notes + done message",
+        "parent": {
+          "key": {
+            "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-notes-done-message-96537432"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "4af5cea",
+    "branch": "aimfp-u62f-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "ticket_ref calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-ref-193f9c8a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_dn calls adapter_dn (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-dn-0e132770"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-adapter-dn-ea2a1858"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked_changes references rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-changes-fe4a049c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked_changes calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-changes-fe4a049c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked_changes calls ticket_ref (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-changes-fe4a049c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-ref-193f9c8a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked_numbers calls ticket_ref (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-ref-193f9c8a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked_numbers calls linked_changes (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-changes-fe4a049c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "tickets calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-tickets-7d17721d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_entry calls make_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_entry calls merged_attrs (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_entry calls ticket_dn (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-dn-0e132770"
+      }
+    },
+    {
+      "attributes": {
+        "description": "window_differs calls gtime_date (directory.py) via _day",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-window-differs-b0aac3b5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-916f2b7b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "window_differs calls one (directory.py) via _day",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-window-differs-b0aac3b5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "outside_window calls one (directory.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-outside-window-665f05b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "outside_window calls gtime_at (directory.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-outside-window-665f05b4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-at-675ef8b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "drift_states calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "drift_states calls window_differs (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-window-differs-b0aac3b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "drift_states calls outside_window (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-outside-window-665f05b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls ticket_ref (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-ref-193f9c8a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls ticket_dn (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-dn-0e132770"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls linked_changes (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-changes-fe4a049c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls tickets (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tickets-7d17721d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls drift_states (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "finding_text calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "finding_text calls rdn_value (directory.py) via _change",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls owner_label (findings.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls rdn_value (directory.py) via _change",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls operator (parties.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-operator-9f163a38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls tickets (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tickets-7d17721d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls linked (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-ea9b0f62"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_tickets calls finding_text (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-rows-a12f7088"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-rows-a12f7088"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_rows calls linked (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-rows-a12f7088"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-ea9b0f62"
+      }
+    },
+    {
+      "attributes": {
+        "description": "approver_rows calls gtime (directory.py) via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-approver-rows-4203a9ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls gtime (directory.py) via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-9a963364"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls neutral_state (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-9a963364"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-state-0c31aa16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls setting_value (settings.py) via _models",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls adapter_dn (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-adapter-dn-ea2a1858"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls linked_numbers (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_entry (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-entry-708f46d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_group (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-group-28c07413"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls answer_rows (changes.py) via _tables",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-rows-efc6c971"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls display_only (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-display-only-78761d79"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls neutral_state (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neutral-state-0c31aa16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls approver_rows (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-approver-rows-4203a9ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls ticket_facts (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-facts-9a963364"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls collection_sources (collection.py) via _source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls linked_numbers (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-linked-numbers-4e547ca0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls answer_rows (changes.py) via _paged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-rows-efc6c971"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls answer_fields (collect.py) via _request",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-fields-ed60eb77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls page_path (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-a2795ccc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-00106d0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-linked-7816e596"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-linked-7816e596"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/parties.py"
+      },
+      "flow": {
+        "name": "Governed Change"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/adapter.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/README.md"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/parties.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-governance"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-governance"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-servicenow"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-servicenow"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-servicenow"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-servicenow"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-servicenow"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-servicenow"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Store & Governance"
+      }
+    },
+    {
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2f-itsm-cmdb-integration-33ea2f8e"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/parties.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    }
+  ],
+  "warnings": []
+}

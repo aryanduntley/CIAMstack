@@ -1,0 +1,2951 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "inventory.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/pki/inventory.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "secret_inventory.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/connectors/secret_inventory.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "inventory.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "inventory.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/pki/",
+        "purpose": "Keys, secrets and certificates as metadata and references, never material: ciamCredential, plus each environment's secret, key and certificate references with cloud key-service facts. Certificate expiry. Reports: credentials (sprawl), rotation-impact and expiring. The keys report's rows (placement_rows, unbound_status) live here; connectors.keys_report composes them with the installed adapters. Planner checks: certificate expiry, and key placement (HSM shortfall via hsm_shortfall, including an unrecorded protection level; carry-over; weakened stores). Secret-store inventories (inventory.py, ou=secret-inventory: ciamSecretInventory, ciamSecretObject): importer entry builders, reconciliation of secret references through adapters' locators (six states + unreferenced), rotation problems, the planner findings and the secret-inventory report rows (connectors.secret_inventory composes them with the installed adapters)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "domain-pki"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-hashicorp-vault (import opsdir_adapter_hashicorp_vault), registered via entry point opsdir.adapters:hashicorp-vault; depends on opsdir.",
+        "external_dependencies": "[\"Vault CLI (1.11+ for -mount; pinned 2.2.0 for the vault marker test)\"]",
+        "path": "packages/opsdir-adapter-hashicorp-vault/",
+        "purpose": "HashiCorp Vault secret store: resolves vault:// references (owns the vault scheme); inventories its KV mounts, metadata only (importer hashicorp-vault/kv-metadata from `vault kv list` / `vault kv metadata get` output; collector running them with the operator's login, VAULT_ADDR from the store's ciamStoreEndpoint; inventory_locator mount/path)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-hashicorp-vault"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-cyberark (import opsdir_adapter_cyberark), registered via entry point opsdir.adapters:cyberark; depends on opsdir.",
+        "external_dependencies": "[\"CyberArk Credential Provider CLI (clipasswordsdk)\", \"CyberArk PVWA REST API (/PasswordVault/API/Accounts, read-only, Safe permission List accounts)\"]",
+        "path": "packages/opsdir-adapter-cyberark/",
+        "purpose": "CyberArk PAM vault as a secret store: resolves cyberark://<app-id>/<safe>/<object> references (owns the cyberark scheme); inventories its safes' accounts, metadata only (importer cyberark/accounts from PVWA /API/Accounts listings; collector paging GET /PasswordVault/API/Accounts with a session token (token) or Privilege Cloud bearer token, keeping only whitelisted metadata; inventory_locator safe/object)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-cyberark"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Secret stores' inventories, metadata only (never a value), imported/collected by the secret-store adapters (CyberArk PVWA account listings, Vault KV listings + metadata) into ou=secret-inventory (ciamSecretInventory per container, ciamSecretObject per object); every secret reference (ciamRefUri, ciamCopyRef) reconciled through the adapter's inventory_locator into present / deleted / confirmed-missing / inventory-incomplete / inaccessible / not-inventoried, plus unreferenced objects; rotation only from a timestamp meaning rotation; planner check on the target and the secret-inventory report."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Secret-Store Inventory Reconciliation"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/plan.py",
+        "id_in_name": 0,
+        "name": "plan",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"src_spec\", \"type\": \"str\"}, {\"name\": \"dst_spec\", \"type\": \"str\"}, {\"name\": \"as_of\", \"type\": \"date\"}, {\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false, \"description\": \"default registry.ADAPTERS\"}, {\"name\": \"domains\", \"type\": \"Sequence[Domain]\", \"required\": false, \"description\": \"default registry.DOMAINS\"}, {\"name\": \"requester\", \"type\": \"str|None\", \"required\": false, \"description\": \"who runs the migration, recorded in the target's MANIFEST\"}]",
+        "purpose": "Migration plan with the given installed adapters (default: discovered) and domains: render both environments (the target whole, scope ENVIRONMENT, its MANIFEST naming requester when given), build a PlanContext, run cross-domain, adapter and domain checks and the connector checks (access, edge, network, signals, log collection, proxies, upgrades, secret-store inventory with the installed adapters' locators), merge Findings into a Plan",
+        "returns": "{\"type\": \"Plan\"}",
+        "source_hash": "d356d33a026e0d68"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-plan-b824361b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/reports.py",
+        "id_in_name": 0,
+        "name": "catalogue",
+        "parameters": "[{\"name\": \"domains\", \"type\": \"Sequence[Domain]\", \"required\": false}]",
+        "purpose": "report name -> Report: store reports, every domain's reports, then cross-domain reports: ports (from the installed adapters' listeners), keys (key placement against the roles the installed adapters require), log-collection, canary-coverage (which synthetic checks each environment renders, with its adapters), secret-inventory (every secret reference against its store's inventory, with the adapters' locators) and settings.",
+        "returns": "{\"type\": \"dict[str, Report]\"}",
+        "source_hash": "ebc42efcfedd6dc5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-catalogue-efd485ca"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "inventory_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"scheme\", \"type\": \"str\"}, {\"name\": \"container\", \"type\": \"str\"}, {\"name\": \"at\", \"type\": \"str (GeneralizedTime)\"}, {\"name\": \"state\", \"type\": \"str\"}, {\"name\": \"problems\", \"type\": \"tuple[str]\", \"required\": false}, {\"name\": \"prefixes\", \"type\": \"tuple[str]\", \"required\": false}, {\"name\": \"endpoint\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "One container's ciamSecretInventory entry (owned attributes replaced, what the record adds kept): taken at, complete|incomplete|denied, problems, prefixes listed, store endpoint.",
+        "returns": "{\"type\": \"Entry\", \"description\": \"cn=<container>,ou=<scheme>,ou=secret-inventory\"}",
+        "source_hash": "4ac2dd5794e4bab6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-entry-f5002945"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "object_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"scheme\", \"type\": \"str\"}, {\"name\": \"container\", \"type\": \"str\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"facts\", \"type\": \"dict[str, str|None]\"}]",
+        "purpose": "A ciamSecretObject entry for an object a container's inventory found, from its facts (None values dropped); what the record adds kept.",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "3e844e905b65bc53"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-object-entry-8a6dd10e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "inventory_group",
+        "parameters": "[{\"name\": \"inventory\", \"type\": \"Entry\"}, {\"name\": \"objects\", \"type\": \"tuple[Entry]\"}]",
+        "purpose": "An Imported group making a container's subtree exactly its inventory entry and the objects found.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(scope DN, entries)\"}",
+        "source_hash": "8205086d1e281f6f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "wanted_containers",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"scheme\", \"type\": \"str\"}, {\"name\": \"locate\", \"type\": \"callable rest -> (container, object)|None\"}, {\"name\": \"option\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "The containers to inventory for a scheme: those the record's secret references (ciamRefUri, ciamCopyRef) name via the locator, then the operator's comma-separated extra ones.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "7b7c85d5d1241be1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-wanted-containers-66c3182d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "scheme_of",
+        "parameters": "[{\"name\": \"inventory\", \"type\": \"Entry\"}]",
+        "purpose": "The ref-uri scheme an inventory entry is filed under (its parent ou=<scheme>).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "665f1358c7a3be8d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-scheme-of-362027de"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "inventories",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "Every container inventory the record holds, by (scheme, container).",
+        "returns": "{\"type\": \"dict[(str, str), Entry]\"}",
+        "source_hash": "672ff6080914425f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventories-454c264f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "objects_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"inventory\", \"type\": \"Entry\"}]",
+        "purpose": "The ciamSecretObject entries a container's inventory found.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "44bca2d0c1f11085"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-objects-of-086f955f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "references",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"iterable[(str, Entry)]\"}, {\"name\": \"locators\", \"type\": \"dict[str, callable]\"}]",
+        "purpose": "The References of (environment DN, binding) pairs: every ciamSecretRef's ciamRefUri and ciamCopyRef whose scheme has a locator that places it.",
+        "returns": "{\"type\": \"tuple[Reference]\"}",
+        "source_hash": "4c5687efbd955b56"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-references-30c349dd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "record_references",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"locators\", \"type\": \"dict[str, callable]\"}]",
+        "purpose": "The References of every environment's own secret bindings.",
+        "returns": "{\"type\": \"tuple[Reference]\"}",
+        "source_hash": "e9e6ceb87f8388ef"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "reconcile",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"ref\", \"type\": \"Reference\"}, {\"name\": \"held\", \"type\": \"dict[(str, str), Entry]\"}]",
+        "purpose": "A Reference's state against the inventories held: present, deleted, confirmed-missing, inventory-incomplete, inaccessible or not-inventoried.",
+        "returns": "{\"type\": \"Reconciled\"}",
+        "source_hash": "fc0a97e3a7c7c701"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "unreferenced",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"refs\", \"type\": \"tuple[Reference]\"}, {\"name\": \"held\", \"type\": \"dict[(str, str), Entry]\"}, {\"name\": \"containers\", \"type\": \"iterable[(str, str)]|None\", \"required\": false}]",
+        "purpose": "The objects inventoried containers hold that none of the references names, optionally only in the containers given.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((scheme, container, object entry), ...)\"}",
+        "source_hash": "b25d1214fe7f3802"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unreferenced-ede61e59"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "rotation_blind",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"inventory\", \"type\": \"Entry\"}]",
+        "purpose": "Whether a container's inventory says nothing of rotation about any object it found (its store's metadata can't show rotation).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "a9625557b3d3b096"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rotation-blind-deae00c1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "rotation_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"r\", \"type\": \"Reconciled\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "What is wrong with how a present reference's object rotates (own location only): overdue against its credential's ciamRotationDays from ciamLastRotated, last rotation failed, binding ciamAutoRotate TRUE but the store doesn't manage it.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "8d01962169e98be0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "inventory_findings",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}, {\"name\": \"locators\", \"type\": \"dict[str, callable]\"}]",
+        "purpose": "The planner's findings for the target's secret references against the inventories (nothing when none of their schemes is inventoried): blockers for confirmed-missing and deleted, actions for unconfirmed states, rotation problems and unreferenced objects per container, OK lines for present references and rotation-blind containers.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "8625e51f2aed88a0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "name": "inventory_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"locators\", \"type\": \"dict[str, callable]\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "The secret-inventory report rows: one per placed secret reference (state, inventoried, last rotated, rotate by, rotation, problems), then one per unreferenced object.",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "2551bd7b035cc63e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/secret_inventory.py",
+        "id_in_name": 0,
+        "name": "inventory_locators",
+        "parameters": "[{\"name\": \"installed\", \"type\": \"tuple[Adapter]\", \"required\": false}]",
+        "purpose": "{scheme: locate} of the installed adapters' inventory locators.",
+        "returns": "{\"type\": \"dict[str, callable]\"}",
+        "source_hash": "29cb885a2b7a7b5e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-locators-b0ba2c2b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/secret_inventory.py",
+        "id_in_name": 0,
+        "name": "secret_inventory_check",
+        "parameters": "[{\"name\": \"installed\", \"type\": \"tuple[Adapter]\", \"required\": false}]",
+        "purpose": "The planner check (closure over the installed adapters' locators) reconciling the target's secret references with the record's inventories.",
+        "returns": "{\"type\": \"callable\", \"description\": \"check_secret_inventory(ctx) -> Findings\"}",
+        "source_hash": "681c409d17262315"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-secret-inventory-check-9b013bc7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/secret_inventory.py",
+        "id_in_name": 0,
+        "name": "secret_inventory_report",
+        "parameters": "[{\"name\": \"installed\", \"type\": \"tuple[Adapter]\", \"required\": false}]",
+        "purpose": "The secret-inventory report (dated directory report) with the installed adapters' locators.",
+        "returns": "{\"type\": \"Report\"}",
+        "source_hash": "112e4ed679978062"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-secret-inventory-report-9eaed438"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py",
+        "id_in_name": 0,
+        "name": "locate",
+        "parameters": "[{\"name\": \"rest\", \"type\": \"str\"}]",
+        "purpose": "Where a cyberark://<app-id>/<safe>/<object> reference points in the inventory: (safe, object), or None.",
+        "returns": "{\"type\": \"tuple[str, str]|None\"}",
+        "source_hash": "0e75f155f2cef829"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-locate-3897cfe3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py",
+        "id_in_name": 0,
+        "name": "metadata_only",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "A PVWA account listing answer trimmed to the metadata the importer reads (never a value-bearing field); non-JSON text kept as is. The collector's Request.keep.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "92a118f60b74bb29"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-metadata-only-68e90264"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py",
+        "id_in_name": 0,
+        "name": "account_facts",
+        "parameters": "[{\"name\": \"a\", \"type\": \"dict\"}]",
+        "purpose": "The secret object facts of one account: rotation managed/status/manual reason, ciamLastRotated only from lastModifiedTime with status Success, last verified, store modified.",
+        "returns": "{\"type\": \"dict[str, str|None]\"}",
+        "source_hash": "8c39b8496deb2085"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-account-facts-0342012f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py",
+        "id_in_name": 0,
+        "name": "safe_listing",
+        "parameters": "[{\"name\": \"safe\", \"type\": \"str\"}, {\"name\": \"pages\", \"type\": \"tuple[(str, str)]\"}]",
+        "purpose": "One safe's listing pages read: state (complete/incomplete/denied), problems, accounts kept, notices.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(state, problems, accounts, notices)\"}",
+        "source_hash": "d4228c781d0daf24"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-safe-listing-e3b90127"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py",
+        "id_in_name": 0,
+        "name": "read_accounts",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer cyberark/accounts: one inventory per safe in the export (accounts/<safe>.json or pages), its accounts as secret objects.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "5aa657c6dae34ca0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py",
+        "id_in_name": 0,
+        "name": "page_path",
+        "parameters": "[{\"name\": \"safe\", \"type\": \"str\"}, {\"name\": \"offset\", \"type\": \"int\"}]",
+        "purpose": "Where the collector saves one listing page: accounts/<safe>/<offset>.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "a6eedc516d7965c6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-page-path-c500aa4a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py",
+        "id_in_name": 0,
+        "name": "next_offset",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}, {\"name\": \"offset\", \"type\": \"int\"}]",
+        "purpose": "The offset of the page after one, or None when the vault's count says nothing remains or the page isn't a listing.",
+        "returns": "{\"type\": \"int|None\"}",
+        "source_hash": "3adc56adff1426c5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-next-offset-35f58528"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py",
+        "id_in_name": 0,
+        "name": "account_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict[str, str]\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: each wanted safe's first page, then each next page its last one says remains (GET /PasswordVault/API/Accounts with the source's token or bearer credential, metadata kept only).",
+        "returns": "{\"type\": \"tuple[(str, Request)]\"}",
+        "source_hash": "56b607ded23c049b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-account-steps-fe593858"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Why cyberark/accounts collection sources can't be read: unbound roles, no location, a credential scheme other than token or bearer.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "d40a755c624897ee"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-0bbae910"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py",
+        "id_in_name": 0,
+        "name": "locate",
+        "parameters": "[{\"name\": \"rest\", \"type\": \"str\"}]",
+        "purpose": "Where a vault://<mount>/<path> reference points in the inventory: (mount, path), or None.",
+        "returns": "{\"type\": \"tuple[str, str]|None\"}",
+        "source_hash": "696b953553c8ba9c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-locate-3573701e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py",
+        "id_in_name": 0,
+        "name": "listing_path",
+        "parameters": "[{\"name\": \"mount\", \"type\": \"str\"}, {\"name\": \"prefix\", \"type\": \"str\"}]",
+        "purpose": "Where a prefix's `vault kv list` output is kept: list/<mount>/<prefix>_keys.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "61abd33bef7c2736"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-listing-path-839e40f0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py",
+        "id_in_name": 0,
+        "name": "metadata_path",
+        "parameters": "[{\"name\": \"mount\", \"type\": \"str\"}, {\"name\": \"path\", \"type\": \"str\"}]",
+        "purpose": "Where a path's `vault kv metadata get` output is kept: metadata/<mount>/<path>.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "5326e1facc4311ea"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-metadata-path-9bc1bfa9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py",
+        "id_in_name": 0,
+        "name": "metadata_only",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "`vault kv metadata get -format=json` output trimmed to the times, versions and deletion facts the importer reads (custom metadata and who changed it dropped). The collector's Command.keep.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "cbdb04a739a0c82d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-metadata-only-5f9d4536"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py",
+        "id_in_name": 0,
+        "name": "path_facts",
+        "parameters": "[{\"name\": \"meta\", \"type\": \"dict|None\"}, {\"name\": \"at\", \"type\": \"str (GeneralizedTime)\"}]",
+        "purpose": "The secret object facts of one KV 2 path's metadata as of the inventory time: deleted (current version destroyed or deletion time passed) or active, ciamStoreModified from updated_time (never rotation).",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "fd54614174fa563f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-path-facts-dc4ff9ed"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py",
+        "id_in_name": 0,
+        "name": "mount_listing",
+        "parameters": "[{\"name\": \"listings\", \"type\": \"dict[str, str]\"}, {\"name\": \"meta\", \"type\": \"dict[str, dict|None]\"}]",
+        "purpose": "One mount's state (complete/incomplete/denied), problems, prefixes listed first and paths, from its listings and metadata.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(state, problems, prefixes, paths)\"}",
+        "source_hash": "57246ad655f90495"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-mount-listing-b5410c78"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py",
+        "id_in_name": 0,
+        "name": "read_kv_metadata",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer hashicorp-vault/kv-metadata: one inventory per mount in the export (listings + KV 2 metadata), its paths as secret objects.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "a813be8c42e910c8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/collect.py",
+        "id_in_name": 0,
+        "name": "roots",
+        "parameters": "[{\"name\": \"containers\", \"type\": \"iterable[str]\"}]",
+        "purpose": "The (mount, prefix) pairs to list first: a container is a mount (its root) or mount/prefix/.",
+        "returns": "{\"type\": \"tuple[(str, str)]\"}",
+        "source_hash": "6a54e4ec7c9c289e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-roots-6ef15998"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/collect.py",
+        "id_in_name": 0,
+        "name": "kv_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict[str, str]\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: each wanted mount's `vault kv list -format=json -mount=M PREFIX` from its root down through listed folders, and (unless the store records KV 1) each path's `vault kv metadata get -format=json -mount=M PATH`, VAULT_ADDR from the store's ciamStoreEndpoint.",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "c23f6dae25d8703a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kv-steps-abde4707"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/naming.py",
+        "id_in_name": 0,
+        "name": "inventory_scheme_dn",
+        "parameters": "[{\"name\": \"scheme\", \"type\": \"str\"}]",
+        "purpose": "Where the inventories of one ref-uri scheme's stores are kept: ou=<scheme>,ou=secret-inventory.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "6c6b7c29349f33a7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-scheme-dn-88b60898"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/naming.py",
+        "id_in_name": 0,
+        "name": "inventory_dn",
+        "parameters": "[{\"name\": \"scheme\", \"type\": \"str\"}, {\"name\": \"container\", \"type\": \"str\"}]",
+        "purpose": "The DN of one container's inventory (a safe, a mount) of a scheme's store: cn=<container>,ou=<scheme>,ou=secret-inventory.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "84f46d7f103c2ac8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-dn-2c9624f1"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A secret reference a locator places: the environment and binding holding it, the attribute (own location or copy), the ref-uri, its scheme, and the container and object it points at in its store's inventory.",
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Reference"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-reference-1ad4beb6"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A Reference reconciled with the record's inventories: its state, the container's inventory entry (None: not inventoried) and the object found (None: not found).",
+        "file": "opsdir/opsdir/domains/pki/inventory.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Reconciled"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-reconciled-a692bb23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 101 (6.2b; read it, the research note on it, and proposal 3024). Reconcile the record's secret references (ciamSecretRef) and credentials (ciamCredential: ciamRotationDays, continuity) with each store's INVENTORY, metadata only, never a secret value: references whose object is confirmed missing, objects in scoped containers the record doesn't reference, rotation age vs ciamRotationDays from a timestamp that means rotation, CPM/auto-rotation status; states confirmed-missing / inaccessible / deleted / inventory-incomplete kept apart. FIRST escalate a design (kind decision; the master answers on your recommendation): the neutral model (reuse ciamSecretRef/ciamCredential/ciamSecretStore + observed attributes; new attributes only if needed, RESERVED core numbers 690-699, classes 145-146), the importer/collector contract (an inventory export file per store read by an importer, and a collect step using a read-only metadata client with least-privilege grants named in the README), which stores first (recommendation from the research: CyberArk PVWA /API/Accounts and Vault KV v2 metadata, in their existing adapter packages; cloud secret managers after), what the planner/report shows (a check + a report), and the showcase story (fixture exports, no live calls). Rules 2991 + 3002. Boundary: core pki domain (secret refs/credentials/stores), packages/opsdir-adapter-cyberark and -hashicorp-vault (inventory importers/collectors only; don't change value resolution), docs, examples/showcase (ids CHG-2047+, B47+/A141+, data file 26+; 6.2a uses CHG-2046/B46/A140/25), tests. NOT the estate/evidence code (worker on task 526), not opsdir-format-oscal.",
+        "flows": [
+          "Secret Reference Resolution",
+          "Secret-Store Inventory Reconciliation"
+        ],
+        "name": "6.2b-1: secret-store inventory reconciliation: design, then build (metadata only)",
+        "parent": {
+          "slug": "milestone-6-2b-pam-inventory-reconciliation-3a5e08e6"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki schema 690-699, classes 145-146, branch ou=secret-inventory, Adapter.inventory_locator, pure pki/inventory.py (states, unreferenced), schema LDIF regenerated",
+        "name": "Core model + reconciliation",
+        "parent": {
+          "key": {
+            "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-model-reconciliation-14c05564"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_secret_inventory (blockers/actions/OK) and report secret-inventory in the pki domain",
+        "name": "Check + report",
+        "parent": {
+          "key": {
+            "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-check-report-59851adf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "governance attr 633 enum + live._authorization 'token' (Authorization as-is), tests, README",
+        "name": "Credential scheme token",
+        "parent": {
+          "key": {
+            "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-credential-scheme-token-ace1759d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cyberark/accounts importer (whitelist, truncation/denied), Request collector paged with keep, inventory_locator, README least privilege",
+        "name": "CyberArk accounts importer + collector",
+        "parent": {
+          "key": {
+            "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-cyberark-accounts-importer-collector-031314e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "hashicorp-vault/kv-metadata importer (v2 metadata, v1 list), Command collector, inventory_locator, README policy + min version, vault marker test",
+        "name": "Vault KV metadata importer + collector",
+        "parent": {
+          "key": {
+            "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-vault-kv-metadata-importer-collector-3c5bacc2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "CyberArk fixture exports, CHG-2047, data file 26 if needed, snapshot-outputs.sh + demo.sh, expected findings, READMEs, docs",
+        "name": "Showcase + docs",
+        "parent": {
+          "key": {
+            "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-showcase-docs-f71aa64f"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "f04a05a",
+    "branch": "aimfp-u62c-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "plan calls secret_inventory_check (secret_inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-b824361b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-secret-inventory-check-9b013bc7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "catalogue calls secret_inventory_report (secret_inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-catalogue-efd485ca"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-secret-inventory-report-9eaed438"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_entry calls make_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-entry-f5002945"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-entry-f5002945"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_entry calls merged_attrs (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-entry-f5002945"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_entry calls inventory_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-entry-f5002945"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-dn-2c9624f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "object_entry calls make_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-entry-8a6dd10e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "object_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-entry-8a6dd10e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "object_entry calls merged_attrs (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-entry-8a6dd10e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "object_entry calls inventory_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-entry-8a6dd10e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-dn-2c9624f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "wanted_containers calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-wanted-containers-66c3182d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "wanted_containers calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-wanted-containers-66c3182d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "wanted_containers calls branch (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-wanted-containers-66c3182d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-branch-1b5e8b28"
+      }
+    },
+    {
+      "attributes": {
+        "description": "wanted_containers calls split_ref (credentials.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-wanted-containers-66c3182d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-split-ref-4cf3c6fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventories calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventories-454c264f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventories calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventories-454c264f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventories calls scheme_of (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventories-454c264f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-of-362027de"
+      }
+    },
+    {
+      "attributes": {
+        "description": "objects_of calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-objects-of-086f955f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "references calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-references-30c349dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "references calls is_a (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-references-30c349dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-a-2af81559"
+      }
+    },
+    {
+      "attributes": {
+        "description": "references calls split_ref (credentials.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-references-30c349dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-split-ref-4cf3c6fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_references calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_references calls branch (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-branch-1b5e8b28"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_references calls environment_of (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-3ca01c81"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_references calls references (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-references-30c349dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile calls values (directory.py) via _listed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unreferenced calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unreferenced-ede61e59"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unreferenced calls objects_of (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unreferenced-ede61e59"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-objects-of-086f955f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rotation_blind calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-blind-deae00c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rotation_blind calls objects_of (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-blind-deae00c1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-objects-of-086f955f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rotation_problems calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rotation_problems calls credential_for_role (credentials.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-for-role-097e9de6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rotation_problems calls rotate_by (credentials.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rotate-by-9c022469"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rotation_problems calls date_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls one (directory.py) via _state_finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls values (directory.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls date_of (directory.py) via _inventoried",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls inventories (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventories-454c264f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls references (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-references-30c349dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls record_references (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls reconcile (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls unreferenced (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unreferenced-ede61e59"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls rotation_blind (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rotation-blind-deae00c1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_findings calls rotation_problems (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls one (directory.py) via _rotation",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls values (directory.py) via _row",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls credential_for_role (credentials.py) via _row",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-for-role-097e9de6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls rotate_by (credentials.py) via _row",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rotate-by-9c022469"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls env_label (naming.py) via _row",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls date_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls inventories (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventories-454c264f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls record_references (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls reconcile (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls unreferenced (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unreferenced-ede61e59"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_rows calls rotation_problems (inventory.py) via _row",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      }
+    },
+    {
+      "attributes": {
+        "description": "secret_inventory_check calls inventory_findings (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-secret-inventory-check-9b013bc7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-findings-07060b91"
+      }
+    },
+    {
+      "attributes": {
+        "description": "secret_inventory_check calls inventory_locators (secret_inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-secret-inventory-check-9b013bc7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-locators-b0ba2c2b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "secret_inventory_report calls directory_report (contract.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-secret-inventory-report-9eaed438"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-directory-report-ce22e53e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "secret_inventory_report calls inventory_rows (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-secret-inventory-report-9eaed438"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-rows-02d4f4ed"
+      }
+    },
+    {
+      "attributes": {
+        "description": "secret_inventory_report calls inventory_locators (secret_inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-secret-inventory-report-9eaed438"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-locators-b0ba2c2b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_facts calls gtime (directory.py) via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-facts-0342012f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_facts calls gtime_of_iso (directory.py) via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-facts-0342012f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls inventory_entry (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-entry-f5002945"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls object_entry (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-object-entry-8a6dd10e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls account_facts (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-account-facts-0342012f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls safe_listing (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-safe-listing-e3b90127"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_accounts calls inventory_scheme_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-accounts-b57c6e26"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-scheme-dn-88b60898"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps calls collection_sources (collection.py) via _source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps calls wanted_containers (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-wanted-containers-66c3182d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps references locate (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-locate-3897cfe3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps references metadata_only (inventory.py) via _request",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-metadata-only-68e90264"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps calls page_path (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-c500aa4a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps calls next_offset (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-next-offset-35f58528"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-0bbae910"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "path_facts calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-path-facts-dc4ff9ed"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls inventory_entry (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-entry-f5002945"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls object_entry (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-object-entry-8a6dd10e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls path_facts (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-facts-dc4ff9ed"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls mount_listing (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-mount-listing-b5410c78"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_kv_metadata calls inventory_scheme_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-kv-metadata-1a9781fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-scheme-dn-88b60898"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps calls secret_store (credentials.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-secret-store-df165fb6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps calls wanted_containers (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-wanted-containers-66c3182d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps references locate (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-locate-3573701e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps calls listing_path (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listing-path-839e40f0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps calls metadata_path (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-metadata-path-9bc1bfa9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps references metadata_only (inventory.py) via _metadata",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-metadata-only-5f9d4536"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kv_steps calls roots (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kv-steps-abde4707"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roots-6ef15998"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_dn calls inventory_scheme_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-dn-2c9624f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-scheme-dn-88b60898"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-references-30c349dd"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-reference-1ad4beb6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-record-references-fc4d8b3e"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-reference-1ad4beb6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-reference-1ad4beb6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-reconcile-0db8c93c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-reconciled-a692bb23"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-unreferenced-ede61e59"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-reference-1ad4beb6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-rotation-problems-cc1aad76"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-reconciled-a692bb23"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/inventory.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/secret_inventory.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/collect.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/naming.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/adapter.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/adapter.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/reports.py"
+      },
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/inventory.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-pki"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/secret_inventory.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "connectors"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-cyberark"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-cyberark"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-hashicorp-vault"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-hashicorp-vault"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Keys, Secrets & PKI Metadata"
+      }
+    },
+    {
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "Secret-Store Inventory Reconciliation"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2b-pam-inventory-reconciliation-3a5e08e6"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/secret_inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/reports.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/live.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/collection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2b-1-secret-store-inventory-reconcilia-097ae5ee"
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,4204 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "api.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "schema.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/schema.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "naming.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "withheld.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "sources.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "refs.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "importer.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "render.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "checks.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "listeners.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "versions.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/versions.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "empty package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "packaging config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingaccess/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Built for milestone 6.1a (task 537, flow 63). Design approved by master 2026-10-15 (note 3082).",
+        "external_dependencies": "[\"PingAccess Admin API v3 (/pa-admin-api/v3; shapes from Ping's 8.2-9.1 documentation, unverified for 9.1.1)\", \"PingAccess configuration export (GET /config/export; envelope unverified)\"]",
+        "path": "packages/opsdir-adapter-pingaccess/",
+        "purpose": "PingAccess product adapter (arc .3.5, prefix pa): protected applications, resources, sites, virtual hosts, web sessions (OIDC relying party linked to the oidc-client integration), identity mappings (linked to edge header contracts), rules/rule sets and held-as-is objects (environment-bound flagged), named by name with ${pingaccess-id:<collection>/<name>} references; Admin API v3 reads and export importers; read-only Auditor collector; per-environment requests.json render with render notes; check_pingaccess planner check; every vendor form in api.py (unverified for 9.1.1)."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-pingaccess"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "An access gateway's protection of web applications <-> record (milestone 6.1a, task 537, design approved by master 2026-10-15): opsdir-adapter-pingaccess (arc .3.5, prefix pa). Import: Admin API v3 GET responses (pingaccess/admin-api, also reads its own requests.json back) and a saved /config/export (pingaccess/export): applications+resources, sites (targets -> backend role), virtual hosts (host -> service role), web sessions (OIDC RP, linked to the oidc-client integration by client id), header/JWT identity mappings (linked to edge header contracts), rules/rule sets (policy by name), everything else held as is (environment-bound flagged); secrets withheld whole, export key material dropped. Collector admin-api (Auditor basic or bearer; GET allowlist, paging while pages are full). Render per environment: pingaccess/admin-api/requests.json (${pingaccess-id:<collection>/<name>} placeholders) + render notes. Planner check_pingaccess (sign-in, references, bindings, engines in target, fixed sites, header contracts, environment-bound objects). Every vendor form in api.py, unverified for 9.1.1."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Access Gateway Policy (PingAccess)"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py",
+        "id_in_name": 0,
+        "name": "collection",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\", \"description\": \"collection path relative to the API base\"}]",
+        "purpose": "The api.Collection declared at an Admin API path, or None",
+        "returns": "{\"type\": \"Collection | None\"}",
+        "source_hash": "b722e23faa57cbe0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-collection-e1055127"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py",
+        "id_in_name": 0,
+        "name": "usable_name",
+        "parameters": "[{\"name\": \"name\", \"type\": \"object\"}]",
+        "purpose": "Whether a PingAccess name can name an entry and a reference (no DN special character, no slash)",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "a3aa53fbb8d085be"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-usable-name-e819a7c7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py",
+        "id_in_name": 0,
+        "name": "type_slug",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\"}]",
+        "purpose": "A collection path as an RDN value ('/' as '.')",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "1b524dcf7fd7c51e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-type-slug-c78e9da0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py",
+        "id_in_name": 0,
+        "name": "held_base",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\"}]",
+        "purpose": "Container DN of a collection's held-as-is objects: ou=<slug>,ou=held,ou=pingaccess",
+        "returns": "{\"type\": \"str (DN)\"}",
+        "source_hash": "113fc6da885429c6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-held-base-e20443c3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py",
+        "id_in_name": 0,
+        "name": "entry_dn",
+        "parameters": "[{\"name\": \"kind\", \"type\": \"str\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"path\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"application\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "DN of a PingAccess object of a kind (resource below its application, held below its collection container)",
+        "returns": "{\"type\": \"str (DN)\"}",
+        "source_hash": "115a53d2c1083165"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-entry-dn-fbd44c77"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py",
+        "id_in_name": 0,
+        "name": "reference",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\"}, {\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "How settings name an object: ${pingaccess-id:<collection>/<name>}",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "de64055f5372e754"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-reference-8d5f86cf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py",
+        "id_in_name": 0,
+        "name": "resources_path",
+        "parameters": "[{\"name\": \"application\", \"type\": \"str\"}]",
+        "purpose": "The collection path of an application's resources, the application named by reference",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "124b7accd94cedf0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resources-path-d5932c43"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py",
+        "id_in_name": 0,
+        "name": "referenced",
+        "parameters": "[{\"name\": \"value\", \"type\": \"object\"}]",
+        "purpose": "(collection, name) a ${pingaccess-id:...} reference names, or None",
+        "returns": "{\"type\": \"tuple(str, str) | None\"}",
+        "source_hash": "4d769788cfd41d4f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-referenced-43be54bd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py",
+        "id_in_name": 0,
+        "name": "marked",
+        "parameters": "[{\"name\": \"value\", \"type\": \"JSON value\"}, {\"name\": \"key\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Settings with every secret marked SEALED: a hidden field's value (ciphertext dropped), a secret-named setting's value",
+        "returns": "{\"type\": \"JSON value\"}",
+        "source_hash": "b9d9663001e60623"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-marked-985e7c37"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py",
+        "id_in_name": 0,
+        "name": "withheld_settings",
+        "parameters": "[{\"name\": \"settings\", \"type\": \"dict\"}, {\"name\": \"patterns\", \"type\": \"SecretPatterns\"}]",
+        "purpose": "Settings with what is or may be secret replaced by None, and the JSON Pointers withheld",
+        "returns": "{\"type\": \"(dict, tuple[str])\"}",
+        "source_hash": "7fd0adcdf02680a2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-withheld-settings-0cfa861e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py",
+        "id_in_name": 0,
+        "name": "credential_value",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"entry\", \"type\": \"Entry\"}]",
+        "purpose": "What an environment renders for an entry's withheld values: ${secret:<ref>} of its credential role, UNBOUND:<role>, or ${withheld}",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "83edef2215587561"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-credential-value-8c312626"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py",
+        "id_in_name": 0,
+        "name": "filled",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"entry\", \"type\": \"Entry\"}, {\"name\": \"settings\", \"type\": \"dict\"}]",
+        "purpose": "Settings with an entry's withheld values as the environment gives them",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "e158a161ea43a370"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-filled-dd7c9793"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py",
+        "id_in_name": 0,
+        "name": "response_items",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"JSON value\"}]",
+        "purpose": "A collection response's items ({items:[...]} or a list), or a settings object as its one item",
+        "returns": "{\"type\": \"tuple[dict]\"}",
+        "source_hash": "a6087fbd8660bc86"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-response-items-33c498f5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py",
+        "id_in_name": 0,
+        "name": "is_render",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"JSON value\"}]",
+        "purpose": "Whether a JSON document is this adapter's rendered requests.json",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "7754a32a87fdbf4b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-render-4b35058a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py",
+        "id_in_name": 0,
+        "name": "admin_api_read",
+        "parameters": "[{\"name\": \"files\", \"type\": \"{path: text}\"}]",
+        "purpose": "Read of saved Admin API v3 responses (pages joined, resources given their application) and of rendered requests.json",
+        "returns": "{\"type\": \"Read\"}",
+        "source_hash": "d6045d3550e7b61b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-admin-api-read-f25d5488"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py",
+        "id_in_name": 0,
+        "name": "export_read",
+        "parameters": "[{\"name\": \"files\", \"type\": \"{path: text}\"}]",
+        "purpose": "Read of saved configuration exports: sections mapped to collections, nested resources hoisted, encryption material dropped and named",
+        "returns": "{\"type\": \"Read\"}",
+        "source_hash": "90fab9c8548f5196"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-export-read-9b4bbf20"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py",
+        "id_in_name": 0,
+        "name": "host_role",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"host\", \"type\": \"str\"}]",
+        "purpose": "The binding role a host is in the record (service name, external host, database, or rendered UNBOUND:<role>), or None",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "09ab566aad4436ed"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-host-role-55e869f2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py",
+        "id_in_name": 0,
+        "name": "object_name",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"path\", \"type\": \"str\"}, {\"name\": \"item\", \"type\": \"dict\"}]",
+        "purpose": "An object's record name: settings for a settings object, <role or host>:<port> for a virtual host, else its name field",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "706454b79e7b7055"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-object-name-70b6575f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py",
+        "id_in_name": 0,
+        "name": "mapped",
+        "parameters": "[{\"name\": \"value\", \"type\": \"JSON value\"}, {\"name\": \"pattern\", \"type\": \"tuple[str]\"}, {\"name\": \"fn\", \"type\": \"callable\"}]",
+        "purpose": "The value with fn applied to every leaf at a field path ('*' any list item or member)",
+        "returns": "{\"type\": \"JSON value\"}",
+        "source_hash": "bc913797f4e40c9a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-mapped-8eb29d68"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py",
+        "id_in_name": 0,
+        "name": "leaves",
+        "parameters": "[{\"name\": \"value\", \"type\": \"JSON value\"}, {\"name\": \"pattern\", \"type\": \"tuple[str]\"}]",
+        "purpose": "The leaves of a value at a field path",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "66c2aa59bb6c474e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-leaves-efaa89b6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py",
+        "id_in_name": 0,
+        "name": "placeholders",
+        "parameters": "[{\"name\": \"value\", \"type\": \"JSON value\"}]",
+        "purpose": "The (collection, name) of every ${pingaccess-id:...} reference in a value",
+        "returns": "{\"type\": \"tuple[(str, str)]\"}",
+        "source_hash": "52cd8c9065552f7a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-placeholders-1b27f873"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py",
+        "id_in_name": 0,
+        "name": "resolved",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"items\", \"type\": \"{collection: items}\"}]",
+        "purpose": "The Objs of a Read's items: named, ids replaced by references, uses and unresolved ids listed",
+        "returns": "{\"type\": \"tuple[Obj]\"}",
+        "source_hash": "1ef8e8f912a13605"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resolved-ece4ab52"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py",
+        "id_in_name": 0,
+        "name": "target_endpoint",
+        "parameters": "[{\"name\": \"target\", \"type\": \"str\"}]",
+        "purpose": "(host, port or None) of a site target host:port (a rendered UNBOUND:<role>[:port] too)",
+        "returns": "{\"type\": \"(str, int|None)\"}",
+        "source_hash": "886e254c87d0c211"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-target-endpoint-c18124fe"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py",
+        "id_in_name": 0,
+        "name": "imported",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"read\", \"type\": \"Read\"}, {\"name\": \"patterns\", \"type\": \"SecretPatterns\"}]",
+        "purpose": "Imported of a Read: entries per kind (roles for hosts, integration and issuer for sessions, header contracts for mappings, held objects marked), groups per collection read, notices",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "41822d64d11d2a4f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-imported-68100b68"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py",
+        "id_in_name": 0,
+        "name": "read_admin_api",
+        "parameters": "[{\"name\": \"files\", \"type\": \"{path: text}\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"SecretPatterns\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer pingaccess/admin-api: Imported from saved Admin API responses and the adapter's rendered requests",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "2fb518b54949ecee"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-admin-api-80dfc163"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py",
+        "id_in_name": 0,
+        "name": "read_export",
+        "parameters": "[{\"name\": \"files\", \"type\": \"{path: text}\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"SecretPatterns\"}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer pingaccess/export: Imported from a saved configuration export",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "eb5a5504a64ad52e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-export-6aad8b18"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "version",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "The PingAccess version an environment's servers record (admin node's, else an engine's)",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "dbab8252564f1207"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-version-1446d1c5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "entries_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"c\", \"type\": \"Collection\"}]",
+        "purpose": "The record's entries of a collection, in record order (resources after their application)",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "9d7cd30cb932a7d1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "site_targets",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"site\", \"type\": \"Entry\"}]",
+        "purpose": "A site's targets in an environment from its backend role's bindings (host order), or UNBOUND:<role>[:port]",
+        "returns": "{\"type\": \"list[str]\"}",
+        "source_hash": "ac7b29ad87961f28"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-site-targets-9c2bcd8e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "body",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"c\", \"type\": \"Collection\"}, {\"name\": \"e\", \"type\": \"Entry\"}]",
+        "purpose": "An entry's request body for an environment: settings with secrets filled, name, hosts/targets from bindings, context root, client id from the integration",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "a4e7f4aa15f1d50c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-body-72670e52"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "request",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"c\", \"type\": \"Collection\"}, {\"name\": \"e\", \"type\": \"Entry\"}]",
+        "purpose": "One entry's Admin API request: a settings PUT, or a PUT to <collection>/${pingaccess-id:...} creatable by POST",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "3a7d7f045dc55bce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-request-16413799"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "rendered",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "(Collection, entry) of everything the requests hold: every collection but the environment-bound ones",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "aca998f7f0be24ab"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rendered-1a61e00b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "environment_bound",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "(Collection, entries) of the environment-bound objects the record holds (never rendered)",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "1cca3912caddf99a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-environment-bound-b6ffa425"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "missing_references",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"e\", \"type\": \"Entry\"}]",
+        "purpose": "The ${pingaccess-id:...} references in an entry's settings naming an object the record doesn't hold",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "2ab02d532d30f291"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "problems",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"reqs\", \"type\": \"list[dict]\"}]",
+        "purpose": "What the requests can't do as rendered: withheld secrets without credential role, missing references, unbound roles",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "8a3670881a09e050"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-problems-031661a3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "admin_api_files",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "{pingaccess/admin-api/requests.json: text} for an environment (nothing when the record holds nothing to render)",
+        "returns": "{\"type\": \"{path: text}\"}",
+        "source_hash": "47d233ec4613f4bc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "render_env",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Adapter.render_env: PingAccess's configuration for an environment",
+        "returns": "{\"type\": \"{path: text}\"}",
+        "source_hash": "9b6c67c3455b028e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-env-91c516f7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Adapter.notes: render notes as data (unverified requests, environment-bound objects to create, withheld secrets, server profile and node files not rendered)",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "069793b8224d2159"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py",
+        "id_in_name": 0,
+        "name": "pages",
+        "parameters": "[{\"name\": \"s\", \"type\": \"collection Source\"}, {\"name\": \"done\", \"type\": \"{path: output}\"}, {\"name\": \"path\", \"type\": \"str\"}]",
+        "purpose": "Page requests of a collection so far: page 1, then the next while the last came back full and differs from the one before",
+        "returns": "{\"type\": \"tuple[(path, Request)]\"}",
+        "source_hash": "0d2802826847fd03"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-pages-59508fe4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py",
+        "id_in_name": 0,
+        "name": "api_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"{path: output}\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: /version, each settings object and collection (paged), then each application's resources; GET allowlist only",
+        "returns": "{\"type\": \"tuple[(path, Request)]\"}",
+        "source_hash": "77ad4db94f5e8755"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-api-steps-21d05843"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Why the collection sources can't be read (unbound credential/trust anchor, no location, a scheme other than basic/bearer)",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "a7608f9c6a053ef8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-41727b60"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py",
+        "id_in_name": 0,
+        "name": "session_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"s\", \"type\": \"Entry (paWebSession)\"}]",
+        "purpose": "Why a web session can't sign users in: unknown client, unknown issuer, token endpoint auth not registered, PKCE required but not sent",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "da2bd66a842bbed6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-session-problems-5037459b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py",
+        "id_in_name": 0,
+        "name": "header_fix",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}, {\"name\": \"m\", \"type\": \"Entry (paIdentityMapping)\"}, {\"name\": \"header\", \"type\": \"str\"}]",
+        "purpose": "Fix recording a header contract (identity, set by pa-engine, trusted by the backend server roles) for a header an identity mapping sets",
+        "returns": "{\"type\": \"Fix\"}",
+        "source_hash": "d1a04b003690f913"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py",
+        "id_in_name": 0,
+        "name": "check_pingaccess",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check: web sessions (client, issuer, token endpoint auth, PKCE, implicit login), withheld secrets, missing references, virtual host and site roles, engines in the target, fixed sites (external-host fix), headers without contracts (header-contract fix); environment-bound objects reach the plan as the render note instead",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "d114bc6bd95ccd1a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py",
+        "id_in_name": 0,
+        "name": "site_listeners",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Listeners the engines reach through sites naming a backend service name role",
+        "returns": "{\"type\": \"tuple[Listener]\"}",
+        "source_hash": "181a668671da2327"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py",
+        "id_in_name": 0,
+        "name": "listeners",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Adapter.listeners: engine 3000, admin 9000 and 9090, 9095 from 9.1, agents 3030 and sideband 3020 when held, and the sites' backends",
+        "returns": "{\"type\": \"tuple[Listener]\"}",
+        "source_hash": "fd9c64b7696f2026"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-listeners-50004525"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/versions.py",
+        "id_in_name": 0,
+        "name": "key_pairs",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"role\", \"type\": \"str\"}]",
+        "purpose": "VersionChange.touches: the key pairs the record holds, for PingAccess server roles",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "a1c4bfc437cf67be"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-key-pairs-90817c46"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py",
+        "id_in_name": 0,
+        "name": "applies",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Adapter.applies: whether an environment runs PingAccess (servers or Kubernetes)",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "32cafa94d3df18de"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-applies-2bc64fd4"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One Admin API v3 collection or settings object the adapter reads and renders (api.COLLECTIONS, in creation order)",
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Collection"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-collection-2b8066fa"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "What an import was given, as PingAccess objects by collection (Admin API reads, rendered requests or an export)",
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Read"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-read-87f70e4a"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One PingAccess object of an import, named by name with its id references replaced by ${pingaccess-id:...}",
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Obj"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-obj-cfcb7546"
+      }
+    },
+    {
+      "attributes": {
+        "description": "New product adapter package for PingAccess: import its configuration (Admin API v3 per-object reads with an Auditor credential, and/or the /config/export backup, encrypted secrets stripped), model it on the standard bases (OIDC relying party for web sessions, web access policy for applications/resources/rules, identity mappings) with environment bindings separate from portable intent, render where meaningful, read-only collector, planner checks and showcase. Research note 3076. Built by an InterComm worker; design escalated before coding.",
+        "flows": [
+          "Product Config Render",
+          "Product & Host Config Capture",
+          "Access Gateway Policy (PingAccess)",
+          "Live Read-Only Collection",
+          "Migration Planning",
+          "Render Notes Reporting",
+          "Round-trip Verification",
+          "Showcase & Verification"
+        ],
+        "name": "6.1a PingAccess adapter",
+        "parent": {
+          "slug": "milestone-6-1-conditional-product-adapters-43ded1f6"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Arc .3.5 prefix pa; api.py holds every vendor form (unverified); admin-api and export importers; secrets withheld, export key material dropped",
+        "name": "opsdir-adapter-pingaccess package: schema, naming, api data module, importers",
+        "parent": {
+          "key": {
+            "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-opsdir-adapter-pingaccess-package-schema-c84ecc67"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Auditor basic or bearer; GET allowlist; paging while pages are full, stop on repeat; never /config/*, /backup, agent/engine config",
+        "name": "Collector admin-api",
+        "parent": {
+          "key": {
+            "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-collector-admin-api-4e015bb4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Per environment requests in dependency order with ${pingaccess-id:..} placeholders, bindings filled, secrets as references; notes as data; ReadBack round trip",
+        "name": "Render requests.json + render notes + read back",
+        "parent": {
+          "key": {
+            "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-render-requests-json-render-notes-read-b-8fabc742"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess blockers/actions/fixes; listeners 9000/9090/3000(/3030/3020); health endpoint; FIPS info change",
+        "name": "Planner check, listeners, endpoints, version changes",
+        "parent": {
+          "key": {
+            "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-planner-check-listeners-endpoints-versio-0c0b8674"
+      }
+    },
+    {
+      "attributes": {
+        "description": "PingAccess in front of Tech Pubs on source prod; exports/pingaccess; demo.sh, snapshot-outputs.sh, showcase_support APPROVED, governance.py, 20-changes.ldif, expected-findings.json",
+        "name": "Showcase CHG-2060..2062, B65 B66 A181-A183",
+        "parent": {
+          "key": {
+            "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-showcase-chg-2060-2062-b65-b66-a181-a183-6b5f166b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Acceptance items for unverified vendor forms; adapter table; arc list",
+        "name": "Docs: package README Known limits, opsdir README, model doc",
+        "parent": {
+          "key": {
+            "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docs-package-readme-known-limits-opsdir-c54b4d46"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "81fd052",
+    "branch": "aimfp-u61a-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "usable_name calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-usable-name-e819a7c7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "held_base calls type_slug (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-held-base-e20443c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-type-slug-c78e9da0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entry_dn calls held_base (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entry-dn-fbd44c77"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-base-e20443c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resources_path calls reference (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resources-path-d5932c43"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reference-8d5f86cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "marked calls sensitive_name (secrets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-marked-985e7c37"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sensitive-name-977a8f8f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "marked calls rendered_in_place (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-marked-985e7c37"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-in-place-cadfc6f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "withheld_settings calls without_secrets (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-withheld-settings-0cfa861e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-without-secrets-db0ff903"
+      }
+    },
+    {
+      "attributes": {
+        "description": "withheld_settings calls rendered_in_place (jsondata.py) via _sealed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-withheld-settings-0cfa861e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-in-place-cadfc6f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "withheld_settings calls marked (withheld.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-withheld-settings-0cfa861e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-marked-985e7c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "credential_value calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-credential-value-8c312626"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "credential_value calls secret_placeholder (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-credential-value-8c312626"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-secret-placeholder-45d84224"
+      }
+    },
+    {
+      "attributes": {
+        "description": "filled calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-filled-dd7c9793"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "filled calls with_values (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-filled-dd7c9793"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-values-1932a743"
+      }
+    },
+    {
+      "attributes": {
+        "description": "filled calls credential_value (withheld.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-filled-dd7c9793"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-value-8c312626"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_read calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-read-f25d5488"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_read calls collection (api.py) via _api_part",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-read-f25d5488"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-e1055127"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_read calls response_items (sources.py) via _api_part",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-read-f25d5488"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-response-items-33c498f5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_read calls is_render (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-read-f25d5488"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-render-4b35058a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "export_read calls sensitive_name (secrets.py) via _key_material",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-export-read-9b4bbf20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sensitive-name-977a8f8f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "export_read calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-export-read-9b4bbf20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "export_read calls response_items (sources.py) via _sections",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-export-read-9b4bbf20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-response-items-33c498f5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "host_role calls published_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-host-role-55e869f2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-service-role-82b21276"
+      }
+    },
+    {
+      "attributes": {
+        "description": "object_name calls collection (api.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-name-70b6575f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-e1055127"
+      }
+    },
+    {
+      "attributes": {
+        "description": "object_name calls host_role (refs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-object-name-70b6575f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-host-role-55e869f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placeholders calls referenced (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placeholders-1b27f873"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referenced-43be54bd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolved calls reference (naming.py) via _by_id",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolved-ece4ab52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reference-8d5f86cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolved calls referenced (naming.py) via _application",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolved-ece4ab52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referenced-43be54bd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolved calls object_name (refs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolved-ece4ab52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-object-name-70b6575f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolved calls mapped (refs.py) via _apply",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolved-ece4ab52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-mapped-8eb29d68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolved calls leaves (refs.py) via _unresolved",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolved-ece4ab52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-leaves-efaa89b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolved calls placeholders (refs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolved-ece4ab52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placeholders-1b27f873"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls make_entry (directory.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls one (directory.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls get (directory.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls children (directory.py) via _groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls integrations (services.py) via _web_session",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integrations-463318b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls canonical (jsondata.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-canonical-206598e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls merged_attrs (directory.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls held_json (jsondata.py) via _issuer",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls collection (api.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-e1055127"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls usable_name (naming.py) via _usable",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-usable-name-e819a7c7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls held_base (naming.py) via _groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-base-e20443c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls entry_dn (naming.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-dn-fbd44c77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls withheld_settings (withheld.py) via _entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-withheld-settings-0cfa861e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls host_role (refs.py) via _site",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-host-role-55e869f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls leaves (refs.py) via _identity_mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-leaves-efaa89b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls resolved (refs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resolved-ece4ab52"
+      }
+    },
+    {
+      "attributes": {
+        "description": "imported calls target_endpoint (importer.py) via _site",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-target-endpoint-c18124fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_admin_api calls admin_api_read (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-admin-api-80dfc163"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-admin-api-read-f25d5488"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_admin_api calls imported (importer.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-admin-api-80dfc163"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-imported-68100b68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls export_read (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-6aad8b18"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-export-read-9b4bbf20"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_export calls imported (importer.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-export-6aad8b18"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-imported-68100b68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "version calls recorded_versions (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-version-1446d1c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-recorded-versions-f9781dcf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entries_of calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "entries_of calls held_base (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-base-e20443c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "site_targets calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-site-targets-9c2bcd8e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "site_targets calls role_bindings (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-site-targets-9c2bcd8e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-bindings-87248336"
+      }
+    },
+    {
+      "attributes": {
+        "description": "body calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "body calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "body calls follow (directory.py) via _client_id",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "body calls bound (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-bound-d4e512c8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "body calls held_json (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "body calls filled (withheld.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-filled-dd7c9793"
+      }
+    },
+    {
+      "attributes": {
+        "description": "body calls site_targets (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-site-targets-9c2bcd8e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "request calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-request-16413799"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "request calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-request-16413799"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "request calls reference (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-request-16413799"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reference-8d5f86cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "request calls resources_path (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-request-16413799"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resources-path-d5932c43"
+      }
+    },
+    {
+      "attributes": {
+        "description": "request calls body (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-request-16413799"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-body-72670e52"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rendered calls entries_of (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rendered-1a61e00b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environment_bound calls entries_of (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environment-bound-b6ffa425"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "missing_references calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "missing_references calls held_json (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "missing_references calls collection (api.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-e1055127"
+      }
+    },
+    {
+      "attributes": {
+        "description": "missing_references calls entry_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-entry-dn-fbd44c77"
+      }
+    },
+    {
+      "attributes": {
+        "description": "missing_references calls placeholders (refs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placeholders-1b27f873"
+      }
+    },
+    {
+      "attributes": {
+        "description": "problems calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-031661a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "problems calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-031661a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "problems calls credential_value (withheld.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-031661a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-value-8c312626"
+      }
+    },
+    {
+      "attributes": {
+        "description": "problems calls rendered (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-031661a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-1a61e00b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "problems calls missing_references (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-031661a3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_files calls version (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-version-1446d1c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_files calls request (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-request-16413799"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_files calls rendered (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-1a61e00b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "admin_api_files calls problems (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-problems-031661a3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls admin_api_files (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-91c516f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-admin-api-files-d6532aa3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls version (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-version-1446d1c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls rendered (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-1a61e00b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls environment_bound (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-a6cab5ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-bound-b6ffa425"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pages calls response_items (sources.py) via _page_items",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pages-59508fe4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-response-items-33c498f5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_steps calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-steps-21d05843"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_steps calls response_items (sources.py) via _page_items",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-steps-21d05843"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-response-items-33c498f5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_steps calls pages (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-steps-21d05843"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pages-59508fe4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-41727b60"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "session_problems calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-session-problems-5037459b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "session_problems calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-session-problems-5037459b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "session_problems calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-session-problems-5037459b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "session_problems calls follow (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-session-problems-5037459b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "session_problems calls identity_services (services.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-session-problems-5037459b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-identity-services-cfc03923"
+      }
+    },
+    {
+      "attributes": {
+        "description": "session_problems calls held_json (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-session-problems-5037459b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "session_problems calls leaves (refs.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-session-problems-5037459b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-leaves-efaa89b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls one (directory.py) via _backend_roles",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls referrers (directory.py) via _apps_using",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls one_role (environment.py) via _backend_roles",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls held_json (jsondata.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls new_entry (changeset.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-new-entry-f9df7ccc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "header_fix calls leaves (refs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-leaves-efaa89b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls values (directory.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess references rdn_value (directory.py) via _apps_using",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls get (directory.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls referrers (directory.py) via _apps_using",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls responsible (findings.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls held_json (jsondata.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-json-d167b636"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls bound_nowhere (environment.py) via _secrets",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-bound-nowhere-2d798ccb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls external_hosts_fix (external.py) via _site",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-hosts-fix-627a4c50"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls runs_here (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-here-4528dee8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls leaves (refs.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-leaves-efaa89b6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls rendered (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rendered-1a61e00b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls environment_bound (render.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-bound-b6ffa425"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls missing_references (render.py) via _references",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-missing-references-0fdc5de9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls session_problems (checks.py) via _session",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-session-problems-5037459b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_pingaccess calls header_fix (checks.py) via _mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-pingaccess-4eb0f7cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-header-fix-1d16fc29"
+      }
+    },
+    {
+      "attributes": {
+        "description": "site_listeners calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "site_listeners calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "site_listeners calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "site_listeners calls via_service (ports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-via-service-59104252"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-50004525"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls holds (versions.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-50004525"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-holds-7c1e4eba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls recorded_versions (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-50004525"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-recorded-versions-f9781dcf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls held_base (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-50004525"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-base-e20443c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls site_listeners (listeners.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-50004525"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-site-listeners-2c94228e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "key_pairs calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-key-pairs-90817c46"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "key_pairs calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-key-pairs-90817c46"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "key_pairs calls held_base (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-key-pairs-90817c46"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-held-base-e20443c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "applies calls runs_product (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-applies-2bc64fd4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-product-50156a60"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-collection-e1055127"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-collection-2b8066fa"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-entries-of-7a1888ea"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-collection-2b8066fa"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-body-72670e52"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-collection-2b8066fa"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-request-16413799"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-collection-2b8066fa"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-rendered-1a61e00b"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-collection-2b8066fa"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-environment-bound-b6ffa425"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-collection-2b8066fa"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-admin-api-read-f25d5488"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-read-87f70e4a"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-export-read-9b4bbf20"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-read-87f70e4a"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-imported-68100b68"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-read-87f70e4a"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-resolved-ece4ab52"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-obj-cfcb7546"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      },
+      "flow": {
+        "name": "Product & Host Config Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      },
+      "flow": {
+        "name": "Product Config Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/schema.py"
+      },
+      "flow": {
+        "name": "Schema Bootstrap"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/schema.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py"
+      },
+      "flow": {
+        "name": "Product & Host Config Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py"
+      },
+      "flow": {
+        "name": "Product Config Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py"
+      },
+      "flow": {
+        "name": "Product & Host Config Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py"
+      },
+      "flow": {
+        "name": "Product & Host Config Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      },
+      "flow": {
+        "name": "Product & Host Config Capture"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      },
+      "flow": {
+        "name": "Round-trip Verification"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      },
+      "flow": {
+        "name": "Product Config Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      },
+      "flow": {
+        "name": "Render Notes Reporting"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py"
+      },
+      "flow": {
+        "name": "Live Read-Only Collection"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "flow": {
+        "name": "Assisted Fixes"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/versions.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/versions.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py"
+      },
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/schema.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/versions.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-pingaccess"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "Access Gateway Policy (PingAccess)"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-1-conditional-product-adapters-43ded1f6"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/api.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/withheld.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/sources.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/refs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/listeners.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/versions.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1a-pingaccess-adapter-72e6e862"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    }
+  ],
+  "warnings": []
+}

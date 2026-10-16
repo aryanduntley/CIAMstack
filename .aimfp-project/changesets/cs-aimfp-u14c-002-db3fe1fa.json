@@ -1,0 +1,397 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/cli.py",
+        "id_in_name": 0,
+        "name": "parser",
+        "parameters": "[]",
+        "purpose": "argparse parser built from the SUBCOMMANDS table (the collect subcommand's collector options from registry.COLLECT_OPTIONS), its description the module docstring with the installed collectors' collect usage (description()).",
+        "returns": "{\"type\": \"argparse.ArgumentParser\"}",
+        "source_hash": "43564ee21a35c2fd"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-parser-625e9919"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-base-ds/src/opsdir_base_ds/collect.py",
+        "id_in_name": 0,
+        "name": "config_collectors",
+        "parameters": "[{\"name\": \"product_name\", \"type\": \"str\", \"required\": true}, {\"name\": \"flags\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The config and declared Collectors of a DS-lineage product: the product's ldapsearch (its option names: PINGDS_FLAGS/OPENDJ_FLAGS) of cn=config over LDAPS on each collection source's servers (admin port), password on stdin via the password-file option /dev/stdin, keep without_credentials, <host>/config/config.ldif (declared: first server's config.ldif); both declare the collect options LDAPSEARCH and LDAP_TRUSTSTORE (this module's, shared by every product of the lineage); problems for missing bind DN/credential",
+        "returns": "{\"type\": \"tuple[Collector, Collector]\"}",
+        "source_hash": "8545b5bb6fb5095f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-config-collectors-9a53d14a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "collect_options",
+        "parameters": "[{\"name\": \"installed\", \"type\": \"tuple[Adapter]\", \"required\": true, \"description\": \"the installed adapters (COLLECT_OPTIONS = collect_options(ADAPTERS) at load)\"}]",
+        "purpose": "The collect options the installed adapters' collectors declare (Collector.options), each once, sorted by order then flag: identical declarations of one flag (a library's shared option) count once; two different declarations of one flag are refused (SystemExit naming both adapters). Pure.",
+        "returns": "{\"type\": \"tuple[CollectOption]\"}",
+        "source_hash": "8fdb9f1b8d983b18"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-collect-options-1c83e0be"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "option_key",
+        "parameters": "[{\"name\": \"option\", \"type\": \"CollectOption\", \"required\": true}]",
+        "purpose": "The name a collector reads an option's value under in its options ({name: value}): the flag without its dashes, dashes as underscores (--terraform-dir -> terraform_dir). Pure.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "62dc4d68ede55f97"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-option-key-ec51fffb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/cli.py",
+        "id_in_name": 0,
+        "name": "collect_usage",
+        "parameters": "[{\"name\": \"options\", \"type\": \"tuple[CollectOption]\", \"required\": true}, {\"name\": \"indent\", \"type\": \"str\", \"required\": false, \"description\": \"the description's indent (default two spaces)\"}]",
+        "purpose": "The `opsdir collect` usage lines of the help at an indent (the description's, as the module docstring holds it): its own options, the installed collectors' ([FLAG METAVAR], in their order) after --save, wrapped at 108 characters past the indent, continued 15 columns further in. Pure.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "d8db8648a9e4805e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-collect-usage-d193bc53"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/cli.py",
+        "id_in_name": 0,
+        "name": "description",
+        "parameters": "[]",
+        "purpose": "The CLI help's description: the module docstring with its `<collect usage>` line replaced by collect_usage of the installed collectors' options (registry.COLLECT_OPTIONS) at that line's indent (the docstring's, as the interpreter holds it). Pure.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "b26a59eafe2ab4fd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-description-5e567adb"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"importer\": \"str\", \"scope\": \"environment|estate\", \"steps\": \"fn(d, m, done, options) -> ((path, Command|Request), ...)\", \"verify\": \"fn(d, m) -> (call, check(output) -> problem|None) | None\", \"problems\": \"fn(d, m, options) -> (problem, ...) | None: why it can't collect here (nothing run)\", \"options\": \"tuple[CollectOption] = (): the run-time options it takes, offered as `opsdir collect` flags (U.14 task 519)\"}",
+        "description": "How opsdir collect reads one importer's export from the live system, read-only (Adapter.collectors), and the options it takes (CollectOption: the CLI builds its collect flags from the installed collectors' declarations).",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Collector"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-collector-de208f33"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A run-time option a collector takes (`opsdir collect` builds its flags from the installed adapters' declarations): flag (--terraform-dir), metavar (DIR, PATH), help (the CLI's help text), order (its place in the help and usage, lowest first). Data only, never a secret value; the collector receives the value under the flag without dashes, dashes as underscores (terraform_dir). Declared once by the library that reads it (format-terraform TERRAFORM_DIR, base-ds LDAPSEARCH/LDAP_TRUSTSTORE) and reused by the adapters.",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "CollectOption"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-collectoption-12f3e65f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Audit 3001 U14-03, user-approved (decision 3002). cli.py hard-codes adapter-specific collect flags (usage :51; flags --terraform-dir, --amster-key, --ldapsearch, --ldap-truststore, --ldap-ca :172-176; packed into the options dict :631-635), read by aws/azure/gcp collect.py (terraform_dir) and pingam collect.py (amster_key), and the LDAP collectors. Change: the core contract gains a declaration of a collector's options (name, metavar, help; never a secret value), the adapters declare theirs, and the CLI registers the collect flags from the installed adapters (registry), so the core names no tool. Flag names, defaults, help text and behaviour unchanged for users (two adapters declaring the same option name: refuse at load, naming both). Byte-identical: CLI help output and every collect test. Rules 3002 + 2991. Boundary: opsdir/opsdir/core/contract.py, opsdir/opsdir/connectors/registry.py, opsdir/opsdir/cli.py (collect parts only), the collectors' adapter declarations and collect.py of aws, azure, gcp, pingam, and whichever packages own the --ldap* options (base-ds / pingds / opendj / ldap), their tests and READMEs, opsdir/README.md. NOT any cloud's terraform.py/edge.py (worker-1, task 517); NOT format-arm/format-terraform/azure arm_* (worker-2, task 518).",
+        "flows": [
+          "Product & Host Config Capture",
+          "Cloud Inventory Import"
+        ],
+        "name": "U.14 f: collectors declare their own options; the CLI builds collect flags from the registry (U14-03)",
+        "parent": {
+          "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "d3f59d9",
+    "branch": "aimfp-u14c-002",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "parser calls description (cli.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-parser-625e9919"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-description-5e567adb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "description calls collect_usage (cli.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-description-5e567adb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collect-usage-d193bc53"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-collect-options-1c83e0be"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "combinator",
+      "type": {
+        "entity_key": "ty-collectoption-12f3e65f"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-option-key-ec51fffb"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-collectoption-12f3e65f"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-collect-usage-d193bc53"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-collectoption-12f3e65f"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/cli.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-base-ds/src/opsdir_base_ds/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/state.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ldap/src/opsdir_adapter_ldap/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingam/src/opsdir_adapter_pingam/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-base-ds/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ldap/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingam/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-f-collectors-declare-their-own-opti-e0f0ab9c"
+      }
+    }
+  ],
+  "warnings": []
+}

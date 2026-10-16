@@ -1,0 +1,2627 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "environment",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"spec\", \"type\": \"str\"}, {\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false}]",
+        "purpose": "Resolve an environment spec: (EnvModel carrying the installed adapters' product roles (core.environment.product_roles / with_product_roles, attached before the applicable adapters are chosen, so a kit's applies finds its products) with required roles applied, the applicable adapters).",
+        "returns": "{\"type\": \"tuple[EnvModel, tuple[Adapter, ...]]\"}",
+        "source_hash": "8b045cf86732c6d3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-environment-be417ae2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/stack.py",
+        "id_in_name": 0,
+        "name": "declared_adapters",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"adapters\", \"type\": \"Sequence[Adapter]\"}]",
+        "purpose": "Pure: the adapters that render an environment: its declared stack's (registry order), or those whose applies() matches its data when none is declared; a model without product roles gets the given adapters' first (a kit's applies finds its products by them; the stack check's plain env_model models).",
+        "returns": "{\"type\": \"tuple[Adapter, ...]\"}",
+        "source_hash": "f55270b2cc824d62"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-declared-adapters-d0e11f70"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "services",
+        "parameters": "[{\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false}, {\"name\": \"targets\", \"type\": \"dict[str, tuple[str]]|None\", \"required\": false, \"description\": \"the render targets chosen in this render (none outside a render)\"}]",
+        "purpose": "What connectors provide to adapters while rendering (Services), resolved against the installed adapters (their callable logs resolved first: resolved_logs): secret_command, endpoints, listeners, workload_identity, secret_delivery, routes, gateway_plug, ansible_lookup, deployable_config, signals, logs, host_files, render_targets (chosen_for over the targets chosen in this render), mounts_secrets (mounts_secrets_of) and installed_logs (every installed adapter's LogSources).",
+        "returns": "{\"type\": \"Services\"}",
+        "source_hash": "823c98ff6b4b048f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-services-f2431578"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/release.py",
+        "id_in_name": 0,
+        "name": "kit_secrets",
+        "parameters": "[{\"name\": \"names\", \"type\": \"iterable[str]\"}, {\"name\": \"target\", \"type\": \"str (helm|kustomize)\"}]",
+        "purpose": "((KitSecret, what makes it under the render target, or None), ...) for the Secrets the pods of these components read: None when the record (or the operator) supplies it. With no DS store among them (PRODUCT_COMPONENTS' PingDS components), ds-ssl-keypair is SERVERS_CA. Pure.",
+        "returns": "{\"type\": \"tuple[tuple[KitSecret, str|None]]\"}",
+        "source_hash": "f5beed66e178c455"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-kit-secrets-3dcfc95c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/components.py",
+        "id_in_name": 0,
+        "name": "components_of",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true, \"description\": \"carrying the installed adapters' product roles\"}, {\"name\": \"w\", \"type\": \"Entry ciamWorkload\", \"required\": true}]",
+        "purpose": "The ForgeOps components a workload runs as: by its role, a server role of a product ForgeOps deploys (release.PRODUCT_COMPONENTS; the roles the product's adapter declares, core.environment.roles_for in environment m), a DS workload by its name (ds-idrepo, ds-cts); () when ForgeOps doesn't run it. Pure.",
+        "returns": "{\"type\": \"tuple of component names\"}",
+        "source_hash": "5c17c4b7134e2f7b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-components-of-60521386"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/components.py",
+        "id_in_name": 0,
+        "name": "unplaced",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Workloads environment m runs on Kubernetes whose role is a server role of a product ForgeOps deploys (core.environment.roles_for over release.PRODUCT_COMPONENTS) but which it can't place (a DS workload not named ds-idrepo or ds-cts). Pure.",
+        "returns": "{\"type\": \"tuple of Entry\"}",
+        "source_hash": "f49dc9f4a84ffe05"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-unplaced-ef694ac4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/components.py",
+        "id_in_name": 0,
+        "name": "placements",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Per namespace, the workloads environment m runs with ForgeOps (as which components) and every component that is on (with amster, ds-set-passwords, keystore-create and the platform UIs as they come with them).",
+        "returns": "{\"type\": \"tuple of Placement\"}",
+        "source_hash": "226c7ea5f413304a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-placements-68ee00d0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/components.py",
+        "id_in_name": 0,
+        "name": "image_of",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"p\", \"type\": \"Placement\"}, {\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "The image a ForgeOps component runs: kubernetes kits.kit_image over the component's container names; UNBOUND:forgeops-<component>-image when the record names none. Pure.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "090704059e84d95f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-image-of-dd15e658"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/components.py",
+        "id_in_name": 0,
+        "name": "ds_servers",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"p\", \"type\": \"Placement\"}, {\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "host:port of a DS store (ds-idrepo or ds-cts): its pods when it runs here (ForgeOps' service names), else the environment's DS service name (PingDS's declared service role, ds-ldaps-service, via core.environment.roles_for: its port, else LDAPS 1636), else UNBOUND:<that role> (UNBOUND:PingDS-service without the PingDS adapter installed). Pure.",
+        "returns": "{\"type\": \"list of str\"}",
+        "source_hash": "74d62edd5fc971f3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ds-servers-d46fe46d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/components.py",
+        "id_in_name": 0,
+        "name": "pod_labels",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}, {\"name\": \"p\", \"type\": \"Placement\"}, {\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "The labels a component's pods carry: opsdir.io/role (what the kubernetes adapter's network policies select) and the pod labels its cloud's workload identity needs; a component without a workload, the first server role of the product it comes with (release.COMPANION_PRODUCTS, core.environment.roles_for; {} for none). Pure.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "353a3566410d9981"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-pod-labels-a7cbd168"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/products.py",
+        "id_in_name": 1,
+        "name": "image_of",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"p\", \"type\": \"Placement\"}, {\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "The image a ping-devops product runs: kubernetes kits.kit_image over the product's container names (release.PRODUCTS); UNBOUND:ping-devops-<product>-image when the record names none. Pure.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "7233e15b9ebb0c95"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-image-of-d08a5ca4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/helm.py",
+        "id_in_name": 1,
+        "name": "product_values",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}, {\"name\": \"p\", \"type\": \"Placement\", \"required\": true}, {\"name\": \"product\", \"type\": \"Product\", \"description\": \"release.PRODUCTS entry (name, role, containers)\", \"required\": true}]",
+        "purpose": "One product's ping-devops values: enabled, and when a workload runs it its image, container (replicas, resources, Secret env vars), service account, pod labels, pod annotations (kits.workload_marks, plus opsdir.io/derived-containers naming its log sidecars) and storage, envs (the server profile repository it fetches: profile_envs), Secret files, ingress, its log sidecars (product_logs: includeSidecars, out-dir at /opt/out for a Deployment), and its SecretProviderClasses' mounts under csi (secret_mounts), the sidecars' and the classes' volumeMounts combined.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "9015edfe3193fee9"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-product-values-85b59b88"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/helm.py",
+        "id_in_name": 1,
+        "name": "chart_values",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true}, {\"name\": \"p\", \"type\": \"Placement\", \"required\": true}]",
+        "purpose": "The chart's values for a placement: the image's EULA setting, DNS_QUERY_LOCATION from the recorded discovery binding, PingFederate admin and engine (product_values), and the shared log sidecars and out-dir volume (log_sidecars.shared_logs).",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "96e1382f0e5fb4f4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-chart-values-5e83e3e3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/listeners.py",
+        "id_in_name": 1,
+        "name": "listeners",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Adapter.listeners of ForgeOps: kubernetes kits.kit_listeners over its placements and release.POD_PORTS (the release's pods' container ports per server role, on='kubernetes'). Pure.",
+        "returns": "{\"type\": \"tuple[Listener]\"}",
+        "source_hash": "57d548954451308e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-listeners-e3706d4d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/listeners.py",
+        "id_in_name": 1,
+        "name": "listeners",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Adapter.listeners of ping-devops: kubernetes kits.kit_listeners over its placements and release.POD_PORTS (the PingFederate pods' container ports per server role, on='kubernetes'). Pure.",
+        "returns": "{\"type\": \"tuple[Listener]\"}",
+        "source_hash": "57d548954451308e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-listeners-a4bce36b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py",
+        "id_in_name": 0,
+        "name": "recorded_query",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The DNS name environment m's PingFederate cluster-discovery binding (discovery_role) has its nodes query when it uses DNS_PING, or None. Pure.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "d3b4b9aedd02fec6"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-recorded-query-95e120fa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py",
+        "id_in_name": 0,
+        "name": "discovery_gap",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"p\", \"type\": \"Placement\", \"required\": true}]",
+        "purpose": "(what to say, the Fix) when environment m's record doesn't have its PingFederate nodes in placement p find each other by DNS_PING through the chart's cluster service (the binding named by discovery_role, PingFederate's declared cluster-discovery role), else None. Pure.",
+        "returns": "{\"type\": \"tuple[str, Fix]|None\"}",
+        "source_hash": "1d74f7d2da587a74"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/routes.py",
+        "id_in_name": 0,
+        "name": "gateway_fronted",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"chart\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a cluster gateway in environment m fronts a server role of a product whose service names a chart's Ingresses serve (release.CHART_PRODUCTS, core.environment.roles_for): its Ingresses are then off. Pure.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "3106ce32db50fbc3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-gateway-fronted-928ae9cc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/log_sidecars.py",
+        "id_in_name": 0,
+        "name": "picked",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services\", \"required\": true, \"description\": \"installed_logs: every installed adapter's LogSources\"}, {\"name\": \"role\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "((sidecar container, path under the server root), ...) of a role's PingFederate log files environment m's log routes pick: the kit's own LogSources (kit_logs) and PingFederate's file declarations (sidecar_files), both over Services.installed_logs and m's product roles, in declaration order. Pure.",
+        "returns": "{\"type\": \"tuple[tuple[str, str], ...]\"}",
+        "source_hash": "dcb1a2c02bddab3c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-picked-17adfe45"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-kubernetes/src/opsdir_adapter_kubernetes/kits.py",
+        "id_in_name": 0,
+        "name": "workload_of",
+        "parameters": "[{\"name\": \"p\", \"type\": \"Placement\", \"required\": true, \"description\": \"a kit's placement\"}, {\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"a component or product name of the kit\"}]",
+        "purpose": "The workload a kit's placement runs as a component or product name, or None (a component that comes with others). Pure.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "84a7ef05af9efd55"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-kubernetes/src/opsdir_adapter_kubernetes/kits.py",
+        "id_in_name": 0,
+        "name": "kit_image",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"p\", \"type\": \"Placement\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"the component or product\"}, {\"name\": \"containers\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"its container names, in the order they are looked for\"}, {\"name\": \"kit\", \"type\": \"str\", \"required\": true, \"description\": \"the kit's name in the UNBOUND value (forgeops, ping-devops)\"}]",
+        "purpose": "The image a component or product of a kit's placement runs: the first of its container names the placement's workload bindings record (its own workload's first), else its own workload's only image, else UNBOUND:<kit>-<name>-image. Pure.",
+        "returns": "{\"type\": \"str\", \"description\": \"an image reference, or UNBOUND:<kit>-<name>-image\"}",
+        "source_hash": "7e16d958d28ccd66"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kit-image-68cce58f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-kubernetes/src/opsdir_adapter_kubernetes/kits.py",
+        "id_in_name": 0,
+        "name": "kit_listeners",
+        "parameters": "[{\"name\": \"placements\", \"type\": \"tuple[Placement]\", \"required\": true, \"description\": \"the kit's placements in an environment\"}, {\"name\": \"pod_ports\", \"type\": \"tuple[tuple]\", \"required\": true, \"description\": \"((server role, port, purpose, peers), ...) the kit's pods listen on\"}]",
+        "purpose": "A kit's Listeners: the container ports (pod_ports) of the server roles its placements run, declared on='kubernetes' so the kubernetes adapter's network policies admit them to the role's pods and the firewall checks leave them out. Pure.",
+        "returns": "{\"type\": \"tuple[Listener]\"}",
+        "source_hash": "165c9af5f188fb1f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kit-listeners-a0915a6a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "with_product_roles",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"product_roles\", \"type\": \"tuple[tuple[str, str, str]]\", \"required\": true, \"description\": \"((product, kind, role), ...): connectors.registry.product_roles of the installed adapters\"}]",
+        "purpose": "The same environment carrying the roles the installed product adapters declare (EnvModel.product_roles), so kits find a product's roles by product (roles_for). Pure.",
+        "returns": "{\"type\": \"EnvModel\"}",
+        "source_hash": "3513033b9a5c3de1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-with-product-roles-a292f738"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "roles_for",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"product\", \"type\": \"str\", \"required\": true, \"description\": \"a product name as an adapter's Adapter.products names it (PingAM, PingDS, ...)\"}, {\"name\": \"kind\", \"type\": \"str\", \"required\": true, \"description\": \"a contract.ROLE_KINDS value\"}]",
+        "purpose": "The roles of one kind (contract.ROLE_KINDS: server, keystore, service, cluster-discovery) the installed adapter of a product declares, in declaration order, from the environment's product_roles; () when no installed adapter declares that product. Pure.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "b070b91f0b44449e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "product_roles",
+        "parameters": "[{\"name\": \"adapters\", \"type\": \"tuple[Adapter]\", \"required\": true, \"description\": \"the installed adapters\"}]",
+        "purpose": "((product, kind, role), ...): every role the given adapters declare (Adapter.roles), under each product name the declaring adapter lists (Adapter.products), in their order; what connectors.registry.environment and connectors.stack attach to an environment (with_product_roles). Pure.",
+        "returns": "{\"type\": \"tuple[tuple[str, str, str]]\"}",
+        "source_hash": "bcd9d2a33fcf0059"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-product-roles-8692ca7d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "resolved_logs",
+        "parameters": "[{\"name\": \"adapters\", \"type\": \"tuple[Adapter]\", \"required\": true}]",
+        "purpose": "The adapters with every callable Adapter.logs (a kit's: (installed products' static LogSources) -> LogSources) replaced by what it gives over the others' static LogSources, so ADAPTERS holds static tuples only and every consumer reads them unchanged. Pure.",
+        "returns": "{\"type\": \"tuple[Adapter]\"}",
+        "source_hash": "9a93a2558bcbf9df"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resolved-logs-0b6e0117"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/logs.py",
+        "id_in_name": 0,
+        "name": "server_roles",
+        "parameters": "[{\"name\": \"product_roles\", \"type\": \"tuple[tuple[str, str, str]]\", \"required\": true, \"description\": \"((product, kind, role), ...): core.environment.product_roles of the installed adapters (or an EnvModel's product_roles)\"}]",
+        "purpose": "PingFederate's server roles, in its adapter's declaration order, from the installed adapters' product roles. Pure.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "614104b07fde36de"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-server-roles-42ad789f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/logs.py",
+        "id_in_name": 0,
+        "name": "sidecar_files",
+        "parameters": "[{\"name\": \"sources\", \"type\": \"tuple[LogSource]\", \"required\": true, \"description\": \"LogSources of the installed adapters\"}, {\"name\": \"roles\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"PingFederate's server roles (server_roles)\"}]",
+        "purpose": "((server role, sidecar container, path under the server root, declaration), ...): every file PingFederate's servers write, from the installed adapters' LogSources (its own declarations), but those the image's main container streams (TAILED), in declaration order. Pure.",
+        "returns": "{\"type\": \"tuple[tuple]\"}",
+        "source_hash": "206e893c272704a8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sidecar-files-4383577e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/logs.py",
+        "id_in_name": 0,
+        "name": "kit_logs",
+        "parameters": "[{\"name\": \"sources\", \"type\": \"tuple[LogSource]\", \"required\": true, \"description\": \"the installed adapters' static LogSources\"}, {\"name\": \"product_roles\", \"type\": \"tuple[tuple[str, str, str]]\", \"required\": true, \"description\": \"the installed adapters' product roles\"}]",
+        "purpose": "ping-devops' Adapter.logs (a callable the registry resolves once: connectors.registry.resolved_logs): each PingFederate server role's main container (server.log and init.log, kind error), then a sidecar per other file its servers write (sidecar_files), all on='kubernetes'. Pure.",
+        "returns": "{\"type\": \"tuple[LogSource]\"}",
+        "source_hash": "391e8d156bb19ce7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kit-logs-a0170ea9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py",
+        "id_in_name": 0,
+        "name": "discovery_role",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "PingFederate's cluster-discovery binding role (pf-cluster-discovery) as its installed adapter declares it in environment m (core.environment.roles_for), or None. Pure.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "9b8dda995df7685f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-discovery-role-8407edb5"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "kind": "functions",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"typing.NamedTuple (functional form, immutable record)\", \"fields\": {\"d\": \"Directory\", \"dn\": \"str\", \"env\": \"Entry\", \"cloud\": \"Entry\", \"provider\": \"str (ciamCloudProvider)\", \"label\": \"str cloud/env\", \"servers\": \"tuple[Entry]\", \"bindings\": \"tuple[Entry]\", \"unbound\": \"tuple[str] (required roles not bound)\", \"stack\": \"tuple[StackComponent] declared under ou=stack (empty when none)\", \"declared_roles\": \"tuple[str]\", \"overrides\": \"tuple[Entry] (ciamOverride entries that apply)\", \"lineage\": \"tuple[Entry] (the environment, then its bases)\", \"scope\": \"Optional[Scope] = None (what a render writes of it: 5.7)\", \"product_roles\": \"tuple[(product, kind, role)] = () (the installed adapters' declared roles: with_product_roles; roles_for reads them)\"}}",
+        "description": "Resolved view of one environment that every renderer works from (roles, not names: R7). Built by env_model(d, spec); a render sets scope (core Scope: environment, keeper, class or bindings) that governance.keepers places by; connectors.registry.environment (and the stack check) attach the installed adapters' product roles (with_product_roles), which the deployment kits find their products' roles by (roles_for, U.14 task 515).",
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "EnvModel"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "type-envmodel-10501ae2"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"collections.namedtuple (endpoints/prerequisites/collectors/render_targets default (), listeners/proxy_settings/workload_identity/secret_delivery default None)\", \"fields\": {\"name\": \"str\", \"kind\": \"provider|platform|product|host|delivery|secret-store|compliance\", \"applies\": \"(EnvModel) -> bool | None\", \"required_roles\": \"tuple[str]\", \"render_neutral\": \"(Directory) -> {path: text} | None\", \"render_env\": \"(EnvModel, Services[, targets]) -> {path: text} | None\", \"checks\": \"tuple[(PlanContext) -> Findings]\", \"ref_schemes\": \"tuple[str]\", \"secret_schemes\": \"{scheme: (rest) -> shell command}\", \"renders\": \"str|None\", \"neutral_label\": \"str|None\", \"vocabulary\": \"{vocab attribute: tuple[values]}\", \"schema\": \"SchemaFragment|None\", \"formats\": \"tuple[(glob, format)]\", \"products\": \"tuple[(product, range)]\", \"secret_patterns\": \"tuple[SecretPattern]\", \"importers\": \"tuple[Importer]\", \"profile_terms\": \"Terms|None\", \"access\": \"AccessModel|None\", \"endpoints\": \"tuple[Endpoint]\", \"listeners\": \"(EnvModel) -> Listeners | None\", \"proxy_settings\": \"(EnvModel, ProxySettings) -> ProxySettings | None\", \"prerequisites\": \"tuple[Prerequisite]\", \"collectors\": \"tuple[Collector]\", \"render_targets\": \"tuple[(name, what[, False])]\", \"workload_identity\": \"(EnvModel, identity binding) -> K8sIdentity | None\", \"secret_delivery\": \"{scheme: SecretDelivery} | None\"}, \"registered_via\": \"entry points group opsdir.adapters\"}",
+        "description": "An adapter's declaration (namedtuple): name, kind, applies, renders, checks, schemes, formats, products, importers, endpoints, listeners, collectors, render targets, workload identity, secret delivery, routes, gateway plug, settings, ansible_lookup, signals (5.4), logs (static LogSources, or for a kit a callable (installed adapters' static LogSources, their product roles) -> LogSources that connectors.registry.resolved_logs resolves once at load, U.14 task 515) and host_files (5.4b), places_host_files (5.4b f2, default False): whether it places the other adapters' HostFiles on an environment's servers, version_changes (5.17, default ()): the VersionChanges between its products' releases, read by the planner's upgrade check (connectors.upgrades), reads_back (5.5, default ()): ReadBacks naming which of its importers read which of its rendered files back (round-trip guarantee, connectors.roundtrip), profile / render_profiles (product profiles for the kits), notes (5.4e, default None): (EnvModel, Services) -> RenderNotes (core.notes), renders_synthetic_checks (5.4e, default False), roles_used, mounts_secrets (5.12, default None): (EnvModel, workload) -> bool, whether a deployment kit's pods mount the SecretProviderClasses of a workload it deploys, and roles (U.14 task 515, default ()): ((kind, (role, ...)), ...) the roles its products use by kind (contract.ROLE_KINDS: server, keystore, service, cluster-discovery), which kits find by product (core.environment.roles_for), never by name.",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Adapter"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-adapter-ec60b0e6"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"typing.NamedTuple\", \"fields\": {\"secret_command\": \"(ref-uri) -> shell command\", \"endpoints\": \"tuple[Endpoint]\", \"listeners\": \"(EnvModel) -> tuple[Listener]\", \"workload_identity\": \"(EnvModel, identity binding Entry) -> K8sIdentity|None\", \"secret_delivery\": \"(scheme) -> SecretDelivery|None\", \"routes\": \"(EnvModel) -> Routes\", \"gateway_plug\": \"(EnvModel, gateway, service) -> GatewayPlug|None\", \"ansible_lookup\": \"(EnvModel, ref-uri) -> str|None\", \"deployable_config\": \"(EnvModel) -> tuple\", \"signals\": \"(EnvModel) -> tuple[Signal]\", \"logs\": \"(EnvModel) -> tuple[LogSource]\", \"host_files\": \"(EnvModel) -> tuple[HostFile]\", \"render_targets\": \"(adapter name) -> tuple[str]\", \"mounts_secrets\": \"(EnvModel, workload Entry) -> bool\", \"installed_logs\": \"tuple[LogSource] (every installed adapter's, a kit's resolved)\"}}",
+        "description": "What connectors provide to adapters while rendering: secret_command, endpoints, listeners(m), workload_identity, secret_delivery, routes(m), gateway_plug, ansible_lookup, deployable_config(m), signals(m), logs(m), host_files(m), render_targets(adapter name): the render targets chosen for that adapter in this render (() outside a render), mounts_secrets(m, workload): whether a deployment kit rendering m mounts the workload's SecretProviderClasses (Adapter.mounts_secrets), and installed_logs: every installed adapter's LogSources whether or not it renders the environment (what a kit reads its products' log files from; U.14 task 515).",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Services"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-services-b8c9c547"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"namedtuple\", \"fields\": [\"namespace\", \"placed\", \"on\"], \"defaults\": {\"on\": []}}",
+        "description": "One namespace of what a deployment kit runs in an environment: namespace, placed ((name, workload), ...: the kit's component or product names and the workloads they run as), on (every name that is on, including parts that come with others such as ForgeOps' companions; () for a kit without such parts). Shared by the kit adapters (ForgeOps, ping-devops).",
+        "file": "packages/opsdir-adapter-kubernetes/src/opsdir_adapter_kubernetes/kits.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Placement"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "kind": "types",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "kind": "types",
+      "op": "delete",
+      "semantic_key": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Audit 3001, rules (decision note on milestone 68) + 2991. U14-07: Placement(namespace, placed, on=()), workload_of, kit_listeners, kit_image (and applies if it fits) in packages/opsdir-adapter-kubernetes kits.py; forgeops and ping-devops switch. U14-08 option (b), user-approved: product adapters declare their server roles and secret roles in the core contract (opsdir/opsdir/core/contract.py Adapter, a field of declared roles by kind, e.g. server/keystore/service), the registry offers a lookup by product (opsdir/opsdir/connectors/registry.py), and forgeops (release.py KEYSTORE_ROLES, ROLE_COMPONENTS, COMPANION_ROLES, CHART_ROLES; components.py DS_SERVICE_ROLE) and ping-devops (logs.py, discovery.py importing pingfederate) look them up instead of hard-coding or importing; no adapter-to-adapter imports remain (pyproject dependencies dropped where only used for that). The contract field's exact shape is a design choice: escalate it (needs_user) with your proposal before building. Output byte-identical. Boundary: opsdir/opsdir/core/contract.py, opsdir/opsdir/connectors/registry.py (+ tests), packages/opsdir-adapter-kubernetes (kits.py, tests), -forgeops, -ping-devops, and the adapter.py/naming of -pingam, -pingidm, -pinggateway, -pingds, -pingfederate (declarations only), their READMEs/pyprojects.",
+        "flows": [
+          "Kubernetes Deployment Render",
+          "Product Profile Build"
+        ],
+        "name": "U.14 d: kits share placement; product roles declared in the contract (U14-07, 08b)",
+        "parent": {
+          "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Placement, workload_of, kit_image, kit_listeners in kits.py; forgeops and ping-devops switch; duplicates deleted with manifest",
+        "name": "U14-07 kit placement protocol in kubernetes kits.py",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-07-kit-placement-protocol-in-kuberne-09b8d3e4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Shape escalated (needs_user) before building; adapters declare roles, kits look up by product, no adapter-to-adapter imports",
+        "name": "U14-08b product roles declared in the contract",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-u14-08b-product-roles-declared-in-the-co-8d8bb64e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kubernetes, forgeops, ping-devops, product adapters as changed",
+        "name": "READMEs for the touched packages",
+        "parent": {
+          "key": {
+            "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-readmes-for-the-touched-packages-d937eec0"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "15d4fb0",
+    "branch": "aimfp-u14c-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-replicas-ba06afc0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resources-34812168"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-storage-c1e87edb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ingress-hosts-c7a0627e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pod-labels-a7cbd168"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-component-kustomization-f41e5c04"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-product-values-85b59b88"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-ping-devops-db3b3fce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pod-annotations-6b2ae2a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-chart-values-5e83e3e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": "profile_env calls workload_of (components.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-env-a5d64d0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": "delivered calls workload_of (products.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-delivered-5b7a5a56"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": "namespace_profile calls workload_of (products.py) via _ways",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-namespace-profile-ab84a9d9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": "image_of calls kit_image (kits.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-dd15e658"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kit-image-68cce58f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "image_of calls kit_image (kits.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-d08a5ca4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kit-image-68cce58f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls kit_listeners (kits.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-e3706d4d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kit-listeners-a0915a6a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls kit_listeners (kits.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-a4bce36b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kit-listeners-a0915a6a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kit_image calls image_named (kits.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kit-image-68cce58f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-image-named-2ea5b27a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kit_image calls only_image (kits.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kit-image-68cce58f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-only-image-c0b8d104"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kit_image calls workload_of (kits.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kit-image-68cce58f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-workload-of-7023e109"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kit_listeners calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kit-listeners-a0915a6a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environment calls with_product_roles (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environment-be417ae2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-product-roles-a292f738"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environment calls product_roles (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environment-be417ae2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-product-roles-8692ca7d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "declared_adapters calls with_product_roles (environment.py) via _with_roles",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-declared-adapters-d0e11f70"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-product-roles-a292f738"
+      }
+    },
+    {
+      "attributes": {
+        "description": "declared_adapters calls product_roles (environment.py) via _with_roles",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-declared-adapters-d0e11f70"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-product-roles-8692ca7d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "stack_rows calls with_product_roles (environment.py) via _with_roles",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-stack-rows-fc385055"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-product-roles-a292f738"
+      }
+    },
+    {
+      "attributes": {
+        "description": "stack_rows calls product_roles (environment.py) via _with_roles",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-stack-rows-fc385055"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-product-roles-8692ca7d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "services calls resolved_logs (registry.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-services-f2431578"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resolved-logs-0b6e0117"
+      }
+    },
+    {
+      "attributes": {
+        "description": "components_of calls roles_for (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-components-of-60521386"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unplaced calls roles_for (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unplaced-ef694ac4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ds_servers calls roles_for (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ds-servers-d46fe46d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pod_labels calls roles_for (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pod-labels-a7cbd168"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_forgeops calls roles_for (environment.py) via _keystore",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-forgeops-8b67cb31"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "attributes": {
+        "description": "recorded_query calls discovery_role (discovery.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-recorded-query-95e120fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-discovery-role-8407edb5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "discovery_gap calls discovery_role (discovery.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-discovery-role-8407edb5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "gateway_fronted calls roles_for (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gateway-fronted-928ae9cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "attributes": {
+        "description": "picked calls server_roles (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-picked-17adfe45"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-roles-42ad789f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "picked calls sidecar_files (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-picked-17adfe45"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sidecar-files-4383577e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "picked calls kit_logs (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-picked-17adfe45"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kit-logs-a0170ea9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolved_logs calls product_roles (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolved-logs-0b6e0117"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-product-roles-8692ca7d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sidecar_files calls file_name (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sidecar-files-4383577e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-name-bcf99702"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sidecar_files calls sidecar_name (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sidecar-files-4383577e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sidecar-name-8883c4df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sidecar_files calls in_server_root (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-sidecar-files-4383577e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-in-server-root-b4c65742"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kit_logs calls server_roles (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kit-logs-a0170ea9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-roles-42ad789f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kit_logs calls sidecar_files (logs.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kit-logs-a0170ea9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sidecar-files-4383577e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "discovery_role calls roles_for (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-role-8407edb5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-for-835abd32"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-placements-68ee00d0"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-image-of-dd15e658"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-replicas-ba06afc0"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-resources-34812168"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-storage-c1e87edb"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ds-servers-d46fe46d"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-external-ds-5c4e7d1c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ingress-hosts-c7a0627e"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-pod-labels-a7cbd168"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-service-account-9e6e7cca"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-on-in-669d51da"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-identity-platform-values-f0b78e4c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ping-gateway-values-0598550a"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-helm-files-fd782801"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-platform-config-df3fd78f"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kustomize-files-7571c37c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ds-in-cluster-74de5604"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-idm-ds-env-b6fbfd11"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-split-ds-27bff1a2"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-placements-099f7e6c"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-image-of-d08a5ca4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-product-values-85b59b88"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-chart-values-5e83e3e3"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-helm-files-8762043b"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-workload-of-7023e109"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kit-image-68cce58f"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kit-listeners-a0915a6a"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-49349e45"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-kubernetes/src/opsdir_adapter_kubernetes/kits.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/components.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/products.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/listeners.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/listeners.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/kustomize.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/helm.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/profiles.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-kubernetes/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/environment.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/logs.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/log_sidecars.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/stack.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/release.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/routes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-forgeops/src/opsdir_adapter_forgeops/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingam/src/opsdir_adapter_pingam/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingidm/src/opsdir_adapter_pingidm/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/src/opsdir_adapter_pinggateway/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingds/src/opsdir_adapter_pingds/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingam/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingidm/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pinggateway/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingds/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-d-kits-share-placement-product-role-09b711ee"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own workload",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-dd15e658"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-replicas-ba06afc0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resources-34812168"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-storage-c1e87edb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ingress-hosts-c7a0627e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pod-labels-a7cbd168"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-component-kustomization-f41e5c04"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": "by container names",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-dd15e658"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-image-named-2ea5b27a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own workload's only image",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-dd15e658"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-only-image-c0b8d104"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own workload",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-d08a5ca4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "by container names",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-d08a5ca4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-image-named-2ea5b27a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "own workload's only image",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-image-of-d08a5ca4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-only-image-c0b8d104"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-product-values-85b59b88"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-ping-devops-db3b3fce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pod-annotations-6b2ae2a0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-chart-values-5e83e3e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-e3706d4d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listeners calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listeners-a4bce36b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "profile_env calls workload_of (components.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-env-a5d64d0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      }
+    },
+    {
+      "attributes": {
+        "description": "delivered calls workload_of (products.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-delivered-5b7a5a56"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "namespace_profile calls workload_of (products.py) via _ways",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-namespace-profile-ab84a9d9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-placements-68ee00d0"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-workload-of-ed4c2185"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-image-of-dd15e658"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-replicas-ba06afc0"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-resources-34812168"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-storage-c1e87edb"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ds-servers-d46fe46d"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-external-ds-5c4e7d1c"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ingress-hosts-c7a0627e"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-pod-labels-a7cbd168"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-service-account-9e6e7cca"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-on-in-669d51da"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-identity-platform-values-f0b78e4c"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ping-gateway-values-0598550a"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-helm-files-fd782801"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-platform-config-df3fd78f"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kustomize-files-7571c37c"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-placements-099f7e6c"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-workload-of-eadbfb1e"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-image-of-d08a5ca4"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-product-values-85b59b88"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-chart-values-5e83e3e3"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-helm-files-8762043b"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ds-in-cluster-74de5604"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-idm-ds-env-b6fbfd11"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-split-ds-27bff1a2"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-d7888d22"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "kind": "type_usage",
+      "op": "remove",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-placement-8afadbd6"
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,4844 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "managed.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/federation/managed.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "managed_identity.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/connectors/managed_identity.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "cognito.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "cli_cognito.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_cognito.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "external_id.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "Cloud-managed identity services an environment uses, as data on the standard bases (federation domain): a ciamManagedIdentity binding (core class 167) whose ciamManagedService (770, adapter vocabulary) names the service kind. TARGET: ciamRealizes -> one of the platform's identity services (it runs on the managed service there); NEIGHBOUR: ciamPartnerOf (771) -> the integrations it is the partner side of (usually ciamManagedBy another team). Issuer vs relying party is derived from the integrations' protocol types. Cloud adapters declare each service as a ManagedService descriptor (Adapter.managed_identity: the protocols it issues to and trusts, grants, token auth methods, DPoP, signing algorithms, the cloud environments it exists in, custom domains per partition, dated sources). The planner (connectors.managed_identity) blocks a target that lacks what a served integration uses (documented unsupported: no confirmation path; not established by vendor documentation: blocks until an answered ciamUnknown of the proposed name confirms it), a service that doesn't exist in the environment's partition, and a published host the service can't keep; actions for what a render can't express. Report managed-identity. Amazon Cognito (aws adapter): Terraform aws_cognito_* and CloudFormation AWS::Cognito::*, read back from state and CLI (client secrets never read), FedRAMP boundary row, GovCloud facts. Microsoft Entra External ID (azure adapter): descriptor, public clouds only, no render (an action note)."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Managed Identity Services"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/plan.py",
+        "id_in_name": 0,
+        "name": "plan",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"src_spec\", \"type\": \"str\"}, {\"name\": \"dst_spec\", \"type\": \"str\"}, {\"name\": \"as_of\", \"type\": \"date\"}, {\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false, \"description\": \"default registry.ADAPTERS\"}, {\"name\": \"domains\", \"type\": \"Sequence[Domain]\", \"required\": false, \"description\": \"default registry.DOMAINS\"}, {\"name\": \"requester\", \"type\": \"str|None\", \"required\": false, \"description\": \"who runs the migration, recorded in the target's MANIFEST\"}]",
+        "purpose": "Migration plan with the given installed adapters (default: discovered) and domains: render both environments (the target whole, scope ENVIRONMENT, its MANIFEST naming requester when given), build a PlanContext, run cross-domain, adapter and domain checks and the connector checks (access, edge, network, evidence, signals, log collection, SIEM indexes nothing keeps: siem_check, the target's cloud-managed identity services against the adapters' ManagedService descriptors: managed_identity_check, proxies, upgrades, secret-store inventory with the installed adapters' locators), merge Findings into a Plan",
+        "returns": "{\"type\": \"Plan\"}",
+        "source_hash": "f9de08ef2a4319a0"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-plan-b824361b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/checks.py",
+        "id_in_name": 0,
+        "name": "check_identity_services",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check (federation domain): every identity service's published hosts are served by the target's service names for its role; ok when kept, blocker when a host is served by neither environment (a host only the source serves is left to the R9 contract check). An identity service the target runs on a cloud-managed service (a ciamManagedIdentity binding realizing it: managed.realizing) is left to connectors.managed_identity.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "616d129298b8ac94"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-identity-services-c66801f3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/inventory.py",
+        "id_in_name": 0,
+        "name": "pairs_resources",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"list[tuple[str, dict]]\"}]",
+        "purpose": "(resources, notices) of (Terraform resource type, attributes) pairs: what every AWS source is read into (state as is; CLI output and CloudFormation normalized to the same names), IAM included (iam_resources), the network depth (network_resources: route tables, NACLs, VPC endpoints, endpoint services, Network Firewall allowlists, links, flow logs; endpoint security groups left out of the firewall rules), managed databases, Cognito user pools as managed identity services (cognito.cognito_resources), S3 buckets with their settings (storage.object_store_resources), NAT allocation static for a public NAT gateway, audit trails, security services and budgets (budgets.budget_resources; their SNS topics are alert channels).",
+        "returns": "{\"type\": \"tuple[tuple[Resource, ...], tuple[str, ...]]\", \"description\": \"resources and rule notices\"}",
+        "source_hash": "61b4629f7acd6eae"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-pairs-resources-8187d24f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli.py",
+        "id_in_name": 0,
+        "name": "cli_resources",
+        "parameters": "[{\"name\": \"texts\", \"type\": \"dict\", \"description\": \"{path within <cloud>/<env>/: text}\"}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": false, \"description\": \"the import's time (dates evaluator verdicts)\"}]",
+        "purpose": "(Resources, notices) of an environment's AWS CLI outputs: recognized by top-level key, or by the folder they are saved under (a bucket's s3api settings; DLM policies; GuardDuty detectors and organization configurations), normalized to Terraform pairs (IAM, the simulator's verdicts dated by at, Instance Connect Endpoints as access paths; databases; bucket settings; CloudTrail trails; autoscaling groups, launch template versions and EKS; alarms, log groups, canaries and SNS topics; GuardDuty, Inspector, Config and Security Hub; SQS queues, EventBridge buses, Kinesis streams and SES identities; Cognito user pools from the projected describe-user-pool: cli_cognito.cognito_pairs; EventBridge rules with their event patterns; Lambda tags), scoped to the listed VPCs, read by the shared mapping.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(tuple[Resource], tuple[str])\"}",
+        "source_hash": "ea17ef0fd1616352"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-cli-resources-d6814ac5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/terraform.py",
+        "id_in_name": 0,
+        "name": "render_files",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services | None\", \"required\": true}]",
+        "purpose": "{path: TfFile | text} of environment m's AWS render: the stack's providers (the default, the us-east-1 alias, backup copy regions, billing, the organization's management and security administrator accounts when recorded (account.organization_providers), and one per region security services in every region run in (security.every_region / region_alias); each root keeps those it uses) and main items (ending with the Cognito user pools running identity services: cognito.render_cognito) plus the landing zone's and plumbing keepers' parts (landing_parts) placed into roots by who keeps what (landing.placed_roots: the stack's root, each taking keeper's terraform/landing-zone[/<party>]/, named keepers in a stack comment), the scripts and handlers they package as text (copied into a keeper root that reads them: carried_files), evaluation files. Under a keeper, class or bindings scope: the scope's root and the files it reads only.",
+        "returns": "{\"type\": \"dict[str, TfFile | str]\"}",
+        "source_hash": "fcf581d3c28d31fc"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-files-64922dea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_data.py",
+        "id_in_name": 0,
+        "name": "data_stack_pairs",
+        "parameters": "[{\"name\": \"declared\", \"type\": \"list[(logical id, type, resolved, raw, physical id)]\", \"required\": true}, {\"name\": \"names\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "(Terraform resource type, attributes) pairs of the data stores among a stack's declared resources, in the names databases.database_resources, discovery and cognito.cognito_resources read (5.6c): RDS DBInstance (aws_db_instance, or aws_rds_cluster_instance for an Aurora member), DBCluster, DBSubnetGroup, DB/DBCluster parameter groups (their Parameters), Macie CustomDataIdentifier, Cognito UserPool (id, ARN, name, tags) and UserPoolDomain (domain, pool, certificate); ARNs from Fn::GetAtt by type.",
+        "returns": "{\"type\": \"list[(str, dict)]\"}",
+        "source_hash": "e7ac7a8dc40edc97"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-data-stack-pairs-7ca12720"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/terraform.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services|None\", \"required\": true}]",
+        "purpose": "Adapter notes of the AWS adapter (Adapter.notes, flow 43): what environment m's AWS render leaves out or to a person, each written as its comment: the canaries it doesn't render (canary_notes), then the security services' (security_notes), audit trails' (audit_notes), data discovery's (discovery_notes), guardrails' (guardrail_notes), alert rules' (alert_notes), log destinations' (log_group_notes), identities' (core identity_notes), Kubernetes-only roles' (core kubernetes_notes), budgets' (budget_notes), forwarders on its own DNS servers' (dns.forwarder_notes), databases' (database_notes), Cognito user pools' (cognito.cognito_notes: scopes renamed, partner metadata URLs, neighbours not rendered), backup plans' (backup_notes), volumes' (volume_notes), compute groups' (group_notes), service names' edges' (edge_notes), the stack's network depth's (network.network_notes) and the landing zone plumbing's (plumbing.plumbing_notes) and, in GovCloud with a CDN, CloudFront's (cdn.govcloud_note) notes, and with Services the servers' and Fluent Bit's log shipping notes.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "defdec61a75733f2"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-015d06ee"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py",
+        "id_in_name": 0,
+        "name": "render_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services|None\", \"required\": true}]",
+        "purpose": "Adapter notes (flow 43): what environment m's Azure render leaves out or to a person, as data: synthetic checks, check jobs, security services', audit trails', data discovery's, suppressions', guardrails', alert rules', workspaces', Sentinel's (sentinel_notes), identities', Kubernetes-only roles', unpinned priorities', budgets, FIPS, forwarders, backups, databases, Entra External ID tenants' (external_id.external_id_notes: what to create by hand, neighbours not rendered), volumes, groups, edges, quotas, network depth and plumbing notes, the landing zone's placed notes and log shipping's (servers, containers); each written as its comment.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "94f86cc54386c6ec"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-notes-695c25af"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py",
+        "id_in_name": 0,
+        "name": "terraform_parts",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"services\", \"type\": \"Services | None\", \"required\": true}]",
+        "purpose": "(parts, landing_dns, interconnect lines, scripts, container files) of environment m's Azure Terraform before it is placed: the stack's providers and main items (network, servers, groups, backups, services, databases, object stores, DNS, trails, workspaces, log collection, container logs, alerts, Sentinel onboarding and analytics rules: render_sentinel, web tests, check jobs, security, discovery, Purview, suppressions, budgets, quota requests, Key Vault secrets, and last the Entra External ID tenants' notes as comments: nothing of an external tenant renders) and the landing zone's and plumbing keepers' parts.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(parts, landing_dns, interconnect header lines, check scripts {path: text}, container files {path: text})\"}",
+        "source_hash": "920bd47e4c10cec9"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "managed_identities",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Environment m's managed identity service bindings (ciamManagedIdentity).",
+        "returns": "{\"type\": \"tuple[Entry]\", \"description\": \"the bindings\"}",
+        "source_hash": "ca0dcdadf0eee0e3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-identities-5d3f3d2e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "is_target",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether a managed identity binding runs one of the platform's identity services (ciamRealizes): a target, not a neighbour.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "b0ddfdb75312cd62"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "realized_service",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The identity service a target binding realizes (by its ciamRealizes name), or None.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "201d0c5567a0121f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "realizing",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"service\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Environment m's managed identity binding realizing an identity service, or None.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "2423c8adb9fbbad1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-realizing-07334d78"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "partners",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The integrations a neighbour binding is the partner side of (ciamPartnerOf, those the record holds), in record order.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "4cb94b472a4d9691"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-partners-d962139b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "words",
+        "parameters": "[{\"name\": \"capability\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A capability in words: what the managed service would have to do (grants by their short name).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "df8140f657651a8a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-words-c8a1f07d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "slug",
+        "parameters": "[{\"name\": \"capability\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A capability as a name part (lower case, a grant URN by its grant type), for question names.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "1715c4d61501ad58"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-slug-ba9fb5ff"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "integration_needs",
+        "parameters": "[{\"name\": \"i\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_partner\", \"type\": \"bool\", \"required\": false}]",
+        "purpose": "The capabilities an integration needs of the managed service serving it (protocol, grants, token auth, DPoP, PKCE), or as_partner of the neighbour that is its partner side (its protocol part).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "b7e07d9a01ce7fa8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-integration-needs-40ce9eef"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "service_needs",
+        "parameters": "[{\"name\": \"service\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The capabilities an identity service's own settings need: its signing algorithms.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "0a5867f87a846162"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-service-needs-f2bf0031"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "status",
+        "parameters": "[{\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}, {\"name\": \"partition\", \"type\": \"str\", \"required\": true}, {\"name\": \"capability\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(status, source) of a capability on a managed service in a partition: unsupported (partition or service documented), supported, else not established.",
+        "returns": "{\"type\": \"tuple[str, str|None]\"}",
+        "source_hash": "ebd3a964ac36545b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-status-dc4085fa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "availability",
+        "parameters": "[{\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}, {\"name\": \"partition\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(status, source) of a managed service existing in a partition: documented absent, documented available, else not established.",
+        "returns": "{\"type\": \"tuple[str, str|None]\"}",
+        "source_hash": "481475875d7243ac"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-availability-c87222c5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "served",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"service\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The integrations an identity service serves (registered with it, and with none).",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "16e9d5c5a4db4acb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "mfa_split",
+        "parameters": "[{\"name\": \"integrations\", \"type\": \"tuple[Entry]\", \"required\": true}]",
+        "purpose": "The integrations requiring MFA when the others don't (some do, some don't), else ().",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "a6b2c1a073b928ce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-mfa-split-62b0fd20"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "transforms",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"integrations\", \"type\": \"tuple[Entry]\", \"required\": true}]",
+        "purpose": "The integrations releasing a claim with a transformation (ciamTransform).",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "97c9755e1d114328"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-transforms-72b63b22"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "roles",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "(issuer to, relying party of) integration names of a binding, derived from protocol types: a target's served integrations, a neighbour's partner integrations seen from its side.",
+        "returns": "{\"type\": \"tuple[tuple[str], tuple[str]]\"}",
+        "source_hash": "a753c476368e4e6a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/federation/managed.py",
+        "id_in_name": 0,
+        "name": "managed_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "Report managed-identity: one row per managed identity binding of every environment (service, target or neighbour, realizes/partner of, issuer to, relying party of, kept by, resource).",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "e2e8d63335c792fd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "question_name",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"capability\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The name of the unknowns-register question confirming a capability of a managed identity binding in an environment: confirm-<cloud>-<env>-<binding>-<capability slug>.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "047b2dbc122bffe9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-question-name-f6bc974b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "confirm_fix",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true}, {\"name\": \"question\", \"type\": \"str\", \"required\": true}, {\"name\": \"owners\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"concerns\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "The Fix adding the blocking ciamUnknown question that confirms a capability (owner given as an Input when none is recorded), with its manual steps and risks.",
+        "returns": "{\"type\": \"Fix\"}",
+        "source_hash": "d8d2120a06da1506"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-confirm-fix-a8e0e67e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "managed_identity_check",
+        "parameters": "[{\"name\": \"dst_adapters\", \"type\": \"tuple[Adapter]\", \"required\": true}]",
+        "purpose": "The planner check of the target's managed identity services given the adapters rendering it (their ManagedService descriptors): targets' coverage, availability, published hosts, actions; neighbours' part; undeclared services blocked.",
+        "returns": "{\"type\": \"Callable[[PlanContext], Findings]\"}",
+        "source_hash": "76065443eba908f4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_owners",
+        "parameters": "[{\"name\": \"*entries\", \"type\": \"Entry\", \"required\": false, \"description\": \"entries in order; the first with owners gives them\"}]",
+        "purpose": "The owner DNs of the first of these entries that has any.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "e932456fa8240a9c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-owners-6db638bc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_confirmed",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"capability\", \"type\": \"str\", \"required\": true}, {\"name\": \"needs\", \"type\": \"str\", \"required\": true}, {\"name\": \"concerns\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"owner_entries\", \"type\": \"tuple[Entry]\", \"required\": true}]",
+        "purpose": "The finding for a capability no vendor documentation establishes: ok when an answered question confirms it, nothing when an open blocking question asks it (the register counts it), else a blocker offering the question as its fix.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "7f0a8df2a46a5a96"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-confirmed-2829f94a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_gap",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}, {\"name\": \"partition\", \"type\": \"str\", \"required\": true}, {\"name\": \"capability\", \"type\": \"str\", \"required\": true}, {\"name\": \"needs\", \"type\": \"str\", \"required\": true}, {\"name\": \"concerns\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"owner_entries\", \"type\": \"tuple[Entry]\", \"required\": true}, {\"name\": \"change\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The finding for one capability: nothing when supported (an action when on a condition), a blocker when documented unsupported, else the confirmation path.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "e4765792cd54b909"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-gap-36e24457"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_available",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}, {\"name\": \"partition\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The finding for a managed service existing in the environment's partition: documented absent a blocker, not established a blocker until a question confirms it.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "3fc31a8db59c8e80"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-available-62864491"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_hosts",
+        "parameters": "[{\"name\": \"service\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "((capability, host, attribute), ...): each published http(s) host of an identity service once per capability keeping it (custom-domain for base URL and entity ID, custom-issuer for the issuer).",
+        "returns": "{\"type\": \"tuple[tuple[str, str, str]]\"}",
+        "source_hash": "add50cbe732e4b3d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-hosts-1320c6d0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_kept",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}, {\"name\": \"partition\", \"type\": \"str\", \"required\": true}, {\"name\": \"service\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"cap\", \"type\": \"str\", \"required\": true}, {\"name\": \"host\", \"type\": \"str\", \"required\": true}, {\"name\": \"attr\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The finding for one published host of the identity service a target binding realizes: kept when the capability is supported and ciamFqdn serves it, else a blocker or the gap's path.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "454b7eb968b97622"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-c5bd2998"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_target",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}]",
+        "purpose": "Findings for a binding running one of the platform's identity services on a managed service: availability, per-integration and service gaps, hosts, MFA split, claim transforms, partition notes, users, and its ok line.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "43c5bc42d19def31"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-target-f81892d8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_neighbour",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"spec\", \"type\": \"ManagedService\", \"required\": true}]",
+        "purpose": "Findings for a neighbour binding: it exists in its partition and can play the part its integrations' protocol types give it; its ok line.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "d3ca812578729ee5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-neighbour-df991a84"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/managed_identity.py",
+        "id_in_name": 0,
+        "name": "_undeclared",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The blocker for a binding whose ciamManagedService no adapter rendering the environment declares.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "d93efb13ae7420df"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-undeclared-503f8b47"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "cognito_bindings",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Environment m's managed identity bindings of service cognito-user-pool.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "5ac50a54fb6361a4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cognito-bindings-42476ea1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "custom_domain",
+        "parameters": "[{\"name\": \"host\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a sign-in host is a custom domain rather than a prefix of Cognito's own amazoncognito.com.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "826abcf13dbc35d9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-custom-domain-a607a795"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "custom_scopes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The scopes a target's served oidc-client integrations ask for beyond OIDC's (offline_access aside), each once: the resource server's scopes.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "6ff84a5983cff442"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-custom-scopes-b2c9a0c9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "render_cognito",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "HCL for environment m's Cognito user pools running its identity services (pool, domain, resource server, SAML partners and their metadata variables, a client per OIDC client, notes as comments), each stamped with its entry; a neighbour's note as its comment.",
+        "returns": "{\"type\": \"tuple[TfBlock | comment]\"}",
+        "source_hash": "e69f59beea7ce90c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "cognito_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Render notes of environment m's Cognito user pools: each target's (custom scope renaming, partner metadata URLs: actions), and each neighbour's (not rendered: a note).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "7edaa41cb27c6367"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cognito-notes-8b0aacd2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "cognito_resources",
+        "parameters": "[{\"name\": \"pairs\", \"type\": \"tuple[tuple[str, dict]]\", \"required\": true}]",
+        "purpose": "Managed identity resources of (Terraform type, attributes) pairs: a user pool per aws_cognito_user_pool (ARN else id as ref, its custom domain as ciamFqdn, its tags' role and Realizes); nothing of clients or providers (their secrets).",
+        "returns": "{\"type\": \"tuple[Resource]\"}",
+        "source_hash": "83b912874b06d5ee"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cognito-resources-18739a64"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "_targets",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Environment m's Cognito bindings that realize an identity service the record holds.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "315bf8f2c129cda0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-targets-dd21ee1b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "_served",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The integrations the identity service a target binding realizes serves.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "a77a875b2563f241"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-served-468d9c09"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "_of",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"protocol\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The served integrations of one protocol type.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "8db68f07526fdfd7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-of-de1f5276"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "_target",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The HCL items of one target binding: notes, pool, import, domain, resource server, providers, clients, comments for what Cognito can't serve.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "149455893867f86f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-target-fc29baaa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The render notes of a target binding: scopes applications now request by the resource server's name, partner metadata URLs to give.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "e5d24de0d05288fd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-notes-69d1d875"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "_neighbour_note",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The note of a neighbour user pool: kept by its owner, not rendered.",
+        "returns": "{\"type\": \"RenderNote\"}",
+        "source_hash": "7255382b6a5e591c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-neighbour-note-4361dc75"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py",
+        "id_in_name": 0,
+        "name": "_custom",
+        "parameters": "[{\"name\": \"domains\", \"type\": \"tuple[dict]\", \"required\": true}, {\"name\": \"a\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The custom domain of a user pool: its custom_domain, else the domain with a certificate among its aws_cognito_user_pool_domain attributes, or None.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "118f18d2f7f2f547"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-custom-36f02f29"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_cognito.py",
+        "id_in_name": 0,
+        "name": "cognito_pairs",
+        "parameters": "[{\"name\": \"outs\", \"type\": \"tuple[tuple[str, str, dict]]\", \"required\": true}]",
+        "purpose": "The (Terraform type, attributes) pairs of the projected describe-user-pool outputs among the recognized CLI outputs: aws_cognito_user_pool with id, ARN, name, tags, custom_domain.",
+        "returns": "{\"type\": \"list[tuple[str, dict]]\"}",
+        "source_hash": "4a585c466f8843e2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cognito-pairs-cb8b4e66"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "partition",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The Azure cloud environment m's cloud is in for External ID's availability: usgovernment (Azure Government region or ciamCloudEnvironment), else public.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "8011f73551ce8867"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-partition-3af0beb2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "external_id_bindings",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Environment m's managed identity bindings of service entra-external-id.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "5ac50a54fb6361a4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "external_id_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "Render notes of environment m's Entra External ID bindings: a target's what to create by hand (tenant, app registrations, user flows: an action), a neighbour's not rendered (a note).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "34d98de8f97d7a54"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "_target_note",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The action note of a target external tenant: the tenant and an app registration per served integration to create by hand.",
+        "returns": "{\"type\": \"RenderNote\"}",
+        "source_hash": "f861ef7ab54e6c31"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-target-note-663aa925"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "_neighbour_note",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The note of a neighbour external tenant: kept by its owner, not rendered.",
+        "returns": "{\"type\": \"RenderNote\"}",
+        "source_hash": "71cb6fb5511e811c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py",
+        "id_in_name": 0,
+        "name": "_apps",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"service\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "'name (protocol: return URLs)' for each integration an identity service serves.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "72f0db04f940b5fa"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-apps-7e7b76d8"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"collections.namedtuple (endpoints/prerequisites/collectors/render_targets default (), listeners/proxy_settings/workload_identity/secret_delivery default None)\", \"fields\": {\"name\": \"str\", \"kind\": \"provider|platform|product|host|delivery|secret-store|compliance\", \"applies\": \"(EnvModel) -> bool | None\", \"required_roles\": \"tuple[str]\", \"render_neutral\": \"(Directory) -> {path: text} | None\", \"render_env\": \"(EnvModel, Services[, targets]) -> {path: text} | None\", \"checks\": \"tuple[(PlanContext) -> Findings]\", \"ref_schemes\": \"tuple[str]\", \"secret_schemes\": \"{scheme: (rest) -> shell command}\", \"renders\": \"str|None\", \"neutral_label\": \"str|None\", \"vocabulary\": \"{vocab attribute: tuple[values]}\", \"schema\": \"SchemaFragment|None\", \"formats\": \"tuple[(glob, format)]\", \"products\": \"tuple[(product, range)]\", \"secret_patterns\": \"tuple[SecretPattern]\", \"importers\": \"tuple[Importer]\", \"profile_terms\": \"Terms|None\", \"access\": \"AccessModel|None\", \"endpoints\": \"tuple[Endpoint]\", \"listeners\": \"(EnvModel) -> Listeners | None\", \"proxy_settings\": \"(EnvModel, ProxySettings) -> ProxySettings | None\", \"prerequisites\": \"tuple[Prerequisite]\", \"collectors\": \"tuple[Collector]\", \"render_targets\": \"tuple[(name, what[, False])]\", \"workload_identity\": \"(EnvModel, identity binding) -> K8sIdentity | None\", \"secret_delivery\": \"{scheme: SecretDelivery} | None\"}, \"registered_via\": \"entry points group opsdir.adapters\"}",
+        "description": "An installable adapter's declaration (core contract): name, kind, applies, required roles, renderers, planner checks, schemes, vocabulary, schema, formats, products, importers, collectors, render targets, Kubernetes and edge hooks, settings, signals, logs, host files, version changes, read-backs, profiles, notes, roles used, product roles (roles), for a deployment kit what its chart answers for its products' cluster discovery (cluster_discovery -> DiscoveryAnswers), inventory locators, SIEM indexes it keeps (siem_indexes), and the cloud-managed identity services it declares (managed_identity -> ManagedServices, default ()).",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Adapter"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-adapter-ec60b0e6"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A cloud-managed identity service an adapter declares (Adapter.managed_identity), as data with sources: name (its ciamManagedService value), title, partition(m), available/absent by partition, supported/unsupported capabilities and partition_unsupported (each with its source), conditions (supported on an add-on: actions), notes per partition (actions for a target there), users (how users move: an action for every target).",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "ManagedService"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Cloud-managed identity services as migration TARGET or NEIGHBOUR: Amazon Cognito user pools, Microsoft Entra External ID (and B2C status), Google Cloud Identity Platform, and managed directory services (AWS Managed Microsoft AD, Entra Domain Services, Google Managed AD): their settings as data on the OIDC/SAML/LDAP bases (read-only import, IaC render where a resource exists, explicit coverage of what can't be expressed), likely inside the existing cloud adapters; government availability as data. Research note 3078. Built by an InterComm worker; design escalated before coding.",
+        "flows": [
+          "Product Config Render",
+          "Product & Host Config Capture",
+          "Managed Identity Services"
+        ],
+        "name": "6.1c cloud-managed identity services as data on the standard bases",
+        "parent": {
+          "slug": "milestone-6-1-conditional-product-adapters-43ded1f6"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "federation schema fragment + regenerated ciam-ops.schema.ldif",
+        "name": "Core model: ciamManagedIdentity (167), ciamManagedService (770), ciamPartnerOf (771), schema LDIF",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-model-ciammanagedidentity-167-ciamm-cc8d8c2e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "contract field default (); README shared-API rows",
+        "name": "Core contract: Adapter.managed_identity + ManagedService descriptor",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-contract-adapter-managed-identity-m-4d5d1e4c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pure coverage evaluation; identity services a dst binding realizes skip the service-name check",
+        "name": "Federation managed.py: coverage, report managed-identity, checks.py hand-off",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-federation-managed-py-coverage-report-ma-210cfb68"
+      }
+    },
+    {
+      "attributes": {
+        "description": "target coverage, partition availability, published host, neighbour availability; unknowns confirmation for not-established gaps",
+        "name": "Connector managed_identity_check (planner)",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-connector-managed-identity-check-planner-af5495b1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "every attribute checked against aws 6.68 schema and cfn-lint",
+        "name": "AWS Cognito: descriptor, Terraform render, CFN rows, state + CLI read-back, boundary row, GovCloud data",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-aws-cognito-descriptor-terraform-render-f368cff2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "public clouds only",
+        "name": "Azure Entra External ID: descriptor, availability, no render action note, boundary row",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-azure-entra-external-id-descriptor-avail-aa57fd75"
+      }
+    },
+    {
+      "attributes": {
+        "description": "",
+        "name": "Docs: READMEs Known limits, ops-directory-model, opsdir README",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docs-readmes-known-limits-ops-directory-55d1f35b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "demo.sh, snapshot-outputs.sh, showcase_support APPROVED, governance.py, expected findings",
+        "name": "Showcase CHG-2066 (partners on External ID, target) and CHG-2067 (Cognito neighbour, source)",
+        "parent": {
+          "key": {
+            "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-showcase-chg-2066-partners-on-external-i-5570f1de"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "81fd052",
+    "branch": "aimfp-u61c-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "plan calls managed_identity_check (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-b824361b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_identity_services calls realizing (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-identity-services-c66801f3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realizing-07334d78"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pairs_resources calls cognito_resources (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pairs-resources-8187d24f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cognito-resources-18739a64"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cli_resources calls cognito_pairs (cli_cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cli-resources-d6814ac5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cognito-pairs-cb8b4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_files calls render_cognito (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-files-64922dea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls cognito_notes (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-015d06ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cognito-notes-8b0aacd2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_notes calls external_id_notes (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-notes-695c25af"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_parts calls external_id_notes (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-parts-ffdb037f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identities calls of_class (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identities-5d3f3d2e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_target calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realized_service calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realized_service calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realizing calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realizing-07334d78"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realizing calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realizing-07334d78"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "realizing calls managed_identities (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-realizing-07334d78"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-identities-5d3f3d2e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "partners calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-partners-d962139b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "partners calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-partners-d962139b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_needs calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-needs-40ce9eef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_needs calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-needs-40ce9eef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "service_needs calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-service-needs-f2bf0031"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "served calls integrations_served (services.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-served-b54d394a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integrations-served-2f1bf4cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "mfa_split calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-mfa-split-62b0fd20"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "transforms calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-transforms-72b63b22"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "transforms calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-transforms-72b63b22"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "roles calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "roles calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "roles calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "roles calls realized_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "roles calls partners (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partners-d962139b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "roles calls served (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls branch (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-branch-1b5e8b28"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls environment_of (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-3ca01c81"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls env_label (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls partners (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partners-d962139b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls roles (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-9e11e72d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "question_name calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-question-name-f6bc974b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "question_name calls slug (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-question-name-f6bc974b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-slug-ba9fb5ff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "confirm_fix calls new_entry (changeset.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirm-fix-a8e0e67e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-new-entry-f9df7ccc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identity_check calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identity_check calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identity_check calls managed_identities (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-identities-5d3f3d2e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identity_check calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identity_check references _target (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-target-f81892d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identity_check references _neighbour (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neighbour-df991a84"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_identity_check calls _undeclared (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-identity-check-b8d59706"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-undeclared-503f8b47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_owners calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-owners-6db638bc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls answered (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answered-02a0b10a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls blocking (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-blocking-4ac43992"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls words (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-words-c8a1f07d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls question_name (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-question-name-f6bc974b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls confirm_fix (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-confirm-fix-a8e0e67e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_confirmed calls _owners (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-confirmed-2829f94a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-6db638bc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_gap calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gap-36e24457"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_gap calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gap-36e24457"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_gap calls words (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gap-36e24457"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-words-c8a1f07d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_gap calls status (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gap-36e24457"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-status-dc4085fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_gap calls _confirmed (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-gap-36e24457"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-confirmed-2829f94a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls answered (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answered-02a0b10a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls blocking (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-blocking-4ac43992"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls availability (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-availability-c87222c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls question_name (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-question-name-f6bc974b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls confirm_fix (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-confirm-fix-a8e0e67e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_available calls _owners (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-available-62864491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-6db638bc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_hosts calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-hosts-1320c6d0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_kept calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-c5bd2998"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_kept calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-c5bd2998"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_kept calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-c5bd2998"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_kept calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-c5bd2998"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_kept calls status (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-c5bd2998"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-status-dc4085fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_kept calls _gap (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-c5bd2998"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gap-36e24457"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls realized_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls words (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-words-c8a1f07d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls integration_needs (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integration-needs-40ce9eef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls service_needs (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-service-needs-f2bf0031"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls status (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-status-dc4085fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls served (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls mfa_split (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-mfa-split-62b0fd20"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls transforms (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-transforms-72b63b22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls roles (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls _gap (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gap-36e24457"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls _available (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-available-62864491"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls _hosts (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-hosts-1320c6d0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls _kept (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-c5bd2998"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls partners (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partners-d962139b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls integration_needs (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integration-needs-40ce9eef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls roles (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-roles-b9b0e0c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls _gap (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gap-36e24457"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour calls _available (managed_identity.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-available-62864491"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_undeclared calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-undeclared-503f8b47"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_undeclared calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-undeclared-503f8b47"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_undeclared calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-undeclared-503f8b47"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_undeclared calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-undeclared-503f8b47"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_bindings calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-bindings-42476ea1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_bindings calls of_class (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-bindings-42476ea1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "custom_scopes calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-custom-scopes-b2c9a0c9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "custom_scopes calls _of (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-custom-scopes-b2c9a0c9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-de1f5276"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls from_entry (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-from-entry-7471a268"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls cognito_bindings (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cognito-bindings-42476ea1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls _targets (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-targets-dd21ee1b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls _target (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-target-fc29baaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_cognito calls _neighbour_note (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-cognito-6bddd037"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neighbour-note-4361dc75"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_notes calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-notes-8b0aacd2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_notes calls cognito_bindings (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-notes-8b0aacd2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cognito-bindings-42476ea1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_notes calls _targets (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-notes-8b0aacd2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-targets-dd21ee1b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_notes calls _notes (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-notes-8b0aacd2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-notes-69d1d875"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_notes calls _neighbour_note (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-notes-8b0aacd2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neighbour-note-4361dc75"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_resources calls resource (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-resources-18739a64"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_resources calls tagged_role (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-resources-18739a64"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tagged-role-38b52328"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_resources calls of_types (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-resources-18739a64"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-types-3c844a4e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_resources calls state_tags (tags.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-resources-18739a64"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-state-tags-f0907085"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cognito_resources calls _custom (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cognito-resources-18739a64"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-36f02f29"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_targets calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-targets-dd21ee1b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_targets calls realized_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-targets-dd21ee1b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_targets calls cognito_bindings (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-targets-dd21ee1b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cognito-bindings-42476ea1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_served calls realized_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-served-468d9c09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_served calls served (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-served-468d9c09"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_of calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-of-de1f5276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_of calls _served (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-of-de1f5276"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-468d9c09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls ref (hcl.py) via _client",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ref-018f1ed3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls values (directory.py) via _client",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls certificate_ref (resolve.py) via _domain",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-ref-e0cc911a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls binding_tags (network.py) via _pool",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-binding-tags-124bd559"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls partition (account.py) via _domain",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-partition-a4646dea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls tf_block (hcl.py) via _client",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-block-ebb01e26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls comment (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-comment-6dd4aa4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls tf_import (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-import-7b34c873"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls note_comment (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-comment-7aa05069"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls realized_service (managed.py) via _identifier",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls custom_domain (cognito.py) via _domain",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-domain-a607a795"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls custom_scopes (cognito.py) via _resource_server",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-scopes-b2c9a0c9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls _served (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-468d9c09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls _of (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-de1f5276"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target calls _notes (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-fc29baaa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-notes-69d1d875"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_notes calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-notes-69d1d875"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_notes calls one (directory.py) via _identifier",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-notes-69d1d875"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-notes-69d1d875"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-notes-69d1d875"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_notes calls realized_service (managed.py) via _identifier",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-notes-69d1d875"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_notes calls custom_scopes (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-notes-69d1d875"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-custom-scopes-b2c9a0c9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_notes calls _of (cognito.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-notes-69d1d875"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-de1f5276"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-4361dc75"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-4361dc75"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-4361dc75"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-4361dc75"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "partition calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-partition-3af0beb2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "partition calls government (account.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-partition-3af0beb2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-government-19b1731c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_bindings calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_bindings calls of_class (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls is_target (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-target-12e3fb0e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls external_id_bindings (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-external-id-bindings-fb2837c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls _target_note (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-target-note-663aa925"
+      }
+    },
+    {
+      "attributes": {
+        "description": "external_id_notes calls _neighbour_note (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-external-id-notes-09e04d8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls realized_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-realized-service-5ecebeff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_target_note calls _apps (external_id.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-target-note-663aa925"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-apps-7e7b76d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_neighbour_note calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neighbour-note-94310bbe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_apps calls served (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-apps-7e7b76d8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-served-b54d394a"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-status-dc4085fa"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-availability-c87222c5"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-gap-36e24457"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-available-62864491"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-kept-c5bd2998"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-target-f81892d8"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-neighbour-df991a84"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedservice-8dd7d386"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/managed.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/managed_identity.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/managed_identity.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_cognito.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/schema.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/domain.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/checks.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/adapter.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/boundary.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cfn_types.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_data.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/inventory.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/rendered_state.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/terraform.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/adapter.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/boundary.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/managed.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-federation"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/managed_identity.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "connectors"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-aws"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_cognito.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-aws"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-azure"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Managed Identity Services"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-1-conditional-product-adapters-43ded1f6"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/managed.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/managed_identity.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cognito.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_cognito.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/external_id.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_data.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/federation/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/boundary.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cfn_types.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/rendered_state.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/boundary.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-1c-cloud-managed-identity-services-as-cada99a2"
+      }
+    }
+  ],
+  "warnings": []
+}

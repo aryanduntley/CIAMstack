@@ -1,0 +1,3590 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "issued.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package build config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "markdown",
+        "name": "README.md",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/README.md"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "inventory.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "templates.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "urls.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "powershell",
+        "name": "Export-AdcsInventory.ps1",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-adcs/scripts/Export-AdcsInventory.ps1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-adcs (kind pki, declaration-only): importer adcs/inventory reading the shipped PowerShell exporter's typed JSON (ICertView/ICertAdmin2) per CA and the forest's templates LDIF; publication URL flags and variables (urls.py), template LDIF decoding incl. pKIExpirationPeriod (templates.py). Never certutil text, never key columns.",
+        "external_dependencies": null,
+        "path": "packages/opsdir-adapter-adcs/",
+        "purpose": "Microsoft AD CS read into the core pki domain: CAs, templates, revocation endpoints and issued-certificate inventories, metadata only"
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-adcs"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "Certification authorities (ou=certificate-authorities, with revocation endpoints CDP/AIA/OCSP as children), certificate templates (ou=certificate-templates) and per-CA issued-certificate inventories (ou=issued-certificates, metadata only, never keys) in the core pki domain; the CA hierarchy per certificate (ciamIssuedBy). The record's certificates are reconciled with what their CA issued (fingerprint > serial > subject+validity): present, revoked, revocation-scheduled, superseded, confirmed-missing, inventory-incomplete, inaccessible, not-inventoried; untracked active certificates of templates the record cares about, owned by the template's renewal owner. Planner check check_issued_certificates (estate-wide, silent without an inventory) and reports certificate-authorities and issued-certificates (6.2d)."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "Microsoft AD CS read into the pki domain's authorities, templates, revocation endpoints and issued-certificate inventory (opsdir-adapter-adcs, importer adcs/inventory, adapter kind pki): per CA a typed JSON export written on the CA host by the shipped PowerShell exporter through the documented ICertView/ICertAdmin2 COM interfaces (issued and revoked rows by schema name, UTC ISO-8601 times, publication URL registry entries as decimal flags:template, the CA's templates), and the forest's certificate templates as LDIF (RFC 2849, base64 binary, pKIExpirationPeriod as a negative 100-ns interval). Metadata only: no archived-key column is ever read. certutil text output is never parsed (6.2d)."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "AD CS Inventory Import"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "revocation_reason",
+        "parameters": "[{\"name\": \"code\", \"type\": \"int|str\"}]",
+        "purpose": "RFC 5280 name of a CA's revocation reason code, else the value as it is (Microsoft -1 unrevoke never taken for reason 8)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "dd35728ef67c5ced"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-revocation-reason-f3e4230d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"provider_ref\", \"type\": \"str|None\"}, {\"name\": \"templates\", \"type\": \"tuple\"}]",
+        "purpose": "Importer builder: a ciamCertAuthority entry (provider ref, published templates), operator attributes kept",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "cbce0485bf7bd9b1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "endpoint_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"authority\", \"type\": \"str\"}, {\"name\": \"kind\", \"type\": \"str\"}, {\"name\": \"n\", \"type\": \"int\"}, {\"name\": \"url\", \"type\": \"str\"}, {\"name\": \"template\", \"type\": \"str|None\"}]",
+        "purpose": "Importer builder: the n-th ciamRevocationEndpoint of a kind under a CA, with its URL and the CA's unexpanded template when variables remain",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "e563eba02432d884"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "template_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"display\", \"type\": \"str|None\"}, {\"name\": \"oid\", \"type\": \"str|None\"}, {\"name\": \"max_days\", \"type\": \"int|None\"}, {\"name\": \"usages\", \"type\": \"tuple\"}]",
+        "purpose": "Importer builder: a ciamCertTemplate entry (display name, OID, max validity days, EKUs); purpose and renewal owner kept",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "5f4e28e60ebe3297"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "cert_inventory_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"authority\", \"type\": \"str\"}, {\"name\": \"at\", \"type\": \"str\"}, {\"name\": \"state\", \"type\": \"str\"}, {\"name\": \"problems\", \"type\": \"tuple\"}, {\"name\": \"provider_ref\", \"type\": \"str|None\"}]",
+        "purpose": "Importer builder: a CA's ciamCertInventory entry (when, complete/incomplete/denied, problems, provider ref)",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "9762060c6ece99d4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "issued_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"authority\", \"type\": \"str\"}, {\"name\": \"request\", \"type\": \"int|str\"}, {\"name\": \"facts\", \"type\": \"dict\"}]",
+        "purpose": "Importer builder: a ciamIssuedCertificate under a CA's inventory, by request id, from facts of ISSUED_ATTRS",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "553e5daf20824861"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-entry-1438647a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "templates_group",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"templates\", \"type\": \"tuple\"}]",
+        "purpose": "Imported group making ou=certificate-templates exactly the given templates (container kept)",
+        "returns": "{\"type\": \"tuple (scope DN, entries)\"}",
+        "source_hash": "c5ad7d74f9a17c3f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-templates-group-bf6590a7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authorities",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "The certification authorities the record holds",
+        "returns": "{\"type\": \"tuple of Entry\"}",
+        "source_hash": "8d94359397c3c0d6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "endpoints",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"authority\", \"type\": \"Entry\"}]",
+        "purpose": "A CA's revocation endpoints",
+        "returns": "{\"type\": \"tuple of Entry\"}",
+        "source_hash": "389b98da2fd76bb1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-endpoints-a82580c5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "cert_inventories",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "{CA name lowercase: issued-certificate inventory entry}",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "9df5c50ecc89ef5f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "issued_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"inventory\", \"type\": \"Entry\"}]",
+        "purpose": "The issued certificates of a CA inventory, by request id (numeric order)",
+        "returns": "{\"type\": \"tuple of Entry\"}",
+        "source_hash": "5bea27d4c866d577"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-of-df28b8c2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"cert\", \"type\": \"Entry\"}, {\"name\": \"cas\", \"type\": \"tuple of Entry\"}]",
+        "purpose": "The CA a record certificate was issued by: ciamIssuedBy listed as CA's own certificate, else issuer = CA certificate's subject, else issuer CN = CA name; None for a CA's own certificate",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "b13ce0002c01d0f0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authority-of-51a8f553"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "is_revoked",
+        "parameters": "[{\"name\": \"issued\", \"type\": \"Entry\"}]",
+        "purpose": "Whether the CA recorded an issued certificate as revoked (it carries a reason)",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "5a38b2cab3083aee"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "is_active",
+        "parameters": "[{\"name\": \"issued\", \"type\": \"Entry\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "Whether an issued certificate is current on as_of and not revoked",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "be7272ea3a45d1ec"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-active-83c779d1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "find_issued",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"Entry\"}, {\"name\": \"rows\", \"type\": \"tuple of Entry\"}, {\"name\": \"everywhere\", \"type\": \"tuple of Entry\"}]",
+        "purpose": "The issued certificate matching a record certificate: fingerprint (everywhere) > serial > subject+validity (its CA's rows)",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "dae8f6d99d6f85c8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "newer_issue",
+        "parameters": "[{\"name\": \"found\", \"type\": \"Entry\"}, {\"name\": \"rows\", \"type\": \"tuple of Entry\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "The latest active certificate issued later to the same subject from the same template (what superseded found)",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "e0b3dcbb0c79d651"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-newer-issue-cec417e7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "inventory_name",
+        "parameters": "[{\"name\": \"issued\", \"type\": \"Entry\"}]",
+        "purpose": "The name of the CA whose inventory holds an issued certificate",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "41858797916fea02"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-name-a5bafd33"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "reconcile",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"cert\", \"type\": \"Entry\"}, {\"name\": \"cas\", \"type\": \"tuple\"}, {\"name\": \"held\", \"type\": \"dict\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "A record certificate's Reconciled state against the CA inventories (present, revoked, revocation-scheduled, superseded, confirmed-missing, inventory-incomplete, inaccessible, not-inventoried), or None when no CA is found",
+        "returns": "{\"type\": \"Reconciled|None\"}",
+        "source_hash": "2a0b2c2c8859c5c5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-reconcile-875b2149"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "reconciled",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "Every record certificate a CA is found for, reconciled",
+        "returns": "{\"type\": \"tuple of Reconciled\"}",
+        "source_hash": "12ff7bbf275ce96b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "untracked",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"done\", \"type\": \"tuple of Reconciled\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "Active issued certificates no reconciled record certificate was found as: (inventory, issued) pairs",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "7f58d2213cce02de"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-untracked-25f2b01c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "template_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"issued\", \"type\": \"Entry\"}]",
+        "purpose": "The template entry an issued certificate was issued from, or None",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "4d3991a3af62a54b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-of-e5d3284d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "cared_templates",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"done\", \"type\": \"tuple of Reconciled\"}]",
+        "purpose": "Template names the record cares about: renewal owner or purpose recorded, or a record certificate issued from it",
+        "returns": "{\"type\": \"set of str\"}",
+        "source_hash": "e5bf55dbeca00d8c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cared-templates-037c24dd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "renewal_owner",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"cert\", \"type\": \"Entry|None\"}, {\"name\": \"issued\", \"type\": \"Entry|None\"}]",
+        "purpose": "Who renews a certificate: record certificate's owners, else its template's ciamRenewalOwner, else None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "8d25ee812813dac2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "check_issued_certificates",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check (estate-wide, silent without an inventory): revoked certificate in use = blocker; revoked unused, scheduled, superseded, missing, unconfirmable, untracked per (CA, cared template), inventoried CA without CRL/OCSP = actions",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "e17cd89203dfcbce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str|None\"}]",
+        "purpose": "certificate-authorities report rows: config, issued by (hierarchy), CA certificates, templates, endpoints, inventory, owner",
+        "returns": "{\"type\": \"list of tuple\"}",
+        "source_hash": "33d3b2fb9e3e5fc1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "issued_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str|None\"}, {\"name\": \"as_of\", \"type\": \"date\"}]",
+        "purpose": "issued-certificates report rows: each reconciled record certificate, then every untracked active issued certificate",
+        "returns": "{\"type\": \"list of tuple\"}",
+        "source_hash": "1c95e665b0d92323"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/naming.py",
+        "id_in_name": 0,
+        "name": "authority_dn",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "DN of a certification authority by name (cn=<name>,ou=certificate-authorities)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "5b0b332b95eb4318"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/naming.py",
+        "id_in_name": 0,
+        "name": "template_dn",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "DN of a certificate template by name (cn=<name>,ou=certificate-templates)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "0516b1794a59e9c0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-dn-036b18f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/naming.py",
+        "id_in_name": 0,
+        "name": "issued_inventory_dn",
+        "parameters": "[{\"name\": \"authority\", \"type\": \"str\"}]",
+        "purpose": "DN of a CA's issued-certificate inventory (cn=<CA>,ou=issued-certificates)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "7a86a3fc6b01e950"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-inventory-dn-21b81abf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py",
+        "id_in_name": 0,
+        "name": "row_facts",
+        "parameters": "[{\"name\": \"row\", \"type\": \"dict\"}, {\"name\": \"resolve\", \"type\": \"callable (value) -> template name or None\"}]",
+        "purpose": "One exported AD CS row's (request id, ciamIssuedCertificate facts or None for an unknown disposition, problems): schema-name columns, zoned ISO 8601 times, revoked rows' effective time and RFC 5280 reason, template resolved",
+        "returns": "{\"type\": \"tuple (int|None, dict|None, tuple of str)\"}",
+        "source_hash": "d314c441b1ae8f89"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-row-facts-aaa8ed05"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py",
+        "id_in_name": 0,
+        "name": "read_ca",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"path\", \"type\": \"str\"}, {\"name\": \"doc\", \"type\": \"dict\"}, {\"name\": \"resolve\", \"type\": \"callable\"}, {\"name\": \"at\", \"type\": \"datetime|None\"}]",
+        "purpose": "One CA's opsdir-adcs-inventory v1 export: (authority group with endpoints, inventory group) and notices; refused when format/version/name/time is unusable; denied on exporter error, incomplete on row problems",
+        "returns": "{\"type\": \"tuple (groups, notices)\"}",
+        "source_hash": "ced622201bbe092d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-ca-cddc6484"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py",
+        "id_in_name": 0,
+        "name": "read_inventory",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict path->text\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\"}, {\"name\": \"at\", \"type\": \"datetime|None\"}]",
+        "purpose": "Importer adcs/inventory read(): templates.ldif into ou=certificate-templates and each ca/<name>.json into its authority and issued-certificate inventory",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "56a8401b5be472b7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py",
+        "id_in_name": 0,
+        "name": "validity_days",
+        "parameters": "[{\"name\": \"raw\", \"type\": \"bytes\"}]",
+        "purpose": "Whole days of a pKIExpirationPeriod (8-byte signed little-endian negative 100-ns interval), or (None, why not)",
+        "returns": "{\"type\": \"tuple (int|None, str|None)\"}",
+        "source_hash": "93063c102acfd4ac"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-validity-days-86b7047e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py",
+        "id_in_name": 0,
+        "name": "read_templates",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "pKICertificateTemplate entries of an LDIF export as {name: display, oid, days, usages} and notices",
+        "returns": "{\"type\": \"tuple (dict, tuple of str)\"}",
+        "source_hash": "b5d14726e4103f0d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-templates-65e423ec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py",
+        "id_in_name": 0,
+        "name": "resolver",
+        "parameters": "[{\"name\": \"templates\", \"type\": \"dict\"}]",
+        "purpose": "A function resolving a CA's template value (name, display name or OID) to a template name",
+        "returns": "{\"type\": \"callable (value) -> str|None\"}",
+        "source_hash": "fddb115fa1cb432b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resolver-363c51f6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py",
+        "id_in_name": 0,
+        "name": "split_entry",
+        "parameters": "[{\"name\": \"entry\", \"type\": \"str\"}]",
+        "purpose": "(decimal flags, template) of a publication URL registry entry split at its first colon, or None",
+        "returns": "{\"type\": \"tuple (int, str)|None\"}",
+        "source_hash": "54d96030bbf12957"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-split-entry-afbf8d69"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py",
+        "id_in_name": 0,
+        "name": "expand",
+        "parameters": "[{\"name\": \"template\", \"type\": \"str\"}, {\"name\": \"values\", \"type\": \"dict\"}]",
+        "purpose": "Fill AD CS URL variables (%1..%11) the values give; (text, variables left unfilled)",
+        "returns": "{\"type\": \"tuple (str, tuple of str)\"}",
+        "source_hash": "6c7ed615751931af"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-expand-08600147"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py",
+        "id_in_name": 0,
+        "name": "endpoints",
+        "parameters": "[{\"name\": \"entries\", \"type\": \"iterable of str\"}, {\"name\": \"kinds\", \"type\": \"tuple of (bit, kind)\"}, {\"name\": \"ca\", \"type\": \"dict dns/netbios/name\"}]",
+        "purpose": "Revocation endpoints (kind, url, template or None) a registry value's entries put into issued certificates by flag context (CRL 0x02 crl, 0x04 delta-crl; CA cert 0x02 ca-issuers, 0x20 ocsp), and notices",
+        "returns": "{\"type\": \"tuple (tuple, tuple of str)\"}",
+        "source_hash": "0b67fff67562dd03"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-endpoints-829b9432"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/scripts/Export-AdcsInventory.ps1",
+        "id_in_name": 0,
+        "name": "ConvertTo-Utc",
+        "parameters": "[{\"name\": \"Value\", \"type\": \"datetime|null\"}]",
+        "purpose": "PowerShell: a COM DATE value from ICertView as UTC ISO 8601 with Z (taken as UTC; acceptance item)",
+        "returns": "{\"type\": \"string|null\"}",
+        "source_hash": null
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-convertto-utc-5d6d0059"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-adcs/scripts/Export-AdcsInventory.ps1",
+        "id_in_name": 0,
+        "name": "Read-Rows",
+        "parameters": "[{\"name\": \"View\", \"type\": \"ICertView COM object\"}]",
+        "purpose": "PowerShell: every row of an opened ICertView as an ordered hashtable of the selected schema-name columns, RawCertificate replaced by its SHA-256 and subject",
+        "returns": "{\"type\": \"ArrayList of ordered hashtables\"}",
+        "source_hash": null
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-rows-f9f0b711"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Core pki domain: issuer/CA hierarchy, certificate templates, revocation endpoints (CDP/AIA/OCSP) as entities; an issued-certificate inventory import (expiry, template, requester, serial, hash, renewal owner), metadata only, never private keys; AD CS first (typed JSON from a shipped PowerShell ICertView/ICertAdmin2 exporter + template LDIF export; no certutil text parsing, master decision after Codex research note 3058), other CAs per research note 3045 as follow-ups. Reconcile with the record's certificates (ciamCertificate) like 6.2b reconciles secret references; planner check + reports. Built by an InterComm worker; design approved (note 3052).",
+        "flows": [
+          "Secret Reference Resolution",
+          "PKI Authorities & Issued-Certificate Reconciliation",
+          "AD CS Inventory Import"
+        ],
+        "name": "6.2d.1 PKI issuer/template/revocation entities and issued-certificate inventory (AD CS first)",
+        "parent": {
+          "slug": "milestone-6-2d-pki-ca-entities-and-issued-certific-52e4d6ec"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "attributes": {
+        "description": "schema.py + naming.py branches; ciamIssuedBy/ciamSerialNumber on ciamCertificate; regenerate schema LDIF",
+        "name": "pki schema: authorities, templates, endpoints, inventory (attrs 720-732, classes 151-155)",
+        "parent": {
+          "key": {
+            "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-pki-schema-authorities-templates-endpoin-4f929423"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pure reconciliation (fingerprint > serial > subject+validity), states incl. revocation-scheduled and superseded; check_issued_certificates; reports certificate-authorities, issued-certificates; registry kind pki",
+        "name": "pki issued.py reconciliation + check + reports",
+        "parent": {
+          "key": {
+            "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-pki-issued-py-reconciliation-check-repor-2a3e7c82"
+      }
+    },
+    {
+      "attributes": {
+        "description": "adapter (kind pki, declaration-only), importer adcs/inventory (typed JSON + templates.ldif), PowerShell exporter (acceptance item), README with Known limits, unit tests",
+        "name": "opsdir-adapter-adcs package",
+        "parent": {
+          "key": {
+            "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-opsdir-adapter-adcs-package-35b9ed6a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "exports/adcs fixtures, CHG-2050 import, CHG-2051 modify LDIF, expected findings, demo.sh/snapshot-outputs.sh/showcase_support wiring, README",
+        "name": "Showcase CHG-2050/2051, B55 A161 A162",
+        "parent": {
+          "key": {
+            "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-showcase-chg-2050-2051-b55-a161-a162-28cf5364"
+      }
+    },
+    {
+      "attributes": {
+        "description": "documentation of the new branches, reports and limits",
+        "name": "Docs: README Known limits, ops-directory-model, root README report rows",
+        "parent": {
+          "key": {
+            "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docs-readme-known-limits-ops-directory-m-36f60ddc"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "d080075",
+    "branch": "aimfp-u62d-002",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-entry-d15306c0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-entry-d15306c0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-entry-d15306c0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-dn-036b18f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-inventory-dn-21b81abf"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-entry-1438647a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-entry-1438647a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-inventory-dn-21b81abf"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-group-bf6590a7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-group-bf6590a7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authorities-643834fc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoints-a82580c5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-of-df28b8c2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-of-df28b8c2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-of-51a8f553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-of-51a8f553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-of-51a8f553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-of-51a8f553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-of-51a8f553"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-active-83c779d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-active-83c779d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-newer-issue-cec417e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-active-83c779d1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-newer-issue-cec417e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-name-a5bafd33"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-of-df28b8c2"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-of-51a8f553"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-name-a5bafd33"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-newer-issue-cec417e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconcile-875b2149"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-untracked-25f2b01c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-untracked-25f2b01c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-of-df28b8c2"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-untracked-25f2b01c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-active-83c779d1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-of-e5d3284d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-of-e5d3284d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-dn-036b18f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cared-templates-037c24dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cared-templates-037c24dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-of-e5d3284d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _untracked_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-untracked-25f2b01c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _untracked_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cared-templates-037c24dd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _untracked_finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _unchecked_authorities",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _unchecked_authorities",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-a82580c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _used_by",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authorities-643834fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventories-c4b1178c"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-all-13b8ceaa"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-a82580c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _issuer_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-of-51a8f553"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-untracked-25f2b01c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _issued_row",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-row-facts-aaa8ed05"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-revocation-reason-f3e4230d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _sha256",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-row-facts-aaa8ed05"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-row-facts-aaa8ed05"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-row-facts-aaa8ed05"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-829b9432"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-entry-1438647a"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-cddc6484"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-templates-65e423ec"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resolver-363c51f6"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-ca-cddc6484"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-templates-group-bf6590a7"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _record_templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _record_templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _record_templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _record_templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-d4898a0b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-templates-65e423ec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-content-entries-52cbc1c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-templates-65e423ec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-validity-days-86b7047e"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-templates-65e423ec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoints-829b9432"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-split-entry-afbf8d69"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoints-829b9432"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-expand-08600147"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-rows-f9f0b711"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-convertto-utc-5d6d0059"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoint_entry calls get (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_entry calls get (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-entry-d15306c0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cert_inventory_entry calls get (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cert_inventory_entry calls merged_attrs (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_entry calls get (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-entry-1438647a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_entry calls merged_attrs (directory.py) via _observed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-entry-1438647a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_issued calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-issued-ab98aaea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "newer_issue calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-newer-issue-cec417e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile calls date_of (directory.py) via _state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-875b2149"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconciled calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_of calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-of-e5d3284d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cared_templates calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cared-templates-037c24dd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renewal_owner calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-owner-b7952292"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls one (directory.py) via _revoked_text",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls values (directory.py) via _why",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls rdn_value (directory.py) via _inventoried",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls date_of (directory.py) via _inventoried",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_rows calls norm_dn (directory.py) via _issuer_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_rows calls follow (directory.py) via _issuer_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_rows calls rdn_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-of-877f985b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "authority_rows calls date_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_rows calls one (directory.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_rows calls values (directory.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_rows calls date_of (directory.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_rows calls is_revoked (issued.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/README.md"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/adapter.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/scripts/Export-AdcsInventory.ps1"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/naming.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/domain.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-pki"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/README.md"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/scripts/Export-AdcsInventory.ps1"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-adcs"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Keys, Secrets & PKI Metadata"
+      }
+    },
+    {
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Keys, Secrets & PKI Metadata"
+      }
+    },
+    {
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2d-pki-ca-entities-and-issued-certific-52e4d6ec"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "AD CS Inventory Import"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2d-pki-ca-entities-and-issued-certific-52e4d6ec"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/scripts/Export-AdcsInventory.ps1"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/templates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/src/opsdir_adapter_adcs/urls.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/scripts/Export-AdcsInventory.ps1"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2d-1-pki-issuer-template-revocation-en-3b7e1058"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2f-1-itsm-ticket-linkage-read-only-ser-e32bef06"
+      }
+    }
+  ],
+  "warnings": []
+}

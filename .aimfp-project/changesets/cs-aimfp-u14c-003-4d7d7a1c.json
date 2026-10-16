@@ -1,0 +1,5132 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "landing.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/landing.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "identities.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/identities.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "guardrails.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/guardrails.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "identities.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/identities.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "landing.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/landing.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "guardrails.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/guardrails.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "identities.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/identities.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "landing.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/landing.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "guardrails.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/guardrails.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "iam.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/iam.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "iam.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/iam.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "iam.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/iam.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "cli_iam.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_iam.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "cli_iam.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_iam.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "cli_iam.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_iam.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "frameworks.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/frameworks.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "compliance.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/compliance.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "bulk.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/bulk.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "profiles.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "modify",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/profiles.py"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Record -> each cloud's Terraform (AWS, Azure, Google Cloud): the render pipeline that composes the family flows. Each cloud's terraform.py render_files assembles the environment's roots ({path: TfFile | text}) from its family modules: network and firewall (45), plumbing (46), edge and DNS (47), accounts, landing zone and guardrails (48), identities (49), data stores (50), volumes and backups (51), audit trails (52), budgets and quotas (53), security services (33), compute groups (37), observability (27), synthetic checks (42). It places them by keeper (flow 38) and pins the providers to the current release (aws ~> 6.68 + archive, azurerm ~> 5.9 + azapi add-on + azuread, google ~> 8.6) and the recorded account. Built as data: helpers return TfBlocks and comments (tf_block/comment/tf_import); questions about items go to the data (blocks_of, mentions, distinct), never text. format-terraform holds HCL formatting and the TfBlock model, the HCL reader, the state builder and realized values the round trip uses; validate-terraform.sh checks the output. CloudFormation and Bicep/ARM are translated from these blocks on request (flows 34-36)."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Cloud Infrastructure Render"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Cloud state -> record: the import pipeline the family flows' readers plug into. Terraform state (format-terraform state.py), CloudFormation stacks (cloudformation.py, cloudformation_values), ARM/Bicep deployments (arm.py, arm_ids) and cloud CLI/asset-inventory JSON (each cloud's cli.py, Azure cli_items and state_names, AWS cli_outputs) are read by each adapter's one pairs mapping (inventory.py pairs_resources) into neutral resources (core inventory: kind, ref, attributes, links, name/role hints, tags), placed as the environment's servers and bindings through the domains' ImportKinds (connectors.importing, infrastructure imports). A ref naming a role realizes the record's one designed binding of it with no ref yet; an alias matches a short ref form. An environment's sources are read together (read_together, merge_reads); aws/cloudformation and azure/arm also read the *.tfstate beside the templates. Messaging is read here (CloudFormation and CLI). Each family's readers are its own flow (45-53, 33, 27, 37). Not here: region lists (flow 17), collection (flow 18), the round trip (flow 32)."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Cloud Inventory Import"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.5,
+        "description": "Record <-> each environment's alerting and log retention. The core derives the alert rules an environment delivers, each realized by an alarm binding recording the metric it evaluates, with its condition in base units (rates as counts per window), and the products' Prometheus signals for the versions a role runs (declared per release line where names change); a binding someone else keeps, or an overlay inherits from its base, is named, never rendered twice. Renderers: AWS CloudWatch metric alarms and log groups (retention snapped to the values CloudWatch allows); Azure Monitor metric alerts on the role's virtual machines and Log Analytics workspaces; Google Cloud alert policies and Cloud Logging bucket retention (a legal hold named, a bucket never locked by a render); the Prometheus adapter's rule file, the Ansible play for monitoring servers (promtool-checked) and PrometheusRule. What a cloud can't run is a NOTE. Read back here too: each cloud's observability.py, and cli_monitor / cloudformation_observability for alarms and log destinations. Synthetic checks are the Synthetic Checks Render flow; log routing the Log Routing Render flow."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Observability Render"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "Record <-> each cloud's security services, for what the platform keeps (core estate: ciamSecurityService, ciamSuppression; another team's named in a comment).\n- Threat detection, posture, vulnerability scanning, config recording, findings routing and incidents: GuardDuty / Inspector / Security Hub / Config (AWS); Defender for Cloud plans, continuous export, assignments (Azure); Security Command Center, Asset Inventory and Compliance Manager framework deployments from the fetched catalog (GCP: every control DETECTIVE else AUDIT; a request when PREVENTIVE-only, a parameter lacks a value, or the catalog/organization is missing).\n- Azure identity protection: Entra risk-log export, opt-in risk-based Conditional Access; hybrid sync/writeback and Defender for Identity actions.\n- Suppressions carrying out exceptions: Security Hub automation rules, Azure policy exemptions and alert rules, SCC mute configs.\nRead back here too (state, CLI and CloudFormation security readers) into the estate's bindings; the FedRAMP adapter's Certification Package Overview import (an authorization and its in-scope services) sits with them. Data discovery: flow 54. Round trip: flow 32. Organization-wide parts: flow 40."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Security Services Render & Read-back"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Record <-> each cloud's compute groups (ciamComputeGroup). Each adapter's compute_groups.py: AWS launch template + autoscaling group (CloudFormation LaunchTemplate + AutoScalingGroup through cfn_types), Azure Linux scale set + autoscale setting (ARM virtualMachineScaleSets + autoscalesettings through arm_types), GCP instance template + regional managed instance group + autoscaler. Each carries its role's disks (AWS block_device_mappings and Azure os/data disks named by the instances' tags BootVolume/DataVolumes: core data.volumes.disk_tags; GCP disks labelled each), its subnets (ciamSubnetRole: compute.hosts.group_subnets), the role's security group / NSG / network or secure tag, its role's workload identity, and load balancer membership (AWS target_group_arns, Azure LB and Application Gateway pools, GCP MIG backends with named port 'ciam'). Designed groups (no provider ref) are created; adopted ones imported by name or ID (their existing autoscaler / autoscale setting by hand); a group an overlay inherits is its base's (compute.hosts.own_groups). Planner: check_server_inputs blocks a group without image, size or bound subnets. Read back here too (cli_compute, cloudformation_compute: groups and their template disks); round-tripped in flow 32."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Compute Group Render"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "An environment's networks, subnets and firewall per cloud, rendered and read back. Render: VPC/VNet/VPC network data or resources and subnets (the network stack, core network.stack: owned or kept by a keeper), firewall rules from the record's ciamFirewallRule entries with pinned priorities (core infrastructure.firewall), AWS security groups, Azure NSGs and rules, Google Cloud VPC firewall rules by network tag or network firewall policy rules by secure tag (firewall_policy.py). Read back: each cloud's network_inventory (and CLI/CloudFormation network readers) gives networks, subnets and rules as neutral resources placed through the network and infrastructure ImportKinds (domains/network/imports.py); port ranges and non-IPv4 sources are named, not imported."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Network & Firewall"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "What an environment's network needs around its subnets, per cloud (plumbing.py, core network.plumbing): egress (NAT gateways and their allocations), route tables, network ACLs, private endpoints and endpoint services, interconnects (peerings, VPN, transit/hub links, dedicated circuits), time sources and flow logs. Each binding is rendered into the root of whoever keeps it (render_plumbing per keeper, stamped with its entry), with render notes for what a cloud can't express (cross-cloud peerings, circuits ordered by hand, the other side's half of a peering, unrecorded link kinds); the same resources read back into the plumbing bindings."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Network Plumbing"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "How traffic reaches the platform, per cloud, rendered and read back. Render: a stable service name's front (core edge: exposure, resolve, records), an L4 network load balancer or, when its traffic policy terminates TLS, an L7 balancer (ALB, Application Gateway, Application Load Balancer) whose backend is the role's servers or a cluster's in-cluster gateway (ingress.py, gateway_plug), WAF / DDoS protection and rate limits, health checks and their probe rules, CDN fronts (CloudFront, Front Door, Cloud CDN), DNS zones, records and forwarders. Read back: edge_inventory, cli_edge and cloudformation_edge give load balancers, listeners, web ACLs, distributions and DNS as neutral facts placed through the edge ImportKinds (domains/edge/imports.py)."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Edge & DNS"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "The estate an environment runs in, per cloud (core estate domain). Render: the account, subscription or project and its partition or sovereign cloud (account.py: AWS GovCloud by region, Azure Government, FIPS endpoints), the landing zone's content and its keeper's root header (landing.py), organization guardrails (SCPs, Azure Policy, organization policies), the estate tag policy (estate.tags), region guardrails and data residency, Azure resource provider registration, data boundaries (boundary.py) and risk policies. Read back: tags, regions and region pairs, and the estate's layout from the cloud's state (estate domain ImportKinds)."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Who and what may act on the platform, per cloud (core access domain). Render: one workload identity per identity role (IAM roles and instance profiles, user-assigned managed identities, service accounts; core access.workloads), with the grants its permission sets need from the cloud's permission table, least privilege, and trust for Kubernetes service accounts. Read back: iam.py, cli_iam, cloudformation_iam and Azure's cli_identity give roles, assignments and trust as identity bindings and their grants (domains/access/imports.py)."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Identities & Access"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Managed databases and object stores per cloud (core data domain), rendered and read back. Render: database instances by engine and version with their endpoint role, availability, encryption, backups, parameters, credential role and admitted ranges; object stores with versioning, immutability, encryption (customer-managed keys: Azure cmk.py), lifecycle, public access and replicas. Read back: databases.py, storage.py and their CLI/CloudFormation readers give them as ciamDatabase and ciamObjectStore bindings."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Data Stores"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Server disks, snapshot policies and backup plans per cloud (core data domain: volumes, protection). Render: each server role's boot and data disks (size, class, IOPS/throughput, encryption) and its snapshot policy (core data.volumes), backup vaults and plans with copy regions, locks and keys. Read back: volumes.py, backups.py and their CLI/CloudFormation readers (cli_volume, cli_disk, cli_backup, cloudformation_backups) give them as ciamVolume, ciamSnapshotPolicy and backup bindings; compute groups' disks join the role's volumes."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Volumes & Backups"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Control-plane audit trails per cloud (core observability.audit): CloudTrail, Azure activity log diagnostic settings, Google Cloud audit log sinks, rendered with their destination, retention and who keeps them (a trail another party keeps is asked of it), unrendered ones as render notes; read back (audit.py, cli_audit) as the environment's audit trail bindings."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Audit Trails"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Cost and capacity per cloud (core estate: budgets, quotas). Render: budgets with their amounts, alerts and notified roles (AWS Budgets, Azure consumption budgets, Google Cloud billing budgets); a quota increase the operator decided to request (ciamQuotaDecision request) as the cloud's quota request resource. Read back: budgets from state, CLI (cli_budgets) and CloudFormation (cloudformation_budgets); quota limits from the provider-wide quota catalog the planner checks needs against."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Budgets & Quotas"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.9,
+        "description": "Record <-> each cloud's sensitive-data discovery for what the platform keeps (core estate: ciamDataDiscovery: the stores it scans, own data types, findings and results roles, rescan interval). Rescans are honoured exactly (estate discovery rescan_plan / rescan_due / rescan_line): Amazon Macie's daily or weekly job, else an EventBridge Scheduler + Lambda starting one-time jobs; Google Sensitive Data Protection's refresh, else a paused config + Cloud Scheduler + Workflows; Azure Defender CSPM data discovery plus Purview scan triggers (commercial; Azure Government pending a live test). Where a cloud doesn't offer it (Macie in GovCloud) it is a comment and a planner action (check_discovery_availability, check_discovery_cadence). Read back from state and CLI into the discovery bindings, intervals recovered from the scheduler's environment and tags."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Cloud Data Discovery"
+      }
+    },
+    {
+      "kind": "flows",
+      "op": "delete",
+      "semantic_key": {
+        "name": "Cloud Security Services Render"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Plan 2490 (10), handoff 2519, decision 2509.\n- Showcase data:\n  - target/prod's Defender gets a risk-based Conditional Access policy (covers, excludes break-glass, a grant);\n  - the target cloud records its on-prem directory corp.example-aero.internal (ciamOnPremDirectory, sync, writeback), so the Defender for Identity and hybrid-sync actions show. The directory's threat detection is kept by another team (ciamManagedBy) where it clears them, or the round trip names it a known gap (deferred note 2507);\n  - source macie-backups gets a non-native interval (e.g. 3 days) so the AWS scheduler (EventBridge Scheduler + Lambda) renders, and its MACIE_JOB ref is realized by the Lambda.\n- Golden reviewed with the user.\n- Round trip and fixed point: KNOWN gaps are CloudTrail only (5.7).\n- READMEs and STACK.md (round-trip line, 5.5e).\n- Full opsdir/scripts/test.sh.\n- Flow review (5, 10, 12, 32: descriptions match what was built).\n- Close milestone 91.",
+        "flows": [
+          "Migration Planning",
+          "Cloud Infrastructure Render",
+          "Cloud Inventory Import",
+          "Round-trip Verification",
+          "Cloud Security Services Render & Read-back"
+        ],
+        "name": "5.5e (10) Close: showcase data, golden, round trip, docs, full test, flow review",
+        "parent": {
+          "slug": "milestone-5-5e-round-trip-gaps-defender-identity-c-1da8c6c7"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-5e-10-close-showcase-data-golden-round-a9f35059"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2731 item 3, decision 2732. Core: governance.keepers.root_of (stack None | taking keeper's folder | NAMED keeper). format-terraform roots helper (shared by the 3 clouds): the environment's Terraform parts (file, items) partitioned into roots (translate.partition), regrouped into each root's files by the file each block came from (inputs and outputs in providers.tf), named keepers' blocks left out and listed, plus a per-root adjust hook for providers. AWS: render_files on it; landing identities, guardrails and plumbing stamped and placed (keeper roots keep providers without the own-account pin and drop unused aliases); databases and object stores rendered for every entry and stamped (not filtered by owned), named ones listed in a stack comment. Remaining kinds (volumes, snapshot policies, backups, audit trails, alarms, log groups, canaries, security services, suppressions, discovery, budgets) are a later task per kind across the three clouds. Golden diff reviewed with the user.",
+        "flows": [
+          "Keeper Root Placement",
+          "Cloud Infrastructure Render",
+          "Cloud Security Services Render & Read-back",
+          "CloudFormation Render"
+        ],
+        "name": "5.7 (d1) Keeper roots by partition: shared helper + AWS (landing, plumbing, databases, object stores)",
+        "parent": {
+          "slug": "milestone-5-7-scoped-on-request-render-be0c9e67"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7-d1-aws-keeper-roots-by-partition-d349f0f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Note 2742 plan (task recorded after the code, same session: the code was written under the k4 momentum; tracking follows). Security services, suppressions and data discovery render for every entry and are stamped. Shared pieces (Azure Defender plan pricing, GCP scanning APIs, Macie and its identifiers and export) go with the first entry needing them. Purview scans and Entra identity protection render for any keeper, while planner checks keep the platform's-own semantics (Azure _policies_render on kept services). Golden: the showcase's Defender for Identity (security-operations, asked) becomes the asked-keeper line.",
+        "flows": [
+          "Keeper Root Placement",
+          "Cloud Security Services Render & Read-back",
+          "Cloud Infrastructure Render"
+        ],
+        "name": "5.7 (k5) Kept kinds: security services, suppressions, data discovery (all clouds)",
+        "parent": {
+          "slug": "milestone-5-7-scoped-on-request-render-be0c9e67"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7-k5-kept-kinds-security-services-supp-7df71fd3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Read-only survey (AIMFP DB first, then targeted files) of what each cloud adapter renders today, and leaves as a comment, for: AWS organization CloudTrail trail, data-event selectors (record model: what data resources a trail would name), CloudWatch Logs delivery (IAM role); AWS security services every-region (aliased providers, as backup copies) and organization-wide enabling (delegated admin, auto-enable, management account provider); Azure continuous export to Event Hub (secret ref), email/security contacts, Defender initiatives on the management group, resource change history export; GCP SCC activation/services, Compliance Manager framework deployments, Assured Workloads folders, VM Manager osconfig metadata. Plus the record attributes involved (ciamAuditTrail, ciamSecurityService scopes, ciamAllRegions, keepers/organization roots) and how 5.7 places organization-scope entries. Vendor facts (resource types, provider versions, GovCloud/Azure Government/Assured Workloads availability) researched by Codex web-only from exact file paths. Output: a design note with the per-cloud plan, schema changes and task split (b...) for the user's review before coding.",
+        "flows": [
+          "Cloud Infrastructure Render",
+          "Cloud Security Services Render & Read-back",
+          "Keeper Root Placement"
+        ],
+        "name": "5.7b (a) Survey and design: organization-level security and audit in keeper roots",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-a-survey-and-design-organization-le-efbe17c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2776 A + decision 2777. Schema (versioned, store snapshot check): ciamManagementRef and ciamSecurityAdminRef on ciamCloudAccount (estate); ciamAuditResourceRole (multi) and ciamAuditStreamRole on ciamAuditTrail (observability). Core: governance.keepers treats an organization-scope security service / audit trail as the landing zone's by nature (keeper = ciamManagedBy else the landing zone's keeper) for its organization part; a helper telling renderers which part is the organization's and which the environment's (decision Q1: org-wide service -> the stack renders only its findings routing + a comment naming who enables it). Core audit: the data resources a trail logs (named roles, else the environment's own bound object stores, functions, tables, secrets: decision Q2). Per-cloud organization providers/inputs: AWS provider aliases management / security_admin (pinned, unpinned rules like billing), Azure management group input, GCP organization input (shared with audit.py). Tests; showcase snapshot unchanged expected.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Keeper Root Placement",
+          "Cloud Infrastructure Render",
+          "Cloud Security Services Render & Read-back"
+        ],
+        "name": "5.7b (b) Core: organization refs + audit trail roles in the schema, organization pieces kept by the landing zone, organization providers per cloud",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-b-core-organization-refs-audit-trai-b35a7084"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2776 B4, deferred note 1984 part 2. A security service with ciamAllRegions TRUE renders in every region the record's region catalog gives the account (opt-in regions only when opted in; the region guardrail doesn't exempt detection), each through an aliased provider per region (Terraform has no provider for_each; as copy_regions does): GuardDuty detector + features, Inspector enabler, Security Hub account + standards, Config recorder + delivery channel (global resources recorded only in the home region). Security Hub posture aggregates every region's findings in the home region (aws_securityhub_finding_aggregator ALL_REGIONS), so findings routing stays in the home region; without posture, other regions' findings routing is said. The comment 'runs in every region: each region needs its own' goes. CloudFormation: one template per provider region (existing per-provider templates) or kept with reason. Read-back: a service seen in several regions reads ciamAllRegions TRUE. Tests; golden diff reviewed.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Cloud Security Services Render & Read-back",
+          "Cloud Infrastructure Render"
+        ],
+        "name": "5.7b (d1) AWS security services in every region (ciamAllRegions)",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-d1-aws-security-services-in-every-r-e5dbe560"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2776 B5, decision 2777 Q1, deferred note 1984 part 3. A security service with ciamAuditScope organization: its organization part (stamped with its organization origin: kept by ciamManagedBy else the landing zone's keeper) registers the delegated administrator from the management account (provider aws.management: aws_guardduty_organization_admin_account, aws_inspector2_delegated_admin_account, aws_securityhub_organization_admin_account, aws_organizations_delegated_administrator for AWS Config) and holds the organization configuration in the delegated administrator account (provider aws.security_admin: the administrator's own detector/enabler/hub, aws_guardduty_organization_configuration auto-enable ALL + features, aws_inspector2_organization_configuration auto_enable by area, aws_securityhub_organization_configuration CENTRAL with a finding aggregator, a configuration policy enabling the standards and its association to the organization root, aws_config_configuration_aggregator for the organization); in every region when ciamAllRegions (per-region aliases of the admin account). The environment's own root renders only the findings and incident routing plus organization_line. Without ciamManagementRef / ciamSecurityAdminRef: a NOTE naming what is missing. CloudFormation: each new type native or NO_NATIVE with its reason (cfn-lint schemas). Read-back: the organization configuration types give organization scope (existing _scope). Tests; samples validated (terraform validate, cfn-lint); golden diff reviewed.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Cloud Security Services Render & Read-back",
+          "Keeper Root Placement"
+        ],
+        "name": "5.7b (d2) AWS organization-wide security services: delegated administrator + organization configuration",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-d2-aws-organization-wide-security-s-d08810cb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2776 C1-C2, deferred note 1989 part 2. Schema: ciamSendSecretRole on ciamStreamBinding (the secret binding holding what a producer sends to the stream with: an Event Hub's connection string; a reference, never the value). azure security._export: a findings role naming a ciamStreamBinding of kind event-hub (ciamProviderRef the hub's ID) renders azurerm_security_center_automation with action type EventHub, resource_id, connection_string from the send secret's Key Vault reference (data azurerm_key_vault + azurerm_key_vault_secret: the value lands in Terraform state, said in a comment; no write-only argument exists); without a send secret, a NOTE. Incident routes likewise. An email alert channel (ciamChannelKind email, its address) as a service's findings or incident role: azurerm_security_center_contact for the subscription (alert_notifications, alerts_to_admins), the minimum severity named in a comment (only the 2023-12-01-preview securityContacts API has it). ARM/Bicep: automation eventHubResourceId + connectionString as a secure parameter from Key Vault; contact native or kept with reason. Read-back: automation's Event Hub destination; contact as an email channel. Tests; azure sample validated (terraform validate, bicep); golden diff reviewed.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Cloud Security Services Render & Read-back"
+        ],
+        "name": "5.7b (e1) Azure Defender: continuous export to an Event Hub, email security contacts",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-e1-azure-defender-continuous-export-c50a714c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2776 D1, D3, D4; deferred note 1991 parts 2-3 (Compliance Manager is task g). SCC services: google_scc_management_project_security_center_service ENABLED per service a kept service needs (threat-detection's detectors by coverage, SECURITY_HEALTH_ANALYTICS for posture, WEB_SECURITY_SCANNER for applications scanning); an organization-wide service's services at the organization (google_scc_management_organization_security_center_service on the organization input), its organization part kept with the landing zone (organization origin), the environment's root keeping its notification and organization_line. Tier activation stays a request (no Terraform resource). enable-osconfig: google_compute_project_metadata_item enable-osconfig TRUE when vulnerability scanning covers compute (the comment goes). Assured Workloads: regimes ITAR / CJIS where ciamRequiredAuthorization names them (vocabulary permitting), the workload's compliance regime immutable (lifecycle prevent_destroy). Read-back: SCC service enablement and the metadata item where readers exist. Tests; GCP sample validated (terraform validate google 8.6); golden diff reviewed.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Cloud Security Services Render & Read-back",
+          "Cloud Infrastructure Render"
+        ],
+        "name": "5.7b (f) GCP: Security Command Center services, enable-osconfig, Assured Workloads regimes",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-f-gcp-security-command-center-servi-3b49e62e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2776 C3, decision 2777 Q1, research 2792, deferred note 1989 part 3. An organization-wide Azure security service's organization part (organization origin: kept by ciamManagedBy else the landing zone's keeper) assigns, on the management group (var.management_group_id from ciamManagementRef; NOTE without it), the built-in DeployIfNotExists policy enabling each Defender plan it needs (PLAN_POLICIES by definition GUID, looked up with data azurerm_policy_definition), with a system-assigned identity in the cloud's region, a role assignment at the management group for each role the definition lists (role_definition_ids: never hardcoded), and a remediation for the subscriptions already there; posture frameworks' initiatives assigned on the management group too. Defender for APIs has no enabling policy (audit only): a comment. Azure Government: the GUIDs aren't confirmed there by Microsoft (comment) and GOV_NOTES apply. The environment's own part keeps its continuous export and incident routing and organization_line (no pricings or subscription assignments for that service). ARM/Bicep: the management-group part stays Terraform (KEPT with its reason). Tests; Azure sample validated (terraform validate, bicep); golden diff reviewed.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Cloud Security Services Render & Read-back",
+          "Keeper Root Placement"
+        ],
+        "name": "5.7b (e2) Azure organization-wide Defender: plans and frameworks assigned on the management group",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-e2-azure-organization-wide-defender-00dc26d1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Design 2776 C4, decision 2777 Q3, research 2792, deferred note 1989 part 4. A config-recording service on Azure whose ciamRetentionDays exceeds Resource Graph's 14 days, with its ciamFindingsRole a Log Analytics workspace, renders (new module change_history.py): a custom table CiamResourceChanges_CL (TimeGenerated, ChangeId, ChangeType, TargetResourceId, TargetResourceType, Changes, ChangeAttributes; retention from ciamRetentionDays, Log Analytics' limits named), a data collection endpoint and rule (Logs Ingestion API stream Custom-ResourceChanges -> the table), a Logic App (azapi Microsoft.Logic/workflows, system-assigned identity) that every hour queries Resource Graph's resourcechanges of the subscription for the last hour and posts them to the rule's ingestion endpoint (managed identity; Azure Government endpoints management.usgovcloudapi.net / monitor.azure.us), and role assignments: Reader on the subscription, Monitoring Metrics Publisher on the rule. Paging past 1000 changes an hour said in a comment. The 'keeping them longer needs an export (not rendered)' comment goes. ARM/Bicep translation (DCE logs_ingestion_endpoint / DCR immutable_id references), tests, Azure sample validated, golden reviewed.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Cloud Security Services Render & Read-back"
+        ],
+        "name": "5.7b (e3) Azure resource change history kept beyond 14 days: scheduled Resource Graph export to Log Analytics",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-e3-azure-resource-change-history-ke-a12fca8f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Decision 2777 Q4: a new provider prerequisite (gcloud importer, flow 17 pattern) fetches Google Compliance Manager frameworks (built-in, with major revision and cloud control details) into the record; the GCP posture render maps the service's neutral ciamComplianceStandard ids to fetched frameworks and renders google_cloud_security_compliance_framework_deployment (google 8.6: framework{framework, major_revision_id}, target_resource_config, cloud_control_metadata for every control with enforcement_mode); a request until fetched. Design note for the user first (record shape, mapping, parent/target, enforcement mode), then code, read-back, showcase if it fits, golden reviewed.",
+        "flows": [
+          "Cloud Security Services Render & Read-back",
+          "Organization-wide Security & Audit",
+          "Provider Prerequisites Fetch"
+        ],
+        "name": "5.7b (g) GCP Compliance Manager: framework catalog prerequisite + framework deployments from neutral standards",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-g-gcp-compliance-manager-framework-e6b7a4fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "STACK.md roadmap/security rows for 5.7b (organization-wide security & audit, Compliance Manager, regulated data); flow review (40, 33, 38, 10, 5, 6, 17: descriptions current); structure health; status of deferred notes 1950/1984/1989/1991; full scripts/test.sh; milestone complete.",
+        "flows": [
+          "Organization-wide Security & Audit",
+          "Cloud Security Services Render & Read-back"
+        ],
+        "name": "5.7b (h) Close: docs, flow review, structure health, deferred notes, full test.sh",
+        "parent": {
+          "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-5-7b-h-close-docs-flow-review-structure-5426c57d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Part 1 (found by worker-2 in task 514, note 3004): (a) packages/opsdir-adapter-aws/README.md:5 and ~:869 say 'commercial partition only / GovCloud not in the vocabulary yet', but account.py:16-21 handles us-gov-* with the aws-us-gov partition and the README's own CDN/budgets sections cover GovCloud: correct to what the code does; (b) aws README ~:864 and gcp README ~:551 say 'no required roles, planner checks or schema of its own', but aws registers 4 checks (check_boundary, check_regulated_placement, check_discovery_availability, check_server_inputs) and gcp 5 (priority_check, check_boundary, check_regulated_placement, check_server_inputs, check_discovery_cadence): list them with what each reports; (c) AIMFP file records named without '.py' though their paths are right (pf bulk 934; gcp 511, 930, 929, 499, 504, 497, 498; aws 509, 491, 502, 490, 489): update_file names. Part 2, U14-14 (user-approved, decision 3002): split flow 10 'Cloud Infrastructure Render' (103 files) and flow 12 'Cloud Inventory Import' (123 files) by behaviour family aligned to the core domains (network/firewall, DNS/edge, landing zone and guardrails, identities/access, servers/compute, data stores, volumes/backups, plumbing, audit/security services, budgets/quotas/regions...) as flows 33/37/38 were split from 10: add_flow with themes, move_files_to_flow, add_milestone_flows for open milestones that use them, flow descriptions stating current behaviour (no history), evolution note; keep 10 and 12 (trimmed to what remains, or as umbrella) for task history. Propose the family list first via intercomm_escalate (kind decision; the master answers) before moving files. Rules 2991 + 3002. Boundary: aws and gcp READMEs only (no code), AIMFP DB (files, flows). Workers 1 (ping-devops/pingfederate/core environment, stack) and 2 (format-arm, format-terraform native, azure arm_*) are coding in parallel: don't touch their files; flow moves of files they're editing are fine (DB only).",
+        "flows": [
+          "Cloud Infrastructure Render",
+          "Cloud Inventory Import",
+          "Showcase & Verification"
+        ],
+        "name": "U.14 g: housekeeping (README claims, AIMFP file names) and the flow split (U14-14)",
+        "parent": {
+          "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "8b21e58",
+    "branch": "aimfp-u14c-003",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/identity_protection.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/risk_policies.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/hybrid.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/poam.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/change_history.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/frameworks.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/frameworks.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/compliance.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/network.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/network.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/network.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/firewall_policy.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/firewall.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/stack.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/imports.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/network_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_network.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_network.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/network_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_network.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/network_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_network.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/nsg_rules.py"
+      },
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/edge.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/dns.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/dns.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/dns.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cdn.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/frontdoor.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/ingress.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/ingress.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/ingress.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/health_checks.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/resolve.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/records.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/exposure.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/imports.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/edge_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/landing.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/landing.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/landing.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/guardrails.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/guardrails.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/guardrails.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/account.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/account.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/account.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/resource_providers.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/tags.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/naming.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/schema.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/pairs.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/boundary.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/risk_policies.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/hybrid.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/domain.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/tags.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/identities.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/identities.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/identities.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/access/workloads.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/iam.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/iam.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/iam.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/access/imports.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_identity.py"
+      },
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cmk.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_database.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_database.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_storage.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_storage.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_data.py"
+      },
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/data/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_volume.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_disk.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_backup.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_backup.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_backups.py"
+      },
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_audit.py"
+      },
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/quotas.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/quotas.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/quotas.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-fedramp/src/opsdir_adapter_fedramp/adapter.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-fedramp/src/opsdir_adapter_fedramp/cpo.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-fedramp/README.md"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_observability.py"
+      },
+      "flow": {
+        "name": "Observability Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_monitor.py"
+      },
+      "flow": {
+        "name": "Observability Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_monitor.py"
+      },
+      "flow": {
+        "name": "Observability Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_compute.py"
+      },
+      "flow": {
+        "name": "Compute Group Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_compute.py"
+      },
+      "flow": {
+        "name": "Compute Group Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_compute.py"
+      },
+      "flow": {
+        "name": "Compute Group Render"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/purview.py"
+      },
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Observability Render"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Compute Group Render"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-5-5e-round-trip-gaps-defender-identity-c-1da8c6c7"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render & Read-back"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Network & Firewall"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Network Plumbing"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Edge & DNS"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Accounts, Landing Zone & Guardrails"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Identities & Access"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Stores"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Volumes & Backups"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Audit Trails"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Budgets & Quotas"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Cloud Data Discovery"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-7-2-validation-against-real-products-d0d427f2"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/landing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/identities.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/guardrails.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/identities.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/landing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/guardrails.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/iam.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/iam.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_iam.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_iam.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/frameworks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/compliance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/bulk.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/identities.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/landing.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/guardrails.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/iam.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_iam.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/profiles.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-g-housekeeping-readme-claims-aimfp-43fbfccd"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/landing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/identities.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/guardrails.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/dns.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cdn.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/network.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/identities.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/landing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/guardrails.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/dns.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/frontdoor.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/network.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cmk.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/health_checks.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/identities.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/landing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/guardrails.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/edge.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/dns.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/network.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/firewall_policy.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/firewall.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/plumbing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/stack.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/resolve.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/records.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/data/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/access/workloads.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/iam.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/iam.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/iam.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/edge_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/edge_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/edge_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/network_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_network.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_network.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/network_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_network.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/network_inventory.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_network.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_database.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_database.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_storage.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_storage.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_volume.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/nsg_rules.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_disk.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/databases.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/storage.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/volumes.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/health_checks.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/imports.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/network/imports.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/access/imports.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_backup.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_backup.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/backups.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/tags.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/tags.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/domain.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/account.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/tags.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/account.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/account.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/regions.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_audit.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/audit.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/pairs.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/pairs.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/security.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/security.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/security.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/quotas.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/quotas.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/quotas.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-fedramp/src/opsdir_adapter_fedramp/adapter.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-fedramp/src/opsdir_adapter_fedramp/cpo.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/boundary.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/boundary.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/collect.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/ingress.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/ingress.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/ingress.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/edge/exposure.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/observability.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/observability.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/observability.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/canaries.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/canaries.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/canaries.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/resource_providers.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/rendered_state.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/rendered_state.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/rendered_state.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/rendered_state.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/rendered_state.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/risk_policies.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/naming.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/schema.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_identity.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/identity_protection.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/hybrid.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/purview.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/identity_protection.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/purview.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/suppressions.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/security.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/discovery.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/risk_policies.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/hybrid.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/poam.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/native.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_render.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_types.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_iam.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_edge.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_data.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_security.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_observability.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_backups.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_monitor.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_compute.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_monitor.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_security.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cli_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_security.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_security.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/cli_budgets.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/cloudformation_compute.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_compute.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-format-terraform/src/opsdir_format_terraform/placing.py"
+      },
+      "flow": {
+        "name": "Cloud Infrastructure Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/change_history.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/frameworks.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/frameworks.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/compliance.py"
+      },
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/compliance.py"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-fedramp/README.md"
+      },
+      "flow": {
+        "name": "Cloud Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "flow_theme",
+      "op": "remove",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "flow_theme",
+      "op": "remove",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-5-5e-round-trip-gaps-defender-identity-c-1da8c6c7"
+      },
+      "op": "remove"
+    },
+    {
+      "flow": {
+        "name": "Cloud Security Services Render"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-5-7b-keeper-root-leftovers-organization-c35abfa3"
+      },
+      "op": "remove"
+    }
+  ],
+  "warnings": []
+}

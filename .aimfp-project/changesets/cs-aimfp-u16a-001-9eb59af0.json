@@ -1,0 +1,680 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/registry.py",
+        "id_in_name": 0,
+        "name": "environment",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"spec\", \"type\": \"str\"}, {\"name\": \"installed\", \"type\": \"Sequence[Adapter]\", \"required\": false}]",
+        "purpose": "Resolve an environment spec: (EnvModel carrying the installed adapters' product roles (core.environment.product_roles / with_product_roles, attached before the applicable adapters are chosen, so a kit's applies finds its products), with required roles applied and what its kits answer for cluster discovery (with_cluster_discovery over the applicable adapters), the applicable adapters).",
+        "returns": "{\"type\": \"tuple[EnvModel, tuple[Adapter, ...]]\"}",
+        "source_hash": "539f630de809e15b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-environment-be417ae2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/checks.py",
+        "id_in_name": 1,
+        "name": "check_ping_devops",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check on the target: actions for PingFederate licenses, the admin password, admin console replicas, engines without their admin console, workloads beyond one per product, and a rendered server profile's OPSDIR_* variables the record doesn't deliver (unmapped_variables); ok 'has its licenses and admin password recorded' when none. Cluster discovery is PingFederate's check_kit_discovery over this kit's cluster_discovery declaration.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "c0bef17ab43e4b4c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-ping-devops-db3b3fce"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py",
+        "id_in_name": 0,
+        "name": "recorded_query",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "ping-devops: the DNS name environment m's PingFederate cluster-discovery binding (role from roles_for(PingFederate, cluster-discovery)) has its nodes query when it uses DNS_PING (stated, or no protocol, no storage reference and a ciamFqdn), else None: the values' DNS_QUERY_LOCATION. Repeats PingFederate's binding_protocol rule (source of truth; the showcase test test_cluster_discovery_rule checks they agree).",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "0ee514a15d598f52"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-recorded-query-95e120fa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/discovery.py",
+        "id_in_name": 0,
+        "name": "discovery_gap",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"answer\", \"type\": \"DiscoveryAnswer\", \"required\": true}]",
+        "purpose": "PingFederate (moved from ping-devops, task 520): (finding text, Fix) when environment m's pf-cluster-discovery binding doesn't have the nodes find each other by DNS_PING through the name a deployment kit's chart answers in a namespace (a contract.DiscoveryAnswer), else None. Text 'PingFederate runs on Kubernetes in <env> (namespace `<ns>`): ... Record that binding.'; Fix '<kit>-discovery:<env>:<ns>' (area PingFederate on Kubernetes) binding DNS_PING through the name (discovery_records), its step installing the kit's values (they set the answer's setting from the binding).",
+        "returns": "{\"type\": \"tuple[str, Fix] | None\"}",
+        "source_hash": "14e2bcd77fa60113"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "with_cluster_discovery",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"adapters\", \"type\": \"tuple[Adapter]\", \"required\": true, \"description\": \"the adapters rendering m\"}]",
+        "purpose": "The same environment carrying what the deployment kits among the adapters rendering it answer for their products' cluster discovery: each adapter's cluster_discovery(as_seen(m)) concatenated into EnvModel.cluster_discovery (DiscoveryAnswers), for a product's own check (discovery_answers).",
+        "returns": "{\"type\": \"EnvModel\"}",
+        "source_hash": "a262d540a73c3d21"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-with-cluster-discovery-de19192e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "discovery_answers",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"product\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The DiscoveryAnswers the kits rendering environment m give for a product's cluster discovery (m.cluster_discovery filtered by product), in their order; () when none deploys it.",
+        "returns": "{\"type\": \"tuple[DiscoveryAnswer]\"}",
+        "source_hash": "33bf316008c0ced2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-discovery-answers-03763673"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py",
+        "id_in_name": 0,
+        "name": "cluster_discovery",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "ping-devops (Adapter.cluster_discovery): what the chart answers for PingFederate's cluster discovery in environment m: per placement namespace a DiscoveryAnswer(PingFederate, namespace, release.cluster_query(namespace), 'ping-devops', DNS_QUERY_LOCATION).",
+        "returns": "{\"type\": \"tuple[DiscoveryAnswer]\"}",
+        "source_hash": "e0d65c65c929c2d1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cluster-discovery-f5a8f1e4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/discovery.py",
+        "id_in_name": 0,
+        "name": "recorded_query",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "PingFederate: the DNS name environment m's pf-cluster-discovery binding has its nodes query when its protocol (binding_protocol) is DNS_PING, else None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "ae7aed22d99954ec"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-recorded-query-d7128280"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/checks.py",
+        "id_in_name": 0,
+        "name": "check_kit_discovery",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "PingFederate planner check (first of its checks): where a deployment kit deploys PingFederate (discovery_answers(m, PingFederate)), an action (area PingFederate on Kubernetes, owner the environment's responsible) and fix (discovery_gap) per namespace whose chart answers a DNS name the record's discovery binding doesn't query by DNS_PING; an ok line per namespace when all agree; nothing without answers.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "48df84cb3b72d275"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-kit-discovery-3486676a"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"typing.NamedTuple (functional form, immutable record)\", \"fields\": {\"d\": \"Directory\", \"dn\": \"str\", \"env\": \"Entry\", \"cloud\": \"Entry\", \"provider\": \"str (ciamCloudProvider)\", \"label\": \"str cloud/env\", \"servers\": \"tuple[Entry]\", \"bindings\": \"tuple[Entry]\", \"unbound\": \"tuple[str] (required roles not bound)\", \"stack\": \"tuple[StackComponent] declared under ou=stack (empty when none)\", \"declared_roles\": \"tuple[str]\", \"overrides\": \"tuple[Entry] (ciamOverride entries that apply)\", \"lineage\": \"tuple[Entry] (the environment, then its bases)\", \"scope\": \"Optional[Scope] = None (what a render writes of it: 5.7)\", \"product_roles\": \"tuple[(product, kind, role)] = () (the installed adapters' declared roles: with_product_roles; roles_for reads them)\"}}",
+        "description": "An environment as renderers and checks see it: directory snapshot, DN, environment and cloud entries, provider, label, servers, bindings, unbound roles, declared stack, declared roles, overrides, lineage, render scope, the installed adapters' product roles (with_product_roles) and what the kits rendering it answer for their products' cluster discovery (cluster_discovery: DiscoveryAnswers, with_cluster_discovery).",
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "EnvModel"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "type-envmodel-10501ae2"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"collections.namedtuple (endpoints/prerequisites/collectors/render_targets default (), listeners/proxy_settings/workload_identity/secret_delivery default None)\", \"fields\": {\"name\": \"str\", \"kind\": \"provider|platform|product|host|delivery|secret-store|compliance\", \"applies\": \"(EnvModel) -> bool | None\", \"required_roles\": \"tuple[str]\", \"render_neutral\": \"(Directory) -> {path: text} | None\", \"render_env\": \"(EnvModel, Services[, targets]) -> {path: text} | None\", \"checks\": \"tuple[(PlanContext) -> Findings]\", \"ref_schemes\": \"tuple[str]\", \"secret_schemes\": \"{scheme: (rest) -> shell command}\", \"renders\": \"str|None\", \"neutral_label\": \"str|None\", \"vocabulary\": \"{vocab attribute: tuple[values]}\", \"schema\": \"SchemaFragment|None\", \"formats\": \"tuple[(glob, format)]\", \"products\": \"tuple[(product, range)]\", \"secret_patterns\": \"tuple[SecretPattern]\", \"importers\": \"tuple[Importer]\", \"profile_terms\": \"Terms|None\", \"access\": \"AccessModel|None\", \"endpoints\": \"tuple[Endpoint]\", \"listeners\": \"(EnvModel) -> Listeners | None\", \"proxy_settings\": \"(EnvModel, ProxySettings) -> ProxySettings | None\", \"prerequisites\": \"tuple[Prerequisite]\", \"collectors\": \"tuple[Collector]\", \"render_targets\": \"tuple[(name, what[, False])]\", \"workload_identity\": \"(EnvModel, identity binding) -> K8sIdentity | None\", \"secret_delivery\": \"{scheme: SecretDelivery} | None\"}, \"registered_via\": \"entry points group opsdir.adapters\"}",
+        "description": "An installable adapter's declaration (core contract): name, kind, applies, required roles, renderers, planner checks, schemes, vocabulary, schema, formats, products, importers, collectors, render targets, Kubernetes and edge hooks, settings, signals, logs, host files, version changes, read-backs, profiles, notes, roles used, product roles (roles) and, for a deployment kit, what its chart answers for its products' cluster discovery (cluster_discovery -> DiscoveryAnswers).",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Adapter"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-adapter-ec60b0e6"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"NamedTuple\", \"fields\": {\"product\": \"str\", \"namespace\": \"str\", \"name\": \"str\", \"kit\": \"str\", \"setting\": \"str\"}}",
+        "description": "What a deployment kit's chart answers for a product's cluster discovery in one namespace (Adapter.cluster_discovery): the product (as its adapter's products name it), the namespace, the DNS name its pods find each other through, the kit (its adapter name, for the product's fix key and step) and the setting its values pass the product's discovery binding as.",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "DiscoveryAnswer"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-discoveryanswer-e36cfba2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "User-approved D1-later (decisions 3003, note on task 515 context 3012). The last adapter-to-adapter import: packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py:12 `from opsdir_adapter_pingfederate.discovery import binding_protocol, discovery_records`. Change: the kit declares, as data through the core contract, what its chart answers for cluster discovery (e.g. a field `cluster_discovery`: (EnvModel) -> ((product, namespace, DNS name), ...)); PingFederate's own planner check owns the comparison and its Fix records (finding text and fix key IDENTICAL, so expected-findings and golden stay unchanged; only the check's owner changes). Then drop the import and the ping-devops pyproject dependency on opsdir-adapter-pingfederate. If the contract field's shape has more than one reasonable answer, escalate (needs_user) before building. Rules 3002 + 2991. Boundary: opsdir/opsdir/core/contract.py (the one field), opsdir/opsdir/connectors/registry.py only if the lookup needs it, packages/opsdir-adapter-ping-devops, packages/opsdir-adapter-pingfederate (discovery.py, checks.py, adapter.py), their tests/READMEs/pyprojects. Coordinate: worker-3's task 519 also edits core/contract.py (Collector options) and registry.py: keep your contract edit to one added field so the text merge is trivial.",
+        "flows": [
+          "Kubernetes Deployment Render",
+          "Product Profile Build"
+        ],
+        "name": "U.16 c: PingFederate owns its cluster-discovery comparison; ping-devops declares what its chart answers (U14-08 D1)",
+        "parent": {
+          "slug": "milestone-u-16-deferred-follow-ups-taken-in-parall-dd5525b4"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Adapter.cluster_discovery; EnvModel.cluster_discovery + with_cluster_discovery/discovery_answers; registry.environment attaches from the applicable adapters (on the model as seen)",
+        "name": "Contract field and model delivery",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-contract-field-and-model-delivery-b7afc1d0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cluster_discovery(m) from placements + cluster_query; values read the binding's DNS_PING name with the repeated implied-protocol rule; check without discovery; ok line without 'and cluster discovery'; import and pyproject dependency on pingfederate dropped",
+        "name": "ping-devops declares what its chart answers",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-ping-devops-declares-what-its-chart-answ-18403ffd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "discovery_gap/_now/recorded_query moved into pingfederate discovery.py; check registered first; text, area, fix key identical; its own ok line",
+        "name": "PingFederate owns check_kit_discovery",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-pingfederate-owns-check-kit-discovery-50d2eb41"
+      }
+    },
+    {
+      "attributes": {
+        "description": "package tests moved/updated; examples/showcase/tests/unit test that the kit's rule and binding_protocol agree on showcase bindings; READMEs; AIMFP moves; byte-identical plan/fix list",
+        "name": "Tests, showcase agreement test, READMEs, tracking",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-showcase-agreement-test-readmes-tr-5da09546"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "8fe5c9a",
+    "branch": "aimfp-u16a-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "discovery_gap calls recorded_query (discovery.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-recorded-query-d7128280"
+      }
+    },
+    {
+      "attributes": {
+        "description": "environment calls with_cluster_discovery (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-environment-be417ae2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-with-cluster-discovery-de19192e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "with_cluster_discovery calls as_seen (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-with-cluster-discovery-de19192e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-as-seen-b0a2d912"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cluster_discovery calls placements (products.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cluster-discovery-f5a8f1e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placements-099f7e6c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cluster_discovery calls cluster_query (release.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-cluster-discovery-f5a8f1e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cluster-query-f3499849"
+      }
+    },
+    {
+      "attributes": {
+        "description": "recorded_query calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-recorded-query-d7128280"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "recorded_query calls one_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-recorded-query-d7128280"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "recorded_query calls binding_protocol (discovery.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-recorded-query-d7128280"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-binding-protocol-ff0b130e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_kit_discovery calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-kit-discovery-3486676a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_kit_discovery calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-kit-discovery-3486676a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_kit_discovery calls discovery_gap (discovery.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-kit-discovery-3486676a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_kit_discovery calls discovery_answers (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-kit-discovery-3486676a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-discovery-answers-03763673"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-cluster-discovery-f5a8f1e4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-discoveryanswer-e36cfba2"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-discovery-answers-03763673"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-discoveryanswer-e36cfba2"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-discoveryanswer-e36cfba2"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-with-cluster-discovery-de19192e"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "combinator",
+      "type": {
+        "entity_key": "ty-discoveryanswer-e36cfba2"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/discovery.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/discovery.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/environment.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/registry.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ping-devops/src/opsdir_adapter_ping_devops/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-c-pingfederate-owns-its-cluster-dis-b182deea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the protocol the binding states or implies",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-recorded-query-95e120fa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-binding-protocol-ff0b130e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the chart's cluster service DNS name",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-cluster-query-f3499849"
+      }
+    },
+    {
+      "attributes": {
+        "description": "what the record has the nodes query",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-recorded-query-95e120fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "per placement: discovery action and fix",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-ping-devops-db3b3fce"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      }
+    },
+    {
+      "attributes": {
+        "description": "discovery_gap calls discovery_role (discovery.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-discovery-gap-b17be691"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-discovery-role-8407edb5"
+      }
+    }
+  ],
+  "warnings": []
+}

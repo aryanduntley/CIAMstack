@@ -1,0 +1,118 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "description": "Deferred note 2880 (read it in full). arm_types.py keeps azurerm_container_app_job in the side Terraform root ('no ARM form is written for the check jobs yet'), and with it the per-job publisher and pull grants scoped to inputs. Write a Native for azurerm_container_app_job in the image-delivery form only (Microsoft.App/jobs: identity, configuration.registries [server, identity], scheduleTriggerConfig, secrets with keyVaultUrl + identity, template.containers with env); script delivery stays KEPT for its file(). API version: newest stable in the Bicep type index the repo uses (check how arm_types picks others; no web research: escalate if you can't tell). The grants that only stayed in Terraform because of the job move with it where the table allows. Read back: the job round-trips through the ARM read-back (rendered_deployments + the azure/arm reader) as the Terraform read-back does (test_arm_coverage / native parity). Rules: brief 2991 + U.14 rules 3002 (line-length test, AIMFP loop, deletion manifests). Golden: none expected (golden holds no Bicep renders); the Azure sample (examples/showcase/tests/terraform/azure_sample.py) must still build: list the bicep marker tests for the master. Boundary: packages/opsdir-adapter-azure arm_types.py, arm_render.py, check_jobs.py, rendered_state.py, arm.py, their tests and README; NOT inventory.py, landing.py, collect.py, plumbing.py (worker-1's task 513): escalate if the read-back needs them.",
+        "flows": [
+          "ARM / Bicep Render"
+        ],
+        "name": "U.16 a: native ARM/Bicep form for the Azure check jobs (note 2880)",
+        "parent": {
+          "slug": "milestone-u-16-deferred-follow-ups-taken-in-parall-dd5525b4"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-16-a-native-arm-bicep-form-for-the-azu-3da8e0a0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Microsoft.App/jobs @ APP, image delivery; script delivery kept by keep(); KEPT entry removed; jobs stay Terraform waiting for their input-scoped grants",
+        "name": "Native row for azurerm_container_app_job (decision C)",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-a-native-arm-bicep-form-for-the-azu-3da8e0a0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-native-row-for-azurerm-container-app-job-6fa31b83"
+      }
+    },
+    {
+      "attributes": {
+        "description": "test_azure_check_jobs (native body with depends_on stripped; side-root reason), hand-made ARM template read-back, showcase test_arm_render reason",
+        "name": "Tests: native form, hand-made template read-back, updated reasons",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-a-native-arm-bicep-form-for-the-azu-3da8e0a0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-native-form-hand-made-template-rea-e73bf1be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-azure README Bicep/ARM section",
+        "name": "README: why the jobs stay Terraform",
+        "parent": {
+          "key": {
+            "slug": "task-u-16-a-native-arm-bicep-form-for-the-azu-3da8e0a0"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-readme-why-the-jobs-stay-terraform-a02f4f98"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "404e964",
+    "branch": "aimfp-u16b-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/arm_types.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-a-native-arm-bicep-form-for-the-azu-3da8e0a0"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/cli_monitor.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-a-native-arm-bicep-form-for-the-azu-3da8e0a0"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-16-a-native-arm-bicep-form-for-the-azu-3da8e0a0"
+      }
+    }
+  ],
+  "warnings": []
+}

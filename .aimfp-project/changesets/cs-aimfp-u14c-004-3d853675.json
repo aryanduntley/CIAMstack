@@ -1,0 +1,695 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/data/volumes.py",
+        "id_in_name": 0,
+        "name": "volume_policy",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"v\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "What environment m binds for a volume's ciamSnapshotPolicyRole (core.environment.role_named): a snapshot policy, or a backup plan where the environment snapshots disks with a backup service; None for no role, unbound, or another class.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "f9463e237bdcb8c1"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-volume-policy-95e96f89"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/data/backups.py",
+        "id_in_name": 0,
+        "name": "plan_vault",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"p\", \"type\": \"Entry\"}]",
+        "purpose": "The backup vault an environment binds for a plan's ciamBackupVaultRole, or None.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "544e59e78820a0fe"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-plan-vault-d18bc5f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/audit.py",
+        "id_in_name": 0,
+        "name": "trail_destination",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"trail\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The binding of environment m that keeps an audit trail's records (its ciamLogDestinationRole: a log destination or object store), or None",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "6a5a6360355efcbf"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-trail-destination-a623df4c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/security.py",
+        "id_in_name": 0,
+        "name": "findings_destination",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"service\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The binding of environment m that a security service's findings (or recorded configuration) go to (its ciamFindingsRole), or None.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "657b7b243acd685d"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-findings-destination-6f7a13ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/budgets.py",
+        "id_in_name": 0,
+        "name": "budget_channel",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"b\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The binding of environment m a budget alerts (its ciamAlertRole), or None",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "41190fd4968a098e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-budget-channel-ed89486c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/estate/discovery.py",
+        "id_in_name": 0,
+        "name": "destination",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"s\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"attr\", \"type\": \"str\", \"required\": true, \"description\": \"ciamFindingsRole or ciamResultsRole\"}]",
+        "purpose": "The binding of environment m a data discovery service's findings (ciamFindingsRole) or results (ciamResultsRole) go to, or None",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "066308daa30794b8"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-destination-f3b68648"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/collection.py",
+        "id_in_name": 0,
+        "name": "resolve_source",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"s\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The Source a ciamCollectionSource binding resolves to in its environment: name, importer, locations (ciamSourceRef or https://host:port per server of its role), credential and CA references, login name, problems (unbound roles, no location), and how the credential is sent (ciamCredentialScheme, default basic).",
+        "returns": "{\"type\": \"Source\"}",
+        "source_hash": "7468e14170c42828"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-resolve-source-457220ee"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/appliances.py",
+        "id_in_name": 0,
+        "name": "login_secret",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"appliance\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "ref-uri of the secret an appliance's login signs in with (its ciamLoginSecretRole as m binds it), or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "1097b775b9a62825"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-login-secret-45a91e69"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/observability/audit.py",
+        "id_in_name": 0,
+        "name": "trail_stream",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"trail\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The binding an audit trail also streams its records to (its ciamAuditStreamRole: a log destination such as a CloudWatch log group), or None.",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "0c8ae392b9860c28"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-trail-stream-966ecd15"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "role_named",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"e\", \"type\": \"Entry\", \"required\": true, \"description\": \"the entry naming the role\"}, {\"name\": \"attr\", \"type\": \"str\", \"required\": true, \"description\": \"its attribute holding a binding role (ciamFindingsRole, ciamAlertRole, ...)\"}]",
+        "purpose": "The binding of environment m whose role entry e's attribute attr names (one_role of that role), or None when e names none or m binds nothing with it: the shared 'binding of the role an attribute names' lookup (findings and results destinations, alert channels, audit trail destinations and streams, login secrets, backup vaults, snapshot policies, collection credentials). Pure.",
+        "returns": "{\"type\": \"Entry | None\"}",
+        "source_hash": "3772cfc5dbe5d73d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "User-approved 2026-10-15 (asked to give idle workers the role_named task). Found by worker-2 in task 514 (notes 3003, 3004): the same 2 lines 'the binding of the role an attribute names' (one_role(m, one(e, attr))) at 9 sites: estate security.py:55 findings_destination, budgets.py:33, discovery.py:70 (destination); observability audit.py:56 (trail_destination) and :74; infrastructure appliances.py:25; data backups.py:39, volumes.py:54; governance collection.py:24. Change: core opsdir/opsdir/core/environment.py role_named(m, e, attr), public, documented, tested; the sites switch; discovery.destination stays as a public wrapper (aws and gcp import it). Behaviour-neutral, byte-identical. Rules 2991 + 3002. Boundary: core/environment.py (add the function at the end of the file only: task 520, not yet merged, adds EnvModel.cluster_discovery and helpers in the same file), the 9 domain files, their tests, opsdir/README.md shared-API line.",
+        "flows": [
+          "Showcase & Verification"
+        ],
+        "name": "U.14 h: core role_named helper for the 9 'binding of the role an attribute names' sites",
+        "parent": {
+          "slug": "milestone-u-14-modularity-audit-and-backfill-992d73a2"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "94d2f5f",
+    "branch": "aimfp-u14c-004",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "volume_policy calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-volume-policy-95e96f89"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan_vault calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-vault-d18bc5f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "trail_destination calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-destination-a623df4c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "findings_destination calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-findings-destination-6f7a13ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "budget_channel calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-budget-channel-ed89486c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "destination calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-destination-f3b68648"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolve_source calls role_named (environment.py) via _ref",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolve-source-457220ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "login_secret calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-login-secret-45a91e69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "trail_stream calls role_named (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-stream-966ecd15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-named-3cd31a22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "role_named calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-role-named-3cd31a22"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "role_named calls one_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-role-named-3cd31a22"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/data/volumes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/environment.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/security.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/budgets.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/estate/discovery.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/observability/audit.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/appliances.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/data/backups.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/collection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-u-14-h-core-role-named-helper-for-the-9-953299e4"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-volume-policy-95e96f89"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-volume-policy-95e96f89"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-vault-d18bc5f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-destination-a623df4c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "one_role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-destination-a623df4c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-findings-destination-6f7a13ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "one_role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-findings-destination-6f7a13ab"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the channel bound to the budget's alert role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-budget-channel-ed89486c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "binding of ciamLoginSecretRole",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-login-secret-45a91e69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "one",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-destination-f3b68648"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "one_role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-destination-f3b68648"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan_vault calls one_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-vault-d18bc5f1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "budget_channel calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-budget-channel-ed89486c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolve_source calls one_role (environment.py) via _ref",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolve-source-457220ee"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    },
+    {
+      "attributes": {
+        "description": "trail_stream calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-stream-966ecd15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "trail_stream calls one_role (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trail-stream-966ecd15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-one-role-04b50f40"
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,888 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "unknowns.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/governance/unknowns.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/governance/",
+        "purpose": "Owners (parties), change records, incidents and work instructions; import runs and collection attempts; the unknowns register (ciamUnknown questions the planner counts: check_unknowns, report unknowns); stale-runbook view and report."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "domain-governance"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/build.py",
+        "id_in_name": 0,
+        "name": "specs",
+        "parameters": "[]",
+        "purpose": "Every entry spec of the estate, in within-file order",
+        "returns": "{\"type\": \"tuple[Spec, ...]\"}",
+        "source_hash": "2c52b890020e8b92"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-specs-4a938b46"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/unknowns.py",
+        "id_in_name": 0,
+        "name": "unknowns",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "Every question in the unknowns register (ciamUnknown under ou=unknowns), sorted by name.",
+        "returns": "{\"type\": \"list[Entry]\"}",
+        "source_hash": "bd46bffaa12834b0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unknowns-701b3979"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/unknowns.py",
+        "id_in_name": 0,
+        "name": "answered",
+        "parameters": "[{\"name\": \"u\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether a question has its answer (ciamAnswer set).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "585629eeae9970ac"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-answered-02a0b10a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/unknowns.py",
+        "id_in_name": 0,
+        "name": "blocking",
+        "parameters": "[{\"name\": \"u\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether a move waits for a question's answer (ciamBlocking TRUE).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "5dd83daa92849b39"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-blocking-4ac43992"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/unknowns.py",
+        "id_in_name": 0,
+        "name": "concerns",
+        "parameters": "[{\"name\": \"u\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"env_dn\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a question concerns an environment: it names none (estate-wide), the environment or an entry inside it, or an entry outside every environment (intent the environments share).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "3ca0aa8a94f8a224"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-concerns-4b71f7cb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/unknowns.py",
+        "id_in_name": 0,
+        "name": "concerned",
+        "parameters": "[{\"name\": \"u\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "What a question concerns, in words: environments by label, entries inside one as `name` in label, others by name; 'the estate' when it names none.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "0fb92cba20b0473c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-concerned-7aa261e3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/unknowns.py",
+        "id_in_name": 0,
+        "name": "check_unknowns",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Governance planner check (area Unknowns) over the questions concerning the source or the target: open and blocking -> blocker naming the owner (the plan can't be READY); open, not blocking -> action for the owner dated by ciamNeededBy else the cutover ('**already late**' when past); answered -> ok line with date, owner and answer. No fix.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "167d393e6ed4b22e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/unknowns.py",
+        "id_in_name": 0,
+        "name": "unknown_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"as_of\", \"type\": \"date|None\", \"required\": false}]",
+        "purpose": "Report `unknowns` (dated): one row per question: name, question, owner, blocking yes/no, concerns, raised, needed by, status as of the day (open | overdue past needed-by | answered), answer, answered.",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "768c2fbf532c4879"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/governance.py",
+        "id_in_name": 0,
+        "name": "unknowns",
+        "parameters": "[]",
+        "purpose": "Showcase fixture: the unknowns register's entries (23-unknowns): q-skyline-signing (blocking, target, answered by CHG-2044), q-tech-pubs-sso (open, estate-wide, needed by 2026-12-01), q-mro-export-window (answered, source).",
+        "returns": "{\"type\": \"tuple[Spec]\"}",
+        "source_hash": "e440b227619a7096"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unknowns-9a5f5abb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 6.3 (id 29): 'ciamUnknown (question, owner, blocking, answer) included in the planner verdict.' Started 2026-10-15 at the user's request to keep idle workers busy. Design first, escalate (kind decision) with your recommendation before building: where unknowns live (container, which domain owns them: likely governance or the planner's own), attributes (question, owner party, blocking yes/no, answer, answered-on, the environment(s)/entries it concerns, raised-on/due), how the planner verdict counts them (an open blocking unknown = a blocker? an open non-blocking one = an action? answered ones = info), report(s) (`opsdir report unknowns`), governed writes like any entry, docs. Reuse existing patterns (findings, keepers/owner parties, due dates from lead times) before adding new ones. RESERVED NUMBERS (another worker may add schema in parallel): core attributes 661-669, object classes 137-139; use only these. Showcase: propose whether to plant an unknown (it would change golden: plan and reports); the master re-baselines golden when the diff is what you predicted. Find the right flow(s) (planner verdict, governance) and set task/file flow_ids accordingly; add a flow if none fits. Rules 2991 (+ 3002's line-length/AIMFP rules). Boundary: the core domain you choose for unknowns, the planner verdict code, schema LDIF regeneration (opsdir/schema via gen-schema.py), docs, showcase data (examples/showcase/example_estate, data via gen-synthetic.py) if planting is approved, their tests. Not: cloud adapters, kits, format packages, core environment.py.",
+        "flows": [
+          "Showcase & Verification",
+          "Migration Planning",
+          "Query & Report"
+        ],
+        "name": "6.3 Unknowns register: ciamUnknown in the record and the planner verdict",
+        "parent": {
+          "slug": "milestone-6-3-unknowns-register-6946ec27"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "governance schema fragment, naming.UNKNOWNS, regenerated schema LDIF",
+        "name": "Schema: ciamUnknown and attributes 661-667",
+        "parent": {
+          "key": {
+            "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-schema-ciamunknown-and-attributes-661-66-feccbc43"
+      }
+    },
+    {
+      "attributes": {
+        "description": "governance unknowns.py: check_unknowns (blocker/action/ok), report unknowns (dated), registered in the domain",
+        "name": "Planner check and report",
+        "parent": {
+          "key": {
+            "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-planner-check-and-report-c9fa2a1d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "23-unknowns (three questions), ou=unknowns branch, CHG-2044 answering the blocking one, B44/A138 expected, demo.sh + snapshot report line, APPROVED",
+        "name": "Showcase planting",
+        "parent": {
+          "key": {
+            "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-showcase-planting-b89b73b8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir/README.md section, root README and model doc report rows, STACK.md row, showcase README; tests/unit/test_unknowns.py",
+        "name": "Docs and tests",
+        "parent": {
+          "key": {
+            "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-docs-and-tests-7cb46e02"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "94d2f5f",
+    "branch": "aimfp-u63-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "specs calls unknowns (governance.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-specs-4a938b46"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unknowns-9a5f5abb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknowns references rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknowns-701b3979"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknowns calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknowns-701b3979"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "answered calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-answered-02a0b10a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "blocking calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-blocking-4ac43992"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "concerns calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-concerns-4b71f7cb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "concerns calls within (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-concerns-4b71f7cb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "concerned calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-concerned-7aa261e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "concerned calls env_label (naming.py) via _where",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-concerned-7aa261e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "concerned calls within (directory.py) via _where",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-concerned-7aa261e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls date_of (directory.py) via _action",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls unknowns (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unknowns-701b3979"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls answered (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answered-02a0b10a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls blocking (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-blocking-4ac43992"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls concerns (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-concerns-4b71f7cb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_unknowns calls concerned (unknowns.py) via _open_text",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-unknowns-714d898f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-concerned-7aa261e3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls responsible (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls date_of (directory.py) via _date",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls unknowns (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unknowns-701b3979"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls answered (unknowns.py) via _status",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answered-02a0b10a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls blocking (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-blocking-4ac43992"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknown_rows calls concerned (unknowns.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknown-rows-5aa8ebd1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-concerned-7aa261e3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknowns calls spec (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknowns-9a5f5abb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-e-65fcabe6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknowns calls t (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknowns-9a5f5abb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-t-a3e2257d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unknowns calls owner (common.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unknowns-9a5f5abb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owner-ded37f0b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/unknowns.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/unknowns.py"
+      },
+      "flow": {
+        "name": "Query & Report"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/domain.py"
+      },
+      "flow": {
+        "name": "Migration Planning"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/unknowns.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-governance"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Query & Report"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-3-unknowns-register-6946ec27"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Showcase & Verification"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-3-unknowns-register-6946ec27"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/unknowns.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/build.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/base.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-3-unknowns-register-ciamunknown-in-the-a71baeac"
+      }
+    }
+  ],
+  "warnings": []
+}

@@ -1,0 +1,2501 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "running.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/infrastructure/running.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "running.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "importer.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "readback.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/readback.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "firewall_running.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "examples/showcase/example_estate/firewall_running.py"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "A firewall manager's RUNNING rules read back, read-only, against the record's ciamFirewallRule and what the network-firewall add-on renders (milestone 6.2c, task 529). The add-on's importer (PAN-OS/Panorama first: panos/running-config, from an explicit running-config snapshot or the XML API's action=show envelopes its collector saves) matches rules by the add-on's description marker, then its rule name; it reads sources, ports, protocol and target role into the neutral rule (out-of-band changes are import take/keep conflicts) and records what the neutral rule can't hold as observed attributes: ciamRunningState (committed on a manager, deployed on a firewall, disabled, missing), ciamRunningFact ('<key> <value>': record-owned drift such as action, log-end, destination, description, unresolved members; team settings that limit access such as negation and schedule), ciamUnrecordedRule on the appliance (rules carrying the environment's marker the record lacks, unmarked allows to its servers), and ciamRecordedCidr of external allowlists whose ciamAllowlistRef names an object the export holds. The core (vendor-neutral, for later AlgoSec/Tufin/FireMon importers) reports them: planner check check_firewall_running and report firewall-running."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Firewall Running Read-back"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/infrastructure.py",
+        "id_in_name": 0,
+        "name": "external_allowlists",
+        "parameters": "[]",
+        "purpose": "Specs of other parties' allowlists holding our addresses (80-external-allowlists), each with where it lives in its system when an import can read it (ciamAllowlistRef: hq-apps-egress-to-ldaps on the HQ Panorama's shared address group)",
+        "returns": "{\"type\": \"tuple[Spec, ...]\"}",
+        "source_hash": "6684af960214396c"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-external-allowlists-fcfe3f4a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/build.py",
+        "id_in_name": 0,
+        "name": "exports",
+        "parameters": "[]",
+        "purpose": "{path under exports/: text} built from the estate: directory servers' config/ directories, access logs, what the clouds report (exports/cloud), each provider's region list (exports/regions, estate.region_exports) and quota limits (exports/quotas, estate.quota_exports), the production directory's user data, and the lab Panorama's running configuration as the XML API answers it (exports/panos, firewall_running.panorama_exports)",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "6ca26748fe11b54e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-exports-6a03a35a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/rules.py",
+        "id_in_name": 0,
+        "name": "objects",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "{addresses, services, rules} of env m's firewall rules as the play's vars: source-range address objects (shared names), server address objects named per environment (opsdir-<cloud>-<env>-<server>; UNBOUND when no IP), service objects per protocol/port, rules opsdir-<cloud>-<env>-<rule> in ciamRulePriority order (unpinned last) with marker description and 'after' = previous rule name (None for the first).",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "95d24cf2e9d429f4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-objects-968392bd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/running.py",
+        "id_in_name": 0,
+        "name": "observed_rule",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"state\", \"type\": \"str|None\", \"required\": true, \"description\": \"a RUNNING_STATES value\"}, {\"name\": \"facts\", \"type\": \"Iterable[str]\", \"required\": true, \"description\": \"'<key> <value>' facts\"}]",
+        "purpose": "A firewall rule entry with what a read-back of a firewall manager's running configuration observed: ciamRunningState and ciamRunningFact replaced (none: removed); the rest of the entry kept.",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "4554d417ed1c7927"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observed-rule-f1c98ced"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/running.py",
+        "id_in_name": 0,
+        "name": "observed_appliance",
+        "parameters": "[{\"name\": \"a\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"unrecorded\", \"type\": \"Iterable[str]\", \"required\": true}]",
+        "purpose": "An appliance entry with the rules its running configuration holds that the record doesn't (ciamUnrecordedRule replaced; none: removed).",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "0a608f65b0a242fb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-observed-appliance-12e34384"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/running.py",
+        "id_in_name": 0,
+        "name": "allowlist_refs",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"adapter\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The external allowlists whose ciamAllowlistRef an adapter's importer reads ('<adapter>:<path>'), with the path after the adapter's prefix.",
+        "returns": "{\"type\": \"tuple[tuple[Entry, str]]\"}",
+        "source_hash": "f30cfa094487ea4e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-allowlist-refs-137d7c35"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/running.py",
+        "id_in_name": 0,
+        "name": "recorded_allowlist",
+        "parameters": "[{\"name\": \"xa\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"cidrs\", \"type\": \"Iterable[str]\", \"required\": true}]",
+        "purpose": "An external allowlist entry with the addresses its system holds today (ciamRecordedCidr replaced), as a read-back of that system observed them.",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "1f615b3d3cd0f668"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-recorded-allowlist-3859a7df"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/running.py",
+        "id_in_name": 0,
+        "name": "running_facts",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "A rule's ciamRunningFact values split into what the record owns (OWNED_FACTS: the next push restores it) and the network team's settings limiting what it admits (ACCESS_FACTS).",
+        "returns": "{\"type\": \"tuple[tuple[str], tuple[str]]\", \"description\": \"(owned, access)\"}",
+        "source_hash": "e8aec1275cf7b18e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-running-facts-5d5614e2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/running.py",
+        "id_in_name": 0,
+        "name": "check_firewall_running",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check over the source and target environments' firewall rules as last read back from their firewall managers: missing, disabled, record-owned drift and access-limiting settings per rule, and each appliance's unrecorded rules, as actions; rules only committed on a manager named as fine with delivery unconfirmed. Nothing when nothing was read back.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "daf2559c85c933b5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/infrastructure/running.py",
+        "id_in_name": 0,
+        "name": "firewall_running_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Report source (directory_report firewall-running): per environment, each firewall rule read back (state, what it runs the record doesn't) and each appliance's unrecorded rules, with when the last import covering it read the live system.",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "908bf40b9fe9ea9c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/rules.py",
+        "id_in_name": 0,
+        "name": "rule_name",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"r\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamFirewallRule\"}]",
+        "purpose": "The PAN-OS security rule name the add-on writes for firewall rule r of environment m: opsdir-<cloud>-<env>-<rule>, cut with a digest past 63 characters.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "119d055f073d9fa8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-rule-name-fb9933ef"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/rules.py",
+        "id_in_name": 0,
+        "name": "server_object",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"s\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The PAN-OS address object name the add-on writes for server s of environment m: opsdir-<cloud>-<env>-<server>.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "c4bddb8d42cd61a3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-server-object-d40a3510"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/rules.py",
+        "id_in_name": 0,
+        "name": "marked",
+        "parameters": "[{\"name\": \"description\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "(environment label, rule, target role) a security rule's description names when it starts with an environment's marker ('opsdir <cloud>/<env>: <rule> -> role <role>'), else None: how a read-back knows which record rule a running rule realizes.",
+        "returns": "{\"type\": \"tuple[str,str,str]|None\"}",
+        "source_hash": "6ea7c65e726ea702"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-marked-937c9723"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "name": "xpath",
+        "parameters": "[{\"name\": \"scope\", \"type\": \"str\", \"required\": true}, {\"name\": \"family\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The XML API xpath of one family (pre-rulebase, post-rulebase, rulebase, address, address-group, service, service-group) of one scope (shared, device-group/<name>, vsys/<name>); reconstructed from Palo Alto's documented examples.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "ddba04d7bc210d13"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-xpath-cc39caf5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "name": "read_running",
+        "parameters": "[{\"name\": \"files\", \"type\": \"Mapping[str, str]\", \"required\": true, \"description\": \"{path within the appliance folder: text}\"}]",
+        "purpose": "(Running or None, notices) of one appliance's files: its running-config.xml <config> snapshot, else its api/<scope>/<family>.xml XML API answers; None when nothing can be read or the answers are incomplete (never half a read); DOCTYPE/entities refused.",
+        "returns": "{\"type\": \"tuple[Running|None, tuple[str]]\"}",
+        "source_hash": "238569aef2e0bd99"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-running-bbd98d76"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "name": "chain",
+        "parameters": "[{\"name\": \"scope\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The scopes a rule's objects resolve in, nearest first: its own, then shared.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "90eb5e54f6387437"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-chain-71927af0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "name": "resolve_addresses",
+        "parameters": "[{\"name\": \"running\", \"type\": \"Running\", \"required\": true}, {\"name\": \"scope\", \"type\": \"str\", \"required\": true}, {\"name\": \"members\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "((cidr, ...), (unresolved, ...)) of a rule's sources or destinations in a scope: any = 0.0.0.0/0 and ::/0; literals, ip-netmask objects and static groups resolve (recursively, cycles named); ranges, wildcards, FQDNs, dynamic groups and objects not in the export are named.",
+        "returns": "{\"type\": \"tuple[tuple[str], tuple[str]]\"}",
+        "source_hash": "f14afc1afe26eab2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resolve-addresses-bae21ae6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "name": "resolve_services",
+        "parameters": "[{\"name\": \"running\", \"type\": \"Running\", \"required\": true}, {\"name\": \"scope\", \"type\": \"str\", \"required\": true}, {\"name\": \"members\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "(((protocol, port), ...), (unresolved, ...)) of a rule's services in a scope: TCP/UDP service objects and static groups on single ports resolve; any, application-default, port ranges, other protocols and predefined services are named.",
+        "returns": "{\"type\": \"tuple[tuple[tuple[str,str]], tuple[str]]\"}",
+        "source_hash": "a66962b378836a9d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resolve-services-ae17bbcb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py",
+        "id_in_name": 0,
+        "name": "placement",
+        "parameters": "[{\"name\": \"a\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamAppliance\"}]",
+        "purpose": "(kind, own scope, ((scope, rulebase), ...) in enforcement order, (scope, rulebase) the add-on writes to) of a network-firewall appliance: a firewall's vsys (scope vsys<n>, none: vsys1) or a Panorama device group (shared pre, DG pre, DG post, shared post).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "7e4627b71bf586bd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-placement-2c868c73"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py",
+        "id_in_name": 0,
+        "name": "management_host",
+        "parameters": "[{\"name\": \"address\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The host name an appliance's management address or a URL names, lower case (no scheme, port or path).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "067d1643dc740d57"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-management-host-7757f7f1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py",
+        "id_in_name": 0,
+        "name": "allowlist_place",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(host, scope, kind, name) a panos ciamAllowlistRef's path names, or None when it isn't <host>/<scope>/<address|address-group|rule>/<name>.",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "f5772f8029242cb7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-allowlist-place-c9d9ce5a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py",
+        "id_in_name": 0,
+        "name": "read_running_config",
+        "parameters": "[{\"name\": \"files\", \"type\": \"Mapping[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple[SecretPattern]\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer panos/running-config: Imported of each <cloud>/<env>/<appliance>/ folder's running configuration against that environment: rules matched by marker then name, sources/ports/protocol/role read into the rule (core.inventory), state and facts observed, missing rules, the appliance's unrecorded rules, and the external allowlists whose ciamAllowlistRef the files hold.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "cd8c919719098346"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py",
+        "id_in_name": 0,
+        "name": "credential",
+        "parameters": "[{\"name\": \"s\", \"type\": \"Source\", \"required\": true}]",
+        "purpose": "The Request credential sending a collection source's API key in X-PAN-KEY (scheme api-key, no login; worker-1's task 528 contract), or None.",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "4c7f43c42991cef0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-credential-466ef340"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py",
+        "id_in_name": 0,
+        "name": "families",
+        "parameters": "[{\"name\": \"scope\", \"type\": \"str\", \"required\": true}, {\"name\": \"kind\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The families the collector reads of one scope of a panorama or firewall appliance (rulebases where rules live, then the object families).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "ca4eef54ebb57a77"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-families-70d7fbcf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py",
+        "id_in_name": 0,
+        "name": "running_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"Mapping[str,str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"Mapping\", \"required\": true}]",
+        "purpose": "Collector steps: one GET /api/?type=config&action=show&xpath=... (the running configuration; never action=get, never a commit) per family of the appliance's scope, shared and the scopes its external allowlists name, for each collection source of panos/running-config, saved as <cloud>/<env>/<appliance>/api/<scope>/<family>.xml.",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "5a4178931ea0d58e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"Mapping\", \"required\": true}]",
+        "purpose": "Why panos/running-config's collection sources can't be read: unbound credential/trust anchor, no location, a credential scheme other than api-key, a location that is none of the environment's network firewalls.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "4a38c62265e92568"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-45332a0c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/readback.py",
+        "id_in_name": 0,
+        "name": "running_config",
+        "parameters": "[{\"name\": \"host\", \"type\": \"Mapping\", \"required\": true}, {\"name\": \"found\", \"type\": \"Mapping\", \"required\": true}]",
+        "purpose": "The <config> document a push of the rendered play's variables (addresses, services, rules) to one inventory host (device group or vsys) leaves running.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "9eb46918abe1551a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-running-config-151fc679"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/readback.py",
+        "id_in_name": 0,
+        "name": "running_from_render",
+        "parameters": "[{\"name\": \"files\", \"type\": \"Mapping[str,str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"environment\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "ReadBack prepare: {<cloud>/<env>/<appliance>/running-config.xml: text} of what pushing the rendered ansible/panos.yml leaves on each Panorama or firewall of ansible/inventory/panos.yml.",
+        "returns": "{\"type\": \"dict[str,str]\"}",
+        "source_hash": "a5ec162225f7663f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-running-from-render-57e0c7a5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "examples/showcase/example_estate/firewall_running.py",
+        "id_in_name": 0,
+        "name": "panorama_exports",
+        "parameters": "[]",
+        "purpose": "{path under exports/: text}: the XML API answers `opsdir collect` saves for the lab's Panorama (DG CIAM-Lab and shared), with the planted drift (fw-admin widened, fw-lb-ldaps log-end off, fw-sso disabled, fw-pf-cluster extra destination, fw-pf-cluster-admin missing, vendor-tmp-ldaps and fw-old-monitoring unrecorded) and the shared address group the HQ apps' allowlist names.",
+        "returns": "{\"type\": \"dict[str,str]\"}",
+        "source_hash": "2402af7293e8a439"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-panorama-exports-40ee0d70"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A PAN-OS security rule as it runs: name, UUID, scope, rulebase, sources, destinations, services (as written), action, disabled, negation, log-end (None: not written), schedule, description.",
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Rule"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-rule-fa72aed4"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One PAN-OS scope's objects: addresses {name: (type, value)}, address groups {name: (static, members) | (dynamic, filter)}, services {name: (protocol, port)}, service groups {name: members}.",
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Scope"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-scope-374be926"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "A Panorama's or firewall's running configuration as read: {scope: Scope}, {(scope, rulebase): (Rule, ...)} in order, the snapshot's version.",
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Running"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-running-01e03aca"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One running rule as the read-back meets it: appliance, its Running, the Rule, (scope, rulebase) it is in, where the add-on writes, and the appliance kind (panorama|firewall).",
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Seen"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-seen-404928bb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 102 (6.2c; read it and proposal 3024). Read the RUNNING rules back from PAN-OS firewalls/Panorama (read-only) to find drift against the record's ciamFirewallRule and the PAN-OS add-on's rendered rules: rules changed out of band, rules the record doesn't hold, expected rules missing; external allowlist request status where readable. STEP 1 (now, before vendor facts): survey what the record and packages/opsdir-adapter-panos already hold (render model, names/digests/tags it writes, team-owned fields it keeps, the infrastructure/network domain's firewall classes and checks, existing drift patterns e.g. edge/network imports) and draft the design. STEP 2: the master sends the Codex vendor research (PAN-OS XML/REST running-config reads, auth/least privilege, export format, drift gotchas) as a research note; then escalate the design (kind decision, with recommendation): neutral model (reuse the network/infrastructure classes; observed attributes; RESERVED core numbers 700-709, classes 147-148 only if needed), importer (offline running-config / API export) + read-only collector, matching keys (the add-on's own names/tags/digests first), what drift is reported (planner check + report), showcase story (fixture export, no live calls). Build after the answer. Rules 2991 + 3002. Boundary: core infrastructure/network domains (firewall parts), packages/opsdir-adapter-panos, docs, examples/showcase (ids CHG-2048+, B48+/A145+, data file 27+), tests. NOT the pki domain, cyberark/vault adapters, governance credential schemes or live.py (worker on task 528), not estate/evidence or format-oscal.",
+        "flows": [
+          "Cloud Network & Firewall",
+          "Firewall Running Read-back"
+        ],
+        "name": "6.2c-1: firewall-manager import (PAN-OS/Panorama first): survey, design, then build",
+        "parent": {
+          "slug": "milestone-6-2c-firewall-manager-import-b7972589"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ciamRunningState/ciamRunningFact (ciamFirewallRule), ciamUnrecordedRule (ciamAppliance), ciamAllowlistRef (ciamExternalAllowlist); generated schema ldif; core infrastructure/running.py: check_firewall_running (src+dst), report firewall-running, fact helpers; Domain registration; opsdir README",
+        "name": "1 core schema 700-703 + running read-back (infrastructure)",
+        "parent": {
+          "key": {
+            "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-1-core-schema-700-703-running-read-back-99542dd5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "packages/opsdir-adapter-panos running.py: <config> snapshot or XML API <response><result> envelopes; scope (DG pre/post, shared, vsys); objects resolved scope->shared, static groups recursive, ranges/FQDN/dynamic unresolved; services; DOCTYPE refused",
+        "name": "2 panos running-config parsing",
+        "parent": {
+          "key": {
+            "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-2-panos-running-config-parsing-12ae0896"
+      }
+    },
+    {
+      "attributes": {
+        "description": "importer panos/running-config: <cloud>/<env>/<appliance>/ files; marker then name matching; firewall Resources via environment_groups; observed state/facts; missing rules; unrecorded rules on the appliance; external allowlists by ciamAllowlistRef; ReadBack intent with prepare (rendered play vars -> running config)",
+        "name": "3 panos importer + read-back",
+        "parent": {
+          "key": {
+            "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-3-panos-importer-read-back-efcba718"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Collector panos/running-config: ciamCollectionSource, ciamCredentialScheme api-key (worker-1 contract, X-PAN-KEY), GET /api/?type=config&action=show&xpath=... per family and scope, never get/commit; steps unit-tested",
+        "name": "4 panos collector",
+        "parent": {
+          "key": {
+            "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-4-panos-collector-21820d24"
+      }
+    },
+    {
+      "attributes": {
+        "description": "README: import, collector, matching, drift statuses, reconstructed xpaths to confirm in /api/ browser, least-privilege XML role release-specific acceptance item, known limits",
+        "name": "5 panos README + docs",
+        "parent": {
+          "key": {
+            "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-5-panos-readme-docs-d8228185"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lab panorama-hq DG CIAM-Lab fixture exports/panos (API envelopes) with planted drift; data 27-firewall-collection.ldif; CHG-2048 import (keep fw-admin); findings B48+/A145+; demo.sh + snapshot-outputs.sh + showcase_support APPROVED",
+        "name": "6 showcase",
+        "parent": {
+          "key": {
+            "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-6-showcase-b65c127f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "panos unit tests (parsing, matching, importer, collector steps, read-back), core running check/report tests, line length",
+        "name": "7 tests",
+        "parent": {
+          "key": {
+            "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-7-tests-ec1c7c1a"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "1505193",
+    "branch": "aimfp-u62d-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "via _rule: owned and access facts per rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-running-facts-5d5614e2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _environment: the environment's network firewalls",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-appliances-7773b37d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _rule/_read_at: when the covering import read the rule",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-covering-d5192615"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _read_at: when the covering import read each entry",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-runs-covering-d5192615"
+      }
+    },
+    {
+      "attributes": {
+        "description": "the environment of each rule or appliance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-scope-30df9a23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "exports calls panorama_exports (firewall_running.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-exports-6a03a35a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-panorama-exports-40ee0d70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "objects calls rule_name (rules.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-objects-968392bd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-name-fb9933ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "objects calls server_object (rules.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-objects-968392bd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-object-d40a3510"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observed_rule calls make_entry (directory.py) via _with",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observed-rule-f1c98ced"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "observed_appliance calls make_entry (directory.py) via _with",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-observed-appliance-12e34384"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "allowlist_refs calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-allowlist-refs-137d7c35"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "allowlist_refs calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-allowlist-refs-137d7c35"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "recorded_allowlist calls make_entry (directory.py) via _with",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-recorded-allowlist-3859a7df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_facts calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-facts-5d5614e2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls one (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls values (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls rdn_value (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls of_class (environment.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls findings (findings.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls responsible (findings.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_firewall_running calls within (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-firewall-running-ab1ebaf0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "firewall_running_rows calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "firewall_running_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "firewall_running_rows calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "firewall_running_rows calls subtree (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subtree-ef8f7866"
+      }
+    },
+    {
+      "attributes": {
+        "description": "firewall_running_rows calls env_label (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-label-22f42c37"
+      }
+    },
+    {
+      "attributes": {
+        "description": "firewall_running_rows calls within (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-firewall-running-rows-e8211b15"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_name calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-name-fb9933ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rule_name calls name (rules.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rule-name-fb9933ef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-e990b479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_object calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-object-d40a3510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_object calls name (rules.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-object-d40a3510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-e990b479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolve_addresses calls chain (running.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolve-addresses-bae21ae6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-chain-71927af0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resolve_services calls chain (running.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resolve-services-ae17bbcb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-chain-71927af0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "placement calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-placement-2c868c73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls env_dn (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-dn-e280afb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls one (directory.py) via _allowlist",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls rdn_value (directory.py) via _allowlist",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls env_model (environment.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls of_class (environment.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-of-class-7b5c0928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls servers_with_role (environment.py) via _facts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-servers-with-role-b3e6ef7a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls scan (secrets.py) via _withheld",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scan-9c7ff825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls resource (inventory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-57afaee9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls environment_groups (inventory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-groups-e8a1e6a6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls within (directory.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-within-8d4c4f70"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls appliances (appliances.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-appliances-7773b37d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls observed_rule (running.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observed-rule-f1c98ced"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls observed_appliance (running.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-observed-appliance-12e34384"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls allowlist_refs (running.py) via _allowlists",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-allowlist-refs-137d7c35"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls recorded_allowlist (running.py) via _allowlist",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-recorded-allowlist-3859a7df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls rule_name (rules.py) via _scan",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rule-name-fb9933ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls server_object (rules.py) via _to_servers",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-object-d40a3510"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls marked (rules.py) via _claim",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-marked-937c9723"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls read_running (running.py) via _environment",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-running-bbd98d76"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls resolve_addresses (running.py) via _facts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resolve-addresses-bae21ae6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls resolve_services (running.py) via _facts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resolve-services-ae17bbcb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls placement (importer.py) via _seen",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placement-2c868c73"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls management_host (importer.py) via _allowlist",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-management-host-7757f7f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls allowlist_place (importer.py) via _allowlist",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-allowlist-place-c9d9ce5a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls one (directory.py) via _appliance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls appliances (appliances.py) via _appliance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-appliances-7773b37d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls allowlist_refs (running.py) via _parts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-allowlist-refs-137d7c35"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls xpath (running.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-xpath-cc39caf5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls placement (importer.py) via _parts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-placement-2c868c73"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls management_host (importer.py) via _appliance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-management-host-7757f7f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls allowlist_place (importer.py) via _parts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-allowlist-place-c9d9ce5a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls credential (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-466ef340"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls families (collect.py) via _parts",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-families-70d7fbcf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls one (directory.py) via _appliance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-45332a0c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-45332a0c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls appliances (appliances.py) via _appliance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-45332a0c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-appliances-7773b37d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls management_host (importer.py) via _appliance",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-45332a0c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-management-host-7757f7f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_from_render calls running_config (readback.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-from-render-57e0c7a5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-running-config-151fc679"
+      }
+    },
+    {
+      "attributes": {
+        "description": "panorama_exports calls name (rules.py) via _addresses",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-panorama-exports-40ee0d70"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-name-e990b479"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls folders (sources.py) via _folders",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-folders-f4fff597"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_running_config calls by_folder (sources.py) via _folders",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-running-config-44e662b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-by-folder-73807e09"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-running-bbd98d76"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-running-01e03aca"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-resolve-addresses-bae21ae6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-running-01e03aca"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-resolve-services-ae17bbcb"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-running-01e03aca"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-running-bbd98d76"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-rule-fa72aed4"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-read-running-bbd98d76"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-scope-374be926"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/running.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/readback.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/firewall_running.py"
+      },
+      "flow": {
+        "name": "Showcase & Verification"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/firewall_running.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/rules.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/adapter.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/README.md"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/firewall.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/domain.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/naming.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/schema.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/infrastructure.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/build.py"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/running.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-infrastructure"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-panos"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-panos"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-panos"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/readback.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-panos"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/firewall_running.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "showcase"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Planning, Queries & Reports"
+      }
+    },
+    {
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Data Model & Standard"
+      }
+    },
+    {
+      "flow": {
+        "name": "Firewall Running Read-back"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2c-firewall-manager-import-b7972589"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/running.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/running.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/importer.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/readback.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/firewall_running.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/rules.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/infrastructure.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/build.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-6-2c-1-firewall-manager-import-pan-os-pa-a7a8ed2a"
+      }
+    }
+  ],
+  "warnings": []
+}
