@@ -129,6 +129,29 @@ EXPECTED = MappingProxyType({
         ("B61", "Change tickets", "ITSM says its ticket servicenow:CHG0030108 (read 2026-09-23) was **cancelled**",
          "the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled", None,
          "CHG-2056"),
+        # cloud-managed identity services (6.1c): the tech-pubs team's Cognito user pool, a neighbour in production
+        # (CHG-2067), has no counterpart in the target; the partners service on Entra External ID in the target
+        # (CHG-2066) is outside the target's authorization, and what Microsoft documents neither way waits for its
+        # confirmation (RS256 signing is confirmed by CHG-2068)
+        ("B75", "Binding", "Role `tech-pubs-user-pool` is bound in source/prod but not in target/prod",
+         "the tech-pubs team's Cognito user pool relies on the platform's sign-on from production's account: where "
+         "it is after the move isn't recorded", None, "CHG-2067"),
+        ("B76", "Authorization", "target/prod uses Microsoft Entra External ID (partners-identity), which "
+         "`F1209051525` doesn't list in its boundary",
+         "External ID isn't in the in-scope list of the Azure authorization the target relies on", None, "CHG-2066"),
+        ("B77", "Managed identity", "`partner-portal` (oidc-client) needs `partners-external-id` (Microsoft Entra "
+         "External ID, running `partners` in target/prod) to accept the refresh_token grant, and no vendor "
+         "documentation establishes that it can",
+         "the partner portal refreshes its tokens: Microsoft's External ID pages don't say the grant is supported "
+         "there; the question is proposed", None, "CHG-2066"),
+        ("B78", "Managed identity", "`partners` publishes `login.example-aero.test` (its entity ID), so "
+         "`partners-external-id` in target/prod must serve sign-in at a custom domain",
+         "partners keep the partner realm's sign-in host; whether an external tenant serves a custom domain isn't "
+         "documented in what was read", None, "CHG-2066"),
+        ("B79", "Managed identity", "`partners` publishes `login.example-aero.test` (its issuer), so "
+         "`partners-external-id` in target/prod must issue tokens under a custom issuer",
+         "applications hold the realm's issuer; whether an external tenant issues under a custom one isn't documented "
+         "in what was read", None, "CHG-2066"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -517,6 +540,15 @@ EXPECTED = MappingProxyType({
         ("A152", "Logs", "Log route `security-events` must keep logs 365 days; source/prod's `siem` keeps them 180 "
          "already", "Splunk keeps production's security events 180 days, short of the 365 the route needs", None,
          "CHG-2049"),
+        # the partners service on Entra External ID in the target (CHG-2066): nothing of it renders, its journeys and
+        # its users move by hand
+        ("A201", "Identity", "external tenant partners-external-id: Entra External ID isn't rendered",
+         "the external tenant and the partner portal's app registration are created by hand", None, "CHG-2066"),
+        ("A202", "Managed identity", "Microsoft Entra External ID in target/prod (public): Its user flows and custom "
+         "authentication extensions", "the realm's journeys become user flows, recreated by hand", None, "CHG-2066"),
+        ("A203", "Managed identity", "User accounts and passwords don't move with `partners`'s configuration onto "
+         "`partners-external-id`", "External ID imports no password hashes: the partner users reset or move just in "
+         "time", None, "CHG-2066"),
     ],
 })
 

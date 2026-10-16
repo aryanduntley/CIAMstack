@@ -126,6 +126,12 @@ CHANGES = (
      "and the forest's certificate templates", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2051", "Record the issuing CA's own certificate and owner, and who renews the CIAM templates' certificates",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2066", "Run the partners sign-in service on Microsoft Entra External ID in the target (an external tenant "
+     "the platform team keeps)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2067", "Record the tech-pubs team's Amazon Cognito user pool, a relying party of the platform's single "
+     "sign-on, as a neighbour in production", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2068", "Record Microsoft's confirmation that the partners external tenant signs with RS256 (the plan's "
+     "question)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2055", "Link the recorded changes to their ServiceNow tickets; name the instance's change models on the "
      "standard state model", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2056", "Read the linked ServiceNow tickets as evidence (state, approval, planned and actual windows)",

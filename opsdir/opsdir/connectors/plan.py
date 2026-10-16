@@ -18,6 +18,7 @@ from ..core.contract import PlanContext
 from .access import access_check
 from .edge import edge_check
 from .evidence import evidence_check
+from .managed_identity import managed_identity_check
 from .network import network_check
 from .observability import log_collection_check, siem_check, signal_check
 from .proxies import proxy_check
@@ -234,6 +235,7 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requ
                         run_check(signal_check(adapters), ctx),
                         run_check(log_collection_check(adapters), ctx),
                         run_check(siem_check(adapters), ctx),
+                        run_check(managed_identity_check(adapters), ctx),
                         run_check(proxy_check(adapters), ctx),
                         run_check(upgrade_check(src_adapters, adapters), ctx),
                         run_check(secret_inventory_check(installed), ctx)])

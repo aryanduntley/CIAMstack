@@ -47,6 +47,7 @@ from .backups import backup_notes, render_backups
 from .account import govcloud, organization_providers, provider_block, required_providers, standard_account
 from .volumes import render_snapshot_policies, root_block_device, server_volumes, volume_notes
 from .databases import copy_alias, copy_regions, database_notes, render_databases
+from .cognito import cognito_notes, render_cognito
 from .storage import kept_buckets, render_object_stores
 from .plumbing import network_data, plumbing_notes
 
@@ -195,7 +196,7 @@ def render_files(m, services):
            *render_security(m),
            *discovery, *render_suppressions(m),
            *render_budgets(m), *render_quota_requests(m),
-           *_references(m))
+           *_references(m), *render_cognito(m))
     providers = (
         required_providers(bool(scripts) or bool(handlers)),
         provider_block(m),
@@ -253,7 +254,7 @@ def render_notes(m, services):
     return (*canary_notes(m, services.endpoints if services else ()), *security_notes(m), *audit_notes(m),
             *discovery_notes(m), *guardrail_notes(m), *alert_notes(m), *log_group_notes(m),
             *identity_notes(m, ACCESS), *kubernetes_notes(m), *budget_notes(m), *forwarder_notes(m),
-            *database_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m),
+            *database_notes(m), *cognito_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m),
             *edge_notes(m, services.endpoints if services else ()),
             *network_notes(m, services.endpoints if services else ()), *plumbing_notes(m),
             *((govcloud_note(m),) if govcloud(m) and _fronted(m, services.endpoints if services else ()) else ()),

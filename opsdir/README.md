@@ -138,6 +138,32 @@ requested, or never), **closed-pending** (ITSM closed it while the record has it
 nothing while the record holds no ticket) blocks on rejected and cancelled and gives the rest as actions for the
 change's owner (else the operator); no fix is offered: a change's status is a person's.
 
+### Cloud-managed identity services
+
+An environment that runs one of the platform's identity services on a cloud-managed service (a user pool, an external
+tenant) records it as a `ciamManagedIdentity` binding (`ciamManagedService`: the service as the cloud's adapter names
+it, in that adapter's vocabulary; `ciamRealizes`: the identity service's name; `ciamProviderRef` its resource;
+`ciamFqdn` the sign-in host it serves at, a custom domain presenting `ciamTlsCertificate`): a **target**. A managed
+service someone else runs that the platform federates with is a **neighbour**: `ciamPartnerOf` names the integrations
+it is the partner side of, `ciamManagedBy` its keeper. Whether a binding is the issuer or the relying party is never
+stored: a target issues to the `oidc-client` and `saml2-sp` integrations its identity service serves and relies on the
+`saml2-idp` ones; a neighbour relies on the platform for an `oidc-client` or `saml2-sp` integration and issues to it
+for a `saml2-idp` one. `opsdir report managed-identity` lists every binding that way.
+
+Each cloud adapter declares what its vendor documents of the services it knows (`Adapter.managed_identity`, a
+`ManagedService` each: where it exists by partition, its capabilities as supported, unsupported or neither, each with
+its source and date). `opsdir plan` checks the target's bindings (area `Managed identity`): a capability a served
+integration needs (its protocol, grants, client authentication, DPoP, PKCE), the identity service's signing algorithms
+and the hosts it publishes (its base URL and entity ID by a custom domain, its issuer by a custom issuer) are a
+blocker when the vendor documents it can't, with no way out but changing the record; a capability no documentation
+establishes either way is a blocker too, until the operator records the vendor's confirmation as the answer to the
+unknowns-register question the finding names (`confirm-<cloud>-<env>-<binding>-<capability>`; its fix proposes the
+question, blocking, owned by the integration's owners), and while that question is open the register counts it. A
+service its partition doesn't have is a blocker; one on a condition (an add-on), per-application MFA or claim
+transformations it can't express, what a target in its partition must know and how users move onto it are actions.
+An identity service the target runs on a managed service is left to this check by the service-name check. A
+neighbour in the target must exist there and play the part its integrations give it.
+
 ### Certification authorities and issued certificates
 
 The CAs the record's certificates come from are `ciamCertAuthority` entries under `ou=certificate-authorities` (cn: the
@@ -412,8 +438,9 @@ opsdir/                      the package (names no platform, product, vendor or 
     infrastructure/          SQL views: clouds, environments, servers, bindings, stacks, external allowlists
     directory/               the LDAP user directory: its schema (attributes and object classes, standard or
                              defined in the record), declared/observed configuration and drift, consumers, ACIs
-    federation/              SAML/OIDC integrations and claim maps, the platform's own identity services, and the
-                             protocols' standard vocabulary (grant types, auth methods, bindings, NameID formats)
+    federation/              SAML/OIDC integrations and claim maps, the platform's own identity services, the
+                             protocols' standard vocabulary (grant types, auth methods, bindings, NameID formats), and
+                             cloud-managed identity services (ciamManagedIdentity: target or neighbour; managed.py)
     pki/                     certificates and their expiry
     governance/              owners (including the operator), changes, incidents, runbooks, keepers (who keeps an
                              entry and which root it renders in, scopes), authorization (the policy asked first)
@@ -484,6 +511,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | How long a destination keeps what it is sent, and a report's yes/no | `opsdir.domains.observability.retention`: `retention_days(b)` (searchable), `total_days(b)` (in all: `ciamTotalRetentionDays`, else `retention_days`), `days_text(days)` (a report's cell: `forever` for `INDEFINITE`), `longest_retention(days)`, `INDEFINITE` (forever), `yes_no(e, attr)` |
    | A secret store's inventory (what a safe or mount holds, metadata only) and where a reference points in it | the adapter declares `inventory_locator={"scheme": locate}` (`locate(rest) -> (container, object)` or `None`); its importer builds entries with `opsdir.domains.pki.inventory`: `inventory_entry(d, scheme, container, at, state, problems, prefixes, endpoint)`, `object_entry(d, scheme, container, name, facts)`, `inventory_group(inventory, objects)`; its collector lists `wanted_containers(d, scheme, locate, options.get("inventory_container"))` and declares the shared `CONTAINER_OPTION` (`--inventory-container`) |
    | Send a collection source's credential the way its API takes it | `Request(url, headers, credential, ca)` with `credential` `(s.scheme, s.credential, s.login)` for `basic`, `bearer` and `token` (the whole `Authorization` value: a session token obtained outside opsdir), `("headers", ref, login, (login header, secret header))`, or `("api-key", ref, None, "X-PAN-KEY")` (the secret alone in the header named) |
+   | A cloud-managed identity service: what its vendor documents, whether a binding is a target or a neighbour, whom it issues to and relies on | the cloud adapter declares `managed_identity=(ManagedService(...),)` (`opsdir.core.contract`: `name` (its `ciamManagedService` value, also in the adapter's vocabulary), `title`, `partition(m)`, `available` / `absent` by partition, `supported` / `unsupported` / `partition_unsupported` capabilities each with its source, `conditions`, `notes`, `users`); `opsdir.domains.federation.managed`: `managed_identities(m)`, `is_target(b)`, `realized_service(d, b)`, `realizing(m, service)`, `partners(d, b)`, `roles(d, b)` (issuer to, relying party of), `integration_needs(i, as_partner)`, `service_needs(service)`, `status(spec, partition, capability)`, `availability(spec, partition)`, `words(capability)`; the planner's check is `opsdir.connectors.managed_identity` (`question_name(m, b, capability)`: the unknowns-register question that confirms a capability no documentation establishes) |
    | SIEM indexes and the detections searching them; which adapter keeps a SIEM index | `opsdir.domains.observability.siem`: `SIEM_INDEX`, `is_siem(b)`, `siem_destinations(m)`, `detections(m)`, `detection_index(m, b)`, `detection_for(m, rule)`; a SIEM adapter declares `siem_indexes=` `(EnvModel, destination) -> bool` (`opsdir.core.contract.Adapter`), and a provider adapter leaves a destination another adapter keeps to it: `Services.siem_keeper(m, destination)` (the keeper's name, or `None`) |
 
    Anything two packages would write alike belongs in the core (or an `opsdir-base-*` library), public and tested. Module-level tables are read-only (`MappingProxyType`, tuples, `frozenset`).

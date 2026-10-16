@@ -61,6 +61,12 @@ ATTRIBUTES = (
                  'Token signing algorithms (JWS)'),
     AttributeDef(213, 'ciamServedBy', 'dn', 'intent', True,
                  'The identity service the integration is registered with (none: every identity service serves it)'),
+    AttributeDef(770, 'ciamManagedService', 'vocab', 'binding', True,
+                 'The cloud-managed identity service a binding is, as the adapter declaring it names it (a user pool '
+                 'service, an external tenant)'),
+    AttributeDef(771, 'ciamPartnerOf', 'dn', 'intent', False,
+                 'The integrations a managed identity service is the partner side of (a neighbour the platform '
+                 'federates with): whether it is their relying party or their issuer follows from their protocol type'),
 )
 CLASSES = (
     ClassDef(26, 'ciamIntegration', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProtocolType'),
@@ -77,6 +83,13 @@ CLASSES = (
              ('ciamEntityId', 'ciamOidcIssuer', 'ciamScope', 'ciamSigningAlg', 'ciamNameIdFormat',
               'ciamUsesCertificate', 'ciamTargetRole', 'ciamCriticality'),
              'The platform\'s own identity provider / OpenID provider, as partners and applications know it'),
+    ClassDef(167, 'ciamManagedIdentity', 'ciamBinding', 'STRUCTURAL', ('ciamManagedService',),
+             ('ciamRealizes', 'ciamPartnerOf', 'ciamProviderRef', 'ciamFqdn', 'ciamTlsCertificate', 'ciamManagedBy'),
+             "A cloud-managed identity service an environment uses: the platform's own identity service run on it "
+             "there (ciamRealizes: the identity service's name; a target), or a neighbour the platform federates "
+             "with (ciamPartnerOf: the integrations it is the partner side of); its resource (ciamProviderRef), the "
+             "sign-in host it serves at (ciamFqdn, a custom domain presenting ciamTlsCertificate) and who keeps it "
+             "when it isn't the platform team (ciamManagedBy)"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

@@ -3339,6 +3339,17 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.749 NAME 'ciamTicketFact' DESC 'Anot
   model, close code, assignment group, configuration item, requester, correl
  ation, last update)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
  21.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.770 NAME 'ciamManagedService' DESC '
+ The cloud-managed identity service a binding is, as the adapter declaring i
+ t names it (a user pool service, an external tenant)' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'bindin
+ g' X-VALUE-TYPE 'vocab' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.771 NAME 'ciamPartnerOf' DESC 'The i
+ ntegrations a managed identity service is the partner side of (a neighbour 
+ the platform federates with): whether it is their relying party or their is
+ suer follows from their protocol type' EQUALITY distinguishedNameMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X
+ -ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4197,3 +4208,13 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.156 NAME 'ciamTicket' DESC 'An ITSM t
  etState $ ciamTicketApproval $ ciamTicketNativeState $ ciamTicketPlannedSta
  rt $ ciamTicketPlannedEnd $ ciamTicketWorkStart $ ciamTicketWorkEnd $ ciamT
  icketApprover $ ciamTicketFact ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.167 NAME 'ciamManagedIdentity' DESC '
+ A cloud-managed identity service an environment uses: the platform\27s own 
+ identity service run on it there (ciamRealizes: the identity service\27s na
+ me; a target), or a neighbour the platform federates with (ciamPartnerOf: t
+ he integrations it is the partner side of); its resource (ciamProviderRef),
+  the sign-in host it serves at (ciamFqdn, a custom domain presenting ciamTl
+ sCertificate) and who keeps it when it isn\27t the platform team (ciamManag
+ edBy)' SUP ciamBinding STRUCTURAL MUST ciamManagedService MAY ( ciamRealize
+ s $ ciamPartnerOf $ ciamProviderRef $ ciamFqdn $ ciamTlsCertificate $ ciamM
+ anagedBy ) X-ORIGIN 'opsdir' )

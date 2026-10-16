@@ -146,6 +146,10 @@ cap 08-apply-chg-2050 od import --change CHG-2050 --at 20260923090000Z adcs/inve
 cap 08-apply-chg-2051 od modify --change CHG-2051 changes/CHG-2051-issuing-ca-and-template-owners.ldif
 cap 08-report-certificate-authorities od report certificate-authorities
 cap 08-report-issued-certificates od report issued-certificates
+cap 08-apply-chg-2066 od modify --change CHG-2066 changes/CHG-2066-target-partners-external-id.ldif
+cap 08-apply-chg-2067 od modify --change CHG-2067 changes/CHG-2067-source-tech-pubs-user-pool.ldif
+cap 08-apply-chg-2068 od modify --change CHG-2068 changes/CHG-2068-external-id-signing-answer.ldif
+cap 08-report-managed-identity od report managed-identity
 cap 08-apply-chg-2055 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif
 cap 08-apply-chg-2056 od import --change CHG-2056 --at 20260923090000Z servicenow/change-requests exports/servicenow
 cap 08-report-tickets od report tickets

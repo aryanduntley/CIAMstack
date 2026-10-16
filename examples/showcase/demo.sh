@@ -254,6 +254,13 @@ od import --change CHG-2050 --at 20260923090000Z adcs/inventory exports/adcs
 od modify --change CHG-2051 changes/CHG-2051-issuing-ca-and-template-owners.ldif
 od report certificate-authorities
 od report issued-certificates
+echo "-- cloud-managed identity services: the partners sign-in service is to run on Microsoft Entra External ID in the"
+echo "   target (CHG-2066), the tech-pubs team's Amazon Cognito user pool relies on the platform's sign-on (a neighbour,"
+echo "   CHG-2067), and Microsoft confirms the tenant's RS256 signing (CHG-2068, the plan's question answered)"
+od modify --change CHG-2066 changes/CHG-2066-target-partners-external-id.ldif
+od modify --change CHG-2067 changes/CHG-2067-source-tech-pubs-user-pool.ldif
+od modify --change CHG-2068 changes/CHG-2068-external-id-signing-answer.ldif
+od report managed-identity
 echo "-- the change records name their ServiceNow tickets (CHG-2055), and the tickets are read as evidence (CHG-2056:"
 echo "   change_request and its approval records, as the Table API answers): what ITSM says against the record"
 od modify --change CHG-2055 changes/CHG-2055-ticket-links.ldif

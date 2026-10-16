@@ -70,6 +70,7 @@ OPERATIONS = {
     ("network-firewall", "list-rule-groups"), ("network-firewall", "describe-rule-group"),
     ("network-firewall", "list-firewall-policies"), ("network-firewall", "describe-firewall-policy"),
     ("network-firewall", "list-firewalls"), ("network-firewall", "describe-firewall"), ("rds", "describe-db-instances"),
+    ("cognito-idp", "list-user-pools"), ("cognito-idp", "describe-user-pool"),
     ("rds", "describe-db-clusters"), ("rds", "describe-db-subnet-groups"), ("rds", "describe-db-parameter-groups"),
     ("rds", "describe-db-parameters"), ("rds", "describe-db-cluster-parameter-groups"),
     ("rds", "describe-db-cluster-parameters"), ("ec2", "describe-volumes"), ("dlm", "get-lifecycle-policies"),
@@ -96,7 +97,8 @@ OPERATIONS = {
     ("kinesis", "list-streams"), ("kinesis", "list-tags-for-resource"), ("sesv2", "list-email-identities"),
     ("sesv2", "get-email-identity"), ("ec2", "describe-instance-connect-endpoints")}
 NEVER = ("get-secret-value", "get-parameter", "get-parameters", "--with-decryption", "describe-instance-attribute",
-         "get-function", "get-function-configuration", "get-object", "--debug")
+         "get-function", "get-function-configuration", "get-object", "--debug",
+         "describe-user-pool-client", "describe-identity-provider")       # client and upstream secrets
 SSO = "arn:aws:sso:::instance/ssoins-1"
 PS = "arn:aws:sso:::permissionSet/ssoins-1/ps-1"
 

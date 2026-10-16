@@ -1,0 +1,15 @@
+# CHG-2067 (approved): the technical publications team signs its readers in with its own Amazon Cognito user pool in
+# production's account, which relies on the platform's single sign-on as an upstream OpenID provider (the tech-pubs
+# client). The pool is theirs: a neighbour the platform federates with, recorded so the move accounts for it.
+dn: cn=tech-pubs-user-pool,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamManagedIdentity
+cn: tech-pubs-user-pool
+ciamBindingRole: tech-pubs-user-pool
+ciamManagedService: cognito-user-pool
+ciamPartnerOf: cn=tech-pubs,ou=integrations,dc=ciam-ops
+ciamProviderRef: arn:aws:cognito-idp:us-east-1:111122223333:userpool/us-east-1_Tp7Rd2Kx9
+ciamManagedBy: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2067,ou=changes,dc=ciam-ops
+description: The tech-pubs team's reader sign-in (Amazon Cognito user pool), an OIDC relying party of sso

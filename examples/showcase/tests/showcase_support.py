@@ -77,6 +77,9 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2049", ImportStep("splunk/rest", SHOWCASE / "exports" / "splunk", "20260923090000Z")),
             ("CHG-2050", ImportStep("adcs/inventory", SHOWCASE / "exports" / "adcs", "20260923090000Z")),
             ("CHG-2051", SHOWCASE / "changes" / "CHG-2051-issuing-ca-and-template-owners.ldif"),
+            ("CHG-2066", SHOWCASE / "changes" / "CHG-2066-target-partners-external-id.ldif"),
+            ("CHG-2067", SHOWCASE / "changes" / "CHG-2067-source-tech-pubs-user-pool.ldif"),
+            ("CHG-2068", SHOWCASE / "changes" / "CHG-2068-external-id-signing-answer.ldif"),
             ("CHG-2055", SHOWCASE / "changes" / "CHG-2055-ticket-links.ldif"),
             ("CHG-2056", ImportStep("servicenow/change-requests", SHOWCASE / "exports" / "servicenow",
                                     "20260923090000Z")))

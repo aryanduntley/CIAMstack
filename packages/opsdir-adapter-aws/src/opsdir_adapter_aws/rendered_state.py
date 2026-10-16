@@ -45,7 +45,7 @@ REALIZES = MappingProxyType({
     "aws_cloudtrail": "ciamAuditTrail", "aws_cloudwatch_log_group": "ciamLogDestination",
     "aws_cloudwatch_metric_alarm": "ciamAlarmBinding", "aws_synthetics_canary": "ciamCanaryBinding",
     "aws_iam_role": "ciamIdentityBinding", "aws_securityhub_automation_rule": "ciamSuppression",
-    "aws_autoscaling_group": "ciamComputeGroup"})
+    "aws_autoscaling_group": "ciamComputeGroup", "aws_cognito_user_pool": "ciamManagedIdentity"})
 # What AWS assigns a resource of a type beyond its id and ARN, as the importers read it: (block name, configured
 # attributes, partition, region, account) -> attributes
 ASSIGNS = MappingProxyType({

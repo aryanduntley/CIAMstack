@@ -748,6 +748,30 @@ TYPES = {
         "name": "DBSubnetGroupName", "description": "DBSubnetGroupDescription", "subnet_ids": "SubnetIds"},
         DBSubnetGroupDescription=TERRAFORM_DESCRIPTION),
         {"id": "Ref", "name": "Ref", "arn": "DBSubnetGroupArn"}, "DBSubnetGroupName", "list"),
+    # managed identity: Cognito user pools (cognito.py; property names, Ref and attributes as cfn-lint's schemas have
+    # them, the same in the GovCloud regions)
+    "aws_cognito_user_pool": Native("AWS::Cognito::UserPool", {
+        "name": "UserPoolName", "deletion_protection": "DeletionProtection", "mfa_configuration": "MfaConfiguration",
+        "software_token_mfa_configuration": Custom(lambda v, cx: {"EnabledMfas": ["SOFTWARE_TOKEN_MFA"]} if any(
+            cx.value(b.get("enabled")) is True for b in v) else {})},
+        {"id": "Ref", "arn": "Arn"}, "UserPoolId", "map", tags_key="UserPoolTags"),
+    "aws_cognito_user_pool_domain": Native("AWS::Cognito::UserPoolDomain", {
+        "domain": "Domain", "user_pool_id": "UserPoolId",
+        "certificate_arn": Custom(lambda v, cx: {"CustomDomainConfig": {"CertificateArn": cx.value(v)}})}, {}),
+    "aws_cognito_user_pool_client": Native("AWS::Cognito::UserPoolClient", {
+        "name": "ClientName", "user_pool_id": "UserPoolId", "generate_secret": "GenerateSecret",
+        "allowed_oauth_flows": "AllowedOAuthFlows", "allowed_oauth_flows_user_pool_client":
+        "AllowedOAuthFlowsUserPoolClient", "allowed_oauth_scopes": "AllowedOAuthScopes",
+        "callback_urls": "CallbackURLs", "logout_urls": "LogoutURLs",
+        "supported_identity_providers": "SupportedIdentityProviders",
+        "enable_token_revocation": "EnableTokenRevocation",
+        "prevent_user_existence_errors": "PreventUserExistenceErrors"}, {}),
+    "aws_cognito_resource_server": Native("AWS::Cognito::UserPoolResourceServer", {
+        "identifier": "Identifier", "name": "Name", "user_pool_id": "UserPoolId",
+        "scope": Nest("Scopes", {"scope_name": "ScopeName", "scope_description": "ScopeDescription"}, True)}, {}),
+    "aws_cognito_identity_provider": Native("AWS::Cognito::UserPoolIdentityProvider", {
+        "user_pool_id": "UserPoolId", "provider_name": "ProviderName", "provider_type": "ProviderType",
+        "provider_details": "ProviderDetails", "attribute_mapping": "AttributeMapping"}, {}),
     # volumes
     "aws_ebs_volume": Native("AWS::EC2::Volume", {
         "availability_zone": "AvailabilityZone", "size": "Size", "type": "VolumeType", "iops": "Iops",

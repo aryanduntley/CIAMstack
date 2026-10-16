@@ -492,6 +492,36 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the issuing CA's own certificate and owner, and who renews t
  he CIAM templates' certificates
 
+dn: cn=CHG-2066,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2066
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Run the partners sign-in service on Microsoft Entra External ID in 
+ the target (an external tenant the platform team keeps)
+
+dn: cn=CHG-2067,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2067
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the tech-pubs team's Amazon Cognito user pool, a relying par
+ ty of the platform's single sign-on, as a neighbour in production
+
+dn: cn=CHG-2068,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2068
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record Microsoft's confirmation that the partners external tenant s
+ igns with RS256 (the plan's question)
+
 dn: cn=CHG-2055,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

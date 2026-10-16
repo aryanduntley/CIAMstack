@@ -179,6 +179,22 @@ Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", t
                                    ("mounts_secrets", Callable), ("installed_logs", tuple),
                                    ("siem_keeper", Callable)])
 
+# A cloud-managed identity service an adapter declares (Adapter.managed_identity), as data with its sources, for the
+# planner's managed identity check (connectors.managed_identity). name: the ciamManagedService value; title: it in
+# words; partition: (EnvModel) -> the partition label an environment is in (aws / aws-us-gov, public / usgovernment);
+# available / absent: {partition: source} where the vendor documents it exists / doesn't exist (anywhere else: not
+# established); supported / unsupported: {capability: source} (capabilities: issue:oidc, issue:saml, trust:oidc,
+# trust:saml, grant:<grant type>, token-auth:<method>, dpop-bound, pkce-required, signing-alg:<alg>, custom-domain,
+# custom-issuer, mfa-per-client, claim-transform; one in neither is not established by the vendor's documentation);
+# partition_unsupported: {partition: {capability: source}}, what a partition lacks beyond them; conditions:
+# {capability: what it needs (an add-on, a tier)}: supported on a condition, an action; notes: {partition or "*":
+# ((topic, text, how), ...)}: what a target there must know (an action each); users: how user accounts and passwords
+# move onto it (an action for every target: the configuration doesn't carry them).
+ManagedService = NamedTuple("ManagedService", [("name", str), ("title", str), ("partition", Callable),
+                                               ("available", Mapping), ("absent", Mapping), ("supported", Mapping),
+                                               ("unsupported", Mapping), ("partition_unsupported", Mapping),
+                                               ("conditions", Mapping), ("notes", Mapping), ("users", str)])
+
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a
 # target group binding), and the Service's type (ClusterIP, or LoadBalancer for an internal load balancer the front
@@ -411,11 +427,13 @@ Adapter = namedtuple("Adapter", (
                             # inventory a reference of the scheme points (a safe and an account, a mount and a path),
                             # for reconciling the record's references with the inventory its importers record
                             # (domains.pki.inventory), or None (its stores aren't inventoried)
-    "siem_indexes"),        # (EnvModel, ciamLogDestination binding of kind siem-index) -> bool: whether its render
+    "siem_indexes",         # (EnvModel, ciamLogDestination binding of kind siem-index) -> bool: whether its render
                             # keeps that SIEM index (its retention, the detections searching it and, where it ships
                             # logs to it itself, their forwarding), or None (it keeps none)
+    "managed_identity"),    # ManagedServices: the cloud-managed identity services it declares (their
+                            # ciamManagedService values are in its vocabulary)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None, None))
+              None, False, None, None, (), None, None, None, ()))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

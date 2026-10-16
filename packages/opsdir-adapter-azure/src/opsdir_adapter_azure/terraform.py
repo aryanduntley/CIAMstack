@@ -24,6 +24,7 @@ from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
 from .databases import database_notes, render_databases
+from .external_id import external_id_notes
 from .storage import render_object_stores
 from .audit import audit_notes, render_trails
 from .container_logs import container_log_notes, render_container_logs
@@ -219,7 +220,8 @@ def terraform_parts(m, services):
            *render_tests(m, endpoints), *jobs,
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
-           *_key_vault_secrets(m), *scope_data(m, identities))
+           *_key_vault_secrets(m), *scope_data(m, identities),
+           *(comment(note_comment(n)) for n in external_id_notes(m)))     # nothing of an external tenant renders
     out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     providers = (
@@ -291,7 +293,8 @@ def render_notes(m, services):
             *workspace_notes(m), *sentinel_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m),
             *firewall_notes(m),
             *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m), *backup_notes(m),
-            *database_notes(m), *volume_notes(m), *group_notes(m), *inspection_notes(m, endpoints),
+            *database_notes(m), *external_id_notes(m), *volume_notes(m), *group_notes(m),
+            *inspection_notes(m, endpoints),
             *frontdoor_notes(m, endpoints), *quota_notes(m), *network_notes(m, endpoints), *plumbing_notes(m),
             *placed_notes(m, *terraform_parts(m, services)[:2]),
             *((*log_collection_notes(m, services), *container_log_notes(m, services)) if services else ()))
