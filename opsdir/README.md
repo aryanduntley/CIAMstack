@@ -181,6 +181,52 @@ transformations it can't express, what a target in its partition must know and h
 An identity service the target runs on a managed service is left to this check by the service-name check. A
 neighbour in the target must exist there and play the part its integrations give it.
 
+### Protected web applications (the neutral web access layer)
+
+What an access gateway or agent protects is held in neutral terms under `ou=protected-applications` (domain
+`webaccess`), whatever product enforces it:
+- **Applications** (`ciamProtectedApp`) record:
+  - the base path (`ciamBasePath`) and the service-name roles they are published as (`ciamPublishedAs`);
+  - the server role enforcing them (`ciamEnforcedByRole`, overridable per environment);
+  - the application behind a gateway (`ciamBackendRole`, port, TLS; none: an agent in the application's own web
+    server);
+  - how users sign in (`ciamSignOn`: oidc, token, form, basic, certificate, federated, custom, none);
+  - the integration the enforcer signs users in as (`ciamSignInAs`), its identity service (`ciamServedBy`) and its
+    client's secret role (`ciamCredentialRole`);
+  - session idle and maximum limits;
+  - the header contracts it sets (`ciamSetsHeader`) and the access rules every resource applies (`ciamRuleRef`).
+- **Path resources** (`ciamPathResource`, below their application) record patterns relative to the base path, a match
+  kind (prefix, wildcard with `*` across `/`, regex), methods, an access mode (standard, anonymous, unprotected), an
+  order (none: most specific first) and their own rules.
+- **Access rules** (`ciamAccessRule`, `ou=access-rules`) record an effect (allow, deny, or custom for a product rule
+  with no neutral form), who they are about (`ciamWho`: `authenticated`, `user`, `group`, `filter`, `attribute
+  <name>=<value>`, `scope`, `network`), and any or all of those and of the rules they include.
+
+The applications' rules apply first, then the resource's; every rule must admit; a denial beats an allowance.
+`opsdir report protected-applications` lists them.
+
+Product importers project their own objects onto the layer and name the product entry (`ciamProjectedFrom`):
+PingAccess applications, resources and rules; SiteMinder realms, rules and policies; PingGateway routes (each
+adapter's README).
+- An importer writes only what it projected. It replaces what it says, keeps what the record adds (a published or
+  backend role the product can't name, owners, the credential role) and sets the enforcing role only where none is
+  recorded.
+- It never changes another product's projection or an operator's entry; it names the differences instead.
+- A governed edit of a product entry doesn't change its projection: edit the neutral entry with it, or import again.
+
+**Moving an application to another product**: an environment overrides `ciamEnforcedByRole` (and, for a header the
+application trusts, the contract's `ciamSetByRole`, now overridable). The target's product renders the application
+from the neutral layer, and the product it leaves no longer renders it there. `opsdir plan` (area `Web access`)
+reports:
+- a blocker for an application the source enforces whose enforcing role the target doesn't run (fixes
+  `protect:<adapter>/<application>`, offered by each product the target runs);
+- on a move to another product, a blocker for the service names, the application behind the gateway, and the sign-in
+  integration the new product needs;
+- an action for a header still set by another role (fix `enforcer-header:<contract>`).
+
+What the new product can't express (`webaccess.express`: each product declares its capabilities as data) reaches the
+plan as its render's notes. A rule it can't render is a blocker: the render would admit more than the record says.
+
 ### Certification authorities and issued certificates
 
 The CAs the record's certificates come from are `ciamCertAuthority` entries under `ou=certificate-authorities` (cn: the

@@ -17,6 +17,36 @@ Per environment (`render.py`); nothing environment-neutral.
 
 A route with no backend role keeps the `baseURI` it was imported with: a fixed backend. Withheld values are rendered as opsdir's in-place placeholders. The gateway's own settings (`config/config.json`, `admin.json`) are captured config files, rendered with the environment's other captured files. The product profile (`render.PROFILE`) places `pinggateway/routes/` under a deployment kit's `config/routes/` and captured `files/pinggateway/` at the instance root. The routes follow the gateway's JSON but are not validated against a live gateway.
 
+### Applications the gateways take over (`takeover.py`)
+
+The neutral protected-application layer (core domain `webaccess`; opsdir's README, Protected web applications) holds
+what any product protects. An environment can have its gateways enforce an application another product (or an operator)
+recorded: its override of the application's `ciamEnforcedByRole` is `ig`. PingGateway then renders a route for it,
+`pinggateway/routes/<application>.json`:
+- **condition**: the hosts of its published service names and its base path (`^<base>(?:/|$)`);
+- **baseURI**: from its backend role;
+- **session**: `JwtSessionManager`, with the idle limit as the session timeout;
+- **chain**:
+  - an `AuthorizationCodeOAuth2ClientFilter` for its integration's client id and the issuer of the identity service
+    serving it, inside a `ConditionalFilter` skipping its anonymous and unprotected paths;
+  - an `AllowOnlyFilter` with each path resource as a rule (paths as regular expressions, methods);
+  - a `ConditionEnforcementFilter` per access rule (a claim test on `contexts.oauth2Info.userInfo`, `not()` for a
+    denial; a resource's inside a `ConditionalFilter` on its paths);
+  - a `HeaderFilter` (`REQUEST`, `replace`, so the client's own copy goes) for the header contracts it sets;
+  - then `ReverseProxyHandler`.
+
+A route projected from an application another role enforces in the environment is left out of its render there. What
+PingGateway can't express is a render note for the application's owners:
+- a rule it can't test (a directory group, user, filter, scope or network) is a **blocker**: rendered without it, the
+  route admits more than the record says;
+- the maximum session lifetime (PingGateway has one session timeout) is an action;
+- so is the client secret, read from the gateway's secrets provider (the note names the credential role's
+  reference).
+
+The routes' listeners include the taken-over applications' backends. The read-back of a render leaves taken-over routes
+out (`takeover.own_routes`): read, they would become the gateway's own routes, which is what a cutover does. The plan's
+`protect:pinggateway/<application>` fix writes the target's override for an application nothing there would protect.
+
 ## What it reads back
 
 ### Gateway configuration: `pinggateway/config`
@@ -33,6 +63,16 @@ Reads a gateway configuration directory (`gateway.py`):
 | `config/*.json` | captured config files (configuration domain): `ig.<path>` at repository path `pinggateway/<path>`, deployed to role `ig` | path |
 
 The importer owns what it reads; what the record adds to a route (owners) is kept. Notices name a client ID no integration has, a route trusting more than one OpenID provider (the first is recorded), a backend that is no service name (the route goes to the same place from every environment), routes that aren't JSON, names with a DN special character (not imported), and files outside `routes/` and `config/`. The adapter's render reads back unchanged (`reads_back`: `config` over `pinggateway/*`).
+
+Each route is also projected onto the neutral protected-application layer (`neutral.py`; `ciamProjectedFrom` names the route), as an application enforced by `ig`:
+- the base path comes from a literal `request.uri.path` test in its condition (else `/`, and a notice);
+- it is published as the service name of its condition's host test;
+- its backend role and scheme;
+- sign-on `oidc` through the integration its client filter signs in as, served by the identity service of the issuer it trusts;
+- its session manager's timeout is the idle limit;
+- the header contracts of the headers its `HeaderFilter`s set.
+
+Its resources are each `AllowOnlyFilter` rule (else one, every path), and the paths a `ConditionalFilter` keeps the sign-in from (anonymous). Its `ConditionEnforcementFilter`s become access rules `<route>-<n>`: a claim test an attribute test, `not()` a denial, anything else custom.
 
 ### Collecting (`opsdir collect`)
 
@@ -86,6 +126,12 @@ A migration may upgrade the product within the supported range. The planner name
 - **One OpenID provider per route** is recorded (`pinggwIssuer`, the first found); the planner still checks every one the route's settings name.
 - **Routes only** are modeled; the gateway's own settings are captured files, scripts are bundles.
 - **The client listener** (8443) is the estate's convention, not recorded.
+
+- **The neutral layer's forms follow PingGateway's 2026 reference, unverified against a running gateway** (research note 3133; deferred note on `routes.py`):
+  - the `AllowOnlyFilter` page marks `from` required while its own example omits it, and calls a path a prefix while its example is a regex;
+  - the sign-in's claims are a map in Ping's examples and an array of maps in the context reference;
+  - the session managers' one timeout is taken as the idle limit;
+  - the takeover route's registration reads its client secret from `SystemAndEnvSecretStore-1`.
 
 ## Tests
 

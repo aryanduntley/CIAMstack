@@ -76,6 +76,21 @@ A runnable example of opsdir with real adapter packages. The estate is **Example
     **Synthetic checks of a private CA's service.** The directory's LDAPS certificate (`ds-ldaps-2026`) chains to Example Aero Issuing CA 2 (CHG-2051), which no check runtime trusts. Until the record holds that CA's certificate, the source's `directory-bind` canary isn't rendered (`opsdir report canary-coverage`: a blocker, since it feeds an alert rule; the note names the CA, its chain and what to record). CHG-2069 records Issuing CA 2's certificate itself (`ciamCertificatePem`, public material, its fingerprint corrected to it); the canary then renders, given that CA to trust beside its runtime's own store, the intermediate as the anchor (`yes, trusting example-aero-issuing-ca-2`). A CA rotation is the same kind of record change. The standby's check still doesn't render: Google runs no synthetic checks in its Assured Workloads boundary.
 
     **The PingAccess servers' host baselines.** CHG-2075 reads the source's PingAccess servers' own files (`exports/hosts-pingaccess`, the admin node and both engines, laid out as `exports/hosts`) with `linux/baseline`: the `pa-admin` and `pa-engine` baselines record RHEL 9.4, Temurin 17.0.11, the `pingaccess` service unit and limits, the agents, and a truststore adding the corporate root CA (linked to the certificate CHG-2013 recorded). CHG-2076 then scopes their AWS agents to AWS environments, as CHG-2036 did for the other roles, so the target's Azure VMs are checked against what every PingAccess server runs. The plan loses its two actions for PingAccess roles without a baseline in the target (A186, A187): actions go from 140 to 138.
+    **What PingAccess, SiteMinder and PingGateway protect, in neutral terms, and two applications moving between them.** Each product import projects what it protects onto the core's neutral protected-application layer (`opsdir report protected-applications`):
+    - PingAccess (CHG-2061): `techpubs`, `techpubs-media`, rule `techpubs-readers`;
+    - SiteMinder (CHG-2063): `crew-portal-crew`, with its crew pages and the roster admin regex, and the crew and roster admin groups;
+    - PingGateway (CHG-2004): `partner-portal`.
+
+    CHG-2062 also names Tech Pubs' header on its neutral application, as PingAccess's next import would.
+
+    CHG-2081 registers the crew portal's OpenID Connect client with sso and binds, in the target, the portal's name, the crew application's server and the client secret. CHG-2082 has the target's PingAccess take the portal over from SiteMinder's web agent: the application records those, and the target overrides its enforcing role and SM_USER's setter. CHG-2083 has the target's gateways take Tech Pubs over from PingAccess, its media application staying put.
+
+    The target's PingAccess render gains the portal's site, virtual host, header mapping, web session, application and resources and leaves Tech Pubs out; its PingGateway render gains `routes/techpubs.json`. The plan:
+    - loses the SiteMinder realm and SM_USER setter blockers (B71, B73);
+    - gains blockers for the crew groups PingAccess can't test (B81, B82: rendered without them, the portal would admit every signed-in user) and for Tech Pubs' still unbound name (B80, beside B66);
+    - gains actions for the four overrides (A204-A207), the badge sign-on PingAccess leaves to the identity service (A208), the gateway's client secret (A209) and Tech Pubs' maximum session lifetime (A210).
+
+    Blockers go from 35 to 36, actions from 138 to 145.
 
 21. **An on-prem lab, configured by Ansible.** `hq/lab` runs a directory pair and a PingFederate engine and console on the company's own servers at headquarters. Its provider is `onprem` (`opsdir-adapter-onprem`): its region is a site from the organization's own list (`exports/sites/onprem/sites.json`, imported under CHG-2035 as the provider's prerequisite `onprem-sites`), and its servers already exist (no image or size). Its stack declares Ansible for configuration management, Prometheus on its monitoring server (`mon-1`) and three appliance add-ons:
 

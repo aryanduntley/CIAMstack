@@ -377,10 +377,10 @@
     },
     {
       "id": "B71",
-      "area": "SiteMinder",
-      "match": "Realm `crew-portal/crew` (resources `/crew/`) is protected by `sm-agent` servers",
-      "planted": "nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop",
-      "cleared_by": null,
+      "area": "Web access",
+      "match": "Protected application `crew-portal-crew` (`/crew/`) is enforced by `sm-agent`",
+      "planted": "nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop (until the target's PingAccess takes it over)",
+      "cleared_by": "CHG-2082",
       "raised_by": "CHG-2063"
     },
     {
@@ -395,8 +395,8 @@
       "id": "B73",
       "area": "Edge",
       "match": "Header `SM_USER` (contract `crew-portal-sm_user`) is set by `sm-agent` servers",
-      "planted": "the crew portal's header-based sign-on has no setter in the target",
-      "cleared_by": null,
+      "planted": "the crew portal's header-based sign-on has no setter in the target (until PingAccess's engines set it there)",
+      "cleared_by": "CHG-2082",
       "raised_by": "CHG-2063"
     },
     {
@@ -446,6 +446,30 @@
       "planted": "applications hold the realm's issuer; whether an external tenant issues under a custom one isn't documented in what was read",
       "cleared_by": null,
       "raised_by": "CHG-2066"
+    },
+    {
+      "id": "B80",
+      "area": "Web access",
+      "match": "Protected application `techpubs` is published as `techpubs-service`, which target/prod doesn't bind",
+      "planted": "the gateways taking Tech Pubs over have no name to answer as in the target",
+      "cleared_by": null,
+      "raised_by": "CHG-2083"
+    },
+    {
+      "id": "B81",
+      "area": "PingAccess",
+      "match": "target/prod: protected application `crew-portal-crew`: rule `crew-portal-all-crew` admits `group cn=crew,",
+      "planted": "PingAccess tests no directory groups: the crew group must reach it as a claim",
+      "cleared_by": null,
+      "raised_by": "CHG-2082"
+    },
+    {
+      "id": "B82",
+      "area": "PingAccess",
+      "match": "target/prod: protected application `crew-portal-crew`: rule `crew-portal-roster-admins` admits `group cn=roster-admins,",
+      "planted": "the roster admins group must reach PingAccess as a claim",
+      "cleared_by": null,
+      "raised_by": "CHG-2082"
     }
   ],
   "actions": [
@@ -1683,6 +1707,62 @@
       "planted": "External ID imports no password hashes: the partner users reset or move just in time",
       "cleared_by": null,
       "raised_by": "CHG-2066"
+    },
+    {
+      "id": "A204",
+      "area": "Overrides",
+      "match": "`ciamEnforcedByRole` of `cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops`",
+      "planted": "the target has PingAccess enforce the crew portal, the source SiteMinder",
+      "cleared_by": null,
+      "raised_by": "CHG-2082"
+    },
+    {
+      "id": "A205",
+      "area": "Overrides",
+      "match": "`ciamSetByRole` of `cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops`",
+      "planted": "PingAccess's engines set SM_USER in the target",
+      "cleared_by": null,
+      "raised_by": "CHG-2082"
+    },
+    {
+      "id": "A206",
+      "area": "Overrides",
+      "match": "`ciamEnforcedByRole` of `cn=techpubs,ou=protected-applications,dc=ciam-ops`",
+      "planted": "the target has its gateways enforce Tech Pubs, the source PingAccess",
+      "cleared_by": null,
+      "raised_by": "CHG-2083"
+    },
+    {
+      "id": "A207",
+      "area": "Overrides",
+      "match": "`ciamSetByRole` of `cn=techpubs-user,ou=header-contracts,dc=ciam-ops`",
+      "planted": "the gateways set X-TechPubs-User in the target",
+      "cleared_by": null,
+      "raised_by": "CHG-2083"
+    },
+    {
+      "id": "A208",
+      "area": "PingAccess",
+      "match": "target/prod: protected application `crew-portal-crew`: users sign in with custom today",
+      "planted": "the crew badge sign-on is SiteMinder custom code: the identity service PingAccess signs users in through must offer it",
+      "cleared_by": null,
+      "raised_by": "CHG-2082"
+    },
+    {
+      "id": "A209",
+      "area": "PingGateway",
+      "match": "target/prod: pinggateway/routes/techpubs.json: the sign-in's client secret is read from the gateway's secrets provider",
+      "planted": "the route's client secret comes from the gateway's own secrets provider, filled from the credential role's reference; the route's filters are unverified against a running gateway",
+      "cleared_by": null,
+      "raised_by": "CHG-2083"
+    },
+    {
+      "id": "A210",
+      "area": "PingGateway",
+      "match": "target/prod: protected application `techpubs`: its max session limit (28800s) isn't enforced by PingGateway",
+      "planted": "PingGateway has one session timeout: Tech Pubs' eight-hour maximum is the identity service's to hold",
+      "cleared_by": null,
+      "raised_by": "CHG-2083"
     }
   ]
 }

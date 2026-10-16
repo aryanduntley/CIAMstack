@@ -147,14 +147,15 @@ EXPECTED = MappingProxyType({
         ("B70", "Consumer", "Consumer `siteminder-ps`",
          "SiteMinder's directory bind account is only 'identified': it retires with SiteMinder, which nobody has "
          "recorded against the target", None),
-        ("B71", "SiteMinder", "Realm `crew-portal/crew` (resources `/crew/`) is protected by `sm-agent` servers",
-         "nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop",
-         None, "CHG-2063"),
+        ("B71", "Web access", "Protected application `crew-portal-crew` (`/crew/`) is enforced by `sm-agent`",
+         "nothing in the target protects the crew portal: its rules, policies, badge sign-on and SM_USER header stop "
+         "(until the target's PingAccess takes it over)", "CHG-2082", "CHG-2063"),
         ("B72", "Source objects", "Source object `custom-scheme-crew-badge`",
          "the crew badge sign-on is SiteMinder custom code (library crewbadgeauth): rebuilt before the portal moves",
          None, "CHG-2063"),
         ("B73", "Edge", "Header `SM_USER` (contract `crew-portal-sm_user`) is set by `sm-agent` servers",
-         "the crew portal's header-based sign-on has no setter in the target", None, "CHG-2063"),
+         "the crew portal's header-based sign-on has no setter in the target (until PingAccess's engines set it there)",
+         "CHG-2082", "CHG-2063"),
         ("B74", "Identity service", "`siteminder` publishes `wam.example-aero.test`",
          "SiteMinder's federation address has no service name in the record: nothing shows the partners keep it",
          None, "CHG-2063"),
@@ -181,6 +182,18 @@ EXPECTED = MappingProxyType({
          "`partners-external-id` in target/prod must issue tokens under a custom issuer",
          "applications hold the realm's issuer; whether an external tenant issues under a custom one isn't documented "
          "in what was read", None, "CHG-2066"),
+        # the target moves Tech Pubs to PingGateway (CHG-2083), still unpublished there (B66); and its PingAccess,
+        # taking the crew portal over (CHG-2082), can't test the crew groups: rendered, the portal would admit every
+        # signed-in user
+        ("B80", "Web access", "Protected application `techpubs` is published as `techpubs-service`, which target/prod "
+         "doesn't bind", "the gateways taking Tech Pubs over have no name to answer as in the target", None,
+         "CHG-2083"),
+        ("B81", "PingAccess", "target/prod: protected application `crew-portal-crew`: rule `crew-portal-all-crew` "
+         "admits `group cn=crew,", "PingAccess tests no directory groups: the crew group must reach it as a claim",
+         None, "CHG-2082"),
+        ("B82", "PingAccess", "target/prod: protected application `crew-portal-crew`: rule `crew-portal-roster-admins` "
+         "admits `group cn=roster-admins,", "the roster admins group must reach PingAccess as a claim", None,
+         "CHG-2082"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -614,6 +627,26 @@ EXPECTED = MappingProxyType({
         ("A203", "Managed identity", "User accounts and passwords don't move with `partners`'s configuration onto "
          "`partners-external-id`", "External ID imports no password hashes: the partner users reset or move just in "
          "time", None, "CHG-2066"),
+        # the target moves the crew portal to PingAccess (CHG-2082) and Tech Pubs to PingGateway (CHG-2083): each
+        # override is named for confirmation; what the new product can't express is the render's note
+        ("A204", "Overrides", "`ciamEnforcedByRole` of `cn=crew-portal-crew,ou=protected-applications,dc=ciam-ops`",
+         "the target has PingAccess enforce the crew portal, the source SiteMinder", None, "CHG-2082"),
+        ("A205", "Overrides", "`ciamSetByRole` of `cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops`",
+         "PingAccess's engines set SM_USER in the target", None, "CHG-2082"),
+        ("A206", "Overrides", "`ciamEnforcedByRole` of `cn=techpubs,ou=protected-applications,dc=ciam-ops`",
+         "the target has its gateways enforce Tech Pubs, the source PingAccess", None, "CHG-2083"),
+        ("A207", "Overrides", "`ciamSetByRole` of `cn=techpubs-user,ou=header-contracts,dc=ciam-ops`",
+         "the gateways set X-TechPubs-User in the target", None, "CHG-2083"),
+        ("A208", "PingAccess", "target/prod: protected application `crew-portal-crew`: users sign in with custom today",
+         "the crew badge sign-on is SiteMinder custom code: the identity service PingAccess signs users in through "
+         "must offer it", None, "CHG-2082"),
+        ("A209", "PingGateway", "target/prod: pinggateway/routes/techpubs.json: the "
+         "sign-in's client secret is read from the gateway's secrets provider",
+         "the route's client secret comes from the gateway's own secrets provider, filled from the credential role's "
+         "reference; the route's filters are unverified against a running gateway", None, "CHG-2083"),
+        ("A210", "PingGateway", "target/prod: protected application `techpubs`: its max session limit (28800s) isn't "
+         "enforced by PingGateway", "PingGateway has one session timeout: Tech Pubs' eight-hour maximum is the "
+         "identity service's to hold", None, "CHG-2083"),
     ],
 })
 
