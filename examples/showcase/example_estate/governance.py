@@ -143,6 +143,12 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2065", "Read back PingFederate's AOG Parts Exchange SP connection as the platform team configured it",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2066", "Run the partners sign-in service on Microsoft Entra External ID in the target (an external tenant "
+     "the platform team keeps)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2067", "Record the tech-pubs team's Amazon Cognito user pool, a relying party of the platform's single "
+     "sign-on, as a neighbour in production", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2068", "Record Microsoft's confirmation that the partners external tenant signs with RS256 (the plan's "
+     "question)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

@@ -3264,4 +3264,6 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
   }
 }
 
+# NOTE: external tenant partners-external-id: Entra External ID isn't rendered: the external tenant running `partners` and its app registrations are created by hand (partner-portal (oidc-client: https://partners.example-aero.test/callback))
+
 # defender-identity: kept by security-operations, not rendered here (azurerm_security_center_automation.defender_identity_export): they take no generated infrastructure, so it is asked of them; a render scoped to them gives their root

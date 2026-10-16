@@ -59,6 +59,10 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
   aws_db_instance, aws_rds_cluster (+ its      -> database (kind database, ciamDatabase): engine, edition, version,
     instances, subnet and parameter groups)      endpoint, size, availability, TLS, backups, parameters, its subnets,
                                                  key and master secret as roles; never its password: see databases.py
+  aws_cognito_user_pool (+ its               -> managed identity service (kind managed-identity, ciamManagedIdentity):
+    aws_cognito_user_pool_domain)                cognito-user-pool, its ARN, its custom domain, the identity service
+                                                 its tag Realizes names; never a client's or provider's secret: see
+                                                 cognito.py
   IAM: roles, resource policies, permission sets, control policies, access paths: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole). A compute group's binding role
 is its tag BindingRole, else compute-<its tag Role>; a cluster's is its tag BindingRole or Role, else cluster; an
@@ -78,6 +82,7 @@ from .network_inventory import endpoint_security_groups, network_resources
 from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_facts, lb_security_groups,
                              service_dns)
 from .iam import iam_resources
+from .cognito import cognito_resources
 from .databases import database_resources, database_security_groups
 from .audit import trail_resources
 from .budgets import budget_resources, budget_topics
@@ -506,7 +511,7 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
-             *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
+             *database_resources(pairs), *cognito_resources(pairs), *volumes, *backups, *trail_resources(pairs),
              *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs),
              *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))

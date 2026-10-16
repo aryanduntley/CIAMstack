@@ -123,7 +123,7 @@ def test_the_planner_runs_the_source_checks_of_the_adapters_applying_to_the_sour
                      render_neutral=None, render_env=None, checks=(), ref_schemes=(), secret_schemes={},
                      renders="", neutral_label="", vocabulary={}, schema=None, formats=(), products=(),
                      secret_patterns=(), importers=(), profile_terms=None, access=None, source_checks=(legacy_check,))
-    assert Adapter._field_defaults["source_checks"] == () and Adapter._fields[-1] == "source_checks"
+    assert Adapter._field_defaults["source_checks"] == ()
     d = mini_estate.directory(tuple(parse(
         f"dn: cn=legacy,ou=stack,{ALPHA}\nchangetype: add\nobjectClass: top\nobjectClass: ciamStackComponent\n"
         "cn: legacy\nciamStackRole: access\nciamAdapter: legacy\nciamAdapterVersion: >=0.1,<1\n")))

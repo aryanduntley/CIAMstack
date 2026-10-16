@@ -273,6 +273,13 @@ od import --change CHG-2063 --at 20260923090000Z siteminder/xps exports/sitemind
 od modify --change CHG-2064 changes/CHG-2064-siteminder-owners-and-aog-to-sso.ldif
 od import --change CHG-2065 --at 20260923090000Z pingfederate/bulk exports/pingfederate-aog
 od report source-objects
+echo "-- cloud-managed identity services: the partners sign-in service is to run on Microsoft Entra External ID in the"
+echo "   target (CHG-2066), the tech-pubs team's Amazon Cognito user pool relies on the platform's sign-on (a neighbour,"
+echo "   CHG-2067), and Microsoft confirms the tenant's RS256 signing (CHG-2068, the plan's question answered)"
+od modify --change CHG-2066 changes/CHG-2066-target-partners-external-id.ldif
+od modify --change CHG-2067 changes/CHG-2067-source-tech-pubs-user-pool.ldif
+od modify --change CHG-2068 changes/CHG-2068-external-id-signing-answer.ldif
+od report managed-identity
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

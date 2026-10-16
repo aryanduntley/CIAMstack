@@ -1,0 +1,18 @@
+# CHG-2068 (approved): Microsoft's account team confirmed that the partners external tenant signs its tokens with RS256,
+# the algorithm the partners service publishes: the answer to the question the plan raised for it. The other
+# questions (custom domain, custom issuer, the refresh token grant) are still to be asked.
+dn: cn=confirm-target-prod-partners-external-id-signing-alg-rs256,ou=unknowns,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamUnknown
+cn: confirm-target-prod-partners-external-id-signing-alg-rs256
+ciamQuestion: `partners` needs `partners-external-id` (Microsoft Entra External ID) in target/prod to sign tokens
+  with RS256: does the vendor confirm it can?
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamBlocking: TRUE
+ciamConcerns: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+ciamConcerns: cn=partners,ou=identity-services,dc=ciam-ops
+ciamRaisedAt: 20260919000000Z
+ciamAnswer: Yes: the external tenant signs ID and access tokens with RS256 (Microsoft account team, case 2609-1142)
+ciamAnsweredAt: 20260922000000Z
+ciamChangeRef: cn=CHG-2068,ou=changes,dc=ciam-ops

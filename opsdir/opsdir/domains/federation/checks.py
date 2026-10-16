@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 from ...core.directory import one, rdn_value
 from ...core.environment import of_class
 from ...core.findings import findings, merge_findings, responsible
+from .managed import realizing
 from .services import identity_services
 
 # The identity service's contracts that are URLs partners and applications hold (an entity ID may also be a URN)
@@ -55,5 +56,8 @@ def _identity_service(ctx, service):
 
 def check_identity_services(ctx):
     """Every identity service's published hosts are served by the target's service names for its role. A host only
-    the source serves is a changed service name, which the contract check (R9) already blocks."""
-    return merge_findings([_identity_service(ctx, s) for s in identity_services(ctx.d)])
+    the source serves is a changed service name, which the contract check (R9) already blocks. A service the target
+    runs on a cloud-managed identity service (a binding realizing it) is the managed identity check's
+    (connectors.managed_identity): its hosts are the managed service's to keep."""
+    return merge_findings([_identity_service(ctx, s) for s in identity_services(ctx.d)
+                           if realizing(ctx.dst, s) is None])

@@ -2,7 +2,8 @@
 given (the clouds moved there by a change record, on an account): every kind of network plumbing (the plumbing sample,
 its peer's network bound so the peering renders), the front before a cluster's gateway behind CloudFront with address
 rules and Shield Advanced's automatic response (the gateway sample), a failover pair's health checks (the edge
-fixtures' DNS estate), an Aurora cluster, a suppression, a quota request, Macie's scheduled job, a compute group with
+fixtures' DNS estate), an Aurora cluster, a Cognito user pool with its domain, clients, resource server and SAML
+partner, a suppression, a quota request, Macie's scheduled job, a compute group with
 its role's boot and data disks (a launch template and an autoscaling group), and Fluent Bit's role
 its pods assume through the cluster's OIDC provider (IRSA): every resource and data source type the AWS renderers
 write that the showcase doesn't."""
@@ -114,8 +115,25 @@ GROUP = (entry(ALPHA, "asg-app", "ciamComputeGroup", ciamBindingRole="compute-ap
                ciamSnapshotPolicyRole="app-snapshots"),
          entry(ALPHA, "app-snapshots", "ciamSnapshotPolicy", ciamBindingRole="app-snapshots", ciamRetentionDays="7",
                ciamSnapshotAt="02:00"))
+# a Cognito user pool running the identity service (flow 63): its custom domain, an OIDC client with a custom scope,
+# a partner SAML identity provider
+INTEGRATIONS = "ou=integrations,dc=ciam-ops"
+IDENTITY = (OU.format(INTEGRATIONS, "integrations"),
+            "dn: cn=sso-tls,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCertificate\ncn: sso-tls\n"
+            "ciamCertPurpose: tls-server\n",
+            entry(INTEGRATIONS, "portal", "ciamIntegration", ciamProtocolType="oidc-client", ciamClientId="portal",
+                  ciamGrantType=("authorization_code", "refresh_token"), ciamTokenAuthMethod="client_secret_basic",
+                  ciamRedirectUri="https://portal.example.test/cb", ciamScope=("openid", "orders.read")),
+            entry(INTEGRATIONS, "skyline", "ciamIntegration", ciamProtocolType="saml2-idp",
+                  ciamEntityId="https://idp.skyline.test", ciamSsoUrl="https://idp.skyline.test/sso"))
+POOL = (entry(ALPHA, "cert-sso", "ciamCertificateRef", ciamBindingRole="sso-cert",
+              ciamRefUri=f"aws-acm://arn:aws:acm:us-east-1:{ACCOUNT}:certificate/c-1",
+              ciamHoldsCertificate="cn=sso-tls,dc=ciam-ops"),
+        entry(ALPHA, "sso-pool", "ciamManagedIdentity", ciamBindingRole="sso-pool",
+              ciamManagedService="cognito-user-pool", ciamRealizes="sso", ciamFqdn="sso.example.test",
+              ciamTlsCertificate="cn=sso-tls,dc=ciam-ops"))
 RECORDS = (
-    *GROUP,
+    *GROUP, *POOL,
     entry(ALPHA, "key-db", "ciamKeyRef", ciamBindingRole="db-key", ciamRefUri=f"aws-kms://{KEY_ARN}"),
     entry(ALPHA, "db-grants", "ciamDatabase", **DB),
     entry(ALPHA, "exc-EXC-7", "ciamSuppression", ciamBindingRole="suppression-EXC-7", ciamExceptionRef=EXC,
@@ -162,7 +180,8 @@ def environments(region):
     return (("plumbing", plumbing, found),
             ("gateway", _gateway(region), found),
             ("dns", _dns(region), found),
-            ("services", model(alpha=RECORDS, tree=EXCEPTIONS, changes=(*placed(region), *bound(region)))[1], found),
+            ("services", model(alpha=RECORDS, tree=(*EXCEPTIONS, *IDENTITY),
+                               changes=(*placed(region), *bound(region)))[1], found),
             ("logs", model(alpha=CLUSTER, tree=LOGS, changes=(*placed(region), *bound(region)))[1],
              found._replace(logs=lambda m: (AM,))))
 

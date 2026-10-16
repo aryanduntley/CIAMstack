@@ -1,0 +1,16 @@
+# CHG-2066 (approved): the partner sign-in service (`partners`, today a PingAM realm) is to run on Microsoft Entra
+# External ID in the target: an external tenant the platform team keeps. Nothing of it renders yet (the target's
+# render names the tenant and app registrations to create by hand), and the planner checks the service against what
+# Microsoft documents of it: it exists in the target's public cloud (not in Azure Government), and what isn't
+# documented either way waits for Microsoft's confirmation in the unknowns register.
+dn: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamManagedIdentity
+cn: partners-external-id
+ciamBindingRole: partners-identity
+ciamManagedService: entra-external-id
+ciamRealizes: partners
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2066,ou=changes,dc=ciam-ops
+description: The partners realm's external tenant (Microsoft Entra External ID)

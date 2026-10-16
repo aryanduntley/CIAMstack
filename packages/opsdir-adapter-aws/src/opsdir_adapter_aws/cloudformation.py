@@ -25,13 +25,13 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   Targets), AWS::Route53::RecordSet (+ RecordSetGroup), AWS::SecretsManager::Secret (+ RotationSchedule; SecretString
   is never read), AWS::KMS::Key (+ ReplicaKey), AWS::S3::Bucket, AWS::CloudTrail::Trail (its ARN from the stack's
   region and account; cli_audit.py); the network depth (route tables, network ACLs, VPC endpoints and endpoint
-  services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py; IAM and guardrails,
-  the edge, data stores, security services (GuardDuty, AWS Config, Security Hub) and suppressions, observability (log
-  groups, alarms, canaries), volumes and backups, budgets; EventBridge rules with their event patterns (findings
-  routes); compute groups (autoscaling groups and their launch templates) and EKS clusters; resource policies and
-  Instance Connect Endpoints; hosted zones; queues, topics, event buses, data streams and SES identities:
-  cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py, _compute.py,
-  _messaging.py
+  services, peering, transit and VPN, flow logs, Network Firewall): cloudformation_network.py; IAM and guardrails, the
+  edge, data stores, security services (GuardDuty, AWS Config, Security Hub) and suppressions, observability (log
+  groups, alarms, canaries), volumes and backups, budgets, Cognito user pools; EventBridge rules with their event
+  patterns (findings routes); compute groups (autoscaling groups and their launch templates) and EKS clusters;
+  resource policies and Instance Connect Endpoints; hosted zones; queues, topics, event buses, data streams and SES
+  identities: cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py,
+  _compute.py, _messaging.py
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
 import json
@@ -185,6 +185,7 @@ GETATT = MappingProxyType({
     "AWS::Shield::Protection": {"ProtectionArn": lambda pid, ps: pid if str(pid).startswith("arn:") else None},
     "AWS::RDS::DBInstance": {"DBInstanceArn": _arn("rds", "db:{id}")},
     "AWS::RDS::DBCluster": {"DBClusterArn": _arn("rds", "cluster:{id}")},
+    "AWS::Cognito::UserPool": {"Arn": _arn("cognito-idp", "userpool/{id}")},
     "AWS::SecurityHub::AutomationRule": {"RuleArn": lambda pid, ps: pid if str(pid).startswith("arn:") else None},
     "AWS::CloudFront::Distribution": {"Id": lambda pid, ps: pid,
                                       "Arn": _arn("cloudfront", "distribution/{id}", False)}})

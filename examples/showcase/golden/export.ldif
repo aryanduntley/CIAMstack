@@ -1682,6 +1682,36 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read back PingFederate's AOG Parts Exchange SP connection as the pl
  atform team configured it
 
+dn: cn=CHG-2066,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2066
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Run the partners sign-in service on Microsoft Entra External ID in 
+ the target (an external tenant the platform team keeps)
+
+dn: cn=CHG-2067,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2067
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the tech-pubs team's Amazon Cognito user pool, a relying par
+ ty of the platform's single sign-on, as a neighbour in production
+
+dn: cn=CHG-2068,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2068
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record Microsoft's confirmation that the partners external tenant s
+ igns with RS256 (the plan's question)
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1857,6 +1887,24 @@ ciamLdapSingleValue: TRUE
 ciamLdapSyntax: 1.3.6.1.4.1.1466.115.121.1.15
 ciamPiiClass: none
 ciamPurpose: Link to the customer / supplier organization record
+
+dn: cn=confirm-target-prod-partners-external-id-signing-alg-rs256,ou=unknowns,dc=ciam-ops
+objectClass: top
+objectClass: ciamUnknown
+cn: confirm-target-prod-partners-external-id-signing-alg-rs256
+ciamAnswer: Yes: the external tenant signs ID and access tokens with RS256 (Mi
+ crosoft account team, case 2609-1142)
+ciamAnsweredAt: 20260922000000Z
+ciamBlocking: TRUE
+ciamChangeRef: cn=CHG-2068,ou=changes,dc=ciam-ops
+ciamConcerns: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=env
+ ironments,dc=ciam-ops
+ciamConcerns: cn=partners,ou=identity-services,dc=ciam-ops
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamQuestion: `partners` needs `partners-external-id` (Microsoft Entra Externa
+ l ID) in target/prod to sign tokens with RS256: does the vendor confirm it ca
+ n?
+ciamRaisedAt: 20260919000000Z
 
 dn: cn=corporate-dns,ou=owners,dc=ciam-ops
 objectClass: top
@@ -11743,6 +11791,18 @@ pingamPolicyConfig: {"actionValues":{"GET":true,"POST":true},"active":true,"co
  signed in with a one-time code may use the partner portal","resources":["http
  s://partners.example-aero.test/*"],"subject":{"type":"AuthenticatedUsers"}}
 
+dn: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamManagedIdentity
+cn: partners-external-id
+ciamBindingRole: partners-identity
+ciamChangeRef: cn=CHG-2066,ou=changes,dc=ciam-ops
+ciamManagedService: entra-external-id
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRealizes: partners
+description: The partners realm's external tenant (Microsoft Entra External ID
+ )
+
 dn: cn=pe-secrets,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top
 objectClass: ciamPrivateEndpoint
@@ -13997,6 +14057,20 @@ ciamOverrideValue: 5
 ciamOverrides: cn=tech-pubs,ou=integrations,dc=ciam-ops
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 description: short tokens to test refresh
+
+dn: cn=tech-pubs-user-pool,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamManagedIdentity
+cn: tech-pubs-user-pool
+ciamBindingRole: tech-pubs-user-pool
+ciamChangeRef: cn=CHG-2067,ou=changes,dc=ciam-ops
+ciamManagedBy: cn=tech-pubs-team,ou=owners,dc=ciam-ops
+ciamManagedService: cognito-user-pool
+ciamPartnerOf: cn=tech-pubs,ou=integrations,dc=ciam-ops
+ciamProviderRef: arn:aws:cognito-idp:us-east-1:111122223333:userpool/us-east-1
+ _Tp7Rd2Kx9
+description: The tech-pubs team's reader sign-in (Amazon Cognito user pool), a
+ n OIDC relying party of sso
 
 dn: cn=techpubs-app,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
 objectClass: top

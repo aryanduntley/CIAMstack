@@ -1,0 +1,6 @@
+environment  binding               service            as         realizes / partner of  issuer to       relying party of  kept by         resource
+-----------  --------------------  -----------------  ---------  ---------------------  --------------  ----------------  --------------  ----------------------------------------------------------------------
+source/prod  tech-pubs-user-pool   cognito-user-pool  neighbour  tech-pubs                              tech-pubs         tech-pubs-team  arn:aws:cognito-idp:us-east-1:111122223333:userpool/us-east-1_Tp7Rd2Kx9
+target/prod  partners-external-id  entra-external-id  target     partners               partner-portal                    platform
+(2 rows)
+exit 0

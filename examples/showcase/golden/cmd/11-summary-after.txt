@@ -4,11 +4,11 @@ applications                          3      customer-portal, skyline-air-partne
 integrations                          9      aog-parts-exchange, customer-portal, harbor-mro-federation, mobile-ops, partner-portal, reports-api, skyline-air-federation, supplier-portal, tech-pubs
 directory consumers                   7      customer-portal-svc, idm-sync, legacy-rptuser, mro-batch-export, pf-ds-svc, siteminder-ps, supplier-portal-svc
 certificates expiring within 30 days  0
-pending changes                       57     CHG-2001, CHG-2002, CHG-2003, CHG-2004, CHG-2005, CHG-2006, CHG-2007, CHG-2008, CHG-2009, CHG-2010, CHG-2011, CHG-2012, CHG-2013, CHG-2014, CHG-2015, CHG-2016, CHG-2017, CHG-2018, CHG-2019, CHG-2020, CHG-2021, CHG-2022, CHG-2023, CHG-2024, CHG-2025, CHG-2026, CHG-2027, CHG-2028, CHG-2029, CHG-2030, CHG-2031, CHG-2032, CHG-2033, CHG-2034, CHG-2035, CHG-2036, CHG-2037, CHG-2038, CHG-2039, CHG-2041, CHG-2042, CHG-2043, CHG-2044, CHG-2046, CHG-2047, CHG-2048, CHG-2049, CHG-2050, CHG-2051, CHG-2055, CHG-2056, CHG-2060, CHG-2061, CHG-2062, CHG-2063, CHG-2064, CHG-2065
+pending changes                       60     CHG-2001, CHG-2002, CHG-2003, CHG-2004, CHG-2005, CHG-2006, CHG-2007, CHG-2008, CHG-2009, CHG-2010, CHG-2011, CHG-2012, CHG-2013, CHG-2014, CHG-2015, CHG-2016, CHG-2017, CHG-2018, CHG-2019, CHG-2020, CHG-2021, CHG-2022, CHG-2023, CHG-2024, CHG-2025, CHG-2026, CHG-2027, CHG-2028, CHG-2029, CHG-2030, CHG-2031, CHG-2032, CHG-2033, CHG-2034, CHG-2035, CHG-2036, CHG-2037, CHG-2038, CHG-2039, CHG-2041, CHG-2042, CHG-2043, CHG-2044, CHG-2046, CHG-2047, CHG-2048, CHG-2049, CHG-2050, CHG-2051, CHG-2055, CHG-2056, CHG-2060, CHG-2061, CHG-2062, CHG-2063, CHG-2064, CHG-2065, CHG-2066, CHG-2067, CHG-2068
 incidents                             2      INC-2231, INC-2240
 awaiting import                       0
-blockers                              30     opsdir plan source/prod target/prod
-actions                               137    opsdir plan source/prod target/prod
-ok                                    92     opsdir plan source/prod target/prod
+blockers                              35     opsdir plan source/prod target/prod
+actions                               140    opsdir plan source/prod target/prod
+ok                                    95     opsdir plan source/prod target/prod
 (10 rows)
 exit 0

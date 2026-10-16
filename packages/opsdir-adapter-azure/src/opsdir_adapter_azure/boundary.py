@@ -40,6 +40,9 @@ NAMES = {
     "ciamDnsZoneBinding": "DNS", "ciamDnsRecord": "DNS",
     "ciamDnsForwarder": lambda b: VMS if is_hosted(b) else "DNS Private Resolver",
     "ciamIdentityBinding": "Microsoft Entra ID", "ciamGuardrail": "Azure Policy", "ciamFirewallPolicy": "Firewall",
+    # External ID by the name Microsoft's External ID FAQ gives it (FedRAMP High and DoD IL2 in public clouds)
+    "ciamManagedIdentity": lambda b: "Microsoft Entra External ID"
+    if one(b, "ciamManagedService") == "entra-external-id" else None,
     "ciamPrivateEndpoint": "Private Link", "ciamEndpointService": "Private Link",
     "ciamInterconnect": lambda b: "ExpressRoute" if "express" in (one(b, "ciamInterconnectKind") or "").lower()
     else "VPN Gateway",

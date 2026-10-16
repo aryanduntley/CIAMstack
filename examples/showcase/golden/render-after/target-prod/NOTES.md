@@ -5,7 +5,7 @@
 -->
 # Render notes: target/prod
 
-**2 blockers, 7 actions, 13 notes, 0 to review**
+**2 blockers, 8 actions, 13 notes, 0 to review**
 
 ## Blockers
 
@@ -26,6 +26,16 @@
 - **How:** Record its kind of link (ciamLinkKind), under an approved change, and re-render
 
 ## Actions
+
+### external tenant partners-external-id (Identity)
+
+- **What:** Entra External ID isn't rendered: the external tenant running `partners` and its app registrations are created by hand (partner-portal (oidc-client: https://partners.example-aero.test/callback))
+- **Where:** terraform/main.tf:3267; target/prod
+- **Who:** ciam-platform
+- **How:**
+  1. Create the external tenant (public cloud) and record its tenant ID as the binding's ciamProviderRef under an approved change, and re-render
+  2. Register partner-portal (oidc-client: https://partners.example-aero.test/callback) in it
+  3. Set up its user flows and the upstream identity providers its partner integrations need
 
 ### check image (Monitoring)
 

@@ -157,6 +157,10 @@ cap 08-apply-chg-2063 od import --change CHG-2063 --at 20260923090000Z siteminde
 cap 08-apply-chg-2064 od modify --change CHG-2064 changes/CHG-2064-siteminder-owners-and-aog-to-sso.ldif
 cap 08-apply-chg-2065 od import --change CHG-2065 --at 20260923090000Z pingfederate/bulk exports/pingfederate-aog
 cap 08-report-source-objects od report source-objects
+cap 08-apply-chg-2066 od modify --change CHG-2066 changes/CHG-2066-target-partners-external-id.ldif
+cap 08-apply-chg-2067 od modify --change CHG-2067 changes/CHG-2067-source-tech-pubs-user-pool.ldif
+cap 08-apply-chg-2068 od modify --change CHG-2068 changes/CHG-2068-external-id-signing-answer.ldif
+cap 08-report-managed-identity od report managed-identity
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

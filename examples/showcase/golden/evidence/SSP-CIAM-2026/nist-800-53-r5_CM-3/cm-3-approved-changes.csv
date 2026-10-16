@@ -55,3 +55,6 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2063,ou=changes,dc=ciam-ops","Read the SiteMinder policy store's export (the crew portal and the AOG Parts Exchange partnership) into the record, its secrets withheld",CAB 2026-09-18,approved
 "cn=CHG-2064,ou=changes,dc=ciam-ops",Own what SiteMinder holds until it is retired; move AOG Parts Exchange to PingFederate (sso),CAB 2026-09-18,approved
 "cn=CHG-2065,ou=changes,dc=ciam-ops",Read back PingFederate's AOG Parts Exchange SP connection as the platform team configured it,CAB 2026-09-18,approved
+"cn=CHG-2066,ou=changes,dc=ciam-ops",Run the partners sign-in service on Microsoft Entra External ID in the target (an external tenant the platform team keeps),CAB 2026-09-18,approved
+"cn=CHG-2067,ou=changes,dc=ciam-ops","Record the tech-pubs team's Amazon Cognito user pool, a relying party of the platform's single sign-on, as a neighbour in production",CAB 2026-09-18,approved
+"cn=CHG-2068,ou=changes,dc=ciam-ops",Record Microsoft's confirmation that the partners external tenant signs with RS256 (the plan's question),CAB 2026-09-18,approved

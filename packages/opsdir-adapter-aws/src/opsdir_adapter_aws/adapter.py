@@ -16,6 +16,7 @@ from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
 from .terraform import TARGETS, render, render_notes
 from .canaries import RUNTIME
+from .cognito import MANAGED, SERVICE as COGNITO
 from .rendered_state import rendered_stacks, rendered_states
 
 PROVIDER = "aws"
@@ -34,7 +35,7 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   renders="Terraform (or AWS CloudFormation) for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
-                              "ciamCloudEnvironment": ("public",)}, schema=None,
+                              "ciamCloudEnvironment": ("public",), "ciamManagedService": (COGNITO,)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/canaries/*/python/*.py", "python"),
                            ("terraform/discovery/*/*.py", "python"),
                            ("cloudformation/*.yaml", "cloudformation-yaml"),
@@ -55,4 +56,4 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                                        rendered_states, intent=True),
                               ReadBack("cloudformation", "cloudformation/*", "cloudformation/", "{environment}/", True,
                                        rendered_stacks, intent=True)),
-                  notes=render_notes, renders_synthetic_checks=True)
+                  notes=render_notes, renders_synthetic_checks=True, managed_identity=MANAGED)

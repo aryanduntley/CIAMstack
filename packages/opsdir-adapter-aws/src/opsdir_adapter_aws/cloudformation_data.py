@@ -8,11 +8,14 @@ physical IDs, Fn::GetAtt where it follows from one). Pure.
   AWS::RDS::DBSubnetGroup                                                   -> aws_db_subnet_group
   AWS::RDS::DBParameterGroup, DBClusterParameterGroup                       -> their parameters
   AWS::Macie::CustomDataIdentifier                                          -> aws_macie2_custom_data_identifier
+  AWS::Cognito::UserPool (+ UserPoolDomain)                                 -> aws_cognito_user_pool (its id, ARN,
+                                                                               name, tags), aws_cognito_user_pool_domain
 """
 from .cloudformation_values import number, tag_map, truth
 
 DATA_TYPES = ("AWS::RDS::DBInstance", "AWS::RDS::DBCluster", "AWS::RDS::DBSubnetGroup", "AWS::RDS::DBParameterGroup",
-              "AWS::RDS::DBClusterParameterGroup", "AWS::Macie::CustomDataIdentifier")
+              "AWS::RDS::DBClusterParameterGroup", "AWS::Macie::CustomDataIdentifier", "AWS::Cognito::UserPool",
+              "AWS::Cognito::UserPoolDomain")
 
 
 def _of(declared, type_):
@@ -69,4 +72,11 @@ def data_stack_pairs(declared, names):
               for _, p, pid in _of(declared, "AWS::RDS::DBSubnetGroup")),
             *_parameter_groups(declared),
             *(("aws_macie2_custom_data_identifier", {"id": pid, "name": p.get("Name"), "regex": p.get("Regex")})
-              for _, p, pid in _of(declared, "AWS::Macie::CustomDataIdentifier"))]
+              for _, p, pid in _of(declared, "AWS::Macie::CustomDataIdentifier")),
+            *(("aws_cognito_user_pool", {"id": pid, "arn": names.get(f"{lid}.Arn"), "name": p.get("UserPoolName"),
+                                         "tags": tag_map(p.get("UserPoolTags"))})
+              for lid, p, pid in _of(declared, "AWS::Cognito::UserPool")),
+            *(("aws_cognito_user_pool_domain", {"domain": p.get("Domain"), "user_pool_id": p.get("UserPoolId"),
+                                                "certificate_arn": (p.get("CustomDomainConfig") or {}).get(
+                                                    "CertificateArn")})
+              for _, p, _ in _of(declared, "AWS::Cognito::UserPoolDomain"))]

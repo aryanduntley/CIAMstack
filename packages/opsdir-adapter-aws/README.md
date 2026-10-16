@@ -149,6 +149,22 @@ The core `data` domain's databases (`ciamDatabase`) render into `main.tf`, or in
 | `ciamProviderRef` recorded | An `import` block (the ARN's last part is the identifier): the database is adopted, not created. Its subnet and parameter groups are adopted by hand, or Terraform creates new ones and moves it to them |
 | `ciamDbPointInTime` `FALSE` with backups kept | A comment: RDS restores to a point in time whenever it keeps backups |
 
+### Cognito user pools (managed identity services)
+
+A `ciamManagedIdentity` binding of `ciamManagedService` `cognito-user-pool` (core federation domain, flow 63) that runs one of the platform's identity services (`ciamRealizes`) renders into `main.tf`, or its keeper's root (`opsdir_adapter_aws.cognito`). A neighbour (`ciamPartnerOf`: someone else's pool the platform federates with) isn't the platform's to render: a note.
+
+| Record | Renders as |
+|---|---|
+| The binding | `aws_cognito_user_pool` named after it, `deletion_protection` `ACTIVE`, `mfa_configuration` `ON` when every integration it serves requires MFA (`ciamMfaRequired`), `OPTIONAL` when some do (the planner's action: Cognito's MFA is the pool's), else `OFF`, with TOTP software tokens; tags `Name`, `Role`, `Realizes` (the identity service) |
+| `ciamFqdn` | `aws_cognito_user_pool_domain`: a `*.amazoncognito.com` host as its prefix; any other host as a custom domain with the ACM certificate holding the binding's `ciamTlsCertificate` (`ciamCertificateRef`). GovCloud has no custom domains: a comment |
+| Each `oidc-client` integration the identity service serves | `aws_cognito_user_pool_client`: `ciamRedirectUri` and `ciamPostLogoutRedirectUri`, the `code` and `client_credentials` flows of its grants, its scopes (the OIDC ones as they are, the others as `<identifier>/<scope>` of the resource server: an action names the new names), a secret when it authenticates with `client_secret_basic` or `client_secret_post` (Terraform state keeps it; nothing reads it back), `COGNITO` and every upstream provider as its identity providers, token revocation on. A grant Cognito's token endpoint doesn't take, and `offline_access`, are comments |
+| Custom scopes | one `aws_cognito_resource_server`, identifier the identity service's `ciamBaseUrl` |
+| Each `saml2-idp` integration it serves | `aws_cognito_identity_provider` (`SAML`), its metadata read from `var.<pool>_<partner>_metadata_url` (the record holds the partner's entity ID and SSO URL, not a metadata URL: an action) |
+| `ciamProviderRef` recorded | An `import` block (the pool id, the ARN's last part) |
+| A `saml2-sp` (or `ldap`) integration it serves | a comment: Cognito provides no downstream SAML identity provider (the planner blocks it) |
+
+What the planner knows of Cognito is `cognito.COGNITO` (`Adapter.managed_identity`), from AWS's documentation read 2026-10-15 (research note 3078): an OIDC issuer to applications, a SAML service provider and OIDC relying party of upstream providers; the `authorization_code`, `client_credentials` and `refresh_token` grants; client authentication `none` (PKCE on the code flow), `client_secret_basic`, `client_secret_post`; RS256 ID tokens; custom domains. Documented as unsupported: a downstream SAML identity provider, the token-exchange grant, a custom issuer (the issuer is the pool's, distinct from its sign-in domain), per-client MFA and claim transformations without a pre-token-generation trigger. Neither documented (blocked until confirmed, connectors.managed_identity): DPoP, PAR, CIBA, dynamic registration, mTLS and private-key client authentication, PKCE required per client, the other grants. In GovCloud (both regions; FedRAMP scope `Amazon Cognito`): FIPS endpoints required, no custom domains, no Pinpoint, managed login since 2025-03, password-hash import eligibility undocumented; each a planner action or blocker for a target there.
+
 ### Disks and snapshot policies
 
 The core `data` domain's volumes (`ciamVolume`, each server role's disks) and snapshot policies (`ciamSnapshotPolicy`) render into `main.tf` (`opsdir_adapter_aws.volumes`). Classes to types: `standard` st1, `ssd` gp3, `provisioned` io2.
@@ -302,6 +318,10 @@ What the network carries beyond VPCs, subnets and security groups comes back in 
 |---|---|
 | `aws_db_instance` (not an Aurora member) + its `aws_db_subnet_group` and `aws_db_parameter_group` | database: engine, edition and service (`rds`), version (`engine_version_actual` over `engine_version`), endpoint (`address`) and port, size, storage, zone (single-zone only), `zone-redundant` when `multi_az`, TLS from `rds.force_ssl` / `require_secure_transport` (else the engine's default), retention and point-in-time restore (on while backups are kept), deletion protection, the other parameters the group sets; the IPv4 ranges the rules on its security groups (`vpc_security_group_ids`) admit as `ciamSourceCidr` (those groups aren't read as firewall rules); its subnets, KMS key and master secret (`master_user_secret`) as the roles of those bindings; `ciamCopyRegion` from the region of each `aws_db_instance_automated_backups_replication` copying it (the CLI: `DBInstanceAutomatedBackupsReplications`) |
 | `aws_rds_cluster` (+ `aws_rds_cluster_instance`, `aws_rds_cluster_parameter_group`) | the same with service `aurora`; `zone-redundant` when its instances are in more than one zone, the size its instances' |
+
+### Cognito user pools, read back
+
+`opsdir_adapter_aws.cognito` (the CLI normalizes to the same names: `cli_cognito.py`; a CloudFormation stack's `AWS::Cognito::UserPool` and `UserPoolDomain`: `cloudformation_data.py`). `aws_cognito_user_pool` -> managed identity (kind `managed-identity`, `ciamManagedIdentity`): `cognito-user-pool`, its ARN (else its id) as the provider ref, its custom domain (`custom_domain`, else the `aws_cognito_user_pool_domain` with a certificate) as `ciamFqdn`, the identity service its tag `Realizes` names; a new one needs its tag `Role`. Nothing of its app clients or identity providers is read, so neither a client secret nor an upstream credential is.
 
 ### Disks and snapshot policies, read back
 
@@ -557,6 +577,15 @@ for g in $(aws rds describe-db-parameter-groups --query 'DBParameterGroups[?!sta
 done
 for g in $(aws rds describe-db-cluster-parameter-groups --query 'DBClusterParameterGroups[?!starts_with(DBClusterParameterGroupName, `default.`)].DBClusterParameterGroupName' --output text); do
   aws rds describe-db-cluster-parameters --db-cluster-parameter-group-name "$g" --source user > "$out/db-cluster-parameters/$g.json"
+done
+
+# Cognito user pools: each pool projected to its id, name, ARN, tags and custom domain (no app client or identity
+# provider is described: they carry secrets)
+mkdir -p $out/user-pools
+for i in $(aws cognito-idp list-user-pools --max-results 60 --query 'UserPools[].Id' --output text); do
+  aws cognito-idp describe-user-pool --user-pool-id "$i" \
+    --query '{UserPool: UserPool.{Id: Id, Name: Name, Arn: Arn, UserPoolTags: UserPoolTags, CustomDomain: CustomDomain}}' \
+                                                                                 > "$out/user-pools/$i.json"
 done
 
 # disks and snapshot policies: the volumes (root volumes included: describe-instances says which they are) and each
@@ -860,7 +889,7 @@ A granted pattern (`secretsmanager:*`, `arn:…:secret:ciam/*`) counts as granti
 
 Configuration management (`opsdir-adapter-ansible`) reads `aws-sm://` references at run time with the `amazon.aws.secretsmanager_secret` lookup (`ansible_lookup`; region and credentials from the controller's AWS configuration, as the CLI).
 
-Values of `ciamCloudProvider` (`aws`) and `ciamCloudEnvironment` (`public`) are validated against this adapter. The store refuses AWS credential forms anywhere in the record: access key IDs (`AKIA…`, `ASIA…`) and secret access keys (`aws_secret_access_key = …`).
+Values of `ciamCloudProvider` (`aws`), `ciamCloudEnvironment` (`public`) and `ciamManagedService` (`cognito-user-pool`) are validated against this adapter. The store refuses AWS credential forms anywhere in the record: access key IDs (`AKIA…`, `ASIA…`) and secret access keys (`aws_secret_access_key = …`).
 
 It adds no required roles or schema of its own (its planner checks are listed above); the environment's product adapters say which roles it must bind.
 
@@ -871,6 +900,7 @@ It adds no required roles or schema of its own (its planner checks are listed ab
 - **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
 - **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.
 - **What the importers can't see:** egress rules, sources other than IPv4 CIDRs, key pairs, Image Builder pipelines (`ciamImageBuild` is recorded by hand), the monitoring above (log groups, alarms, canaries, alert topics) in CLI output, alert topics in CloudFormation stacks (Terraform state reads them all), KMS key protection, bucket encryption (4.10), CloudFront / WAF / API Gateway (edge importers, 4.8).
+- **Cognito user pools** (6.1c): a target's pool, domain, clients, resource server and SAML partners render; its schema attributes, password policy, Lambda triggers, managed login branding, upstream OIDC providers, attribute mappings and user import aren't (the record doesn't hold them: the planner names claim transformations and how users move as actions). The SAML partners' metadata URLs are variables. Read back: the pool, its role, tag `Realizes` and custom domain only; its clients and providers (secrets) are never described.
 - **Compute groups** (5.8): a launch template tags all its disks alike, so a group's volumes are named by its instances' tags (`BootVolume`, `DataVolumes`) and a disk carries no `Volume` tag or binding role of its own; disks naming different snapshot policies get no `SnapshotPolicy` tag (a backup plan on the group's tag `Role` covers them). An adopted group's existing launch template isn't imported: applying points the group at the rendered one. A launch template's root device name is a CloudFormation parameter, one per data source (a group's and its servers' for the same AMI are separate parameters).
 
 ## Tests
@@ -902,6 +932,8 @@ It adds no required roles or schema of its own (its planner checks are listed ab
 `tests/test_aws_backups.py`: AWS Backup rendered (vault with its key and lock, compliance grace, plan with its cron, window, retention and copies to an input vault, selection by tag `Role`; what it can't render said; others' named) and read back from state and the CLI (lock mode, schedule, copies, protected roles, vault link; several rules or ARN selections named).
 
 `tests/test_aws_volumes.py`: disks and snapshot policies rendered (the boot volume on the root block device, data volumes as EBS volumes with attachments and tags, unencrypted or unbound-key volumes as recorded and said, Lifecycle Manager policies with encrypted copies by the multi-region key's replica or an input, an interval it can't take and others' policies named) and read back from state and the CLI (volumes grouped by their Volume tag, root disks, policies linked by target tag, untagged disks, count-based and disabled policies and unencrypted roots named; dlm-policies/ outputs not read as IAM policies; render-to-state round trip).
+
+`tests/test_aws_cognito.py`: Cognito user pools: the descriptor (AWS's documented capabilities, GovCloud's differences, what stays not established), `Amazon Cognito` in the FedRAMP boundary; a target rendered (pool, MFA by its integrations, custom domain with its certificate, a client per OIDC client with its flows, scopes and secret, the resource server, the SAML partner and its metadata variable, notes; an adopted pool imported, a prefix domain), GovCloud's custom domain a comment, a neighbour a note; the CloudFormation translation; the planner on what AWS documents (no downstream SAML, no token exchange, GovCloud's custom domain, FIPS endpoints); read back from state, from a render and from the projected CLI output, never a client secret.
 
 `tests/test_aws_databases.py`: managed databases rendered (an RDS instance with its subnet, security and parameter groups, key, RDS-managed password and import block; the ranges it admits as ingress rules on its security group, the engine's port when none is recorded; TLS as a parameter where it isn't the default; Aurora with an instance per zone; one someone else keeps named) and read back from state and the CLI (Aurora members, user-set parameters only, SSM parameters and passwords never read, VPC scoping, render-to-state round trip; the rules on its security groups as its ranges, not firewall rules).
 

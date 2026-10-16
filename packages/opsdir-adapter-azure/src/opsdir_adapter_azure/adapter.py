@@ -8,6 +8,7 @@ from .arm import ARM
 from .check_jobs import DELIVERY, IMAGE
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
+from .external_id import MANAGED, SERVICE as EXTERNAL_ID
 from .identity_protection import check_identity_protection
 from .purview import check_discovery_cadence
 from .inventory import TERRAFORM_STATE
@@ -36,7 +37,8 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   secret_schemes={"azkv": keyvault_command}, renders="Terraform for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
-                              "ciamCloudEnvironment": ("public", "usgovernment")}, schema=None,
+                              "ciamCloudEnvironment": ("public", "usgovernment"),
+                              "ciamManagedService": (EXTERNAL_ID,)}, schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/checks/check.py", "python"),
                            ("bicep/*/checks/check.py", "python"), ("arm/*/checks/check.py", "python"),
                            ("images/*/Dockerfile", "dockerfile"), ("images/*/check.py", "python"),
@@ -53,4 +55,5 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                                        rendered_states, intent=True),
                               ReadBack("arm", "arm/*", "arm/", "{environment}/", True, rendered_deployments,
                                        intent=True)),
-                  notes=render_notes, renders_synthetic_checks=True, siem_indexes=sentinel_keeps)
+                  notes=render_notes, renders_synthetic_checks=True, siem_indexes=sentinel_keeps,
+                  managed_identity=MANAGED)

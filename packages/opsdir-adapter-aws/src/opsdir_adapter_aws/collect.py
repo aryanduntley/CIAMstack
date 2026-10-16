@@ -14,7 +14,9 @@ Outputs that can carry secret material are projected to the fields the reader us
 fetched: Lambda functions (environment variables), CodeBuild projects (environment variables), Scheduler schedules and
 EventBridge targets (their input), CodePipeline pipelines (action configuration), CloudFront distributions (origin
 custom headers). Messaging is projected to what the reader uses too: a queue's ARN and tags, an SES identity's type,
-DKIM status and tags (not its sending authorization policies). Nothing reads secret values (no get-secret-value, no SSM
+DKIM status and tags (not its sending authorization policies), a Cognito user pool's id, name, ARN, tags and custom
+domain (describe-user-pool; no app client or identity provider is described: they carry secrets). Nothing reads
+secret values (no get-secret-value, no SSM
 parameters, no user data). Calls that answer "nothing there" for a resource without that setting (a bucket without a
 policy, Shield without a subscription, a key without rotation support) leave their file out.
 
@@ -57,6 +59,7 @@ from opsdir.domains.governance.collection import collection_sources
 from opsdir_format_terraform.state import TERRAFORM_DIR, state_steps as terraform_state_steps
 from .account import account_id, govcloud, partition, standard_account
 from .cli_budgets import budget_folder
+from .cli_cognito import POOL_QUERY
 from .cli_compute import launch_template_ref
 from .cli_monitor import tags_path
 from .cli_outputs import file_name
@@ -200,6 +203,7 @@ def _listings(m, vpc):
         (f"{WORK}rule-groups.json", _aws(m, "network-firewall", "list-rule-groups", "--scope", "ACCOUNT")),
         (f"{WORK}firewall-policies.json", _aws(m, "network-firewall", "list-firewall-policies")),
         (f"{WORK}firewalls.json", _aws(m, "network-firewall", "list-firewalls")),
+        (f"{WORK}user-pools.json", _aws(m, "cognito-idp", "list-user-pools", "--max-results", "60")),
         ("rds-instances.json", _aws(m, "rds", "describe-db-instances")),
         ("rds-clusters.json", _aws(m, "rds", "describe-db-clusters")),
         ("rds-subnet-groups.json", _aws(m, "rds", "describe-db-subnet-groups")),
@@ -296,6 +300,9 @@ def _details(m, done):
           for (a,) in _items(done, f"{WORK}firewall-policies.json", "FirewallPolicies", "Arn")),
         *((f"firewall-{_last(a)}.json", _aws(m, "network-firewall", "describe-firewall", "--firewall-arn", a))
           for (a,) in _items(done, f"{WORK}firewalls.json", "Firewalls", "FirewallArn")),
+        *((f"user-pools/{i}.json", _aws(m, "cognito-idp", "describe-user-pool", "--user-pool-id", i,
+                                        query=POOL_QUERY))
+          for (i,) in _items(done, f"{WORK}user-pools.json", "UserPools", "Id") if i),
         *((f"db-parameters/{g}.json", _aws(m, "rds", "describe-db-parameters", "--db-parameter-group-name", g,
                                            "--source", "user"))
           for (g,) in _items(done, f"{WORK}db-parameter-groups.json", "DBParameterGroups", "DBParameterGroupName")

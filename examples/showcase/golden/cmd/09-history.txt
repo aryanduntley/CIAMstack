@@ -617,4 +617,7 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2064  update  cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2065  update  cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
 <TIMESTAMP>          CHG-2065  update  cn=pingfederate.bulk.shared,ou=imports,dc=ciam-ops
-(617 rows)
+<TIMESTAMP>          CHG-2066  insert  cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2067  insert  cn=tech-pubs-user-pool,ou=bindings,env=prod,cloud=source,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2068  insert  cn=confirm-target-prod-partners-external-id-signing-alg-rs256,ou=unknowns,dc=ciam-ops
+(620 rows)

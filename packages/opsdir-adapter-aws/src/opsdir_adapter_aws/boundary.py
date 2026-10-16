@@ -58,6 +58,7 @@ NAMES = {
     "ciamDnsZoneBinding": "Amazon Route 53", "ciamDnsRecord": "Amazon Route 53",
     "ciamDnsForwarder": lambda b: EC2 if is_hosted(b) else "Amazon Route 53",
     "ciamIdentityBinding": "AWS Identity and Access Management (IAM)", "ciamGuardrail": "AWS Organizations",
+    "ciamManagedIdentity": lambda b: "Amazon Cognito" if one(b, "ciamManagedService") == "cognito-user-pool" else None,
     "ciamFirewallPolicy": "AWS Network Firewall",
     "ciamInterconnect": lambda b: "AWS Direct Connect" if "direct" in (one(b, "ciamInterconnectKind") or "").lower()
     else "AWS Site-to-Site VPN",
