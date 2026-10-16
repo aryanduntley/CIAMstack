@@ -224,10 +224,11 @@ def test_losses_name_what_a_product_cant_express():
         ("action", "its max session limit (28800s) isn't enforced by Gateway: the identity service's session must "
                    "hold it"),
         ("info", "resource `pages` matches by wildcard, rendered as regex"),
-        ("action", "rule `no-contractors` denies, which Gateway can't render: rewrite it as an allowance of everyone "
-                   "else"),
-        ("action", "rule `crew-group` admits `group cn=crew,ou=groups,dc=example,dc=test`, which Gateway can't test: "
-                   "release it as a claim of the sign-in integration and test that (attribute <claim>=<value>)")]
+        ("blocker", "rule `no-contractors` denies, which Gateway can't render, so the render leaves it out: rewrite "
+                    "it as an allowance of everyone else"),
+        ("blocker", "rule `crew-group` admits `group cn=crew,ou=groups,dc=example,dc=test`, which Gateway can't test, "
+                    "so the render leaves the rule out and admits every signed-in user: release it as a claim of the "
+                    "sign-in integration and test that (attribute <claim>=<value>)")]
 
 
 def test_patterns_translate_between_match_kinds_without_changing_what_they_match():

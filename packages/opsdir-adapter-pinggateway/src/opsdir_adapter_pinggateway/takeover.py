@@ -23,7 +23,7 @@ reference disagrees with itself)."""
 import re
 
 from opsdir.core.directory import follow, follow_all, one, rdn_value, values
-from opsdir.core.environment import bound, one_role, secret_placeholder
+from opsdir.core.environment import as_seen, bound, env_model, one_role, secret_placeholder
 from opsdir.core.notes import note
 from opsdir.domains.webaccess.apps import enforced_by, path_resources, projected_within, protected_apps, rules_of
 from opsdir.domains.webaccess.express import expressible_rule, losses, pattern_as
@@ -65,10 +65,16 @@ def _paths(app, r):
     return [_full(app, r, p) for p in values(r, "ciamPathPattern")]
 
 
+def _host_pattern(host):
+    """A host name as a regular expression matching only itself (its dots escaped; an UNBOUND:<role> kept readable)."""
+    return host.replace(".", r"\.")
+
+
 def _condition(m, app):
     hosts = [bound(m, role, "ciamFqdn") for role in values(app, "ciamPublishedAs")]
     base = (one(app, "ciamBasePath") or "/").rstrip("/")
-    tests = (*((" or ".join(f"find(request.uri.host, '^{_quoted(re.escape(h))}$')" for h in hosts),) if hosts else ()),
+    tests = (*((" or ".join(f"find(request.uri.host, '^{_quoted(_host_pattern(h))}$')" for h in hosts),)
+               if hosts else ()),
              *((f"find(request.uri.path, '^{_quoted(re.escape(base))}(?:/|$)')",) if base else ()))
     return "${" + " and ".join(f"({t})" if " or " in t else t for t in tests) + "}" if tests else None
 
@@ -95,15 +101,20 @@ def _rule_test(d, rule):
         return None
     parts = (*(_claim_test(w) for w in values(rule, "ciamWho")),
              *(t for r in follow_all(d, rule, "ciamIncludesRule") if r is not None for t in (_rule_test(d, r),) if t))
-    joined = f" {'and' if one(rule, 'ciamRuleMatch') == 'all' else 'or'} ".join(f"({p})" for p in parts) or "true"
+    joined = _joined(parts, "and" if one(rule, "ciamRuleMatch") == "all" else "or") or "true"
     return f"not ({joined})" if one(rule, "ciamEffect") == "deny" else joined
+
+
+def _joined(parts, op):
+    """Expressions joined by and/or, each in parentheses only when there are several."""
+    return parts[0] if len(parts) == 1 else f" {op} ".join(f"({p})" for p in parts)
 
 
 def _enforce(d, rules, paths=None):
     tests = tuple(t for t in (_rule_test(d, r) for r in rules) if t and t != "true")
     if not tests:
         return []
-    inner = {"type": ENFORCE, "config": {"condition": "${" + " and ".join(f"({t})" for t in tests) + "}"}}
+    inner = {"type": ENFORCE, "config": {"condition": "${" + _joined(tests, "and") + "}"}}
     return [inner] if paths is None else [{"type": CONDITIONAL, "config": {
         "condition": "${" + " or ".join(f"find(request.uri.path, '{_quoted(p)}')" for p in paths) + "}",
         "delegate": inner}}]
@@ -141,9 +152,9 @@ def _allow_only(app, d):
 
 def _headers(d, app):
     contracts = tuple(c for c in follow_all(d, app, "ciamSetsHeader") if c is not None)
-    named = {one(c, "ciamHeaderName"): f"${{{USERINFO}['{_quoted(src)}']}}" for c in contracts
-             for kind, _, src in ((one(c, "ciamHeaderValue") or "").partition(" "),)
-             if kind in ("attribute", "claim") and src}
+    named = {one(c, "ciamHeaderName"): f"${{{USERINFO}['{_quoted(rest.split()[0])}']}}" for c in contracts
+             for kind, _, rest in ((one(c, "ciamHeaderValue") or "").partition(" "),)
+             if kind in ("attribute", "claim") and rest.split()}
     return [{"type": HEADERS, "config": {"messageType": "REQUEST", "replace": {h: [v] for h, v in named.items()}}}] \
         if named else []
 
@@ -165,7 +176,7 @@ def route(m, app):
 def takeover_notes(m, services=None):
     """Render notes for each taken-over application: what PingGateway can't express of it, and where its client's
     secret comes from."""
-    return (*(note(AREA, "action" if x.severity == "action" else "note", f"protected application `{rdn_value(a)}`",
+    return (*(note(AREA, {"info": "note"}.get(x.severity, x.severity), f"protected application `{rdn_value(a)}`",
                    x.text, (f"Decide how PingGateway protects `{rdn_value(a)}` without it, and record that, or keep "
                             "it with its current product.",), a.dn)
               for a in taken_over(m) for x in losses(m.d, a, CAPABILITIES)),
@@ -178,6 +189,15 @@ def takeover_notes(m, services=None):
                    ("Check the route against the gateway's version (a test gateway, or its admin endpoints) before "
                     "deploying it.",), a.dn)
               for a in taken_over(m) if follow(m.d, a, "ciamSignInAs") is not None))
+
+
+def own_routes(files, d, environment):
+    """The rendered gateway files without the routes made for taken-over applications (Adapter.reads_back's prepare):
+    those are the neutral layer's render, and reading them back would make them the gateway's own routes, which is
+    what a cutover does, not a round trip. d: the record as the environment sees it."""
+    m = as_seen(env_model(d, environment)) if environment else None
+    taken = {f"routes/{rdn_value(a)}.json" for a in taken_over(m)} if m is not None else set()
+    return {path: text for path, text in files.items() if path not in taken}
 
 
 def takeover_routes(m):

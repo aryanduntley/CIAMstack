@@ -3,7 +3,7 @@ renders, the report). Pure.
 
 An environment sees an application through its overrides (core.environment.as_seen: a plan's and a render's models
 already do): its enforcing role there is the one ciamEnforcedByRole has in the environment's snapshot."""
-from ...core.directory import children, follow, follow_all, get, one, rdn_value, subtree, values, within
+from ...core.directory import children, follow, follow_all, get, one, rdn_value, values, within
 from ...core.findings import responsible
 from .naming import ACCESS_RULES, PROTECTED_APPS
 
@@ -74,12 +74,6 @@ def projected_within(e, base):
     """Whether a neutral entry was projected from a product entry at or below base (a product's own branch)."""
     source = one(e, "ciamProjectedFrom")
     return bool(source) and within(source, base)
-
-
-def projection_of(d, source):
-    """The neutral entries projected from a product entry (its DN), in DN order."""
-    return tuple(e for e in (*protected_apps(d), *subtree(d, PROTECTED_APPS, "ciamPathResource"), *access_rules(d))
-                 if (one(e, "ciamProjectedFrom") or "").lower() == source.lower())
 
 
 def _label(d, dn):

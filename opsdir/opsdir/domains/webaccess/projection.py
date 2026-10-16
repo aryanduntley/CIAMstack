@@ -6,7 +6,8 @@ ownership rule:
   - an importer writes only the neutral entries projected from its own entries (or new ones);
   - it replaces the attributes it says something about (an attribute given no values: the product says there are
     none) and keeps those it doesn't (a published role or backend role the product can't name, owners, a credential
-    role: what the record adds);
+    role: what the record adds); the enforcing role it sets only where the record has none (the record governs it once
+    recorded, and an environment overrides it to move the application);
   - a neutral entry projected from another product's entry, or recorded by an operator, is never changed: the import
     says how what it read differs from it (how a target's read-back of a render made from another product's
     projection is compared);
@@ -24,6 +25,7 @@ from .naming import ACCESS_RULES, PROTECTED_APPS
 
 NEUTRAL = ("top", "ciamObject")
 SOURCE = "ciamProjectedFrom"
+SET_ONCE = ("ciamEnforcedByRole",)          # what a projection sets only where the record holds no value
 # What a projection's entries are compared on when another product's or an operator's entry holds the DN
 COMPARED = ("ciamBasePath", "ciamEnforcedByRole", "ciamPublishedAs", "ciamBackendRole", "ciamBackendPort",
             "ciamBackendTls", "ciamSignOn", "ciamSignInAs", "ciamServedBy", "ciamIdleTimeout", "ciamMaxSessionTime",
@@ -44,7 +46,8 @@ def neutral_entry(dn, oc, attrs):
 
 def _merged(existing, proposed):
     """A projection merged with what the record holds: what it says replaces, what it doesn't say is kept."""
-    attrs = {**(existing.attrs if existing is not None else {}), **proposed.attrs}
+    held = existing.attrs if existing is not None else {}
+    attrs = {**held, **{k: v for k, v in proposed.attrs.items() if not (k in SET_ONCE and held.get(k))}}
     kept = tuple(c for c in (existing.classes if existing is not None else ()) if c not in proposed.classes)
     return make_entry(proposed.dn, (*proposed.classes, *kept),
                       in_record_order(existing, {k: v for k, v in attrs.items() if v}))

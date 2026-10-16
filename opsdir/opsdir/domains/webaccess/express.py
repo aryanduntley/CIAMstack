@@ -17,8 +17,8 @@ from .naming import COLLECTED, who
 Capabilities = NamedTuple("Capabilities", [("product", str), ("match_kinds", tuple), ("translated", tuple),
                                            ("access_modes", tuple), ("who_kinds", tuple), ("sign_ons", tuple),
                                            ("deny", bool), ("session", tuple), ("ipv6", bool)])
-# One thing a product can't express as recorded: severity info (translated, nothing lost) or action (lost: someone
-# must decide), and what it is in words
+# One thing a product can't express as recorded: severity info (translated, nothing lost), action (lost: someone
+# must decide) or blocker (a rule left out, so the render would admit more than the record says), and what it is
 Loss = NamedTuple("Loss", [("severity", str), ("text", str)])
 
 
@@ -49,12 +49,14 @@ def expressible_rule(rule, caps):
 def _rule_losses(rule, caps):
     name, effect = rdn_value(rule), one(rule, "ciamEffect")
     if effect == "custom":
-        return (Loss("action", f"rule `{name}` is a product rule with no neutral form "
-                               f"({one(rule, 'ciamProjectedFrom') or 'recorded by hand'}): rebuild it in "
-                               f"{caps.product}"),)
-    return (*((Loss("action", f"rule `{name}` denies, which {caps.product} can't render: rewrite it as an "
-                              "allowance of everyone else"),) if effect == "deny" and not caps.deny else ()),
-            *(Loss("action", f"rule `{name}` admits `{w}`, which {caps.product} can't test"
+        return (Loss("blocker", f"rule `{name}` is a product rule with no neutral form "
+                                f"({one(rule, 'ciamProjectedFrom') or 'recorded by hand'}), left out of the render, "
+                                f"which admits more than the record says until it is rebuilt in {caps.product}"),)
+    return (*((Loss("blocker", f"rule `{name}` denies, which {caps.product} can't render, so the render leaves it "
+                               "out: rewrite it as an allowance of everyone else"),)
+              if effect == "deny" and not caps.deny else ()),
+            *(Loss("blocker", f"rule `{name}` admits `{w}`, which {caps.product} can't test, so the render leaves "
+                              "the rule out and admits every signed-in user"
                              + (": release it as a claim of the sign-in integration and test that (attribute "
                                 "<claim>=<value>)" if who(w)[0] in ("user", "group", "filter") else ""))
               for w in values(rule, "ciamWho") if not expressible_who(w, caps)))

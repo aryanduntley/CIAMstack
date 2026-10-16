@@ -166,6 +166,11 @@ cap 08-apply-chg-2069 od modify --change CHG-2069 changes/CHG-2069-issuing-ca-ce
 cap 08-report-canary-coverage-after od report canary-coverage
 cap 08-apply-chg-2075 od import --change CHG-2075 --at 20260923090000Z linux/baseline exports/hosts-pingaccess
 cap 08-apply-chg-2076 od modify --change CHG-2076 changes/CHG-2076-pingaccess-scoped-agents.ldif
+cap 08-report-protected-applications od report protected-applications
+cap 08-apply-chg-2081 od modify --change CHG-2081 changes/CHG-2081-crew-portal-client-and-target-bindings.ldif
+cap 08-apply-chg-2082 od modify --change CHG-2082 changes/CHG-2082-target-pingaccess-protects-crew-portal.ldif
+cap 08-apply-chg-2083 od modify --change CHG-2083 changes/CHG-2083-target-pinggateway-protects-tech-pubs.ldif
+cap 08-report-protected-applications-after od report protected-applications
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

@@ -290,6 +290,15 @@ echo "-- the PingAccess servers' own files read in as the pa-admin and pa-engine
 echo "   agents then scoped to AWS environments (CHG-2076), so the target's VMs can be checked against them"
 od import --change CHG-2075 --at 20260923090000Z linux/baseline exports/hosts-pingaccess
 od modify --change CHG-2076 changes/CHG-2076-pingaccess-scoped-agents.ldif
+echo "-- the applications PingAccess, SiteMinder and PingGateway protect, as their imports projected them onto the"
+echo "   neutral protected-application layer; then the target moves two of them to another product: its PingAccess"
+echo "   takes the crew portal over from SiteMinder (the portal's client and the target's bindings, CHG-2081; the"
+echo "   target's overrides, CHG-2082), and its gateways take Tech Pubs over from PingAccess (CHG-2083)"
+od report protected-applications
+od modify --change CHG-2081 changes/CHG-2081-crew-portal-client-and-target-bindings.ldif
+od modify --change CHG-2082 changes/CHG-2082-target-pingaccess-protects-crew-portal.ldif
+od modify --change CHG-2083 changes/CHG-2083-target-pinggateway-protects-tech-pubs.ldif
+od report protected-applications
 od report regulated-data
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone

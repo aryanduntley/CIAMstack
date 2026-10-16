@@ -117,8 +117,8 @@ def _host_name(role):
 
 def _attribute(contract):
     """The attribute or claim a header contract's value comes from ('attribute uid', 'claim sub'), else None."""
-    kind, _, name = (one(contract, "ciamHeaderValue") or "").partition(" ")
-    return name if kind in ("attribute", "claim") and name else None
+    kind, _, rest = (one(contract, "ciamHeaderValue") or "").partition(" ")
+    return rest.split()[0] if kind in ("attribute", "claim") and rest.split() else None
 
 
 def _session(m, app):
@@ -159,7 +159,7 @@ def _app_requests(m, app):
     contracts = tuple(c for c in follow_all(d, app, "ciamSetsHeader") if c is not None and _attribute(c))
     session = _session(m, app)
     rules = tuple(x for r in every_rule(d, app) for x in included(d, r))
-    built = tuple(_rule_requests(d, r) for r in dict.fromkeys(rules))
+    built = tuple(_rule_requests(d, r) for r in {r.norm: r for r in rules}.values())
     app_body = {"name": name, "contextRoot": one(app, "ciamBasePath"), "applicationType": "Web",
                 "destination": "Site", "siteId": reference("sites", f"{name}-backend"),
                 "virtualHostIds": [reference("virtualhosts", h) for h in hosts],
@@ -197,7 +197,7 @@ def takeover_notes(m):
     """Render notes for each taken-over application: what PingAccess can't express of it, and a secret its session
     can't take from a credential role."""
     return (
-        *(note(AREA, "action" if x.severity == "action" else "note", f"protected application `{rdn_value(a)}`",
+        *(note(AREA, {"info": "note"}.get(x.severity, x.severity), f"protected application `{rdn_value(a)}`",
                x.text, (f"Decide how PingAccess protects `{rdn_value(a)}` without it, and record that (the "
                         "application's resources and rules), or keep it with its current product.",), a.dn)
           for a in taken_over(m) for x in losses(m.d, a, CAPABILITIES)),
