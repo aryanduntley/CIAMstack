@@ -1712,6 +1712,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record Microsoft's confirmation that the partners external tenant s
  igns with RS256 (the plan's question)
 
+dn: cn=CHG-2069,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2069
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record Example Aero Issuing CA 2's certificate itself, so the sourc
+ e's directory check trusts it
+
 dn: cn=CHG-2075,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -2451,9 +2461,21 @@ objectClass: top
 objectClass: ciamCertificate
 cn: example-aero-issuing-ca-2
 ciamCertPurpose: ca
-ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
-ciamFingerprint: F5:DB:C6:98:C9:CA:75:19:CB:5F:70:6E:6D:B4:4E:DF:AD:73:C7:D3:5
- C:A3:96:EF:3C:D5:A8:88:CF:64:3F:B7
+ciamCertificatePem:: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJtekNDQVVHZ0F3S
+ UJBZ0lFS2lzc0xUQUtCZ2dxaGtqT1BRUURBakFmTVIwd0d3WURWUVFEREJSRmVHRnQKY0d4bElFRm
+ xjbThnVW05dmRDQkRRVEFlRncweU5UQXpNVEF3TURBd01EQmFGdzB6TlRBek1UQXdNREF3TURCYQp
+ NQ1F4SWpBZ0JnTlZCQU1NR1VWNFlXMXdiR1VnUVdWeWJ5QkpjM04xYVc1bklFTkJJREl3V1RBVEJn
+ Y3Foa2pPClBRSUJCZ2dxaGtqT1BRTUJCd05DQUFTVFcwYXdoL3F6TVJFVFA1OVUzVlJhd2V1RWxBe
+ GNiQ0xBMFJQWSs5WTcKSjdkTVk1bzZRMG0rWnlod0NhYWljUlcvaFJVV24welFYVGpFVVd5Q2FicT
+ dvMll3WkRBU0JnTlZIUk1CQWY4RQpDREFHQVFIL0FnRUFNQTRHQTFVZER3RUIvd1FFQXdJQkJqQWR
+ CZ05WSFE0RUZnUVVBTEpnTml0cUNnUjIyYUVTCnp5Y3NMekw3bHIwd0h3WURWUjBqQkJnd0ZvQVVo
+ bjFsL1VDL1VnNG5IV2o5TzNBeXloS1VIVnd3Q2dZSUtvWkkKemowRUF3SURTQUF3UlFJZ0pnb3hsM
+ W9qTmdnVWxqMkFYNFRoR3F4S29wNHlRZWsvLzAvSUI3RHpCY2tDSVFEUgpXNzE1OTlkOER2V3ZvT0
+ JPb0pMa2pTYStsbnE5TGltNkQ2TFFTSG1mVGc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=
+ =
+ciamChangeRef: cn=CHG-2069,ou=changes,dc=ciam-ops
+ciamFingerprint: 47:9B:50:A4:31:88:5C:31:5F:40:D8:9E:D9:F6:73:53:EE:E6:E5:B2:6
+ 3:C7:39:F4:DE:4D:3A:14:28:AE:D7:A2
 ciamIssuedBy: cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops
 ciamIssuer: CN=Example Aero Root CA
 ciamNotAfter: 20350310000000Z

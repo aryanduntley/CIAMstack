@@ -58,5 +58,6 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2066,ou=changes,dc=ciam-ops",Run the partners sign-in service on Microsoft Entra External ID in the target (an external tenant the platform team keeps),CAB 2026-09-18,approved
 "cn=CHG-2067,ou=changes,dc=ciam-ops","Record the tech-pubs team's Amazon Cognito user pool, a relying party of the platform's single sign-on, as a neighbour in production",CAB 2026-09-18,approved
 "cn=CHG-2068,ou=changes,dc=ciam-ops",Record Microsoft's confirmation that the partners external tenant signs with RS256 (the plan's question),CAB 2026-09-18,approved
+"cn=CHG-2069,ou=changes,dc=ciam-ops","Record Example Aero Issuing CA 2's certificate itself, so the source's directory check trusts it",CAB 2026-09-18,approved
 "cn=CHG-2075,ou=changes,dc=ciam-ops",Read the PingAccess servers' own files into the record as the pa-admin and pa-engine host baselines,CAB 2026-09-18,approved
 "cn=CHG-2076,ou=changes,dc=ciam-ops",Scope the PingAccess baselines' AWS agents to AWS environments,CAB 2026-09-18,approved

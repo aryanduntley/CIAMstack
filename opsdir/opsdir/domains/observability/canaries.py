@@ -14,11 +14,19 @@ canary. What it requests, on the service name's ciamFqdn (and its ciamPort):
 - ldap-bind: ldaps://fqdn:port, a simple bind over TLS (port 389 is plain LDAP: not rendered), as the credentials'
   account, else anonymously.
 Its credentials: the first of its ciamUsesRole bound here (a secret reference read at run time, never rendered).
+What it trusts (CanarySpec.trust, pki.chain): when the certificate the service name presents (ciamTlsCertificate) chains
+to CA certificates the record holds (a private CA's), the check is given their recorded PEMs (public material), added
+to its runtime's own trust store, never replacing it, and trusts an intermediate CA as its anchor when no self-issued
+certificate is among them; otherwise its runtime's trust store decides, as before. A CA rotation is a record change:
+the new CA certificate recorded, the checks re-rendered. Managed checks that can't be given a CA (a cloud's standard
+web test or uptime check) leave such a check to the cloud's scripted checks.
 Whether the service name is internal or internet-facing (edge.exposure), and for an internal one the subnets its check
 runs from: those its canary binding names (ciamSubnetRole), else the first subnet role whose subnets the firewall
 rules admit to the service's servers on its port.
 
-Not rendered, and said so: a flow that says nothing a check could do (other), what the record doesn't describe (above);
+Not rendered, and said so: a flow that says nothing a check could do (other), what the record doesn't describe (above),
+a service name whose certificate chains to CA certificates the record holds none of the PEMs of (its runtime wouldn't
+trust it: the check would fail on every run, an alert it feeds paging for nothing);
 a check an overlay inherits from its base (rendered there) is named with it, and one someone else keeps is placed by
 its keeper (governance.keepers). A canary whose service the environment doesn't bind is the planner's blocker, not a
 renderer's concern.
@@ -35,6 +43,7 @@ from urllib.parse import quote
 
 from ...core.directory import follow, one, rdn_of, rdn_value, values
 from ...core.environment import of_class, one_role
+from ...core.findings import owner_label
 from ...core.inventory import duration_seconds
 from ...core.network import covers
 from ...core.notes import RECORD, note
@@ -43,6 +52,7 @@ from ..edge.exposure import service_exposure
 from ..edge.policies import policy_for
 from ..edge.resolve import declared_endpoints, endpoint_query
 from ..network.stack import subnets
+from ..pki.chain import trust_for
 from ..pki.credentials import role_uses
 from .alerts import canaries, starts_nowhere
 from .realized import keeper_of
@@ -53,8 +63,10 @@ from .realized import keeper_of
 # (None when it is), the checked service name's exposure (edge.exposure: internal, internet or None), and the subnet
 # bindings an internal one's check runs from.
 # how: the steps that would let it render (when why), each in words.
+# trust: the pki.chain Trust its service name's certificate needs (the CA PEMs the check is given), or None (its
+# runtime's own trust store decides).
 CanarySpec = namedtuple("CanarySpec", ("canary", "binding", "name", "flow", "url", "every", "secret", "keeper", "why",
-                                       "exposure", "subnets", "how"), defaults=((),))
+                                       "exposure", "subnets", "how", "trust"), defaults=((), None))
 # Why a cloud doesn't render a check (in words, after "not rendered: ") and how to handle it (steps).
 Reason = namedtuple("Reason", ("why", "how"))
 
@@ -159,6 +171,22 @@ def admitted_subnets(m, svc):
     return tuple(s for s in inside if one(s, "ciamBindingRole") == first)
 
 
+def _untrusted(m, svc, cert, trust):
+    """(why, how) of a check whose service name's certificate chains to CA certificates the record holds none of the
+    PEMs of."""
+    chain = trust.chain
+    ca = rdn_value(trust.authority) if trust.authority is not None else rdn_value(chain[0])
+    path = " -> ".join(rdn_value(c) for c in chain)
+    top, nearest = chain[-1], chain[0]
+    which = (f"{rdn_value(top)} (owner: {owner_label(m.d, top)})" if top.norm == nearest.norm else
+             f"{rdn_value(top)} (owner: {owner_label(m.d, top)}), or else {rdn_value(nearest)} (owner: "
+             f"{owner_label(m.d, nearest)}) as the check's anchor")
+    return (f"service name {rdn_value(svc)} presents certificate {rdn_value(cert)}, issued by CA {ca} ({path}), and "
+            "the record holds the certificate (PEM) of none of those CAs: its runtime wouldn't trust it",
+            (f"Record the CA certificate itself (public material, never a key) on {which}: ciamCertificatePem, "
+             f"{RECORD}; the check is then given it to trust",))
+
+
 def _vantage(m, b, svc, exposure):
     if exposure != "internal":
         return ()
@@ -173,9 +201,12 @@ def _spec(m, endpoints, c):
     every = duration_seconds(one(b, "ciamInterval") if b is not None and one(b, "ciamInterval")
                              else one(c, "ciamInterval")) or DEFAULT_EVERY
     url, why, how = _request(m, endpoints, c, svc, flow, secret)
+    cert = follow(m.d, svc, "ciamTlsCertificate")
+    trust = trust_for(m.d, cert)
+    why, how = (why, how) if why or trust is None or trust.pem else _untrusted(m, svc, cert, trust)
     exposure = service_exposure(svc)
     return CanarySpec(c, b, rdn_value(b) if b is not None else rdn_value(c), flow, url, every, secret, keeper_of(m, b),
-                      why, exposure, _vantage(m, b, svc, exposure), how)
+                      why, exposure, _vantage(m, b, svc, exposure), how, trust)
 
 
 def canary_specs(m, endpoints):

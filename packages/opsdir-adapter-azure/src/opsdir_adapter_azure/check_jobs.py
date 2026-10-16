@@ -30,6 +30,10 @@ How the runner gets there is the estate setting azure-check-delivery:
   its identity and secrets (Microsoft's jobs page): a render note says to keep that right to trusted identities.
 - script (a lab's choice): the job runs the base image and reads the runner from an environment variable
   (terraform/checks/check.py through file(), python3 -c exec): nothing is built, nothing signed.
+A check of a service name whose certificate a private CA issued is given the CA certificates the record holds for it
+(canary_specs' trust: their PEMs, public material, base64-encoded in CHECK_CA so the value is one line wherever it is
+written, and CHECK_CA_PARTIAL true when an intermediate CA is the anchor), added to the image's trust store: data,
+so the image is the same for every check; a CA rotation is a record change and a re-render, never a rebuild.
 Its credentials, when it has some, are a Key Vault secret reference (azkv://<vault>/<name>, its JSON holding client_id
 and client_secret, or bind_dn and password, as on AWS) read by the platform into an environment variable: never
 written anywhere opsdir renders.
@@ -52,6 +56,7 @@ Vault secret; no image recorded (image delivery). A check someone else keeps, or
 named with its keeper. Live validation (decision 2841, deferred 2846): Key Vault references and registry pulls from
 Azure Government.
 """
+import base64
 import ipaddress
 import re
 from functools import reduce
@@ -127,7 +132,8 @@ def cron_seconds(expression):
 
 
 # The checks' runner, after the probes (observability.probes): which check it makes from the job's environment variables
-# (data only), its credentials from the one the platform fills from Key Vault (none: an anonymous LDAP bind), the result
+# (data only: the CA certificates it trusts besides the image's too), its credentials from the one the platform fills
+# from Key Vault (none: an anonymous LDAP bind), the result
 # POSTed to Application Insights as an availability result with an Entra token for the job's identity, and the run
 # failed when the check fails. The same text for every job: built into the image, or read from a variable.
 REPORTER = '''
@@ -140,6 +146,8 @@ FLOW = os.environ["CHECK_FLOW"]
 URL = os.environ["CHECK_URL"]
 TEST = os.environ["CHECK_TEST"]
 AUDIENCE = os.environ["CHECK_AUDIENCE"]
+CA = base64.b64decode(os.environ["CHECK_CA"]).decode() if os.environ.get("CHECK_CA") else None
+CA_PARTIAL = os.environ.get("CHECK_CA_PARTIAL") == "true"
 
 
 def _connection():
@@ -188,7 +196,7 @@ def main():
     creds = json.loads(os.environ["CHECK_CREDENTIALS"]) if os.environ.get("CHECK_CREDENTIALS") else None
     start = time.monotonic()
     try:
-        success, message = True, probe(FLOW, URL, creds)
+        success, message = True, probe(FLOW, URL, creds, CA, CA_PARTIAL)
     except Exception as failure:
         success, message = False, f"{type(failure).__name__}: {failure}"
     report(success, message, time.monotonic() - start)
@@ -445,6 +453,8 @@ def _job(m, spec, reason, environment="checks"):
            ("CHECK_TEST", ("value", spec.name)),
            ("CHECK_AUDIENCE", ("value", GOV_AUDIENCE if government(m) else AUDIENCE)),
            ("CHECK_LOCATION", ("value", LOC)),
+           *((("CHECK_CA", ("value", base64.b64encode(spec.trust.pem.encode()).decode())),
+              ("CHECK_CA_PARTIAL", ("value", "true" if spec.trust.partial else "false"))) if spec.trust else ()),
            ("AZURE_CLIENT_ID", ("value", ref(f"{identity}.client_id"))),
            ("APPLICATIONINSIGHTS_CONNECTION_STRING", ("secret_name", "appinsights")),
            *((("CHECK_CREDENTIALS", ("secret_name", "credentials")),) if secret else ()))

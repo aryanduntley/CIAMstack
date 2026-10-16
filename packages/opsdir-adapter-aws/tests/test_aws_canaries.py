@@ -9,6 +9,7 @@ from opsdir.domains.observability.naming import CANARIES
 from opsdir_format_terraform.hcl import as_text
 from opsdir_adapter_aws.canaries import render_canaries
 from network_fixtures import ALPHA, entry, model, rule
+from pki_samples import CA_PEM, CERTIFICATES, private_chain
 
 ENDPOINTS = (Endpoint("health", "/pf/heartbeat.ping", "web"), Endpoint("token", "/as/token.oauth2", "web"),
              Endpoint("saml-start", "/idp/startSSO.ping", "web", query="PartnerSpId={entity}"))
@@ -168,3 +169,25 @@ def test_what_a_canary_cant_run_is_a_render_note_with_how_to_handle_it():
     assert intranet.how == ("Name the subnet role it runs from on its canary binding (ciamSubnetRole), or record a "
                             "firewall rule admitting a subnet to web, under an approved change, and re-render",)
     assert {n.severity for n in notes} == {"action"} and all(n.area == "Monitoring" for n in notes)
+
+
+PRIVATE_SSO = BINDINGS[0].replace("ciamExposure: internet\n",
+                                  f"ciamExposure: internet\nciamTlsCertificate: cn=svc-cert,{CERTIFICATES}\n")
+
+
+def test_a_canary_of_a_service_a_private_ca_certified_is_given_the_ca_the_record_holds():
+    _, alpha, _ = model(alpha=(PRIVATE_SSO, *BINDINGS[1:], ALIVE), tree=(*TREE, *private_chain()))
+    _, scripts = as_text(render_canaries(alpha, ENDPOINTS))
+    script = scripts["terraform/canaries/ciam-sso-alive/python/canary.py"]
+    ast.parse(script)
+    assert f"CA = {CA_PEM!r}\nCA_PARTIAL = False\n" in script                 # a self-issued root: no partial chain
+    assert "probe(FLOW, URL, creds, CA, CA_PARTIAL)" in script
+    assert "CA = None\nCA_PARTIAL = False\n" in _render(ALIVE)[1]["terraform/canaries/ciam-sso-alive/python/canary.py"]
+
+
+def test_a_canary_whose_private_ca_the_record_holds_no_pem_of_is_named_not_rendered():
+    _, alpha, _ = model(alpha=(PRIVATE_SSO, *BINDINGS[1:], ALIVE), tree=(*TREE, *private_chain(pem=None)))
+    hcl, scripts = as_text(render_canaries(alpha, ENDPOINTS))
+    assert "terraform/canaries/ciam-sso-alive/python/canary.py" not in scripts
+    assert ("NOTE: canary sso-alive: not rendered: service name svc-sso presents certificate svc-cert, issued by CA "
+            "private-root (private-root)") in "\n".join(hcl)

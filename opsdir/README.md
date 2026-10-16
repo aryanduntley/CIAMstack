@@ -252,9 +252,13 @@ Every render's NOTES.md and NOTES.json list what it could not do or leaves to a 
 (the owners of what it concerns, else the environment's) and how, as a blocker, an action or a note; the files' `NOTE`
 comments not yet classified are listed to review. `opsdir render` prints the counts and each blocker; `opsdir check`
 lists every environment's render blockers and actions (without rendering it), and the plan raises the target's as
-findings. `opsdir report canary-coverage` shows, per environment, which synthetic checks it renders and why not. An
-adapter that renders synthetic checks declares it (`renders_synthetic_checks`): an environment none of whose adapters
-does has every canary it could run as a note of its own.
+findings. `opsdir report canary-coverage` shows, per environment, which synthetic checks it renders and why not, and
+which CA certificates a check is given to trust. An adapter that renders synthetic checks declares it
+(`renders_synthetic_checks`): an environment none of whose adapters does has every canary it could run as a note of its
+own. A check of a service whose certificate chains to CA certificates the record holds (`pki.chain`) is given their
+recorded PEMs (`ciamCertificatePem`), added to its runtime's trust store: a CA's certificate is public material (R4
+covers keys and secrets), so a CA rotation is a record change and a re-render; when none of those PEMs is recorded, the
+check isn't rendered and its render note says which CA certificate to record.
 
 Every render's MANIFEST.json records who asked (`requester`: `--as`, default the database login) and, for a scoped
 render, its `scope` (kind and value). A migration's target render records them too: its scope is the whole

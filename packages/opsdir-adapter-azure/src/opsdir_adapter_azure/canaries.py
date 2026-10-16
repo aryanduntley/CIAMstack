@@ -12,8 +12,9 @@ belong to is the root's input application_insights_id (the record doesn't name i
 
 Not rendered, and said so: what canary_specs names. The other checks (an oidc-token check: a standard test sends one
 request and can't read a secret when it runs; an ldap-bind check; any check of a service name that isn't
-internet-facing: the test locations reach public endpoints only) are scripted checks (check_jobs: Container Apps
-jobs). A test someone else keeps, or an overlay inherits from its base, is named with its keeper.
+internet-facing: the test locations reach public endpoints only; a check that must trust a private CA: a standard test
+takes no CA certificate) are scripted checks (check_jobs: Container Apps jobs). A test someone else keeps, or an
+overlay inherits from its base, is named with its keeper.
 """
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.notes import note_comment
@@ -30,8 +31,9 @@ GOVERNMENT_LOCATIONS = ("usgov-va-azr", "usgov-phx-azr", "usgov-tx-azr", "usgov-
 
 
 def standard(spec):
-    """Whether a standard web test makes a check: a flow one GET answers, of an internet-facing service name."""
-    return spec.flow in GET_FLOWS and spec.exposure == "internet"
+    """Whether a standard web test makes a check: a flow one GET answers, of an internet-facing service name whose
+    certificate needs no CA the check must be given (a standard test takes none)."""
+    return spec.flow in GET_FLOWS and spec.exposure == "internet" and spec.trust is None
 
 
 def insights_input():

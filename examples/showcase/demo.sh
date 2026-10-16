@@ -280,6 +280,12 @@ od modify --change CHG-2066 changes/CHG-2066-target-partners-external-id.ldif
 od modify --change CHG-2067 changes/CHG-2067-source-tech-pubs-user-pool.ldif
 od modify --change CHG-2068 changes/CHG-2068-external-id-signing-answer.ldif
 od report managed-identity
+echo "-- the directory's LDAPS certificate chains to Example Aero Issuing CA 2 (CHG-2051), which no check runtime trusts:"
+echo "   the source's directory-bind canary isn't rendered until the CA's certificate is recorded (CHG-2069, public"
+echo "   material); then it is given it to trust"
+od report canary-coverage
+od modify --change CHG-2069 changes/CHG-2069-issuing-ca-certificate.ldif
+od report canary-coverage
 echo "-- the PingAccess servers' own files read in as the pa-admin and pa-engine host baselines (CHG-2075), their AWS"
 echo "   agents then scoped to AWS environments (CHG-2076), so the target's VMs can be checked against them"
 od import --change CHG-2075 --at 20260923090000Z linux/baseline exports/hosts-pingaccess

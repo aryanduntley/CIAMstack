@@ -426,17 +426,17 @@
     "terraform/canaries/directory-bind/python/canary.py": {
       "scope": "environment-specific",
       "format": "python",
-      "sha256": "41f42b186d592b6956c9c05caf4a8e2885c241b1a0be42010d947038268337ec"
+      "sha256": "619180321cec05e72b2e487969c49a8d2cdabb3c0e114cf604413efb238e1d23"
     },
     "terraform/canaries/portal-sso/python/canary.py": {
       "scope": "environment-specific",
       "format": "python",
-      "sha256": "8d3bf4c2850eafd209c4d448700334c6052832218d7012dc2e97c8179ce7348f"
+      "sha256": "93d90aeaed9f603b7b5d98f18e1911ff29aca4ae89075102d76016f1e90d7126"
     },
     "terraform/canaries/sso-login/python/canary.py": {
       "scope": "environment-specific",
       "format": "python",
-      "sha256": "0bfa635d06e826de6c827b437a836ca8a07293c71c2ed451f10d064130b47b2a"
+      "sha256": "869b14bfa0d7c736eeb1ae613e09c28c0398bf3aa7f9780a7b0b39578588b268"
     },
     "terraform/discovery/ciam-prod-macie-macie-backups/handler.py": {
       "scope": "environment-specific",

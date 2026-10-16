@@ -346,7 +346,7 @@
     "images/ciam-check/check.py": {
       "scope": "environment-specific",
       "format": "python",
-      "sha256": "bc3d4b357fc39a102bc1dc25d79f3e9d749abc59cc489b6a78f6b9e1a016a510"
+      "sha256": "e7cfb0212804c47989c1e25b77729914fdee56fa9a9d527f4b9c811e523e86e1"
     },
     "kubernetes/azure-monitor/aks/container-azm-ms-agentconfig.yaml": {
       "scope": "environment-specific",

@@ -11,19 +11,31 @@ import urllib.request
 TIMEOUT = 10
 
 
-def get(url):
-    """GET the URL, redirects followed: urllib raises on an answer of 400 or more."""
-    with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=TIMEOUT) as response:
+def context(ca=None, partial=False):
+    """The TLS context a check verifies certificates with: the runtime's trust store, plus the CA certificates (PEM)
+    the check is given, added, never replacing it; partial: the intermediate CA given is trusted as the anchor."""
+    tls = ssl.create_default_context()
+    if ca:
+        tls.load_verify_locations(cadata=ca)
+        if partial:
+            tls.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+    return tls
+
+
+def get(url, tls=None):
+    """GET the URL, redirects followed (each with the same TLS context): urllib raises on an answer of 400 or more."""
+    with urllib.request.urlopen(urllib.request.Request(url, method="GET"), timeout=TIMEOUT,
+                                context=tls or context()) as response:
         return f"HTTP {response.status}"
 
 
-def token(url, creds):
+def token(url, creds, tls=None):
     """A client-credentials grant at the token endpoint must return an access token."""
     basic = base64.b64encode(f"{creds['client_id']}:{creds['client_secret']}".encode()).decode()
     request = urllib.request.Request(url, data=urllib.parse.urlencode({"grant_type": "client_credentials"}).encode(),
                                      method="POST", headers={"Authorization": f"Basic {basic}",
                                                              "Content-Type": "application/x-www-form-urlencoded"})
-    with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
+    with urllib.request.urlopen(request, timeout=TIMEOUT, context=tls or context()) as response:
         if not json.loads(response.read()).get("access_token"):
             raise Exception(f"{url}: no access_token in the answer")
         return f"HTTP {response.status}, access token issued"
@@ -65,13 +77,13 @@ def _parts(body):
     return parts
 
 
-def ldap_bind(url, creds):
+def ldap_bind(url, creds, tls=None):
     """An LDAP simple bind over TLS must succeed (result code 0); anonymous without creds."""
     dn, password = (creds["bind_dn"], creds["password"]) if creds else ("", "")
     bind = _element(0x60, _element(0x02, b"\x03") + _element(0x04, dn.encode()) + _element(0x80, password.encode()))
     where = urllib.parse.urlsplit(url)
     with socket.create_connection((where.hostname, where.port), timeout=TIMEOUT) as raw:
-        with ssl.create_default_context().wrap_socket(raw, server_hostname=where.hostname) as stream:
+        with (tls or context()).wrap_socket(raw, server_hostname=where.hostname) as stream:
             stream.sendall(_element(0x30, _element(0x02, b"\x01") + bind))
             (_, _), (op, result) = _parts(_response(stream))[:2]
     code = _parts(result)[0][1][0] if op == 0x61 else None
@@ -80,9 +92,12 @@ def ldap_bind(url, creds):
     return f"bound as {dn or 'anonymous'}"
 
 
-def probe(flow, url, creds):
-    """The check a flow makes: what to log when it passes; raises when it fails."""
-    return token(url, creds) if flow == "oidc-token" else ldap_bind(url, creds) if flow == "ldap-bind" else get(url)
+def probe(flow, url, creds, ca=None, partial=False):
+    """The check a flow makes, trusting the CA certificates it is given (ca, partial: context): what to log when it
+    passes; raises when it fails."""
+    tls = context(ca, partial)
+    return (token(url, creds, tls) if flow == "oidc-token" else ldap_bind(url, creds, tls) if flow == "ldap-bind"
+            else get(url, tls))
 
 import boto3
 from aws_synthetics.common import synthetics_logger as logger
@@ -90,10 +105,12 @@ from aws_synthetics.common import synthetics_logger as logger
 FLOW = 'oidc-token'
 URL = 'https://sso.example-aero.test/as/token.oauth2'
 SECRET_ID = 'arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/canary-client'
+CA = None
+CA_PARTIAL = False
 
 
 def handler(event, context):
     """oidc-token check of URL: the probe raises when it fails, failing the canary."""
     creds = (json.loads(boto3.client("secretsmanager").get_secret_value(SecretId=SECRET_ID)["SecretString"])
              if SECRET_ID else None)
-    logger.info(f"{URL}: {probe(FLOW, URL, creds)}")
+    logger.info(f"{URL}: {probe(FLOW, URL, creds, CA, CA_PARTIAL)}")

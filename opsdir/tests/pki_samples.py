@@ -25,3 +25,14 @@ def ca_records(cn="internal-ca", pem=CA_PEM, fingerprint=CA_FINGERPRINT):
     return (f"dn: {CERTIFICATES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: certificates\n",
             f"dn: cn={cn},{CERTIFICATES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamCertificate\n"
             f"cn: {cn}\nciamFingerprint: {fingerprint}\nciamNotAfter: 20310115000000Z\nciamCertPurpose: ca\n{pem_line}")
+
+
+def private_chain(leaf="svc-cert", root="private-root", pem=CA_PEM):
+    """LDIF records: the certificates branch, a private root CA (self-issued; its PEM when pem is given) and the
+    certificate leaf it issued (what a service name presents: ciamTlsCertificate cn=<leaf>)."""
+    branch, ca = ca_records(root, pem)
+    return (branch,
+            ca + "ciamSubject: CN=Private Root CA\nciamIssuer: CN=Private Root CA\n",
+            f"dn: cn={leaf},{CERTIFICATES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamCertificate\n"
+            f"cn: {leaf}\nciamFingerprint: AA:BB\nciamNotAfter: 20310115000000Z\nciamCertPurpose: tls-server\n"
+            f"ciamIssuer: CN=Private Root CA\n")

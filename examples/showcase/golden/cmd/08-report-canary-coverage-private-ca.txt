@@ -1,0 +1,19 @@
+environment   canary          flow        owner          rendered
+------------  --------------  ----------  -------------  ----------------------------------------------------------------------
+hq/lab        directory-bind  ldap-bind   ciam-platform  NO (blocker): no adapter in hq/lab's stack renders synthetic checks (its provider: onprem)
+hq/lab        portal-sso      saml-sso    ciam-platform  NO (blocker): no adapter in hq/lab's stack renders synthetic checks (its provider: onprem)
+hq/lab        sso-login       oidc-token  ciam-platform  NO (blocker): no adapter in hq/lab's stack renders synthetic checks (its provider: onprem)
+source/prod   directory-bind  ldap-bind   ciam-platform  NO (blocker): service name svc-ldaps presents certificate ds-ldaps-2026, issued by CA Example Aero Issuing CA 2 (example-aero-issuing-ca-2 -> example-aero-corp-root-ca), and the record holds the certificate (PEM) of none of those CAs: its runtime wouldn't trust it
+source/prod   portal-sso      saml-sso    ciam-platform  yes
+source/prod   sso-login       oidc-token  ciam-platform  yes
+standby/prod  directory-bind  ldap-bind   ciam-platform  NO (blocker): service name svc-ldaps presents certificate ds-ldaps-2026, issued by CA Example Aero Issuing CA 2 (example-aero-issuing-ca-2 -> example-aero-corp-root-ca), and the record holds the certificate (PEM) of none of those CAs: its runtime wouldn't trust it
+standby/prod  portal-sso      saml-sso    ciam-platform  NO (blocker): the environment is an Assured Workloads workload (ITAR), where Google supports neither uptime checks nor synthetic monitors (their requests may come from any uptime region)
+standby/prod  sso-login       oidc-token  ciam-platform  NO (blocker): the environment is an Assured Workloads workload (ITAR), where Google supports neither uptime checks nor synthetic monitors (their requests may come from any uptime region)
+target/prod   directory-bind  ldap-bind   ciam-platform  yes
+target/prod   portal-sso      saml-sso    ciam-platform  yes
+target/prod   sso-login       oidc-token  ciam-platform  yes
+source/stage  directory-bind  ldap-bind   ciam-platform  inherited or kept: source/prod (this environment inherits it)
+source/stage  portal-sso      saml-sso    ciam-platform  inherited or kept: source/prod (this environment inherits it)
+source/stage  sso-login       oidc-token  ciam-platform  inherited or kept: source/prod (this environment inherits it)
+(15 rows)
+exit 0

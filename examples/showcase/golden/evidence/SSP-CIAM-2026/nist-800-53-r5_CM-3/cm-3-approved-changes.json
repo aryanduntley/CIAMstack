@@ -361,6 +361,12 @@
       "approved"
     ],
     [
+      "cn=CHG-2069,ou=changes,dc=ciam-ops",
+      "Record Example Aero Issuing CA 2's certificate itself, so the source's directory check trusts it",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
       "cn=CHG-2075,ou=changes,dc=ciam-ops",
       "Read the PingAccess servers' own files into the record as the pa-admin and pa-engine host baselines",
       "CAB 2026-09-18",

@@ -1,0 +1,28 @@
+# CHG-2069 (approved): record Example Aero Issuing CA 2's certificate itself (public material, from the CA's own
+# export: never a key), correcting the fingerprint CHG-2051 typed in from the console. The directory's LDAPS
+# certificate (ds-ldaps-2026) chains to it, and no check runtime trusts the corporate root: with the CA certificate
+# recorded, the source's directory-bind canary is given it to trust (the intermediate as the anchor: the root's
+# certificate itself isn't recorded) instead of being left unrendered. (The standby's check still isn't rendered:
+# Google runs no synthetic checks in its Assured Workloads boundary.)
+dn: cn=example-aero-issuing-ca-2,ou=certificates,dc=ciam-ops
+changetype: modify
+replace: ciamFingerprint
+ciamFingerprint: 47:9B:50:A4:31:88:5C:31:5F:40:D8:9E:D9:F6:73:53:EE:E6:E5:B2:63:C7:39:F4:DE:4D:3A:14:28:AE:D7:A2
+-
+add: ciamCertificatePem
+ciamCertificatePem:: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJtekNDQVVHZ0F3S
+ UJBZ0lFS2lzc0xUQUtCZ2dxaGtqT1BRUURBakFmTVIwd0d3WURWUVFEREJSRmVHRnQKY0d4bElFRm
+ xjbThnVW05dmRDQkRRVEFlRncweU5UQXpNVEF3TURBd01EQmFGdzB6TlRBek1UQXdNREF3TURCYQp
+ NQ1F4SWpBZ0JnTlZCQU1NR1VWNFlXMXdiR1VnUVdWeWJ5QkpjM04xYVc1bklFTkJJREl3V1RBVEJn
+ Y3Foa2pPClBRSUJCZ2dxaGtqT1BRTUJCd05DQUFTVFcwYXdoL3F6TVJFVFA1OVUzVlJhd2V1RWxBe
+ GNiQ0xBMFJQWSs5WTcKSjdkTVk1bzZRMG0rWnlod0NhYWljUlcvaFJVV24welFYVGpFVVd5Q2FicT
+ dvMll3WkRBU0JnTlZIUk1CQWY4RQpDREFHQVFIL0FnRUFNQTRHQTFVZER3RUIvd1FFQXdJQkJqQWR
+ CZ05WSFE0RUZnUVVBTEpnTml0cUNnUjIyYUVTCnp5Y3NMekw3bHIwd0h3WURWUjBqQkJnd0ZvQVVo
+ bjFsL1VDL1VnNG5IV2o5TzNBeXloS1VIVnd3Q2dZSUtvWkkKemowRUF3SURTQUF3UlFJZ0pnb3hsM
+ W9qTmdnVWxqMkFYNFRoR3F4S29wNHlRZWsvLzAvSUI3RHpCY2tDSVFEUgpXNzE1OTlkOER2V3ZvT0
+ JPb0pMa2pTYStsbnE5TGltNkQ2TFFTSG1mVGc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=
+ =
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2069,ou=changes,dc=ciam-ops
+-

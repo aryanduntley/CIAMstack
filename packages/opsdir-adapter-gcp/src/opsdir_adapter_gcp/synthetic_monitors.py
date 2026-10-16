@@ -2,7 +2,10 @@
 synthetic monitors: the checks no uptime check makes (canaries.standard): an oidc-token check (it reads its
 credentials when it runs) and an ldap-bind check (not HTTP), of a public or an internal service name, and every check
 of an internal service name, its GETs included (decision 2859: Google's private uptime checks don't follow redirects
-or validate certificates; the probes do). Decision 2833, research 2832, 2840, 2848, 2857. Pure.
+or validate certificates; the probes do), and any check that must trust a private CA (an uptime check takes no CA
+certificate): it is given the CA certificates the record holds for it (canary_specs' trust: their PEMs, public
+material, in index.js, added to Node.js's own roots; CHECK_CA_PARTIAL when an intermediate CA is the anchor); a CA
+rotation is a record change and a re-render. Decision 2833, research 2832, 2840, 2848, 2857. Pure.
 
 Each is a 2nd gen Cloud Run function (google_cloudfunctions2_function named as its canary binding: lowercase letters,
 digits and -) in Node.js (nodejs24, the newest GA runtime), its source opsdir renders (terraform/checks/<name>/:
@@ -61,7 +64,8 @@ BUILD_ROLES = ("roles/logging.logWriter", "roles/artifactregistry.writer")
 MOUNT, CREDENTIALS_FILE = "/etc/secrets/check", "credentials"
 
 # The function's handler, after the probes (observability.probes NODE_PROBES): the credentials read from the mounted
-# secret at each run (null: none, an anonymous LDAP bind), the probe run; a rejection fails the synthetic monitor.
+# secret at each run (null: none, an anonymous LDAP bind), the probe run trusting the CA certificates it is given
+# besides Node.js's roots (null: none); a rejection fails the synthetic monitor.
 HANDLER = '''
 const fs = require("fs");
 const functions = require("@google-cloud/functions-framework");
@@ -70,11 +74,13 @@ const {{runSyntheticHandler}} = require("@google-cloud/synthetics-sdk-api");
 const CHECK_FLOW = {flow};
 const CHECK_URL = {url};
 const CREDENTIALS = {credentials};
+const CHECK_CA = {ca};
+const CHECK_CA_PARTIAL = {partial};
 
 functions.http("{entry}", runSyntheticHandler(async ({{logger}}) => {{
   // The {flow_text} check of CHECK_URL: the probe rejects when it fails, failing the synthetic monitor.
   const creds = CREDENTIALS ? JSON.parse(fs.readFileSync(CREDENTIALS, "utf8")) : null;
-  logger.info(`${{CHECK_URL}}: ${{await probe(CHECK_FLOW, CHECK_URL, creds)}}`);
+  logger.info(`${{CHECK_URL}}: ${{await probe(CHECK_FLOW, CHECK_URL, creds, CHECK_CA, CHECK_CA_PARTIAL)}}`);
 }}));
 '''
 
@@ -100,7 +106,9 @@ def index_js(m, spec):
     return (header(m, f"Cloud Monitoring synthetic monitor {check_name(spec.name)} ({spec.flow})", JAVASCRIPT)
             + NODE_PROBES + HANDLER.format(
                 flow=json.dumps(spec.flow), url=json.dumps(spec.url), entry=ENTRY, flow_text=spec.flow,
-                credentials=json.dumps(f"{MOUNT}/{CREDENTIALS_FILE}" if spec.secret is not None else None)))
+                credentials=json.dumps(f"{MOUNT}/{CREDENTIALS_FILE}" if spec.secret is not None else None),
+                ca=json.dumps(spec.trust.pem if spec.trust is not None else None),
+                partial=json.dumps(bool(spec.trust is not None and spec.trust.partial))))
 
 
 def package_json(m, spec):
