@@ -16,8 +16,10 @@ from .overlays import (apply_overrides, declared_roles, effective_bindings, effe
 UNBOUND = "UNBOUND:"              # a value from a role the environment doesn't bind: UNBOUND:<role>
 
 # One declared component of an environment's stack: the adapter (by registered name) that fills a role, the adapter
-# versions it accepts and where to get it (or None), and the adapter's render targets it renders (() = its defaults).
-StackComponent = namedtuple("StackComponent", ("role", "adapter", "versions", "source", "targets"), defaults=((),))
+# versions it accepts and where to get it (or None), the adapter's render targets it renders (() = its defaults) and
+# the offering of its product that fills the role (ciamOffering, adapter vocabulary; None = the adapter's default).
+StackComponent = namedtuple("StackComponent", ("role", "adapter", "versions", "source", "targets", "offering"),
+                            defaults=((), None))
 # The slice of an environment a render writes (5.7): kind environment (all of it, value ()), keeper (value: the party's
 # DN), class (value: object class names) or bindings (value: the entries' DNs); governance.keepers places by it.
 Scope = NamedTuple("Scope", [("kind", str), ("value", tuple)])
@@ -57,7 +59,13 @@ def environment_at(d, path):
 
 def stack_component(e):
     return StackComponent(one(e, "ciamStackRole"), one(e, "ciamAdapter"), one(e, "ciamAdapterVersion"),
-                          one(e, "ciamAdapterSource"), tuple(values(e, "ciamRenderTarget")))
+                          one(e, "ciamAdapterSource"), tuple(values(e, "ciamRenderTarget")), one(e, "ciamOffering"))
+
+
+def offering(m, adapter, default):
+    """The offering of its product environment m's stack declares for the components an adapter fills
+    (ciamOffering), or default when none records one."""
+    return next((c.offering for c in m.stack if c.adapter == adapter and c.offering), default)
 
 
 def _with_role(bindings, role):

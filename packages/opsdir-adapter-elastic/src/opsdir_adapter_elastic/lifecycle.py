@@ -18,11 +18,18 @@ kept that much longer in all.
 Named instead (lifecycle_notes): a stream recording no retention (nothing rendered), streams sharing a dataset (its
 component template attaches one policy to all of them), when the policy takes effect (backing indices created from the
 next rollover, through templates composing the hook) and an archive the record keeps no place for.
+
+Elastic Cloud Serverless (the stack component's ciamOffering serverless, decision on task 555) has no index lifecycle
+and no snapshots: a stream keeps logs as long as its data stream lifecycle says, set on the stream itself (PUT
+_data_stream/<stream>/_lifecycle with data_retention <ciamRetentionDays>d; none when kept indefinitely), so nothing is
+shared by a dataset's streams. Named instead: when it takes effect (once Fleet has created the stream), the project's
+maximum retention capping it, the project's default applying to a stream kept indefinitely, and an archive Serverless
+can't keep (a blocker: the logs are deleted after their searchable days).
 """
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.notes import RECORD, note
 from opsdir.domains.observability.retention import INDEFINITE, retention_days
-from .naming import custom_template, kept_streams, policy_name, stream_name
+from .naming import custom_template, kept_streams, policy_name, serverless, stream_name
 
 ROLLOVER = {"max_age": "1d", "max_primary_shard_size": "50gb"}
 SNAPSHOT_SCHEDULE = "0 30 1 * * ?"          # every day at 01:30 (Elasticsearch's cron, seconds first)
@@ -77,6 +84,22 @@ def slm_policy(b):
         **({"retention": {"expire_after": f"{days}d"}} if days != INDEFINITE else {})}}
 
 
+def data_stream_lifecycle(b):
+    """(stream, its data stream lifecycle as GET _data_stream/<stream>/_lifecycle answers it) of data stream destination
+    b, what PUT _data_stream/<stream>/_lifecycle takes: data_retention its searchable days (none when kept
+    indefinitely); None when it records no retention."""
+    days, stream = retention_days(b), stream_name(b)
+    if days is None:
+        return None
+    return stream, {"enabled": True, **({"data_retention": f"{days}d"} if days != INDEFINITE else {})}
+
+
+def lifecycle_streams(m):
+    """Environment m's kept data streams whose data stream lifecycle renders (on Serverless): those recording a
+    retention."""
+    return tuple(b for b in kept_streams(m) if retention_days(b) is not None)
+
+
 def _attached(m):
     """{component template: the first kept stream of its dataset recording a retention}: what each dataset's hook
     attaches."""
@@ -123,16 +146,67 @@ def _shared_notes(m):
     return tuple(of(b) for b in later)
 
 
-def lifecycle_notes(m):
-    """The render notes of environment m's data streams' retention: none recorded (a note), streams sharing a dataset
-    (a note when they keep logs as long, else a blocker), when each policy takes effect (an action) and an archive
-    with no place recorded (an action)."""
+def _unrecorded(m, rendered):
+    return tuple(note("Logs", "note", f"Elastic data stream {stream_name(b)}", "records no retention "
+                      f"(ciamRetentionDays): no {rendered} rendered, so the stream keeps what "
+                      f"{'the project' if serverless(m) else 'its index template'} says",
+                      ("Read what Elastic keeps into the record (elastic/elasticsearch), or record the retention the "
+                       "obligations need",), b.dn, m.label)
+                 for b in kept_streams(m) if retention_days(b) is None)
+
+
+def _serverless_notes(m):
+    found = lifecycle_streams(m)
+    longest = max((retention_days(b) for b in found if retention_days(b) != INDEFINITE), default=None)
     return (
-        *(note("Logs", "note", f"Elastic data stream {stream_name(b)}", "records no retention (ciamRetentionDays): no "
-               "lifecycle policy rendered, so the stream keeps what its index template says",
-               ("Read what Elastic keeps into the record (elastic/elasticsearch), or record the retention the "
+        *_unrecorded(m, "data stream lifecycle"),
+        *(note("Logs", "action", f"Elastic data stream {stream_name(b)}", "its data stream lifecycle is set on the "
+               "stream itself, which Fleet creates at its first event: until then PUT "
+               f"_data_stream/{stream_name(b)}/_lifecycle (and terraform apply) fails",
+               ("Apply it once the stream has received its first event",
+                f"Check what the stream keeps: GET _data_stream/{stream_name(b)}/_lifecycle (effective_retention)"),
+               b.dn, m.label)
+          for b in found),
+        *((note("Logs", "action", "Elastic Cloud Serverless retention", f"its streams keep logs up to {longest} days "
+                "searchable, and the project's maximum data retention caps every stream's",
+                (f"Confirm the Serverless project's maximum retention is at least {longest} days (a Security "
+                 "project's search_lake max_retention_days: 396 unless changed)",), None, m.label),)
+          if longest is not None else ()),
+        *(note("Logs", "note", f"Elastic data stream {stream_name(b)}", "kept indefinitely: no data_retention "
+               "rendered, so the project's default retention applies to it",
+               ("Set the Serverless project's default and maximum retention to unlimited, or record the days the "
                 "obligations need",), b.dn, m.label)
-          for b in kept_streams(m) if retention_days(b) is None),
+          for b in found if retention_days(b) == INDEFINITE),
+        *map(_no_archive(m), (b for b in found if archive_days(b) is not None or one(b, "ciamArchiveRef"))))
+
+
+def _no_archive(m):
+    def of(b):
+        total, where = one(b, "ciamTotalRetentionDays"), one(b, "ciamArchiveRef")
+        kept = f"{total} in all" if archive_days(b) is not None else "no longer in all"
+        # logs kept longer in all are lost (a blocker); an archive recorded with no days past the searchable ones
+        # loses nothing, it names a place Serverless doesn't have (an action)
+        severity = "blocker" if archive_days(b) is not None else "action"
+        return note("Logs", severity, f"Elastic data stream {stream_name(b)}", f"keeps logs {retention_days(b)} days "
+                    f"searchable and {kept}{', archived in ' + where if where else ''}, but Elastic Cloud Serverless "
+                    f"keeps no archive to restore (no snapshots): they are deleted after {retention_days(b)} days",
+                    ((f"Keep them searchable as long as in all (ciamRetentionDays {total}), {RECORD}",
+                      "Or route a copy of the logs to a destination that archives them")
+                     if archive_days(b) is not None else
+                     (f"Remove ciamArchiveRef from {rdn_value(b)}: Serverless has no snapshot repository, {RECORD}",)),
+                    b.dn, m.label)
+    return of
+
+
+def lifecycle_notes(m):
+    """The render notes of environment m's data streams' retention. Stateful: none recorded (a note), streams sharing
+    a dataset (a note when they keep logs as long, else a blocker), when each policy takes effect (an action) and an
+    archive with no place recorded (an action). Serverless: none recorded (a note), when each lifecycle takes effect
+    and the project's maximum retention (actions), kept indefinitely (a note) and an archive (a blocker)."""
+    if serverless(m):
+        return _serverless_notes(m)
+    return (
+        *_unrecorded(m, "lifecycle policy"),
         *_shared_notes(m),
         *(note("Logs", "action", f"Elastic data stream {stream_name(b)}", f"{policy_name(stream_name(b))} is attached "
                f"through the component template {custom_template(stream_name(b))}, which takes effect for the "

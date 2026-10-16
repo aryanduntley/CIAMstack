@@ -1,6 +1,8 @@
 """Elastic names: which log destinations are Elastic Security data streams this add-on keeps, the names of what it
 renders for one (its index lifecycle policy, the component template attaching it, its snapshot policy), the search
-languages of Elastic's detection rules, and the estate setting naming the Kibana space the rules live in. Pure.
+languages of Elastic's detection rules, the offerings of Elastic its stack component can declare (ciamOffering), the
+names of the Fleet policies it renders, and the estate settings naming the Kibana space the rules live in and the
+integration package versions the Fleet policies use. Pure.
 
 A log destination of kind siem-index whose provider reference is a logs data stream named as Elastic names them
 (logs-<dataset>-<namespace>: dataset and namespace lowercase letters, digits, dots and underscores, neither starting
@@ -12,6 +14,7 @@ import re
 
 from opsdir.core.contract import Setting
 from opsdir.core.directory import one
+from opsdir.core.environment import offering
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.siem import is_siem, siem_destinations
 
@@ -22,10 +25,25 @@ NATIVE = "esql"                     # ciamSearchLanguage of an ES|QL search: the
 # the languages Elastic's detection rules search in (ciamSearchLanguage): ES|QL, KQL (kuery), Lucene, EQL
 LANGUAGES = (NATIVE, "kuery", "lucene", "eql")
 
+ADAPTER_NAME = "elastic"
+# the offerings of Elastic a stack component of this adapter can declare (ciamOffering): stateful, its default, for
+# self-managed Elasticsearch, ECE, ECK and Elastic Cloud Hosted (index lifecycle and snapshot policies), and Elastic
+# Cloud Serverless (the data stream lifecycle only, no snapshots)
+STATEFUL, SERVERLESS = "stateful", "serverless"
+OFFERINGS = (STATEFUL, SERVERLESS)
+
 KIBANA_SPACE = Setting("elastic-kibana-space", "string", "default",
                        "The Kibana space Elastic Security's detection rules live in: opsdir renders them there and "
                        "reads them from there (default: Kibana's default space)")
-SETTINGS = (KIBANA_SPACE,)
+FILESTREAM_VERSION = Setting("elastic-filestream-version", "string", "2.5.1",
+                             "The version of Elastic's Custom Logs (Filestream) integration package (filestream) the "
+                             "Fleet policies shipping log files use (default: the current release, which needs Kibana "
+                             "9.4 or later; 1.2.0 is the latest for Kibana 8.19)")
+KUBERNETES_VERSION = Setting("elastic-kubernetes-version", "string", "1.85.5",
+                             "The version of Elastic's Kubernetes integration package (kubernetes) the Fleet policies "
+                             "shipping container output use (default: the current release, which needs Kibana 9.5 or "
+                             "later; 1.83.1 is the latest for Kibana 8.19)")
+SETTINGS = (KIBANA_SPACE, FILESTREAM_VERSION, KUBERNETES_VERSION)
 
 
 def stream_name(b):
@@ -38,6 +56,12 @@ def stream_name(b):
 def is_stream(name):
     """Whether name is a logs data stream name as Elastic names them (logs-<dataset>-<namespace>)."""
     return bool(_STREAM.match(name or ""))
+
+
+def stream_parts(name):
+    """(type, dataset, namespace) of a data stream name (logs-<dataset>-<namespace>)."""
+    found = _STREAM.match(name)
+    return found.group("type"), found.group("dataset"), found.group("namespace")
 
 
 def dataset_of(name):
@@ -55,6 +79,17 @@ def custom_template(name):
 def policy_name(name):
     """The ILM (and SLM) policy the render names after a data stream: opsdir-<stream>."""
     return POLICY_PREFIX + name
+
+
+def serverless(m):
+    """Whether environment m's stack declares its Elastic component Elastic Cloud Serverless (ciamOffering)."""
+    return offering(m, ADAPTER_NAME, STATEFUL) == SERVERLESS
+
+
+def fleet_name(m, *parts):
+    """The name (and ID) of a Fleet policy the render writes for environment m: opsdir-<cloud>-<env>-<part>-..., each
+    part lowercased with runs of other characters than letters and digits made a dash."""
+    return "-".join(("opsdir", *(re.sub(r"[^a-z0-9]+", "-", p.lower()).strip("-") for p in (m.label, *parts))))
 
 
 def keeps(m, b):

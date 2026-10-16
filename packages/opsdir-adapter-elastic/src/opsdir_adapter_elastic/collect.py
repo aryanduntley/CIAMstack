@@ -8,10 +8,11 @@ Authorization: ApiKey <key> when its ciamCredentialScheme is api-key (an Elastic
 to read with a dedicated reader), as Bearer for bearer, else as HTTP Basic for its ciamLoginName, and the CA
 certificate its ciamCaRole binding references as the trust anchor.
 
-elastic/elasticsearch: GET /_data_stream, /_ilm/policy and /_slm/policy, saved as data-streams.json, ilm-policies.json
-and slm-policies.json; read-only privileges: cluster read_ilm and read_slm, index view_index_metadata on the logs
-streams. elastic/kibana: GET /api/detection_engine/rules/_find, paged (per_page 1000), saved as detection-rules.json
-and detection-rules.<page>.json for the pages after the first, in the Kibana space the estate setting
+elastic/elasticsearch: GET /_data_stream, /_ilm/policy, /_slm/policy and / (whether the cluster is Elastic Cloud
+Serverless: its build flavor), saved as data-streams.json, ilm-policies.json, slm-policies.json and cluster.json;
+read-only privileges: cluster read_ilm, read_slm and monitor (GET /), index view_index_metadata on the logs streams.
+elastic/kibana: GET /api/detection_engine/rules/_find, paged (per_page 1000), saved as detection-rules.json and
+detection-rules.<page>.json for the pages after the first, in the Kibana space the estate setting
 elastic-kibana-space names (/s/<space> unless it is the default); read-only privilege: Security, Rules and
 Exceptions, Rules: Read (an API key's role descriptor for the kibana-.kibana application).
 """
@@ -24,7 +25,7 @@ from .naming import KIBANA_SPACE
 
 ELASTICSEARCH, KIBANA = "elastic/elasticsearch", "elastic/kibana"
 ES_CALLS = (("data-streams.json", "/_data_stream"), ("ilm-policies.json", "/_ilm/policy"),
-            ("slm-policies.json", "/_slm/policy"))
+            ("slm-policies.json", "/_slm/policy"), ("cluster.json", "/"))
 RULES = "/api/detection_engine/rules/_find"
 PER_PAGE = 1000
 
@@ -43,7 +44,7 @@ def _get(s, path):
 
 
 def elasticsearch_steps(d, m, done, options):
-    """The three GETs, against the first location of the environment's first readable elastic/elasticsearch source."""
+    """The four GETs, against the first location of the environment's first readable elastic/elasticsearch source."""
     s = readable_source(m, ELASTICSEARCH)
     return () if s is None else tuple((f"{m.label}/{path}", _get(s, call)) for path, call in ES_CALLS)
 
