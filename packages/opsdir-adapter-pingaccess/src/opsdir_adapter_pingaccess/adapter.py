@@ -5,6 +5,7 @@ from .checks import check_pingaccess
 from .collect import COLLECTORS
 from .importer import ADMIN_API, EXPORT
 from .listeners import listeners
+from .logs import LOGS
 from .naming import ENDPOINTS, SERVER_ROLES
 from .render import FORMATS, render_env, render_notes
 from .schema import FRAGMENT
@@ -24,6 +25,6 @@ ADAPTER = Adapter(name="pingaccess", kind="product", applies=applies, required_r
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=FORMATS, products=(("PingAccess", ">=8.2,<10"),), roles=(("server", SERVER_ROLES),),
                   secret_patterns=(), importers=(ADMIN_API, EXPORT), profile_terms=None, access=None,
-                  endpoints=ENDPOINTS, listeners=listeners, collectors=COLLECTORS, notes=render_notes,
+                  endpoints=ENDPOINTS, listeners=listeners, collectors=COLLECTORS, notes=render_notes, logs=LOGS,
                   version_changes=VERSION_CHANGES,
                   reads_back=(ReadBack("admin-api", "pingaccess/admin-api/*.json", "pingaccess/admin-api/"),))

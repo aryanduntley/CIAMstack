@@ -1601,7 +1601,7 @@
       "area": "Host",
       "match": "Server role `pa-admin` has no host baseline that applies in target/prod",
       "planted": "the PingAccess servers were recorded without their hosts' baselines",
-      "cleared_by": null,
+      "cleared_by": "CHG-2075",
       "raised_by": "CHG-2060"
     },
     {
@@ -1609,7 +1609,7 @@
       "area": "Host",
       "match": "Server role `pa-engine` has no host baseline that applies in target/prod",
       "planted": "the PingAccess servers were recorded without their hosts' baselines",
-      "cleared_by": null,
+      "cleared_by": "CHG-2075",
       "raised_by": "CHG-2060"
     },
     {
