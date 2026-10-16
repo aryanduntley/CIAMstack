@@ -1,7 +1,8 @@
 """PingGateway adapter: render the gateway's routes for each environment.
 
   pinggateway/routes/<name>.json     each route, its backend address from the binding of its backend role in the
-                                     environment (UNBOUND:<role> when the environment binds none)
+                                     environment (UNBOUND:<role> when the environment binds none); and a route for each
+                                     protected application the environment has its gateways take over (takeover.py)
 
 The gateway's own settings (config.json, admin.json) are captured config files, rendered with the rest of the
 environment's captured files. The routes follow the gateway's JSON but are not validated against a live gateway.
@@ -14,6 +15,7 @@ from opsdir.core.environment import one_role
 from opsdir.core.jsondata import held_json
 from opsdir.core.profiles import ProductProfile
 from .naming import ROUTES
+from .takeover import handed_over, takeover_routes
 
 FORMATS = (("pinggateway/routes/*.json", "json"),)
 # The gateway's configuration as it reads it under its instance directory (config/config.json, admin.json,
@@ -42,6 +44,10 @@ def route_file(m, route):
 
 
 def render_env(m, services):
-    """Every route, for this environment."""
-    return {f"pinggateway/routes/{rdn_value(r)}.json": json.dumps(route_file(m, r), indent=2) + "\n"
-            for r in children(m.d, ROUTES, "pinggwRoute")}
+    """Every route, for this environment: the record's routes (but those whose protected application another role
+    enforces here), and one for each protected application the environment has its gateways take over
+    (takeover.py)."""
+    gone = handed_over(m.d)
+    own = {f"pinggateway/routes/{rdn_value(r)}.json": route_file(m, r) for r in children(m.d, ROUTES, "pinggwRoute")
+           if r.dn.lower() not in gone}
+    return {path: json.dumps(body, indent=2) + "\n" for path, body in {**takeover_routes(m), **own}.items()}

@@ -4,7 +4,7 @@ applies to, so one policy means each environment's own load balancer, WAF and CD
 is a binding per environment: DNS zones, records and forwarders, the WAF, CDN, DDoS protection, gateways and proxies,
 and what each actually runs (read back as facts in the policies' terms); and the in-cluster gateway a cluster routes
 the service names of roles it alone runs through."""
-from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
+from ...core.standard import OVERRIDABLE, AttributeDef, ClassDef, enum_type, fragment
 from .naming import (BACKEND_VALIDATION, DDOS_TIERS, EDGE_FACT, EDGE_KINDS, ENDPOINT_PATH, FORWARD_DIRECTIONS,
                      GEO_RULE, HEADER_KINDS, HEADER_NAME, HEALTH_PROTOCOLS, IP_RULE, RATE_LIMIT, RECORD_TYPES,
                      ROUTING_POLICIES, STICKINESS, TLS_MODES, TLS_PROFILES, TLS_VERSIONS, WAF_CATEGORIES, WAF_EXCLUSION,
@@ -79,7 +79,8 @@ ATTRIBUTES = (
                  'or host the client used'),
     AttributeDef(367, 'ciamSetByRole', 'string', 'intent', True,
                  "Who sets a header: a server role (a gateway, a proxy) or a service name's binding role (its "
-                 'load balancer)'),
+                 'load balancer); an environment overrides it when another product sets the header there',
+                 OVERRIDABLE),
     AttributeDef(368, 'ciamTrustedByRole', 'string', 'intent', False, 'A server role that trusts a header'),
     AttributeDef(369, 'ciamTrustedByConsumer', 'dn', 'intent', False, 'A consumer that trusts a header'),
     AttributeDef(370, 'ciamHeaderValue', 'string', 'intent', True,

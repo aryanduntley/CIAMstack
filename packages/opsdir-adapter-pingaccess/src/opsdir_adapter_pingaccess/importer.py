@@ -26,8 +26,10 @@ from opsdir.core.directory import children, get, make_entry, merged_attrs, one, 
 from opsdir.core.jsondata import canonical, held_json
 from opsdir.domains.edge.naming import HEADER_CONTRACTS
 from opsdir.domains.federation.services import integrations
+from opsdir.domains.webaccess.projection import after_import, merged_import
 from .api import CLIENT_ID, COLLECTIONS, CONTEXT_ROOT, HEADER_FIELDS, HOST, ISSUERS, RESOURCES, TARGETS, collection
 from .naming import HELD, KINDS, PINGACCESS, entry_dn, held_base, usable_name
+from .neutral import projection
 from .refs import host_role, leaves, resolved
 from .sources import admin_api_read, export_read
 from .withheld import withheld_settings
@@ -167,7 +169,13 @@ def _groups(d, read_paths, entries):
 
 
 def imported(d, read, patterns):
-    """Imported of a Read."""
+    """Imported of a Read, with its applications, resources and rules projected onto the neutral protected-application
+    layer (neutral.py)."""
+    own = _imported(d, read, patterns)
+    return merged_import(own, projection(after_import(d, own), "PingAccess"))
+
+
+def _imported(d, read, patterns):
     objs, unusable = _usable(resolved(d, read.items))
     issuer = _issuer(d, read.items)
     built = [(o.path, _entry(d, o, patterns, read.version, issuer)) for o in objs]

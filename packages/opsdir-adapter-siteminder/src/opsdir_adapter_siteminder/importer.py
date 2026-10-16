@@ -1,9 +1,9 @@
 """SiteMinder's policy store read into the record from an XPSExport (importer siteminder/xps), as the source of a
 migration. Pure.
 
-  policy domains, realms, rules, policies   -> ou=siteminder (policies.py): this adapter's own entries, which the
-  authentication schemes, user directories,    planned neutral protected-web-application layer will take over
-  agents
+  policy domains, realms, rules, policies   -> ou=siteminder (policies.py): this adapter's own entries; realms,
+  authentication schemes, user directories,    their rules and policies also projected onto the neutral
+  agents                                       protected-application layer (neutral.py)
   federation partnerships, OIDC clients     -> standard integrations (federation.py)
   header responses                          -> edge header contracts (responses.py)
   what has no standard equivalent           -> source objects (carried.py)
@@ -23,9 +23,11 @@ from opsdir.core.versions import in_range, parsed
 from opsdir.domains.edge.naming import HEADER_CONTRACTS
 from opsdir.domains.federation.naming import IDENTITY_SERVICES, INTEGRATIONS
 from opsdir.domains.governance.naming import SOURCE_OBJECTS
+from opsdir.domains.webaccess.projection import after_import, merged_import
 from .carried import CARRY, carried_entry, carried_name
 from .entries import Export, cleaned, unique, with_rest
 from .federation import PROTOCOLS, integration_groups, place, service_for
+from .neutral import projection
 from .naming import (ACCESS_GATEWAY, AGENTS, AUTH_SCHEMES, CARRIED, DOMAINS, SITEMINDER, USER_DIRECTORIES, name_of,
                      named)
 from .policies import (agent_entry, agent_role, directory_entry, domain_group, is_custom_scheme, realms_of,
@@ -219,12 +221,13 @@ def read_export(files, d, patterns, at=None):
     containers = (SITEMINDER, *sorted(used), *((SOURCE_OBJECTS, CARRIED) if carried else ()),
                   *((INTEGRATIONS,) if fed_groups else ()), *((IDENTITY_SERVICES,) if service is not None else ()),
                   *((HEADER_CONTRACTS,) if headers else ()))
-    return Imported(
+    own = Imported(
         containers=tuple(ou_entry(c) for c in containers),
         groups=(*domains, *own, *headers, *carried, *((with_rest(d, service.dn, (service,)),) if service else ()),
                 *fed_groups),
         notices=(*problems, *(n for _, ns in dirs for n in ns), *service_notices, *fed_notices,
                  *_notices(x, order, unresolved, orphans)))
+    return merged_import(own, projection(after_import(d, own)))
 
 
 XPS = Importer("xps", "a SiteMinder policy store export (XPSExport XML: domains, realms, rules, policies, responses, "

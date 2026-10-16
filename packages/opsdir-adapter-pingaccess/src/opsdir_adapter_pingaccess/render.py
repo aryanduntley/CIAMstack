@@ -29,6 +29,7 @@ from opsdir.domains.compute.workloads import recorded_versions
 from .api import API, CLIENT_ID, COLLECTIONS, CONTEXT_ROOT, HOST, NAME, NAME_FIELDS, OPENAPI, TARGETS, collection
 from .naming import KINDS, SERVER_ROLES, entry_dn, held_base, reference, resources_path
 from .refs import placeholders
+from .takeover import handed_over, requests, takeover_notes
 from .withheld import credential_value, filled
 
 OUTPUT = "pingaccess/admin-api/requests.json"
@@ -41,13 +42,21 @@ def version(m):
     return next((v for r in SERVER_ROLES for v in recorded_versions(m, r)), None)
 
 
+def _applications(d):
+    """The record's PingAccess applications d has PingAccess enforce (not those whose protected application another
+    role enforces there: takeover.handed_over)."""
+    gone = handed_over(d)
+    return tuple(a for a in children(d, KINDS["application"][0], "paApplication") if a.dn.lower() not in gone)
+
+
 def entries_of(d, c):
     """The record's entries of a collection, in the record's order (an application's resources after it)."""
     if c.kind == "held":
         return children(d, held_base(c.path), "paHeld")
     if c.kind == "resource":
-        return tuple(r for a in children(d, KINDS["application"][0], "paApplication")
-                     for r in children(d, a.dn, "paResource"))
+        return tuple(r for a in _applications(d) for r in children(d, a.dn, "paResource"))
+    if c.kind == "application":
+        return _applications(d)
     return children(d, KINDS[c.kind][0], KINDS[c.kind][1])
 
 
@@ -133,7 +142,8 @@ def _strings(value):
 def admin_api_files(m):
     """{pingaccess/admin-api/requests.json: text} for environment m (nothing when the record holds nothing for
     PingAccess to render)."""
-    reqs = [request(m, c, e) for c, e in rendered(m.d)]
+    reqs = [r for c in COLLECTIONS if not c.bound
+            for r in (*(request(m, c, e) for e in entries_of(m.d, c)), *requests(m, c.path))]
     if not reqs:
         return {}
     doc = {"pingAccess": version(m), "adminApi": API.rsplit("/", 1)[1], "verified": False, "openApi": OPENAPI,
@@ -149,7 +159,8 @@ def render_env(m, services):
 def render_notes(m, services):
     """What environment m's PingAccess render leaves to a person (core.notes)."""
     d = m.d
-    if not rendered(d) and not environment_bound(d):
+    taken = takeover_notes(m)
+    if not rendered(d) and not environment_bound(d) and not taken:
         return ()
     at = version(m) or "the version the environment runs"
     return (
@@ -157,7 +168,8 @@ def render_notes(m, services):
                 f"unverified for {at}: check the requests against {OPENAPI} on the admin node before applying them",
                 ("Fetch the OpenAPI document from the environment's admin node (an Auditor can read it).",
                  "Validate each request's path and body against it; report a difference so the adapter's api.py is "
-                 "corrected.")),) if rendered(d) else ()),
+                 "corrected.")),) if rendered(d) or taken else ()),
+        *taken,
         *((note(AREA, "action", "environment-bound objects", "not rendered: create " + "; ".join(
             f"{c.path} " + ", ".join(f"`{rdn_value(e)}`" for e in found) for c, found in environment_bound(d))
             + f" in {m.label} before applying the requests",

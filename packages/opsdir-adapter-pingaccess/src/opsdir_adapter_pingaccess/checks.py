@@ -9,6 +9,9 @@ Actions: an implicit-flow login (POST, x_post); a site sending requests to fixed
 record them as an external system's role); a header an identity mapping sets that no header contract names (fix:
 record it, so the edge's header check guards it). The environment-bound objects to create in the target reach the
 plan as the render's note (render.render_notes).
+Fix: a protected application the source enforces and nothing in the target would (the web access domain's blocker)
+can be taken over by PingAccess when the target runs its engines (protect:pa/<application>); what PingAccess can't
+express of it reaches the plan as the render's notes (takeover.py).
 """
 from opsdir.core.changeset import new_entry
 from opsdir.core.directory import children, follow, get, one, rdn_value, referrers, values
@@ -19,6 +22,8 @@ from opsdir.domains.compute.workloads import runs_here
 from opsdir.domains.edge.naming import HEADER_CONTRACTS
 from opsdir.domains.federation.services import identity_services
 from opsdir.domains.infrastructure.external import external_hosts_fix
+from opsdir.domains.webaccess.apps import enforcer, protected_apps
+from opsdir.domains.webaccess.checks import protect_fix
 from .api import (ATTRIBUTE_FIELD, AUTH_METHODS, CLIENT_ID, CREDENTIALS_TYPE, HEADER_FIELDS, IMPLICIT_LOGINS,
                   LOGIN_TYPE, NO_PKCE, PKCE, TARGETS)
 from .naming import ENGINE, KINDS
@@ -162,18 +167,31 @@ def _mapping(ctx, m):
                     fixes=[header_fix(ctx, m, h) for h in missing])
 
 
+def _unprotected(ctx):
+    """The protected applications the source enforces and the target's enforcing role doesn't run there."""
+    return tuple(a for a in protected_apps(ctx.src.d) for src, dst in ((enforcer(ctx.src, a), enforcer(ctx.dst, a)),)
+                 if src and runs_here(ctx.src, src) and not (dst and runs_here(ctx.dst, dst)))
+
+
+def _protect(ctx):
+    """The fixes having PingAccess's engines protect, in the target, what nothing there would."""
+    return findings(fixes=[protect_fix(ctx.dst, a, ENGINE, "PingAccess", "pa") for a in _unprotected(ctx)]) \
+        if runs_here(ctx.dst, ENGINE) else findings()
+
+
 def check_pingaccess(ctx):
-    """What PingAccess protects, and whether it can work in the target."""
+    """What PingAccess protects, and whether it can work in the target; the fixes having it protect what nothing in
+    the target would."""
     d = ctx.d
     objects = rendered(d)
     if not objects and not environment_bound(d):
-        return findings()
+        return _protect(ctx)
     sessions = children(d, KINDS["web-session"][0], "paWebSession")
     engines = findings(blockers=[(AREA, f"{ctx.dst.label} runs no PingAccess engine (`{ENGINE}`): the "
                                   f"{len(children(d, KINDS['application'][0], 'paApplication'))} applications it "
                                   "protects would go unprotected.", _owner(ctx))]) \
         if not runs_here(ctx.dst, ENGINE) else findings()
-    found = merge_findings([engines,
+    found = merge_findings([engines, _protect(ctx),
                             *(_session(ctx, s) for s in sessions),
                             *(_secrets(ctx, c, e) for c, e in objects),
                             *(_references(ctx, c, e) for c, e in objects),

@@ -128,6 +128,31 @@ EXPORT_SECTIONS = MappingProxyType({
     "pingFederateRuntime": "pingfederate/runtime", "oidcProvider": "oidc/provider",
     "replicaAdmins": "adminConfig/replicaAdmins"})
 
+# The neutral protected-application projection (opsdir.domains.webaccess; milestone 110): what an application, its
+# resources and its rules say in neutral terms. Ping's 9.1 documentation describes these settings (application type,
+# case-sensitive paths, standard/anonymous/unprotected resources, wildcard and regex path patterns, methods, idle and
+# maximum web session timeouts in minutes, rule sets succeeding on all or any, rules that negate); the JSON names
+# below are NOT established by it (research note 3133) and are acceptance items like the rest.
+APPLICATION_TYPE, API_APPLICATION = "applicationType", "API"     # Web, API (and Web + API: both policies)
+CASE_SENSITIVE = "caseSensitivePath"
+APP_REFERENCES = MappingProxyType({"site": "siteId", "virtual-hosts": "virtualHostIds", "web-session": "webSessionId",
+                                   "identity-mappings": "identityMappingIds"})
+POLICY_KINDS = ("Web", "API")
+PATH_PATTERNS, PATH_PREFIXES = "pathPatterns", "pathPrefixes"   # [{"type", "pattern"}], or the older [prefix, ...]
+PATTERN_TYPES = MappingProxyType({"WILDCARD": "wildcard", "REGEX": "regex"})
+METHODS, ANY_METHOD = "methods", "*"
+ANONYMOUS, UNPROTECTED = "anonymous", "unprotected"             # a resource's access, booleans
+# a web session's limits, in minutes: (field, the neutral attribute it becomes, in seconds)
+SESSION_MINUTES = (("idleTimeoutInMinutes", "ciamIdleTimeout"), ("sessionTimeoutInMinutes", "ciamMaxSessionTime"))
+RULE_CONFIG, NEGATE = "configuration", "negate"
+# rules the neutral terms can test: className -> (who kind, its configuration fields: "<a>=<b>" when two)
+RULE_WHO = MappingProxyType({
+    "com.pingidentity.pa.policy.WebSessionAttributeRule": ("attribute", ("attributeName", "attributeValue")),
+    "com.pingidentity.pa.policy.OAuthScopeRule": ("scope", ("scope",)),
+    "com.pingidentity.pa.policy.CIDRPolicyInterceptor": ("network", ("cidrNotation",))})
+SUCCESS = "successCriteria"
+SUCCESS_CRITERIA = MappingProxyType({"SuccessIfAllSucceed": "all", "SuccessIfAnyOneSucceeds": "any"})
+
 # Documented: the product's default ports and its heartbeat
 ADMIN_PORT, CLUSTER_PORT, ENGINE_PORT, AGENT_PORT, SIDEBAND_PORT = 9000, 9090, 3000, 3030, 3020
 HEARTBEAT = "/pa/heartbeat.ping"

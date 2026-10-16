@@ -42,7 +42,9 @@ def _is_service(m, role):
 
 
 def _contract(ctx, c):
-    d, setter, header = ctx.d, one(c, "ciamSetByRole"), one(c, "ciamHeaderName")
+    d, header = ctx.d, one(c, "ciamHeaderName")
+    # each environment's setter as it sees it (the target may override it: another product sets the header there)
+    was, setter = (one(get(m.d, c.dn) or c, "ciamSetByRole") for m in (ctx.src, ctx.dst))
     owner, trusting = responsible(d, c, ctx.dst.env), _trusting(d, c)
     who = ", ".join(trusting) or "nobody recorded"
     if _is_service(ctx.src, setter) or _is_service(ctx.dst, setter):
@@ -57,7 +59,7 @@ def _contract(ctx, c):
         blockers = (("Edge", f"Header `{header}` (contract `{rdn_value(c)}`) is set by `{setter}` servers, which "
                      f"{ctx.dst.label} doesn't run: {who} would go without it"
                      + (" (header-based sign-on stops)." if one(c, "ciamHeaderKind") == "identity" else "."),
-                     owner),) if servers_with_role(ctx.src, setter) and not servers_with_role(ctx.dst, setter) \
+                     owner),) if servers_with_role(ctx.src, was) and not servers_with_role(ctx.dst, setter) \
             and setter not in kubernetes_roles(ctx.dst) else ()
     spoofable = (("Edge", f"Clients can send header `{header}` themselves (contract `{rdn_value(c)}`): `{setter}` must "
                   f"remove it from incoming requests, since {who} {'trust' if len(trusting) > 1 else 'trusts'} it.",

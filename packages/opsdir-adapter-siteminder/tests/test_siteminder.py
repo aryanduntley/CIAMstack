@@ -20,7 +20,8 @@ from opsdir.core.standard import registry_ldif
 from opsdir.domains.governance.source_objects import check_source_objects
 from opsdir_adapter_siteminder.adapter import ADAPTER, PRODUCTS
 from opsdir_adapter_siteminder.carried import CARRY
-from opsdir_adapter_siteminder.checks import AREA, check_realms, check_user_directories
+from opsdir.domains.webaccess.checks import AREA as WEB_ACCESS, check_protected_apps
+from opsdir_adapter_siteminder.checks import AREA, check_user_directories
 from opsdir_adapter_siteminder.importer import VERSIONS, release
 from opsdir_adapter_siteminder.naming import AGENTS, CARRIED, DOMAINS, SERVER_ROLES, SERVICE, USER_DIRECTORIES
 from opsdir_adapter_siteminder.schema import FRAGMENT
@@ -92,7 +93,7 @@ def test_registered_and_chosen_from_the_products_on_the_servers():
     assert not ADAPTER.applies(SimpleNamespace(servers=(server("PingAccess 9.0.1"),), d=NO_RECORDS))
     assert VERSIONS == ">=12.8,<13" and all(v == VERSIONS for _, v in PRODUCTS)
     assert ADAPTER.render_neutral is None and ADAPTER.render_env is None and ADAPTER.checks == ()
-    assert ADAPTER.source_checks == (check_realms, check_user_directories)
+    assert ADAPTER.source_checks == (check_user_directories,)
     assert ADAPTER.vocabulary["ciamServerRole"] == SERVER_ROLES and [i.name for i in ADAPTER.importers] == ["xps"]
 
 
@@ -224,18 +225,43 @@ def _ctx(d, src="alpha/prod", dst="beta/prod"):
     return PlanContext(d, env_model(d, src), env_model(d, dst), dt.date(2026, 11, 1), dt.date(2026, 10, 1), {}, {}, ())
 
 
+APPS = "ou=protected-applications,dc=ciam-ops"
+RULES = f"ou=access-rules,{APPS}"
+
+
+def test_realms_rules_and_policies_are_projected_onto_the_neutral_layer(after):
+    d, _ = after
+    crew = get(d, f"cn=crew-portal-crew,{APPS}")
+    assert (one(crew, "ciamBasePath"), one(crew, "ciamEnforcedByRole"), one(crew, "ciamSignOn"),
+            one(crew, "ciamIdleTimeout"), one(crew, "ciamProjectedFrom")) == ("/crew/", "sm-agent", "form", "1800",
+                                                                              CREW)
+    assert values(crew, "ciamSetsHeader") == ("cn=crew-portal-sm_user,ou=header-contracts,dc=ciam-ops",
+                                              "cn=crew-portal-x-crew-app-key,ou=header-contracts,dc=ciam-ops")
+    assert one(crew, "ciamPublishedAs") is None and one(crew, "ciamBackendRole") is None     # not in the export
+    pages = get(d, f"cn=crew-pages,{crew.dn}")
+    assert (values(pages, "ciamPathPattern"), one(pages, "ciamMatchKind"), values(pages, "ciamHttpMethod"),
+            values(pages, "ciamRuleRef")) == (("/*",), "wildcard", ("GET", "POST"),
+                                              (f"cn=crew-portal-all-crew,{RULES}",))
+    admin = get(d, f"cn=admin-pages,cn=crew-portal-crew-admin,{APPS}")
+    assert (values(admin, "ciamPathPattern"), one(admin, "ciamMatchKind")) == (("^/(roster|swap)",), "regex")
+    assert one(get(d, f"cn=crew-portal-crew-admin,{APPS}"), "ciamSignOn") == "custom"
+    rule = get(d, f"cn=crew-portal-all-crew,{RULES}")
+    assert (one(rule, "ciamEffect"), values(rule, "ciamWho"), one(rule, "ciamProjectedFrom")) == (
+        "allow", ("group cn=crew,ou=groups,dc=example,dc=test",), f"cn=all-crew,ou=policies,{DOMAIN}")
+
+
 def test_a_target_without_its_agents_leaves_every_realm_unprotected():
     d, _, _ = imported(extra=(*EXTRA, *SERVERS))
-    found = check_realms(_ctx(d))
-    realms = ["Realm `crew-portal/crew`", "Realm `crew-portal/crew-admin`"]
-    assert [b[1].split(" (")[0] for b in found.blockers] == realms
-    assert found.blockers[0] == (AREA, "Realm `crew-portal/crew` (resources `/crew/`) is protected by `sm-agent` "
-                                       "servers, which beta/prod doesn't run: its 1 rule(s) and the policies granting "
-                                       "them (`all-crew`; users sign in with `crew-forms`) stop being enforced, and "
-                                       "the application loses the headers it trusts (`SM_USER`, `X-Crew-App-Key`). "
-                                       "Protect these resources with a gateway or access product the target runs (its "
-                                       "paths, rules, sign-on and headers), then retire the realm.", "**NO OWNER**")
-    assert check_realms(_ctx(d, "beta/prod", "alpha/prod")).blockers == ()
+    found = check_protected_apps(_ctx(d))
+    assert [b[1].split(" (")[0] for b in found.blockers] == ["Protected application `crew-portal-crew`",
+                                                             "Protected application `crew-portal-crew-admin`"]
+    assert found.blockers[0] == (WEB_ACCESS, "Protected application `crew-portal-crew` (`/crew/`) is enforced by "
+                                             "`sm-agent`, which beta/prod doesn't run: its 1 resource(s), its rules "
+                                             "(`crew-portal-all-crew`), its form sign-on, and the headers the "
+                                             "application trusts (`SM_USER`, `X-Crew-App-Key`) stop being enforced. "
+                                             "Have a product beta/prod runs protect it (its enforcing role overridden "
+                                             "there), or retire it.", "**NO OWNER**")
+    assert check_protected_apps(_ctx(d, "beta/prod", "alpha/prod")).blockers == ()
 
 
 def test_source_objects_of_roles_the_target_doesnt_run_are_planned_by_the_core():

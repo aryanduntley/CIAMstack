@@ -1584,9 +1584,10 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.366 NAME 'ciamHeaderKind' DESC 'What
  N 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.367 NAME 'ciamSetByRole' DESC 'Who s
  ets a header: a server role (a gateway, a proxy) or a service name\27s bind
- ing role (its load balancer)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
- 466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' 
- X-ORIGIN 'opsdir' )
+ ing role (its load balancer); an environment overrides it when another prod
+ uct sets the header there' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-O
+ VERRIDABLE 'TRUE' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.368 NAME 'ciamTrustedByRole' DESC 'A
   server role that trusts a header' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.
  4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN
@@ -3371,6 +3372,113 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.771 NAME 'ciamPartnerOf' DESC 'The i
  suer follows from their protocol type' EQUALITY distinguishedNameMatch SYNT
  AX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X
  -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.776 NAME 'ciamBasePath' DESC 'The pa
+ th a protected application is reached at on its hosts (its resources\27 pat
+ terns are relative to it)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 SINGLE-VALUE X-PORTABILITY 'contract' X-VALUE-TYPE 'string' X
+ -PATTERN '^/[^ ]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.777 NAME 'ciamPublishedAs' DESC 'A s
+ ervice name role clients reach a protected application at: each environment
+  renders its host' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.778 NAME 'ciamEnforcedByRole' DESC '
+ The server role that enforces a protected application (a gateway, or an age
+ nt in the application\27s own web server): an environment overrides it to h
+ ave another product protect the application' EQUALITY caseIgnoreMatch SYNTA
+ X 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE
+ -TYPE 'string' X-OVERRIDABLE 'TRUE' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.779 NAME 'ciamBackendRole' DESC 'The
+  binding role of the application a gateway sends requests to (none: the enf
+ orcement point runs inside the application\27s own web server)' EQUALITY ca
+ seIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILI
+ TY 'intent' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.780 NAME 'ciamBackendPort' DESC 'The
+  port the application behind a gateway listens on (none: its binding\27s)' 
+ EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-P
+ ORTABILITY 'intent' X-VALUE-TYPE 'port' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.781 NAME 'ciamBackendTls' DESC 'Whet
+ her a gateway reaches the application behind it over TLS' EQUALITY booleanM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent
+ ' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.782 NAME 'ciamSignOn' DESC 'How user
+ s sign in: through an identity service (oidc), with a bearer token (token),
+  with credentials the enforcement point collects (form, basic, certificate)
+ , a federation journey of its own, the operator\27s own code (custom), or n
+ ot at all' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:oidc|token|form|basic|
+ certificate|federated|custom|none' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.783 NAME 'ciamSignInAs' DESC 'The in
+ tegration (an OpenID Connect client) the enforcement point signs users in a
+ s' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SIN
+ GLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.784 NAME 'ciamIdleTimeout' DESC 'How
+  long a session may be idle, in seconds' EQUALITY integerMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE '
+ int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.785 NAME 'ciamMaxSessionTime' DESC '
+ How long a session may last, in seconds' EQUALITY integerMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE '
+ int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.786 NAME 'ciamSetsHeader' DESC 'A he
+ ader contract the enforcement point sets for the application (who the user 
+ is)' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X
+ -PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.787 NAME 'ciamRuleRef' DESC 'An acce
+ ss rule applying: on an application, to every resource; on a resource, its 
+ own, after the application\27s' EQUALITY distinguishedNameMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN
+  'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.788 NAME 'ciamProjectedFrom' DESC 'T
+ he product entry an importer projected this entry from (its importer keeps 
+ it in step); none: recorded by an operator' EQUALITY distinguishedNameMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'meta' X-V
+ ALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.789 NAME 'ciamPathPattern' DESC 'A p
+ ath a resource matches, relative to its application\27s base path' EQUALITY
+  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'contra
+ ct' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.790 NAME 'ciamMatchKind' DESC 'How a
+  resource\27s patterns match: prefix, wildcard (* is any run of characters,
+  / included) or regex' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:prefix|wil
+ dcard|regex' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.791 NAME 'ciamHttpMethod' DESC 'An H
+ TTP method a resource matches (none: every method)' EQUALITY caseIgnoreMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 
+ 'enum:GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS|TRACE' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.792 NAME 'ciamAccessMode' DESC 'stan
+ dard: users sign in and the rules apply; anonymous: no sign-in, the rules s
+ till apply; unprotected: passed through' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'enum:standard|anonymous|unprotected' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.793 NAME 'ciamOrder' DESC 'A resourc
+ e\27s place among its application\27s (lowest first; none: the most specifi
+ c first)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE
+ -VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.794 NAME 'ciamEffect' DESC 'What an 
+ access rule does when it matches: allow, deny (a denial beats an allowance)
+ , or custom (a product rule the neutral terms can\27t express: rebuilt by h
+ and in another product)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.1
+ 15.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:allow|de
+ ny|custom' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.795 NAME 'ciamWho' DESC 'Who an acce
+ ss rule is about: "authenticated", or "<user|group|filter|attribute|scope|n
+ etwork> <value>"' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^(authenticate
+ d|(user|group|filter|attribute|scope|network) [^ ].*)$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.796 NAME 'ciamRuleMatch' DESC 'Wheth
+ er any or all of a rule\27s subjects and included rules must match (none: a
+ ny)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-V
+ ALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:any|all' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.797 NAME 'ciamIncludesRule' DESC 'An
+  access rule a rule set combines' EQUALITY distinguishedNameMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.798 NAME 'ciamCaseSensitive' DESC 'W
+ hether an application\27s paths match case-sensitively' EQUALITY booleanMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'intent' 
+ X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4248,3 +4356,27 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.167 NAME 'ciamManagedIdentity' DESC '
  edBy)' SUP ciamBinding STRUCTURAL MUST ciamManagedService MAY ( ciamRealize
  s $ ciamPartnerOf $ ciamProviderRef $ ciamFqdn $ ciamTlsCertificate $ ciamM
  anagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.169 NAME 'ciamProtectedApp' DESC 'A w
+ eb application an access gateway or agent protects, in neutral terms (under
+  ou=protected-applications): where it is reached, the server role enforcing
+  it (overridable per environment), what is behind it, how users sign in (th
+ e integration, the identity service, the secret role of its client) and how
+  long sessions last, the headers it trusts, the rules every resource applie
+ s; its path resources below it' SUP ciamObject STRUCTURAL MUST ( cn $ ciamB
+ asePath $ ciamEnforcedByRole ) MAY ( ciamPublishedAs $ ciamBackendRole $ ci
+ amBackendPort $ ciamBackendTls $ ciamSignOn $ ciamSignInAs $ ciamServedBy $
+  ciamCredentialRole $ ciamIdleTimeout $ ciamMaxSessionTime $ ciamSetsHeader
+  $ ciamRuleRef $ ciamProjectedFrom $ ciamCaseSensitive ) X-ORIGIN 'opsdir' 
+ )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.170 NAME 'ciamPathResource' DESC 'Pat
+ hs of a protected application (below it): the patterns and methods they mat
+ ch, whether users sign in, their order and the access rules they apply' SUP
+  ciamObject STRUCTURAL MUST ( cn $ ciamPathPattern $ ciamMatchKind ) MAY ( 
+ ciamHttpMethod $ ciamAccessMode $ ciamOrder $ ciamRuleRef $ ciamProjectedFr
+ om ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.171 NAME 'ciamAccessRule' DESC 'An ac
+ cess rule (under ou=access-rules,ou=protected-applications): allow or deny 
+ whom, any or all of its subjects and included rules; custom when a product\
+ 27s rule has no neutral form' SUP ciamObject STRUCTURAL MUST ( cn $ ciamEff
+ ect ) MAY ( ciamWho $ ciamRuleMatch $ ciamIncludesRule $ ciamProjectedFrom 
+ ) X-ORIGIN 'opsdir' )
