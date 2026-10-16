@@ -7,15 +7,17 @@ and keeps the data streams it names (siem_indexes), so the provider adapters lea
 from opsdir.core.contract import Adapter, Importer, ReadBack
 from .api import OUTPUT
 from .collect import COLLECTORS
-from .naming import LANGUAGES, SETTINGS, keeps
+from .naming import ADAPTER_NAME, LANGUAGES, OFFERINGS, SETTINGS, keeps
 from .read import read_elasticsearch, read_kibana
 from .render import TARGETS, render_env, render_notes
 
-ADAPTER = Adapter(name="elastic", kind="platform", applies=None, required_roles=(),
+ADAPTER = Adapter(name=ADAPTER_NAME, kind="platform", applies=None, required_roles=(),
                   render_neutral=None, render_env=render_env, checks=(), ref_schemes=(), secret_schemes={},
-                  renders="Elastic data streams' index lifecycle and snapshot archive, and detections as ES|QL rules "
+                  renders="Elastic data streams' index lifecycle and snapshot archive (on Serverless their data "
+                          "stream lifecycle), detections as ES|QL rules and the Fleet policies shipping logs there "
                           "(API documents and Terraform)",
-                  neutral_label=None, vocabulary={"ciamSearchLanguage": LANGUAGES}, schema=None,
+                  neutral_label=None, vocabulary={"ciamSearchLanguage": LANGUAGES, "ciamOffering": OFFERINGS},
+                  schema=None,
                   formats=((f"{OUTPUT}*.json", "json"), (f"{OUTPUT}*.ndjson", "ndjson"),
                            ("elastic/terraform/*.tf", "hcl")),
                   products=(), secret_patterns=(),

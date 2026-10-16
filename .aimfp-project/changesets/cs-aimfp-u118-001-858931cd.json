@@ -1,0 +1,2643 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "fleet.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "kubernetes.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Task 552 (milestone 109 item e), decisions 3166. Package opsdir-adapter-elastic, entry point elastic. naming (stream names, policy/template names, languages, kibana-space setting), lifecycle (ILM/component template/SLM documents and notes), detections (ES|QL wrap, rule bodies, notes), shipping (Elastic Agent action, container blocker), api and terraform (render targets), render (orchestrator), read (importers elastic/elasticsearch and elastic/kibana), collect (two collectors).",
+        "external_dependencies": "[\"Elasticsearch ILM, SLM, component template and data stream APIs (GET _ilm/policy, _slm/policy, _data_stream)\", \"Kibana detection engine API (/api/detection_engine/rules, _find, _import NDJSON)\", \"elastic/elasticstack Terraform provider (~> 0.16.6)\", \"Elastic Stack 8.x/9.x (current 9.5.5); ECS\"]",
+        "path": "packages/opsdir-adapter-elastic/",
+        "purpose": "SIEM add-on: the Elastic data streams an environment keeps logs in (stateful: ILM policy attached by the dataset's @custom component template, SLM snapshot archive; Serverless, ciamOffering serverless: each stream's data stream lifecycle), its detections as ES|QL detection rules, and the Fleet policies Elastic Agent ships the logs with (filestream per server log file, Kubernetes container logs by pod label), as API documents and Terraform for elastic/elasticstack; read back from the Elasticsearch and Kibana APIs (read-only collectors, API key) and its own documents (round trip)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-elastic"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "Elastic Security as a SIEM: a siem-index destination whose reference is a logs data stream (logs-<dataset>-<namespace>) is kept by the Elastic add-on (stack role siem; its offering stateful by default, or serverless). Stateful: its searchable days render as an index lifecycle policy per stream (daily rollover, delete phase at the searchable days, none when kept indefinitely) attached through the dataset's @custom component template; days kept longer in all, with the archive's snapshot repository recorded, render as a daily snapshot policy expiring after the extra days, the delete phase waiting for its snapshot. Serverless: each stream's data stream lifecycle (data_retention the searchable days); an archive there is a blocker. Detections on a stream render as ES|QL rules counting matching events per window, every window of the rule's period breaching. Both as Elasticsearch/Kibana API documents and elasticstack Terraform, credentials only from environment variables. Read back from Elasticsearch (ILM or data stream lifecycle retention, effective retention first, snapshot archives, the build flavor against the declared offering) and Kibana (detection rules of any language), collected read-only with an API key. Named for the Elastic team: rule actions, when a policy or lifecycle takes effect, archives with no place, shared datasets, Serverless project retention limits. Shipping the logs is a separate flow."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "Elastic Security SIEM"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.8,
+        "description": "How the products' logs reach an environment's Elastic data streams: the Fleet policies Elastic Agent is enrolled in, rendered from the log routes and the logs the products declare. Per server role an agent policy and per log file a Custom Logs (Filestream) integration policy: the file's glob under every install root, the stream's dataset and namespace, JSON lines decoded (ndjson; mixed files ignoring text lines), records spanning lines joined (multiline from the log's first-line pattern) and, when the routes take only some lines, the others dropped (a drop_event unless a kept-kind clause holds). Per role's container output a Kubernetes integration policy on the environment's Kubernetes agent policy, only its container logs stream enabled, its condition picking the role's pods by the deployment kits' label, the role's namespaces and the log's container. Both as Fleet API bodies (simplified format) and elasticstack Terraform (package install, agent and integration policies); package versions from estate settings. Named for the Elastic team: enrolling servers and running the DaemonSet (tokens never rendered), a catch-all Kubernetes policy duplicating, container lines shipped whole, a log two routes send to different streams (blocker). Not read back."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Elastic Log Shipping (Fleet)"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "stack_component",
+        "parameters": "[{\"name\": \"e\", \"type\": \"Entry\"}]",
+        "purpose": "Pure: a StackComponent record from a ciamStackComponent entry (role, adapter, accepted versions, source, its ciamRenderTarget values as targets, and its ciamOffering as offering).",
+        "returns": "{\"type\": \"StackComponent\"}",
+        "source_hash": "a646b1c7b3269f23"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-stack-component-80ff3ba6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "lifecycle_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Render notes of environment m's data streams' retention. Stateful: none recorded (note), streams sharing a dataset (note when kept as long, else blocker), when each policy takes effect (action), an archive with no place recorded (action). Serverless (naming.serverless): none recorded (note), each lifecycle applying once the stream exists and the project's maximum retention (actions), kept indefinitely takes the project default (note), an archive Serverless can't keep (blocker; an archive ref with no extra days: action).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "19eb95d6deebff7d"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "elastic_shipments",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: environment m's Shipments (core sources.shipments of its log routes and declared LogSources) whose destination is an Elastic data stream (naming.stream_name), on servers and on Kubernetes.",
+        "returns": "{\"type\": \"tuple[Shipment]\"}",
+        "source_hash": "79c4edfa0f3b9334"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py",
+        "id_in_name": 0,
+        "name": "shipping_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: the render notes of how environment m's logs reach its Elastic data streams: fleet.server_notes then kubernetes.container_notes (task 555; replaces task 552's Elastic Agent action and container blocker).",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "d1d8c8165dbb316f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py",
+        "id_in_name": 0,
+        "name": "api_files",
+        "parameters": "[{\"name\": \"m\", \"type\": null, \"required\": true}, {\"name\": \"services\", \"type\": null, \"required\": true}]",
+        "purpose": "Render target api: {elastic/api/<file>: text} of environment m: its data streams' retention (ILM policies, component templates, SLM policies as GET answers; on Serverless data-stream-lifecycles.json), detection rules (NDJSON for _import) and the Fleet policies shipping its logs (fleet-agent-policies.json, fleet-package-policies.json: POST bodies, simplified format), each file only when it holds something.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "7dd1fc25238ee55f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-api-files-4b85f510"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "terraform_files",
+        "parameters": "[{\"name\": \"m\", \"type\": null, \"required\": true}, {\"name\": \"notes\", \"type\": null, \"required\": true}, {\"name\": \"services\", \"type\": null, \"required\": true}]",
+        "purpose": "Render target terraform: {elastic/terraform/versions.tf, main.tf} of environment m (elasticstack ~> 0.16.6, credentials from environment variables; notes as comments, then the retention blocks (ILM, component template, SLM; on Serverless data stream lifecycles), detection rule blocks and the Fleet integration, agent policy and integration policy blocks); nothing when it renders none.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "9fa899dbd679c31a"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py",
+        "id_in_name": 0,
+        "name": "render_env",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}, {\"name\": \"targets\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "Adapter render_env: environment m's Elastic data streams' retention, detection rules and Fleet shipping policies in the render targets chosen (api, terraform), when it keeps logs in an Elastic data stream, runs a detection on one or ships logs to one.",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "3034c723ee359366"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-render-env-710afa69"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "parse_elasticsearch",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}]",
+        "purpose": "(resources, notices) of one environment's Elasticsearch answers: logs data streams as siem-index destinations with searchable days (data stream lifecycle: effective_retention, else data_retention, else indefinite, also from the render's data-stream-lifecycles.json; else the ILM delete min_age of the stream's policy), days in all and archive repository from a covering SLM policy.",
+        "returns": "{\"type\": \"tuple[tuple[Resource], tuple[str]]\"}",
+        "source_hash": "d866ff8e3d068ad7"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-parse-elasticsearch-5c27bd0d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "read_elasticsearch",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": false}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": false}]",
+        "purpose": "Importer elastic/elasticsearch: the data streams' retention per <cloud>/<env>/ (layout_import of parse_elasticsearch, other SIEMs' notices left out), plus offering_notices when a cluster.json's build flavor disagrees with the stack's declared ciamOffering.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "467e7c1258571794"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-elasticsearch-63c20ff3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "name": "offering",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"adapter\", \"type\": \"str\", \"description\": \"the adapter's registered name\"}, {\"name\": \"default\", \"type\": \"str\", \"description\": \"the adapter's default offering\"}]",
+        "purpose": "Pure: the offering of its product an environment's stack declares (ciamOffering) for the components a given adapter fills, or the default given when none records one.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "6021005179a0518e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-offering-40e3c513"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "first_streams",
+        "parameters": "[{\"name\": \"found\", \"type\": \"tuple[Shipment]\"}]",
+        "purpose": "Pure: {(role, place, source path, source container): the stream the first of the Shipments given shipping that log of the role there ships it to}: the stream its Fleet policy reads it into.",
+        "returns": "{\"type\": \"dict[tuple, str]\"}",
+        "source_hash": "077602720ba46d04"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-first-streams-7b3a20df"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "shipped",
+        "parameters": "[{\"name\": \"found\", \"type\": \"tuple[Shipment]\"}]",
+        "purpose": "Pure: the Shipments given that ship a log into the stream its first route ships it to (first_streams); the rest are clashes.",
+        "returns": "{\"type\": \"tuple[Shipment]\"}",
+        "source_hash": "179dce8b66016465"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-shipped-adce83a9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "clashes",
+        "parameters": "[{\"name\": \"found\", \"type\": \"tuple[Shipment]\"}]",
+        "purpose": "Pure: the Shipments given not shipped because their role's log already goes to another stream through its first route (first_streams), once per route and log.",
+        "returns": "{\"type\": \"tuple[Shipment]\"}",
+        "source_hash": "ecf9aef75ce957b5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-clashes-54cb57af"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "clash_note",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"x\", \"type\": \"Shipment\"}, {\"name\": \"first\", \"type\": \"dict\", \"description\": \"first_streams of the shipments\"}, {\"name\": \"what\", \"type\": \"str\", \"description\": \"the log in words (a file path, 'the containers output')\"}]",
+        "purpose": "Pure: the blocker RenderNote of a Shipment not shipped (clashes): its log (in words) already goes to the stream first_streams names, so the route's stream doesn't get it.",
+        "returns": "{\"type\": \"RenderNote\"}",
+        "source_hash": "9a17d450a6c32a6d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-clash-note-772bbdac"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "file_shipments",
+        "parameters": "[{\"name\": \"found\", \"type\": \"tuple[Shipment]\"}]",
+        "purpose": "Pure: the FileShipments of the server Shipments given, a log file once per role, into the stream its first route ships it to: its globs under every install root, hosts, the routes' kinds and names.",
+        "returns": "{\"type\": \"tuple[FileShipment]\"}",
+        "source_hash": "e25340dc564c3e8d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "parsers",
+        "parameters": "[{\"name\": \"source\", \"type\": \"LogSource\"}]",
+        "purpose": "Pure: the filestream parsers reading a LogSource's lines: a multiline pattern parser joining records from its line_start, then an ndjson parser decoding JSON lines into the event (add_error_key for json-lines, ignore_decoding_error for a mixed file); [] for plain text.",
+        "returns": "{\"type\": \"list[dict]\"}",
+        "source_hash": "34c9cfb0b8de84f1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-parsers-c3eb6609"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "line_filter",
+        "parameters": "[{\"name\": \"source\", \"type\": \"LogSource\"}, {\"name\": \"kinds\", \"type\": \"tuple[str]\", \"description\": \"the log kinds the routes take\"}]",
+        "purpose": "Pure: the filestream processors keeping only the lines of a LogSource of the log kinds a route takes when it takes only some (sources.picks SOME): a drop_event whose condition is the negation of any kept clause (sources.kept_clauses: regexp ^prefix, has_fields, excluded rules negated; not-not collapsed); [] when all lines are taken.",
+        "returns": "{\"type\": \"list[dict]\"}",
+        "source_hash": "29700f6b0b86986e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-line-filter-847c92ae"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "agent_policy",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"namespace\", \"type\": \"str\"}, {\"name\": \"description\", \"type\": \"str\"}]",
+        "purpose": "Pure: a Fleet agent policy as POST /api/fleet/agent_policies takes it: id and name, namespace, description, the agents' logs and metrics monitored.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "f62676fd96c9e9a8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-agent-policy-7a19e492"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "package_policy",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"description\", \"type\": \"str\"}, {\"name\": \"namespace\", \"type\": \"str\"}, {\"name\": \"agent\", \"type\": \"str\", \"description\": \"the agent policy's id\"}, {\"name\": \"package\", \"type\": \"tuple[str, str]\", \"description\": \"(package name, version)\"}, {\"name\": \"inputs\", \"type\": \"dict\", \"description\": \"{input: {enabled, streams: {stream: {enabled, vars}}}}\"}]",
+        "purpose": "Pure: a Fleet integration policy as POST /api/fleet/package_policies?format=simplified takes it: id and name, description, namespace, policy_ids (its agent policy), package {name, version}, inputs.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "4057c73aabdc5ac4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-package-policy-aa8c0ec9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "file_policy",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"f\", \"type\": \"FileShipment\"}, {\"name\": \"version\", \"type\": \"str\", \"description\": \"the filestream package version\"}]",
+        "purpose": "Pure: the Custom Logs (Filestream) integration policy of a FileShipment of environment m: paths, the stream's dataset and namespace, parsers and line filter as YAML strings, in its role's agent policy.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "33f74f65c7bdc67b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "server_policies",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: (agent policies, integration policies) shipping environment m's log files on servers to its Elastic data streams: an agent policy per server role (namespace its first stream's), a filestream integration policy per role and file (package version from the elastic-filestream-version setting).",
+        "returns": "{\"type\": \"tuple[tuple[dict], tuple[dict]]\"}",
+        "source_hash": "e9db850207553cf8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "server_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: the render notes of shipping environment m's server log files to Elastic: per role an action to enroll its servers in its agent policy (token and Fleet Server URL never rendered; the package to install first with the API documents), a blocker per file two routes ship to different streams.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "3356b709973b2f6e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-server-notes-374ee262"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py",
+        "id_in_name": 0,
+        "name": "container_shipments",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: environment m's container (on kubernetes) Shipments whose destination is an Elastic data stream.",
+        "returns": "{\"type\": \"tuple[Shipment]\"}",
+        "source_hash": "778f196a4324e4d3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-container-shipments-316ecd6e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py",
+        "id_in_name": 0,
+        "name": "container_condition",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"x\", \"type\": \"Shipment\"}, {\"name\": \"sources\", \"type\": \"tuple[LogSource]\"}]",
+        "purpose": "Pure: the Elastic Agent condition picking a container Shipment's lines: ${kubernetes.labels.opsdir.io/role} == role, ${kubernetes.namespace} in the role's namespaces (when recorded), and the container (== a sidecar's name, or != the role's other sources' containers); validated with Elastic Agent 9.5.5 in kind.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "dd3ece488dc1bd73"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-container-condition-b0c0307c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py",
+        "id_in_name": 0,
+        "name": "container_policies",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: (agent policies, integration policies) shipping environment m's container output to its Elastic data streams: the agent policy opsdir-<env>-kubernetes and a Kubernetes integration policy per role and log, container_logs alone enabled with its condition and the stream's dataset/namespace (package version from elastic-kubernetes-version); ((), ()) when none.",
+        "returns": "{\"type\": \"tuple[tuple[dict], tuple[dict]]\"}",
+        "source_hash": "acc3c5663448a937"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-container-policies-222d04f0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py",
+        "id_in_name": 0,
+        "name": "container_notes",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: the render notes of shipping environment m's container output to Elastic: an action to run Fleet's Elastic Agent DaemonSet on the clusters (and Elastic's catch-all policy duplicating), a note per route taking only some lines (shipped whole), a blocker per container output two routes ship to different streams.",
+        "returns": "{\"type\": \"tuple[RenderNote]\"}",
+        "source_hash": "3bd99f9665539ce4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "data_stream_lifecycle",
+        "parameters": "[{\"name\": \"b\", \"type\": \"Entry\", \"description\": \"a ciamLogDestination naming a logs data stream\"}]",
+        "purpose": "Pure: (stream, its data stream lifecycle as GET _data_stream/<stream>/_lifecycle answers it and PUT takes it: enabled, data_retention <searchable days>d, none when kept indefinitely) of a data stream destination; None when it records no retention.",
+        "returns": "{\"type\": \"tuple[str, dict] | None\"}",
+        "source_hash": "d15535dd00bd71f1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-data-stream-lifecycle-53d0957f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py",
+        "id_in_name": 0,
+        "name": "lifecycle_streams",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Pure: environment m's kept data streams whose data stream lifecycle renders on Serverless: those recording a retention.",
+        "returns": "{\"type\": \"tuple[Entry]\"}",
+        "source_hash": "a6f2d92f709bc125"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-lifecycle-streams-d6f81410"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "stream_parts",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\"}]",
+        "purpose": "Pure: (type, dataset, namespace) of a logs data stream name (logs-<dataset>-<namespace>).",
+        "returns": "{\"type\": \"tuple[str, str, str]\"}",
+        "source_hash": "443a05a95a6c1e15"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-stream-parts-4e74f257"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "serverless",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}]",
+        "purpose": "Pure: whether environment m's stack declares its Elastic component Elastic Cloud Serverless (ciamOffering serverless; default stateful).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "94dc3f160a140d9e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-serverless-6a07a0b0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py",
+        "id_in_name": 0,
+        "name": "fleet_name",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"parts\", \"type\": \"str (varargs)\"}]",
+        "purpose": "Pure: the name and id of a Fleet policy rendered for environment m: opsdir-<cloud>-<env>-<part>-..., each part lowercased with runs of non-alphanumerics made a dash.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "3abe8b54c92afae1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-fleet-name-1ca76bcd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "build_flavor",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "Pure: the build flavor GET / answers (version.build_flavor: serverless on Elastic Cloud Serverless, default otherwise), or None when the text isn't such an answer.",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "238a25e8b9c6d4af"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-build-flavor-dda957f6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py",
+        "id_in_name": 0,
+        "name": "offering_notices",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"d\", \"type\": \"Directory\"}]",
+        "purpose": "Pure: per <cloud>/<env>/cluster.json of an environment in record d, a notice when its build flavor (serverless or stateful) disagrees with the offering the environment's stack declares for Elastic (ciamOffering).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "0c39abd0453a7174"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-offering-notices-97c69da6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py",
+        "id_in_name": 0,
+        "name": "fleet_policies",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"services\", \"type\": \"Services\"}]",
+        "purpose": "Pure: (agent policies, integration policies) shipping environment m's logs to its Elastic data streams: the servers' log files' (fleet.server_policies), then the containers' output (kubernetes.container_policies).",
+        "returns": "{\"type\": \"tuple[tuple[dict], tuple[dict]]\"}",
+        "source_hash": "b058ea4a51a46f8c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-fleet-policies-c53d2396"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "data_stream_lifecycle_block",
+        "parameters": "[{\"name\": \"stream\", \"type\": \"str\"}, {\"name\": \"lifecycle\", \"type\": \"dict\"}]",
+        "purpose": "Pure: the elasticstack_elasticsearch_data_stream_lifecycle resource block of a data stream's lifecycle (name, enabled, data_retention).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "8de2f03c90fa981f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-data-stream-lifecycle-block-3eebed9a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "integration_block",
+        "parameters": "[{\"name\": \"package\", \"type\": \"dict\", \"description\": \"{name, version}\"}]",
+        "purpose": "Pure: the elasticstack_fleet_integration resource block installing a Fleet integration package (name, version).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "2929db7dcecb9240"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-integration-block-bed0c5f5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "agent_policy_block",
+        "parameters": "[{\"name\": \"body\", \"type\": \"dict\", \"description\": \"fleet.agent_policy\"}]",
+        "purpose": "Pure: the elasticstack_fleet_agent_policy resource block of an agent policy body (policy_id, name, namespace, description, monitor_logs/monitor_metrics).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "48648c59b4f4be40"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-agent-policy-block-998b72b5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py",
+        "id_in_name": 0,
+        "name": "package_policy_block",
+        "parameters": "[{\"name\": \"body\", \"type\": \"dict\", \"description\": \"fleet.package_policy\"}]",
+        "purpose": "Pure: the elasticstack_fleet_integration_policy resource block of an integration policy body: ids, namespace, description, references to its agent policy and package blocks, inputs as the provider's map with each stream's vars as jsonencode().",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e75ca7bc52592048"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-package-policy-block-b2d1cafb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "name": "routes_named",
+        "parameters": "[{\"name\": \"names\", \"type\": \"tuple[str]\", \"description\": \"route names\"}]",
+        "purpose": "Pure: the log routes a policy ships for, in words for its description: 'log route a', 'log routes a, b'.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "27e6c6abae08a6af"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-routes-named-0cb7e49d"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"namedtuple\", \"fields\": {\"role\": \"str\", \"adapter\": \"str\", \"versions\": \"str|None (PEP 440 range)\", \"source\": \"str|None\", \"targets\": \"tuple[str] (default ())\", \"offering\": \"str|None (ciamOffering, adapter vocabulary; default None)\"}}",
+        "description": "One declared component of an environment's stack (a ciamStackComponent entry under ou=stack): the adapter, by registered name, that fills a role, the versions accepted, where to get it, the adapter's render targets the environment renders (ciamRenderTarget; () = the adapter's defaults) and the offering of its product filling the role (ciamOffering, the adapter's vocabulary; None = the adapter's default). A collections.namedtuple; targets defaults to (), offering to None.",
+        "file": "opsdir/opsdir/core/environment.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "StackComponent"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-stackcomponent-6cc7005b"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{}",
+        "description": "One log file a server role ships to an Elastic data stream through a Fleet filestream integration policy: the role, its LogSource, the stream, its glob under every install root the role's servers record, the hosts, the log kinds the routes shipping it there take and their names. A collections.namedtuple.",
+        "file": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "FileShipment"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-fileshipment-920d4682"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Deferred notes 3185 and 3186 (worker). (1) Elastic Cloud Serverless has no ILM and no user SLM: a Serverless data stream needs the data stream lifecycle (template.lifecycle.data_retention or PUT _data_stream/<name>/_lifecycle; Terraform elasticstack_elasticsearch_data_stream_lifecycle). The reader already reads DSL retention. Needs a way to say a deployment is Serverless (estate setting vs record attribute: design decision, may change what the record holds -> escalate) and a decision on the archive there (no user snapshots). (2) Shipping to Elastic data streams isn't rendered (today an Elastic Agent action note; container output is a blocker): render Fleet agent and integration policies (elasticstack_fleet_agent_policy / elasticstack_fleet_integration_policy, a filestream input per file into the stream's dataset/namespace) and, if sound, Kubernetes collection. Research first via Codex (read-only): current Elastic docs for DSL on Serverless and stateful, Fleet agent/integration policy API and Terraform schemas, the Custom Logs / filestream input package, Kubernetes integration. Design to the master before coding. Showcase ids reserved: CHG-2100..2104, planted A240..A249, B100..B104.",
+        "flows": [
+          "Elastic Security SIEM",
+          "Elastic Log Shipping (Fleet)"
+        ],
+        "name": "Elastic Serverless retention and Fleet/Agent shipping",
+        "parent": {
+          "slug": "milestone-6-2e-follow-ups-siem-detections-forwardi-af713894"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Codex read-only research (DSL on Serverless/stateful, archive on Serverless, Fleet agent/package policy API + elasticstack Terraform schemas, filestream package, Kubernetes integration, availability); check key claims on Elastic pages; design escalated to master as a decision.",
+        "name": "Research and design gate",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-research-and-design-gate-bb7608d6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Declare a deployment Serverless (as decided) and render its data streams' retention as the data stream lifecycle (API document + Terraform), with the archive decision; reader round trip; notes.",
+        "name": "Serverless retention render",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-serverless-retention-render-86327f3f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Render Fleet agent and integration policies (filestream input per file into the stream's dataset/namespace) for server shipments and, if sound, Kubernetes collection; API documents + Terraform; read back where designed; notes for what stays the Elastic team's.",
+        "name": "Fleet/Agent shipping render",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-fleet-agent-shipping-render-f9a241fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Package tests, terraform validate of a local render, showcase change(s) CHG-2100.. in demo.sh/snapshot-outputs.sh/showcase_support APPROVED, planted ids, README (Known limits), predicted golden changes.",
+        "name": "Tests, showcase, README",
+        "parent": {
+          "key": {
+            "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-showcase-readme-74650006"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "fbb9af2ec0652beb18d38b50f4e3642047ee0bc5",
+    "branch": "aimfp-u118-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls lifecycle_streams (lifecycle.py) via _serverless_notes",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifecycle-streams-d6f81410"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_notes calls serverless (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-notes-0866edd0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serverless-6a07a0b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls server_notes (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-notes-374ee262"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls container_notes (kubernetes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files references data_stream_lifecycle (lifecycle.py) via _retention_files",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-stream-lifecycle-53d0957f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files calls lifecycle_streams (lifecycle.py) via _retention_files",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifecycle-streams-d6f81410"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files calls serverless (naming.py) via _retention_files",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serverless-6a07a0b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_files calls fleet_policies (shipping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-files-4b85f510"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fleet-policies-c53d2396"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files references data_stream_lifecycle (lifecycle.py) via _retention_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-stream-lifecycle-53d0957f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls lifecycle_streams (lifecycle.py) via _retention_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifecycle-streams-d6f81410"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls serverless (naming.py) via _retention_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serverless-6a07a0b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls fleet_policies (shipping.py) via _fleet_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fleet-policies-c53d2396"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files calls data_stream_lifecycle_block (terraform.py) via _retention_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-stream-lifecycle-block-3eebed9a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files references integration_block (terraform.py) via _fleet_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-integration-block-bed0c5f5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files references agent_policy_block (terraform.py) via _fleet_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-policy-block-998b72b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "terraform_files references package_policy_block (terraform.py) via _fleet_blocks",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-terraform-files-8bd312f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-package-policy-block-b2d1cafb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "render_env calls elastic_shipments (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-render-env-710afa69"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_elasticsearch calls offering_notices (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-elasticsearch-63c20ff3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-offering-notices-97c69da6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "first_streams calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-first-streams-7b3a20df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-adce83a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipped calls first_streams (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipped-adce83a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-first-streams-7b3a20df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "clashes calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-clashes-54cb57af"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "clashes calls first_streams (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-clashes-54cb57af"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-first-streams-7b3a20df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "clash_note calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-clash-note-772bbdac"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "clash_note calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-clash-note-772bbdac"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "clash_note calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-clash-note-772bbdac"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_shipments calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_shipments calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_shipments calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_shipments calls shipped (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-adce83a9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "line_filter calls picks (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-line-filter-847c92ae"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-picks-6e7ad6c7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "line_filter calls kept_clauses (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-line-filter-847c92ae"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-clauses-61362cb2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_policy calls dump (yaml_text.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dump-47e37804"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_policy calls parsers (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-parsers-c3eb6609"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_policy calls line_filter (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-line-filter-847c92ae"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_policy calls package_policy (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-package-policy-aa8c0ec9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_policy calls stream_parts (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-parts-4e74f257"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_policy calls fleet_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fleet-name-1ca76bcd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_policies calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_policies calls elastic_shipments (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_policies calls file_shipments (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_policies calls agent_policy (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-policy-7a19e492"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_policies calls file_policy (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_policies calls stream_parts (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-parts-4e74f257"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_policies calls fleet_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fleet-name-1ca76bcd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls elastic_shipments (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls first_streams (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-first-streams-7b3a20df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls clashes (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-clashes-54cb57af"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls clash_note (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-clash-note-772bbdac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls file_shipments (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      }
+    },
+    {
+      "attributes": {
+        "description": "server_notes calls fleet_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-server-notes-374ee262"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fleet-name-1ca76bcd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_shipments calls elastic_shipments (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-shipments-316ecd6e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_condition calls containers_of (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-condition-b0c0307c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-containers-of-fe6ae0de"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_condition calls role_namespaces (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-condition-b0c0307c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-namespaces-22aa9cb6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls shipped (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-adce83a9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls agent_policy (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-agent-policy-7a19e492"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls package_policy (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-package-policy-aa8c0ec9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls container_shipments (kubernetes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-container-shipments-316ecd6e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls container_condition (kubernetes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-container-condition-b0c0307c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls stream_parts (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-parts-4e74f257"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls fleet_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fleet-name-1ca76bcd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls role_clusters (workloads.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-clusters-41154301"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls first_streams (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-first-streams-7b3a20df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls shipped (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-shipped-adce83a9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls clashes (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-clashes-54cb57af"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls clash_note (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-clash-note-772bbdac"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls container_shipments (kubernetes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-container-shipments-316ecd6e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_notes calls fleet_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-notes-8c1382f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fleet-name-1ca76bcd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "data_stream_lifecycle calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-data-stream-lifecycle-53d0957f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "data_stream_lifecycle calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-data-stream-lifecycle-53d0957f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_streams calls retention_days (retention.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-streams-d6f81410"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-retention-days-9ef4419a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifecycle_streams calls kept_streams (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifecycle-streams-d6f81410"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-streams-fc442c0f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "serverless calls offering (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-serverless-6a07a0b0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-offering-40e3c513"
+      }
+    },
+    {
+      "attributes": {
+        "description": "offering_notices calls env_model (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-offering-notices-97c69da6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-env-model-91aeaf5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "offering_notices calls environment_at (environment.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-offering-notices-97c69da6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-at-4addf2ff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "offering_notices calls serverless (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-offering-notices-97c69da6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serverless-6a07a0b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "offering_notices calls build_flavor (read.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-offering-notices-97c69da6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-build-flavor-dda957f6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "fleet_policies calls server_policies (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-fleet-policies-c53d2396"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-server-policies-7619ddbf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "fleet_policies calls container_policies (kubernetes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-fleet-policies-c53d2396"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-container-policies-222d04f0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "data_stream_lifecycle_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-data-stream-lifecycle-block-3eebed9a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "data_stream_lifecycle_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-data-stream-lifecycle-block-3eebed9a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-block-bed0c5f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "integration_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-integration-block-bed0c5f5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_policy_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-policy-block-998b72b5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "agent_policy_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-agent-policy-block-998b72b5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "package_policy_block calls tf_name (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-policy-block-b2d1cafb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-tf-name-07ac02e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "package_policy_block calls data_value (hcl.py) via _encoded",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-policy-block-b2d1cafb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-value-e61d2c87"
+      }
+    },
+    {
+      "attributes": {
+        "description": "package_policy_block calls data_block (hcl.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-package-policy-block-b2d1cafb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-data-block-64cca3b4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "file_policy calls routes_named (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-routes-named-0cb7e49d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "container_policies calls routes_named (fleet.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-container-policies-222d04f0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-routes-named-0cb7e49d"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-offering-40e3c513"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-stackcomponent-6cc7005b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-file-shipments-fa2ee520"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-fileshipment-920d4682"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-file-policy-42fbf4c6"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-fileshipment-920d4682"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py"
+      },
+      "flow": {
+        "name": "Elastic Log Shipping (Fleet)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py"
+      },
+      "flow": {
+        "name": "Elastic Log Shipping (Fleet)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py"
+      },
+      "flow": {
+        "name": "Elastic Log Shipping (Fleet)"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-elastic"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Elastic Log Shipping (Fleet)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Renderers (DB -> files)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Elastic Log Shipping (Fleet)"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Provider & Lineage Agnosticism"
+      }
+    },
+    {
+      "flow": {
+        "name": "Elastic Log Shipping (Fleet)"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2e-follow-ups-siem-detections-forwardi-af713894"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/environment.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/fleet.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/kubernetes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/lifecycle.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/terraform.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/read.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/api.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/render.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/infrastructure/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-elastic-serverless-retention-and-fleet-a-58453657"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls note (notes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-note-ef2fda46"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls stream_name (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-stream-name-caf2e71b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "shipping_notes calls elastic_shipments (shipping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-shipping-notes-af9bc59f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-elastic-shipments-3124fddb"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-elastic/src/opsdir_adapter_elastic/shipping.py"
+      },
+      "flow": {
+        "name": "Elastic Security SIEM"
+      },
+      "kind": "file_flow",
+      "op": "remove"
+    }
+  ],
+  "warnings": []
+}

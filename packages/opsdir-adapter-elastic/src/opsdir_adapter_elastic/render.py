@@ -1,17 +1,19 @@
 """What the Elastic add-on renders for an environment (decision on task 552), in the render targets chosen: the
 Elasticsearch and Kibana API documents (api) and Terraform for the elastic/elasticstack provider (terraform), both by
-default, from the same documents; and the render notes of what it leaves to the Elastic team. Pure.
+default, from the same documents: the data streams' retention, the detections' rules and the Fleet policies shipping
+the logs there; and the render notes of what it leaves to the Elastic team. Pure.
 """
 from opsdir.core.notes import note
 from .api import api_files
 from .detections import detection_notes, elastic_detections, rendered_rules
 from .lifecycle import lifecycle_notes
+from .fleet import elastic_shipments
 from .naming import kept_streams
 from .shipping import shipping_notes
 from .terraform import terraform_files
 
-TARGETS = (("api", "Elasticsearch and Kibana API documents: ILM, component template and SLM policies, and detection "
-                   "rules to import (elastic/api/)"),
+TARGETS = (("api", "Elasticsearch and Kibana API documents: ILM, component template and SLM policies (on Serverless "
+                   "data stream lifecycles), detection rules to import and Fleet policies (elastic/api/)"),
            ("terraform", "Terraform for the elastic/elasticstack provider (elastic/terraform/)"))
 
 
@@ -28,9 +30,10 @@ def render_notes(m, services):
 
 
 def render_env(m, services, targets=tuple(t[0] for t in TARGETS)):
-    """Adapter render_env: environment m's Elastic data streams' lifecycle and detection rules in the render targets
-    chosen, when it keeps logs in an Elastic data stream or runs a detection on one."""
-    if not kept_streams(m) and not elastic_detections(m):
+    """Adapter render_env: environment m's Elastic data streams' lifecycle, detection rules and log shipping in the
+    render targets chosen, when it keeps logs in an Elastic data stream, runs a detection on one or ships logs to
+    one."""
+    if not kept_streams(m) and not elastic_detections(m) and not elastic_shipments(m, services):
         return {}
-    return {**(api_files(m) if "api" in targets else {}),
-            **(terraform_files(m, render_notes(m, services)) if "terraform" in targets else {})}
+    return {**(api_files(m, services) if "api" in targets else {}),
+            **(terraform_files(m, render_notes(m, services), services) if "terraform" in targets else {})}

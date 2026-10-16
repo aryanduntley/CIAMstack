@@ -4,15 +4,20 @@ reading <cloud>/<env>/ folders as the collectors save them (collect.py) or the r
 Pure.
 
 elastic/elasticsearch reads data-streams.json (GET /_data_stream), ilm-policies.json (GET /_ilm/policy),
-slm-policies.json (GET /_slm/policy) and component-templates.json (GET _component_template; the render's). A logs data
-stream is a log destination of kind siem-index named by the stream (ciamProviderRef). Its searchable days: when the
-data stream lifecycle manages it (next_generation_managed_by), its data_retention (none: kept indefinitely); else its
+slm-policies.json (GET /_slm/policy), component-templates.json (GET _component_template; the render's),
+data-stream-lifecycles.json (GET _data_stream/<name>/_lifecycle; the render's on Serverless) and cluster.json (GET /).
+A logs data stream is a log destination of kind siem-index named by the stream (ciamProviderRef). Its searchable days:
+when the data stream lifecycle manages it (next_generation_managed_by, or only its lifecycle is given), its
+effective_retention, else its data_retention (what a global default or maximum leaves it; neither: kept
+indefinitely); else its
 ILM policy's delete phase min_age (no delete phase: kept indefinitely; days not whole are named), the policy being the
 one the stream reports (ilm_policy), else the one its dataset's component template attaches, else the one whose _meta
 names the stream (the render's). Its days in all, when a snapshot policy covers the stream (config.indices): searchable
 days plus the policy's retention expire_after (none: kept indefinitely), its repository the archive (ciamArchiveRef).
 What the answers don't give is left as the record has it, never read as zero. Streams of other types (metrics-...) and
-system ones (a leading dot) are left out.
+system ones (a leading dot) are left out. Whether the cluster is Elastic Cloud Serverless (GET /: version.build_flavor
+serverless) is checked against the offering the environment's stack declares (ciamOffering), a notice when they
+disagree.
 
 elastic/kibana reads detection-rules.json (GET /api/detection_engine/rules/_find; its further pages
 detection-rules.<n>.json) or detection-rules.ndjson (an export, or the render's import file). A rule is a detection
@@ -30,19 +35,21 @@ import json
 import re
 from fnmatch import fnmatchcase
 
+from opsdir.core.environment import env_model, environment_at
 from opsdir.core.inventory import layout_import, realization_roles, resource
 from opsdir.domains.observability.retention import INDEFINITE
 from opsdir.domains.observability.siem import UNREPORTED, own_notices, realized_in
 from .detections import base_query, source_of
-from .naming import NATIVE, custom_template, is_stream, keeps
+from .naming import NATIVE, SERVERLESS, STATEFUL, custom_template, is_stream, keeps, serverless
 
 DAY = 86400
 DSL = "Data stream lifecycle"               # next_generation_managed_by of a stream the data stream lifecycle manages
 _DURATION = re.compile(r"^(?P<n>\d+)(?P<unit>d|h|m|s|ms|micros|nanos)$")
 _SECONDS = {"d": DAY, "h": 3600, "m": 60, "s": 1, "ms": 0.001, "micros": 1e-6, "nanos": 1e-9}
 DATA_STREAMS, ILM_POLICIES, SLM_POLICIES = "data-streams.json", "ilm-policies.json", "slm-policies.json"
-COMPONENT_TEMPLATES = "component-templates.json"
-ES_FILES = (DATA_STREAMS, ILM_POLICIES, SLM_POLICIES, COMPONENT_TEMPLATES)
+COMPONENT_TEMPLATES, DATA_STREAM_LIFECYCLES, CLUSTER = ("component-templates.json", "data-stream-lifecycles.json",
+                                                       "cluster.json")
+ES_FILES = (DATA_STREAMS, ILM_POLICIES, SLM_POLICIES, COMPONENT_TEMPLATES, DATA_STREAM_LIFECYCLES, CLUSTER)
 RULE_FILES = ("detection-rules.json", "detection-rules.ndjson")
 _PAGE = re.compile(r"^detection-rules(\.\d+)?\.json$")     # the _find answer's pages (collect.page_path)
 _UNSEARCHED = f"(ciamLogDestination) {UNREPORTED}"   # a stream no rule searches: the rules say nothing of it
@@ -79,12 +86,19 @@ def _template_policies(doc):
             for t in (doc or {}).get("component_templates", ()) if isinstance(t, dict)}
 
 
-def _streams(streams, policies):
-    """{stream name: its GET _data_stream entry ({} when only a policy's _meta names it)}: logs data streams only."""
+def _lifecycles(doc):
+    """{stream name: its data stream lifecycle} of GET _data_stream/<name>/_lifecycle's answer."""
+    return {s.get("name"): s.get("lifecycle") or {} for s in (doc or {}).get("data_streams", ()) if isinstance(s, dict)}
+
+
+def _streams(streams, policies, lifecycles):
+    """{stream name: its GET _data_stream entry ({} when only a policy's _meta names it; its lifecycle alone when only
+    the lifecycles answer names it)}: logs data streams only."""
     named = {s.get("name"): s for s in (streams or {}).get("data_streams", ()) if isinstance(s, dict)}
     by_meta = {p.get("policy", {}).get("_meta", {}).get("data_stream"): {} for p in (policies or {}).values()
                if isinstance(p, dict)}
-    return {n: s for n, s in {**by_meta, **named}.items() if n and is_stream(n)}
+    by_lifecycle = {n: {"next_generation_managed_by": DSL, "lifecycle": lc} for n, lc in lifecycles.items()}
+    return {n: s for n, s in {**by_meta, **by_lifecycle, **named}.items() if n and is_stream(n)}
 
 
 def _policy_of(name, entry, policies, templates):
@@ -94,10 +108,11 @@ def _policy_of(name, entry, policies, templates):
     return entry.get("ilm_policy") or templates.get(custom_template(name)) or meta
 
 
-def _searchable(name, entry, policies, templates):
+def _searchable(name, entry, policies, templates, lifecycles):
     """(searchable days or None, notices) of data stream name."""
     if entry.get("next_generation_managed_by") == DSL:
-        retention = (entry.get("lifecycle") or {}).get("data_retention")
+        lifecycle = {**lifecycles.get(name, {}), **(entry.get("lifecycle") or {})}
+        retention = lifecycle.get("effective_retention") or lifecycle.get("data_retention")
         days, why = es_days(retention) if retention else (INDEFINITE, None)
         return days, ((f"Elastic data stream {name}: data_retention {why}",) if why else ())
     policy = (policies or {}).get(_policy_of(name, entry, policies, templates) or "")
@@ -133,16 +148,16 @@ def _archive(name, days, snapshots):
 def parse_elasticsearch(files):
     """(resources, notices) of one environment's Elasticsearch answers ({file name: text})."""
     read = {f: _json(files, f) for f in ES_FILES}
-    streams, policies, snapshots, templates = (read[f][0] for f in ES_FILES)
-    by_template = _template_policies(templates)
+    streams, policies, snapshots, templates, lifecycles, _ = (read[f][0] for f in ES_FILES)
+    by_template, by_lifecycle = _template_policies(templates), _lifecycles(lifecycles)
 
     def of(name, entry):
-        days, notices = _searchable(name, entry, policies, by_template)
+        days, notices = _searchable(name, entry, policies, by_template, by_lifecycle)
         total, repository = _archive(name, days, snapshots)
         return resource("logs", name, {"ciamDestinationKind": "siem-index", "ciamRetentionDays": days,
                                        "ciamTotalRetentionDays": total, "ciamArchiveRef": repository},
                         name=name), notices
-    found = tuple(of(n, e) for n, e in _streams(streams, policies).items())
+    found = tuple(of(n, e) for n, e in _streams(streams, policies, by_lifecycle).items())
     return (tuple(r for r, _ in found),
             (*(p for _, p in read.values() if p), *(n for _, ns in found for n in ns)))
 
@@ -194,10 +209,39 @@ def parse_kibana(files):
             (*problems, *(n for _, ns in found for n in ns)))
 
 
+def build_flavor(text):
+    """The build flavor GET / answers (version.build_flavor: serverless on Elastic Cloud Serverless, default
+    otherwise), or None when the answer doesn't say."""
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return None
+    flavor = (doc.get("version") or {}).get("build_flavor") if isinstance(doc, dict) else None
+    return flavor if isinstance(flavor, str) else None
+
+
+def offering_notices(files, d):
+    """Per <cloud>/<env>/cluster.json of an environment in record d whose build flavor disagrees with the offering
+    its stack declares (ciamOffering serverless, or the stateful default), a notice saying so."""
+    def notice(path):
+        env, flavor = environment_at(d, path), build_flavor(files[path])
+        if env is None or flavor is None:
+            return None
+        found, declared = SERVERLESS if flavor == SERVERLESS else STATEFUL, serverless(env_model(d, env))
+        if found == (SERVERLESS if declared else STATEFUL):
+            return None
+        return (f"{path.rsplit('/', 1)[0]}: Elasticsearch answers build flavor {flavor} ({found}), but the "
+                f"environment's stack declares its Elastic component {SERVERLESS if declared else STATEFUL} "
+                f"(ciamOffering): record ciamOffering {found} on it, or collect from the right cluster")
+    return tuple(n for n in (notice(p) for p in files if p.endswith(f"/{CLUSTER}")) if n is not None)
+
+
 def read_elasticsearch(files, d, patterns=(), at=None):
-    """Importer elastic/elasticsearch: the data streams' retention per <cloud>/<env>/."""
-    return own_notices(d, layout_import(files, d, None, "Elastic", parse_elasticsearch, ES_FILES,
-                                        "Elasticsearch answers", DATA_STREAMS, summarize=("logs",)), keeps)
+    """Importer elastic/elasticsearch: the data streams' retention per <cloud>/<env>/, and whether the cluster is the
+    offering the stack declares (offering_notices)."""
+    imported = own_notices(d, layout_import(files, d, None, "Elastic", parse_elasticsearch, ES_FILES,
+                                            "Elasticsearch answers", DATA_STREAMS, summarize=("logs",)), keeps)
+    return imported._replace(notices=(*imported.notices, *offering_notices(files, d)))
 
 
 def read_kibana(files, d, patterns=(), at=None):

@@ -148,6 +148,9 @@ ATTRIBUTES = (
                  'Adapter versions the environment accepts (a PEP 440 range, e.g. >=0.1,<1)'),
     AttributeDef(129, 'ciamAdapterSource', 'string', 'binding', True,
                  'Where to get the adapter package (URL or package name)'),
+    AttributeDef(850, 'ciamOffering', 'vocab', 'binding', True,
+                 "Which offering of its product fills a stack component's role, from the vocabulary its adapter "
+                 "declares (e.g. a managed service's serverless form). Not recorded: the adapter's default"),
     AttributeDef(645, 'ciamRenderTarget', 'string', 'binding', False,
                  "A render target the environment holds for the component's adapter (one the adapter declares, such "
                  "as the infrastructure-as-code language a cloud adapter writes), set only when the environment "
@@ -223,8 +226,9 @@ CLASSES = (
               'ciamAcceptedCidr', 'ciamPeerAccepted', 'ciamManagedBy'),
              'Link to another environment'),
     ClassDef(33, 'ciamStackComponent', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamStackRole', 'ciamAdapter'),
-             ('ciamAdapterVersion', 'ciamAdapterSource', 'ciamRenderTarget'),
-             'One component of an environment stack: the adapter that fills a role'),
+             ('ciamAdapterVersion', 'ciamAdapterSource', 'ciamRenderTarget', 'ciamOffering'),
+             'One component of an environment stack: the adapter that fills a role, and the offering of its product '
+             'when it has several (ciamOffering)'),
     ClassDef(44, 'ciamRequiredRole', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBindingRole'),
              (),
              'A role the environment must bind, declared as data (beyond what its domains and adapters require); '

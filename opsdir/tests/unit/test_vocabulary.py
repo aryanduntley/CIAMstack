@@ -6,7 +6,7 @@ from opsdir.store.postgres import schema_rows
 
 VOCAB_ATTRIBUTES = {"ciamCloudProvider", "ciamCloudEnvironment", "ciamServerRole", "ciamTargetRole", "ciamFormat",
                     "ciamGatewayImplementation", "ciamHardeningProfile", "ciamOnProvider", "ciamManagedService",
-                    "ciamDataGeography", "ciamSearchLanguage"}
+                    "ciamDataGeography", "ciamSearchLanguage", "ciamOffering"}
 
 
 def _attribute_rows(fragments=None):
