@@ -50,6 +50,8 @@ NAMES = {
     # External ID by the name Microsoft's External ID FAQ gives it; covered by Microsoft Entra ID (COVERED)
     "ciamManagedIdentity": lambda b: EXTERNAL_ID
     if one(b, "ciamManagedService") == "entra-external-id" else None,
+    "ciamManagedDirectory": lambda b: "Microsoft Entra Domain Services"
+    if one(b, "ciamManagedService") == "entra-domain-services" else None,
     "ciamPrivateEndpoint": "Private Link", "ciamEndpointService": "Private Link",
     "ciamInterconnect": lambda b: "ExpressRoute" if "express" in (one(b, "ciamInterconnectKind") or "").lower()
     else "VPN Gateway",

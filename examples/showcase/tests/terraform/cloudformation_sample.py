@@ -5,8 +5,9 @@ rules and Shield Advanced's automatic response (the gateway sample), a failover 
 fixtures' DNS estate), an Aurora cluster, a Cognito user pool with its domain, clients, resource server and SAML
 partner, a suppression, a quota request, Macie's scheduled job, a compute group with
 its role's boot and data disks (a launch template and an autoscaling group), and Fluent Bit's role
-its pods assume through the cluster's OIDC provider (IRSA): every resource and data source type the AWS renderers
-write that the showcase doesn't."""
+its pods assume through the cluster's OIDC provider (IRSA), and an AWS Managed Microsoft AD directory as its
+CloudFormation stack with a further region and a conditional forwarder (flow 76): every resource and data source type
+the AWS renderers write that the showcase doesn't."""
 import pathlib
 
 from opsdir.connectors.registry import services
@@ -132,8 +133,19 @@ POOL = (entry(ALPHA, "cert-sso", "ciamCertificateRef", ciamBindingRole="sso-cert
         entry(ALPHA, "sso-pool", "ciamManagedIdentity", ciamBindingRole="sso-pool",
               ciamManagedService="cognito-user-pool", ciamRealizes="sso", ciamFqdn="sso.example.test",
               ciamTlsCertificate="cn=sso-tls,dc=ciam-ops"))
+# an AWS Managed Microsoft AD directory holding the user directory (flow 76): its stack (the Admin password a Secrets
+# Manager dynamic reference), a further region on variables, a forwarder for its trust's domain
+AD_SECRET = f"arn:aws:secretsmanager:us-east-1:{ACCOUNT}:secret:ciam/prod/ad-admin-AbCdEf"
+DIRECTORY = (entry(ALPHA, "ad-admin", "ciamSecretRef", ciamBindingRole="ad-admin", ciamRefUri=f"aws-sm://{AD_SECRET}"),
+             entry(ALPHA, "user-dir", "ciamManagedDirectory", ciamBindingRole="user-dir",
+                   ciamManagedService="aws-managed-ad", ciamRealizes="ds", ciamFqdn="corp.example.test",
+                   ciamNetbiosName="CORP", ciamDirectoryEdition="enterprise",
+                   ciamSubnetRole=("subnet-ds", "subnet-web"), ciamCredentialRole="ad-admin",
+                   ciamReplicaRegion="us-west-2"),
+             entry(f"cn=user-dir,ou=bindings,{ALPHA}", "hq", "ciamDirectoryTrust", ciamFqdn="hq.example.test",
+                   ciamTrustType="forest", ciamTrustDirection="two-way", ciamForwardTarget=("10.9.0.10", "10.9.0.11")))
 RECORDS = (
-    *GROUP, *POOL,
+    *GROUP, *POOL, *DIRECTORY,
     entry(ALPHA, "key-db", "ciamKeyRef", ciamBindingRole="db-key", ciamRefUri=f"aws-kms://{KEY_ARN}"),
     entry(ALPHA, "db-grants", "ciamDatabase", **DB),
     entry(ALPHA, "exc-EXC-7", "ciamSuppression", ciamBindingRole="suppression-EXC-7", ciamExceptionRef=EXC,

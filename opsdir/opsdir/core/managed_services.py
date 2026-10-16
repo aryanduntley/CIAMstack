@@ -7,10 +7,15 @@ SUPPORTED, UNSUPPORTED, UNESTABLISHED = "supported", "unsupported", "not establi
 
 def status(spec, partition, capability):
     """(status, source) of a capability on a managed service in a partition: unsupported where the partition or the
-    service is documented to lack it, supported where documented, else not established (None)."""
+    service is documented to lack it, not established where the partition's documentation leaves open what is
+    documented elsewhere (a ManagedDirectory's partition_unestablished: the why as the source), supported where
+    documented, else not established (None)."""
     lacking = spec.partition_unsupported.get(partition, {})
     if capability in lacking:
         return UNSUPPORTED, lacking[capability]
+    open_there = getattr(spec, "partition_unestablished", {}).get(partition, {})
+    if capability in open_there:
+        return UNESTABLISHED, open_there[capability]
     if capability in spec.unsupported:
         return UNSUPPORTED, spec.unsupported[capability]
     if capability in spec.supported:

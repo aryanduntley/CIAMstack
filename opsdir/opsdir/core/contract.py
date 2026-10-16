@@ -10,6 +10,7 @@ it can resolve; a package may also add schema definitions of its own (a fragment
 plain records of data and functions; connectors compose them.
 """
 from collections import namedtuple
+from types import MappingProxyType
 from typing import Callable, Mapping, NamedTuple, Optional
 
 from .directory import Directory
@@ -202,13 +203,15 @@ ManagedService = NamedTuple("ManagedService", [("name", str), ("title", str), ("
 # {what: (most, source)} (password-policies, regions, trusts: the most a directory takes); editions {capability:
 # (editions, source)}: the ciamDirectoryEdition values a capability needs; default_base: (binding) -> the DN of the
 # OU the service gives the customer to write in (where the record's entries land when the binding records no
-# ciamWritableBase), or None when the customer names it.
+# ciamWritableBase), or None when the customer names it; partition_unestablished {partition: {capability: why}}: what
+# the vendor documents in general but its documentation of that partition leaves open (not established there).
 ManagedDirectory = NamedTuple("ManagedDirectory", [("name", str), ("title", str), ("partition", Callable),
                                                    ("available", Mapping), ("absent", Mapping), ("supported", Mapping),
                                                    ("unsupported", Mapping), ("partition_unsupported", Mapping),
                                                    ("conditions", Mapping), ("notes", Mapping), ("users", str),
                                                    ("limits", Mapping), ("editions", Mapping),
-                                                   ("default_base", Callable)])
+                                                   ("default_base", Callable), ("partition_unestablished", Mapping)])
+ManagedDirectory.__new__.__defaults__ = (MappingProxyType({}),)
 
 # How a cloud's L7 front reaches a cluster's in-cluster gateway, from the provider adapter that owns the cloud:
 # annotations on the gateway's Service ((name, value), ...), further Kubernetes objects the plug needs (dicts, e.g. a

@@ -10,12 +10,15 @@ physical IDs, Fn::GetAtt where it follows from one). Pure.
   AWS::Macie::CustomDataIdentifier                                          -> aws_macie2_custom_data_identifier
   AWS::Cognito::UserPool (+ UserPoolDomain)                                 -> aws_cognito_user_pool (its id, ARN,
                                                                                name, tags), aws_cognito_user_pool_domain
+  AWS::DirectoryService::MicrosoftAD                                        -> aws_directory_service_directory (its
+                                                                               ID, domain, NetBIOS name, edition, VPC;
+                                                                               its Password is never read)
 """
 from .cloudformation_values import number, tag_map, truth
 
 DATA_TYPES = ("AWS::RDS::DBInstance", "AWS::RDS::DBCluster", "AWS::RDS::DBSubnetGroup", "AWS::RDS::DBParameterGroup",
               "AWS::RDS::DBClusterParameterGroup", "AWS::Macie::CustomDataIdentifier", "AWS::Cognito::UserPool",
-              "AWS::Cognito::UserPoolDomain")
+              "AWS::Cognito::UserPoolDomain", "AWS::DirectoryService::MicrosoftAD")
 
 
 def _of(declared, type_):
@@ -79,4 +82,8 @@ def data_stack_pairs(declared, names):
             *(("aws_cognito_user_pool_domain", {"domain": p.get("Domain"), "user_pool_id": p.get("UserPoolId"),
                                                 "certificate_arn": (p.get("CustomDomainConfig") or {}).get(
                                                     "CertificateArn")})
-              for _, p, _ in _of(declared, "AWS::Cognito::UserPoolDomain"))]
+              for _, p, _ in _of(declared, "AWS::Cognito::UserPoolDomain")),
+            *(("aws_directory_service_directory", {"id": pid, "type": "MicrosoftAD", "name": p.get("Name"),
+                                                   "short_name": p.get("ShortName"), "edition": p.get("Edition"),
+                                                   "vpc_id": (p.get("VpcSettings") or {}).get("VpcId")})
+              for _, p, pid in _of(declared, "AWS::DirectoryService::MicrosoftAD"))]

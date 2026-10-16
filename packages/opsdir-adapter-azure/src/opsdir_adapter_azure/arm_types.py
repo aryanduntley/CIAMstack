@@ -46,8 +46,13 @@ _PARENT_INPUT = ("a child of the {}, which the root takes as an input: ARM deplo
 _MANAGEMENT_GROUP = ("made on the management group the record names (a management-group scope deployment): its keeper "
                      "applies it with Terraform, with the role assignments and remediation it needs")
 # Types kept in Terraform for a stated reason.
+_DOMAIN_SERVICES = ("kept with its replica sets: ARM declares them as the managed domain's replicaSets property, which "
+                    "azurerm sets as resources of their own")
 KEPT = {
     "azurerm_subnet_network_security_group_association": _SUBNET,
+    # Entra Domain Services (flow 76): the managed domain and its replica sets together
+    "azurerm_active_directory_domain_service": _DOMAIN_SERVICES,
+    "azurerm_active_directory_domain_service_replica_set": _DOMAIN_SERVICES,
     "azurerm_subnet_route_table_association": _SUBNET,
     "azurerm_subnet_nat_gateway_association": _SUBNET,
     "azurerm_virtual_hub_connection": _PARENT_INPUT.format("virtual WAN hub"),

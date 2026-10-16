@@ -39,7 +39,7 @@ def _block(text, head):
 
 
 def test_the_adapter_declares_external_id_for_public_clouds_only():
-    assert ADAPTER.managed_identity == (EXTERNAL_ID,) and ADAPTER.vocabulary["ciamManagedService"] == (SERVICE,)
+    assert ADAPTER.managed_identity == (EXTERNAL_ID,) and SERVICE in ADAPTER.vocabulary["ciamManagedService"]
     assert set(EXTERNAL_ID.available) == {"public"} and set(EXTERNAL_ID.absent) == {"usgovernment"}
     assert {"issue:oidc", "issue:saml", "grant:refresh_token", "token-auth:client_secret_basic", "signing-alg:RS256",
             "custom-domain", "mfa-per-client", "claim-transform"} <= set(EXTERNAL_ID.supported)

@@ -9,6 +9,7 @@ from .check_jobs import DELIVERY, IMAGE
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .external_id import GEOGRAPHIES, MANAGED, SERVICE as EXTERNAL_ID
+from .domain_services import EDITIONS, MANAGED as MANAGED_DIRECTORY, SERVICE as DOMAIN_SERVICES
 from .external_id_graph import GRAPH_COLLECTOR, GRAPH_IMPORTER
 from .identity_protection import check_identity_protection
 from .purview import check_discovery_cadence
@@ -39,7 +40,8 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment"),
-                              "ciamManagedService": (EXTERNAL_ID,), "ciamDataGeography": tuple(GEOGRAPHIES),
+                              "ciamManagedService": (EXTERNAL_ID, DOMAIN_SERVICES),
+                              "ciamDataGeography": tuple(GEOGRAPHIES), "ciamDirectoryEdition": EDITIONS,
                               "ciamSearchLanguage": (SEARCH_LANGUAGE,)},
                   schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/checks/check.py", "python"),
@@ -60,4 +62,4 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                               ReadBack("arm", "arm/*", "arm/", "{environment}/", True, rendered_deployments,
                                        intent=True)),
                   notes=render_notes, renders_synthetic_checks=True, siem_indexes=sentinel_keeps,
-                  managed_identity=MANAGED)
+                  managed_identity=MANAGED, managed_directory=MANAGED_DIRECTORY)

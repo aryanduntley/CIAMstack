@@ -70,6 +70,16 @@ def trust_capability(t):
     return f"trust:{one(t, 'ciamTrustType')}:{one(t, 'ciamTrustDirection')}"
 
 
+def trust_summary(d, t):
+    """A trust in words: the trust with its domain (its type, direction, selective authentication), and who keeps the
+    other side when recorded."""
+    keeper = get(d, one(t, "ciamManagedBy")) if one(t, "ciamManagedBy") else None
+    how = (one(t, "ciamTrustType"), DIRECTIONS.get(one(t, "ciamTrustDirection"), one(t, "ciamTrustDirection")),
+           "selective authentication" if one(t, "ciamSelectiveAuth") == "TRUE" else None)
+    return (f"the trust with {one(t, 'ciamFqdn')} ({', '.join(x for x in how if x)})"
+            + (f", its other side kept by {rdn_value(keeper)}" if keeper is not None else ""))
+
+
 def words(capability):
     """A capability in words: what the managed directory would have to do."""
     kind, _, rest = capability.partition(":")

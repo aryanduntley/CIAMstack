@@ -63,6 +63,10 @@ From Terraform state (terraform.tfstate, format version 4), managed resources an
     aws_cognito_user_pool_domain)                cognito-user-pool, its ARN, its custom domain, the identity service
                                                  its tag Realizes names; never a client's or provider's secret: see
                                                  cognito.py
+  aws_directory_service_directory (type       -> managed directory (kind managed-directory, ciamManagedDirectory):
+    MicrosoftAD; or an opsdir directory          aws-managed-ad, its ID, domain, NetBIOS name, edition, regions (its
+    stack: aws_cloudformation_stack; +           aws_directory_service_region entries), the role and Realizes its
+    aws_directory_service_region)                tags name; never its password: see directory.py
   IAM: roles, resource policies, permission sets, control policies, access paths: see iam.py
 Roles of resources the record doesn't have come from their tags Role (or BindingRole). A compute group's binding role
 is its tag BindingRole, else compute-<its tag Role>; a cluster's is its tag BindingRole or Role, else cluster; an
@@ -83,6 +87,7 @@ from .edge_inventory import (aliased_names, dns_resources, edge_services, lb_fac
                              service_dns)
 from .iam import iam_resources
 from .cognito import cognito_resources
+from .directory import directory_resources
 from .databases import database_resources, database_security_groups
 from .audit import trail_resources
 from .budgets import budget_resources, budget_topics
@@ -511,7 +516,8 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *iam, *edge_services(pairs), *zones, *records, *forwarders, *network,
-             *database_resources(pairs), *cognito_resources(pairs), *volumes, *backups, *trail_resources(pairs),
+             *database_resources(pairs), *cognito_resources(pairs), *directory_resources(pairs), *volumes,
+             *backups, *trail_resources(pairs),
              *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs),
              *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *dns_notices, *network_notices, *volume_notices, *backup_notices))

@@ -31,6 +31,7 @@ from opsdir.domains.edge.resolve import (inspected, inspection_notes, rendered_e
 from opsdir.domains.network.stack import firewall_model
 from opsdir_adapter_gcp.access import ACCESS
 from opsdir_adapter_gcp.databases import database_notes, render_databases
+from opsdir_adapter_gcp.managed_ad import managed_ad_notes, render_managed_ad
 from opsdir_adapter_gcp.storage import kept_buckets, render_object_stores
 from opsdir_adapter_gcp.dns import failover_notes, forwarder_notes, forwarding_zones, records, service_record
 from opsdir_adapter_gcp.edge import (alb_rendered, application_lb, category_notes, network_lb,
@@ -238,7 +239,8 @@ def render_files(m, services):
            *render_snapshot_policies(m), *render_backups(m),
            *gateway_negs(m),
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
-           *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
+           *render_network(m, endpoints), *render_databases(m), *render_managed_ad(m), *render_object_stores(m),
+           *records(m.d, m),
            *forwarding_zones(m), *render_trails(m), *render_buckets(m),
            *(render_log_sinks(m, services) if services else ()),
            *(comment(note_comment(n)) for n in (log_sink_notes(m, services) if services else ())),
@@ -293,6 +295,7 @@ def render_notes(m, services):
             *discovery_notes(m), *guardrail_notes(m), *workload_notes(m), *alert_notes(m),
             *identity_notes(m, ACCESS), *kubernetes_notes(m, firewall=firewall_model(m) != "policy"),
             *firewall_notes(m), *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m),
-            *database_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m), *edge_notes(m, endpoints),
+            *database_notes(m), *managed_ad_notes(m), *backup_notes(m), *volume_notes(m), *group_notes(m),
+            *edge_notes(m, endpoints),
             *failover_notes(m, endpoints), *quota_notes(m), *network_notes(m, endpoints), *plumbing_notes(m),
             *(log_sink_notes(m, services) if services else ()))

@@ -24,6 +24,7 @@ from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
 from .databases import database_notes, render_databases
+from .domain_services import domain_service_notes, render_domain_services
 from .external_id import (external_id_notes, external_id_providers, render_external_id, renders_applications,
                           renders_tenant)
 from .storage import render_object_stores
@@ -222,7 +223,7 @@ def terraform_parts(m, services):
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
            *_key_vault_secrets(m), *scope_data(m, identities),
-           *render_external_id(m))
+           *render_external_id(m), *render_domain_services(m))
     out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
     providers = (
@@ -296,7 +297,8 @@ def render_notes(m, services):
             *workspace_notes(m), *sentinel_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m),
             *firewall_notes(m),
             *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m), *backup_notes(m),
-            *database_notes(m), *external_id_notes(m), *volume_notes(m), *group_notes(m),
+            *database_notes(m), *external_id_notes(m), *domain_service_notes(m), *volume_notes(m),
+            *group_notes(m),
             *inspection_notes(m, endpoints),
             *frontdoor_notes(m, endpoints), *quota_notes(m), *network_notes(m, endpoints), *plumbing_notes(m),
             *placed_notes(m, *terraform_parts(m, services)[:2]),

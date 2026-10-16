@@ -15,7 +15,9 @@ fetched: Lambda functions (environment variables), CodeBuild projects (environme
 EventBridge targets (their input), CodePipeline pipelines (action configuration), CloudFront distributions (origin
 custom headers). Messaging is projected to what the reader uses too: a queue's ARN and tags, an SES identity's type,
 DKIM status and tags (not its sending authorization policies), a Cognito user pool's id, name, ARN, tags and custom
-domain (describe-user-pool; no app client or identity provider is described: they carry secrets). Nothing reads
+domain (describe-user-pool; no app client or identity provider is described: they carry secrets), and a managed
+directory's ID, type, domain, NetBIOS name, edition, VPC and regions (describe-directories: its RADIUS settings carry a
+shared secret), then each Microsoft AD directory's tags. Nothing reads
 secret values (no get-secret-value, no SSM
 parameters, no user data). Calls that answer "nothing there" for a resource without that setting (a bucket without a
 policy, Shield without a subscription, a key without rotation support) leave their file out.
@@ -60,6 +62,7 @@ from opsdir_format_terraform.state import TERRAFORM_DIR, state_steps as terrafor
 from .account import account_id, govcloud, partition, standard_account
 from .cli_budgets import budget_folder
 from .cli_cognito import POOL_QUERY
+from .cli_directory import DIRECTORY_QUERY, TAGS_FOLDER
 from .cli_compute import launch_template_ref
 from .cli_monitor import tags_path
 from .cli_outputs import file_name
@@ -204,6 +207,7 @@ def _listings(m, vpc):
         (f"{WORK}firewall-policies.json", _aws(m, "network-firewall", "list-firewall-policies")),
         (f"{WORK}firewalls.json", _aws(m, "network-firewall", "list-firewalls")),
         (f"{WORK}user-pools.json", _aws(m, "cognito-idp", "list-user-pools", "--max-results", "60")),
+        ("directories.json", _aws(m, "ds", "describe-directories", query=DIRECTORY_QUERY)),
         ("rds-instances.json", _aws(m, "rds", "describe-db-instances")),
         ("rds-clusters.json", _aws(m, "rds", "describe-db-clusters")),
         ("rds-subnet-groups.json", _aws(m, "rds", "describe-db-subnet-groups")),
@@ -303,6 +307,9 @@ def _details(m, done):
         *((f"user-pools/{i}.json", _aws(m, "cognito-idp", "describe-user-pool", "--user-pool-id", i,
                                         query=POOL_QUERY))
           for (i,) in _items(done, f"{WORK}user-pools.json", "UserPools", "Id") if i),
+        *((f"{TAGS_FOLDER}/{i}.json", _aws(m, "ds", "list-tags-for-resource", "--resource-id", i))
+          for i, kind in _items(done, "directories.json", "DirectoryDescriptions", "DirectoryId", "Type")
+          if i and kind == "MicrosoftAD"),
         *((f"db-parameters/{g}.json", _aws(m, "rds", "describe-db-parameters", "--db-parameter-group-name", g,
                                            "--source", "user"))
           for (g,) in _items(done, f"{WORK}db-parameter-groups.json", "DBParameterGroups", "DBParameterGroupName")

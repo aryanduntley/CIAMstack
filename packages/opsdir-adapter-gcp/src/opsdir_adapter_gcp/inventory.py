@@ -49,6 +49,9 @@ alike; resource names (projects/<p>/...) are the provider refs, self links read 
                                                  DNS name, tier, disk, zone, availability, TLS, backups, flags,
                                                  deletion protection, its key as a role; never its root password:
                                                  see databases.py
+  google_active_directory_domain              -> managed directory (kind managed-directory, ciamManagedDirectory):
+                                                 google-managed-ad, its resource name, domain, regions, reserved range,
+                                                 the role and realized role its labels name: see managed_ad.py
   google_billing_budget                       -> budget (kind budget, ciamBudget): amount and currency, period,
                                                  threshold rules, the channel or topic its updates go to: see
                                                  budgets.py
@@ -80,7 +83,8 @@ from .storage import object_store_resources
 from .backups import backup_resources
 from .volumes import volume_resources
 from .iam import iam_resources
-from .names import resource_id, state_labels
+from .managed_ad import managed_ad_resources
+from .names import label_tags, resource_id, state_labels
 from .network_inventory import google_apis_endpoint, network_resources
 
 PROVIDER = "gcp"
@@ -107,9 +111,7 @@ def _state_labels(a):
 
 def _tags(a):
     """A resource's labels as the core's tag names (Role, BindingRole, Realizes)."""
-    labels = _labels(a)
-    return {k: labels[low] for k, low in (("Role", "role"), ("BindingRole", "bindingrole"), ("Realizes", "realizes"))
-            if labels.get(low)}
+    return label_tags(_labels(a))
 
 
 def _role(a):
@@ -448,7 +450,8 @@ def pairs_resources(pairs):
              *_keys(pairs), *object_store_resources(pairs), *_egress(pairs), *_jobs(pairs), *_compute(pairs),
              *_clusters(pairs),
              *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs), *_canaries(pairs),
-             *iam, *edge, *network, *database_resources(pairs), *volumes, *backups, *trail_resources(pairs),
+             *iam, *edge, *network, *database_resources(pairs), *managed_ad_resources(pairs), *volumes, *backups,
+             *trail_resources(pairs),
              *security_resources(pairs), *discovery_resources(pairs), *suppression_resources(pairs),
              *budget_resources(pairs)),
             (*rule_notices, *iam_notices, *edge_notices, *network_notices, *volume_notices, *backup_notices,

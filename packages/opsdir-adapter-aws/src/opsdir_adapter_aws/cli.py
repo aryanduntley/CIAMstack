@@ -50,6 +50,7 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   logs, Network Firewall rule groups, policies and firewalls      -> see cli_network.py
   Managed databases: RDS instances, Aurora clusters, subnet groups, user-set parameters -> see cli_database.py
   Cognito user pools (their id, ARN, tags, custom domain; no client, no provider) -> see cli_cognito.py
+  managed Microsoft AD directories (ID, domain, NetBIOS name, edition, VPC, regions, tags) -> see cli_directory.py
   Disks and snapshots: EBS volumes (instances' root volumes on the instance), Lifecycle Manager policies saved as
   dlm-policies/<policy id>.json                                   -> see cli_volume.py
   Backups: AWS Backup vaults, plans, selections, and their tags saved as backup-tags/<name>.json -> see cli_backup.py
@@ -84,6 +85,7 @@ from .cli_messaging import KEYS as MESSAGING_KEYS, is_messaging_tags, messaging_
 from .cli_monitor import KEYS as MONITOR_KEYS, TAG_KEYS as MONITOR_TAG_KEYS, is_tags_of, monitor_pairs
 from .cli_security import KEYS as SECURITY_KEYS, security_output, security_pairs
 from .cli_cognito import KEYS as COGNITO_KEYS, cognito_pairs
+from .cli_directory import KEYS as DIRECTORY_KEYS, directory_pairs
 from .cli_database import KEYS as DATABASE_KEYS, database_pairs
 from .cli_volume import DLM, KEYS as VOLUME_KEYS, is_dlm_output, root_devices, volume_pairs
 from .cli_storage import storage_folder, storage_pairs
@@ -96,14 +98,14 @@ from .inventory import PROVIDER, pairs_resources
 KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules", "NatGateways", "LoadBalancers",
         "TagDescriptions", "Listeners", "TargetGroups", "TargetHealthDescriptions", "ResourceRecordSets", "SecretList",
         "KeyMetadata", "KeyRotationEnabled", "Buckets", "Functions", "Rules", "Targets", "ScheduleExpression",
-        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *COGNITO_KEYS, *VOLUME_KEYS,
-        *BACKUP_KEYS,
+        "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *COGNITO_KEYS, *DIRECTORY_KEYS,
+        *VOLUME_KEYS, *BACKUP_KEYS,
         *AUDIT_KEYS, *COMPUTE_KEYS, *MONITOR_KEYS, *SECURITY_KEYS, *MESSAGING_KEYS,
         "Tags", *MONITOR_TAG_KEYS)   # tags last: others carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
           "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment", "aws_db_instance",
           "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_subnet_group", "aws_autoscaling_group",
-          "aws_eks_cluster", "aws_ec2_instance_connect_endpoint")
+          "aws_eks_cluster", "aws_ec2_instance_connect_endpoint", "aws_directory_service_directory")
 ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity", "logs", "alarm", "canary", "channel", "stream",
                 "managed-identity",
                 "budget")
@@ -382,7 +384,7 @@ def cli_resources(texts, at=None):
                                     *jobs, *iam, *edge_pairs(outs, _dns), *network_pairs(outs), *databases,
                                     *storage_pairs(outs), *volume_pairs(outs), *backup_pairs(outs),
                                     *audit_pairs(outs), *compute, *monitoring, *security, *budget_pairs(outs),
-                                    *messaging, *cognito_pairs(outs)])
+                                    *messaging, *cognito_pairs(outs), *directory_pairs(outs)])
     resources, rule_notices = pairs_resources(pairs)
     return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
                        *compute_notices, *monitor_notices, *security_notices, *messaging_notices, *scope_notices,
