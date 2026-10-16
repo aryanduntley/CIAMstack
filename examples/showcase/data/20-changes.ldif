@@ -732,6 +732,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the linked Jira Service Management tickets as evidence (state,
   approval steps, planned window)
 
+dn: cn=CHG-2110,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2110
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the corporate identity team's managed domain in the target (
+ Entra Domain Services) and its trusts
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

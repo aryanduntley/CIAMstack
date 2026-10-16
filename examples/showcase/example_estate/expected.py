@@ -192,6 +192,16 @@ EXPECTED = MappingProxyType({
         ("B82", "PingAccess", "target/prod: protected application `crew-portal-crew`: rule `crew-portal-roster-admins` "
          "admits `group cn=roster-admins,", "the roster admins group must reach PingAccess as a claim", None,
          "CHG-2082"),
+        # the corporate identity team's managed domain in the target (CHG-2110, flow 76): Entra Domain Services keeps
+        # forest trusts only, so the engineering lab's external trust can't be kept; and the target's authorization
+        # doesn't list the service in its boundary
+        ("B110", "Managed directory", "`corp-managed-domain` keeps a trust with lab.example-aero.internal, so "
+         "`corp-managed-domain` (Microsoft Entra Domain Services) in target/prod must keep a one-way outgoing external "
+         "trust", "the corporate identity team asks for an external trust with the engineering lab's domain, and a "
+         "managed domain keeps forest trusts only", None, "CHG-2110"),
+        ("B111", "Authorization", "target/prod uses Microsoft Entra Domain Services (corp-managed-domain), which "
+         "`F1209051525` doesn't list", "the corporate managed domain's service isn't in the target's recorded "
+         "authorization boundary", None, "CHG-2110"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),

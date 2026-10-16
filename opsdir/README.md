@@ -192,6 +192,35 @@ must know and how users move onto it are actions.
 An identity service the target runs on a managed service is left to this check by the service-name check. A
 neighbour in the target must exist there and play the part its integrations give it.
 
+### Cloud-managed directory services
+
+A managed Active Directory (AWS Managed Microsoft AD, Microsoft Entra Domain Services, Google Cloud's Managed Service
+for Microsoft AD) is recorded as a `ciamManagedDirectory` binding (directory domain; `ciamManagedService` in its
+cloud adapter's vocabulary): a **target** holds the platform's user directory there (`ciamRealizes ds`); a
+**neighbour** is a directory the platform binds to or syncs from (`ciamPartnerOf` its `ldap` integrations,
+`ciamManagedBy` its keeper). The binding records its domain (`ciamFqdn`, `ciamNetbiosName`), edition
+(`ciamDirectoryEdition`, the adapter's vocabulary), regions (`ciamRegion`, `ciamReplicaRegion`) and domain controllers
+per region (`ciamReplicaCount`), the OU the platform writes in (`ciamWritableBase`), secure LDAP (`ciamLdapsMode`
+`off`/`private`/`internet`, presenting `ciamTlsCertificate`), where it is placed (`ciamSubnetRole`, a reserved range
+`ciamCidr`) and the secret role of its administrator's password (`ciamCredentialRole`). Its trusts are entries beneath
+it (`ciamDirectoryTrust`: the other domain `ciamFqdn`, `ciamTrustType` `forest`/`external`, `ciamTrustDirection`
+`one-way-incoming`/`one-way-outgoing`/`two-way` from the managed domain's side, `ciamSelectiveAuth`, the other
+domain's DNS servers `ciamForwardTarget`, its keeper). `opsdir report managed-directory` lists every binding.
+
+Each cloud adapter declares what its vendor documents (`Adapter.managed_directory`, a `ManagedDirectory` each: what a
+`ManagedService` says, read the same way (`core.managed_services`), plus limits, the editions a capability needs, the
+OU the service gives the customer, and what a partition's documentation leaves open). `opsdir plan` (area `Managed
+directory`) reads what the record needs of a target: a schema extension for the attribute types and object classes it
+defines with OIDs of its own, fine-grained password policies for more than one policy (or one for a population),
+secure LDAP (to the internet), further regions, each trust (`trust:<type>:<direction>`); a neighbour needs LDAP for its
+partner integrations and its trusts. Documented unsupported blocks; not established blocks until the unknowns-register
+question it names is answered (`connectors.managed_service`, shared with the managed identity check); a limit exceeded
+or an edition that lacks a capability blocks. The record's base DNs moving under the writable OU (naming the consumers
+whose binds or searches change), its ACIs (re-created as delegation), consumers that connect only with TLS where secure
+LDAP is off, what a target in its partition must know and how users and passwords move are actions. Renders keep every
+secret out of Terraform state: trusts and secure LDAP certificates are actions, and AWS's directory is a CloudFormation
+stack whose administrator password is a Secrets Manager dynamic reference.
+
 ### Protected web applications (the neutral web access layer)
 
 What an access gateway or agent protects is held in neutral terms under `ou=protected-applications` (domain
@@ -552,7 +581,8 @@ opsdir/                      the package (names no platform, product, vendor or 
   domains/                   vendor-neutral parts of the stack, each with naming, schema fragment, checks, reports and
     infrastructure/          SQL views: clouds, environments, servers, bindings, stacks, external allowlists
     directory/               the LDAP user directory: its schema (attributes and object classes, standard or
-                             defined in the record), declared/observed configuration and drift, consumers, ACIs
+                             defined in the record), declared/observed configuration and drift, consumers, ACIs,
+                             cloud-managed directories (ciamManagedDirectory: target or neighbour; managed.py)
     federation/              SAML/OIDC integrations and claim maps, the platform's own identity services, the
                              protocols' standard vocabulary (grant types, auth methods, bindings, NameID formats), and
                              cloud-managed identity services (ciamManagedIdentity: target or neighbour; managed.py)

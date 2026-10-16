@@ -175,6 +175,8 @@ CHANGES = (
      "workflow statuses and fields", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2099", "Read the linked Jira Service Management tickets as evidence (state, approval steps, planned window)",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2110", "Record the corporate identity team's managed domain in the target (Entra Domain Services) and its "
+     "trusts", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

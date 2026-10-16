@@ -59,13 +59,18 @@ def _limit(ctx, m, b, spec, key, count, what):
                                "elsewhere.", responsible(ctx.d, b, m.env))])
 
 
-def _need(ctx, m, b, spec, partition, need):
-    """The findings for one need: the capability's gap, the edition it takes and the service's limit on it."""
+TARGET_CHANGE = "Change the record (what needs it), or hold the user directory where it can be kept."
+NEIGHBOUR_CHANGE = ("Correct the record (the trust or the integration, as its keeper has it), or keep the platform's "
+                    "use of the directory to what it can do.")
+
+
+def _need(ctx, m, b, spec, partition, need, change):
+    """The findings for one need: the capability's gap (change: what to do instead), the edition it takes and the
+    service's limit on it."""
     label = rdn_value(b)
     gap = managed_service.gap(ctx, VOICE, m, b, spec, partition, need.capability, slug(need.capability),
                               f"{need.cause}, so `{label}` ({spec.title}) in {m.label} must", need.concerns,
-                              (b, m.env), "Change the record (what needs it), or hold the user directory where it "
-                              "can be kept.")
+                              (b, m.env), change)
     counted = COUNTED.get(need.capability)
     limit = _limit(ctx, m, b, spec, counted[0], counted[1](ctx.d, b), counted[2]) if counted else findings()
     return merge_findings([gap, _edition(ctx, m, b, spec, need), limit])
@@ -119,7 +124,7 @@ def _target(ctx, m, b, spec):
                       f"{', '.join(x for x in held if x)}; trusts: "
                       f"{_listed(one(t, 'ciamFqdn') for t in trusts(ctx.d, b))}."])
     return merge_findings([managed_service.available(ctx, VOICE, m, b, spec, partition),
-                           *(_need(ctx, m, b, spec, partition, n) for n in target_needs(ctx.d, b)),
+                           *(_need(ctx, m, b, spec, partition, n, TARGET_CHANGE) for n in target_needs(ctx.d, b)),
                            _limit(ctx, m, b, spec, "trusts", len(trusts(ctx.d, b)), "trusts"),
                            _bases(ctx, m, b, spec), _carried(ctx, m, b, spec), *notes, users, ok])
 
@@ -134,7 +139,8 @@ def _neighbour(ctx, m, b, spec):
                       f"{_listed(rdn_value(i) for i in (get(ctx.d, x) for x in values(b, 'ciamPartnerOf')) if i)}; "
                       f"trusts: {_listed(one(t, 'ciamFqdn') for t in trusts(ctx.d, b))}."])
     return merge_findings([managed_service.available(ctx, VOICE, m, b, spec, partition),
-                           *(_need(ctx, m, b, spec, partition, n) for n in neighbour_needs(ctx.d, b)),
+                           *(_need(ctx, m, b, spec, partition, n, NEIGHBOUR_CHANGE)
+                             for n in neighbour_needs(ctx.d, b)),
                            _limit(ctx, m, b, spec, "trusts", len(trusts(ctx.d, b)), "trusts"), ok])
 
 

@@ -327,6 +327,11 @@ echo "   mapped (CHG-2098); the tickets and their approval steps are read as evi
 od modify --change CHG-2098 changes/CHG-2098-jira-sm-ticket-links.ldif
 od import --change CHG-2099 --at 20260923090000Z jira-sm/change-requests exports/jira-sm
 od report tickets
+echo "-- the corporate identity team's managed domain in the target is recorded (CHG-2110): Entra Domain Services, a"
+echo "   neighbour directory with a forest trust to the corporate forest (kept) and an external trust with the lab's"
+echo "   domain, which a managed domain can't keep (a blocker); the target's authorization doesn't list the service"
+od modify --change CHG-2110 changes/CHG-2110-target-corporate-managed-domain.ldif
+od report managed-directory
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines
