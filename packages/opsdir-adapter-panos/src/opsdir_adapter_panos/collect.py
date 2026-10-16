@@ -14,7 +14,7 @@ from urllib.parse import quote
 
 from opsdir.core.contract import Collector, Request
 from opsdir.core.directory import one, rdn_value
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import collection_sources, readable_sources
 from opsdir.domains.infrastructure.appliances import appliances
 from opsdir.domains.infrastructure.running import allowlist_refs
 from .importer import ADAPTER, STACK_ROLE, allowlist_place, management_host, placement
@@ -57,7 +57,7 @@ def running_steps(d, m, done, options):
     return tuple((f"{m.label}/{rdn_value(a)}/{API}{scope}/{family}.xml",
                   Request(f"{s.locations[0].rstrip('/')}/api/?{SHOW}&xpath={quote(xpath(scope, family), safe='')}",
                           (), credential(s), s.ca))
-                 for s in collection_sources(m, IMPORTER) if s.locations and not s.problems and s.scheme == SCHEME
+                 for s in readable_sources(m, IMPORTER, (SCHEME,))
                  for a in (_appliance(m, s),) if a is not None for scope, family in _parts(m, a))
 
 

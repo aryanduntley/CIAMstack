@@ -60,12 +60,17 @@ def collection_sources(m, importer):
     return tuple(resolve_source(m, s) for s in of_class(m, SOURCE) if one(s, "ciamImporter") == importer)
 
 
+def readable_sources(m, importer, schemes=None):
+    """Environment m's collection sources for an importer that can be read: each has a location and no problems
+    and, when schemes are given, sends its credential in one of them (the ones the system is read with)."""
+    return tuple(s for s in collection_sources(m, importer)
+                 if s.locations and not s.problems and (schemes is None or s.scheme in schemes))
+
+
 def readable_source(m, importer, schemes=None):
-    """Environment m's first collection source for an importer that can be read: it has a location and no problems
-    and, when schemes are given, sends its credential in one of them (the ones the system is read with); None when
-    none can."""
-    return next((s for s in collection_sources(m, importer)
-                 if s.locations and not s.problems and (schemes is None or s.scheme in schemes)), None)
+    """Environment m's first collection source for an importer that can be read (readable_sources); None when none
+    can."""
+    return next(iter(readable_sources(m, importer, schemes)), None)
 
 
 def source_problems(m, importer):

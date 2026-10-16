@@ -16,12 +16,13 @@ out."""
 import json
 
 from opsdir.core.contract import Collector, Request
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import readable_source, scheme_problems
 from .api import API, COLLECTIONS, ID, PAGE_SIZE, PAGING, RESOURCES, VERSION, XSRF
 from .sources import response_items
 
 IMPORTER = "pingaccess/admin-api"
 SCHEMES = ("basic", "bearer")       # how the Admin API takes the credential (Basic administrators; OAuth tokens)
+TAKES = f"PingAccess's Admin API takes {' or '.join(SCHEMES)}"
 ABSENT = (404,)
 
 
@@ -65,8 +66,7 @@ def _applications(done):
 
 def api_steps(d, m, done, options):
     """The version, each collection and settings object, then each application's resources."""
-    s = next((x for x in collection_sources(m, IMPORTER) if x.locations and not x.problems and x.scheme in SCHEMES),
-             None)
+    s = readable_source(m, IMPORTER, SCHEMES)
     if s is None:
         return ()
     listed = tuple(c for c in COLLECTIONS if c.path != RESOURCES)
@@ -79,12 +79,7 @@ def api_steps(d, m, done, options):
 def source_problems(d, m, options):
     """Why the collection sources can't be read (an unbound credential or trust anchor, no location, a credential
     scheme the Admin API doesn't take)."""
-    return tuple(p for s in collection_sources(m, IMPORTER) for p in (*s.problems, *_scheme_problem(s)))
-
-
-def _scheme_problem(s):
-    return (f"collection source `{s.name}`: credential scheme `{s.scheme}`: PingAccess's Admin API takes "
-            f"{' or '.join(SCHEMES)}",) if s.scheme not in SCHEMES else ()
+    return scheme_problems(m, IMPORTER, SCHEMES, TAKES)
 
 
 COLLECTORS = (Collector("admin-api", "environment", api_steps, problems=source_problems),)

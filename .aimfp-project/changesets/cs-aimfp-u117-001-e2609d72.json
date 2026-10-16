@@ -1,0 +1,864 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/governance/",
+        "purpose": "Owners (parties: parties.py display_name/operator/operator_label), change records, incidents and work instructions. Import runs keyed by importer + environment/shared + scope set (imports.py: run_dn, scope_set_key, runs_covering, reports imports and import-scopes, check_import_runs with fix imports/scope-set-names for legacy-named runs) and collection attempts. Collection sources (collection.py: collection_sources, and the collectors' shared idiom readable_sources / readable_source, source_problems, scheme_problems). The unknowns register (ciamUnknown questions the planner counts: check_unknowns, report unknowns). ITSM ticket evidence (tickets.py: ciamTicketRef on ciamChange; observed ciamTicket under ou=<adapter>,ou=tickets with approval steps and change type; vocabularies TICKET_STATES/TICKET_APPROVALS/TICKET_CHANGE_TYPES in schema.py; drift states, check_tickets, report tickets; never an approval). Stale-runbook view and report."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "domain-governance"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/collect.py",
+        "id_in_name": 0,
+        "name": "bulk_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of pingfederate/bulk: GET <admin>/pf-admin-api/v1/bulk/export (X-XSRF-Header; the collection source's credential sent as Basic with its login, or as a Bearer token when its ciamCredentialScheme is bearer: OAuth2/JWT Admin API auth; CA role as trust anchor) per usable collection source with a scheme in SCHEMES, to bulk-export-<source>.json",
+        "returns": "{\"type\": \"tuple[(str, Request)]\"}",
+        "source_hash": "480dc2ec6fabde30"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-bulk-steps-52db3b53"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.problems of pingfederate/bulk: the collection sources' problems (unbound credential or trust anchor, no location) and a credential scheme the Admin API doesn't take (not basic or bearer).",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"problems\"}",
+        "source_hash": "bcbeda441cea08b5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-71026c27"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingidm/src/opsdir_adapter_pingidm/collect.py",
+        "id_in_name": 0,
+        "name": "config_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of pingidm/project: GET /openidm/config (listing, _work) then GET /openidm/config/<id> per object to conf_path(id) with without_id; credential as X-OpenIDM-Username/Password headers, Accept-API-Version resource=1.0, CA role trust; first usable collection source",
+        "returns": "{\"type\": \"tuple[(str, Request)]\"}",
+        "source_hash": "1f2aa6f971040a82"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-config-steps-547b26d7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingidm/src/opsdir_adapter_pingidm/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.problems of pingidm/project: the collection sources' problems",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "da0062172d7ad28b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-e889ae52"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingam/src/opsdir_adapter_pingam/collect.py",
+        "id_in_name": 0,
+        "name": "amster_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.steps of pingam/amster: one workdir Command running amster on the script for the first usable collection source's AM URL with options amster_key; files written under {dir}/export are the export",
+        "returns": "{\"type\": \"tuple[(str, Command)]\"}",
+        "source_hash": "71a3023dd8a9f186"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-amster-steps-bdae5178"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingam/src/opsdir_adapter_pingam/collect.py",
+        "id_in_name": 0,
+        "name": "problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.problems of pingam/amster: the collection sources' problems, or no --amster-key given while a source exists",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "378e6ae72463bdc4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-problems-9d87ede9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py",
+        "id_in_name": 0,
+        "name": "account_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict[str, str]\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: each wanted safe's first page, then each next page its last one says remains (GET /PasswordVault/API/Accounts with the source's token or bearer credential, metadata kept only).",
+        "returns": "{\"type\": \"tuple[(str, Request)]\"}",
+        "source_hash": "b6fd372b75c37fa5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-account-steps-fe593858"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Why cyberark/accounts collection sources can't be read: unbound roles, no location, a credential scheme other than token or bearer.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "bcbeda441cea08b5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-0bbae910"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py",
+        "id_in_name": 0,
+        "name": "running_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"Mapping[str,str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"Mapping\", \"required\": true}]",
+        "purpose": "Collector steps: one GET /api/?type=config&action=show&xpath=... (the running configuration; never action=get, never a commit) per family of the appliance's scope, shared and the scopes its external allowlists name, for each collection source of panos/running-config, saved as <cloud>/<env>/<appliance>/api/<scope>/<family>.xml.",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "66dbfccbfb7426f6"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py",
+        "id_in_name": 0,
+        "name": "change_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps: each chunk of linked tickets' change_request pages (each page after a non-empty one), then, once every chunk ended on an empty page, the sysapproval_approver pages of the sys_ids found; GETs only.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Request), ...)\"}",
+        "source_hash": "0b3fadf961e18b28"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why the environment's servicenow/change-requests collection sources can't be read: their own problems, or a credential scheme other than basic or bearer.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "bcbeda441cea08b5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-00106d0a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py",
+        "id_in_name": 0,
+        "name": "api_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"{path: output}\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: /version, each settings object and collection (paged), then each application's resources; GET allowlist only",
+        "returns": "{\"type\": \"tuple[(path, Request)]\"}",
+        "source_hash": "350ecac914689140"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-api-steps-21d05843"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Why the collection sources can't be read (unbound credential/trust anchor, no location, a scheme other than basic/bearer)",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "bcbeda441cea08b5"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-41727b60"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/collection.py",
+        "id_in_name": 1,
+        "name": "readable_source",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"importer\", \"type\": \"str\", \"required\": true, \"description\": \"'adapter/importer'\"}, {\"name\": \"schemes\", \"type\": \"tuple[str] | None\", \"required\": false, \"description\": \"the credential schemes the system is read with; None: any\"}]",
+        "purpose": "Environment m's first collection source for an importer that can be read (the first of readable_sources: a location, no problems and, when schemes are given, a credential sent in one of them); None when none can.",
+        "returns": "{\"type\": \"Source | None\"}",
+        "source_hash": "e5171afc8e279521"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/collection.py",
+        "id_in_name": 0,
+        "name": "readable_sources",
+        "parameters": "[{\"name\": \"m\", \"type\": \"Model\", \"required\": true, \"description\": \"the environment model\"}, {\"name\": \"importer\", \"type\": \"str\", \"required\": true, \"description\": \"the importer the sources are for (adapter/name)\"}, {\"name\": \"schemes\", \"type\": \"tuple[str, ...] | None\", \"required\": false, \"description\": \"credential schemes the system is read with; None accepts any\"}]",
+        "purpose": "Every one of environment m's collection sources for an importer that can be read: it has a location and no problems and, when schemes are given, sends its credential in one of them. For collectors that read each source (one request set per source); readable_source is its first.",
+        "returns": "{\"type\": \"tuple[CollectionSource, ...]\", \"description\": \"the readable sources, in collection_sources order\"}",
+        "source_hash": "076aeff9f7e95f57"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Notes 3176/3187 (worker). opsdir/opsdir/domains/governance/collection.py offers readable_source(m, importer, schemes=None), source_problems(m, importer) and scheme_problems(m, importer, schemes, takes), used by opsdir-adapter-elastic, -splunk and -jira-sm. The same idiom is still inlined (or kept as private copies like _source/_scheme_problem) in the collect.py of opsdir-adapter-panos, -pingaccess, -pingam, -pingfederate, -servicenow, -cyberark, -pingidm and maybe others: find all of them, switch them to the core helpers with no behaviour change (exact problem wording kept via `takes`), and update AIMFP tracking (interactions, deleted private helpers). Acceptance: targeted tests of each touched package pass unchanged; showcase golden unchanged.",
+        "flows": [
+          "Live Read-Only Collection"
+        ],
+        "name": "Collectors use the core collection helpers",
+        "parent": {
+          "slug": "milestone-u-17-runtime-isolation-and-shared-collec-74db5b71"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "collection.py: add readable_sources(m, importer, schemes=None) (every readable source, for collectors that read each one: pingfederate, panos); readable_source becomes its first. Additive, no signature change.",
+        "name": "Core helper readable_sources",
+        "parent": {
+          "key": {
+            "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-core-helper-readable-sources-a3356d21"
+      }
+    },
+    {
+      "attributes": {
+        "description": "cyberark, servicenow, pingaccess, pingfederate: readable_source/readable_sources + scheme_problems with the exact wording as TAKES; private _source/_scheme_problem removed.",
+        "name": "Scheme collectors use the helpers",
+        "parent": {
+          "key": {
+            "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-scheme-collectors-use-the-helpers-97f295ef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pingidm, pingam: readable_source + source_problems; panos: readable_sources in running_steps (its source_problems interleaves an appliance problem per source, kept).",
+        "name": "Scheme-free collectors use the helpers",
+        "parent": {
+          "key": {
+            "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-scheme-free-collectors-use-the-helpers-f56bb799"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Interactions (new edges to the helpers, stale ones removed), deleted private helpers, targeted tests of each touched package + line length, default unit suite, audit_tracking(554).",
+        "name": "Tracking, tests, audit",
+        "parent": {
+          "key": {
+            "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tracking-tests-audit-558ab250"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "fbb9af2ec0652beb18d38b50f4e3642047ee0bc5",
+    "branch": "aimfp-u117-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "readable_sources calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "bulk_steps calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-bulk-steps-52db3b53"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-71026c27"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "config_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-config-steps-547b26d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls problems_of (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-e889ae52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-problems-04375cae"
+      }
+    },
+    {
+      "attributes": {
+        "description": "amster_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-amster-steps-bdae5178"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "problems calls source_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-problems-9d87ede9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-source-problems-04375cae"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-0bbae910"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-00106d0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_steps calls readable_source (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-steps-21d05843"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-41727b60"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "readable_source calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/collection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingidm/src/opsdir_adapter_pingidm/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingam/src/opsdir_adapter_pingam/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-cyberark/src/opsdir_adapter_cyberark/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-panos/src/opsdir_adapter_panos/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-pingaccess/src/opsdir_adapter_pingaccess/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-collectors-use-the-core-collection-helpe-fc02cd38"
+      }
+    },
+    {
+      "attributes": {
+        "description": "sources",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-bulk-steps-52db3b53"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-71026c27"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-config-steps-547b26d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-e889ae52"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-amster-steps-bdae5178"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "account_steps calls collection_sources (collection.py) via _source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-account-steps-fe593858"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-0bbae910"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "running_steps calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-running-steps-cf6ff819"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls collection_sources (collection.py) via _source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-00106d0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "api_steps calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-api-steps-21d05843"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-41727b60"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "readable_source calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-readable-source-6c0f220a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    }
+  ],
+  "warnings": []
+}

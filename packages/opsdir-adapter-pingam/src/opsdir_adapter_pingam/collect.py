@@ -8,7 +8,7 @@ private work directory (connect with the key, export-config --failOnError into t
 writes are the export. Encrypted passwords are exported only with a transport key, which this never configures: they
 are left out, and the importer withholds what it recognizes as secret anyway."""
 from opsdir.core.contract import CollectOption, Collector, Command
-from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.governance.collection import collection_sources, readable_source, source_problems
 
 IMPORTER = "pingam/amster"
 
@@ -20,7 +20,7 @@ def script(url, key):
 
 def amster_steps(d, m, done, options):
     """Amster's export of the first collection source's AM, when the operator gave the key."""
-    s = next((x for x in collection_sources(m, IMPORTER) if x.locations and not x.problems), None)
+    s = readable_source(m, IMPORTER)
     key = options.get("amster_key")
     if s is None or not key:
         return ()
@@ -30,10 +30,9 @@ def amster_steps(d, m, done, options):
 
 def problems(d, m, options):
     """Why AM can't be read: its sources' problems, or no Amster key given."""
-    sources = collection_sources(m, IMPORTER)
-    return (*(p for s in sources for p in s.problems),
+    return (*source_problems(m, IMPORTER),
             *(("give --amster-key PATH: the private key AM trusts for Amster",)
-              if sources and not options.get("amster_key") else ()))
+              if collection_sources(m, IMPORTER) and not options.get("amster_key") else ()))
 
 
 # The collect option amster_steps and problems read (amster_key): the key itself is never stored.
