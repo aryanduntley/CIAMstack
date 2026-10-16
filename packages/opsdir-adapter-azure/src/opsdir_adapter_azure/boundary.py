@@ -8,8 +8,10 @@ DNS servers (ciamResolverHost) runs on Virtual Machines. In Azure Government, Mi
 Azure DNS Private Resolver as GA and authorized at FedRAMP High, DoD IL4 and IL5 forecasted (record it in an Azure
 Government authorization's in-scope list from there; for IL4/IL5, forwarders on virtual machines), and Communication
 Services in Azure Government "has achieved FedRAMP High accreditation as part of the Microsoft 365 Government Community
-Cloud (GCC) - High service offering" (a separate package, FR1824057433), with no SMTP endpoint there. Budgets and
-quotas hold no customer data and are named nowhere. Pure."""
+Cloud (GCC) - High service offering" (a separate package, FR1824057433), with no SMTP endpoint there. Microsoft Entra
+External ID has no row of its own: the Azure table's Microsoft Entra ID row carries a footnote applying Entra ID's
+FedRAMP High and DoD IL2 authorizations to it (COVERED; the Azure Government table has neither, and external tenants
+don't exist there). Budgets and quotas hold no customer data and are named nowhere. Pure."""
 from opsdir.core.directory import one
 from opsdir.domains.edge.records import is_hosted
 from opsdir.domains.estate.authorizations import boundary_findings, services_used
@@ -18,6 +20,11 @@ from .account import government
 
 VNET, MONITOR, KEY_VAULT, BLOBS = "Virtual Network", "Azure Monitor", "Key Vault", "Storage: Blobs"
 VMS = "Virtual Machines"
+EXTERNAL_ID = "Microsoft Entra External ID"
+# a service Microsoft documents as covered by a listed one -> (that service, Microsoft's basis)
+COVERED = {EXTERNAL_ID: ("Microsoft Entra ID", "the scope page's Microsoft Entra ID row applies its FedRAMP High and "
+                                               "DoD IL2 authorizations to Microsoft Entra External ID (its footnote, "
+                                               "read 2026-10-16)")}
 ENGINES = {"postgresql": "Azure Database for PostgreSQL", "mysql": "Azure Database for MySQL",
            "sqlserver": "SQL Database"}
 STREAMS = {"queue": "Service Bus", "topic": "Service Bus", "event-hub": "Event Hubs", "bus": "Event Grid"}
@@ -40,8 +47,8 @@ NAMES = {
     "ciamDnsZoneBinding": "DNS", "ciamDnsRecord": "DNS",
     "ciamDnsForwarder": lambda b: VMS if is_hosted(b) else "DNS Private Resolver",
     "ciamIdentityBinding": "Microsoft Entra ID", "ciamGuardrail": "Azure Policy", "ciamFirewallPolicy": "Firewall",
-    # External ID by the name Microsoft's External ID FAQ gives it (FedRAMP High and DoD IL2 in public clouds)
-    "ciamManagedIdentity": lambda b: "Microsoft Entra External ID"
+    # External ID by the name Microsoft's External ID FAQ gives it; covered by Microsoft Entra ID (COVERED)
+    "ciamManagedIdentity": lambda b: EXTERNAL_ID
     if one(b, "ciamManagedService") == "entra-external-id" else None,
     "ciamPrivateEndpoint": "Private Link", "ciamEndpointService": "Private Link",
     "ciamInterconnect": lambda b: "ExpressRoute" if "express" in (one(b, "ciamInterconnectKind") or "").lower()
@@ -58,7 +65,7 @@ def azure_services(m):
 
 def check_boundary(ctx):
     """The target's services outside the authorization it relies on."""
-    return boundary_findings(ctx, azure_services(ctx.dst))
+    return boundary_findings(ctx, azure_services(ctx.dst), COVERED)
 
 
 # Where Microsoft says Azure can hold regulated data (its ITAR, EAR, CJIS, HIPAA and IRS 1075 offering pages; research

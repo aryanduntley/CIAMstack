@@ -1,0 +1,3 @@
+target/prod partners-external-id: partner-portal is registered in the tenant as client 5b0e9c41-7a2f-4d63-9c18-2e4f6a8d0b37; the record's client ID is partner-portal: Entra assigns client IDs, so the application switches to the tenant's when it moves (record it then)
+CHG-2090: 4 change(s) applied, the import run among them
+exit 0

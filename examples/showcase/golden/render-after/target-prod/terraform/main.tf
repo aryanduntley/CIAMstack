@@ -3328,6 +3328,79 @@ data "azurerm_key_vault_secrets" "kv_ciam_prod" {
   }
 }
 
-# NOTE: external tenant partners-external-id: Entra External ID isn't rendered: the external tenant running `partners` and its app registrations are created by hand (partner-portal (oidc-client: https://partners.example-aero.test/callback))
+# NOTE: external tenant partners-external-id credentials: client credentials aren't rendered (a client secret made by Terraform sits in its state): give partner-portal theirs in the tenant by hand
+
+# NOTE: external tenant partners-external-id user flows: user flows, upstream identity providers and custom authentication extensions aren't rendered (azuread has no resource for them): set them up in the tenant, then read them back (azure/external-id)
+
+variable "partners_external_id_display_name" {
+  type        = string
+  description = "The display name of external tenant partners-external-id (set when it is created)"
+}
+
+variable "partners_external_id_country_code" {
+  type        = string
+  description = "The two-letter country code of external tenant partners-external-id (set when it is created)"
+}
+
+resource "azapi_resource" "partners_external_id" {
+  type      = "Microsoft.AzureActiveDirectory/ciamDirectories@2023-05-17-preview"
+  name      = "partnersexternalid"
+  parent_id = data.azurerm_resource_group.main.id
+  location  = "United States"
+  body = {
+    sku = {
+      name = "Standard"
+      tier = "A0"
+    }
+    properties = {
+      createTenantProperties = {
+        displayName = var.partners_external_id_display_name
+        countryCode = var.partners_external_id_country_code
+      }
+    }
+  }
+  tags = {
+    CostCenter  = "CC-1001"
+    Environment = "target/prod"
+    Owner       = "ciam-platform"
+    Role        = "partners-identity"
+    ManagedBy   = "opsdir"
+    Realizes    = "partners"
+  }
+}
+
+import {
+  to = azapi_resource.partners_external_id
+  id = "${data.azurerm_resource_group.main.id}/providers/Microsoft.AzureActiveDirectory/ciamDirectories/partnersexternalid"
+}
+
+resource "azuread_application" "partners_external_id_partner_portal" {
+  provider         = azuread.partners_external_id
+  display_name     = "partner-portal"
+  sign_in_audience = "AzureADMyOrg"
+  web {
+    redirect_uris = ["https://partners.example-aero.test/callback"]
+    implicit_grant {
+      access_token_issuance_enabled = false
+      id_token_issuance_enabled     = false
+    }
+  }
+  required_resource_access {
+    resource_app_id = "00000003-0000-0000-c000-000000000000"
+    resource_access {
+      id   = "37f7f235-527c-4136-accd-4a02d197296e"
+      type = "Scope"
+    }
+    resource_access {
+      id   = "7427e0e9-2fba-42fe-b0c0-848c9e6a8182"
+      type = "Scope"
+    }
+  }
+}
+
+resource "azuread_service_principal" "partners_external_id_partner_portal" {
+  provider  = azuread.partners_external_id
+  client_id = azuread_application.partners_external_id_partner_portal.client_id
+}
 
 # defender-identity: kept by security-operations, not rendered here (azurerm_security_center_automation.defender_identity_export): they take no generated infrastructure, so it is asked of them; a render scoped to them gives their root

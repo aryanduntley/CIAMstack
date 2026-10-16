@@ -5,7 +5,7 @@
 -->
 # Render notes: target/prod
 
-**4 blockers, 11 actions, 14 notes, 0 to review**
+**4 blockers, 12 actions, 14 notes, 0 to review**
 
 ## Blockers
 
@@ -41,15 +41,21 @@
 
 ## Actions
 
-### external tenant partners-external-id (Identity)
+### external tenant partners-external-id credentials (Identity)
 
-- **What:** Entra External ID isn't rendered: the external tenant running `partners` and its app registrations are created by hand (partner-portal (oidc-client: https://partners.example-aero.test/callback))
+- **What:** client credentials aren't rendered (a client secret made by Terraform sits in its state): give partner-portal theirs in the tenant by hand
 - **Where:** terraform/main.tf:3331; target/prod
 - **Who:** ciam-platform
+- **How:** partner-portal: upload the public key of the certificate it signs its assertions with
+
+### external tenant partners-external-id user flows (Identity)
+
+- **What:** user flows, upstream identity providers and custom authentication extensions aren't rendered (azuread has no resource for them): set them up in the tenant, then read them back (azure/external-id)
+- **Where:** terraform/main.tf:3333; target/prod
+- **Who:** ciam-platform
 - **How:**
-  1. Create the external tenant (public cloud) and record its tenant ID as the binding's ciamProviderRef under an approved change, and re-render
-  2. Register partner-portal (oidc-client: https://partners.example-aero.test/callback) in it
-  3. Set up its user flows and the upstream identity providers its partner integrations need
+  1. Create the sign-up and sign-in user flows and add each application to one
+  2. Read the tenant's configuration back with `opsdir collect --adapter azure` (external-id)
 
 ### check image (Monitoring)
 

@@ -32,7 +32,7 @@ from types import MappingProxyType
 from typing import Mapping, NamedTuple, Optional
 
 from .contract import Imported
-from .directory import children, get, is_kind, is_subclass, make_entry, one, ou_entry, rdn_value
+from .directory import children, get, is_kind, is_subclass, make_entry, one, ou_entry, rdn_value, subtree
 from .environment import env_dn
 from .overlays import lineage
 
@@ -217,9 +217,11 @@ def _placed(d, own, bases):
 
 
 def environment_groups(d, spec, resources, summarize=()):
-    """((DN, (entry,)), ...) and notices placing the resources a cloud reports into the environment spec names. Kinds in
-    summarize (those an account-wide listing reports beyond the environment: secrets, keys, buckets) are counted, not
-    listed one by one, when they are new and name no role."""
+    """((DN, (entry, ...)), ...) and notices placing the resources a cloud reports into the environment spec names: each
+    group the entry and, for one the record holds, what it holds beneath it unchanged (a cloud reports the binding, not
+    the entries other importers keep under it: a managed identity service's sign-in flows). Kinds in summarize (those an
+    account-wide listing reports beyond the environment: secrets, keys, buckets) are counted, not listed one by one,
+    when they are new and name no role."""
     dn = env_dn(spec)
     if get(d, dn) is None:
         return (), (f"{spec}: no such environment in the record; nothing imported",)
@@ -278,7 +280,7 @@ def environment_groups(d, spec, resources, summarize=()):
                *(n for check in table.checks
                  for n in check(d, spec, (*(r for r, held, _, _ in placed if held is not None),
                                           *(r for r, _ in added)))))
-    return tuple((e.dn, (e,)) for e in entries), notices
+    return tuple((e.dn, (e, *(x for x in subtree(d, e.dn) if x.norm != e.norm))) for e in entries), notices
 
 
 def _counted(spec, unplaced):

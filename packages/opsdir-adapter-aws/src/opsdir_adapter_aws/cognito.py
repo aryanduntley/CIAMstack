@@ -69,6 +69,9 @@ COGNITO = ManagedService(
         "issue:saml": f"it consumes SAML assertions and provides no downstream SAML identity provider ({_ROLES})",
         "grant:urn:ietf:params:oauth:grant-type:token-exchange": f"its token endpoint isn't an RFC 8693 "
                                                                 f"token-exchange endpoint ({_TOKEN})",
+        **{f"grant:urn:ietf:params:oauth:grant-type:{g}": f"its token endpoint takes only the authorization_code, "
+                                                          f"refresh_token and client_credentials grants ({_TOKEN})"
+           for g in ("device_code", "jwt-bearer", "saml2-bearer")},
         "custom-issuer": f"its issuer is the user pool's own, distinct from its sign-in domain ({_ENDPOINTS})",
         "mfa-per-client": f"MFA is a setting of the user pool, not of an app client ({_API}: SetUserPoolMfaConfig)",
         "claim-transform": "claims beyond the attribute mappings need a pre-token-generation Lambda trigger (Cognito "

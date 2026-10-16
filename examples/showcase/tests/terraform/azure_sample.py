@@ -177,6 +177,17 @@ GROUP = (entry(ALPHA, "vmss-app", "ciamComputeGroup", ciamBindingRole="compute-a
                ciamThroughputMb="200"))
 
 
+# an Entra External ID target (task 547): its tenant through azapi, recorded, and a SAML application registered in it
+# through the tenant-aliased azuread provider (public regions only: Azure Government has no external tenants)
+INTEGRATIONS = "ou=integrations,dc=ciam-ops"
+EXTERNAL_ID = (entry(ALPHA, "sso-tenant", "ciamManagedIdentity", ciamBindingRole="sso-tenant",
+                     ciamManagedService="entra-external-id", ciamRealizes="sso", ciamDataGeography="united-states",
+                     ciamProviderRef="8d3e1f02-6a5b-4c7d-9e8f-0a1b2c3d4e5f"),)
+APPS = (OU.format(INTEGRATIONS, "integrations"),
+        entry(INTEGRATIONS, "crm", "ciamIntegration", ciamProtocolType="saml2-sp",
+              ciamEntityId="https://crm.example.test", ciamAcsUrl="https://crm.example.test/acs"))
+
+
 def environments(region):
     """((name, environment model, services), ...): the sample's environments in region, each rendered with
     services."""
@@ -187,8 +198,8 @@ def environments(region):
             ("gateway", _gateway(region), found),
             ("dns", _dns(region), found),
             ("services", model(alpha=(KEY_DB, SECRET_DB, _db(region), STORE, SUPPRESSION, SSO, EGRESS, BLOB_ENDPOINT,
-                                      *GROUP, *SECURITY),
-                               tree=(*EXCEPTIONS, *CANARY), changes=(*placed(region), *bound()))[1],
+                                      *GROUP, *SECURITY, *EXTERNAL_ID),
+                               tree=(*EXCEPTIONS, *CANARY, *APPS), changes=(*placed(region), *bound()))[1],
              found._replace(endpoints=(*found.endpoints, *ENDPOINTS))))
 
 

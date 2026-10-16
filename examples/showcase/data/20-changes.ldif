@@ -672,6 +672,26 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the forest's certificate templates again, collected over LDA
  PS with who may enroll
 
+dn: cn=CHG-2089,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2089
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the partners external tenant the render created, so the targ
+ et adopts it and registers the partner portal in it
+
+dn: cn=CHG-2090,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2090
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the partners external tenant's Graph configuration (app regist
+ rations, user flow, token extension) into the record
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

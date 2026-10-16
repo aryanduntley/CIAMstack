@@ -1,0 +1,16 @@
+# CHG-2089 (approved): the partners external tenant exists: the platform team applied the target's render, which
+# creates it through Microsoft's azapi provider (an add-on the target's cloud allows since CHG-2030). Its tenant ID and
+# where it keeps the partner users' data are recorded, so the render adopts the tenant (an import block) and registers
+# the partner portal in it (hashicorp/azuread through a provider aliased to the tenant); the portal's signing
+# certificate is uploaded by hand.
+dn: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: modify
+add: ciamProviderRef
+ciamProviderRef: 3f6c1a7e-58d2-4b9e-a1c4-7e2d9b0f5a68
+-
+add: ciamDataGeography
+ciamDataGeography: united-states
+-
+replace: ciamChangeRef
+ciamChangeRef: cn=CHG-2089,ou=changes,dc=ciam-ops
+-

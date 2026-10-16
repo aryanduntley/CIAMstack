@@ -96,6 +96,7 @@ def test_kept_resources_say_why(translated):
     assert {a.split(".")[0] for a in why} <= {
         "azurerm_data_protection_backup_vault_customer_managed_key", "azurerm_subnet_route_table_association",
         "azurerm_subnet_network_security_group_association", "azuread_conditional_access_policy",
+        "azuread_application", "azuread_service_principal", "azuread_service_principal_token_signing_certificate",
         "azapi_data_plane_resource", "data", "azurerm_sentinel_log_analytics_workspace_onboarding",
         "azurerm_sentinel_alert_rule_scheduled"}
     # Sentinel (6.2e): extension resources on the workspace, their ARM form not translated yet

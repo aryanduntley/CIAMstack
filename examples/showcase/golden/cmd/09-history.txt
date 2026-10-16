@@ -659,4 +659,9 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2086  update  cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
 <TIMESTAMP>          CHG-2086  update  cn=User,ou=certificate-templates,dc=ciam-ops
 <TIMESTAMP>          CHG-2086  insert  cn=adcs.inventory.shared.s1-ec43948a9827141f,ou=imports,dc=ciam-ops
-(659 rows)
+<TIMESTAMP>          CHG-2089  update  cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2090  insert  cn=partner-organization-claim,cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2090  insert  cn=partners-sign-up-and-sign-in,cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2090  insert  cn=azure.external-id.shared.s1-8a3dd9bc18e38d46,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2090  insert  cn=azure.external-id.target.prod.s1-ecc4e7e660ccc88e,ou=imports,dc=ciam-ops
+(664 rows)

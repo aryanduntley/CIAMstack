@@ -306,6 +306,12 @@ echo "   adcs/inventory's template collector): CIAM-WebServer now also issues cl
 echo "   subject from the request and lets Domain Users enroll (ESC1-style): an action for its renewal owner; the"
 echo "   import takes the live values where the record held CHG-2050's (who may enroll was unknown then)"
 od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory exports/adcs-templates
+echo "-- the partners external tenant the render created is recorded (CHG-2089): the target adopts it and registers the"
+echo "   partner portal in it; then its Graph configuration (the portal's registration, the partners' user flow and"
+echo "   token extension) is read back (CHG-2090)"
+od modify --change CHG-2089 changes/CHG-2089-partners-external-tenant.ldif
+od import --change CHG-2090 --at 20260923090000Z azure/external-id exports/external-id
+od report managed-identity
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

@@ -165,7 +165,14 @@ service someone else runs that the platform federates with is a **neighbour**: `
 it is the partner side of, `ciamManagedBy` its keeper. Whether a binding is the issuer or the relying party is never
 stored: a target issues to the `oidc-client` and `saml2-sp` integrations its identity service serves and relies on the
 `saml2-idp` ones; a neighbour relies on the platform for an `oidc-client` or `saml2-sp` integration and issues to it
-for a `saml2-idp` one. `opsdir report managed-identity` lists every binding that way.
+for a `saml2-idp` one. `opsdir report managed-identity` lists every binding that way. A binding may say where the
+service keeps its users' data (`ciamDataGeography`, in the adapter's vocabulary: an external tenant's residency). A
+target's own configuration that has no standard base lives beneath its binding, as the cloud's importer reads it: its
+sign-in flows (`ciamSignInFlow`: `ciamFlowApplications` the integrations it signs users in to, `ciamSignInMethod`
+`email-password`/`email-otp`/`sign-up`/`federated`, `ciamUpstreamProvider`, `ciamCollectedAttribute`,
+`ciamFlowExtension`) and custom authentication extensions (`ciamAuthExtension`: `ciamExtensionEvent`, the
+application it authenticates to its API as `ciamExtensionResource`, the claims it returns `ciamExtensionClaim`; never
+its endpoint). A cloud inventory read of the binding keeps what is beneath it.
 
 Each cloud adapter declares what its vendor documents of the services it knows (`Adapter.managed_identity`, a
 `ManagedService` each: where it exists by partition, its capabilities as supported, unsupported or neither, each with
@@ -176,8 +183,9 @@ blocker when the vendor documents it can't, with no way out but changing the rec
 establishes either way is a blocker too, until the operator records the vendor's confirmation as the answer to the
 unknowns-register question the finding names (`confirm-<cloud>-<env>-<binding>-<capability>`; its fix proposes the
 question, blocking, owned by the integration's owners), and while that question is open the register counts it. A
-service its partition doesn't have is a blocker; one on a condition (an add-on), per-application MFA or claim
-transformations it can't express, what a target in its partition must know and how users move onto it are actions.
+service its partition doesn't have is a blocker; one on a condition (an add-on), per-application MFA it can't express,
+claim transformations it can't express or expresses only on a condition (an extension), what a target in its partition
+must know and how users move onto it are actions.
 An identity service the target runs on a managed service is left to this check by the service-name check. A
 neighbour in the target must exist there and play the part its integrations give it.
 

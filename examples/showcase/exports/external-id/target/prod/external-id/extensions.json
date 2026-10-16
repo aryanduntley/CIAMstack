@@ -1,0 +1,18 @@
+{
+ "value": [
+  {
+   "@odata.type": "#microsoft.graph.onTokenIssuanceStartCustomExtension",
+   "id": "4d8f2b6a-0c1e-4a3b-9d5f-7e9a1c3b5d72",
+   "displayName": "Partner organization claim",
+   "description": "Adds the partner's organization to the partner portal's tokens",
+   "authenticationConfiguration": {
+    "resourceId": "api://claims.example-aero.test/4d8f2b6a-0c1e-4a3b-9d5f-7e9a1c3b5d72"
+   },
+   "claimsForTokenConfiguration": [
+    {
+     "claimIdInApiResponse": "partnerOrganization"
+    }
+   ]
+  }
+ ]
+}

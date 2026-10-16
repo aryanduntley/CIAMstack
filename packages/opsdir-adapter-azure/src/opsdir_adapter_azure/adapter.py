@@ -8,7 +8,8 @@ from .arm import ARM
 from .check_jobs import DELIVERY, IMAGE
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
-from .external_id import MANAGED, SERVICE as EXTERNAL_ID
+from .external_id import GEOGRAPHIES, MANAGED, SERVICE as EXTERNAL_ID
+from .external_id_graph import GRAPH_COLLECTOR, GRAPH_IMPORTER
 from .identity_protection import check_identity_protection
 from .purview import check_discovery_cadence
 from .inventory import TERRAFORM_STATE
@@ -38,7 +39,8 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment"),
-                              "ciamManagedService": (EXTERNAL_ID,)}, schema=None,
+                              "ciamManagedService": (EXTERNAL_ID,), "ciamDataGeography": tuple(GEOGRAPHIES)},
+                  schema=None,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/checks/check.py", "python"),
                            ("bicep/*/checks/check.py", "python"), ("arm/*/checks/check.py", "python"),
                            ("images/*/Dockerfile", "dockerfile"), ("images/*/check.py", "python"),
@@ -46,9 +48,10 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                            ("bicep/*placements.json", "json"), ("arm/*placements.json", "json"),
                            ("arm/*.json", "arm-json"), ("arm/*.tf", "hcl"), ("kubernetes/azure-monitor/*", "yaml")),
                   products=(),
-                  secret_patterns=SECRET_PATTERNS, importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS),
+                  secret_patterns=SECRET_PATTERNS,
+                  importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS, GRAPH_IMPORTER),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=COLLECTORS, render_targets=TARGETS, settings=(IMAGE, DELIVERY),
+                  collectors=(*COLLECTORS, GRAPH_COLLECTOR), render_targets=TARGETS, settings=(IMAGE, DELIVERY),
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"azkv": keyvault_lookup},
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,

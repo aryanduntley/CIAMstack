@@ -34,6 +34,11 @@ provider "azapi" {
 provider "azuread" {
 }
 
+provider "azuread" {
+  alias     = "partners_external_id"
+  tenant_id = "3f6c1a7e-58d2-4b9e-a1c4-7e2d9b0f5a68"
+}
+
 variable "subscription_id" {
   type    = string
   default = "00000000-0000-0000-0000-000000000000"

@@ -1000,6 +1000,27 @@ ciamImplementation: FIPS-validated modules of Key Vault Premium (HSM-backed ke
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamResponsibility: shared
 
+dn: cn=azure.external-id.shared.s1-8a3dd9bc18e38d46,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: azure.external-id.shared.s1-8a3dd9bc18e38d46
+ciamChangeRef: cn=CHG-2090,ou=changes,dc=ciam-ops
+ciamImportScope: cn=partner-portal,ou=integrations,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: azure/external-id
+
+dn: cn=azure.external-id.target.prod.s1-ecc4e7e660ccc88e,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: azure.external-id.target.prod.s1-ecc4e7e660ccc88e
+ciamChangeRef: cn=CHG-2090,ou=changes,dc=ciam-ops
+ciamImportScope: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=
+ environments,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: azure/external-id
+
 dn: cn=azure.quotas.shared.s1-60d2177c2aeb65cb,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1795,6 +1816,26 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the forest's certificate templates again, collected over LDA
  PS with who may enroll
+
+dn: cn=CHG-2089,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2089
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the partners external tenant the render created, so the targ
+ et adopts it and registers the partner portal in it
+
+dn: cn=CHG-2090,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2090
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the partners external tenant's Graph configuration (app regist
+ rations, user flow, token extension) into the record
 
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
@@ -12308,9 +12349,11 @@ objectClass: top
 objectClass: ciamManagedIdentity
 cn: partners-external-id
 ciamBindingRole: partners-identity
-ciamChangeRef: cn=CHG-2066,ou=changes,dc=ciam-ops
+ciamChangeRef: cn=CHG-2089,ou=changes,dc=ciam-ops
+ciamDataGeography: united-states
 ciamManagedService: entra-external-id
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamProviderRef: 3f6c1a7e-58d2-4b9e-a1c4-7e2d9b0f5a68
 ciamRealizes: partners
 description: The partners realm's external tenant (Microsoft Entra External ID
  )
@@ -14977,6 +15020,30 @@ objectClass: ciamIndex
 cn: mail
 ciamIndexType: equality
 ciamIndexedAttribute: cn=mail,ou=user-schema,dc=ciam-ops
+
+dn: cn=partner-organization-claim,cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamAuthExtension
+cn: partner-organization-claim
+ciamExtensionClaim: partnerOrganization
+ciamExtensionEvent: token-issuance-start
+ciamExtensionResource: api://claims.example-aero.test/4d8f2b6a-0c1e-4a3b-9d5f-
+ 7e9a1c3b5d72
+description: Adds the partner's organization to the partner portal's tokens
+
+dn: cn=partners-sign-up-and-sign-in,cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamSignInFlow
+cn: partners-sign-up-and-sign-in
+ciamCollectedAttribute: email
+ciamCollectedAttribute: displayName
+ciamCollectedAttribute: extension_0c4b2e196d3a4f85b7e291a8c5d0f364_partnerOrga
+ nization
+ciamFlowApplications: cn=partner-portal,ou=integrations,dc=ciam-ops
+ciamSignInMethod: email-otp
+ciamSignInMethod: sign-up
+description: Partner staff sign in with a one-time code sent to their email; f
+ irst-timers sign up
 
 dn: cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top

@@ -1,5 +1,5 @@
 """federation domain schema fragment: its attribute types and object classes (OIDs pinned by number)."""
-from ...core.standard import OVERRIDABLE, AttributeDef, ClassDef, fragment
+from ...core.standard import OVERRIDABLE, AttributeDef, ClassDef, enum_type, fragment
 
 # Standard values (the protocols' own names), so every product adapter maps from one vocabulary.
 GRANT_TYPES = ("authorization_code", "client_credentials", "refresh_token",
@@ -9,6 +9,12 @@ TOKEN_AUTH_METHODS = ("none", "client_secret_basic", "client_secret_post", "clie
                       "tls_client_auth", "self_signed_tls_client_auth")      # RFC 7591, OIDC Core 9, RFC 8705
 SAML_BINDINGS = ("HTTP-POST", "HTTP-Redirect", "HTTP-Artifact", "SOAP")     # urn:oasis:names:tc:SAML:2.0:bindings:*
 NAMEID_FORMATS = ("unspecified", "emailAddress", "persistent", "transient")  # SAML 2.0 core 8.3
+# How a managed identity service's sign-in flow signs users in (sign-up: accounts are created in it), and the events a
+# custom authentication extension answers (a token being issued, attributes being collected at sign-up, a one-time
+# passcode being sent, a password being submitted: just-in-time migration)
+SIGN_IN_METHODS = ("email-password", "email-otp", "sign-up", "federated")
+EXTENSION_EVENTS = ("token-issuance-start", "attribute-collection-start", "attribute-collection-submit", "otp-send",
+                    "password-submit")
 SIGNING_ALGS = ("RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512")   # RFC 7518
 
 ATTRIBUTES = (
@@ -67,6 +73,27 @@ ATTRIBUTES = (
     AttributeDef(771, 'ciamPartnerOf', 'dn', 'intent', False,
                  'The integrations a managed identity service is the partner side of (a neighbour the platform '
                  'federates with): whether it is their relying party or their issuer follows from their protocol type'),
+    AttributeDef(808, 'ciamFlowApplications', 'dn', 'intent', False,
+                 'The integrations a sign-in flow signs users in to'),
+    AttributeDef(809, 'ciamSignInMethod', enum_type(SIGN_IN_METHODS), 'intent', False,
+                 'How a sign-in flow signs users in (sign-up: it also creates their accounts; federated: through an '
+                 'upstream identity provider)'),
+    AttributeDef(810, 'ciamUpstreamProvider', 'string', 'intent', False,
+                 'An upstream identity provider a sign-in flow offers, as the managed service names it'),
+    AttributeDef(811, 'ciamCollectedAttribute', 'string', 'intent', False,
+                 'A user attribute a sign-in flow collects at sign-up, as the managed service names it'),
+    AttributeDef(812, 'ciamFlowExtension', 'dn', 'intent', False,
+                 'The custom authentication extensions a sign-in flow calls'),
+    AttributeDef(813, 'ciamExtensionEvent', enum_type(EXTENSION_EVENTS), 'intent', True,
+                 'The sign-in event a custom authentication extension answers'),
+    AttributeDef(814, 'ciamExtensionResource', 'string', 'binding', True,
+                 'The application a custom authentication extension authenticates to its API as (its app ID URI or '
+                 'ID); where the API runs is not recorded'),
+    AttributeDef(815, 'ciamExtensionClaim', 'string', 'contract', False,
+                 'A claim a custom authentication extension returns for tokens'),
+    AttributeDef(816, 'ciamDataGeography', 'vocab', 'binding', True,
+                 'Where a managed identity service keeps its users\' data, as the adapter declaring it names the '
+                 'geography (a tenant\'s data residency)'),
 )
 CLASSES = (
     ClassDef(26, 'ciamIntegration', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamProtocolType'),
@@ -84,12 +111,25 @@ CLASSES = (
               'ciamUsesCertificate', 'ciamTargetRole', 'ciamCriticality'),
              'The platform\'s own identity provider / OpenID provider, as partners and applications know it'),
     ClassDef(167, 'ciamManagedIdentity', 'ciamBinding', 'STRUCTURAL', ('ciamManagedService',),
-             ('ciamRealizes', 'ciamPartnerOf', 'ciamProviderRef', 'ciamFqdn', 'ciamTlsCertificate', 'ciamManagedBy'),
+             ('ciamRealizes', 'ciamPartnerOf', 'ciamProviderRef', 'ciamFqdn', 'ciamTlsCertificate', 'ciamManagedBy',
+              'ciamDataGeography'),
              "A cloud-managed identity service an environment uses: the platform's own identity service run on it "
              "there (ciamRealizes: the identity service's name; a target), or a neighbour the platform federates "
              "with (ciamPartnerOf: the integrations it is the partner side of); its resource (ciamProviderRef), the "
-             "sign-in host it serves at (ciamFqdn, a custom domain presenting ciamTlsCertificate) and who keeps it "
-             "when it isn't the platform team (ciamManagedBy)"),
+             "sign-in host it serves at (ciamFqdn, a custom domain presenting ciamTlsCertificate), where it keeps its "
+             "users' data (ciamDataGeography) and who keeps it when it isn't the platform team (ciamManagedBy); a "
+             "target's sign-in flows and custom authentication extensions are entries beneath it"),
+    ClassDef(178, 'ciamSignInFlow', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamFlowApplications', 'ciamSignInMethod', 'ciamUpstreamProvider', 'ciamCollectedAttribute',
+              'ciamFlowExtension'),
+             "A sign-in flow of a managed identity service (beneath its binding): the integrations it signs users in "
+             "to, how (its methods, its upstream identity providers), what it collects at sign-up and the custom "
+             "authentication extensions it calls"),
+    ClassDef(179, 'ciamAuthExtension', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamExtensionEvent'),
+             ('ciamExtensionResource', 'ciamExtensionClaim'),
+             "A custom authentication extension of a managed identity service (beneath its binding): the event it "
+             "answers, the application it authenticates as and the claims it returns; its endpoint and the code "
+             "behind it aren't recorded"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)
