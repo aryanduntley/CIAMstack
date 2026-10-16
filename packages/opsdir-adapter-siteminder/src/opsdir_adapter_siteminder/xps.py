@@ -90,16 +90,21 @@ CUSTOM_SCHEME = "custom"
 
 # Sensitive settings: never read into the record, clear (an -npass export) or encrypted (-pass). A property is
 # withheld when its name matches SENSITIVE (whatever its class: the per-class list isn't published), when its value
-# looks encrypted (ENCRYPTED: a {cipher} prefix, a shape seen in SiteMinder's tools, unverified for XPS) or when the
-# store's secret patterns match it.
+# looks encrypted (ENCRYPTED: a {cipher} prefix: {RC2} and {AES} in an agent's SmHost.conf, KB 10974 and 224434) or
+# when the store's secret patterns match it. The agent files' (conf.py) are read by the same rules: SmHost.conf's
+# sharedsecret, an Access Gateway's ClientPassPhrase, an IIS agent's DefaultPassword (plain text in LocalConfig.conf).
+# NOT_SENSITIVE names a setting SENSITIVE matches that holds no secret (when the shared secret last changed).
 SENSITIVE = re.compile(r"password|secret|passphrase|private.?key|credentials?value", re.IGNORECASE)
+NOT_SENSITIVE = ("sharedsecrettime",)
 ENCRYPTED = re.compile(r"^\{[A-Za-z0-9_-]{2,16}\}")
 PURPOSES = MappingProxyType({
     "Password": "the bind password of the connection",
     "SharedSecret": "the shared secret an agent or trusted host signs its requests with",
     "Secret": "a secret the object is configured with",
     "ClientSecret": "the client's secret",
-    "BackchannelPassword": "the password of the partnership's back channel"})
+    "BackchannelPassword": "the password of the partnership's back channel",
+    "ClientPassPhrase": "the password of the Access Gateway's client private key (ClientKeyFile)",
+    "DefaultPassword": "the password of the account an IIS agent proxies requests as (DefaultUserName)"})
 GENERIC_PURPOSE = "a sensitive setting"
 
 Obj = NamedTuple("Obj", [("cls", str), ("xid", str), ("props", tuple), ("links", tuple), ("parent", Optional[str]),
@@ -207,9 +212,12 @@ def is_true(v):
 def sensitive(prop, vals, patterns, scan):
     """Whether a property is withheld: its name is a sensitive one, or a value looks encrypted or like secret
     material to the store (scan: core.secrets.scan)."""
-    return bool(SENSITIVE.search(prop)) or any(ENCRYPTED.match(v) or scan(v, patterns) for v in vals)
+    return (bool(SENSITIVE.search(prop)) and prop.lower() not in NOT_SENSITIVE) \
+        or any(ENCRYPTED.match(v) or scan(v, patterns) for v in vals)
 
 
 def purpose(prop):
     """What a withheld setting is, in words."""
-    return PURPOSES.get(prop) or next((p for k, p in PURPOSES.items() if prop.endswith(k)), GENERIC_PURPOSE)
+    lower = prop.lower()
+    return next((p for k, p in PURPOSES.items() if lower == k.lower()), None) \
+        or next((p for k, p in PURPOSES.items() if lower.endswith(k.lower())), GENERIC_PURPOSE)

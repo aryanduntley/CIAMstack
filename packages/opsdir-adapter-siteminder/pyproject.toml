@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opsdir-adapter-siteminder"
 version = "0.1.0"
-description = "opsdir product adapter for Broadcom SiteMinder as a migration source: its policy store export (XPSExport XML) read into the record on the standard bases, secrets withheld, what has no equivalent carried as source objects."
+description = "opsdir product adapter for Broadcom SiteMinder as a migration source: its policy store export (XPSExport XML) and its Web Agents' and Access Gateways' own files read into the record on the standard bases, secrets withheld, what has no equivalent carried as source objects."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["opsdir>=0.1"]

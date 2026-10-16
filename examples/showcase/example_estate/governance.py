@@ -163,6 +163,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2086", "Record the forest's certificate templates again, collected over LDAPS with who may enroll",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2095", "Record the crew portal web server's SiteMinder agent files (its Web Agent, policy servers, trusted "
+     "host)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

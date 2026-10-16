@@ -6,8 +6,13 @@ SiteMinder identity of every entry the import makes, its own and the standard on
 source objects): its XID, its XPS class, its other settings (JSON) and the sensitive settings withheld.
 
 These map one to one onto the planned neutral protected-web-application layer (realm: an application's path and
-sign-on; rule: a path rule; policy: who it admits)."""
-from opsdir.core.standard import AttributeDef, ClassDef, fragment
+sign-on; rule: a path rule; policy: who it admits).
+
+An agent's own files (importer agent-files) add each server's Web Agent instances (smWebAgent under ou=web-agents: the
+agent identities it acts as, its configuration objects, its trusted host, its policy servers, a gateway virtual host's
+names) and an Access Gateway's proxy rules as ordered routes (smRoute under ou=routes), each naming its server
+(smServer): in SiteMinder's own branch, so no other importer's scope reaches them."""
+from opsdir.core.standard import AttributeDef, ClassDef, enum_type, fragment
 
 ARC = "1.3.6.1.4.1.32473.3.6"      # packages in this repository: .3.<n> of the documentation PEN (SPEC 2.1)
 ORIGIN = "siteminder"
@@ -67,6 +72,30 @@ ATTRIBUTES = (
                  'An authentication scheme\'s protection level (1-1000)'),
     AttributeDef(24, 'smLibrary', 'string', 'intent', True,
                  'The library an authentication scheme runs (a custom one is rebuilt in the target)'),
+    AttributeDef(25, 'smActsAs', 'dn', 'intent', False,
+                 'An agent identity (smAgent) a Web Agent instance acts as (its DefaultAgentName, its AgentName '
+                 'mappings): the realms naming that agent are what it protects'),
+    AttributeDef(26, 'smAgentConfig', 'dn', 'intent', True,
+                 'The agent configuration object a Web Agent instance reads its settings from (its source object)'),
+    AttributeDef(27, 'smHostConfig', 'dn', 'intent', True,
+                 'The host configuration object a Web Agent instance\'s SmHost.conf names (its source object)'),
+    AttributeDef(28, 'smTrustedHost', 'dn', 'intent', True,
+                 'The trusted host a Web Agent instance registered as (its source object; SmHost.conf hostname)'),
+    AttributeDef(29, 'smPolicyServer', 'dn', 'intent', False,
+                 'A policy server (a server of its environment) a Web Agent instance asks'),
+    AttributeDef(30, 'smVirtualHost', 'string', 'intent', False,
+                 'A host name an Access Gateway virtual host answers to (its agent instance\'s)'),
+    AttributeDef(31, 'smCondition', 'string', 'intent', False,
+                 'A condition of an Access Gateway route, all of which must hold: "<type> <criteria> <value>" (type '
+                 'host, uri, query, header:<name>, cookie; criteria equals, beginswith, endswith, contains, exists, '
+                 'regex)'),
+    AttributeDef(32, 'smRouteAction', enum_type(("forward", "redirect")), 'intent', True,
+                 'What an Access Gateway route does: forward the request to its target, or redirect the client'),
+    AttributeDef(33, 'smRouteTarget', 'string', 'intent', True,
+                 'Where an Access Gateway route sends the request, as its proxy rules write it ($0 the request URI, $1 '
+                 'what follows the matched prefix or the first regex group)'),
+    AttributeDef(34, 'smServer', 'dn', 'intent', True,
+                 'The server (ciamServer) a Web Agent instance runs on, or whose Access Gateway a route is'),
 )
 CLASSES = (
     ClassDef(1, 'smObject', 'top', 'AUXILIARY', ('smXid', 'smClass'), ('smConfig', 'smWithheld'),
@@ -92,6 +121,16 @@ CLASSES = (
              'binds as (credentials withheld)'),
     ClassDef(8, 'smAgent', 'ciamObject', 'STRUCTURAL', ('cn',), ('smAgentType', 'ciamTargetRole'),
              'An agent: the enforcement point realms name, and the server role it runs on (ciamTargetRole)'),
+    ClassDef(9, 'smWebAgent', 'ciamObject', 'STRUCTURAL', ('cn', 'smServer'),
+             ('smEnabled', 'smActsAs', 'smAgentConfig', 'smHostConfig', 'smTrustedHost', 'smPolicyServer',
+              'smVirtualHost', 'smConfig', 'smWithheld'),
+             'A Web Agent instance on a server (smServer: a web server\'s, or an Access Gateway virtual host\'s), as '
+             'its WebAgent.conf, SmHost.conf and LocalConfig.conf say: the agent identities it acts as, its '
+             'configuration objects, its trusted host and policy servers, its other settings (secrets withheld)'),
+    ClassDef(10, 'smRoute', 'ciamObject', 'STRUCTURAL', ('cn', 'smServer', 'smRouteAction', 'smRouteTarget'),
+             ('smCondition', 'ciamOrder', 'smConfig'),
+             'A route of an Access Gateway (smServer; its proxy rules): the conditions a request meets, its place '
+             'among the routes (the first that matches is taken) and where it sends the request'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES, ARC, ORIGIN)

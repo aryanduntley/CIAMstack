@@ -173,6 +173,7 @@ cap 08-apply-chg-2083 od modify --change CHG-2083 changes/CHG-2083-target-pingga
 cap 08-report-protected-applications-after od report protected-applications
 cap 08-apply-chg-2086 od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory \
   exports/adcs-templates
+cap 08-apply-chg-2095 od import --change CHG-2095 --at 20260923090000Z siteminder/agent-files exports/siteminder-agents
 cap 08-report-regulated-data od report regulated-data
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions

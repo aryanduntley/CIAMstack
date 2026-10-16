@@ -75,7 +75,7 @@ def files(text=None):
 def imported(extra=EXTRA, text=None, d=None):
     """(the record after importing the export, the change records, notices)."""
     base = d if d is not None else directory(extra)
-    changes, notices = preview_import(base, "siteminder", files(text), (ADAPTER,), at=AT)
+    changes, notices = preview_import(base, "siteminder/xps", files(text), (ADAPTER,), at=AT)
     return build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *extra)))), changes) \
         if d is None else None, changes, notices
 
@@ -94,7 +94,8 @@ def test_registered_and_chosen_from_the_products_on_the_servers():
     assert VERSIONS == ">=12.8,<13" and all(v == VERSIONS for _, v in PRODUCTS)
     assert ADAPTER.render_neutral is None and ADAPTER.render_env is None and ADAPTER.checks == ()
     assert ADAPTER.source_checks == (check_user_directories,)
-    assert ADAPTER.vocabulary["ciamServerRole"] == SERVER_ROLES and [i.name for i in ADAPTER.importers] == ["xps"]
+    assert ADAPTER.vocabulary["ciamServerRole"] == SERVER_ROLES
+    assert [i.name for i in ADAPTER.importers] == ["xps", "agent-files"]
 
 
 def test_policy_domains_realms_rules_and_policies_land_in_its_own_branch(after):
@@ -214,11 +215,11 @@ def test_a_partner_the_record_holds_is_kept_as_it_is(after):
 
 def test_a_re_import_changes_nothing_and_keeps_the_record_s_decisions(after):
     d, _ = after
-    assert preview_import(d, "siteminder", files(), (ADAPTER,), at=AT)[0] == ()
+    assert preview_import(d, "siteminder/xps", files(), (ADAPTER,), at=AT)[0] == ()
     decided = build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *EXTRA)))), (
         *imported()[1], *parse(f"dn: cn=hco-default-hco,{CARRIED}\nchangetype: modify\nreplace: ciamHandling\n"
                                "ciamHandling: review\n-\nreplace: ciamHow\nciamHow: ask the web team\n-\n")))
-    assert preview_import(decided, "siteminder", files(), (ADAPTER,), at=AT)[0] == ()
+    assert preview_import(decided, "siteminder/xps", files(), (ADAPTER,), at=AT)[0] == ()
 
 
 def _ctx(d, src="alpha/prod", dst="beta/prod"):

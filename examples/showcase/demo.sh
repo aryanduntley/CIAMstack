@@ -306,6 +306,10 @@ echo "   adcs/inventory's template collector): CIAM-WebServer now also issues cl
 echo "   subject from the request and lets Domain Users enroll (ESC1-style): an action for its renewal owner; the"
 echo "   import takes the live values where the record held CHG-2050's (who may enroll was unknown then)"
 od import --change CHG-2086 --at 20260923090000Z --take all adcs/inventory exports/adcs-templates
+echo "-- crew-web-1's SiteMinder agent files read in (CHG-2095, siteminder/agent-files): its Web Agent instance below"
+echo "   the server, acting as crew-web-agent, linked to its ACO, HCO, trusted host and sm-ps-1 (its shared secret"
+echo "   withheld); its LocalConfig.conf's IgnoreUrl is named, since crew-aco doesn't allow local configuration"
+od import --change CHG-2095 --at 20260923090000Z siteminder/agent-files exports/siteminder-agents
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

@@ -8,6 +8,10 @@ The Broadcom SiteMinder (formerly CA Single Sign-On) adapter, for SiteMinder as 
 
 ## What it reads
 
+Two importers: `siteminder/xps`, the policy store's export (below), and `siteminder/agent-files`, the agents' and
+Access Gateways' own files ([Agent and gateway files](#agent-and-gateway-files)). Read the export first: what the files
+name is linked only when the record holds it.
+
 Importer `siteminder/xps`: every `*.xml` file given, as `XPSExport` writes it (the whole store with `-xb`, or parts; `opsdir import --change <id> siteminder/xps <folder>`). The export is the operator's: XPSExport runs on a Policy Server as its administrator (no read-only role is documented for it), so there is no collector. A document declaring a DOCTYPE or an entity is refused; an export whose root names a release outside `>=12.8,<13` is refused whole, its version named (12.51 and 12.52 are 12.5 service packs: older).
 
 | In the export | In the record |
@@ -41,9 +45,14 @@ Integrations the record already holds (matched by entity ID or client ID) keep w
 | OpenID provider configuration (`CA.FED::OIDCAdminConfig`) | rebuild in the target's OpenID provider | `sm-policy-server` | no |
 | Custom authentication scheme (type *Custom*) | rebuild: the operator's own sign-on code | `sm-policy-server` | **yes** (concerns the realms using it) |
 | Cookie response (`WebAgent-HTTP-Cookie-Variable`) / any other response | rebuild / review in the target gateway's identity mapping | `sm-agent` | no |
-| An Access Gateway agent's routing | rebuild: its proxy rules aren't in the policy store | `sm-access-gateway` | **yes** |
+| An Access Gateway agent's routing | rebuild: its proxy rules aren't in the policy store; dropped once the record holds the gateway's routes (its agent files) | `sm-access-gateway` | **yes** |
+| An Access Gateway route sending another path (`rewrite-<application>`, agent files) | rebuild: the neutral layer has no backend path | `sm-access-gateway` | **yes** (concerns the application) |
 | The keys (one object, whenever the export has agents, hosts or partnerships) | re-provision: agent and session keys (`smkeyexport`) and federation keys (the certificate data store) are never in an XPSExport | `sm-policy-server` | no |
 | Any class this adapter doesn't map | review | `sm-policy-server` | no |
+
+The ACO's source object also keeps its settings (`smConfig`): the agents' settings are read from it. Once a server's
+agent files are read, the ACO, HCO and trusted host source objects concern the servers whose files name them
+(`ciamConcerns`).
 
 `opsdir report source-objects` lists them; the core planner check (`check_source_objects`) makes each an action for its owner, or a blocker when the move waits for it, for a target that doesn't run the role holding it.
 
@@ -72,6 +81,45 @@ so a plan can move what SiteMinder protects to a product the target runs:
 The service names clients reach a realm at, the application behind a gateway that takes it over, and the integration
 that gateway signs users in as aren't in an export: the record adds them, and the import keeps them.
 
+The agent files add (`agents.py`, `routing.py`; one projection over the whole record, which both importers run):
+- the extensions and URLs an agent passes through unprotected (`IgnoreExt`, `IgnoreUrl`: its ACO's, or its
+  `LocalConfig.conf`'s where the ACO allows it) as `unprotected` path resources of every application its realms
+  become, projected from the agent: an extension anywhere below the base path (`/*.gif`), a URL exactly (a URL takes
+  no wildcard, KB 44956: matching it exactly is the conservative reading); what its instances don't all pass through
+  is left out, and a notice names them;
+- a gateway application's backend role, port and TLS from the first route every request of it takes (its virtual
+  host's names and its base path decide; a condition on a query, header or cookie, or one only part of it meets, is
+  named), and the roles of the names it is published at, each only where the record resolves the host (a service
+  name, an external host, a server);
+- a forward route no realm covers as application `<agent>-<route>`: enforced by the gateway, no sign-on, one `/*`
+  resource `unprotected`, with its backend (the gateway passes it through, so the target must too);
+- a route sending another path than the request's (`http://app:8080/old$1` for `/legacy`) as a blocking `rewrite`
+  source object concerning the application.
+
+## Agent and gateway files
+
+Importer `siteminder/agent-files`: one folder per server, named by its hostname or record name (a server of role
+`sm-agent` or `sm-access-gateway`; `opsdir import --change <id> siteminder/agent-files <folder>`):
+
+| In the folder | In the record |
+|---|---|
+| `WebAgent.conf` (one per instance: an Apache instance, an IIS site, an Access Gateway virtual host's) | `smWebAgent` at `cn=<cloud>-<env>-<server>-<virtual host \| ServerPath \| webagent>,ou=web-agents,ou=siteminder`, naming its server (`smServer`): enabled, its ACO (`smAgentConfig`, the ACO's source object), its other settings (`smConfig`) |
+| `SmHost.conf` (the one its `HostConfigFile` names, by the tail of the path, else beside it) | its trusted host (`smTrustedHost`, from `hostname`) and HCO (`smHostConfig`) source objects, the servers of role `sm-policy-server` of its environment its `policyserver` lines name (`smPolicyServer`, by hostname or address); `sharedsecret` withheld |
+| `LocalConfig.conf` | settings overriding its ACO where the ACO allows (`AllowLocalConfig`: no by default, yes, or the names it lists); the agent identities it acts as (`smActsAs`: `DefaultAgentName`, each `AgentName` mapping's name; local or the ACO's) |
+| `server.conf` (an Access Gateway's) | each `<VirtualHost>` an instance (`smVirtualHost`: its `hostnames`), its `WebAgent.conf` the one its `<WebAgent> sminitfile` names (else `<VirtualHostDefaults>`'s, else `proxy-engine/conf/defaultagent/WebAgent.conf`); `ClientPassPhrase` withheld |
+| `proxyrules.xml` (the one `ServiceDispatcher` `rules_file` names) | `smRoute` at `cn=<cloud>-<env>-<server>-route-<n>,ou=routes,ou=siteminder`, naming the gateway (`smServer`): the rule tree flattened into routes in the order the gateway tries them (`ciamOrder`), each with the conditions on its way (`smCondition` `<type> <criteria> <value>`, all must hold), forward or redirect (`smRouteAction`) and its target as written (`smRouteTarget`; a forward's filter class in `smConfig`) |
+
+Broadcom's proxy rules files declare an external DOCTYPE (`<!DOCTYPE nete:proxyrules SYSTEM ".../proxyrules.dtd">`,
+KB 216168): exactly one such declaration (a SYSTEM or PUBLIC id, no internal subset) is removed before the file is
+read; any other DOCTYPE, an internal subset or an entity is refused like any XML the core reads. Secrets are withheld
+whole, never stored: `sharedsecret` (`{RC2}`/`{AES}`, KB 10974 and 224434), `ClientPassPhrase`, an IIS agent's
+`DefaultPassword` (clear text in `LocalConfig.conf`) and anything the export's rules call sensitive; the instance
+records that each existed, what it is and that the target re-provisions it (`smWithheld`). A re-import replaces what
+the record says of each server's instances and routes and changes nothing when the files haven't. They are kept in
+SiteMinder's own branch, not below the server, so no other importer's scope (a cloud's state, CLI output or native
+templates, which replace a server's subtree) removes them; an instance or route whose server the record no longer
+holds is named by every SiteMinder import, and no source object concerns it.
+
 ## Secrets
 
 Never stored, neither the value nor its ciphertext. `XPSExport -npass` writes sensitive settings in **clear text**; `-pass` encrypts them with a passphrase: either way the import withholds them. A setting is withheld when its name is a sensitive one (password, secret, passphrase, private key: SiteMinder publishes no per-class list), when its value looks encrypted (a `{cipher}` prefix) or when the store's secret patterns match it; a header response's fixed value too. The entry records only that it existed, what it is and that the target re-provisions it (`smWithheld`, e.g. `Password: the bind password of the connection; re-provision in the target`), and every import says how many it withheld and that the export file must be treated as a secret. Agent keys, the session key and federation keys aren't in an XPSExport at all (`smkeyexport`, `smkeytool`): the `keys` source object says so.
@@ -86,7 +134,7 @@ The core checks the rest: integrations still served by SiteMinder's identity ser
 
 ## Schema
 
-Under this package's OID arc `1.3.6.1.4.1.32473.3.6` (prefix `sm`, `schema.py`): 24 attributes, classes `smObject` (auxiliary), `smPolicyDomain`, `smRealm`, `smRule`, `smPolicy`, `smAuthScheme`, `smUserDirectory`, `smAgent`. Realms, rules and policies are projected onto the core's neutral protected-application layer, which PingAccess and PingGateway share (above).
+Under this package's OID arc `1.3.6.1.4.1.32473.3.6` (prefix `sm`, `schema.py`): 34 attributes, classes `smObject` (auxiliary), `smPolicyDomain`, `smRealm`, `smRule`, `smPolicy`, `smAuthScheme`, `smUserDirectory`, `smAgent`, `smWebAgent`, `smRoute`. Realms, rules and policies are projected onto the core's neutral protected-application layer, which PingAccess and PingGateway share (above).
 
 ## Known limits
 
@@ -99,12 +147,34 @@ Under this package's OID arc `1.3.6.1.4.1.32473.3.6` (prefix `sm`, `schema.py`):
     read, so a policy using them is `custom`.
   - Also whether a regex rule is matched against the whole path (assumed) and the 12.8/12.9 deny-over-allow precedence
     (documented for 12.51).
-- **Not read**: the admin policy REST API (`/ca/api/sso/services/policy/v1/`: needs a legacy administrator; its coverage is unverified), Web Agent files (`WebAgent.conf`, `SmHost.conf`), Access Gateway proxy rules (`proxyrules.xml`: carried as a blocking source object), the key store, the session and audit stores, the certificate data store's contents (certificates are linked only when the record holds them).
+- **The agent files' names are unverified for 12.8 and 12.9.** They come from Broadcom's archived Web Agent 12.52,
+  Secure Proxy Server 12.52 and r12 SP3 guides and knowledge-base articles (the current TechDocs pages weren't
+  readable); every name read is data in `conf.py` (`NAMES`, the server.conf sections) and `proxyrules.py`. The
+  tests' files are built from the documented shapes. **Acceptance items** (a real Apache and IIS Web Agent 12.8.x
+  install, an Access Gateway 12.8 SP and 12.9.1): the parameter names of `WebAgent.conf`, `SmHost.conf` and
+  `LocalConfig.conf` (one per Apache instance or IIS site?); how the ACO's parameters appear in an XPSExport
+  (`Parameters` `<name>=<value>` assumed) and whether `AllowLocalConfig` still works as r12 SP3 documents (SP2
+  differs); whether `IgnoreUrl` matches a path exactly (assumed: the conservative reading) or as a prefix, and how
+  `IgnoreExt` treats a query string; the proxy rules DTD of 12.8/12.9 (the `case` element's `value`, `xprcond`'s
+  `type`, an `xpr` result's `service`, whether `default` may be left out and what happens then); `server.conf`'s
+  section and setting names (`VirtualHost` `hostnames`, `<WebAgent> sminitfile`, `ServiceDispatcher` `rules_file`) and
+  whether a virtual host can name its agent identity directly; `sharedsecrettime`'s meaning (KB 10974 and 369902
+  disagree: it is kept, not withheld).
+- **Routes the record can't place** (a condition on a query, header or cookie, a regular expression, `contains` or
+  `endswith`, a redirect) are named in the import's notices, not recorded as anything the plan acts on: rebuild them
+  in the target gateway.
+- **Not read**: the admin policy REST API (`/ca/api/sso/services/policy/v1/`: needs a legacy administrator; its coverage is unverified), an Access Gateway's own session schemes, filters and other `server.conf` settings (only its virtual hosts and rules file), `IgnoreHost` and the agents' other settings (kept in `smConfig`), the key store, the session and audit stores, the certificate data store's contents (certificates are linked only when the record holds them).
 - **Responses' other types, variables, active rules and expressions** beyond `userattr` and `userdn` are kept as source objects to review or in `smConfig`, not interpreted.
 - **One identity service per export**: partnerships of several local entities are served by the first (a notice names the others).
 - **Versions**: an export naming no release is read (the servers' recorded versions apply); a server's `ciamProductVersion` is compared as PEP 440, so record 12.52 as `12.5.2`.
 
 ## Tests
+
+`tests/test_agent_files.py` with the synthetic export `tests/agent-files/policy-store.xml` and two server folders
+(an Apache Web Agent; an Access Gateway with a virtual host and proxy rules): the files' parsing, the routes in order,
+the DOCTYPE forms accepted and refused, instances below their servers and their links, secrets withheld whole, the
+ignored extensions and URLs, a gateway application's backend and names, uncovered routes, rewrites, source objects'
+concerns and the routing dropped, a re-import of either changing nothing, and the core checks.
 
 `tests/test_siteminder.py` with the synthetic export `tests/xps/policy-store.xml`: registration and applicability, every mapping above, nested realms and XREF references, held integrations kept, every sensitive value absent from what is stored, DOCTYPE and other releases refused, unresolved links named, a re-import changing nothing and keeping the record's handling, the source checks and the core source-object check. The core's `opsdir/tests/unit/test_source_objects.py` covers source objects, the federation check and the planner hook.
 

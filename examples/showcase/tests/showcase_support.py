@@ -96,7 +96,9 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2082", SHOWCASE / "changes" / "CHG-2082-target-pingaccess-protects-crew-portal.ldif"),
             ("CHG-2083", SHOWCASE / "changes" / "CHG-2083-target-pinggateway-protects-tech-pubs.ldif"),
             ("CHG-2086", ImportStep("adcs/inventory", SHOWCASE / "exports" / "adcs-templates", "20260923090000Z",
-                                    take=("all",))))
+                                    take=("all",))),
+            ("CHG-2095", ImportStep("siteminder/agent-files", SHOWCASE / "exports" / "siteminder-agents",
+                                    "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

@@ -29,7 +29,7 @@
     </Object>
     <Object Class="CA.SM::AgentConfig" Xid="CA.SM::AgentConfig@25-8c3f5d10-crew-aco">
       <Property Name="CA.SM::AgentConfig.Name"><StringValue>crew-aco</StringValue></Property>
-      <Property Name="CA.SM::AgentConfig.Parameters"><StringValue>CookieDomain=.example-aero.test</StringValue><StringValue>LogOffUri=/crew/logout</StringValue><StringValue>IgnoreExt=.gif,.png,.css,.js</StringValue></Property>
+      <Property Name="CA.SM::AgentConfig.Parameters"><StringValue>DefaultAgentName=crew-web-agent</StringValue><StringValue>CookieDomain=.example-aero.test</StringValue><StringValue>LogOffUri=/crew/logout</StringValue><StringValue>IgnoreExt=.gif,.png,.css,.js</StringValue></Property>
     </Object>
     <Object Class="CA.SM::HostConfig" Xid="CA.SM::HostConfig@26-1e7b4a92-default">
       <Property Name="CA.SM::HostConfig.Name"><StringValue>DefaultHostSettings</StringValue></Property>

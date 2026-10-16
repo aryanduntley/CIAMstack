@@ -13,16 +13,25 @@ can move what SiteMinder protects to a product the target runs. Pure.
   smPolicy  -> ciamAccessRule <domain>-<policy>, allowing its user selections (a group, user, filter, or every user
                of a directory: authenticated); <domain>-<policy>-deny for the deny rules it grants. A selection of
                another kind makes the rule custom. A disabled policy isn't projected.
-Every vendor name is xps.py's (unverified). The ownership rule is webaccess.projection's."""
+  smWebAgent / smRoute (the agent files, agents.py and routing.py): the extensions and URLs an agent passes through
+               unprotected (IgnoreExt, IgnoreUrl) as unprotected resources of the applications it enforces; a gateway
+               application's backend and published roles from its routes; a route no realm covers as an unprotected
+               application; a route sending another path as a blocking 'rewrite' source object.
+One projection over the whole record: every SiteMinder importer runs it, so each import leaves the same neutral entries
+whichever files it read. Every vendor name is xps.py's and conf.py's (unverified). The ownership rule is
+webaccess.projection's."""
 import re
 
-from opsdir.core.directory import children, follow, get, one, rdn_value, subtree, values
+from opsdir.core.directory import children, follow, get, one, ou_entry, rdn_value, subtree, values
 from opsdir.core.jsondata import held_json
+from opsdir.domains.governance.naming import SOURCE_OBJECTS
 from opsdir.domains.webaccess.express import pattern_as
 from opsdir.domains.webaccess.naming import HTTP_METHODS, app_dn, resource_dn, rule_dn
 from opsdir.domains.webaccess.projection import neutral_entry, projected
+from .agents import dangling, ignored_by, ignored_resources
 from .checks import realm_role
-from .naming import DOMAINS, SITEMINDER
+from .naming import CARRIED, DOMAINS, SITEMINDER
+from .routing import gateways, rewrite_entries
 from .xps import PROTECT_ALL, SCHEME_SIGN_ONS, SUBJECT_KINDS, is_true
 
 _SUBJECT = re.compile(r"^(.*?) (" + "|".join(SUBJECT_KINDS) + r")(?: (.*))?$")
@@ -49,7 +58,8 @@ def _sign_on(scheme):
     return next((v for k, v in SCHEME_SIGN_ONS if k in kind), None) if kind else None
 
 
-def _app(d, realm):
+def _app(d, realm, extra=None):
+    """The application a realm becomes, with what its gateway's routes add (extra: {attribute: values})."""
     scheme = follow(d, realm, "smAuthScheme")
     headers = tuple(dict.fromkeys(r for p in granting(d, realm) for r in values(p, "smResponse")
                                   if get(d, r) is not None and "ciamHeaderContract" in get(d, r).classes))
@@ -58,7 +68,7 @@ def _app(d, realm):
         "cn": (_name(d, realm),), "ciamBasePath": (base if base.startswith("/") else "/" + base,),
         "ciamEnforcedByRole": (realm_role(d, realm),), "ciamSignOn": (_sign_on(scheme),),
         "ciamIdleTimeout": (one(realm, "smIdleTimeout"),), "ciamMaxSessionTime": (one(realm, "smMaxTimeout"),),
-        "ciamSetsHeader": headers, "ciamProjectedFrom": (realm.dn,)})
+        "ciamSetsHeader": headers, "ciamProjectedFrom": (realm.dn,), **(extra or {})})
 
 
 def _pattern(realm, rule):
@@ -120,12 +130,28 @@ def _actions(d, realm):
                  for other in (tuple(a for a in values(r, "smAction") if a.upper() not in HTTP_METHODS),) if other)
 
 
-def projection(d):
-    """Projected of the record's SiteMinder realms, rules and policies (d: the record as the import leaves it)."""
+def _ignored(d, realms):
+    """{agent DN: ((extensions, URLs), notices)} of the agents realms name (agents.ignored_by)."""
+    agents = {a.norm: a for a in (follow(d, r, "smAgent") for r in realms) if a is not None}
+    return {a.dn: ignored_by(d, a) for a in agents.values()}
+
+
+def projection(d, at=None):
+    """Projected of the record's SiteMinder realms, rules and policies, and of its agents' files (d: the record as
+    the import leaves it): the neutral entries, and the rewrites' source objects (at: when the import read them)."""
     realms = subtree(d, DOMAINS, "smRealm")
-    apps = tuple((app, tuple(_resource(d, app, realm, r) for r in children(d, realm.dn, "smRule")
-                             if one(r, "smEnabled") != "FALSE"))
-                 for realm in realms for app in (_app(d, realm),))
+    told = gateways(d, tuple((_app(d, realm), one(realm, "smAgent")) for realm in realms))
+    ignored = _ignored(d, realms)
+    apps = tuple((app, (*(_resource(d, app, realm, r) for r in children(d, realm.dn, "smRule")
+                          if one(r, "smEnabled") != "FALSE"),
+                        *(ignored_resources(app, agent, ignored[agent.dn][0]) if agent is not None else ())))
+                 for realm in realms for agent in (follow(d, realm, "smAgent"),)
+                 for app in (_app(d, realm, told.attrs.get(app_dn(_name(d, realm)))),))
     rules = tuple(r for p in subtree(d, DOMAINS, "smPolicy") if one(p, "smEnabled") != "FALSE" for r in _rules(d, p))
-    found = projected(d, apps, rules, (SITEMINDER,), "SiteMinder")
-    return found._replace(notices=(*found.notices, *(n for realm in realms for n in _actions(d, realm))))
+    found = projected(d, (*apps, *told.uncovered), rules, (SITEMINDER, CARRIED), "SiteMinder")
+    rewrites = rewrite_entries(d, told.rewrites, at)
+    return found._replace(
+        containers=(*found.containers, *((ou_entry(SOURCE_OBJECTS), ou_entry(CARRIED)) if rewrites else ())),
+        groups=(*found.groups, *rewrites),
+        notices=(*found.notices, *(n for realm in realms for n in _actions(d, realm)),
+                 *(n for _, ns in ignored.values() for n in ns), *told.notices, *dangling(d)))

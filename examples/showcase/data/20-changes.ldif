@@ -672,6 +672,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the forest's certificate templates again, collected over LDA
  PS with who may enroll
 
+dn: cn=CHG-2095,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2095
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the crew portal web server's SiteMinder agent files (its Web
+  Agent, policy servers, trusted host)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

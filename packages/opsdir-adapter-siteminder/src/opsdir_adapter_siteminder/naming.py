@@ -1,5 +1,6 @@
-"""Where SiteMinder's own entries live: ou=siteminder, a branch per kind, each object named after its SiteMinder name;
-the source objects it carries under ou=siteminder,ou=source-objects."""
+"""Where SiteMinder's own entries live: ou=siteminder, a branch per kind, each object named after its SiteMinder name
+(the agent files' Web Agent instances and gateway routes after their server: <cloud>-<env>-<server>-...); the source
+objects it carries under ou=siteminder,ou=source-objects."""
 from opsdir.core.naming import branch
 from opsdir.domains.automation.pipelines import slug
 from opsdir.domains.federation.naming import IDENTITY_SERVICES
@@ -13,6 +14,8 @@ DOMAINS = branch("domains", SITEMINDER)
 AUTH_SCHEMES = branch("auth-schemes", SITEMINDER)
 USER_DIRECTORIES = branch("user-directories", SITEMINDER)
 AGENTS = branch("agents", SITEMINDER)
+WEB_AGENTS = branch("web-agents", SITEMINDER)          # the agent files' Web Agent instances (smWebAgent)
+ROUTES = branch("routes", SITEMINDER)                  # an Access Gateway's routes (smRoute)
 CARRIED = branch("siteminder", SOURCE_OBJECTS)            # its source objects
 SERVICE = f"cn=siteminder,{IDENTITY_SERVICES}"           # its own federation service, when the record has none
 

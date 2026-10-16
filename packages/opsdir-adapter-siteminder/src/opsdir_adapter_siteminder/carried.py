@@ -13,16 +13,18 @@ when SiteMinder is retired and whether a move waits for that. Pure.
                                        move waits
   cookie and other responses           rebuild /      the target gateway's identity mapping
                                        review
-  an Access Gateway's routing          rebuild, a     its proxy rules aren't in the policy store
-                                       move waits
+  an Access Gateway's routing          rebuild, a     its proxy rules aren't in the policy store (dropped once the
+                                       move waits     record holds the gateway's routes: routing.py)
   the keys                             re-provision   agent and session keys (smkeyexport) and federation keys (the
                                                       certificate data store) are never in an XPSExport
   any class this adapter doesn't map   review
+The ACO's source object also keeps its settings (smConfig): what the agents' settings are read from (agents.py). The
+agent files make an ACO, an HCO and a trusted host concern the servers whose files name them (agents.file_concerns).
 """
 from types import MappingProxyType
 
 from opsdir.core.directory import get, gtime, rdn_of
-from .entries import entry, facts
+from .entries import config, entry, facts
 from .naming import ACCESS_GATEWAY, AGENT, POLICY_SERVER
 from .responses import header_value, parts
 from .xps import name
@@ -86,8 +88,8 @@ def carried_entry(d, x, k, o, dn, at, concerns=()):
                                                  "ciamBlocking": ("TRUE" if blocks else None,)}
     found = (_response_facts(o) if k in ("cookie", "response") else facts(x, o)) if o is not None else (
         "AgentKeys smkeyexport", "SessionKey smkeyexport", "FederationKeys certificate data store")
-    sm = {"smXid": (o.xid,), "smClass": (o.cls,), "smConfig": (None,), "smWithheld": x.withheld[o.xid]} \
-        if o is not None else {}
+    sm = {"smXid": (o.xid,), "smClass": (o.cls,), "smConfig": (config(x, o) if k == "aco" else None,),
+          "smWithheld": x.withheld[o.xid]} if o is not None else {}
     return entry(d, dn, ("top", "ciamObject", "ciamSourceObject", *(("smObject",) if o is not None else ())),
                  {"cn": (rdn_of(dn),), "ciamSourceClass": (o.cls if o is not None else KEYS_CLASS,),
                   "ciamTargetRole": (role,), "ciamSourceFact": found or (None,), **decided,
