@@ -4,7 +4,8 @@ ticket said when an ITSM add-on's importer last read it, compared with the recor
 A change names its ticket in ciamTicketRef as <adapter>:<number> (servicenow:CHG0030101): the operator's link. The
 add-on's importer reads the tickets the record links into their own entries (ciamTicket at cn=<number>,ou=<adapter>,
 ou=tickets): the ticket's state in neutral terms (when the add-on knows the ticket's state model), its overall
-approval, its planned and actual (work) windows, its approval records and other fields as the system gave them, all
+approval (with the steps' own decisions, where the system approves by steps), its kind of change (standard, normal or
+emergency), its planned and actual (work) windows, its approval records and other fields as the system gave them, all
 EVIDENCE. Nothing here, and nothing an importer writes, is under ou=changes: a ticket never changes a change's status
 or approver, and never authorizes a write (the store accepts a write only under an approved change record).
 
@@ -33,7 +34,7 @@ overall approval the system reports. No fix is offered: a change's status is a p
 from typing import NamedTuple
 
 from ...core.directory import (children, get, gtime_at, gtime_date, make_entry, merged_attrs, one, rdn_of, rdn_value,
-                               subtree)
+                               subtree, values)
 from ...core.findings import findings, owner_label
 from .naming import CHANGES, TICKETS
 from .parties import operator_label
@@ -42,7 +43,8 @@ AREA = "Change tickets"
 TICKET_CLASS = "ciamTicket"
 TICKET_ATTRS = ("cn", "ciamImportedAt", "ciamTitle", "ciamProviderRef", "ciamDocUrl", "ciamTicketState",
                 "ciamTicketApproval", "ciamTicketNativeState", "ciamTicketPlannedStart", "ciamTicketPlannedEnd",
-                "ciamTicketWorkStart", "ciamTicketWorkEnd", "ciamTicketApprover", "ciamTicketFact")
+                "ciamTicketWorkStart", "ciamTicketWorkEnd", "ciamTicketApprover", "ciamTicketFact",
+                "ciamTicketApprovalStep", "ciamTicketChangeType")
 TICKET_HEADERS = ("change", "status", "planned", "ticket", "state", "approval", "planned window", "work window",
                   "read at", "drift")
 IN_STEP, NOT_IMPORTED, REJECTED, CANCELLED, UNAPPROVED, CLOSED_PENDING, LIVE_REJECTED, WINDOW_DIFFERS, \
@@ -193,6 +195,13 @@ def _approval(t):
     return (one(t, "ciamTicketApproval") or "unknown").replace("-", " ")
 
 
+def _steps(t):
+    """' (steps: 1 approved, 1 pending)' of a ticket whose system approves by steps, else ''."""
+    decided = [s.split(" ", 1)[0] for s in values(t, "ciamTicketApprovalStep")]
+    counts = ", ".join(f"{decided.count(x)} {x}" for x in dict.fromkeys(sorted(decided)))
+    return f" (steps: {counts})" if decided else ""
+
+
 def finding_text(link, state):
     """What one drift state of a linked change says, in words ('ITSM says': evidence, never the record's approval)."""
     if state == NOT_IMPORTED:
@@ -243,14 +252,15 @@ def check_tickets(ctx):
 
 def ticket_rows(d, dn=None):
     """One row per linked change: its status and planned day in the record, the ticket, what ITSM said of it (state,
-    with the system's own; overall approval; planned and work windows; when it was read) and its drift."""
+    with the system's own; overall approval, with its steps' decisions when the system approves by steps; planned and
+    work windows; when it was read) and its drift."""
     def row(link):
         t = link.ticket
         native = f" ({one(t, 'ciamTicketNativeState')})" if t is not None and one(t, "ciamTicketNativeState") else ""
         state = f"{one(t, 'ciamTicketState') or 'unknown'}{native}" if t is not None else ""
         return (rdn_value(link.change), one(link.change, "ciamChangeStatus"),
                 _when(one(link.change, "ciamPlannedAt"))[:10] if one(link.change, "ciamPlannedAt") else "",
-                f"{link.adapter}:{link.number}", state, _approval(t) if t is not None else "",
+                f"{link.adapter}:{link.number}", state, f"{_approval(t)}{_steps(t)}" if t is not None else "",
                 _window(t, "ciamTicketPlannedStart", "ciamTicketPlannedEnd") if t is not None else "",
                 _window(t, "ciamTicketWorkStart", "ciamTicketWorkEnd") if t is not None else "",
                 _when(one(t, "ciamImportedAt"))[:10] if t is not None else "",

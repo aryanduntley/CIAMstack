@@ -3,6 +3,11 @@ from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 
 # How a source object is handled when its product is retired (governance.source_objects)
 HANDLINGS = ("rebuild", "re-provision", "re-register", "replace", "retire", "review")
+# An ITSM ticket's lifecycle state and overall approval in neutral terms (governance.tickets): what each ITSM add-on
+# maps its system's own states and approvals to (an operator's mapping is checked against these)
+TICKET_STATES = ("new", "assess", "authorize", "scheduled", "implement", "review", "closed", "cancelled")
+TICKET_APPROVALS = ("not-requested", "requested", "approved", "rejected")
+TICKET_CHANGE_TYPES = ("standard", "normal", "emergency")
 
 ATTRIBUTES = (
     AttributeDef(110, 'ciamTitle', 'string', 'meta', True,
@@ -115,11 +120,10 @@ ATTRIBUTES = (
     AttributeDef(740, 'ciamTicketRef', 'string', 'meta', True,
                  'The ITSM ticket a change record is tracked by, as <adapter>:<number> (servicenow:CHG0030101): the '
                  'operator\'s link; what the ticket says is read into its own entry under ou=tickets, never here'),
-    AttributeDef(741, 'ciamTicketState', 'enum:new|assess|authorize|scheduled|implement|review|closed|cancelled',
-                 'meta', True,
+    AttributeDef(741, 'ciamTicketState', enum_type(TICKET_STATES), 'meta', True,
                  'A ticket\'s lifecycle state in neutral terms, as its add-on maps the system\'s own (absent: the '
                  'mapping doesn\'t know the ticket\'s state model; ciamTicketNativeState holds what the system said)'),
-    AttributeDef(742, 'ciamTicketApproval', 'enum:not-requested|requested|approved|rejected', 'meta', True,
+    AttributeDef(742, 'ciamTicketApproval', enum_type(TICKET_APPROVALS), 'meta', True,
                  'The ticket\'s overall approval as its system reports it: evidence, never an approval of the '
                  'record\'s change'),
     AttributeDef(743, 'ciamTicketNativeState', 'string', 'meta', True,
@@ -138,6 +142,14 @@ ATTRIBUTES = (
     AttributeDef(749, 'ciamTicketFact', 'string', 'meta', False,
                  'Another field of the ticket as its system gave it: "<field> <raw value>" (type, model, close code, '
                  'assignment group, configuration item, requester, correlation, last update)'),
+    AttributeDef(834, 'ciamTicketApprovalStep', 'string', 'meta', False,
+                 'One approval step of the ticket as its system decided it, where approval goes by steps (a '
+                 'workflow\'s approval statuses): "<approved|declined|pending> <step id> created <time>[ completed '
+                 '<time>]"; the overall approval its add-on derives from them is ciamTicketApproval, the people '
+                 'asked are ciamTicketApprover'),
+    AttributeDef(835, 'ciamTicketChangeType', enum_type(TICKET_CHANGE_TYPES), 'meta', True,
+                 'The kind of change the ticket is, in neutral terms: standard (pre-approved), normal or emergency, '
+                 'as its system classes it'),
     # source objects (milestone 6.1): what a product a migration retires holds that the standard model has no
     # equivalent for, carried as data so the plan says what each needs (ciamSourceObject under ou=source-objects)
     AttributeDef(760, 'ciamSourceClass', 'string', 'observed', True,
@@ -202,7 +214,8 @@ CLASSES = (
     ClassDef(156, 'ciamTicket', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImportedAt'),
              ('ciamTitle', 'ciamProviderRef', 'ciamDocUrl', 'ciamTicketState', 'ciamTicketApproval',
               'ciamTicketNativeState', 'ciamTicketPlannedStart', 'ciamTicketPlannedEnd', 'ciamTicketWorkStart',
-              'ciamTicketWorkEnd', 'ciamTicketApprover', 'ciamTicketFact'),
+              'ciamTicketWorkEnd', 'ciamTicketApprover', 'ciamTicketFact', 'ciamTicketApprovalStep',
+              'ciamTicketChangeType'),
              'An ITSM ticket a change record names (ciamTicketRef), as its add-on\'s importer last read it (under '
              'cn=<number>,ou=<adapter>,ou=tickets; ciamImportedAt: when the export was taken): its state, overall '
              'approval, planned and actual windows, approval records and other fields, with the system\'s own '

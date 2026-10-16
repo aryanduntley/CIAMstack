@@ -321,6 +321,11 @@ echo "-- crew-web-1's SiteMinder agent files read in (CHG-2095, siteminder/agent
 echo "   to the server), acting as crew-web-agent, linked to its ACO, HCO, trusted host and sm-ps-1 (its shared secret"
 echo "   withheld); its LocalConfig.conf's IgnoreUrl is named, since crew-aco doesn't allow local configuration"
 od import --change CHG-2095 --at 20260923090000Z siteminder/agent-files exports/siteminder-agents
+echo "-- the platform team's changes name their Jira Service Management tickets and the site's workflow and fields are"
+echo "   mapped (CHG-2098); the tickets and their approval steps are read as evidence (CHG-2099: as the REST APIs answer)"
+od modify --change CHG-2098 changes/CHG-2098-jira-sm-ticket-links.ldif
+od import --change CHG-2099 --at 20260923090000Z jira-sm/change-requests exports/jira-sm
+od report tickets
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

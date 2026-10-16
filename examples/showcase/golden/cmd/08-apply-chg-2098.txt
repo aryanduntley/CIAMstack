@@ -1,0 +1,6 @@
+CHG-2098: add cn=jira-sm-status-states,ou=settings,dc=ciam-ops
+CHG-2098: add cn=jira-sm-change-fields,ou=settings,dc=ciam-ops
+CHG-2098: modify cn=CHG-2060,ou=changes,dc=ciam-ops
+CHG-2098: modify cn=CHG-2081,ou=changes,dc=ciam-ops
+CHG-2098: modify cn=CHG-2082,ou=changes,dc=ciam-ops
+exit 0

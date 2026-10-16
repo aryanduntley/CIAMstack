@@ -1,0 +1,4 @@
+status 10014 Declined isn't mapped in jira-sm-status-states: the state of ITOPS-43 is kept as Jira gives it (neutral state unknown)
+3 ticket(s) read from https://jira.example-aero.test
+CHG-2099: 5 change(s) applied, the import run among them
+exit 0

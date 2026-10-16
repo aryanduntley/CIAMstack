@@ -3600,6 +3600,18 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.825 NAME 'ciamOcspStatus' DESC 'What
  66.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'enum:go
  od|revoked|unknown|malformedRequest|internalError|tryLater|sigRequired|unau
  thorized' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.834 NAME 'ciamTicketApprovalStep' DE
+ SC 'One approval step of the ticket as its system decided it, where approva
+ l goes by steps (a workflow\27s approval statuses): "<approved|declined|pen
+ ding> <step id> created <time>[ completed <time>]"; the overall approval it
+ s add-on derives from them is ciamTicketApproval, the people asked are ciam
+ TicketApprover' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.835 NAME 'ciamTicketChangeType' DESC
+  'The kind of change the ticket is, in neutral terms: standard (pre-approve
+ d), normal or emergency, as its system classes it' EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-V
+ ALUE-TYPE 'enum:standard|normal|emergency' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4461,7 +4473,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.156 NAME 'ciamTicket' DESC 'An ITSM t
   ciamImportedAt ) MAY ( ciamTitle $ ciamProviderRef $ ciamDocUrl $ ciamTick
  etState $ ciamTicketApproval $ ciamTicketNativeState $ ciamTicketPlannedSta
  rt $ ciamTicketPlannedEnd $ ciamTicketWorkStart $ ciamTicketWorkEnd $ ciamT
- icketApprover $ ciamTicketFact ) X-ORIGIN 'opsdir' )
+ icketApprover $ ciamTicketFact $ ciamTicketApprovalStep $ ciamTicketChangeT
+ ype ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.163 NAME 'ciamSourceObject' DESC 'Wha
  t a product a migration retires holds that the standard model has no equiva
  lent for (under ou=source-objects, below a branch per importer): its own ty

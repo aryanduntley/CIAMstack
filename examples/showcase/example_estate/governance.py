@@ -171,6 +171,10 @@ CHANGES = (
      "extension) into the record", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2095", "Record the crew portal web server's SiteMinder agent files (its Web Agent, policy servers, trusted "
      "host)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2098", "Link the platform team's changes to their Jira Service Management tickets; map the site's change "
+     "workflow statuses and fields", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2099", "Read the linked Jira Service Management tickets as evidence (state, approval steps, planned window)",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

@@ -1,0 +1,80 @@
+[
+ {
+  "custom": false,
+  "id": "summary",
+  "name": "Summary",
+  "schema": {
+   "system": "summary",
+   "type": "string"
+  }
+ },
+ {
+  "custom": false,
+  "id": "status",
+  "name": "Status",
+  "schema": {
+   "system": "status",
+   "type": "status"
+  }
+ },
+ {
+  "custom": true,
+  "id": "customfield_10005",
+  "name": "Change type",
+  "schema": {
+   "custom": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+   "customId": 10005,
+   "type": "option"
+  }
+ },
+ {
+  "custom": true,
+  "id": "customfield_10006",
+  "name": "Change risk",
+  "schema": {
+   "custom": "com.atlassian.jira.plugin.system.customfieldtypes:select",
+   "customId": 10006,
+   "type": "option"
+  }
+ },
+ {
+  "custom": true,
+  "id": "customfield_10070",
+  "name": "Planned start",
+  "schema": {
+   "custom": "com.atlassian.jira.plugin.system.customfieldtypes:datetime",
+   "customId": 10070,
+   "type": "datetime"
+  }
+ },
+ {
+  "custom": true,
+  "id": "customfield_10071",
+  "name": "Planned end",
+  "schema": {
+   "custom": "com.atlassian.jira.plugin.system.customfieldtypes:datetime",
+   "customId": 10071,
+   "type": "datetime"
+  }
+ },
+ {
+  "custom": true,
+  "id": "customfield_10072",
+  "name": "Change start date",
+  "schema": {
+   "custom": "com.atlassian.jira.plugin.system.customfieldtypes:datetime",
+   "customId": 10072,
+   "type": "datetime"
+  }
+ },
+ {
+  "custom": true,
+  "id": "customfield_10073",
+  "name": "Change completion date",
+  "schema": {
+   "custom": "com.atlassian.jira.plugin.system.customfieldtypes:datetime",
+   "customId": 10073,
+   "type": "datetime"
+  }
+ }
+]

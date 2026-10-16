@@ -60,6 +60,21 @@ def collection_sources(m, importer):
     return tuple(resolve_source(m, s) for s in of_class(m, SOURCE) if one(s, "ciamImporter") == importer)
 
 
+def readable_source(m, importer, schemes):
+    """The first collection source for an importer that can be read (a location, no problems, a credential scheme
+    among schemes, the ones the system is read with), or None."""
+    return next((s for s in collection_sources(m, importer) if s.locations and not s.problems and s.scheme in schemes),
+                None)
+
+
+def scheme_problems(m, importer, schemes, takes):
+    """Why an importer's collection sources can't be read: their own problems, and a credential scheme the system
+    isn't read with (takes: what it is read with, in words)."""
+    return tuple(p for s in collection_sources(m, importer) for p in (
+        *s.problems, *((f"collection source `{s.name}`: credential scheme `{s.scheme}`: {takes}",)
+                       if s.scheme not in schemes else ())))
+
+
 def collection_roles(m):
     """(RoleUse, ...) of environment m's collection sources' credential roles (ciamCredentialRole)."""
     return role_uses(of_class(m, "ciamCollectionSource"), "ciamCredentialRole", "collection source")

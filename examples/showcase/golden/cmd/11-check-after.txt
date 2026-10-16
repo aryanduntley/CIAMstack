@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 62   expected now 34   detected 34   missed 0   unexpected 0
+  blockers planted 63   expected now 35   detected 35   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -32,6 +32,7 @@ Expected findings check (after changes)
            B55  raised by CHG-2050: the PKI team renewed the directory's LDAPS certificate (request 1342) and revoked the old one, which the record and its servers still use: clients checking revocation refuse it → reported
            B60  raised by CHG-2056: the record approves CHG-2004 (the partner realm's PingAM import), but the CAB rejected its ticket → reported
            B61  raised by CHG-2056: the record approves CHG-2008 (PingFederate's configuration import), but its ticket was cancelled → reported
+           B95  raised by CHG-2099: the record approves CHG-2082 (the target's PingAccess protecting the crew portal), but its ticket's approval step was declined: Jira has no request-wide approval, so the step's own decision is the evidence → reported
            B65  raised by CHG-2061: PingAccess signs Tech Pubs users in with a client secret, but the record registers tech-pubs-web as a public client (none): the target's PingFederate, rendered from the record, refuses the token request → reported
            B66  raised by CHG-2061: Tech Pubs is published at techpubs.example-aero.test in the source only: the target's PingAccess has no name to answer as → reported
            B67  raised by CHG-2060: the same missing service name, from the core role check (its fix binds it like the source does) → reported
@@ -43,7 +44,7 @@ Expected findings check (after changes)
            B80  raised by CHG-2083: the gateways taking Tech Pubs over have no name to answer as in the target → reported
            B81  raised by CHG-2082: PingAccess tests no directory groups: the crew group must reach it as a claim → reported
            B82  raised by CHG-2082: the roster admins group must reach PingAccess as a claim → reported
-  actions  planted 183   expected now 150   detected 150   missed 0   unexpected 0
+  actions  planted 184   expected now 151   detected 151   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -94,6 +95,7 @@ Expected findings check (after changes)
            A173 raised by CHG-2056: the record plans CHG-2006 for 2026-09-20; its ticket's window is 2026-09-27 to 2026-09-28 → reported
            A174 raised by CHG-2056: CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state is kept native) → reported
            A175 raised by CHG-2056: CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed → reported
+           A236 raised by CHG-2099: the record approves CHG-2081, but its ticket's CAB step is still pending (one CAB member approved: not the step's decision, and the change manager's earlier step doesn't approve the change) → reported
            A152 raised by CHG-2049: Splunk keeps production's security events 180 days, short of the 365 the route needs → reported
            A181 raised by CHG-2062: nobody has confirmed PingAccess removes a client's own X-TechPubs-User, which Tech Pubs trusts for who the user is → reported
            A182 raised by CHG-2061: the media application's CDN is reached at the same host from every environment → reported

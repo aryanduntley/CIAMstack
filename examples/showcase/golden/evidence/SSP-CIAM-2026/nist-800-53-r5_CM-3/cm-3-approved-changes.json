@@ -425,6 +425,18 @@
       "Record the crew portal web server's SiteMinder agent files (its Web Agent, policy servers, trusted host)",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2098,ou=changes,dc=ciam-ops",
+      "Link the platform team's changes to their Jira Service Management tickets; map the site's change workflow statuses and fields",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2099,ou=changes,dc=ciam-ops",
+      "Read the linked Jira Service Management tickets as evidence (state, approval steps, planned window)",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

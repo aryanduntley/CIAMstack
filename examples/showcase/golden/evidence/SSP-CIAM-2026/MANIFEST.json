@@ -83,8 +83,8 @@
           "source": "search",
           "dn": "ou=changes,dc=ciam-ops",
           "files": {
-            "nist-800-53-r5_CM-3/cm-3-approved-changes.csv": "baabd826ea18f8c74586ff212105419ff6c510e655b0d025dc38c35c73cf34d3",
-            "nist-800-53-r5_CM-3/cm-3-approved-changes.json": "561dc3a25b7f5540feadad2980a593ec335e5a0b88073116f7f21ecb4b992a7f"
+            "nist-800-53-r5_CM-3/cm-3-approved-changes.csv": "76d88c5a2de78622f74a00e3236a01010092f6dc8b1f2dadc7490505be414fbe",
+            "nist-800-53-r5_CM-3/cm-3-approved-changes.json": "542ccd6b236ec45b30364b53abbb2cc743ce06b8718b8c049f960d915f2c4468"
           }
         },
         {
