@@ -1,7 +1,7 @@
 """Where an import and the record disagree, neither is assumed right: each value the record holds that the import
 would replace or remove, and each entry it would delete, is a conflict the operator decides (take the live value or
-keep the record's). What the record lacks is simply added. An applied import records when each scope it read was
-last imported."""
+keep the record's). What the record lacks is simply added. An applied import records when the scope set it read
+was last imported."""
 import datetime as dt
 
 import pytest
@@ -11,7 +11,7 @@ from opsdir.core.changeset import new_entry
 from opsdir.core.directory import get
 from opsdir.core.interchange.ldif import LdifRecord
 from opsdir.domains.governance.imports import (environment_of_scope, import_rows, run_dn, run_records,
-                                               runs_covering)
+                                               runs_covering, scope_set_key)
 from opsdir.domains.governance.naming import IMPORTS
 from network_fixtures import ALPHA, BETA, model, rule
 
@@ -66,22 +66,27 @@ def test_an_applied_import_records_its_run_of_each_environment_it_read():
     d = _d()
     bindings, servers, shared = f"ou=bindings,{BETA}", f"cn=ds-1,{BETA}", "ou=owners,dc=ciam-ops"
     first = run_records(d, "cloud/inventory", (bindings, servers, bindings, shared), AT, "CHG-1")
-    assert [(r.changetype, r.dn) for r in first] == [
-        ("add", IMPORTS), ("add", f"cn=cloud.inventory.beta.prod,{IMPORTS}"),
-        ("add", f"cn=cloud.inventory.shared,{IMPORTS}")]
+    beta_run, shared_run = run_dn("cloud/inventory", (bindings, servers)), run_dn("cloud/inventory", (shared,))
+    assert [(r.changetype, r.dn) for r in first] == [("add", IMPORTS), ("add", beta_run), ("add", shared_run)]
+    assert beta_run.startswith("cn=cloud.inventory.beta.prod.s1-")
+    assert shared_run.startswith("cn=cloud.inventory.shared.s1-")
     assert (first[1].attrs["ciamImportScope"], first[1].attrs["ciamImportedAt"], first[1].attrs["ciamChangeRef"]) == (
         (bindings, servers), ("20260920030000Z",), ("cn=CHG-1,ou=changes,dc=ciam-ops",))
     d, _, _ = model(beta=(rule(BETA, "fw-a", "10.0.0.0/24", "1636", "ds"),),
                     tree=(f"dn: cn=CHG-1,ou=changes,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamChange\n"
                           "cn: CHG-1\nciamTitle: import\nciamChangeStatus: approved\n",), changes=first)
-    assert import_rows(d) == [("cloud/inventory", "beta/prod", 2, "20260920030000Z", "CHG-1"),
-                              ("cloud/inventory", "shared", 1, "20260920030000Z", "CHG-1")]
-    assert [r.dn for r in runs_covering(d, FW)] == [run_dn("cloud/inventory", BETA)]
+    assert import_rows(d) == [
+        ("cloud/inventory", "beta/prod", scope_set_key((bindings, servers)), 2, "20260920030000Z", "CHG-1"),
+        ("cloud/inventory", "shared", scope_set_key((shared,)), 1, "20260920030000Z", "CHG-1")]
+    assert [r.dn for r in runs_covering(d, FW)] == [beta_run]
     assert runs_covering(d, f"cn=x,ou=bindings,{ALPHA}") == ()
-    later = run_records(d, "cloud/inventory", (bindings,), AT + dt.timedelta(days=1), "CHG-2")
-    assert later == (LdifRecord(run_dn("cloud/inventory", BETA), "modify", {}, (
-        ("replace", "ciamImportScope", (bindings,)), ("replace", "ciamImportedAt", ("20260921030000Z",)),
+    again = run_records(d, "cloud/inventory", (servers, bindings.upper()), AT + dt.timedelta(days=1), "CHG-2")
+    assert again == (LdifRecord(beta_run, "modify", {}, (                   # the same set: its run is replaced
+        ("replace", "ciamImportScope", (servers, bindings.upper())),
+        ("replace", "ciamImportedAt", ("20260921030000Z",)),
         ("replace", "ciamChangeRef", ("cn=CHG-2,ou=changes,dc=ciam-ops",)))),)
+    (later,) = run_records(d, "cloud/inventory", (bindings,), AT + dt.timedelta(days=1), "CHG-2")
+    assert (later.changetype, later.dn) == ("add", run_dn("cloud/inventory", (bindings,)))  # a subset: its own run
 
 
 def test_scopes_name_their_environment():
@@ -97,7 +102,7 @@ def test_the_records_an_import_applies():
     with pytest.raises(ValueError, match="undecided"):
         import_records(d, plan, "CHG-1")
     records = import_records(d, plan, "CHG-1", keep=("all",))
-    assert [r.dn for r in records] == [IMPORTS, run_dn("cloud/inventory", BETA)]
+    assert [r.dn for r in records] == [IMPORTS, run_dn("cloud/inventory", (f"ou=bindings,{BETA}",))]
     assert get(d, IMPORTS) is None
 
 

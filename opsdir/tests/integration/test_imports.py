@@ -1,5 +1,5 @@
 """Imports through the store: an import that would replace what the record holds is refused until each conflict is
-decided; the record's value stays where it is kept; every applied import records its run of each scope it read, with
+decided; the record's value stays where it is kept; every applied import records its run of the scope set it read, with
 how its export was collected when opsdir collected it."""
 import datetime as dt
 
@@ -11,7 +11,7 @@ from opsdir.connectors.importing import ImportPlan, import_conflicts
 from opsdir.core.directory import get, one, values
 from opsdir.core.interchange.ldif import LdifRecord, parse
 from opsdir.domains.governance.attempts import Attempt, attempt_dn, attempt_rows
-from opsdir.domains.governance.imports import import_rows, run_dn
+from opsdir.domains.governance.imports import import_rows, misnamed_runs, renamed_run_records, run_dn, scope_set_key
 from opsdir.store import postgres as db
 
 pytestmark = pytest.mark.integration
@@ -46,6 +46,7 @@ ciamOwnerKind: team
 ciamContactUrl: https://wiki.example.test/net
 """
 TEAM, SCOPE = "cn=net-team,ou=owners,dc=ciam-ops", "ou=owners,dc=ciam-ops"
+RUN = run_dn("parties/directory", (SCOPE,))
 AT = dt.datetime(2026, 9, 20, 3, 0, tzinfo=dt.timezone.utc)
 
 
@@ -77,20 +78,20 @@ def test_a_conflict_is_decided_and_the_run_recorded(conn):
     team = get(d, TEAM)
     assert (one(team, "ciamContactUrl"), one(team, "ciamDisplayName")) == (
         "https://wiki.example.test/net", "Network team")                   # kept; what it lacked was added
-    run = get(d, run_dn("parties/directory"))
+    run = get(d, RUN)
     assert (one(run, "ciamImportedAt"), values(run, "ciamChangeRef")) == (
         "20260920030000Z", ("cn=CHG-1,ou=changes,dc=ciam-ops",))
-    assert import_rows(d) == [("parties/directory", "shared", 1, "20260920030000Z", "CHG-1")]
+    assert import_rows(d) == [("parties/directory", "shared", scope_set_key((SCOPE,)), 1, "20260920030000Z", "CHG-1")]
     again = _plan(conn, ("replace", "ciamContactUrl", ("https://chat.example.test/net",)))
     ops.apply_import(conn, again._replace(at=AT + dt.timedelta(days=1)), "CHG-1", take=("all",))
     d = db.load_directory(conn)
     assert one(get(d, TEAM), "ciamContactUrl") == "https://chat.example.test/net"
-    assert one(get(d, run_dn("parties/directory")), "ciamImportedAt") == "20260921030000Z"
+    assert one(get(d, RUN), "ciamImportedAt") == "20260921030000Z"
 
 
 def test_an_import_with_nothing_to_change_still_records_its_run(conn):
     ops.apply_import(conn, _plan(conn)._replace(changes=()), "CHG-1")
-    assert get(db.load_directory(conn), run_dn("parties/directory")) is not None
+    assert get(db.load_directory(conn), RUN) is not None
 
 
 def test_a_collected_export_leaves_its_evidence_on_the_run_and_a_file_import_clears_it(conn):
@@ -98,10 +99,10 @@ def test_a_collected_export_leaves_its_evidence_on_the_run_and_a_file_import_cle
              "ciamCollectedCall": ("9f86d081 parties.json <- tool list-parties",),
              "ciamCollectionCredential": ("vault://kv/reader",)}
     ops.apply_import(conn, _plan(conn)._replace(changes=()), "CHG-1", evidence=proof)
-    run = get(db.load_directory(conn), run_dn("parties/directory"))
+    run = get(db.load_directory(conn), RUN)
     assert {a: values(run, a) for a in proof} == proof
     ops.apply_import(conn, _plan(conn)._replace(changes=()), "CHG-1")             # an export read off disk
-    run = get(db.load_directory(conn), run_dn("parties/directory"))
+    run = get(db.load_directory(conn), RUN)
     assert not any(values(run, a) for a in proof)
 
 
@@ -137,3 +138,31 @@ def test_the_last_change_to_entries_leaves_out_the_load_and_the_changes_named(co
     ops.apply_import(conn, _plan(conn, ("add", "ciamDisplayName", ("Network team",))), "CHG-1")
     when = db.last_change(conn, (TEAM, SCOPE))
     assert when is not None and db.last_change(conn, (TEAM,), ("CHG-1",)) is None
+
+
+LEGACY = """dn: ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: organizationalUnit
+ou: imports
+
+dn: cn=parties.directory.shared,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: parties.directory.shared
+ciamImporter: parties/directory
+ciamImportScope: ou=owners,dc=ciam-ops
+ciamImportedAt: 20260919030000Z
+ciamChangeRef: cn=CHG-1,ou=changes,dc=ciam-ops
+"""
+
+
+def test_a_run_named_the_old_way_is_renamed_under_an_approved_change_once(conn):
+    ops.load(conn, parse(LEGACY))
+    legacy = "cn=parties.directory.shared,ou=imports,dc=ciam-ops"
+    ops.modify(conn, renamed_run_records(db.load_directory(conn)), "CHG-1")
+    d = db.load_directory(conn)
+    assert get(d, legacy) is None and misnamed_runs(d) == () and renamed_run_records(d) == ()
+    assert (one(get(d, RUN), "ciamImportedAt"), values(get(d, RUN), "ciamChangeRef")) == (
+        "20260919030000Z", ("cn=CHG-1,ou=changes,dc=ciam-ops",))                # the original time and change
+    assert [op for _, _, op, _ in ops.history(conn, legacy).rows][-1] == "delete"

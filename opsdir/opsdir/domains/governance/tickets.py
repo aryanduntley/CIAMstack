@@ -36,7 +36,7 @@ from ...core.directory import (children, get, gtime_at, gtime_date, make_entry, 
                                subtree)
 from ...core.findings import findings, owner_label
 from .naming import CHANGES, TICKETS
-from .parties import operator
+from .parties import operator_label
 
 AREA = "Change tickets"
 TICKET_CLASS = "ciamTicket"
@@ -177,8 +177,7 @@ def _owner(d, change):
     """Who answers for a linked change: its owners, else the party operating the platform."""
     if change.attrs.get("ciamOwner"):
         return owner_label(d, change)
-    op = operator(d)
-    return rdn_value(op) if op is not None else "**NO OWNER**"
+    return operator_label(d)
 
 
 def _change(link):
