@@ -587,6 +587,16 @@ ciamImportScope: cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-o
 ciamImportedAt: 20260923090000Z
 ciamImporter: adcs/inventory
 
+dn: cn=adcs.inventory.shared.s1-ec43948a9827141f,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: adcs.inventory.shared.s1-ec43948a9827141f
+ciamChangeRef: cn=CHG-2086,ou=changes,dc=ciam-ops
+ciamImportScope: ou=certificate-templates,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: adcs/inventory
+
 dn: cn=admin-login-failures,ou=alert-rules,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1741,6 +1751,16 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Scope the PingAccess baselines' AWS agents to AWS environments
 
+dn: cn=CHG-2086,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2086
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the forest's certificate templates again, collected over LDA
+ PS with who may enroll
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1759,12 +1779,21 @@ objectClass: top
 objectClass: ciamObject
 objectClass: ciamCertTemplate
 cn: CIAM-ClientAuth
+ciamApprovalRequired: FALSE
 ciamCertPurpose: client-auth
 ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-512 (Domain Admins)
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-519 (Enterprise Admins)
+ciamEnrollee: S-1-5-18 (Local System)
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-4127
+ciamEnrollmentScope: restricted
 ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.2
 ciamMaxValidityDays: 365
+ciamRequiredSignatures: 0
+ciamSubjectFromRequest: FALSE
 ciamTemplateOid: 1.3.6.1.4.1.311.21.8.7638725.13898300.1985460.3383425.7519116
  .119.4211002.9871201
+ciamTemplateVersion: 2
 description: CIAM Client Authentication
 
 dn: cn=ciam-internal-ca,ou=certificates,dc=ciam-ops
@@ -1818,12 +1847,22 @@ objectClass: top
 objectClass: ciamObject
 objectClass: ciamCertTemplate
 cn: CIAM-WebServer
+ciamApprovalRequired: FALSE
 ciamChangeRef: cn=CHG-2051,ou=changes,dc=ciam-ops
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-512 (Domain Admins)
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-519 (Enterprise Admins)
+ciamEnrollee: S-1-5-18 (Local System)
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-513 (Domain Users)
+ciamEnrollmentScope: broad
 ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.1
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.2
 ciamMaxValidityDays: 365
 ciamRenewalOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRequiredSignatures: 0
+ciamSubjectFromRequest: TRUE
 ciamTemplateOid: 1.3.6.1.4.1.311.21.8.7638725.13898300.1985460.3383425.7519116
  .119.4211001.1522731
+ciamTemplateVersion: 2
 description: CIAM Web Server
 
 dn: cn=client-address-login,ou=header-contracts,dc=ciam-ops
@@ -5034,12 +5073,21 @@ objectClass: top
 objectClass: ciamObject
 objectClass: ciamCertTemplate
 cn: User
+ciamApprovalRequired: FALSE
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-512 (Domain Admins)
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-519 (Enterprise Admins)
+ciamEnrollee: S-1-5-18 (Local System)
+ciamEnrollee: S-1-5-21-3623811015-3361044348-30300820-513 (Domain Users)
+ciamEnrollmentScope: broad
 ciamExtendedKeyUsage: 1.3.6.1.4.1.311.10.3.4
 ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.4
 ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.2
 ciamMaxValidityDays: 365
+ciamRequiredSignatures: 0
+ciamSubjectFromRequest: FALSE
 ciamTemplateOid: 1.3.6.1.4.1.311.21.8.7638725.13898300.1985460.3383425.7519116
  .119.1.1
+ciamTemplateVersion: 1
 description: User
 
 dn: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops

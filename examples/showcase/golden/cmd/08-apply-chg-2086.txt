@@ -1,0 +1,7 @@
+templates: 3 template(s)
+no CA exports (ca/<name>.json, scripts/Export-AdcsInventory.ps1)
+conflict cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops|ciamEnrollmentScope: record unknown -> live restricted
+conflict cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops|ciamEnrollmentScope: record unknown -> live broad
+conflict cn=User,ou=certificate-templates,dc=ciam-ops|ciamEnrollmentScope: record unknown -> live broad
+CHG-2086: 4 change(s) applied, the import run among them
+exit 0

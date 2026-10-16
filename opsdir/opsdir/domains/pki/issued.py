@@ -34,6 +34,7 @@ from typing import NamedTuple
 from ...core.directory import (children, date_of, fingerprint, follow, follow_all, get, make_entry, merged_attrs,
                                norm_dn, one, ou_entry, rdn_of, rdn_value, referrers, values)
 from ...core.findings import findings, merge_findings, owner_label
+from ...core.settings import setting_text
 from .checks import CERTIFICATE_USE
 from .inventory import INACCESSIBLE, INCOMPLETE, MISSING, NOT_INVENTORIED, PRESENT
 from .naming import (AUTHORITIES, CERTIFICATES, ISSUED, TEMPLATES, authority_dn, issued_inventory_dn,
@@ -45,7 +46,11 @@ CERT_INVENTORY_CLASS, ISSUED_CLASS = "ciamCertInventory", "ciamIssuedCertificate
 # what importers own of each entry (the rest, an authority's own certificates, owners, a template's purpose and
 # renewal owner, is the operator's and kept)
 AUTHORITY_ATTRS = ("cn", "ciamProviderRef", "ciamTemplateName")
-TEMPLATE_ATTRS = ("cn", "description", "ciamTemplateOid", "ciamMaxValidityDays", "ciamExtendedKeyUsage")
+# what a template lets requesters do and who may request from it (templates.py judges the risk)
+TEMPLATE_RIGHTS = ("ciamSubjectFromRequest", "ciamApprovalRequired", "ciamRequiredSignatures", "ciamTemplateVersion",
+                   "ciamEnrollee", "ciamEnrollmentScope")
+TEMPLATE_ATTRS = ("cn", "description", "ciamTemplateOid", "ciamMaxValidityDays", "ciamExtendedKeyUsage",
+                  *TEMPLATE_RIGHTS)
 ENDPOINT_ATTRS = ("cn", "ciamRevocationKind", "ciamEndpointUrl", "description")
 CERT_INVENTORY_ATTRS = ("cn", "ciamInventoryAt", "ciamInventoryState", "ciamInventoryProblem", "ciamProviderRef")
 ISSUED_ATTRS = ("cn", "ciamSerialNumber", "ciamFingerprint", "ciamSubject", "ciamNotBefore", "ciamNotAfter",
@@ -91,12 +96,16 @@ def endpoint_entry(d, authority, kind, n, url, template=None):
     return _observed(d, dn, ENDPOINT_CLASS, owned, ENDPOINT_ATTRS)
 
 
-def template_entry(d, name, display=None, oid=None, max_days=None, usages=()):
+def template_entry(d, name, display=None, oid=None, max_days=None, usages=(), rights=None):
     """A certificate template's entry (its purpose and renewal owner, the operator's, kept): display name, OID, the
-    longest validity it issues in days and its extended key usages."""
+    longest validity it issues in days, its extended key usages and rights {attribute of TEMPLATE_RIGHTS: value, or
+    a tuple of values for ciamEnrollee; None: not read} (what it lets requesters do and who may request from it)."""
+    told = {k: v for k, v in (rights or {}).items() if k in TEMPLATE_RIGHTS}
     owned = {"cn": (name,), "description": (display,), "ciamTemplateOid": (oid,),
              "ciamMaxValidityDays": (None if max_days is None else str(max_days),),
-             "ciamExtendedKeyUsage": tuple(dict.fromkeys(usages))}
+             "ciamExtendedKeyUsage": tuple(dict.fromkeys(usages)),
+             **{k: tuple(dict.fromkeys(v)) if isinstance(v, tuple) else (None if v is None else setting_text(v),)
+                for k, v in told.items()}}
     return _observed(d, template_dn(name), TEMPLATE_CLASS, owned, TEMPLATE_ATTRS)
 
 

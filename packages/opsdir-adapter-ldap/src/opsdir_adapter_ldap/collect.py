@@ -9,49 +9,30 @@ exact bytes), paged (pr=1000), all user and operational attributes, unwrapped; i
 profiler the front end gives (options profile: `opsdir data-profile` for the environment, dated when collecting), so
 the user data is never held whole, written or kept: the export is the profile's counts only. The CA certificate the
 server is checked against is the operator's PEM file, given when collecting (--ldap-ca PATH, LDAPTLS_CACERT)."""
-from urllib.parse import unquote, urlparse
-
-from opsdir.core.contract import CollectOption, Collector, Command
+from opsdir.core.contract import Collector
 from opsdir.core.directory import rdn_value
+from opsdir.core.ldap_source import LDAP_CA, ldaps_parts, ldaps_source, ldaps_source_problems, ldapsearch_command
 from opsdir.domains.governance.collection import collection_sources
 
 IMPORTER = "ldap/data-profile"
 
 
-def _parts(location):
-    parsed = urlparse(location)
-    return parsed.hostname, parsed.port or 636, unquote(parsed.path.lstrip("/"))
-
-
 def profile_steps(d, m, done, options):
     """The paged search of the first collection source's user branch, profiled as it streams."""
     profile = options.get("profile")
-    s = next((x for x in collection_sources(m, IMPORTER) if x.locations and x.credential and x.login
-              and not x.problems), None)
+    s = ldaps_source(collection_sources(m, IMPORTER))
     if s is None or profile is None:
         return ()
-    host, port, base = _parts(s.locations[0])
-    if not host or not base:
-        return ()
-    ca = options.get("ldap_ca")
     return ((f"data-profile-{rdn_value(m.env)}.json",
-             Command(("ldapsearch", "-H", f"ldaps://{host}:{port}", "-x", "-D", s.login, "-y", "/dev/stdin",
-                      "-b", base, "-E", "pr=1000/noprompt", "-o", "ldif-wrap=no", "(objectClass=*)", "*", "+"),
-                     (s.credential,), lambda r: r[s.credential], env=(("LDAPTLS_CACERT", ca),) if ca else (),
-                     digest=profile)),)
+             ldapsearch_command(s, ldaps_parts(s.locations[0])[2],
+                                ("-E", "pr=1000/noprompt", "-o", "ldif-wrap=no", "(objectClass=*)", "*", "+"), options,
+                                digest=profile)),)
 
 
 def problems(d, m, options):
     """Why the directory can't be profiled: a source's problems, no bind DN, credential or base DN."""
-    return tuple(p for s in collection_sources(m, IMPORTER) for p in (
-        *s.problems,
-        *((f"collection source `{s.name}`: no bind DN (ciamLoginName)",) if not s.login else ()),
-        *((f"collection source `{s.name}`: no credential (ciamCredentialRole)",) if not s.credential and not s.problems
-          else ()),
-        *((f"collection source `{s.name}`: ciamSourceRef must be ldaps://<host>:<port>/<base DN>",)
-          if s.locations and not (_parts(s.locations[0])[0] and _parts(s.locations[0])[2]) else ())))
+    return ldaps_source_problems(collection_sources(m, IMPORTER))
 
 
-# The collect option profile_steps reads (ldap_ca).
-LDAP_CA = CollectOption("--ldap-ca", "PATH", "CA certificate (PEM) for the data profile's search", 50)
+# ldapsearch_command reads core.ldap_source's LDAP_CA option (ldap_ca).
 COLLECTORS = (Collector("data-profile", "environment", profile_steps, problems=problems, options=(LDAP_CA,)),)

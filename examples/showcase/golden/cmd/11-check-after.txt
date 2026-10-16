@@ -42,7 +42,7 @@ Expected findings check (after changes)
            B77  raised by CHG-2066: the partner portal refreshes its tokens: Microsoft's External ID pages don't say the grant is supported there; the question is proposed → reported
            B78  raised by CHG-2066: partners keep the partner realm's sign-in host; whether an external tenant serves a custom domain isn't documented in what was read → reported
            B79  raised by CHG-2066: applications hold the realm's issuer; whether an external tenant issues under a custom one isn't documented in what was read → reported
-  actions  planted 171   expected now 138   detected 138   missed 0   unexpected 0
+  actions  planted 172   expected now 139   detected 139   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -108,6 +108,7 @@ Expected findings check (after changes)
            A201 raised by CHG-2066: the external tenant and the partner portal's app registration are created by hand → reported
            A202 raised by CHG-2066: the realm's journeys become user flows, recreated by hand → reported
            A203 raised by CHG-2066: External ID imports no password hashes: the partner users reset or move just in time → reported
+           A204 raised by CHG-2086: client authentication added to the web server template, which takes the subject from the request and lets Domain Users enroll: its renewal owner, the platform team → reported
   RESULT: PASS. The planner found every planted problem and nothing else. 'NOT READY' is the correct verdict
           for this deliberately broken environment.
 exit 0

@@ -3371,6 +3371,38 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.771 NAME 'ciamPartnerOf' DESC 'The i
  suer follows from their protocol type' EQUALITY distinguishedNameMatch SYNT
  AX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X
  -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.800 NAME 'ciamSubjectFromRequest' DE
+ SC 'Whether a certificate template takes the subject and alternative names 
+ from the request (the requester names them) instead of building them from t
+ he directory' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SIN
+ GLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.801 NAME 'ciamApprovalRequired' DESC
+  'Whether a certificate template\27s requests wait for a CA manager\27s app
+ roval before they are issued' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.7 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'bool' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.802 NAME 'ciamRequiredSignatures' DE
+ SC 'How many authorized signatures (an enrollment agent\27s) a certificate 
+ template\27s requests need' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.1
+ 15.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'int' X-MIN 
+ '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.803 NAME 'ciamTemplateVersion' DESC 
+ 'A certificate template\27s schema version, as its directory records it' EQ
+ UALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-POR
+ TABILITY 'observed' X-VALUE-TYPE 'int' X-MIN '1' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.804 NAME 'ciamEnrollee' DESC 'Who a 
+ certificate template\27s access rights let request certificates from it, as
+  its directory names them (an identifier, with its well-known name when it 
+ has one); metadata only' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.1
+ 15.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.805 NAME 'ciamEnrollmentScope' DESC 
+ 'Whether a certificate template lets a broad group request certificates (an
+ yone, every authenticated account, all of a domain\27s users or computers),
+  or only named principals; unknown when its access rights weren\27t read or
+  hold entries that can\27t be judged' EQUALITY caseIgnoreMatch SYNTAX 1.3.6
+ .1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE
+  'enum:broad|restricted|unknown' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4197,10 +4229,13 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.151 NAME 'ciamCertAuthority' DESC 'A
  TemplateName ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.152 NAME 'ciamCertTemplate' DESC 'A c
  ertificate template CAs issue from (cn: its name; description: its display 
- name): what it issues, and who renews what it issues that the record holds 
- no certificate for' SUP ciamObject STRUCTURAL MUST cn MAY ( ciamTemplateOid
-  $ ciamMaxValidityDays $ ciamExtendedKeyUsage $ ciamCertPurpose $ ciamRenew
- alOwner ) X-ORIGIN 'opsdir' )
+ name): what it issues, who renews what it issues that the record holds no c
+ ertificate for, and what it lets requesters do (name the subject, skip appr
+ oval) and who may request from it' SUP ciamObject STRUCTURAL MUST cn MAY ( 
+ ciamTemplateOid $ ciamMaxValidityDays $ ciamExtendedKeyUsage $ ciamCertPurp
+ ose $ ciamRenewalOwner $ ciamSubjectFromRequest $ ciamApprovalRequired $ ci
+ amRequiredSignatures $ ciamTemplateVersion $ ciamEnrollee $ ciamEnrollmentS
+ cope ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.153 NAME 'ciamRevocationEndpoint' DES
  C 'Where the certificates a CA issues say to check their revocation or find
   their issuer (a child of the ciamCertAuthority; cn: <kind>-<n>)' SUP ciamO

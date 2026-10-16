@@ -61,3 +61,4 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2069,ou=changes,dc=ciam-ops","Record Example Aero Issuing CA 2's certificate itself, so the source's directory check trusts it",CAB 2026-09-18,approved
 "cn=CHG-2075,ou=changes,dc=ciam-ops",Read the PingAccess servers' own files into the record as the pa-admin and pa-engine host baselines,CAB 2026-09-18,approved
 "cn=CHG-2076,ou=changes,dc=ciam-ops",Scope the PingAccess baselines' AWS agents to AWS environments,CAB 2026-09-18,approved
+"cn=CHG-2086,ou=changes,dc=ciam-ops","Record the forest's certificate templates again, collected over LDAPS with who may enroll",CAB 2026-09-18,approved

@@ -628,4 +628,8 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2076  update  cn=pa-engine,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2076  insert  cn=pa-admin-aws,ou=baselines,dc=ciam-ops
 <TIMESTAMP>          CHG-2076  insert  cn=pa-engine-aws,ou=baselines,dc=ciam-ops
-(628 rows)
+<TIMESTAMP>          CHG-2086  update  cn=CIAM-ClientAuth,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2086  update  cn=CIAM-WebServer,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2086  update  cn=User,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2086  insert  cn=adcs.inventory.shared.s1-ec43948a9827141f,ou=imports,dc=ciam-ops
+(632 rows)

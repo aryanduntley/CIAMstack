@@ -377,6 +377,12 @@
       "Scope the PingAccess baselines' AWS agents to AWS environments",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2086,ou=changes,dc=ciam-ops",
+      "Record the forest's certificate templates again, collected over LDAPS with who may enroll",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

@@ -17,9 +17,10 @@ Certification authorities (ou=certificate-authorities) are the CAs the estate's 
 importers read them, with what the operator adds: the CA's own certificates in the record (the hierarchy runs
 certificate by certificate: ciamIssuedBy), the templates it issues from and the revocation endpoints it puts in
 the certificates it issues (CRL distribution points, delta CRLs, OCSP, CA issuers), its children. Certificate templates
-(ou=certificate-templates) are what a CA may issue, with who renews what they issue. A CA's issued-certificate
-inventory (ou=issued-certificates) is what its database said it issued, metadata only, never a key: the record's
-certificates are reconciled with it (issued.py), and nothing it observes is written onto them.
+(ou=certificate-templates) are what a CA may issue, with who renews what they issue, what they let a requester do
+(name the subject, skip approval) and who may request from them (templates.py judges the risk). A CA's
+issued-certificate inventory (ou=issued-certificates) is what its database said it issued, metadata only, never a key:
+the record's certificates are reconciled with it (issued.py), and nothing it observes is written onto them.
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -175,6 +176,24 @@ ATTRIBUTES = (
     AttributeDef(732, 'ciamRevocationReason', 'string', 'observed', True,
                  'Why an issued certificate was revoked: the RFC 5280 reason (keyCompromise, superseded, ...), or the '
                  "CA's value as it is when it is no RFC 5280 reason; present on every revoked certificate"),
+    # ------------------------------------------------------------------ what a certificate template lets requesters do
+    AttributeDef(800, 'ciamSubjectFromRequest', 'bool', 'observed', True,
+                 'Whether a certificate template takes the subject and alternative names from the request (the '
+                 'requester names them) instead of building them from the directory'),
+    AttributeDef(801, 'ciamApprovalRequired', 'bool', 'observed', True,
+                 "Whether a certificate template's requests wait for a CA manager's approval before they are issued"),
+    AttributeDef(802, 'ciamRequiredSignatures', 'int', 'observed', True,
+                 "How many authorized signatures (an enrollment agent's) a certificate template's requests need",
+                 (("X-MIN", "0"),)),
+    AttributeDef(803, 'ciamTemplateVersion', 'int', 'observed', True,
+                 "A certificate template's schema version, as its directory records it", (("X-MIN", "1"),)),
+    AttributeDef(804, 'ciamEnrollee', 'string', 'observed', False,
+                 "Who a certificate template's access rights let request certificates from it, as its directory "
+                 "names them (an identifier, with its well-known name when it has one); metadata only"),
+    AttributeDef(805, 'ciamEnrollmentScope', 'enum:broad|restricted|unknown', 'observed', True,
+                 "Whether a certificate template lets a broad group request certificates (anyone, every "
+                 "authenticated account, all of a domain's users or computers), or only named principals; unknown "
+                 "when its access rights weren't read or hold entries that can't be judged"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -221,9 +240,12 @@ CLASSES = (
              "HOST\\CA): its own certificates in the record, the templates it issues from, and its revocation "
              "endpoints as children"),
     ClassDef(152, 'ciamCertTemplate', 'ciamObject', 'STRUCTURAL', ('cn',),
-             ('ciamTemplateOid', 'ciamMaxValidityDays', 'ciamExtendedKeyUsage', 'ciamCertPurpose', 'ciamRenewalOwner'),
+             ('ciamTemplateOid', 'ciamMaxValidityDays', 'ciamExtendedKeyUsage', 'ciamCertPurpose', 'ciamRenewalOwner',
+              'ciamSubjectFromRequest', 'ciamApprovalRequired', 'ciamRequiredSignatures', 'ciamTemplateVersion',
+              'ciamEnrollee', 'ciamEnrollmentScope'),
              'A certificate template CAs issue from (cn: its name; description: its display name): what it issues, '
-             'and who renews what it issues that the record holds no certificate for'),
+             'who renews what it issues that the record holds no certificate for, and what it lets requesters do '
+             '(name the subject, skip approval) and who may request from it'),
     ClassDef(153, 'ciamRevocationEndpoint', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamRevocationKind', 'ciamEndpointUrl'),
              (),
              'Where the certificates a CA issues say to check their revocation or find their issuer (a child of the '
