@@ -19,6 +19,7 @@ set -uo pipefail
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 BIN=$ROOT/tools/bin
 KIND=$BIN/kind KUBECTL=$BIN/kubectl HELM=$BIN/helm PY=$ROOT/opsdir/.venv/bin/python
+unset PYTHONPATH                  # a folder a shell exports there would shadow the venv's packages
 CLUSTER=opsdir-csi-sync
 NODE_IMAGE=kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5
 CSI_CHART_VERSION=1.6.1           # secrets-store-csi-driver, 2026-09-09

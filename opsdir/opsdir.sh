@@ -3,4 +3,5 @@
 # (scripts/dev-env.sh). Relative paths in the arguments are relative to where you run it.
 CORE=$(cd "$(dirname "$0")" && pwd)
 . "$CORE/scripts/dev-env.sh"
+unset PYTHONPATH   # a folder a shell exports there would shadow the venv's packages
 exec "$CORE/.venv/bin/python" -m opsdir "$@"

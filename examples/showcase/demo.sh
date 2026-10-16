@@ -7,6 +7,7 @@ set -uo pipefail
 cd "$(dirname "$0")"                           # the showcase; outputs go to out/ here
 CORE=$(cd ../../opsdir && pwd)
 PY=$CORE/.venv/bin/python
+unset PYTHONPATH                               # a folder a shell exports there would shadow the venv's packages
 AS_OF=2026-09-23                               # the synthetic data is dated relative to this day
 od() { "$CORE/opsdir.sh" --as-of "$AS_OF" "$@"; }
 . "$CORE/scripts/dev-env.sh"   # OPSDIR_DSN: the local dev database unless already set (init below drops its opsdir schema)

@@ -12,6 +12,7 @@ OUT=$(realpath -m "${1:?usage: snapshot-outputs.sh OUTDIR}")
 : "${OPSDIR_DSN:?set OPSDIR_DSN to the database to use (its opsdir schema is dropped)}"
 AS_OF=2026-09-23                                # the synthetic data is dated relative to this day
 PY=$CORE/.venv/bin/python
+unset PYTHONPATH                                # a folder a shell exports there would shadow the venv's packages
 BLAST="cn=skyline-air-idp-signing,ou=certificates,dc=ciam-ops"
 ROTATE="cn=pf-signing-key,ou=credentials,dc=ciam-ops"
 UNTESTED='(&(objectClass=ciamConsumer)(!(ciamMigrationStatus=tested)))'

@@ -6,4 +6,6 @@
 set -euo pipefail
 CORE=$(cd "$(dirname "$0")/.." && pwd)
 cd "$CORE/.."
+# PYTHONPATH unset: a folder a shell exports there comes before the venv's packages and would shadow them.
+unset PYTHONPATH
 OPSDIR_TEST_REQUIRE_DB=1 exec "$CORE/.venv/bin/python" -m pytest -m "" "$@"

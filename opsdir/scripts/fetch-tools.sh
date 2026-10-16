@@ -186,7 +186,7 @@ else
     "ansible-core==$ANSIBLE_CORE_VERSION" "ansible-lint==$ANSIBLE_LINT_VERSION"
   echo "ansible-core $ANSIBLE_CORE_VERSION, ansible-lint $ANSIBLE_LINT_VERSION: tools/ansible/venv"
 fi
-"$ROOT/opsdir/.venv/bin/python" -c '
+env -u PYTHONPATH "$ROOT/opsdir/.venv/bin/python" -c '
 from opsdir.core.interchange.yaml_text import dump
 from opsdir_adapter_ansible.requirements import all_requirements
 print(dump(all_requirements()), end="")' > "$ANSIBLE/requirements.yml"

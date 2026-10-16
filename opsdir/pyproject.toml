@@ -11,7 +11,11 @@ requires-python = ">=3.11"
 dependencies = ["psycopg[binary]>=3.1", "packaging>=23"]
 
 [project.optional-dependencies]
-test = ["pytest>=8", "ruff==0.15.13"]          # ruff: the line-length check (ruff.toml at the repository root)
+test = [
+    "pytest>=8",
+    "ruff==0.15.13",        # the line-length check (ruff.toml at the repository root)
+    "jsonschema>=4.26.0",   # opsdir-format-oscal's tests validate its documents against NIST's OSCAL schema
+]
 
 [project.scripts]
 opsdir = "opsdir.cli:run"
