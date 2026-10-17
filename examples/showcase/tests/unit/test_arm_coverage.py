@@ -1,10 +1,11 @@
 """Every type the Azure renderers write, translated to ARM (5.6 e4): the showcase and the Azure sample (azure_sample:
 plumbing with peering, VPNs, a hub connection and NAT prefixes, Front Door before a cluster's gateway, DNS records of
 every type in a public and a private zone with Traffic Manager names and forwarders, MySQL, a copied container, a
-suppression, an availability test) rendered in eastus2 and Azure Government cover the whole mapping, and each
-translates: every resource goes exactly one place, what stays Terraform says why, and the computed forms (a Front Door
-route waiting for its origins, its custom domains, the Key Vault secret its certificate is, a web test's hidden-link
-tag, long TXT values, Traffic Manager's global profile) come out as ARM takes them."""
+suppression, an availability test, a workspace's export to an Event Hub) rendered in eastus2 and Azure Government
+cover the whole mapping, and each translates: every resource goes exactly one place, what stays Terraform says why, and
+the computed forms (a Front Door route waiting for its origins, its custom domains, the Key Vault secret its
+certificate is, a web test's hidden-link tag, long TXT values, Traffic Manager's global profile, a data export as the
+workspace's child) come out as ARM takes them."""
 import pytest
 
 from opsdir.connectors.registry import ADAPTERS, environment_specs, services
@@ -119,6 +120,19 @@ def test_a_web_test_is_tied_to_its_component_and_long_txt_values_are_split(sampl
         assert [len(x) for x in value] == [255, 47] and "".join(value) == "v=" + "x" * 300
         profile = _resources(dns, "Microsoft.Network/trafficmanagerprofiles")[0]
         assert profile.fields["location"] == "global"
+
+
+def test_a_forwarded_workspace_exports_to_the_existing_hub_as_its_child(sample):
+    """The siem sample's data export rule is the workspace's dataExports child (its parent), naming the existing
+    Event Hub by its ID (no namespace or access rule: no SAS key anywhere)."""
+    for region in REGIONS:
+        _, _, _, t = _by_name(sample, region, "siem")
+        export = _resources(t, "Microsoft.OperationalInsights/workspaces/dataExports")[0]
+        workspace = _resources(t, "Microsoft.OperationalInsights/workspaces")[0]
+        assert export.parent == workspace.symbol and export.name == "to-siem"
+        assert export.properties == {"destination": {"resourceId": azure_sample.HUB},
+                                     "tableNames": ["CiamAccessLogs_CL"], "enable": True}
+        assert not _resources(t, "Microsoft.EventHub/namespaces/authorizationRules")
 
 
 # The Bicep/ARM read-back against the Terraform one (native_parity): both read the same kinds; a managed identity's

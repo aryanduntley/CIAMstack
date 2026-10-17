@@ -5,15 +5,16 @@ cluster's gateway behind Front Door with address rules (the gateway sample), DNS
 a private zone with weighted and failover names (Traffic Manager) and forwarders (the edge fixtures' DNS estate), a
 MySQL server, a blob container copied to another account, a suppression, an availability test, a NAT gateway
 for egress, a private endpoint to blob storage and a compute group with its role's disks (a scale set and its autoscale
-setting), an Entra Domain Services managed domain with a replica set (flow 76): every resource and
-data source type the Azure renderers write that the showcase doesn't."""
+setting), an Entra Domain Services managed domain with a replica set (flow 76), a workspace's logs exported to an
+existing Event Hub on their way to a SIEM (the siem sample, milestone 109): every resource and data source type the
+Azure renderers write that the showcase doesn't."""
 import pathlib
 
 from opsdir.connectors.registry import services
-from opsdir.core.contract import Endpoint
+from opsdir.core.contract import Endpoint, LogSource
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord, parse
-from opsdir.domains.observability.naming import CANARIES
+from opsdir.domains.observability.naming import CANARIES, LOG_ROUTES
 from opsdir_adapter_azure.terraform import render_files
 from opsdir_format_terraform.hcl import written
 import edge_fixtures
@@ -197,6 +198,28 @@ DIRECTORY = (entry(ALPHA, "user-dir", "ciamManagedDirectory", ciamBindingRole="u
                    ciamTrustType="forest", ciamTrustDirection="one-way-outgoing"))
 
 
+# a workspace's access logs exported to an existing Event Hub (named by ID: no SAS key in state) for the SIEM to read
+# (milestone 109, siem_export.py): the route landing there, from the servers' access log
+RESOURCES = f"/subscriptions/{SUBSCRIPTION}/resourceGroups"
+HUB = f"{RESOURCES}/rg-ciam/providers/Microsoft.EventHub/namespaces/ehn-ciam/eventhubs/logs"
+SIEM =(entry(ALPHA, "ops", "ciamLogDestination", ciamBindingRole="ops-logs", ciamDestinationKind="workspace",
+              ciamProviderRef=f"{RESOURCES}/rg-ciam-prod/providers/Microsoft.OperationalInsights/workspaces/law-ops",
+              ciamForwardsToRole="siem", ciamStreamRole="siem-hub"),
+        entry(ALPHA, "siem", "ciamLogDestination", ciamBindingRole="siem", ciamDestinationKind="siem-index",
+              ciamProviderRef="ciam_security"),
+        entry(ALPHA, "siem-hub", "ciamStreamBinding", ciamBindingRole="siem-hub", ciamStreamKind="event-hub",
+              ciamProviderRef=HUB))
+ROUTES = (OU.format(LOG_ROUTES, "log-routes"),
+          f"dn: cn=access-logs,{LOG_ROUTES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamLogRoute\n"
+          "cn: access-logs\nciamLogKind: access\nciamPublishedBy: ds\nciamLogDestinationRole: ops-logs\n")
+ACCESS_LOG = (LogSource("ds", "servers", "logs/access", "text", "access"),)
+
+
+def _siem(region):
+    root = LdifRecord(f"cn=ds-1,{ALPHA}", "modify", {}, (("add", "ciamInstallRoot", ("/opt/ds",)),))
+    return model(alpha=SIEM, tree=ROUTES, changes=(*placed(region), *bound(), root))[1]
+
+
 def environments(region):
     """((name, environment model, services), ...): the sample's environments in region, each rendered with
     services."""
@@ -209,7 +232,8 @@ def environments(region):
             ("services", model(alpha=(KEY_DB, SECRET_DB, _db(region), STORE, SUPPRESSION, SSO, EGRESS, BLOB_ENDPOINT,
                                       *GROUP, *SECURITY, *EXTERNAL_ID, *DIRECTORY),
                                tree=(*EXCEPTIONS, *CANARY, *APPS), changes=(*placed(region), *bound()))[1],
-             found._replace(endpoints=(*found.endpoints, *ENDPOINTS))))
+             found._replace(endpoints=(*found.endpoints, *ENDPOINTS))),
+            ("siem", _siem(region), found._replace(logs=lambda m: ACCESS_LOG)))
 
 
 def renders(region):
@@ -217,7 +241,7 @@ def renders(region):
     return tuple((name, m, render_files(m, found)) for name, m, found in environments(region))
 
 
-def write_samples(root, region="eastus2", names=("services",)):
+def write_samples(root, region="eastus2", names=("services", "siem")):
     """Write the Terraform roots of the sample's environments named (in region) under root/<name>/; the root."""
     for name, _, files in renders(region):
         if name in names:

@@ -28,7 +28,9 @@ rest of reference, listKeys, uniqueString, copyIndex, …) is counted, and the r
 computes. Built-in roles are named from the adapter's table of them (arm_types.ROLES), as the Terraform render looks
 them up. Each resource (nested child resources included, `existing` references and conditions that evaluate false
 excluded, and, when the deployment is given, only those it produced) is given its ARM ID where the deployment puts it
-(a resource group's, the subscription's or the tenant's) and flattened into the shape the Azure CLI prints (properties
+(a resource group's, the subscription's or the tenant's; an extension resource's, its scope, under the resource it
+extends: Sentinel's onboarding and analytics rules under their workspace) and flattened into the shape the Azure CLI
+prints (properties
 merged into the resource, sub-resources given their IDs), so the CLI reader maps it
 (opsdir_adapter_azure.cli.items_resources). A Key Vault secret's value is dropped before anything evaluates it.
 """
@@ -258,6 +260,15 @@ def _id_in(ctx, type_, names):
     return arm_id(ctx["subscription"] or PLACEHOLDER[0], ctx["group"] or PLACEHOLDER[1], type_, names)
 
 
+def _resource_id_of(r, ctx):
+    """An evaluated resource's ARM ID: an extension resource's (its scope evaluated to an ID: Sentinel's onboarding and
+    rules on a workspace, a role assignment, a lock) under the resource it extends, as Azure gives it; else _id_in."""
+    names = r["name"].split("/")
+    scope = r.get("scope")
+    return f"{scope.rstrip('/')}/{_provider_path(r['type'], names)}" \
+        if isinstance(scope, str) and scope.startswith("/") else _id_in(ctx, r["type"], names)
+
+
 def _top(template):
     """The template's top-level resources as a list (symbolic-name templates hold them in an object)."""
     given = template.get("resources") or []
@@ -350,7 +361,7 @@ def _own_items(tops, ctx, produced):
     found = [x for r in tops for x in _expand(_known(evaluate(_without_secret_values(r), ctx)))]
     kept = [r for r in found if r.get("condition", True) is not False and isinstance(r.get("name"), str)
             and isinstance(r.get("type"), str) and "None" not in r["name"].split("/")]
-    ids = [(r, _id_in(ctx, r["type"], r["name"].split("/"))) for r in kept]
+    ids = [(r, _resource_id_of(r, ctx)) for r in kept]
     live = [(r, rid) for r, rid in ids if produced is None or rid.lower() in produced]
     read = [(r, rid) for r, rid in live if r["type"].lower() in READ_TYPES
             and (ctx["subscription"] or r["type"].lower() != "microsoft.compute/diskencryptionsets")]

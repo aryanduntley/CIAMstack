@@ -1,8 +1,9 @@
 """Every type the AWS renderers write, translated to CloudFormation (5.6): the showcase and the CloudFormation sample
 (cloudformation_sample: plumbing with peering and VPNs, a CDN front with address rules and Shield Advanced, DNS
-failover, Aurora, suppressions, quotas, Macie, Fluent Bit's IRSA role) rendered in us-east-1 and GovCloud cover the
-whole mapping, and each translates: every resource goes exactly one place, the computed forms (an IRSA trust policy,
-an Aurora member's engine, TXT values, Shield's automatic response) come out as AWS takes them."""
+failover, Aurora, suppressions, quotas, Macie, Fluent Bit's IRSA role, Cognito's clients, a log group forwarded to a
+SIEM through Firehose) rendered in us-east-1 and GovCloud cover the whole mapping, and each translates: every resource
+goes exactly one place, the computed forms (an IRSA trust policy, an Aurora member's engine, TXT values, Shield's
+automatic response, a Firehose stream's secret-held token) come out as AWS takes them."""
 import json
 
 import pytest
@@ -120,6 +121,31 @@ def test_shields_automatic_response_is_part_of_the_protection(sample):
         assert protection["Properties"]["ApplicationLayerAutomaticResponseConfiguration"] == {
             "Action": {"Block": {}}, "Status": "ENABLED"}
         assert "DependsOn" not in protection                    # its ResourceArn already orders it
+
+
+def test_a_forwarded_log_group_feeds_a_firehose_stream_reading_its_token_from_the_secret(sample):
+    """The siem sample's subscription delivers to the stream by its ARN; the stream's Splunk destination holds no
+    HECToken (Firehose reads it from Secrets Manager) and keeps what it can't deliver in the partition's bucket."""
+    for region in REGIONS:
+        _, _, _, t = _by_name(sample, region, "siem")
+        found = _resources(t)
+        stream_id, stream = next((k, r) for k, r in found.items()
+                                 if r["Type"] == "AWS::KinesisFirehose::DeliveryStream")
+        splunk = stream["Properties"]["SplunkDestinationConfiguration"]
+        assert "HECToken" not in splunk and splunk["SecretsManagerConfiguration"]["Enabled"] is True
+        partition = "aws-us-gov" if region.startswith("us-gov-") else "aws"
+        assert splunk["S3Configuration"]["BucketARN"] == f"arn:{partition}:s3:::ciam-siem-failed"
+        subscription = next(r for r in found.values() if r["Type"] == "AWS::Logs::SubscriptionFilter")["Properties"]
+        assert subscription["DestinationArn"] == {"Fn::GetAtt": [stream_id, "Arn"]}
+        assert subscription["FilterPattern"] == ""
+
+
+def test_a_public_cognito_client_is_a_user_pool_client_without_a_secret(sample):
+    for region in REGIONS:
+        _, _, _, t = _by_name(sample, region, "services")
+        clients = [r["Properties"] for r in _resources(t).values() if r["Type"] == "AWS::Cognito::UserPoolClient"]
+        assert [(c["ClientName"], c["GenerateSecret"], c["AllowedOAuthFlows"]) for c in clients] == \
+            [("mobile", False, ["code"])]                   # the confidential portal client is its own stack
 
 
 def test_in_govcloud_cloudfront_runs_from_the_standard_accounts_us_east_1_template(sample):
