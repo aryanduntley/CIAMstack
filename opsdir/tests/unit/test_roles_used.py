@@ -1,6 +1,7 @@
 """The binding roles the record's entries use in an environment (Domain roles_used), for the keys report: canaries
 checked there, external services reached from roles it runs, jobs that apply there, its appliances' logins, its
-collection sources' credentials, its streams' send secrets and its databases' credentials."""
+collection sources' credentials, its streams' send secrets, its databases' credentials and its interconnects'
+pre-shared keys."""
 from opsdir.connectors.registry import DOMAINS, roles_used
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
@@ -37,7 +38,10 @@ RECORDS = tuple(parse("\n".join((
     _entry(f"cn=audit-bus,ou=bindings,{ALPHA}", "ciamStreamBinding", cn="audit-bus", ciamBindingRole="audit-bus",
            ciamProviderRef="hub-1", ciamSendSecretRole="hub-send"),
     _entry(f"cn=db,ou=bindings,{ALPHA}", "ciamDatabase", cn="db", ciamBindingRole="db", ciamDbEngine="postgresql",
-           ciamDbCredentialRole="db-password")))))
+           ciamDbCredentialRole="db-password"),
+    _entry(f"cn=vpn-dc,ou=bindings,{ALPHA}", "ciamInterconnect", cn="vpn-dc", ciamBindingRole="vpn-dc",
+           ciamInterconnectKind="VPN", ciamLinkKind="vpn", ciamPeerEnvironment=BETA, ciamSourceCidr="10.9.0.0/16",
+           ciamSharedKeyRole="vpn-dc-psk")))))
 
 
 def test_the_roles_the_entries_an_environment_runs_use():
@@ -46,8 +50,8 @@ def test_the_roles_the_entries_an_environment_runs_use():
         "bigip-login": ("appliance `bigip`",), "pf-admin-login": ("collection source `pf-admin`",),
         "job-secret": ("job `nightly`",), "captcha-secret": ("external service `captcha`",),
         "hub-send": ("stream `audit-bus`",), "canary-client": ("canary `sso-login`",),
-        "db-password": ("database `db`",)}
+        "db-password": ("database `db`",), "vpn-dc-psk": ("interconnect `vpn-dc`",)}
     beta = roles_used(env_model(d, "beta/prod"), ())
     assert "job-secret" not in beta and "bigip-login" not in beta and "unused-secret" not in beta
     assert {d_.name for d_ in DOMAINS if d_.roles_used} >= {"observability", "messaging", "data", "governance",
-                                                             "infrastructure", "automation"}
+                                                             "infrastructure", "automation", "network"}

@@ -66,6 +66,9 @@ ATTRIBUTES = (
     AttributeDef(403, 'ciamAcceptedCidr', 'cidr', 'binding', False, 'A range this side accepts from the peer'),
     AttributeDef(404, 'ciamPeerAccepted', 'bool', 'binding', True,
                  'Whether the other side has accepted or configured its half (peering is two-sided)'),
+    AttributeDef(967, 'ciamSharedKeyRole', 'string', 'binding', True,
+                 "The binding role of the secret reference (ciamSecretRef) holding the link's pre-shared key (a VPN's "
+                 'IPsec key), read when applied: a reference, never the value'),
     # ------------------------------------------------------------------ bindings: egress control, time, flow logs
     AttributeDef(405, 'ciamProxyKind', enum_type(PROXY_KINDS), 'binding', True,
                  'What controls egress to named sites: a cloud firewall with domain rules, a managed web proxy, a '

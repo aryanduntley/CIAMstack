@@ -3982,6 +3982,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.966 NAME 'ciamAcceptedByService' DES
  ficate journey); its server role (ciamTargetRole) is one of the policy\27s 
  ciamAcceptedByRole' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466
  .115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.967 NAME 'ciamSharedKeyRole' DESC 'T
+ he binding role of the secret reference (ciamSecretRef) holding the link\27
+ s pre-shared key (a VPN\27s IPsec key), read when applied: a reference, nev
+ er the value' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+  SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdi
+ r' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4051,7 +4057,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.15 NAME 'ciamInterconnect' DESC 'Link
   to another environment' SUP ciamBinding STRUCTURAL MUST ( ciamInterconnect
  Kind $ ciamPeerEnvironment $ ciamSourceCidr ) MAY ( ciamPort $ ciamLinkKind
   $ ciamPeerGateway $ ciamLocalAsn $ ciamPeerAsn $ ciamAdvertisedCidr $ ciam
- AcceptedCidr $ ciamPeerAccepted $ ciamManagedBy ) X-ORIGIN 'opsdir' )
+ AcceptedCidr $ ciamPeerAccepted $ ciamSharedKeyRole $ ciamManagedBy ) X-ORI
+ GIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.16 NAME 'ciamBackend' DESC 'DS backen
  d' SUP ciamObject STRUCTURAL MUST ( cn $ ciamBackendType $ ciamBaseDn ) X-O
  RIGIN 'opsdir' )

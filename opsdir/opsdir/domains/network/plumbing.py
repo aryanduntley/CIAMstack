@@ -15,6 +15,7 @@ from ...core.environment import EnvModel, of_class, one_role
 from ...core.naming import env_label
 from ...core.notes import RECORD, note
 from ..governance.keepers import LANDING_ZONE, keeper
+from ..pki.credentials import role_uses
 from .stack import owned
 
 NETWORK_FILE = "network.tf"
@@ -67,6 +68,12 @@ def peer_cloud(d, link):
     """The cloud entry (provider, region) of the environment at the other end of an interconnect, or None."""
     peer = one(link, "ciamPeerEnvironment")
     return get(d, peer.split(",", 1)[1]) if peer and "," in peer else None
+
+
+def plumbing_roles(m):
+    """(RoleUse, ...) of the roles environment m's plumbing uses: each interconnect's pre-shared key (ciamSharedKeyRole,
+    a secret reference read when applied)."""
+    return role_uses(of_class(m, "ciamInterconnect"), "ciamSharedKeyRole", "interconnect")
 
 
 def describe(m, b):

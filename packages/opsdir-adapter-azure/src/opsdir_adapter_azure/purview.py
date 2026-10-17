@@ -40,6 +40,7 @@ from opsdir.domains.data.storage import kept_store
 from opsdir.domains.network.stack import kept_by
 from opsdir_format_terraform.hcl import comment, from_entry, ref, tf_block, tf_name
 from .account import azapi_allowed
+from .azapi import azapi_body
 from .storage import container_of
 
 DATA_PLANE = "azapi_data_plane_resource"
@@ -272,22 +273,17 @@ PurviewRead = NamedTuple("PurviewRead", [("scan", str), ("account", str), ("stor
 _PARENT = re.compile(r"^([^.]+)\.purview\.azure\.(?:com|us)/scan/datasources/([^/]+)/scans/([^/]+)$")
 
 
-def _body(a):
-    body = a.get("body")
-    return body if isinstance(body, dict) else {}
-
-
 def purview_read(pairs):
     """(PurviewRead, ...) of (type, attributes) pairs: each azapi trigger recurring by days, with the endpoint of its
     scan's data source."""
     planes = [a for t, a in pairs if t == DATA_PLANE]
-    sources = {(m.group(1), a.get("name")): (_body(a).get("properties") or {}).get("endpoint") or ""
+    sources = {(m.group(1), a.get("name")): (azapi_body(a).get("properties") or {}).get("endpoint") or ""
                for a in planes if (a.get("type") or "").startswith(f"{SOURCES}@")
                for m in (re.match(r"^([^.]+)\.purview\.azure\.(?:com|us)/scan$", a.get("parent_id") or ""),) if m}
     reads = []
     for a in planes:
         found = _PARENT.match(a.get("parent_id") or "") if (a.get("type") or "").startswith(f"{TRIGGERS}@") else None
-        recurrence = (_body(a).get("properties") or {}).get("recurrence") or {}
+        recurrence = (azapi_body(a).get("properties") or {}).get("recurrence") or {}
         if found and recurrence.get("frequency") == "Day" and recurrence.get("interval"):
             account, source, scan = found.groups()
             endpoint = sources.get((account, source), "")
