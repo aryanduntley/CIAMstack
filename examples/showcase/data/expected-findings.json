@@ -1615,6 +1615,30 @@
       "raised_by": "CHG-2120"
     },
     {
+      "id": "A292",
+      "area": "Certificate",
+      "match": "Certificate `sso-tls-2026` was renewed by venafi-prod",
+      "planted": "the certificate manager renewed (and installed) the SSO certificate on 2026-09-10; the record still names the old one",
+      "cleared_by": null,
+      "raised_by": "CHG-2125"
+    },
+    {
+      "id": "A293",
+      "area": "Certificate",
+      "match": "Certificate `ds-ldaps-2026`: venafi-prod reports a problem with it",
+      "planted": "the certificate manager's renewal of the LDAPS certificate is in error: the CA refused it (the template needs a CA manager's approval)",
+      "cleared_by": null,
+      "raised_by": "CHG-2125"
+    },
+    {
+      "id": "A294",
+      "area": "Certificate",
+      "match": "venafi-prod holds 1 certificate(s) in service for names the record holds",
+      "planted": "network discovery found a certificate for login.example-aero.test that the record has none of",
+      "cleared_by": null,
+      "raised_by": "CHG-2125"
+    },
+    {
       "id": "A150",
       "area": "Logs",
       "match": "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 days in all but searchable only 90",

@@ -15,11 +15,16 @@ from .settings import EXPIRY_MARGIN_DAYS
 CERTIFICATE_USE = ("ciamUsesCertificate", "ciamTlsCertificate", "ciamTrustsCertificate")
 
 
+def certificate_users(d, cert):
+    """The entries that depend on a certificate (through CERTIFICATE_USE), each once, in the order first found."""
+    return tuple({u.dn: u for attr in CERTIFICATE_USE for _, u in referrers(d, cert, attr)}.values())
+
+
 def _certificate_action(d, as_of, c, margin):
     exp = gtime_date(one(c, "ciamNotAfter"))
     partner = follow(d, c, "ciamPartnerContact")
     rb = follow(d, c, "ciamRotationRunbook")
-    used = list(dict.fromkeys(rdn_value(u) for attr in CERTIFICATE_USE for _, u in referrers(d, c, attr)))
+    used = list(dict.fromkeys(rdn_value(u) for u in certificate_users(d, c)))
     text = (f"Certificate `{rdn_value(c)}` expires {exp} ({(exp - as_of).days} days), before cutover + {margin} days. "
             f"Used by: {', '.join(used) or 'nothing recorded'}."
             + (f" Coordinate with partner {rdn_value(partner)}." if partner else "")

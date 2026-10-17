@@ -21,12 +21,22 @@ def certificate_pem(c):
     return pem if certificates_only(pem) else None
 
 
+def _digest(pem, algorithm):
+    der = base64.b64decode("".join(_FIRST.search(pem).group(1).split()))
+    digest = hashlib.new(algorithm, der).hexdigest().upper()
+    return ":".join(digest[i:i + 2] for i in range(0, len(digest), 2))
+
+
 def pem_fingerprint(pem):
     """The SHA-256 fingerprint of a PEM's first certificate, as colon-separated upper-case hex (ciamFingerprint's
     form)."""
-    der = base64.b64decode("".join(_FIRST.search(pem).group(1).split()))
-    digest = hashlib.sha256(der).hexdigest().upper()
-    return ":".join(digest[i:i + 2] for i in range(0, len(digest), 2))
+    return _digest(pem, "sha256")
+
+
+def pem_thumbprint(pem):
+    """The SHA-1 thumbprint of a PEM's first certificate, as colon-separated upper-case hex (ciamThumbprint's form):
+    what a certificate manager that gives no SHA-256 is matched by."""
+    return _digest(pem, "sha1")
 
 
 def _same(a, b):

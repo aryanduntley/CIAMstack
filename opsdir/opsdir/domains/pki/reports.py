@@ -2,11 +2,11 @@
 spread out each credential is (sprawl), and everything a rotation touches (rotation impact)."""
 from typing import NamedTuple
 
-from ...core.directory import follow, follow_all, get, is_a, one, rdn_value, referrers, values
+from ...core.directory import follow, follow_all, get, is_a, one, rdn_value, values
 from ...core.environment import environment_of
 from ...core.findings import owner_label, responsible
 from ...core.naming import env_label
-from .checks import CERTIFICATE_USE
+from .checks import certificate_users
 from .credentials import (all_material_bindings, binding_for, bindings_everywhere, certificates_keyed_by,
                           credential_for_role, credentials, distinct_bindings, hsm_shortfall, linked_settings,
                           material_bindings, rotate_by)
@@ -140,7 +140,7 @@ def sprawl_rows(d, dn=None):
 def _certificate_steps(d, c):
     """Re-issuing a certificate: the certificate, whoever presents or trusts it, the partner to coordinate with."""
     partner = follow(d, c, "ciamPartnerContact")
-    users = tuple(dict.fromkeys(e.dn for attr in CERTIFICATE_USE for _, e in referrers(d, c, attr)))
+    users = tuple(u.dn for u in certificate_users(d, c))
     return (("re-issue certificate", one(c, "cn"),
              _joined(values(c, "ciamSubjectAltName")) or one(c, "ciamSubject", ""),
              owner_label(d, c)),

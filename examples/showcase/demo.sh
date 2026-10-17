@@ -349,6 +349,12 @@ echo "   its endpoints, its roles (ciam-client: any name, client authentication,
 echo "   and the certificates Vault keeps; the lab's SSO certificate was renewed there, and the record names the old one"
 od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
 od report issued-certificates
+echo "-- the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate Manager), read as"
+echo "   its collector saves it (CHG-2125): never a CA's record, so a certificate it lacks isn't missing; it renewed the"
+echo "   SSO certificate the record still names, its LDAPS renewal is in error, and it found one for login.example-aero.test"
+echo "   the record has none of"
+od import --change CHG-2125 --at 20260923090000Z venafi/certificates exports/venafi
+od report managed-certificates
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

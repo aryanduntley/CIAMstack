@@ -3675,6 +3675,54 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.890 NAME 'ciamTemplateAuthority' DES
   with every CA (AD CS\27s forest templates)' EQUALITY distinguishedNameMatc
  h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'observed
  ' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.920 NAME 'ciamThumbprint' DESC 'A ce
+ rtificate\27s SHA-1 thumbprint, as colon-separated hex: what a certificate 
+ manager gives when it gives no SHA-256 fingerprint' EQUALITY caseIgnoreMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed
+ ' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.921 NAME 'ciamCertificateName' DESC 
+ 'The DNS names and IP addresses a certificate names (its subject common nam
+ e and alternative names), as its manager reports them, wildcards kept' EQUA
+ LITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'ob
+ served' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.922 NAME 'ciamManagerPath' DESC 'Whe
+ re a certificate manager files a certificate (a policy folder\27s object, a
+  vault\27s certificate name)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.923 NAME 'ciamManagement' DESC 'What
+  a certificate manager does for a certificate: unassigned (nothing), monito
+ red (watches its expiry; someone else renews it), enrolled (requests and re
+ news it; someone installs it) or provisioned (renews it and installs it whe
+ re it is used)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.
+ 15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'enum:unassigned|moni
+ tored|enrolled|provisioned' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.924 NAME 'ciamManagedOrigin' DESC 'H
+ ow a certificate came to its manager: discovered (found by a network or age
+ nt scan) or added (enrolled through it, imported, or created by someone)' E
+ QUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X
+ -PORTABILITY 'observed' X-VALUE-TYPE 'enum:discovered|added' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.925 NAME 'ciamManagerContact' DESC '
+ Who a certificate manager notifies about a certificate, as the manager name
+ s them (its own identities); metadata only' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'strin
+ g' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.926 NAME 'ciamInstalledAt' DESC 'Whe
+ re a certificate manager says a certificate is installed or was found (an a
+ pplication, a device, host:port), as the manager names it' EQUALITY caseIgn
+ oreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VA
+ LUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.927 NAME 'ciamManagerProblem' DESC '
+ What a certificate manager reports wrong with a certificate now (a failed r
+ enewal or installation, a revocation requested or failed), in its words' EQ
+ UALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY '
+ observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.928 NAME 'ciamManagedAuthority' DESC
+  'The certification authority (or its template) a certificate manager renew
+ s a certificate through, as the manager names it' EQUALITY caseIgnoreMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' 
+ X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4637,3 +4685,23 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.190 NAME 'ciamDirectoryTrust' DESC 'A
  ciamManagedBy)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamFqdn $ ciamTrustT
  ype $ ciamTrustDirection ) MAY ( ciamForwardTarget $ ciamSelectiveAuth $ ci
  amManagedBy ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.199 NAME 'ciamManagedInventory' DESC 
+ 'The last inventory of one certificate manager\27s source (cn: the collecti
+ on source\27s name; under ou=managed-certificates), metadata only: when it 
+ was taken, whether the folders it lists (ciamInventoryPrefix) were listed c
+ ompletely, the manager\27s address (ciamProviderRef), and the certificates 
+ found as its children. Never a CA\27s issuance record: what it doesn\27t ho
+ ld isn\27t missing' SUP ciamObject STRUCTURAL MUST ( cn $ ciamInventoryAt $
+  ciamInventoryState ) MAY ( ciamInventoryProblem $ ciamInventoryPrefix $ ci
+ amProviderRef ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.200 NAME 'ciamManagedCertificate' DES
+ C 'A certificate a certificate manager\27s inventory holds (cn: the manager
+ \27s id for it), metadata only, never a key: serial, fingerprint or thumbpr
+ int, subject, issuer, validity and names; how the manager manages it, who i
+ t notifies, where it says it is installed, what it reports wrong, and once 
+ revoked (as the manager says), when and why' SUP ciamObject STRUCTURAL MUST
+  cn MAY ( ciamSerialNumber $ ciamFingerprint $ ciamThumbprint $ ciamSubject
+  $ ciamIssuer $ ciamNotBefore $ ciamNotAfter $ ciamCertificateName $ ciamMa
+ nagerPath $ ciamManagement $ ciamManagedOrigin $ ciamManagerContact $ ciamI
+ nstalledAt $ ciamManagerProblem $ ciamManagedAuthority $ ciamRevokedAt $ ci
+ amRevocationReason $ ciamObjectState ) X-ORIGIN 'opsdir' )
