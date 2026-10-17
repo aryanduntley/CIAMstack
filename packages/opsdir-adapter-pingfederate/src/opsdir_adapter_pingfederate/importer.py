@@ -5,7 +5,9 @@ Reads the Admin API bulk export (GET /pf-admin-api/v1/bulk/export: {"metadata": 
 (pingfederate/admin-api/requests.json: each request's body an item of the resource type its path names), so a render
 reads back as it was. An integration the record holds without PingFederate settings (recorded by another product's
 importer or by hand) reads back from such a render as the record's: what the render adds to it (PingFederate's defaults,
-the id it names it by, the settings it builds) is derived from the record, not read from a PingFederate.
+the id it names it by, the settings it builds) is derived from the record, not read from a PingFederate. Likewise the
+revocation and incoming proxy settings a render derives from the trust policies (client_certificates) are not read
+back from it (an export's are held as is), nor are the CAs it imports.
 
   /idp/spConnections              -> SAML service providers (saml2-sp integrations): entity ID, default ACS URL and
                                      binding, the claims of the attribute contract (linked to user-schema records),
@@ -63,6 +65,7 @@ from .plugins import KINDS, plugin_groups
 from .policies import policy_groups
 from .naming import SERVER_ROLES
 from .admin_api import request_type
+from .client_certificates import TRUST_SETTINGS
 from .schema import HOLDERS
 from .connections import BINDINGS, CLIENT_AUTH, GRANT_TYPES, LEGACY_METHOD
 
@@ -110,12 +113,15 @@ def resources(files):
     found = ((RESOURCES.get(op.get("resourceType")), item) for op in bulk if op.get("operationType", "SAVE") == "SAVE"
              for item in op.get("items") or ())
     pairs = [(k, i) for k, i in found if k and isinstance(i, dict)]
+    rendered = rendered_only(parsed)
+    # a render's trust settings are the record's trust policies (and what it holds of them already): no new fact
+    derived = TRUST_SETTINGS if rendered else ()
     return ({kind: tuple(i for k, i in pairs if k == kind) for kind in (*RESOURCES.values(),)},
             {t: tuple(i for op in bulk if op.get("resourceType") == t and op.get("operationType", "SAVE") == "SAVE"
                       for i in op.get("items") or () if isinstance(i, dict))
              for t in dict.fromkeys(op.get("resourceType") for op in bulk)
-             if isinstance(t, str) and t not in RESOURCES},
-            source_version(parsed), tuple(p for p, doc in parsed.items() if doc is None), rendered_only(parsed))
+             if isinstance(t, str) and t not in RESOURCES and t not in derived},
+            source_version(parsed), tuple(p for p, doc in parsed.items() if doc is None), rendered)
 
 
 def rendered_only(parsed):

@@ -40,6 +40,9 @@ PROVIDERS = (((12, 2), (13, 1), "1.10.0"), ((11, 3), (13, 0), "1.8.1"))
 RESOURCES = MappingProxyType({
     "/keyPairs/signing/import": ("pingfederate_keypairs_signing_key", "key_id"),
     "/keyPairs/sslServer/import": ("pingfederate_keypairs_ssl_server_key", "key_id"),
+    "/certificates/ca/import": ("pingfederate_certificate_ca", "ca_id"),
+    "/certificates/revocation/settings": ("pingfederate_certificates_revocation_settings", None),
+    "/incomingProxySettings": ("pingfederate_incoming_proxy_settings", None),
     "/dataStores": ("pingfederate_data_store", "data_store_id"),
     "/passwordCredentialValidators": ("pingfederate_password_credential_validator", "validator_id"),
     "/notificationPublishers": ("pingfederate_notification_publisher", "publisher_id"),
@@ -272,11 +275,11 @@ def _files(m, reqs, release, product):
         f"{OUTPUT}main.tf": head + ("\n" if head else "") + "\n\n".join(blocks) + "\n"}
 
 
-def terraform_import_files(m):
+def terraform_import_files(m, services=None):
     """{pingfederate/terraform/imports.tf: text}: an import block per resource the terraform target renders for
     environment m, adopting the object an existing PingFederate already holds (its id, a placeholder for a settings
     object); key pairs named instead (the provider can't import them: set pingfederate_create_key_pairs to false)."""
-    reqs = requests(m)
+    reqs = requests(m, services)
     version, _ = pingfederate_version(m)
     release, _ = provider_release(version)
     if not reqs or release is None:
@@ -291,10 +294,10 @@ def terraform_import_files(m):
     return {f"{OUTPUT}imports.tf": note + ("\n" if note else "") + "\n\n".join(blocks) + "\n"}
 
 
-def terraform_files(m):
+def terraform_files(m, services=None):
     """{pingfederate/terraform/<file>: text}: environment m's PingFederate configuration as Terraform for the provider
     release supporting its version (nothing when the record holds nothing for PingFederate)."""
-    reqs = requests(m)
+    reqs = requests(m, services)
     if not reqs:
         return {}
     version, _ = pingfederate_version(m)
