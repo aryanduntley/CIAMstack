@@ -5,7 +5,7 @@
 -->
 # Render notes: target/prod
 
-**4 blockers, 12 actions, 14 notes, 0 to review**
+**4 blockers, 12 actions, 15 notes, 0 to review**
 
 ## Blockers
 
@@ -138,6 +138,13 @@
 - **How:** Decide how PingGateway protects `techpubs` without it, and record that, or keep it with its current product.
 
 ## Notes
+
+### managed domain corp-managed-domain (Directory)
+
+- **What:** a neighbour directory the platform binds to, kept by corporate-identity: not rendered
+- **Where:** terraform/main.tf:3406; target/prod
+- **Who:** ciam-platform
+- **How:** Record changes its owner makes to it under an approved change, and re-render
 
 ### log destination siem (Logs)
 

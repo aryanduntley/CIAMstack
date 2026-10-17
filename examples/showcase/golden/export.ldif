@@ -1920,6 +1920,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the linked BMC Helix ITSM change requests as evidence (status,
   approval signatures, windows)
 
+dn: cn=CHG-2110,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2110
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Record the corporate identity team's managed domain in the target (
+ Entra Domain Services) and its trusts
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2141,6 +2151,14 @@ ciamContactUrl: https://servicedesk.example-aero.test/dns
 ciamDisplayName: Corporate DNS team
 ciamOwnerKind: team
 mail: dns@example-aero.test
+
+dn: cn=corporate-identity,ou=owners,dc=ciam-ops
+objectClass: top
+objectClass: ciamParty
+cn: corporate-identity
+ciamOwnerKind: team
+description: The corporate identity team: the corporate forest and the managed
+  domains joined to it
 
 dn: cn=cost-center,ou=tag-policy,dc=ciam-ops
 objectClass: top
@@ -10595,6 +10613,21 @@ ciamAdapterSource: https://github.com/aryanduntley/CIAMstack/tree/main/package
 ciamAdapterVersion: >=0.1,<1
 ciamStackRole: configuration-management
 
+dn: cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamManagedDirectory
+cn: corp-managed-domain
+ciamBindingRole: corp-managed-domain
+ciamChangeRef: cn=CHG-2110,ou=changes,dc=ciam-ops
+ciamDirectoryEdition: enterprise
+ciamFqdn: cloud.example-aero.internal
+ciamManagedBy: cn=corporate-identity,ou=owners,dc=ciam-ops
+ciamManagedService: entra-domain-services
+ciamNetbiosName: AEROCLOUD
+ciamRegion: eastus2
+description: The corporate identity team's managed domain for domain-joined wo
+ rkloads (Entra Domain Services)
+
 dn: cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -15437,6 +15470,18 @@ cn: companyId
 ciamIndexType: equality
 ciamIndexedAttribute: cn=companyId,ou=user-schema,dc=ciam-ops
 
+dn: cn=corp-forest,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDirectoryTrust
+cn: corp-forest
+ciamChangeRef: cn=CHG-2110,ou=changes,dc=ciam-ops
+ciamForwardTarget: 10.10.0.10
+ciamForwardTarget: 10.10.0.11
+ciamFqdn: corp.example-aero.internal
+ciamManagedBy: cn=corporate-identity,ou=owners,dc=ciam-ops
+ciamTrustDirection: one-way-outgoing
+ciamTrustType: forest
+
 dn: cn=crew-pages,cn=crew,ou=realms,cn=crew-portal,ou=domains,ou=siteminder,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -15457,6 +15502,16 @@ objectClass: ciamIndex
 cn: description
 ciamIndexType: substring
 ciamIndexedAttribute: cn=description,ou=user-schema,dc=ciam-ops
+
+dn: cn=eng-lab,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+objectClass: top
+objectClass: ciamDirectoryTrust
+cn: eng-lab
+ciamChangeRef: cn=CHG-2110,ou=changes,dc=ciam-ops
+ciamFqdn: lab.example-aero.internal
+ciamManagedBy: cn=corporate-identity,ou=owners,dc=ciam-ops
+ciamTrustDirection: one-way-outgoing
+ciamTrustType: external
 
 dn: cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops
 objectClass: top

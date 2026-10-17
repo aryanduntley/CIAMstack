@@ -449,6 +449,12 @@
       "Read the linked BMC Helix ITSM change requests as evidence (status, approval signatures, windows)",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2110,ou=changes,dc=ciam-ops",
+      "Record the corporate identity team's managed domain in the target (Entra Domain Services) and its trusts",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

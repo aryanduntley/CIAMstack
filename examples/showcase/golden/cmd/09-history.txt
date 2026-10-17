@@ -699,4 +699,8 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2106  insert  cn=CRQ000000001202,ou=bmc-helix,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2106  insert  cn=CRQ000000001203,ou=bmc-helix,ou=tickets,dc=ciam-ops
 <TIMESTAMP>          CHG-2106  insert  cn=bmc-helix.change-requests.shared.s1-325755823c4d1f7d,ou=imports,dc=ciam-ops
-(699 rows)
+<TIMESTAMP>          CHG-2110  insert  cn=corporate-identity,ou=owners,dc=ciam-ops
+<TIMESTAMP>          CHG-2110  insert  cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2110  insert  cn=corp-forest,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+<TIMESTAMP>          CHG-2110  insert  cn=eng-lab,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+(703 rows)

@@ -73,3 +73,4 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2099,ou=changes,dc=ciam-ops","Read the linked Jira Service Management tickets as evidence (state, approval steps, planned window)",CAB 2026-09-18,approved
 "cn=CHG-2105,ou=changes,dc=ciam-ops",Link the security operations team's changes to their BMC Helix ITSM change requests,CAB 2026-09-18,approved
 "cn=CHG-2106,ou=changes,dc=ciam-ops","Read the linked BMC Helix ITSM change requests as evidence (status, approval signatures, windows)",CAB 2026-09-18,approved
+"cn=CHG-2110,ou=changes,dc=ciam-ops",Record the corporate identity team's managed domain in the target (Entra Domain Services) and its trusts,CAB 2026-09-18,approved

@@ -1,0 +1,5 @@
+CHG-2110: add cn=corporate-identity,ou=owners,dc=ciam-ops
+CHG-2110: add cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2110: add cn=corp-forest,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+CHG-2110: add cn=eng-lab,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+exit 0

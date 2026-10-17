@@ -3403,4 +3403,6 @@ resource "azuread_service_principal" "partners_external_id_partner_portal" {
   client_id = azuread_application.partners_external_id_partner_portal.client_id
 }
 
+# NOTE: managed domain corp-managed-domain: a neighbour directory the platform binds to, kept by corporate-identity: not rendered
+
 # defender-identity: kept by security-operations, not rendered here (azurerm_security_center_automation.defender_identity_export): they take no generated infrastructure, so it is asked of them; a render scoped to them gives their root

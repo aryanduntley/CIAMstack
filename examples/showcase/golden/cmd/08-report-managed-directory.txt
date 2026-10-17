@@ -1,0 +1,5 @@
+environment  binding              service                as         realizes / partner of  domain                       edition     regions  trusts                                                                  kept by             resource
+-----------  -------------------  ---------------------  ---------  ---------------------  ---------------------------  ----------  -------  ----------------------------------------------------------------------  ------------------  --------
+target/prod  corp-managed-domain  entra-domain-services  neighbour                         cloud.example-aero.internal  enterprise  eastus2  corp.example-aero.internal (forest, one-way-outgoing), lab.example-aer  corporate-identity
+(1 rows)
+exit 0
