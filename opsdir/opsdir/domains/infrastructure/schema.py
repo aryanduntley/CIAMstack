@@ -260,7 +260,7 @@ CLASSES = (
     ClassDef(15, 'ciamInterconnect', 'ciamBinding', 'STRUCTURAL',
              ('ciamInterconnectKind', 'ciamPeerEnvironment', 'ciamSourceCidr'),
              ('ciamPort', 'ciamLinkKind', 'ciamPeerGateway', 'ciamLocalAsn', 'ciamPeerAsn', 'ciamAdvertisedCidr',
-              'ciamAcceptedCidr', 'ciamPeerAccepted', 'ciamManagedBy'),
+              'ciamAcceptedCidr', 'ciamPeerAccepted', 'ciamSharedKeyRole', 'ciamManagedBy'),
              'Link to another environment'),
     ClassDef(33, 'ciamStackComponent', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamStackRole', 'ciamAdapter'),
              ('ciamAdapterVersion', 'ciamAdapterSource', 'ciamRenderTarget', 'ciamOffering'),

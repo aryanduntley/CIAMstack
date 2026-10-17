@@ -34,6 +34,7 @@ from opsdir.core.notes import note, note_comment
 from opsdir.domains.estate.poam import exception_of, suppression_name
 from opsdir_format_terraform.hcl import comment, from_entry, jsonencoded, mentions, ref, tf_block, tf_name
 from .account import azapi_allowed
+from .azapi import azapi_body
 
 EXEMPTION = "azurerm_subscription_policy_exemption"
 AZAPI = "azapi_resource"
@@ -176,15 +177,6 @@ def _metadata(a):
     return v if isinstance(v, dict) else {}
 
 
-def _body(a):
-    b = a.get("body")
-    try:
-        b = json.loads(b) if isinstance(b, str) else b
-    except ValueError:
-        return {}
-    return b if isinstance(b, dict) else {}
-
-
 def _commented(body):
     """The exception a rule's comment names ("exception <cn>"), or None."""
     comment = (body.get("properties") or {}).get("comment") or ""
@@ -202,8 +194,8 @@ def suppression_resources(pairs):
                    [f"azure:policy:{_framework(a.get('policy_assignment_id'))}" + (f"/{x}" if x else "")
                     for x in (a.get("policy_definition_reference_ids") or [None])])
                   for a in of_types(pairs, EXEMPTION) if a.get("id")]
-    rules = [(_commented(_body(a)) or exception_of(a.get("name")), a.get("id"),
-              [f"azure:alerts:{(_body(a).get('properties') or {}).get('alertType')}"])
+    rules = [(_commented(azapi_body(a)) or exception_of(a.get("name")), a.get("id"),
+              [f"azure:alerts:{(azapi_body(a).get('properties') or {}).get('alertType')}"])
              for a in of_types(pairs, AZAPI) if (a.get("type") or "").startswith(ALERT_RULES) and a.get("id")]
     found = [(exc, rid, refs) for exc, rid, refs in (*exemptions, *rules) if exc]
     names = list(dict.fromkeys(exc for exc, _, _ in found))

@@ -27,11 +27,11 @@ plumbing) is read as the CLI's connections are. Peerings carry no tags in Azure:
 (roles.json); a peering's other side is the environment whose network binding is its remote virtual network (core),
 else a tag PeerEnvironment.
 """
-import json
 
 from opsdir.core.inventory import of_types, peer_environment, resource, tagged_role
 from opsdir.domains.network.routing import Route, route_text
 from .arm_ids import arm_segment, subnet_ref
+from .azapi import azapi_body
 from .cli_network import network_items
 from .network import SUBRESOURCES
 
@@ -55,21 +55,11 @@ def _tags(a):
     return a.get("tags") or {}
 
 
-def _body(a):
-    """An azapi resource's body: an object, or JSON text (as an older state holds it); {} otherwise."""
-    b = a.get("body")
-    try:
-        b = json.loads(b) if isinstance(b, str) else b
-    except ValueError:
-        return {}
-    return b if isinstance(b, dict) else {}
-
-
 def azapi_connections(found):
     """(azurerm_virtual_network_gateway_connection, attributes) of the VPN connections among (type, attributes) pairs
     made through azapi (plumbing), their body read as the CLI's connections are (cli_network)."""
     return tuple(network_items([(CONNECTIONS, {"id": a.get("id"), "name": a.get("name"), "tags": _tags(a),
-                                               **(_body(a).get("properties") or {})})
+                                               **(azapi_body(a).get("properties") or {})})
                                 for a in of_types(found, "azapi_resource")
                                 if _low(a.get("type")).startswith(CONNECTIONS + "@")]))
 

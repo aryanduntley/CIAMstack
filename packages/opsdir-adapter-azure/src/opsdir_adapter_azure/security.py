@@ -71,7 +71,6 @@ workspace or Event Hub a continuous export of its findings goes to as their dest
 as the CLI's automation is), and the incident route: the workspace or Event Hub an export filtering them on severity
 goes to, or the action group a log alert on the table of their kind notifies, with the least severity it lets through.
 """
-import json
 import re
 
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
@@ -83,6 +82,7 @@ from opsdir.domains.estate.security import findings_destination, security_servic
 from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
 from opsdir.domains.governance.keepers import organization_line, organization_origin
 from .account import azapi_allowed, management_group, management_group_variable
+from .azapi import azapi_body
 from .change_history import history_note, render_change_history
 from .cli_security import AUTOMATIONS, security_items
 from .cmk import role_uri, vault_object
@@ -787,20 +787,10 @@ def security_notices(pairs):
     return (*ident.notices, *((orphan,) if ident.watched and not defended else ()))
 
 
-def _body(a):
-    """An azapi resource's body: an object, or JSON text (as an older state holds it); {} otherwise."""
-    b = a.get("body")
-    try:
-        b = json.loads(b) if isinstance(b, str) else b
-    except ValueError:
-        return {}
-    return b if isinstance(b, dict) else {}
-
-
 def azapi_automations(pairs):
     """(azurerm_security_center_automation, attributes) of the continuous exports among (type, attributes) pairs made
     through azapi (hub_export), their body read as the CLI's automations are (cli_security)."""
-    return tuple(security_items([(AUTOMATIONS, {"id": a.get("id"), "name": a.get("name"), **_body(a)})
+    return tuple(security_items([(AUTOMATIONS, {"id": a.get("id"), "name": a.get("name"), **azapi_body(a)})
                                  for a in of_types(pairs, AZAPI)
                                  if (a.get("type") or "").lower().startswith(AUTOMATIONS + "@")]))
 

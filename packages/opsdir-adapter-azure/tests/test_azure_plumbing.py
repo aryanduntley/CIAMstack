@@ -126,20 +126,28 @@ def test_peering_across_providers_and_a_link_without_a_kind_are_named():
     assert "a link: what kind of link it is isn't recorded" in out and "azurerm_virtual_network_peering" not in out
 
 
+# the Key Vault secret a VPN link's pre-shared key is in, by the role its ciamSharedKeyRole names
+PSK = entry(ALPHA, "vpn-dc-psk", "ciamSecretRef", ciamBindingRole="vpn-dc-psk", ciamRefUri="azkv://ciam-kv/vpn-dc-psk")
+
+
 def _vpn_dc(**attrs):
     return _link("vpn-dc", "vpn", ciamPeerGateway="198.51.100.1", ciamPeerAsn="65010", ciamLocalAsn="65515",
-                 ciamAcceptedCidr="192.168.0.0/16", **attrs)
+                 ciamAcceptedCidr="192.168.0.0/16", **{"ciamSharedKeyRole": "vpn-dc-psk", **attrs})
 
 
 def test_a_site_to_site_vpn_through_azapi_its_shared_key_write_only_from_key_vault():
-    m = model(alpha=(_vpn_dc(),), changes=ADD_ON)[1]
+    m = model(alpha=(_vpn_dc(), PSK), changes=ADD_ON)[1]
     files = as_text(render_landing(m))
     out, providers = files[NET], files[f"{LZ}/providers.tf"]
     assert 'gateway_address     = "198.51.100.1"' in out and 'address_space       = ["192.168.0.0/16"]' in out
     assert "asn                 = 65010" in out and "bgp_peering_address = var.vpn_dc_bgp_peer_ip" in out
+    # the vault and secret the record's reference names (azkv://ciam-kv/vpn-dc-psk): no inputs for them
+    vault = out[out.index('data "azurerm_key_vault" "vpn_dc_shared_key"'):]
+    assert 'name                = "ciam-kv"' in vault[:vault.index("}")]
+    assert "resource_group_name = data.azurerm_resource_group.main.name" in vault[:vault.index("}")]
     assert 'ephemeral "azurerm_key_vault_secret" "vpn_dc_shared_key"' in out
-    assert "name         = var.vpn_dc_shared_key_secret" in out
-    assert "key_vault_id = var.vpn_dc_shared_key_vault_id" in out
+    assert 'name         = "vpn-dc-psk"' in out
+    assert "key_vault_id = data.azurerm_key_vault.vpn_dc_shared_key.id" in out
     assert 'resource "azapi_resource" "vpn_dc"' in out and '"Microsoft.Network/connections@2025-07-01"' in out
     assert 'connectionType = "IPsec"' in out and "enableBgp      = true" in out
     assert "id = var.virtual_network_gateway_id" in out and "id = azurerm_local_network_gateway.vpn_dc.id" in out
@@ -150,14 +158,14 @@ def test_a_site_to_site_vpn_through_azapi_its_shared_key_write_only_from_key_vau
     assert "shared_key" not in out.replace("_shared_key", "")
     assert "azurerm_virtual_network_gateway_connection" not in out
     assert "connection isn't rendered" not in out and "import {" not in out
-    assert 'variable "vpn_dc_shared_key_vault_id"' in providers and 'variable "vpn_dc_shared_key_secret"' in providers
+    assert "shared_key" not in providers
     assert "sensitive" not in providers and 'variable "virtual_network_gateway_id"' in providers
     assert 'source  = "Azure/azapi"' in providers and 'provider "azapi"' in providers
     assert [n.severity for n in plumbing_notes(m)] == ["action"]      # the BGP ASN on the gateway alone
 
 
 def test_without_the_azapi_add_on_a_vpn_s_connection_is_made_by_hand():
-    m = model(alpha=(_vpn_dc(),))[1]
+    m = model(alpha=(_vpn_dc(), PSK))[1]
     files = as_text(render_landing(m))
     out, providers = files[NET], files[f"{LZ}/providers.tf"]
     assert 'resource "azurerm_local_network_gateway" "vpn_dc"' in out
@@ -168,8 +176,37 @@ def test_without_the_azapi_add_on_a_vpn_s_connection_is_made_by_hand():
     assert found.severity == "action" and "reads the key back even when not set" in found.text
     assert "Create connection cn-ciam-prod-vpn-dc on the virtual network gateway (type IPsec, to local network " \
            "gateway lgw-ciam-prod-vpn-dc, BGP on)" in found.how[0]
-    assert "ciamProviderAddOn azapi" in found.how[1]
+    assert "its shared key the one Key Vault ciam-kv secret vpn-dc-psk holds" in found.how[0]
+    assert "ciamProviderAddOn azapi), under an approved change" in found.how[1]
     assert note_comment(found) in out
+    # no secret recorded: the person is told to record it along with allowing the add-on
+    (bare,) = (n for n in plumbing_notes(model(alpha=(_vpn_dc(ciamSharedKeyRole=()),))[1])
+               if "connection isn't rendered" in n.text)
+    assert "the one Key Vault holds for it" in bare.how[0] and "(ciamSharedKeyRole)" in bare.how[1]
+
+
+def _unrecorded(*records):
+    m = model(alpha=records, changes=ADD_ON)[1]
+    files = as_text(render_landing(m))
+    out, providers = files[NET], files[f"{LZ}/providers.tf"]
+    assert 'resource "azurerm_local_network_gateway" "vpn_dc"' in out
+    assert "azapi_resource" not in out and "ephemeral" not in out and "azurerm_key_vault" not in out
+    assert "azapi" not in providers and 'variable "virtual_network_gateway_id"' not in providers
+    (found,) = (n for n in plumbing_notes(m) if "connection isn't rendered" in n.text)
+    assert found.severity == "action" and note_comment(found) in out
+    assert "record a secret reference to it (ciamSecretRef, ciamRefUri azkv://<vault>/<secret>)" in found.how[0]
+    assert "name that role in the link's ciamSharedKeyRole, under an approved change" in found.how[0]
+    return found.text
+
+
+def test_a_vpn_whose_shared_key_isn_t_a_recorded_key_vault_secret_renders_no_connection():
+    assert _unrecorded(_vpn_dc(ciamSharedKeyRole=())).endswith(
+        "the record names no secret holding its pre-shared key (ciamSharedKeyRole)")
+    assert _unrecorded(_vpn_dc()).endswith(
+        "the environment binds no secret reference to its pre-shared key's role vpn-dc-psk (ciamSharedKeyRole)")
+    other = entry(ALPHA, "vpn-dc-psk", "ciamSecretRef", ciamBindingRole="vpn-dc-psk", ciamRefUri="vault://kv/psk")
+    assert _unrecorded(_vpn_dc(), other).endswith(
+        "its pre-shared key's reference vault://kv/psk (role vpn-dc-psk) isn't a Key Vault secret (azkv://)")
 
 
 def test_an_existing_vpn_connection_is_not_adopted():
@@ -183,12 +220,13 @@ def test_an_existing_vpn_connection_is_not_adopted():
 
 def test_an_azapi_vpn_connection_translates_its_shared_key_a_secure_parameter():
     group = parse(f"dn: {ALPHA}\nchangetype: modify\nadd: ciamResourceGroup\nciamResourceGroup: rg-ciam-prod\n")
-    m = model(alpha=(_vpn_dc(),), changes=(*ADD_ON, *group))[1]
+    m = model(alpha=(_vpn_dc(), PSK), changes=(*ADD_ON, *group))[1]
     templates = arm_translation(m, render_landing(m), "Azure network").templates.values()
     connection = next(r for t in templates for r in t.resources if r.type == "Microsoft.Network/connections")
     template = next(t for t in templates if connection in t.resources)
     secret = next(p for p in template.parameters if p.secure)
     assert connection.properties["sharedKey"] == Param(secret.name) and "fills it from the vault" in secret.description
+    assert "Key Vault secret vpn-dc-psk" in secret.description
     assert connection.properties["connectionType"] == "IPsec" and "Role" in str(connection.fields["tags"])
 
 
