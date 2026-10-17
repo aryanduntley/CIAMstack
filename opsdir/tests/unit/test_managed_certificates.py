@@ -62,10 +62,10 @@ def _row(key, subject, fp=None, sha1=None, serial=None, issuer="CN=Public CA R11
                  "ciamRevocationReason": "unspecified" if revoked else None, "ciamObjectState": state}
 
 
-def _imported(d, rows=(), state="complete", problems=()):
-    inv = inventory_group(managed_inventory_entry(d, SOURCE, AT, state, problems, ("\\VED\\Policy\\Example",),
+def _imported(d, rows=(), state="complete", problems=(), source=SOURCE):
+    inv = inventory_group(managed_inventory_entry(d, source, AT, state, problems, ("\\VED\\Policy\\Example",),
                                                   "https://tpp.example.test/vedsdk"),
-                          tuple(managed_entry(d, SOURCE, k, f) for k, f in rows))
+                          tuple(managed_entry(d, source, k, f) for k, f in rows))
     return after_import(d, Imported((ou_entry(MANAGED),), (inv,), ()))
 
 
@@ -127,6 +127,36 @@ def test_a_linked_earlier_version_is_renewed_exactly():
     disabled = _row("v2", "CN=web.example.test", serial="0B", nb="2026-09-01", na="2027-09-01", state="disabled")
     d = _imported(_base(_cert("web", extra="ciamSerialNumber: 0A\n")), (old, disabled))
     assert _states(d) == {"web": MANAGED_STATE}
+
+
+def test_each_manager_holding_a_certificate_is_judged_on_its_own():
+    # venafi-prod and a key vault both hold `shared` (one provisions into the other): managed in one, renewed in the
+    # other; `twice` was renewed by each; `one-side` is held by the vault only; `none` by neither
+    d = _base(_cert("shared"), _cert("twice", fp="99:00"), _cert("one-side", fp="AA:00"), _cert("none", fp="CC:00"))
+    d = _imported(d, (_row("g1", "CN=shared.example.test", fp=FP, names=("shared.example.test",)),
+                      _row("g2", "CN=twice.example.test", nb="2026-09-01", na="2027-09-01")))
+    old = _row("k1", "CN=shared.example.test", fp=FP, names=("shared.example.test",))
+    old[1].update(ciamRenewedAs="k2")
+    new = _row("k2", "CN=shared.example.test", fp="EE:00", nb="2026-09-15", na="2028-09-15",
+               names=("shared.example.test",))
+    d = _imported(d, (old, new, _row("k3", "CN=twice.example.test", nb="2026-08-01", na="2027-08-01"),
+                      _row("k4", "CN=w", fp="AA:00")), source="kv-prod")
+    done = reconcile_managed(d, AS_OF)
+    assert [(r.cert.attrs["cn"][0], r.inventory.attrs["cn"][0] if r.inventory else None, r.state) for r in done] == [
+        ("none", None, NOT_MANAGED), ("one-side", "kv-prod", MANAGED_STATE),
+        ("shared", "kv-prod", RENEWED), ("shared", "venafi-prod", MANAGED_STATE),
+        ("twice", "kv-prod", RENEWED), ("twice", "venafi-prod", RENEWED)]
+    assert unrecorded(d, done, AS_OF) == ()
+    f = _plan(d)
+    renewed = sorted(t.split(":", 1)[0] for _, t, _, _ in f.actions)
+    assert renewed == ["Certificate `shared` was renewed by kv-prod", "Certificate `twice` was renewed by kv-prod",
+                       "Certificate `twice` was renewed by venafi-prod"]
+    # counted once each, however many managers hold them
+    assert list(f.ok) == ["2 certificate(s) of the record managed by a certificate manager with nothing wrong "
+                          "reported."]
+    rows = managed_rows(d, None, AS_OF)
+    assert [(r[0], r[1], r[7]) for r in rows if r[0] == "shared"] == [("shared", "kv-prod", RENEWED),
+                                                                      ("shared", "venafi-prod", MANAGED_STATE)]
 
 
 def test_a_serial_matches_only_with_the_same_issuer():

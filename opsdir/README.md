@@ -359,7 +359,7 @@ responder that refused, doesn't know the certificate or contradicts the CA's inv
 observation missed.
 
 Certificate managers' inventories (`domains/pki/managed.py`): what a certificate manager (Venafi / CyberArk Certificate
-Manager, Self-Hosted and SaaS, first; a key vault's certificates later) says it holds is recorded under `ou=managed-certificates`, metadata
+Manager, Self-Hosted and SaaS; Azure Key Vault's certificates) says it holds is recorded under `ou=managed-certificates`, metadata
 only: per collection source a `ciamManagedInventory` (cn: the source's name; `ciamInventoryAt`, `ciamInventoryState`
 complete, incomplete or denied for the folders it lists, `ciamInventoryPrefix`, `ciamProviderRef` the manager's
 address, `ciamInventoryProblem`) and per certificate a `ciamManagedCertificate` (cn: the manager's id; serial,
@@ -370,12 +370,13 @@ wildcards kept), `ciamManagerPath`, `ciamManagement` unassigned, monitored, enro
 trigger), once revoked as the manager says `ciamRevokedAt` and `ciamRevocationReason`, and for an earlier version the
 manager links `ciamRenewedAs`, the cn of the certificate that replaced it). A manager is
 never a CA's issuance record: it holds what it discovered, was given or enrolls, so a record certificate it doesn't hold
-is **not-managed**, never confirmed missing, even when its inventory is complete. A record certificate is found by its
+is **not-managed**, never confirmed missing, even when its inventory is complete. A record certificate is found in each inventory by its
 SHA-256 fingerprint, else by the SHA-1 thumbprint of the PEM the record holds of it, else by serial and issuer (subject
 when either records no issuer), else by subject and validity, and is **managed**, **renewed** (the manager holds a newer
 certificate for it that the record doesn't: exactly the one an earlier version found names (`ciamRenewedAs`), else
 inferred: a newer one for the same subject and issuer), **revoked**, **disabled** (its management is) or **in-error**
-(the manager reports a problem now). Certificates in service (an earlier version never is) no record certificate is
+(the manager reports a problem now), at each manager holding it or what it was renewed as, judged on its own (two
+managers often hold the same certificate: one provisions it into the other). Certificates in service (an earlier version never is) no record certificate is
 found or renewed as are **unrecorded**. `opsdir report managed-certificates` lists every record certificate with its state, how it is
 managed, who is notified and where it is installed, then every unrecorded one. `opsdir plan` (area `Certificate`;
 nothing when no manager inventory is recorded) blocks on a certificate the manager says was revoked that the record

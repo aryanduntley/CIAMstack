@@ -8,9 +8,11 @@ is never a CA's issuance record, so a certificate it doesn't hold isn't missing 
 complete (that says only that its folders were listed in full). The core names no manager: each adapter reads its own
 (a Venafi policy folder, a key vault's certificates) into these two classes.
 
-A record certificate is found in the inventories by its SHA-256 fingerprint, else by the SHA-1 thumbprint of the PEM
+A record certificate is found in each inventory by its SHA-256 fingerprint, else by the SHA-1 thumbprint of the PEM
 the record holds of it (for managers giving no SHA-256), else by serial number with its issuer (its subject when either
-side records no issuer), else by subject and validity, and is in one state:
+side records no issuer), else by subject and validity. Each inventory is judged on its own (two managers often hold
+the same certificate: one provisions it into the other), and the certificate is in one state at each manager holding it
+or what it was renewed as (not-managed only when none does):
 
   managed      found, and the manager reports nothing wrong with it
   renewed      the manager holds a newer certificate for it that no record certificate is: it was renewed, and the
@@ -189,22 +191,27 @@ def _state(found, newer):
     return IN_ERROR if values(found, "ciamManagerProblem") else MANAGED_STATE
 
 
-def _inventory_of(d, e):
-    return get(d, e.dn.split(",", 1)[1]) if e is not None else None
+def _reconciled_in(d, inventory, certs, as_of):
+    """{record certificate's DN: its reconciliation with one inventory}, for those the inventory holds or renewed."""
+    rows = managed_of(d, inventory)
+    found = tuple((c, find_managed(c, rows)) for c in certs)
+    matched = {f.norm for _, f in found if f is not None}
+    free = tuple(r for r in rows if r.norm not in matched)
+    return {c.norm: ManagedReconciled(c, inventory, f, _state(f, n), n)
+            for c, f in found for n in (renewal_of(c, f, free, as_of),) if f is not None or n is not None}
 
 
 def reconcile_managed(d, as_of):
     """Every record certificate reconciled with the certificate managers' inventories (empty when the record holds
-    none): managed, renewed, revoked, disabled, in-error or not-managed, never missing."""
+    none), once per inventory holding it or holding what it was renewed as (each manager judged on its own: what one
+    says never hides what another says), else once as not-managed; never missing."""
     held = managed_inventories(d)
     if not held:
         return ()
-    rows = tuple(r for inv in held for r in managed_of(d, inv))
-    found = tuple((c, find_managed(c, rows)) for c in children(d, CERTIFICATES, "ciamCertificate"))
-    matched = {f.norm for _, f in found if f is not None}
-    free = tuple(r for r in rows if r.norm not in matched)
-    return tuple(ManagedReconciled(c, _inventory_of(d, f if f is not None else n), f, _state(f, n), n)
-                 for c, f in found for n in (renewal_of(c, f, free, as_of),))
+    certs = children(d, CERTIFICATES, "ciamCertificate")
+    per = tuple(_reconciled_in(d, inv, certs, as_of) for inv in held)
+    return tuple(r for c in certs for rs in (tuple(p[c.norm] for p in per if c.norm in p),)
+                 for r in (rs or (ManagedReconciled(c, None, None, NOT_MANAGED, None),)))
 
 
 def unrecorded(d, done, as_of):
@@ -314,7 +321,7 @@ def check_managed_certificates(ctx):
     done = reconcile_managed(d, ctx.as_of)
     at_ca = {r.cert.norm: r.state for r in reconciled(d, ctx.as_of)}
     states = tuple(f for r in done for f in (_state_finding(d, r, at_ca.get(r.cert.norm)),) if f)
-    managed = sum(1 for r in done if r.state == MANAGED_STATE)
+    managed = len({r.cert.norm for r in done if r.state == MANAGED_STATE})
     return merge_findings([findings(blockers=[f for k, f in states if k == "blocker"],
                                     actions=[f for k, f in states if k == "action"]),
                            findings(actions=[*_unrecorded_findings(d, done, ctx.as_of), *_inventory_findings(d)],
@@ -345,10 +352,10 @@ def _managed_row(d, cert, inventory, shown, state, owner, detail):
 
 
 def managed_rows(d, dn, as_of):
-    """One row per record certificate (its state; the managed certificate found, else (none found, or an earlier
-    version found) the one it was renewed as; how it is managed, who is notified, where it is installed, its renewal
-    owner and what is wrong), then one per unrecorded certificate in service the inventories hold, with the names it
-    names (those the record holds said)."""
+    """One row per record certificate and manager holding it, or one when none does (its state; the managed certificate
+    found, else (none found, or an earlier version found) the one it was renewed as; how it is managed, who is
+    notified, where it is installed, its renewal owner and what is wrong), then one per unrecorded certificate in
+    service the inventories hold, with the names it names (those the record holds said)."""
     done = reconcile_managed(d, as_of)
     names = record_names(d)
     owner = lambda c: owner_label(d, c) if values(c, "ciamOwner") else ""       # noqa: E731
