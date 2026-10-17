@@ -78,6 +78,7 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2116,ou=changes,dc=ciam-ops",Read the linked ServiceNow tickets again as evidence (the legacy model's states in neutral terms),CAB 2026-09-18,approved
 "cn=CHG-2117,ou=changes,dc=ciam-ops",Restart the target directory servers for the September kernel patches,CAB 2026-09-18,approved
 "cn=CHG-2120,ou=changes,dc=ciam-ops","Read the lab's internal CA from its Vault PKI mount (its endpoints, roles and the certificates it keeps, metadata only)",CAB 2026-09-18,approved
+"cn=CHG-2121,ou=changes,dc=ciam-ops","Read the corporate EJBCA's CAs (its certificate profiles and the certificates they issued, metadata only)",CAB 2026-09-18,approved
 "cn=CHG-2122,ou=changes,dc=ciam-ops","Read production's AWS Private CA hierarchy (its CAs, endpoints, the templates its audit reports show and the certificates they list, metadata only)",CAB 2026-09-18,approved
 "cn=CHG-2123,ou=changes,dc=ciam-ops","Read the standby's Google Cloud CA pools (their CAs, endpoints, issuance policies, templates and the certificates they keep, metadata only)",CAB 2026-09-18,approved
 "cn=CHG-2125,ou=changes,dc=ciam-ops",Read the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate Manager; metadata only),CAB 2026-09-18,approved

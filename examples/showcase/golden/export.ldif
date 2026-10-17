@@ -1999,6 +1999,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's internal CA from its Vault PKI mount (its endpoints,
   roles and the certificates it keeps, metadata only)
 
+dn: cn=CHG-2121,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2121
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the corporate EJBCA's CAs (its certificate profiles and the ce
+ rtificates they issued, metadata only)
+
 dn: cn=CHG-2122,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange
@@ -2661,6 +2671,21 @@ ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
 ciamSubject: CN=ldap.id.example-aero.test
 ciamSubjectAltName: ldap.id.example-aero.test
 
+dn: cn=ds-ldaps-cloud,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: ds-ldaps-cloud
+ciamCertPurpose: tls-server
+ciamFingerprint: C9:40:97:E7:02:4F:CE:DE:55:30:FB:14:41:74:EF:43:05:89:F9:9F:A
+ 7:17:1A:86:D7:1C:9B:A3:BA:40:AE:D2
+ciamIssuer: CN=Example Aero Cloud Issuing CA G1
+ciamNotAfter: 20270803000000Z
+ciamNotBefore: 20260803000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
+ciamSubject: CN=ldap.id.cloud.example-aero.test
+ciamSubjectAltName: ldap.id.cloud.example-aero.test
+
 dn: cn=ds-ldaps-lab,ou=certificates,dc=ciam-ops
 objectClass: top
 objectClass: ciamCertificate
@@ -2745,6 +2770,28 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationDays: 365
 ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
 
+dn: cn=ejbca.inventory.shared.s1-f0c45ec170c3ee92,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: ejbca.inventory.shared.s1-f0c45ec170c3ee92
+ciamChangeRef: cn=CHG-2121,ou=changes,dc=ciam-ops
+ciamImportScope: cn=Example Aero Root CA G2,ou=certificate-authorities,dc=ciam
+ -ops
+ciamImportScope: cn=Example Aero Root CA G2,ou=issued-certificates,dc=ciam-ops
+ciamImportScope: cn=Example Aero Root CA G2/SUBCA,ou=certificate-templates,dc=
+ ciam-ops
+ciamImportScope: cn=Example Aero Cloud Issuing CA G1,ou=certificate-authoritie
+ s,dc=ciam-ops
+ciamImportScope: cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc
+ =ciam-ops
+ciamImportScope: cn=Example Aero Cloud Issuing CA G1/ciam-clients,ou=certifica
+ te-templates,dc=ciam-ops
+ciamImportScope: cn=Example Aero Cloud Issuing CA G1/ciam-ldaps,ou=certificate
+ -templates,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: ejbca/inventory
+
 dn: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2815,6 +2862,48 @@ ciamRequiredSignatures: 0
 ciamSubjectFromRequest: TRUE
 ciamTemplateAuthority: cn=Example Aero CIAM Internal CA,ou=certificate-authori
  ties,dc=ciam-ops
+
+dn: cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertAuthority
+cn: Example Aero Cloud Issuing CA G1
+ciamProviderRef: CloudIssuingCA-G1
+ciamTemplateName: Example Aero Cloud Issuing CA G1/ciam-ldaps
+ciamTemplateName: Example Aero Cloud Issuing CA G1/ciam-clients
+
+dn: cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertInventory
+cn: Example Aero Cloud Issuing CA G1
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
+ciamProviderRef: CloudIssuingCA-G1
+
+dn: cn=Example Aero Cloud Issuing CA G1/ciam-clients,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: Example Aero Cloud Issuing CA G1/ciam-clients
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.2
+ciamMaxValidityDays: 90
+ciamTemplateAuthority: cn=Example Aero Cloud Issuing CA G1,ou=certificate-auth
+ orities,dc=ciam-ops
+description: EJBCA certificate profile ciam-clients (end entity profiles ciam-
+ services)
+
+dn: cn=Example Aero Cloud Issuing CA G1/ciam-ldaps,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: Example Aero Cloud Issuing CA G1/ciam-ldaps
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.1
+ciamMaxValidityDays: 397
+ciamTemplateAuthority: cn=Example Aero Cloud Issuing CA G1,ou=certificate-auth
+ orities,dc=ciam-ops
+description: EJBCA certificate profile ciam-ldaps (end entity profiles ciam-di
+ rectory)
 
 dn: cn=Example Aero Cloud Issuing CA,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
@@ -3015,6 +3104,33 @@ ciamSubjectFromRequest: TRUE
 ciamTemplateAuthority: cn=Example Aero Mesh CA,ou=certificate-authorities,dc=c
  iam-ops
 description: CIAM TLS server certificates
+
+dn: cn=Example Aero Root CA G2,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertAuthority
+cn: Example Aero Root CA G2
+ciamProviderRef: RootCA-G2
+ciamTemplateName: Example Aero Root CA G2/SUBCA
+
+dn: cn=Example Aero Root CA G2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertInventory
+cn: Example Aero Root CA G2
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
+ciamProviderRef: RootCA-G2
+
+dn: cn=Example Aero Root CA G2/SUBCA,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: Example Aero Root CA G2/SUBCA
+ciamMaxValidityDays: 9125
+ciamTemplateAuthority: cn=Example Aero Root CA G2,ou=certificate-authorities,d
+ c=ciam-ops
+description: EJBCA certificate profile SUBCA (end entity profiles EMPTY)
 
 dn: cn=Example Aero Standby Issuing CA,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
@@ -6502,6 +6618,19 @@ ciamOccurrenceOf: cn=svc-sso,ou=bindings,env=prod,cloud=source,ou=environments
  ,dc=ciam-ops
 ciamOccurringAttr: ciamFqdn
 
+dn: cn=1A2B3C4D5E6F708192A3,cn=Example Aero Root CA G2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 1A2B3C4D5E6F708192A3
+ciamFingerprint: 95:5B:67:EB:1C:E0:55:3C:08:83:7C:CC:DD:62:47:D3:EF:6C:15:2C:9
+ 3:63:24:7C:37:C3:2E:AB:0E:D5:EC:73
+ciamNotAfter: 20450110000000Z
+ciamNotBefore: 20250110000000Z
+ciamRequester: SYSTEMCA
+ciamSerialNumber: 1a2b3c4d5e6f708192a3
+ciamSubject: CN=Example Aero Root CA G2,O=Example Aero
+
 dn: cn=1ba5b9f2e1214443,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -6549,6 +6678,20 @@ cn: 28d37a64d1f2098a
 ciamLocator: /connectors/0/port
 ciamSettingRaw: 8085
 ciamSettingValue: 8085
+
+dn: cn=2B3C4D5E6F708192A3B4,cn=Example Aero Root CA G2,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 2B3C4D5E6F708192A3B4
+ciamFingerprint: 74:F2:88:1B:BC:AF:3F:D7:41:4D:DA:00:C0:43:7E:92:62:85:2C:0B:E
+ 8:F0:DA:90:91:0D:F1:97:49:04:74:4F
+ciamNotAfter: 20350201000000Z
+ciamNotBefore: 20250201000000Z
+ciamRequester: SYSTEMCA
+ciamSerialNumber: 2b3c4d5e6f708192a3b4
+ciamSubject: CN=Example Aero Cloud Issuing CA G1,O=Example Aero
+ciamTemplateName: Example Aero Root CA G2/SUBCA
 
 dn: cn=2f6c473084e7ea6c,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -6656,6 +6799,22 @@ ciamSubject: CN=Example Aero Cloud Issuing CA,O=Example Aero
 ciamTemplateName: Example Aero Cloud Root CA/SubordinateCACertificate_PathLen0
  /V1
 
+dn: cn=5D1E0A7C3B2F4E6D8A91,cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 5D1E0A7C3B2F4E6D8A91
+ciamFingerprint: 2B:40:0F:D6:EA:54:54:2F:B8:B8:A3:BB:9C:55:27:0C:14:B0:7F:AB:0
+ 4:A2:4E:A6:76:8C:C5:6D:DE:5E:2F:B0
+ciamNotAfter: 20270803000000Z
+ciamNotBefore: 20260803000000Z
+ciamRequester: ldap.id.cloud
+ciamRevocationReason: superseded
+ciamRevokedAt: 20260918100000Z
+ciamSerialNumber: 5d1e0a7c3b2f4e6d8a91
+ciamSubject: CN=ldap.id.cloud.example-aero.test
+ciamTemplateName: Example Aero Cloud Issuing CA G1/ciam-ldaps
+
 dn: cn=5e:f7:4b:e9:02:0a:8b:47:3f:e3:6f:f9:88:32:0c:8b:15:6f:9d:45,cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -6705,6 +6864,20 @@ ciamNotBefore: 20260302000000Z
 ciamSerialNumber: 6d02
 ciamSubject: CN=Example Aero Standby Issuing CA,O=Example Aero
 ciamTemplateName: Example Aero Standby Root CA/ciam-root
+
+dn: cn=6E2F1B8D4C305F7E9BA2,cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 6E2F1B8D4C305F7E9BA2
+ciamFingerprint: 41:43:BC:D1:D9:F7:62:2C:48:42:49:9C:01:52:4B:A6:3B:E3:2A:08:3
+ 5:DD:69:F0:C4:BE:30:5B:8C:E9:62:89
+ciamNotAfter: 20271020000000Z
+ciamNotBefore: 20260918000000Z
+ciamRequester: ldap.id.cloud
+ciamSerialNumber: 6e2f1b8d4c305f7e9ba2
+ciamSubject: CN=ldap.id.cloud.example-aero.test
+ciamTemplateName: Example Aero Cloud Issuing CA G1/ciam-ldaps
 
 dn: cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 objectClass: top
@@ -6870,6 +7043,20 @@ ciamNotAfter: 20270901000000Z
 ciamNotBefore: 20260901000000Z
 ciamSerialNumber: 7b698df1df70b3ee260b528353a150bd8686aaac
 ciamSubject: CN=ldap.lab.example-aero.test
+
+dn: cn=7F30AC9E5D416A8FACB3,cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 7F30AC9E5D416A8FACB3
+ciamFingerprint: 11:08:99:1E:A1:57:F5:D3:F6:80:E8:F7:9E:BE:DE:C1:9D:92:60:75:4
+ 4:82:DD:3F:7E:EB:DF:C5:73:8B:FD:05
+ciamNotAfter: 20261130000000Z
+ciamNotBefore: 20260901000000Z
+ciamRequester: idm-sync
+ciamSerialNumber: 7f30ac9e5d416a8facb3
+ciamSubject: CN=idm-sync.id.cloud.example-aero.test
+ciamTemplateName: Example Aero Cloud Issuing CA G1/ciam-clients
 
 dn: cn=827b5d26323c2ba0,cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
 objectClass: top
@@ -7196,6 +7383,14 @@ objectClass: ciamRevocationEndpoint
 cn: ca-issuers-1
 ciamEndpointUrl: http://pki.lab.example-aero.test/v1/pki-internal/issuer/2f6d3
  c41-8a5e-4b7c-9d10-6e2a7f5b1c08/der
+ciamRevocationKind: ca-issuers
+
+dn: cn=ca-issuers-1,cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: ca-issuers-1
+ciamEndpointUrl: http://pki.example-aero.test/ca/cloud-issuing-g1.cer
 ciamRevocationKind: ca-issuers
 
 dn: cn=ca-issuers-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
@@ -7608,6 +7803,14 @@ objectClass: ciamObject
 objectClass: ciamRevocationEndpoint
 cn: crl-1
 ciamEndpointUrl: http://pki.lab.example-aero.test/v1/pki-internal/crl
+ciamRevocationKind: crl
+
+dn: cn=crl-1,cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: crl-1
+ciamEndpointUrl: http://pki.example-aero.test/crl/cloud-issuing-g1.crl
 ciamRevocationKind: crl
 
 dn: cn=crl-1,cn=Example Aero Cloud Issuing CA,ou=certificate-authorities,dc=ciam-ops
@@ -8430,6 +8633,14 @@ objectClass: ciamObject
 objectClass: ciamRevocationEndpoint
 cn: ocsp-1
 ciamEndpointUrl: http://pki.lab.example-aero.test/v1/pki-internal/ocsp
+ciamRevocationKind: ocsp
+
+dn: cn=ocsp-1,cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: ocsp-1
+ciamEndpointUrl: http://ocsp.pki.example-aero.test/
 ciamRevocationKind: ocsp
 
 dn: cn=ocsp-1,cn=Example Aero Cloud Issuing CA,ou=certificate-authorities,dc=ciam-ops

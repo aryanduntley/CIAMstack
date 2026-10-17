@@ -112,6 +112,7 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
                                     "20260923090000Z")),
             ("CHG-2110", SHOWCASE / "changes" / "CHG-2110-target-corporate-managed-domain.ldif"),
             ("CHG-2120", ImportStep("hashicorp-vault/pki", SHOWCASE / "exports" / "vault-pki", "20260923090000Z")),
+            ("CHG-2121", ImportStep("ejbca/inventory", SHOWCASE / "exports" / "ejbca-pki", "20260923090000Z")),
             ("CHG-2122", ImportStep("aws/private-ca", SHOWCASE / "exports" / "aws-private-ca", "20260923090000Z")),
             ("CHG-2123", ImportStep("gcp/private-ca", SHOWCASE / "exports" / "gcp-private-ca", "20260923090000Z")),
             ("CHG-2125", ImportStep("venafi/certificates", SHOWCASE / "exports" / "venafi", "20260923090000Z")))

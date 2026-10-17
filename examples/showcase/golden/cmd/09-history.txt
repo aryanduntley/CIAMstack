@@ -722,6 +722,22 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2120  insert  cn=crl-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2120  insert  cn=ocsp-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2120  insert  cn=hashicorp-vault.pki.shared.s1-411f1c33e8ce1881,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=Example Aero Cloud Issuing CA G1/ciam-clients,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=Example Aero Cloud Issuing CA G1/ciam-ldaps,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=Example Aero Root CA G2,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=Example Aero Root CA G2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=Example Aero Root CA G2/SUBCA,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=1A2B3C4D5E6F708192A3,cn=Example Aero Root CA G2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=2B3C4D5E6F708192A3B4,cn=Example Aero Root CA G2,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=5D1E0A7C3B2F4E6D8A91,cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=6E2F1B8D4C305F7E9BA2,cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=7F30AC9E5D416A8FACB3,cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=ca-issuers-1,cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=crl-1,cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=ocsp-1,cn=Example Aero Cloud Issuing CA G1,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2121  insert  cn=ejbca.inventory.shared.s1-f0c45ec170c3ee92,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Issuing CA,ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Issuing CA,ou=issued-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Issuing CA/EndEntityCertificate/V1,ou=certificate-templates,dc=ciam-ops
@@ -768,4 +784,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=venafi.certificates.shared.s1-c0e7a3215724e802,ou=imports,dc=ciam-ops
-(768 rows)
+(784 rows)

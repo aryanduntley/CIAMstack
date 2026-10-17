@@ -602,6 +602,18 @@ EXPECTED = MappingProxyType({
         ("A281", "Certificate", "Certificate template `Example Aero CIAM Internal CA/ciam-client` lets the requester "
          "name the subject", "the lab's ciam-client role issues client certificates in any name, and Vault's default "
          "policy lets every token request them", None, "CHG-2120"),
+        # the corporate EJBCA read in (CHG-2121): the target directory's LDAPS certificate was revoked as superseded by
+        # a renewal the record doesn't hold, and the root's sub-CA certificate names no CRL or OCSP
+        ("A282", "Certificate", "Certificate `ds-ldaps-cloud` was revoked by Example Aero Cloud Issuing CA G1",
+         "EJBCA revoked the target directory's LDAPS certificate on 2026-09-18 (superseded) when it was renewed; the "
+         "record still names the old one", None, "CHG-2121"),
+        ("A283", "Certificate", "Example Aero Cloud Issuing CA G1 issued 1 active certificate(s) from template "
+         "`Example Aero Cloud Issuing CA G1/ciam-ldaps` the record holds none of",
+         "the renewal of ds-ldaps-cloud is active at the CA but not in the record, and nobody renews the template",
+         None, "CHG-2121"),
+        ("A284", "Certificate", "Certification authority `Example Aero Root CA G2` publishes no CRL distribution "
+         "point or OCSP responder", "the root's sub-CA certificate (the cloud issuing CA's) names no CRL or OCSP: "
+         "nothing can check whether the issuing CA was revoked", None, "CHG-2121"),
         # production's AWS Private CA (CHG-2122) and the standby's Google Cloud CA pools (CHG-2123): templates that let
         # broad groups name the subject of client certificates, and a CA nothing can check revocation against
         ("A286", "Certificate", "Certificate template `Example Aero Cloud Issuing CA/"

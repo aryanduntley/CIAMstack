@@ -189,6 +189,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2120", "Read the lab's internal CA from its Vault PKI mount (its endpoints, roles and the certificates it "
      "keeps, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2121", "Read the corporate EJBCA's CAs (its certificate profiles and the certificates they issued, metadata "
+     "only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2122", "Read production's AWS Private CA hierarchy (its CAs, endpoints, the templates its audit reports show "
      "and the certificates they list, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2123", "Read the standby's Google Cloud CA pools (their CAs, endpoints, issuance policies, templates and "

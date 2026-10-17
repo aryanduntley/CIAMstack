@@ -1,0 +1,7 @@
+Example Aero Root CA G2: no active certificate names its revocation endpoints (EJBCA's REST API doesn't give the CA's own): the record's 0 kept
+Example Aero Root CA G2 (pki-hq: RootCA-G2): 2 certificate(s), 0 endpoint(s), 1 template(s), complete
+Example Aero Cloud Issuing CA G1: revocation endpoints as certificate 6E2F1B8D4C305F7E9BA2 names them (EJBCA's REST API doesn't give the CA's own)
+Example Aero Cloud Issuing CA G1 (pki-hq: CloudIssuingCA-G1): 3 certificate(s), 3 endpoint(s), 2 template(s), complete
+who may request from the EJBCA templates and what they let requesters do aren't read: EJBCA's REST API exposes no roles, approval profiles or subject DN override: unknown
+CHG-2121: 16 change(s) applied, the import run among them
+exit 0

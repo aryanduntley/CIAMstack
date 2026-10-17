@@ -1,23 +1,24 @@
-"""Collecting an importer's export from the live system, read-only (`opsdir collect`): an adapter's collector says
-which calls produce the export's files (core.contract Collector, Command, Request); here they are run in rounds, each
-asking for what the previous ones' outputs name (a list, then each item's details), through a runner the caller gives
-(the effect: live.run_call), so this module stays pure.
+"""Collecting an importer's export from the live system, read-only (`opsdir collect`): an adapter's collector says which
+calls produce the export's files (core.contract Collector, Command, Request); here they are run in rounds, each asking
+for what the previous ones' outputs name (a list, then each item's details), through a runner the caller gives (the
+effect: live.run_call), so this module stays pure.
 
-A collection is complete or it isn't imported: an import makes the record's subtrees exactly what the export holds, so
-a missing file would delete what the record holds. Any call that fails, a collector that keeps asking past ROUNDS
-rounds or CALLS calls, a step that names a problem instead of a call, or a command carrying a debug switch (provider
-debug output can print credentials) leaves the
+A collection is complete or it isn't imported: an import makes the record's subtrees exactly what the export holds, so a
+missing file would delete what the record holds. Any call that fails, a collector that keeps asking past ROUNDS rounds
+or CALLS calls, a step that names a problem instead of a call, a command carrying a debug switch (provider debug output
+can print credentials) or a POST to a URL its collector doesn't declare a read-only query (Collector queries) leaves the
 collection incomplete, with its problems. What a complete one ran is its evidence: the identity the provider saw, each
-call (the command or URL, never a credential) with the SHA-256 of what it returned and the file it became, and the
-credential references it resolved; the applied import records it with the import run (domains.governance.imports).
-Whatever the outcome, a run under a change records the attempt (attempt: domains.governance.attempts), so a failed
-one stays visible with its problems and the calls it made.
-Resolved credentials are masked (redact) wherever a call's error output or a problem would show them. An observing
-Request's output (a revocation endpoint's answer) is an observation (core.observation)."""
+call (the command, or the method, URL and a query's body: never a credential) with the SHA-256 of what it returned and
+the file it became, and the credential references it resolved; the applied import records it with the import run
+(domains.governance.imports). Whatever the outcome, a run under a change records the attempt (attempt:
+domains.governance.attempts), so a failed one stays visible with its problems and the calls it made. Resolved
+credentials are masked (redact) wherever a call's error output or a problem would show them. An observing Request's
+output (a revocation endpoint's answer) is an observation (core.observation)."""
 import hashlib
 import re
 import shlex
 from typing import NamedTuple
+from urllib.parse import urlsplit
 
 from ..core.contract import Collector, Command, Request
 from ..domains.governance.attempts import Attempt
@@ -42,9 +43,10 @@ Collection = NamedTuple("Collection", [("importer", str), ("files", object), ("c
 
 
 def provenance(call):
-    """What a call runs, in words that never hold a credential: the command line, or GET and the URL."""
+    """What a call runs, in words that never hold a credential: the command line, GET and the URL, or POST, the URL and
+    the read-only query's body."""
     if isinstance(call, Request):
-        return f"GET {call.url}"
+        return f"POST {call.url} {call.body}" if call.body is not None else f"GET {call.url}"
     return shlex.join(call.argv) + (" (credentials on standard input)" if call.stdin else "")
 
 
@@ -55,10 +57,20 @@ def credential_refs(call):
     return tuple(call.secrets)
 
 
-def refused(call):
-    """Why a call is never run (a debug switch on a command; a step that is a problem text, not a call), or None."""
+def is_query(call, queries):
+    """Whether a POST Request's URL path is one of the read-only query endpoints its collector declares (queries:
+    regular expressions searched in the path)."""
+    path = urlsplit(call.url).path
+    return any(re.search(q, path) for q in queries)
+
+
+def refused(call, queries=()):
+    """Why a call is never run (a debug switch on a command; a POST to a URL the collector's queries don't declare a
+    read-only query; a step that is a problem text, not a call), or None."""
     if isinstance(call, str):
         return call
+    if isinstance(call, Request) and call.body is not None and (call.observe or not is_query(call, queries)):
+        return f"{provenance(call)}: only a read-only query its collector declares is posted"
     found = [a for a in (call.argv if isinstance(call, Command) else ()) for s in DEBUG_SWITCHES
              if a == s or a.startswith(s + "=")]
     return f"{provenance(call)}: debug switches are never run ({', '.join(found)})" if found else None
@@ -108,7 +120,7 @@ def _round(collector, d, m, run, options, done, calls, rounds):
     if rounds >= ROUNDS or len(calls) + len(wanted) > CALLS:
         return calls, done, (f"{collector.importer}: still asking for more after {rounds} rounds and {len(calls)} "
                              f"calls (at most {ROUNDS} rounds and {CALLS} calls)",)
-    bad = tuple(x for x in (refused(c) for _, c in wanted) if x)
+    bad = tuple(x for x in (refused(c, collector.queries) for _, c in wanted) if x)
     if bad:
         return calls, done, bad
     results = tuple(r for p, c in wanted for r in _expanded(p, c, *_kept(c, *run(c))))

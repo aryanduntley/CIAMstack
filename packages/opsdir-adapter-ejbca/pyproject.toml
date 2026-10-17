@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-ejbca"
+version = "0.1.0"
+description = "opsdir PKI adapter for Keyfactor EJBCA: its CAs, certificate profiles, revocation endpoints and issued certificates read into the record's PKI over the REST API, metadata only."
+readme = "README.md"
+requires-python = ">=3.11"
+# certificates are read with opsdir-adapter-x509 (the cryptography library)
+dependencies = ["opsdir>=0.1", "opsdir-adapter-x509>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+ejbca = "opsdir_adapter_ejbca.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]

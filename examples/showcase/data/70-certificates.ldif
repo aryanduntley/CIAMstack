@@ -170,3 +170,18 @@ ciamNotAfter: 20270630000000Z
 ciamNotBefore: 20250630000000Z
 ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
 ciamSubject: CN=Example Aero Security Operations, OU=ECA, O=Example Aero
+
+dn: cn=ds-ldaps-cloud,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: ds-ldaps-cloud
+ciamCertPurpose: tls-server
+ciamFingerprint: C9:40:97:E7:02:4F:CE:DE:55:30:FB:14:41:74:EF:43:05:89:F9:9F:A
+ 7:17:1A:86:D7:1C:9B:A3:BA:40:AE:D2
+ciamIssuer: CN=Example Aero Cloud Issuing CA G1
+ciamNotAfter: 20270803000000Z
+ciamNotBefore: 20260803000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
+ciamSubject: CN=ldap.id.cloud.example-aero.test
+ciamSubjectAltName: ldap.id.cloud.example-aero.test

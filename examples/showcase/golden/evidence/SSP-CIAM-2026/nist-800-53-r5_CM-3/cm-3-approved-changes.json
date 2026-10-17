@@ -481,6 +481,12 @@
       "approved"
     ],
     [
+      "cn=CHG-2121,ou=changes,dc=ciam-ops",
+      "Read the corporate EJBCA's CAs (its certificate profiles and the certificates they issued, metadata only)",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
       "cn=CHG-2122,ou=changes,dc=ciam-ops",
       "Read production's AWS Private CA hierarchy (its CAs, endpoints, the templates its audit reports show and the certificates they list, metadata only)",
       "CAB 2026-09-18",
