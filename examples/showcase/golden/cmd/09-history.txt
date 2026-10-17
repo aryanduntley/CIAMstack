@@ -780,8 +780,29 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2125  insert  ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21-v3982,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a22,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=venafi.certificates.shared.s1-c0e7a3215724e802,ou=imports,dc=ciam-ops
-(784 rows)
+<TIMESTAMP>          CHG-2126  insert  cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2126  insert  cn=apps-tls/871dfdfbd0b7e95530efe5d4dc825e4b,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2126  insert  cn=ciam-internal-ca/5813ca7c27e1b3b6628e0cdc51b5558a,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2126  insert  cn=supplier-portal-sp-signing/a945c22093e1d32038767c4c525b43ea,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2126  insert  cn=supplier-portal-sp-signing/fe7536e6fca8366e99405584259a9f15,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2126  insert  cn=azure.keyvault-certificates.shared.s1-76d90a8cd2a36974,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2127  insert  cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2127  insert  cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f10,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2127  insert  cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f11,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2127  insert  cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f12,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2127  insert  cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f13,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2127  insert  cn=venafi.saas.shared.s1-91295744e42807b2,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=Example Aero Retired Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=Example Aero Retired Issuing CA/EndEntityServerAuthCertificate/V1,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=7d01,cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=7d02,cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=7d03,cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=crl-1,cn=Example Aero Retired Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2128  insert  cn=aws.private-ca.shared.s1-0e7f7e654a99004f,ou=imports,dc=ciam-ops
+(805 rows)

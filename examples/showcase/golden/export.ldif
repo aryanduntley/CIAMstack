@@ -898,6 +898,21 @@ ciamControlRef: nist-800-53-r5:SC-12
 ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamResponsibility: inherited
 
+dn: cn=aws.private-ca.shared.s1-0e7f7e654a99004f,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: aws.private-ca.shared.s1-0e7f7e654a99004f
+ciamChangeRef: cn=CHG-2128,ou=changes,dc=ciam-ops
+ciamImportScope: cn=Example Aero Retired Issuing CA,ou=certificate-authorities
+ ,dc=ciam-ops
+ciamImportScope: cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=
+ ciam-ops
+ciamImportScope: cn=Example Aero Retired Issuing CA/EndEntityServerAuthCertifi
+ cate/V1,ou=certificate-templates,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: aws/private-ca
+
 dn: cn=aws.private-ca.shared.s1-a17abcade25d996f,ou=imports,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -1053,6 +1068,17 @@ ciamImportScope: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=
  environments,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: azure/external-id
+
+dn: cn=azure.keyvault-certificates.shared.s1-76d90a8cd2a36974,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: azure.keyvault-certificates.shared.s1-76d90a8cd2a36974
+ciamChangeRef: cn=CHG-2126,ou=changes,dc=ciam-ops
+ciamImportScope: cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc
+ =ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: azure/keyvault-certificates
 
 dn: cn=azure.quotas.shared.s1-60d2177c2aeb65cb,ou=imports,dc=ciam-ops
 objectClass: top
@@ -2039,6 +2065,36 @@ ciamChangeStatus: approved
 ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the certificate manager's inventory of the Example Aero folder
   (Venafi / CyberArk Certificate Manager; metadata only)
+
+dn: cn=CHG-2126,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2126
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read production Key Vault kv-ciam-prod's certificates as a certific
+ ate manager's inventory (every version, its policies; metadata only)
+
+dn: cn=CHG-2127,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2127
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the Example Aero SaaS tenant's certificate inventory (CyberArk
+  Certificate Manager - SaaS; metadata only)
+
+dn: cn=CHG-2128,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2128
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read production's former issuing CA in us-west-2 (AWS Private CA, d
+ eleted: its last audit report, metadata only)
 
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
@@ -3034,6 +3090,16 @@ cn: Example Aero Issuing CA 2
 ciamInventoryAt: 20260923083000Z
 ciamInventoryState: complete
 
+dn: cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedInventory
+cn: Example Aero KeyVault ciam-prod
+ciamInventoryAt: 20260923090000Z
+ciamInventoryPrefix: kv-ciam-prod
+ciamInventoryState: complete
+ciamProviderRef: https://kv-ciam-prod.vault.azure.net
+
 dn: cn=Example Aero Mesh CA,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3105,6 +3171,45 @@ ciamTemplateAuthority: cn=Example Aero Mesh CA,ou=certificate-authorities,dc=c
  iam-ops
 description: CIAM TLS server certificates
 
+dn: cn=Example Aero Retired Issuing CA,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertAuthority
+cn: Example Aero Retired Issuing CA
+ciamCaKeyAlgorithm: EC_secp384r1
+ciamCaKeyStorage: FIPS_140_2_LEVEL_3_OR_HIGHER
+ciamCaRestorableUntil: 20261022180000Z
+ciamCaState: deleted
+ciamCaType: subordinate
+ciamProviderRef: arn:aws:acm-pca:us-west-2:111122223333:certificate-authority/
+ 9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b
+ciamTemplateName: Example Aero Retired Issuing CA/EndEntityServerAuthCertifica
+ te/V1
+
+dn: cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertInventory
+cn: Example Aero Retired Issuing CA
+ciamInventoryAt: 20260922173005Z
+ciamInventoryState: complete
+ciamProviderRef: arn:aws:acm-pca:us-west-2:111122223333:certificate-authority/
+ 9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b
+
+dn: cn=Example Aero Retired Issuing CA/EndEntityServerAuthCertificate/V1,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: Example Aero Retired Issuing CA/EndEntityServerAuthCertificate/V1
+ciamApprovalRequired: FALSE
+ciamEnrollmentScope: restricted
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.1
+ciamRequiredSignatures: 0
+ciamSubjectFromRequest: TRUE
+ciamTemplateAuthority: cn=Example Aero Retired Issuing CA,ou=certificate-autho
+ rities,dc=ciam-ops
+description: EndEntityServerAuthCertificate/V1
+
 dn: cn=Example Aero Root CA G2,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3131,6 +3236,15 @@ ciamMaxValidityDays: 9125
 ciamTemplateAuthority: cn=Example Aero Root CA G2,ou=certificate-authorities,d
  c=ciam-ops
 description: EJBCA certificate profile SUBCA (end entity profiles EMPTY)
+
+dn: cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedInventory
+cn: Example Aero SaaS
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
+ciamProviderRef: https://api.venafi.cloud
 
 dn: cn=Example Aero Standby Issuing CA,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
@@ -3329,6 +3443,32 @@ ciamNotAfter: 20350310000000Z
 ciamNotBefore: 20250310000000Z
 ciamOwner: cn=security-operations,ou=owners,dc=ciam-ops
 ciamSubject: CN=Example Aero Issuing CA 2
+
+dn: cn=example-aero-retired-artifact-tls,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-retired-artifact-tls
+ciamCertPurpose: tls-server
+ciamFingerprint: E4:FF:60:B3:BC:53:E7:60:8C:5C:88:EF:30:CA:96:63:9C:47:10:49:F
+ 9:EA:D8:E8:6A:BC:61:2F:EE:A6:3D:C1
+ciamIssuer: CN=Example Aero Retired Issuing CA
+ciamNotAfter: 20270302000000Z
+ciamNotBefore: 20260302000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=artifact.sso.example-aero.test
+
+dn: cn=example-aero-retired-smoke-test,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-retired-smoke-test
+ciamCertPurpose: tls-server
+ciamFingerprint: C4:59:3D:C9:68:39:8E:A1:0A:B4:A8:05:A4:0C:9B:A9:F4:28:80:69:5
+ A:EF:B8:3C:51:B3:E1:8B:2D:EB:04:59
+ciamIssuer: CN=Example Aero Retired Issuing CA
+ciamNotAfter: 20270630000000Z
+ciamNotBefore: 20260302000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=pki-smoke.example-aero.test
 
 dn: cn=exampleAeroPerson,ou=user-schema,dc=ciam-ops
 objectClass: top
@@ -3713,6 +3853,8 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=example-aero-retired-artifact-tls,ou=certificates,dc=c
+ iam-ops
 pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
  2028-01-15T00:00:00.000Z","issuerDN":"CN=Harbor MRO SSO","keyAlgorithm":"RSA"
  ,"keySize":2048,"sha256Fingerprint":"2DE9F6D56B7574001773F5031D9870716DBC6BED
@@ -6122,6 +6264,16 @@ ciamImportScope: cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: venafi/certificates
 
+dn: cn=venafi.saas.shared.s1-91295744e42807b2,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: venafi.saas.shared.s1-91295744e42807b2
+ciamChangeRef: cn=CHG-2127,ou=changes,dc=ciam-ops
+ciamImportScope: cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: venafi/saas
+
 dn: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
 objectClass: top
 objectClass: ciamRunbook
@@ -6717,6 +6869,68 @@ ciamLocator: /metadata/entityId
 ciamSettingRaw: "OAuth2Provider"
 ciamSettingValue: OAuth2Provider
 
+dn: cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f10,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: 3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f10
+ciamCertificateName: suppliers.example-aero.test SP
+ciamIssuer: CN=suppliers.example-aero.test SP
+ciamManagedOrigin: added
+ciamNotAfter: 20261130000000Z
+ciamNotBefore: 20231130000000Z
+ciamObjectState: active
+ciamRenewedAs: 3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f11
+ciamSerialNumber: 2F9B04C7A1E3D658
+ciamSubject: CN=suppliers.example-aero.test SP
+ciamThumbprint: 7D:2B:9E:4A:1F:6C:3D:8B:0E:5A:2C:7F:4D:1B:8E:6A:3C:9F:0D:25
+
+dn: cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f11,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: 3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f11
+ciamCertificateName: suppliers.example-aero.test SP
+ciamIssuer: CN=suppliers.example-aero.test SP
+ciamManagedOrigin: added
+ciamNotAfter: 20290915000000Z
+ciamNotBefore: 20260915000000Z
+ciamObjectState: active
+ciamSerialNumber: 6E41A0C9D3B2F785
+ciamSubject: CN=suppliers.example-aero.test SP
+ciamThumbprint: A1:C3:E5:F7:09:2B:4D:6F:8A:0C:2E:4F:6B:8D:0A:2C:4E:6F:8B:13
+
+dn: cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f12,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: 3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f12
+ciamCertificateName: Example Aero SSO Signing 2025
+ciamIssuer: CN=Example Aero SSO Signing 2025
+ciamManagedOrigin: added
+ciamNotAfter: 20270630000000Z
+ciamNotBefore: 20250701000000Z
+ciamObjectState: disabled
+ciamSerialNumber: 1A7C3E9B5D2F4086
+ciamSubject: CN=Example Aero SSO Signing 2025
+ciamThumbprint: C4:E6:A8:B0:D2:F4:16:38:57:A9:CB:ED:F0:21:43:65:87:9A:B5:D7
+
+dn: cn=3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f13,cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: 3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f13
+ciamCertificateName: sso.example-aero.test
+ciamInstalledAt: sso.example-aero.test:443
+ciamIssuer: CN=Edge Public CA E1
+ciamManagedOrigin: discovered
+ciamNotAfter: 20270101000000Z
+ciamNotBefore: 20260701000000Z
+ciamObjectState: active
+ciamSerialNumber: 0B5D8F2A6C4E1937
+ciamSubject: CN=sso.example-aero.test
+ciamThumbprint: E8:F0:A2:C4:B6:D8:E0:F2:A4:C6:E8:B0:D2:F4:A6:C8:E0:B2:D4:6A
+
 dn: cn=3eb107a09dad6b7f,cn=run.properties,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -6886,6 +7100,7 @@ objectClass: ciamManagedCertificate
 cn: 6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21
 ciamCertificateName: sso.example-aero.test
 ciamInstalledAt: \VED\Policy\Example Aero\Devices\sso-lb-1\App-443
+ciamInstalledAt: sso.example-aero.test:443
 ciamIssuer: CN=Public CA R11
 ciamManagedAuthority: \VED\Policy\CA Templates\Public CA R11
 ciamManagedOrigin: added
@@ -6898,6 +7113,21 @@ ciamObjectState: active
 ciamSerialNumber: 04B7E19A2C55D0F3
 ciamSubject: CN=sso.example-aero.test
 ciamThumbprint: 9F:2A:6C:1D:4E:8B:3A:7F:0C:5D:2E:9B:1A:4F:6C:8D:3E:7B:2A:91
+
+dn: cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21-v3982,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: 6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21-v3982
+ciamCertificateName: sso.example-aero.test
+ciamIssuer: CN=Public CA R11
+ciamManagerPath: \VED\Policy\Example Aero\sso.example-aero.test
+ciamNotAfter: 20270210000000Z
+ciamNotBefore: 20260210000000Z
+ciamRenewedAs: 6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21
+ciamSerialNumber: 03A9C4E2B17D6F80
+ciamSubject: CN=sso.example-aero.test
+ciamThumbprint: 5B:8E:2D:7A:1C:4F:9E:3B:6A:0D:8C:2F:5E:1B:7A:4D:9C:3F:6E:28
 
 dn: cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a22,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 objectClass: top
@@ -6928,6 +7158,7 @@ objectClass: ciamManagedCertificate
 cn: 6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23
 ciamCertificateName: login.example-aero.test
 ciamInstalledAt: \VED\Policy\Example Aero\Devices\10.20.4.17\App-443
+ciamInstalledAt: login.example-aero.test:443
 ciamIssuer: CN=Public CA R10
 ciamManagedOrigin: discovered
 ciamManagement: monitored
@@ -6946,6 +7177,7 @@ objectClass: ciamObject
 objectClass: ciamManagedCertificate
 cn: 6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24
 ciamCertificateName: kiosk.hangar.example-aero.test
+ciamInstalledAt: 10.40.7.12:8443
 ciamIssuer: CN=kiosk.hangar.example-aero.test
 ciamManagedOrigin: discovered
 ciamManagement: unassigned
@@ -7043,6 +7275,42 @@ ciamNotAfter: 20270901000000Z
 ciamNotBefore: 20260901000000Z
 ciamSerialNumber: 7b698df1df70b3ee260b528353a150bd8686aaac
 ciamSubject: CN=ldap.lab.example-aero.test
+
+dn: cn=7d01,cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 7d01
+ciamNotAfter: 20270302000000Z
+ciamNotBefore: 20260302000000Z
+ciamSerialNumber: 7d01
+ciamSubject: CN=artifact.sso.example-aero.test
+ciamTemplateName: Example Aero Retired Issuing CA/EndEntityServerAuthCertifica
+ te/V1
+
+dn: cn=7d02,cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 7d02
+ciamNotAfter: 20270630000000Z
+ciamNotBefore: 20260302000000Z
+ciamSerialNumber: 7d02
+ciamSubject: CN=pki-smoke.example-aero.test
+ciamTemplateName: Example Aero Retired Issuing CA/EndEntityServerAuthCertifica
+ te/V1
+
+dn: cn=7d03,cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 7d03
+ciamNotAfter: 20270415000000Z
+ciamNotBefore: 20260415000000Z
+ciamSerialNumber: 7d03
+ciamSubject: CN=artifact-dr.sso.example-aero.test
+ciamTemplateName: Example Aero Retired Issuing CA/EndEntityServerAuthCertifica
+ te/V1
 
 dn: cn=7F30AC9E5D416A8FACB3,cn=Example Aero Cloud Issuing CA G1,ou=issued-certificates,dc=ciam-ops
 objectClass: top
@@ -7259,6 +7527,28 @@ ciamAccessMode: standard
 ciamMatchKind: prefix
 ciamPathPattern: /
 ciamProjectedFrom: cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops
+
+dn: cn=apps-tls/871dfdfbd0b7e95530efe5d4dc825e4b,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: apps-tls/871dfdfbd0b7e95530efe5d4dc825e4b
+ciamCertificateName: apps.example-aero.test
+ciamFingerprint: 49:C9:86:31:AF:88:A0:75:B7:DA:E8:ED:4E:8F:56:B7:06:78:88:0A:A
+ B:EF:D0:C7:F7:6A:CD:66:8E:1D:D8:21
+ciamIssuer: CN=Public CA G2 (synthetic)
+ciamManagedAuthority: DigiCertIssuer (DigiCert)
+ciamManagedOrigin: added
+ciamManagement: enrolled
+ciamManagerAction: AutoRenew at 30 days before expiry
+ciamManagerContact: ciam-pki@example-aero.test
+ciamManagerPath: kv-ciam-prod/apps-tls/871dfdfbd0b7e95530efe5d4dc825e4b
+ciamNotAfter: 20270601000000Z
+ciamNotBefore: 20260601000000Z
+ciamObjectState: active
+ciamSerialNumber: 0a9f31
+ciamSubject: CN=apps.example-aero.test
+ciamThumbprint: 57:30:DA:14:5F:89:82:5E:45:6D:20:54:FD:3F:90:A6:50:34:D7:99
 
 dn: cn=b24b629b40d0196b,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
@@ -7644,6 +7934,29 @@ ciamTicketWorkStart: 20260923101500Z
 ciamTitle: Restart the target directory servers for the September kernel patch
  es
 
+dn: cn=ciam-internal-ca/5813ca7c27e1b3b6628e0cdc51b5558a,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: ciam-internal-ca/5813ca7c27e1b3b6628e0cdc51b5558a
+ciamCertificateName: Example Aero CIAM Internal CA
+ciamFingerprint: 0B:14:B8:72:FF:36:A5:B2:AC:98:55:00:91:C7:EA:FA:B9:B7:C0:C1:5
+ A:78:44:09:12:35:C6:32:7A:71:1E:8C
+ciamIssuer: CN=Example Aero CIAM Internal CA
+ciamManagedAuthority: Unknown
+ciamManagedOrigin: added
+ciamManagement: monitored
+ciamManagerAction: EmailContacts at 90 days before expiry
+ciamManagerContact: ciam-pki@example-aero.test
+ciamManagerPath: kv-ciam-prod/ciam-internal-ca/5813ca7c27e1b3b6628e0cdc51b5558
+ a
+ciamNotAfter: 20310115000000Z
+ciamNotBefore: 20260115000000Z
+ciamObjectState: active
+ciamSerialNumber: 745148f6170ccbc9df9be4809e364caa185f0ee6
+ciamSubject: CN=Example Aero CIAM Internal CA
+ciamThumbprint: AB:89:8F:93:23:6A:AD:0C:87:74:22:58:E1:CC:98:CC:44:4F:4F:22
+
 dn: cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -7852,6 +8165,15 @@ ciamEndpointUrl: ldap:///CN=%7,CN=PKI-ISS-02,CN=CDP,CN=Public Key Services,CN=
  Services,%6%10
 ciamInventoryAt: 20260923083000Z
 ciamInventoryProblem: its URL still holds the CA's variables
+ciamRevocationKind: crl
+
+dn: cn=crl-1,cn=Example Aero Retired Issuing CA,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: crl-1
+ciamEndpointUrl: http://crl.pki.example-aero.test/crl/9d8c7b6a-5f4e-4d3c-8b2a-
+ 1c0d9e8f7a6b.crl
 ciamRevocationKind: crl
 
 dn: cn=crl-1,cn=Example Aero Standby Issuing CA,ou=certificate-authorities,dc=ciam-ops
@@ -8843,6 +9165,53 @@ cn: storage
 pingfedConfig: {"clients":{"implementation":"org.sourceid.oauth20.domain.Clien
  tManagerJdbcImpl","storage":"JDBC"},"grants":{"implementation":"org.sourceid.
  oauth20.token.AccessGrantManagerJdbcImpl","storage":"JDBC"}}
+
+dn: cn=supplier-portal-sp-signing/a945c22093e1d32038767c4c525b43ea,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: supplier-portal-sp-signing/a945c22093e1d32038767c4c525b43ea
+ciamCertificateName: suppliers.example-aero.test SP
+ciamFingerprint: 47:4C:56:43:CB:F3:53:0D:57:CE:EE:49:AD:84:DC:4F:F2:F0:D5:49:2
+ 5:B5:AB:70:4D:5A:BF:00:D6:98:D9:DB
+ciamIssuer: CN=suppliers.example-aero.test SP
+ciamManagedAuthority: Self
+ciamManagedOrigin: added
+ciamManagement: enrolled
+ciamManagerAction: AutoRenew at 80% of its lifetime
+ciamManagerContact: ciam-pki@example-aero.test
+ciamManagerPath: kv-ciam-prod/supplier-portal-sp-signing/a945c22093e1d32038767
+ c4c525b43ea
+ciamNotAfter: 20261130000000Z
+ciamNotBefore: 20231130000000Z
+ciamObjectState: active
+ciamRenewedAs: supplier-portal-sp-signing/fe7536e6fca8366e99405584259a9f15
+ciamSerialNumber: 5a01
+ciamSubject: CN=suppliers.example-aero.test SP
+ciamThumbprint: 71:00:B5:40:EF:CF:4F:01:56:42:11:C5:FA:35:9E:A9:41:35:7C:29
+
+dn: cn=supplier-portal-sp-signing/fe7536e6fca8366e99405584259a9f15,cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamManagedCertificate
+cn: supplier-portal-sp-signing/fe7536e6fca8366e99405584259a9f15
+ciamCertificateName: suppliers.example-aero.test SP
+ciamFingerprint: 9D:9C:EC:74:B4:71:2E:2A:59:AD:6A:4A:D5:98:6B:DC:59:90:DB:C3:E
+ E:08:F4:FA:59:80:5E:B2:C1:A9:3C:20
+ciamIssuer: CN=suppliers.example-aero.test SP
+ciamManagedAuthority: Self
+ciamManagedOrigin: added
+ciamManagement: enrolled
+ciamManagerAction: AutoRenew at 80% of its lifetime
+ciamManagerContact: ciam-pki@example-aero.test
+ciamManagerPath: kv-ciam-prod/supplier-portal-sp-signing/fe7536e6fca8366e99405
+ 584259a9f15
+ciamNotAfter: 20290430000000Z
+ciamNotBefore: 20260430000000Z
+ciamObjectState: active
+ciamSerialNumber: 5a02
+ciamSubject: CN=suppliers.example-aero.test SP
+ciamThumbprint: 38:A8:80:20:22:A0:14:CB:D9:5A:1D:3B:EC:1D:D4:F7:6A:2C:A3:34
 
 dn: cn=techpubs,ou=applications,ou=pingaccess,dc=ciam-ops
 objectClass: top

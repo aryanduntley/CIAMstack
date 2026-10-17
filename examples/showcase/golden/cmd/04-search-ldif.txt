@@ -60,6 +60,8 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=example-aero-retired-artifact-tls,ou=certificates,dc=c
+ iam-ops
 pingfedConfig: {"active":true,"credentials":{"certs":[{"certView":{"expires":"
  2028-01-15T00:00:00.000Z","issuerDN":"CN=Harbor MRO SSO","keyAlgorithm":"RSA"
  ,"keySize":2048,"sha256Fingerprint":"2DE9F6D56B7574001773F5031D9870716DBC6BED

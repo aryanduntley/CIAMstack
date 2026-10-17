@@ -1,0 +1,5 @@
+Example Aero Retired Issuing CA: no CA certificate read (state DELETED): named after its configured subject
+Example Aero Retired Issuing CA: deleted, restorable until 2026-10-22T18:00:00+00:00
+Example Aero Retired Issuing CA (9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b): 3 certificate(s), 1 endpoint(s), 1 template(s), complete
+CHG-2128: 8 change(s) applied, the import run among them
+exit 0

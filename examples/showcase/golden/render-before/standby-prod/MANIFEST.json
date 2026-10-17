@@ -287,7 +287,7 @@
     "saml/partner-idp/harbor-mro-federation.xml": {
       "scope": "environment-neutral",
       "format": "xml",
-      "sha256": "f6ca69c84de46d746e4f70819cf87872436e17aad0b31a557c403277a51529c6"
+      "sha256": "4fd471b3ae2713f6219d35afdd55a9a9fe0cf1aa8f0d19ad9a5db203f46f83ce"
     },
     "saml/partner-idp/skyline-air-federation.xml": {
       "scope": "environment-neutral",

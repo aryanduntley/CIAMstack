@@ -1,0 +1,3 @@
+Example Aero SaaS (https://api.venafi.cloud): 4 certificate(s) (1 earlier version(s)), complete
+CHG-2127: 6 change(s) applied, the import run among them
+exit 0

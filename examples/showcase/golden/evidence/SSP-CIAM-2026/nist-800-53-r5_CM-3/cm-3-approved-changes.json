@@ -503,6 +503,24 @@
       "Read the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate Manager; metadata only)",
       "CAB 2026-09-18",
       "approved"
+    ],
+    [
+      "cn=CHG-2126,ou=changes,dc=ciam-ops",
+      "Read production Key Vault kv-ciam-prod's certificates as a certificate manager's inventory (every version, its policies; metadata only)",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2127,ou=changes,dc=ciam-ops",
+      "Read the Example Aero SaaS tenant's certificate inventory (CyberArk Certificate Manager - SaaS; metadata only)",
+      "CAB 2026-09-18",
+      "approved"
+    ],
+    [
+      "cn=CHG-2128,ou=changes,dc=ciam-ops",
+      "Read production's former issuing CA in us-west-2 (AWS Private CA, deleted: its last audit report, metadata only)",
+      "CAB 2026-09-18",
+      "approved"
     ]
   ]
 }

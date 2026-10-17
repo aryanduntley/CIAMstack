@@ -1,0 +1,3 @@
+Example Aero KeyVault ciam-prod (kv-ciam-prod): 4 version(s) of 3 certificate(s), complete
+CHG-2126: 6 change(s) applied, the import run among them
+exit 0

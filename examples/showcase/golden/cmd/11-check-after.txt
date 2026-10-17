@@ -1,5 +1,5 @@
 Expected findings check (after changes)
-  blockers planted 66   expected now 38   detected 38   missed 0   unexpected 0
+  blockers planted 67   expected now 39   detected 39   missed 0   unexpected 0
            B1   cleared by CHG-2003: the target environment binds a new LDAPS name (landing-zone DNS default) → gone
            B2   cleared by CHG-2017: the target environment has no backup target → gone
            B4   cleared by CHG-2001: no target firewall rule for the MRO export → gone
@@ -47,7 +47,8 @@ Expected findings check (after changes)
            B82  raised by CHG-2082: the roster admins group must reach PingAccess as a claim → reported
            B110 raised by CHG-2110: the corporate identity team asks for an external trust with the engineering lab's domain, and a managed domain keeps forest trusts only → reported
            B111 raised by CHG-2110: the corporate managed domain's service isn't in the target's recorded authorization boundary → reported
-  actions  planted 197   expected now 164   detected 164   missed 0   unexpected 0
+           B116 raised by CHG-2128: the SAML artifact resolution certificate Harbor MRO's federation uses comes from a CA deleted in AWS: it publishes no CRL any more and renews nothing → reported
+  actions  planted 204   expected now 171   detected 171   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -112,6 +113,13 @@ Expected findings check (after changes)
            A292 raised by CHG-2125: the certificate manager renewed (and installed) the SSO certificate on 2026-09-10; the record still names the old one → reported
            A293 raised by CHG-2125: the certificate manager's renewal of the LDAPS certificate is in error: the CA refused it (the template needs a CA manager's approval) → reported
            A294 raised by CHG-2125: network discovery found a certificate for login.example-aero.test that the record has none of → reported
+           A296 raised by CHG-2126: Key Vault renewed the supplier portal's SP signing certificate on 2026-04-30 (a new version); the record still names the old one, which expires 2026-11-30 → reported
+           A297 raised by CHG-2126: the vault holds a DigiCert certificate for apps.example-aero.test that the record has none of → reported
+           A299 raised by CHG-2127: the tenant renewed the supplier portal's SP signing certificate on 2026-09-15 (its earlier version is the one the record names); the record still names the old one → reported
+           A300 raised by CHG-2127: a scan of the CDN edge found a second certificate for sso.example-aero.test, from another CA, that the record has none of → reported
+           A301 raised by CHG-2127: PingFederate's signing certificate is retired in the tenant, but the record uses it: nothing renews or watches it there → reported
+           A302 raised by CHG-2128: a smoke-test certificate from the deleted CA nothing uses: reissue it or restore the CA before 2026-10-22 → reported
+           A303 raised by CHG-2128: the disaster-recovery artifact certificate is active at the deleted CA but not in the record, and nobody renews the template → reported
            A152 raised by CHG-2049: Splunk keeps production's security events 180 days, short of the 365 the route needs → reported
            A181 raised by CHG-2062: nobody has confirmed PingAccess removes a client's own X-TechPubs-User, which Tech Pubs trusts for who the user is → reported
            A182 raised by CHG-2061: the media application's CDN is reached at the same host from every environment → reported
