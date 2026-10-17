@@ -10,7 +10,11 @@ adopted with an import block; what doesn't is created.
   network ACLs      a network ACL with its rules both ways, on its subnets
   interconnects     VPC peering (with the other environment's VPC, AWS only), a transit gateway attachment (the transit
                     gateway an input), a site-to-site VPN: customer gateway, the VPC's VPN gateway, the connection with
-                    BGP or static routes. Dedicated circuits and hubs are named, not rendered
+                    BGP or static routes, its tunnels' pre-shared keys left to the VPN service, which generates and
+                    keeps them in Secrets Manager (preshared_key_storage SecretsManager, also in GovCloud: AWS answers
+                    them redacted, so Terraform state never holds one, U.5, task 586; with the default Standard
+                    storage the provider reads them into state), an action naming where the other end's device reads
+                    them. Dedicated circuits and hubs are named, not rendered
   flow logs         on the VPC, each subnet or the transit gateway, to its log destination's ARN (CloudWatch Logs with
                     the delivery role an input, S3, Firehose); retention is the destination's
   kept elsewhere    private endpoints and egress firewalls' domain lists someone else keeps (opsdir_adapter_aws.network)
@@ -263,6 +267,28 @@ def _peering(m, b, n):
         *_adopt(f"aws_vpc_peering_connection.{n}", b)), (), ())
 
 
+def vpn_key_note(m, b):
+    """The render note (an action) of VPN link b's tunnel pre-shared keys, which the VPN service generates and keeps in
+    Secrets Manager (preshared_key_storage SecretsManager: AWS answers them redacted, so Terraform state holds none,
+    U.5): the other end's device configured with them from there; an existing connection's tunnels moved to that
+    storage before it is adopted (its import would read Standard-stored keys into the plan). None without a peer
+    gateway (UNBOUND)."""
+    gateway = one(b, "ciamPeerGateway")
+    if gateway is None:
+        return None
+    existing = one(b, "ciamProviderRef")
+    return network_note(m, b, "action", "its tunnels' pre-shared keys are generated and kept in Secrets Manager by the "
+                        "VPN service (preshared_key_storage SecretsManager): AWS answers them redacted, so Terraform "
+                        "state holds none (U.5: no secret in state)", (
+                            *((f"Before applying, move each tunnel of the existing connection {existing} to Secrets "
+                               "Manager storage (ModifyVpnTunnelOptions, PreSharedKeyStorage SecretsManager), one "
+                               "tunnel at a time in a maintenance window (each drops for minutes): otherwise the "
+                               "import reads its keys into the plan",) if existing else ()),
+                            f"Configure the other end's device ({gateway}) with the tunnels' pre-shared keys read from "
+                            "the Secrets Manager secret the connection names (its preshared_key_arn; aws "
+                            "secretsmanager get-secret-value), never written down elsewhere"))
+
+
 def _vpn(m, b, n):
     gateway, peer_asn = one(b, "ciamPeerGateway"), one(b, "ciamPeerAsn")
     if gateway is None:
@@ -276,23 +302,30 @@ def _vpn(m, b, n):
         tf_block("resource", ["aws_customer_gateway", n], [
             ("bgp_asn", int(peer_asn or 65000)), ("ip_address", gateway), ("type", "ipsec.1"),
             ("tags", binding_tags(b))]),
+        comment(note_comment(vpn_key_note(m, b))),
         tf_block("resource", ["aws_vpn_connection", n], [
             ("customer_gateway_id", ref(f"aws_customer_gateway.{n}.id")),
             ("vpn_gateway_id", ref("aws_vpn_gateway.main.id")), ("type", "ipsec.1"),
-            ("static_routes_only", peer_asn is None), ("tags", binding_tags(b))]),
+            ("static_routes_only", peer_asn is None),
+            ("#", "no tunnel pre-shared key set: the VPN service generates them into Secrets Manager (U.5)"),
+            ("preshared_key_storage", "SecretsManager"), ("tags", binding_tags(b))]),
         *_adopt(f"aws_vpn_connection.{n}", b), *static), (), ())
 
 
 def interconnect_notes(m, b, here=()):
     """The render notes of interconnect b as interconnect writes them: a peering to another cloud (a blocker), the
-    other side accepting a peering (peer_half_note), a Direct Connect circuit ordered by hand (an action), a hub link
+    other side accepting a peering (peer_half_note), a VPN's pre-shared keys in Secrets Manager (vpn_key_note, an
+    action), a Direct Connect circuit ordered by hand (an action), a hub link
     (a blocker: AWS has none), an unrecorded kind of link (a blocker); an UNBOUND link has none."""
     kind = one(b, "ciamLinkKind")
     if kind == "peering" and _cross_cloud(m, b):
         return (cross_cloud_peering_note(m, b, "AWS"),)
     if kind == "peering":
         return (_accept_note(m, b),) if _peers(m, b) is not None and one(b, "ciamPeerAccepted") != "TRUE" else ()
-    if kind in ("transit", "vpn"):
+    if kind == "vpn":
+        found = vpn_key_note(m, b)
+        return (found,) if found is not None else ()
+    if kind == "transit":
         return ()
     if kind == "dedicated":
         return (network_note(m, b, "action", "a dedicated circuit (Direct Connect) is ordered from a provider; its "

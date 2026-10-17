@@ -24,8 +24,9 @@ from opsdir_format_terraform.placing import MAIN, PROVIDERS, STACK, keeper_place
 from .access import ACCESS
 from .guardrails import render_guardrails
 from .identities import assignments, federated_credential, managed_identity, notes, role_of, scope, scope_data
-from .plumbing import render_plumbing
+from .plumbing import plumbing_azapi, render_plumbing
 from .account import provider_block, required_providers, subscription_variable
+from .suppressions import azapi_provider
 from opsdir.core.notes import note_comment
 from .resource_providers import registration_notes, resource_providers
 
@@ -149,8 +150,10 @@ def placed_roots(m, parts, landing_dns, stack_head):
 def render_landing(m, guardrails=render_guardrails, plumbing=render_plumbing):
     """{path: TfFile} of the keepers' roots environment m's landing zone and plumbing place into (the landing zone's,
     each other party's that takes generated infrastructure), as the environment's render writes them for these roots
-    alone, or {}."""
+    alone (azapi with them when the plumbing renders a VPN connection through it), or {}."""
     parts, landing = landing_parts(m, guardrails, plumbing)
-    roots = placed_roots(m, ((PROVIDERS, (required_providers(), provider_block(m), subscription_variable(m))), *parts),
-                         landing, lambda name: "")
+    azapi = plumbing_azapi(m)
+    providers = (required_providers(azapi), provider_block(m), *((azapi_provider(m),) if azapi else ()),
+                 subscription_variable(m))
+    roots = placed_roots(m, ((PROVIDERS, providers), *parts), landing, lambda name: "")
     return {p: f for p, f in roots.items() if posixpath.dirname(p) != STACK}

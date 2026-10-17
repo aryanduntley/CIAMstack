@@ -931,9 +931,12 @@ TYPES = {
     "aws_vpn_gateway": Native("AWS::EC2::VPNGateway", _defaults({
         "amazon_side_asn": "AmazonSideAsn", "type": "Type", "vpc_id": None}, Type="ipsec.1"),
         {"id": "Ref"}, "VPNGatewayId", "list", expand=_vpn_attachment, ready="Attachment"),
+    # its tunnels' pre-shared keys kept in Secrets Manager by the VPN service (PreSharedKeyStorage, a create-only,
+    # write-only property in the bundled schemas, GovCloud's too; task 586, U.5)
     "aws_vpn_connection": Native("AWS::EC2::VPNConnection", {
         "customer_gateway_id": "CustomerGatewayId", "vpn_gateway_id": "VpnGatewayId",
-        "transit_gateway_id": "TransitGatewayId", "type": "Type", "static_routes_only": "StaticRoutesOnly"},
+        "transit_gateway_id": "TransitGatewayId", "type": "Type", "static_routes_only": "StaticRoutesOnly",
+        "preshared_key_storage": "PreSharedKeyStorage"},
         {"id": "Ref"}, "VpnConnectionId", "list"),
     "aws_vpn_connection_route": Native("AWS::EC2::VPNConnectionRoute", {
         "destination_cidr_block": "DestinationCidrBlock", "vpn_connection_id": "VpnConnectionId"}, {}),

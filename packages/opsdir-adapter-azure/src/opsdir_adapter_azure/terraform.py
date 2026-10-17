@@ -59,7 +59,7 @@ from .landing import STACK, landing_parts, placed_notes, placed_roots
 from opsdir_format_terraform.placing import MAIN, PROVIDERS, carried_files
 from opsdir.domains.governance.keepers import scope_folder
 from .network import network_notes, render_network
-from .plumbing import network_data, plumbing_notes
+from .plumbing import network_data, plumbing_azapi, plumbing_notes
 from .account import azuread_provider, fips_note, provider_block, required_providers, subscription_variable, tagged
 from .arm_types import arm_files
 from .identity_protection import uses_azuread
@@ -253,7 +253,7 @@ def terraform_parts(m, services):
            *render_external_id(m), *render_domain_services(m))
     out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
-    azapi = uses_azapi(m) or purview_renders(m) or renders_tenant(m) or renders_azapi(m)
+    azapi = uses_azapi(m) or purview_renders(m) or renders_tenant(m) or renders_azapi(m) or plumbing_azapi(m)
     providers = (
         required_providers(azapi, uses_azuread(m) or renders_applications(m)),
         provider_block(m),

@@ -1070,17 +1070,18 @@ def azapi_merged(body, extra):
 
 def _azapi(f, cx):
     """An azapi resource: its body (with its write-only sensitive_body merged in: a secret there is a secure
-    parameter), whose properties are the resource's (the rest top-level fields), and its location and managed identity
-    as the resource's (a Logic App's system-assigned identity, 5.7b)."""
+    parameter), whose properties are the resource's (the rest top-level fields), and its location, tags (a VPN
+    connection's, 586) and managed identity as the resource's (a Logic App's system-assigned identity, 5.7b)."""
     found = own(f)
     body = cx.value(azapi_merged(found.get("body", {}), found.get("sensitive_body", {})))
     rest = sorted(set(found) - {"type", "name", "parent_id", "body", "sensitive_body", "schema_validation_enabled",
-                                "location", "identity"})
+                                "location", "identity", "tags"})
     if rest:
         raise SystemExit(f"{cx.where}: no ARM form for {', '.join(rest)}")
     identity = (found.get("identity") or [{}])[0]
     return {**{k: v for k, v in body.items() if k != "properties"}, **body.get("properties", {}),
             **({"location": cx.value(found["location"])} if "location" in found else {}),
+            **({"tags": cx.value(found["tags"])} if "tags" in found else {}),
             **({"identity": {"type": cx.value(identity["type"])}} if identity else {})}
 
 # ------------------------------------------------------------------ DNS records, Traffic Manager
@@ -1648,14 +1649,8 @@ TYPES = {
         "address_space": Custom(lambda v, cx: {"localNetworkAddressSpace": {"addressPrefixes": cx.value(v)}}),
         "bgp_settings": Nest("bgpSettings", {"asn": "asn", "bgp_peering_address": "bgpPeeringAddress",
                                              "peer_weight": "peerWeight"})}, {"id": "id"}, "name", "map"),
-    "azurerm_virtual_network_gateway_connection": Native(Arm("Microsoft.Network/connections", NETWORK), {
-        **BASE, "type": "connectionType", "shared_key": "sharedKey", "bgp_enabled": "enableBgp",
-        "connection_protocol": "connectionProtocol", "routing_weight": "routingWeight",
-        "virtual_network_gateway_id": Custom(lambda v, cx: {"virtualNetworkGateway1": {"id": cx.value(v),
-                                                                                         "properties": {}}}),
-        "local_network_gateway_id": Custom(lambda v, cx: {"localNetworkGateway2": {"id": cx.value(v),
-                                                                                     "properties": {}}})},
-        {"id": "id"}, "name", "map"),
+    # a VPN connection is an azapi_resource (plumbing, U.5: azurerm's keeps its shared key in state), translated as
+    # every azapi resource is
     "azurerm_nat_gateway_public_ip_prefix_association": Native(None, merge=Merge(
         "nat_gateway_id", lambda props, f, cx: {**props, "publicIpPrefixes": [
             *props.get("publicIpPrefixes", []), {"id": cx.value(f["public_ip_prefix_id"])}]})),
