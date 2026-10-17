@@ -349,6 +349,14 @@ echo "   its endpoints, its roles (ciam-client: any name, client authentication,
 echo "   and the certificates Vault keeps; the lab's SSO certificate was renewed there, and the record names the old one"
 od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
 od report issued-certificates
+echo "-- production's AWS Private CA (CHG-2122) and the standby's Google Cloud CA pools (CHG-2123), read as the cloud"
+echo "   add-ons' collectors save them: each CA's state, key and parent, its endpoints, its templates with who may"
+echo "   request from them, and the certificates the newest audit report lists or the pool keeps; Harbor MRO's"
+echo "   account may issue client certificates in any name, the standby's client template is open to the whole domain,"
+echo "   and the mesh's DevOps pool keeps no certificates and publishes no CRL"
+od import --change CHG-2122 --at 20260923090000Z aws/private-ca exports/aws-private-ca
+od import --change CHG-2123 --at 20260923090000Z gcp/private-ca exports/gcp-private-ca
+od report certificate-authorities
 echo "-- the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate Manager), read as"
 echo "   its collector saves it (CHG-2125): never a CA's record, so a certificate it lacks isn't missing; it renewed the"
 echo "   SSO certificate the record still names, its LDAPS renewal is in error, and it found one for login.example-aero.test"

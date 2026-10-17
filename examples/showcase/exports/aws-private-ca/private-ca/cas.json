@@ -1,0 +1,78 @@
+{
+  "CertificateAuthorities": [
+    {
+      "Arn": "arn:aws:acm-pca:us-east-1:111122223333:certificate-authority/7c1d0e2a-4b5f-4c6d-8e9f-0a1b2c3d4e5f",
+      "OwnerAccount": "111122223333",
+      "CreatedAt": "2026-02-01T10:00:00+00:00",
+      "LastStateChangeAt": "2026-02-02T10:00:00+00:00",
+      "Type": "ROOT",
+      "Serial": "5c01",
+      "Status": "ACTIVE",
+      "NotBefore": "2026-02-01T00:00:00+00:00",
+      "NotAfter": "2036-01-30T00:00:00+00:00",
+      "CertificateAuthorityConfiguration": {
+        "KeyAlgorithm": "EC_secp384r1",
+        "SigningAlgorithm": "SHA384WITHECDSA",
+        "Subject": {
+          "Organization": "Example Aero",
+          "CommonName": "Example Aero Cloud Root CA"
+        }
+      },
+      "RevocationConfiguration": {
+        "CrlConfiguration": {
+          "Enabled": true,
+          "ExpirationInDays": 7,
+          "CustomCname": "crl.pki.example-aero.test",
+          "S3BucketName": "example-aero-pki-crl",
+          "S3ObjectAcl": "BUCKET_OWNER_FULL_CONTROL",
+          "CrlDistributionPointExtensionConfiguration": {
+            "OmitExtension": false
+          },
+          "CrlType": "COMPLETE"
+        },
+        "OcspConfiguration": {
+          "Enabled": false
+        }
+      },
+      "KeyStorageSecurityStandard": "FIPS_140_2_LEVEL_3_OR_HIGHER",
+      "UsageMode": "GENERAL_PURPOSE"
+    },
+    {
+      "Arn": "arn:aws:acm-pca:us-east-1:111122223333:certificate-authority/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b",
+      "OwnerAccount": "111122223333",
+      "CreatedAt": "2026-02-01T10:00:00+00:00",
+      "LastStateChangeAt": "2026-02-02T10:00:00+00:00",
+      "Type": "SUBORDINATE",
+      "Serial": "5c02",
+      "Status": "ACTIVE",
+      "NotBefore": "2026-02-01T00:00:00+00:00",
+      "NotAfter": "2031-02-01T00:00:00+00:00",
+      "CertificateAuthorityConfiguration": {
+        "KeyAlgorithm": "EC_secp384r1",
+        "SigningAlgorithm": "SHA384WITHECDSA",
+        "Subject": {
+          "Organization": "Example Aero",
+          "CommonName": "Example Aero Cloud Issuing CA"
+        }
+      },
+      "RevocationConfiguration": {
+        "CrlConfiguration": {
+          "Enabled": true,
+          "ExpirationInDays": 7,
+          "CustomCname": "crl.pki.example-aero.test",
+          "S3BucketName": "example-aero-pki-crl",
+          "S3ObjectAcl": "BUCKET_OWNER_FULL_CONTROL",
+          "CrlDistributionPointExtensionConfiguration": {
+            "OmitExtension": false
+          },
+          "CrlType": "COMPLETE"
+        },
+        "OcspConfiguration": {
+          "Enabled": true
+        }
+      },
+      "KeyStorageSecurityStandard": "FIPS_140_2_LEVEL_3_OR_HIGHER",
+      "UsageMode": "GENERAL_PURPOSE"
+    }
+  ]
+}

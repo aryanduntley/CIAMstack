@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "etag": "BwYz8D==",
+  "bindings": [
+    {
+      "role": "roles/privateca.templateUser",
+      "members": [
+        "group:ciam-web-team@example-aero.test"
+      ]
+    }
+  ]
+}

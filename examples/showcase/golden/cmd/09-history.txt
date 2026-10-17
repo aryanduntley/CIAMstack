@@ -722,6 +722,45 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2120  insert  cn=crl-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2120  insert  cn=ocsp-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2120  insert  cn=hashicorp-vault.pki.shared.s1-411f1c33e8ce1881,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Issuing CA/EndEntityCertificate/V1,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Issuing CA/EndEntityClientAuthCertificate_APIPassthrough/V1,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Root CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Root CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=Example Aero Cloud Root CA/SubordinateCACertificate_PathLen0/V1,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=5c02,cn=Example Aero Cloud Root CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=7a01,cn=Example Aero Cloud Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=7a02,cn=Example Aero Cloud Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=7a03,cn=Example Aero Cloud Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=crl-1,cn=Example Aero Cloud Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=crl-1,cn=Example Aero Cloud Root CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=ocsp-1,cn=Example Aero Cloud Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2122  insert  cn=aws.private-ca.shared.s1-a17abcade25d996f,ou=imports,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Mesh CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Mesh CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Mesh CA/ciam-mesh,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Mesh CA/ciam-mesh/ciam-client,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Mesh CA/ciam-mesh/ciam-server,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Issuing CA/ciam-issuing,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Issuing CA/ciam-issuing/ciam-client,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Issuing CA/ciam-issuing/ciam-server,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Root CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Root CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Root CA/ciam-root,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Root CA/ciam-root/ciam-client,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=Example Aero Standby Root CA/ciam-root/ciam-server,ou=certificate-templates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=6d02,cn=Example Aero Standby Root CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=8e01,cn=Example Aero Standby Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=8e02,cn=Example Aero Standby Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=8e03,cn=Example Aero Standby Issuing CA,ou=issued-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=ca-issuers-1,cn=Example Aero Standby Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=ca-issuers-1,cn=Example Aero Standby Root CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=crl-1,cn=Example Aero Standby Issuing CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=crl-1,cn=Example Aero Standby Root CA,ou=certificate-authorities,dc=ciam-ops
+<TIMESTAMP>          CHG-2123  insert  cn=gcp.private-ca.shared.s1-09c118541ab72f06,ou=imports,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
@@ -729,4 +768,4 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 <TIMESTAMP>          CHG-2125  insert  cn=venafi.certificates.shared.s1-c0e7a3215724e802,ou=imports,dc=ciam-ops
-(729 rows)
+(768 rows)

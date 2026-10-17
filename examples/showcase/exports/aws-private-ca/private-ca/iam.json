@@ -1,0 +1,84 @@
+{
+  "UserDetailList": [],
+  "GroupDetailList": [],
+  "RoleDetailList": [
+    {
+      "Arn": "arn:aws:iam::111122223333:role/ciam-pki-admin",
+      "RolePolicyList": [
+        {
+          "PolicyName": "pki-admin",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "acm-pca:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Arn": "arn:aws:iam::111122223333:role/ciam-app-deployer",
+      "RolePolicyList": [
+        {
+          "PolicyName": "acm",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "acm:RequestCertificate",
+                  "acm:DescribeCertificate"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Arn": "arn:aws:iam::111122223333:role/ciam-readonly",
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ciam-pki-inventory",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/ciam-pki-inventory"
+        }
+      ]
+    }
+  ],
+  "Policies": [
+    {
+      "Arn": "arn:aws:iam::111122223333:policy/ciam-pki-inventory",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "acm-pca:ListCertificateAuthorities",
+                  "acm-pca:Describe*",
+                  "acm-pca:Get*",
+                  "acm-pca:ListPermissions",
+                  "acm-pca:ListTags"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -189,6 +189,10 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2120", "Read the lab's internal CA from its Vault PKI mount (its endpoints, roles and the certificates it "
      "keeps, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2122", "Read production's AWS Private CA hierarchy (its CAs, endpoints, the templates its audit reports show "
+     "and the certificates they list, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2123", "Read the standby's Google Cloud CA pools (their CAs, endpoints, issuance policies, templates and "
+     "the certificates they keep, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2125", "Read the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate "
      "Manager; metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),

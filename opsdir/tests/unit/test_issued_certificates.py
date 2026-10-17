@@ -159,7 +159,7 @@ def test_nothing_without_an_inventory():
 
 def test_reports():
     d = _imported(_base(_cert("tls")), (_row(1, "CN=tls", fp=FP),))
-    assert authority_rows(d) == [(CA, f"PKI1\\{CA}", "", "", "WebServer",
+    assert authority_rows(d) == [(CA, f"PKI1\\{CA}", "", "", "", "", "WebServer",
                                   "crl http://pki.example.test/crl; ocsp http://pki.example.test/ocsp",
                                   "2026-09-30 complete", "")]
     assert {"certificate-authorities", "issued-certificates"} <= set(DOMAIN.reports)

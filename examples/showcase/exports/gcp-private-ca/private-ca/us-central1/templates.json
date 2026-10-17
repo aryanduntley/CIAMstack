@@ -1,0 +1,35 @@
+[
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/certificateTemplates/ciam-server",
+    "maximumLifetime": "31536000s",
+    "description": "CIAM TLS server certificates",
+    "predefinedValues": {
+      "keyUsage": {
+        "extendedKeyUsage": {
+          "serverAuth": true
+        }
+      }
+    },
+    "identityConstraints": {
+      "allowSubjectPassthrough": true,
+      "allowSubjectAltNamesPassthrough": true
+    }
+  },
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/certificateTemplates/ciam-client",
+    "maximumLifetime": "2592000s",
+    "description": "CIAM service client certificates",
+    "predefinedValues": {
+      "keyUsage": {
+        "extendedKeyUsage": {
+          "serverAuth": true,
+          "clientAuth": true
+        }
+      }
+    },
+    "identityConstraints": {
+      "allowSubjectPassthrough": true,
+      "allowSubjectAltNamesPassthrough": true
+    }
+  }
+]

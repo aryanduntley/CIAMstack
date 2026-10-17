@@ -1,0 +1,30 @@
+[
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing/certificates/portal-standby-2026",
+    "issuerCertificateAuthority": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing/certificateAuthorities/standby-issuing",
+    "certificateTemplate": "projects/example-aero-ciam-standby/locations/us-central1/certificateTemplates/ciam-server",
+    "subjectMode": "DEFAULT",
+    "pemCertificate": "-----BEGIN CERTIFICATE-----\nMIIBtzCCAT6gAwIBAgIDAI4BMAoGCCqGSM49BAMDMEExFTATBgNVBAoMDEV4YW1w\nbGUgQWVybzEoMCYGA1UEAwwfRXhhbXBsZSBBZXJvIFN0YW5kYnkgSXNzdWluZyBD\nQTAeFw0yNjA5MDEwMDAwMDBaFw0yNzA5MDEwMDAwMDBaMEExFTATBgNVBAoMDEV4\nYW1wbGUgQWVybzEoMCYGA1UEAwwfcG9ydGFsLnN0YW5kYnkuZXhhbXBsZS1hZXJv\nLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABGV1lmwpWM5Oer4lw7hsmGo4\nR2Fa7P2nd1iDrjvtc/T9jGITVfEfuIOQMaRLMHoZgSfWyXH7aMwjPxrW827jzpyj\nJTAjMAwGA1UdEwEB/wQCMAAwEwYDVR0lBAwwCgYIKwYBBQUHAwEwCgYIKoZIzj0E\nAwMDZwAwZAIwaDh1CZIEH9ixPZHurZV5mgckRJz5s5DmtxqS4QxNA0AZki8oLE3P\nqu8U3WI20MB2AjALUJScijryHUr2T8FWM9TYdk2se4MGiEumAeIDBDDs8LXH2Dr2\nOwcXnCyd2VkI9jQ=\n-----END CERTIFICATE-----\n",
+    "createTime": "2026-09-01T00:00:00.000000Z"
+  },
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing/certificates/svc-standby-sync-0910",
+    "issuerCertificateAuthority": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing/certificateAuthorities/standby-issuing",
+    "certificateTemplate": "projects/example-aero-ciam-standby/locations/us-central1/certificateTemplates/ciam-client",
+    "subjectMode": "DEFAULT",
+    "pemCertificate": "-----BEGIN CERTIFICATE-----\nMIIBszCCATmgAwIBAgIDAI4CMAoGCCqGSM49BAMDMEExFTATBgNVBAoMDEV4YW1w\nbGUgQWVybzEoMCYGA1UEAwwfRXhhbXBsZSBBZXJvIFN0YW5kYnkgSXNzdWluZyBD\nQTAeFw0yNjA5MTAwMDAwMDBaFw0yNjEwMTAwMDAwMDBaMDIxFTATBgNVBAoMDEV4\nYW1wbGUgQWVybzEZMBcGA1UEAwwQc3ZjLXN0YW5kYnktc3luYzBZMBMGByqGSM49\nAgEGCCqGSM49AwEHA0IABGS3n57y7rO7tVbNzM5bcu5BSfaP4k0GEmZHMmbNhbcs\nbQ/+hF9m/q9QTTM6JnsSbXRlvOkV/r4LDYlRzDhrQVOjLzAtMAwGA1UdEwEB/wQC\nMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMAoGCCqGSM49BAMDA2gA\nMGUCMQC24R4jEngWMebu4jWgl4/fZmhU9xcYQwgoaXRvTIKontznvhMm3hY6qcfN\na1dSd/4CMHXDTN1NtwpgMisLNC51MgPoJ9V81k8gr49VVxUTNmoVWh6gODVF9+CN\nFx/efDN77Q==\n-----END CERTIFICATE-----\n",
+    "createTime": "2026-09-01T00:00:00.000000Z"
+  },
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing/certificates/svc-standby-sync-0810",
+    "issuerCertificateAuthority": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing/certificateAuthorities/standby-issuing",
+    "certificateTemplate": "projects/example-aero-ciam-standby/locations/us-central1/certificateTemplates/ciam-client",
+    "subjectMode": "DEFAULT",
+    "revocationDetails": {
+      "revocationState": "SUPERSEDED",
+      "revocationTime": "2026-09-10T08:00:00.000000Z"
+    },
+    "pemCertificate": "-----BEGIN CERTIFICATE-----\nMIIBszCCATmgAwIBAgIDAI4DMAoGCCqGSM49BAMDMEExFTATBgNVBAoMDEV4YW1w\nbGUgQWVybzEoMCYGA1UEAwwfRXhhbXBsZSBBZXJvIFN0YW5kYnkgSXNzdWluZyBD\nQTAeFw0yNjA4MTAwMDAwMDBaFw0yNjA5MDkwMDAwMDBaMDIxFTATBgNVBAoMDEV4\nYW1wbGUgQWVybzEZMBcGA1UEAwwQc3ZjLXN0YW5kYnktc3luYzBZMBMGByqGSM49\nAgEGCCqGSM49AwEHA0IABN1wyn+cZwIFU2kRZYo3ZG4gkfiCCHmnNMD56NJVV1Aq\nUV3XetD0g90cG1ixxCs1o3tw/uf+q6idL4tBPDwKtnyjLzAtMAwGA1UdEwEB/wQC\nMAAwHQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCMAoGCCqGSM49BAMDA2gA\nMGUCMQDzAMuH28CK0rc+bfV3Chb29xPGAqtRHXqELV+YvmEqJkOKSNOkaga4Ziz7\nNXI7vIYCMGjArkiCwCI/IQSgQQbbIRABUoNsS8GQisRp6S5tCDXIHMjCyZUsiW6g\ntcQSFHNJ/A==\n-----END CERTIFICATE-----\n",
+    "createTime": "2026-09-01T00:00:00.000000Z"
+  }
+]

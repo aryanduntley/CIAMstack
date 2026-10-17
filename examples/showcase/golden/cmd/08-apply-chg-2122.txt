@@ -1,0 +1,4 @@
+Example Aero Cloud Root CA (7c1d0e2a-4b5f-4c6d-8e9f-0a1b2c3d4e5f): 1 certificate(s), 1 endpoint(s), 1 template(s), complete
+Example Aero Cloud Issuing CA (3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b): 3 certificate(s), 2 endpoint(s), 2 template(s), complete
+CHG-2122: 15 change(s) applied, the import run among them
+exit 0

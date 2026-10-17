@@ -49,6 +49,9 @@ CERT_INVENTORY_CLASS, ISSUED_CLASS = "ciamCertInventory", "ciamIssuedCertificate
 # what importers own of each entry (the rest, an authority's own certificates, owners, a template's purpose and
 # renewal owner, is the operator's and kept)
 AUTHORITY_ATTRS = ("cn", "ciamProviderRef", "ciamTemplateName")
+# what a CA's product says of the CA itself, written only by an importer that reads them (a cloud private CA's)
+AUTHORITY_FACTS = ("ciamCaType", "ciamCaState", "ciamCaKeyAlgorithm", "ciamCaKeyStorage", "ciamCaKeyRef",
+                   "ciamParentAuthority")
 # what a template lets requesters do and who may request from it (templates.py judges the risk)
 TEMPLATE_RIGHTS = ("ciamSubjectFromRequest", "ciamApprovalRequired", "ciamRequiredSignatures", "ciamTemplateVersion",
                    "ciamEnrollee", "ciamEnrollmentScope")
@@ -84,11 +87,15 @@ def revocation_reason(code):
     return REASONS.get(code, str(code)) if isinstance(code, int) and not isinstance(code, bool) else str(code)
 
 
-def authority_entry(d, name, provider_ref=None, templates=()):
+def authority_entry(d, name, provider_ref=None, templates=(), facts=None):
     """A certification authority's entry (what the record adds to it, its own certificates and owners, kept): how its
-    product names it and the templates it issues from."""
-    owned = {"cn": (name,), "ciamProviderRef": (provider_ref,), "ciamTemplateName": tuple(dict.fromkeys(templates))}
-    return _observed(d, authority_dn(name), AUTHORITY_CLASS, owned, AUTHORITY_ATTRS)
+    product names it and the templates it issues from; facts {attribute of AUTHORITY_FACTS: value or None} what the
+    product says of the CA itself (ciamParentAuthority: the parent CA's name), owned only when given."""
+    told = {k: v for k, v in (facts or {}).items() if k in AUTHORITY_FACTS}
+    owned = {"cn": (name,), "ciamProviderRef": (provider_ref,), "ciamTemplateName": tuple(dict.fromkeys(templates)),
+             **{k: (authority_dn(v) if k == "ciamParentAuthority" and v else v,) for k, v in told.items()}}
+    return _observed(d, authority_dn(name), AUTHORITY_CLASS, owned,
+                     (*AUTHORITY_ATTRS, *(AUTHORITY_FACTS if facts is not None else ())))
 
 
 def endpoint_entry(d, authority, kind, n, url, template=None):
@@ -425,8 +432,8 @@ def check_issued_certificates(ctx):
 
 
 # ------------------------------------------------------------------ the reports
-AUTHORITY_HEADERS = ("authority", "config", "issued by", "certificates", "templates", "endpoints", "inventoried",
-                     "owner")
+AUTHORITY_HEADERS = ("authority", "config", "state", "key", "issued by", "certificates", "templates", "endpoints",
+                     "inventoried", "owner")
 ISSUED_HEADERS = ("certificate", "authority", "request", "serial", "template", "requester", "not after", "state",
                   "renewal owner", "detail")
 
@@ -441,15 +448,21 @@ def _issuer_of(d, ca_cert, cas):
 
 
 def authority_rows(d, dn=None):
-    """One row per certification authority: how its product names it, who issued its own certificates (the CA above
-    it, or self-signed), those certificates, the templates it issues from, its revocation endpoints, its inventory
-    (when, and whether complete) and its owners."""
+    """One row per certification authority: how its product names it, what its product says of it (root or
+    subordinate and its state; its signing key's algorithm, storage and key reference), who issued its own
+    certificates (the CA above it, or self-signed; else the CA its product names above it), those certificates, the
+    templates it issues from, its revocation endpoints, its inventory (when, and whether complete) and its owners."""
     cas, held = authorities(d), cert_inventories(d)
     def row(a):
         own = tuple(c for c in follow_all(d, a, "ciamCaCertificate") if c is not None)
         inv = held.get(rdn_value(a).lower())
+        parent = one(a, "ciamParentAuthority")
         return (rdn_value(a), one(a, "ciamProviderRef") or "",
-                ", ".join(dict.fromkeys(_issuer_of(d, c, cas) for c in own)), ", ".join(rdn_value(c) for c in own),
+                " ".join(v for v in (one(a, "ciamCaType"), one(a, "ciamCaState")) if v),
+                ", ".join(v for v in (one(a, "ciamCaKeyAlgorithm"), one(a, "ciamCaKeyStorage"), one(a, "ciamCaKeyRef"))
+                          if v),
+                ", ".join(dict.fromkeys(_issuer_of(d, c, cas) for c in own)) or (rdn_of(parent) if parent else ""),
+                ", ".join(rdn_value(c) for c in own),
                 ", ".join(values(a, "ciamTemplateName")),
                 "; ".join(f"{one(e, 'ciamRevocationKind')} {one(e, 'ciamEndpointUrl')}" for e in endpoints(d, a)),
                 f"{date_of(inv, 'ciamInventoryAt')} {one(inv, 'ciamInventoryState')}" if inv is not None else "",

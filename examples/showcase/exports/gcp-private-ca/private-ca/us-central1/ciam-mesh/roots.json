@@ -1,0 +1,25 @@
+[
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-mesh/certificateAuthorities/mesh",
+    "type": "SELF_SIGNED",
+    "config": {
+      "subjectConfig": {
+        "subject": {
+          "commonName": "Example Aero Mesh CA",
+          "organization": "Example Aero"
+        }
+      }
+    },
+    "lifetime": "315360000s",
+    "keySpec": {
+      "algorithm": "EC_P256_SHA256"
+    },
+    "tier": "DEVOPS",
+    "state": "ENABLED",
+    "pemCaCertificates": [
+      "-----BEGIN CERTIFICATE-----\nMIIBqzCCATKgAwIBAgICbQMwCgYIKoZIzj0EAwMwNjEVMBMGA1UECgwMRXhhbXBs\nZSBBZXJvMR0wGwYDVQQDDBRFeGFtcGxlIEFlcm8gTWVzaCBDQTAeFw0yNjAzMDMw\nMDAwMDBaFw0zMTAzMDIwMDAwMDBaMDYxFTATBgNVBAoMDEV4YW1wbGUgQWVybzEd\nMBsGA1UEAwwURXhhbXBsZSBBZXJvIE1lc2ggQ0EwdjAQBgcqhkjOPQIBBgUrgQQA\nIgNiAASTZh/JN1Jr9/E945bYV+I34r4DgguJxag3klikGSiTWXfEHLnVQEUyyaxs\nYjHhAeeQmfhfhZ/zqq+s87Vpafww3STNe//ohXooIa2mh0GlbM8pmWPt2Cc4EW2t\nKfley5WjEzARMA8GA1UdEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwMDZwAwZAIwedL/\nsRmZy6WZR/tz7eWKH9BAM7sqTB6ySnqaTP7Ymc+l1Wxx3b0bg1Dzyns9I2T2AjAE\n3nUZl7Mmn87gonZPtHQFacAD8EE1v6t5FjxDcOub4M08Ui2UhD1AxCw/Eli/9Vs=\n-----END CERTIFICATE-----\n"
+    ],
+    "createTime": "2026-03-01T10:00:00.000000Z",
+    "updateTime": "2026-03-02T10:00:00.000000Z"
+  }
+]

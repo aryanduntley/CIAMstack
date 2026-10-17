@@ -20,6 +20,13 @@ firewall tag key (purpose GCE_FIREWALL) the organization holds (`gcloud resource
 documents organization parents only; a project's keys come from the record). `gcloud asset export` writes to Cloud
 Storage and is never run.
 
+Certificate Authority Service (gcp/private-ca, private_ca.py): the project's CA pools in every location and the
+project's IAM policy (left out when it can't be read: who may request is then unknown), then per pool its root and
+subordinate CAs, its IAM policy and, for an Enterprise tier pool, its certificates (trimmed to what the importer reads:
+their public PEM, issuing CA, template and revocation); per location its certificate templates, then each one's IAM
+policy. A DevOps tier pool keeps no certificates and isn't listed. Read-only: roles/privateca.auditor and
+resourcemanager.projects.getIamPolicy.
+
 Terraform state: (a) by default the state object a collection source names (ciamCollectionSource, importer
 gcp/terraform-state, ciamSourceRef gs://bucket/<prefix>/<workspace>.tfstate) read with `gcloud storage cat`: no init,
 no lock, read access to one object (customer-supplied encryption keys are not supported); (b) with --terraform-dir,
@@ -34,6 +41,7 @@ from opsdir_format_terraform.state import TERRAFORM_DIR, state_steps as terrafor
 from .budgets import billing_account
 from .account import project_id
 from .cli import METADATA
+from .private_ca import resource_part
 
 WORK = "_work/"
 
@@ -216,5 +224,50 @@ def identity_check(d, m):
     return Command(("gcloud", "config", "list", "--format=json")), check
 
 
+CA_FOLDER = "private-ca/"
+CERTIFICATE_FIELDS = ("name", "issuerCertificateAuthority", "certificateTemplate", "subjectMode", "revocationDetails",
+                      "pemCertificate", "createTime")
+
+
+def certificate_fields(text):
+    """gcloud privateca certificates list output with each certificate only the fields the importer reads."""
+    return _trim(text, lambda c: {k: c[k] for k in CERTIFICATE_FIELDS if k in c})
+
+
+def private_ca_steps(d, m, done, options):
+    """The gcp/private-ca calls still to make: the pools and the project's IAM policy, then each pool's CAs, IAM
+    policy and (Enterprise tier) certificates, each location's templates, then each template's IAM policy."""
+    p = project_id(m)
+    if not p:
+        return ()
+    pools = tuple((resource_part(x.get("name"), "locations"), resource_part(x.get("name"), "caPools"), x.get("tier"))
+                  for x in _load(done.get(f"{CA_FOLDER}pools.json"), []) if isinstance(x, dict))
+    pools = tuple(x for x in pools if x[0] and x[1])
+    locations = tuple(dict.fromkeys(loc for loc, _, _ in pools))
+    scope = (f"--project={p}",)
+
+    def pool_calls(loc, pool, tier):
+        at, where = f"{CA_FOLDER}{loc}/{pool}/", (f"--location={loc}", *scope)
+        return ((f"{at}roots.json", _gcloud("privateca", "roots", "list", f"--pool={pool}", *where)),
+                (f"{at}subordinates.json", _gcloud("privateca", "subordinates", "list", f"--pool={pool}", *where)),
+                (f"{at}iam.json", _gcloud("privateca", "pools", "get-iam-policy", pool, *where)),
+                *(((f"{at}certificates.json", _gcloud("privateca", "certificates", "list", f"--issuer-pool={pool}",
+                                                      *where, keep=certificate_fields)),) if tier != "DEVOPS" else ()))
+
+    def template_calls(loc):
+        listed = _load(done.get(f"{CA_FOLDER}{loc}/templates.json"), [])
+        return ((f"{CA_FOLDER}{loc}/templates.json", _gcloud("privateca", "templates", "list", f"--location={loc}",
+                                                             *scope)),
+                *((f"{CA_FOLDER}{loc}/templates/{t}/iam.json", _gcloud("privateca", "templates", "get-iam-policy", t,
+                                                                       f"--location={loc}", *scope))
+                  for t in (resource_part(x.get("name"), "certificateTemplates") for x in listed if isinstance(x, dict))
+                  if t))
+    return ((f"{CA_FOLDER}pools.json", _gcloud("privateca", "pools", "list", *scope)),
+            (f"{CA_FOLDER}project-iam.json", Command(("gcloud", "projects", "get-iam-policy", p, "--format=json"),
+                                                     absent=("PERMISSION_DENIED",))),
+            *(c for x in pools for c in pool_calls(*x)), *(c for loc in locations for c in template_calls(loc)))
+
+
 COLLECTORS = (Collector("cli-inventory", "environment", inventory_steps, identity_check),
-              Collector("terraform-state", "environment", state_steps, identity_check, options=(TERRAFORM_DIR,)))
+              Collector("terraform-state", "environment", state_steps, identity_check, options=(TERRAFORM_DIR,)),
+              Collector("private-ca", "environment", private_ca_steps, identity_check))

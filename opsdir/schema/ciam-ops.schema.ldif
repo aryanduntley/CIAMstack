@@ -3675,6 +3675,39 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.890 NAME 'ciamTemplateAuthority' DES
   with every CA (AD CS\27s forest templates)' EQUALITY distinguishedNameMatc
  h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'observed
  ' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.910 NAME 'ciamCaType' DESC 'Whether 
+ a certification authority is a root (its own certificate self-signed) or su
+ bordinate to another CA, as its product says' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VA
+ LUE-TYPE 'enum:root|subordinate' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.911 NAME 'ciamCaState' DESC 'A certi
+ fication authority\27s state in its product: active (issuing), disabled, pe
+ nding (not yet activated: awaiting its certificate or its activation), expi
+ red, deleted (still restorable) or failed (its creation failed)' EQUALITY c
+ aseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABIL
+ ITY 'observed' X-VALUE-TYPE 'enum:active|disabled|pending|expired|deleted|f
+ ailed' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.912 NAME 'ciamCaKeyAlgorithm' DESC '
+ The algorithm of the key a certification authority signs with, as its produ
+ ct names it (RSA_4096, EC_P384_SHA384)' EQUALITY caseIgnoreMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TY
+ PE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.913 NAME 'ciamCaKeyStorage' DESC 'Wh
+ ere a certification authority\27s signing key is kept, as its product says 
+ (an HSM standard such as FIPS 140-2 Level 3, a provider-managed HSM, a cust
+ omer-managed key)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 
+ 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.914 NAME 'ciamCaKeyRef' DESC 'The cu
+ stomer-managed key a certification authority signs with (its key service\27
+ s name for it): a reference, never key material' EQUALITY caseIgnoreMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X
+ -VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.915 NAME 'ciamParentAuthority' DESC 
+ 'The certification authority (ou=certificate-authorities) that issued a sub
+ ordinate CA\27s certificate, as the CA\27s product says' EQUALITY distingui
+ shedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILI
+ TY 'observed' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.920 NAME 'ciamThumbprint' DESC 'A ce
  rtificate\27s SHA-1 thumbprint, as colon-separated hex: what a certificate 
  manager gives when it gives no SHA-256 fingerprint' EQUALITY caseIgnoreMatc
@@ -4547,9 +4580,12 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.146 NAME 'ciamSecretObject' DESC 'An
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.151 NAME 'ciamCertAuthority' DESC 'A 
  certification authority (cn: its name; ciamProviderRef: how its product nam
  es it, an AD CS CA\27s HOST\5CCA): its own certificates in the record, the 
- templates it issues from, and its revocation endpoints as children' SUP cia
- mObject STRUCTURAL MUST cn MAY ( ciamProviderRef $ ciamCaCertificate $ ciam
- TemplateName ) X-ORIGIN 'opsdir' )
+ templates it issues from, and its revocation endpoints as children; what it
+ s product says of it (root or subordinate, state, signing key, the CA above
+  it) when the product tells' SUP ciamObject STRUCTURAL MUST cn MAY ( ciamPr
+ oviderRef $ ciamCaCertificate $ ciamTemplateName $ ciamCaType $ ciamCaState
+  $ ciamCaKeyAlgorithm $ ciamCaKeyStorage $ ciamCaKeyRef $ ciamParentAuthori
+ ty ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.152 NAME 'ciamCertTemplate' DESC 'A c
  ertificate template CAs issue from (cn: its name; description: its display 
  name): what it issues, who renews what it issues that the record holds no c

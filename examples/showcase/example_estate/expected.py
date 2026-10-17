@@ -602,6 +602,18 @@ EXPECTED = MappingProxyType({
         ("A281", "Certificate", "Certificate template `Example Aero CIAM Internal CA/ciam-client` lets the requester "
          "name the subject", "the lab's ciam-client role issues client certificates in any name, and Vault's default "
          "policy lets every token request them", None, "CHG-2120"),
+        # production's AWS Private CA (CHG-2122) and the standby's Google Cloud CA pools (CHG-2123): templates that let
+        # broad groups name the subject of client certificates, and a CA nothing can check revocation against
+        ("A286", "Certificate", "Certificate template `Example Aero Cloud Issuing CA/"
+         "EndEntityClientAuthCertificate_APIPassthrough/V1` lets the requester name the subject",
+         "the issuing CA's resource policy lets Harbor MRO's AWS account issue client certificates from it, in any "
+         "name", None, "CHG-2122"),
+        ("A287", "Certificate", "Certificate template `Example Aero Standby Issuing CA/ciam-issuing/ciam-client` lets "
+         "the requester name the subject", "the standby's issuing pool and its client template let everyone in the "
+         "example-aero.test domain request client certificates in any name", None, "CHG-2123"),
+        ("A288", "Certificate", "Certification authority `Example Aero Mesh CA` publishes no CRL distribution point "
+         "or OCSP responder", "the mesh's DevOps pool publishes no CRL: nothing can check its certificates' "
+         "revocation", None, "CHG-2123"),
         # the certificate manager's inventory of the Example Aero folder (CHG-2125): never a CA's issuance record, so
         # the record's certificates it lacks are only not managed; what it renewed, what is in error and what it holds
         # for the record's names that the record lacks

@@ -1,0 +1,35 @@
+[
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing/certificateAuthorities/standby-issuing",
+    "type": "SUBORDINATE",
+    "config": {
+      "subjectConfig": {
+        "subject": {
+          "commonName": "Example Aero Standby Issuing CA",
+          "organization": "Example Aero"
+        }
+      }
+    },
+    "lifetime": "157680000s",
+    "keySpec": {
+      "algorithm": "EC_P384_SHA384"
+    },
+    "subordinateConfig": {
+      "certificateAuthority": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-root/certificateAuthorities/standby-root"
+    },
+    "tier": "ENTERPRISE",
+    "state": "ENABLED",
+    "pemCaCertificates": [
+      "-----BEGIN CERTIFICATE-----\nMIIBwTCCAUigAwIBAgICbQIwCgYIKoZIzj0EAwMwPjEVMBMGA1UECgwMRXhhbXBs\nZSBBZXJvMSUwIwYDVQQDDBxFeGFtcGxlIEFlcm8gU3RhbmRieSBSb290IENBMB4X\nDTI2MDMwMjAwMDAwMFoXDTMxMDMwMTAwMDAwMFowQTEVMBMGA1UECgwMRXhhbXBs\nZSBBZXJvMSgwJgYDVQQDDB9FeGFtcGxlIEFlcm8gU3RhbmRieSBJc3N1aW5nIENB\nMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEghp5UsbXziwOfId6NNs2VpxqVq2fvOri\n7QDu5tijOQcYZVVwqJh30Y8nq+pCKobGJJInTMMg4pK9UKpFsmAYeOrfgL8eKMFP\njyVCIL1yF0tfiCR0z/oHHWj3CK8QxD0CoxYwFDASBgNVHRMBAf8ECDAGAQH/AgEA\nMAoGCCqGSM49BAMDA2cAMGQCMDQQymLlw7S0ELOS6DJA+IFwEqFWdxDoX+YUURbw\nlgwV1DkIj3LTbA3cGpTGqzmJ/wIwAusOpSXpsMSc+uYjbmKZ3rdDSuVz/jxU1fpf\nF3V6WvaZ+ynM+29VxR/ckroNJFea\n-----END CERTIFICATE-----\n"
+    ],
+    "accessUrls": {
+      "caCertificateAccessUrl": "http://storage.googleapis.com/privateca-content-example-aero-standby/standby-issuing/ca.crt",
+      "crlAccessUrls": [
+        "http://storage.googleapis.com/privateca-content-example-aero-standby/standby-issuing/crl.crl"
+      ]
+    },
+    "gcsBucket": "privateca-content-example-aero-standby",
+    "createTime": "2026-03-01T10:00:00.000000Z",
+    "updateTime": "2026-03-02T10:00:00.000000Z"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "etag": "BwYz8B==",
+  "bindings": [
+    {
+      "role": "roles/privateca.certificateRequester",
+      "members": [
+        "domain:example-aero.test"
+      ]
+    }
+  ]
+}

@@ -240,6 +240,26 @@ ATTRIBUTES = (
                  "The certification authority (ou=certificate-authorities) a CA-scoped certificate template is its "
                  "own (a Vault PKI role): only that CA issues from it and only its importer replaces it; absent on "
                  "templates a directory shares with every CA (AD CS's forest templates)"),
+    # ------------------------------------------------------------------ what a CA's product says of the CA itself
+    AttributeDef(910, 'ciamCaType', 'enum:root|subordinate', 'observed', True,
+                 "Whether a certification authority is a root (its own certificate self-signed) or subordinate to "
+                 "another CA, as its product says"),
+    AttributeDef(911, 'ciamCaState', 'enum:active|disabled|pending|expired|deleted|failed', 'observed', True,
+                 "A certification authority's state in its product: active (issuing), disabled, pending (not yet "
+                 "activated: awaiting its certificate or its activation), expired, deleted (still restorable) or "
+                 "failed (its creation failed)"),
+    AttributeDef(912, 'ciamCaKeyAlgorithm', 'string', 'observed', True,
+                 "The algorithm of the key a certification authority signs with, as its product names it (RSA_4096, "
+                 "EC_P384_SHA384)"),
+    AttributeDef(913, 'ciamCaKeyStorage', 'string', 'observed', True,
+                 "Where a certification authority's signing key is kept, as its product says (an HSM standard such "
+                 "as FIPS 140-2 Level 3, a provider-managed HSM, a customer-managed key)"),
+    AttributeDef(914, 'ciamCaKeyRef', 'string', 'observed', True,
+                 "The customer-managed key a certification authority signs with (its key service's name for it): a "
+                 "reference, never key material"),
+    AttributeDef(915, 'ciamParentAuthority', 'dn', 'observed', True,
+                 "The certification authority (ou=certificate-authorities) that issued a subordinate CA's "
+                 "certificate, as the CA's product says"),
     # ------------------------------------------------------------------ certificate managers' inventories (observed)
     AttributeDef(920, 'ciamThumbprint', 'string', 'observed', True,
                  "A certificate's SHA-1 thumbprint, as colon-separated hex: what a certificate manager gives when it "
@@ -310,10 +330,12 @@ CLASSES = (
              "never its value: its state and what the store says of its rotation (ciamLastRotated only from a "
              "timestamp that means rotation)"),
     ClassDef(151, 'ciamCertAuthority', 'ciamObject', 'STRUCTURAL', ('cn',),
-             ('ciamProviderRef', 'ciamCaCertificate', 'ciamTemplateName'),
+             ('ciamProviderRef', 'ciamCaCertificate', 'ciamTemplateName', 'ciamCaType', 'ciamCaState',
+              'ciamCaKeyAlgorithm', 'ciamCaKeyStorage', 'ciamCaKeyRef', 'ciamParentAuthority'),
              "A certification authority (cn: its name; ciamProviderRef: how its product names it, an AD CS CA's "
              "HOST\\CA): its own certificates in the record, the templates it issues from, and its revocation "
-             "endpoints as children"),
+             "endpoints as children; what its product says of it (root or subordinate, state, signing key, the CA "
+             "above it) when the product tells"),
     ClassDef(152, 'ciamCertTemplate', 'ciamObject', 'STRUCTURAL', ('cn',),
              ('ciamTemplateOid', 'ciamMaxValidityDays', 'ciamExtendedKeyUsage', 'ciamCertPurpose', 'ciamRenewalOwner',
               'ciamSubjectFromRequest', 'ciamApprovalRequired', 'ciamRequiredSignatures', 'ciamTemplateVersion',

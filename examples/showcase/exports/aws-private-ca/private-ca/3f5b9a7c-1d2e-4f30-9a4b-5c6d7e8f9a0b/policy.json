@@ -1,0 +1,3 @@
+{
+  "Policy": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Sid\": \"HarborMroClientCertificates\", \"Effect\": \"Allow\", \"Principal\": {\"AWS\": \"444455556666\"}, \"Action\": [\"acm-pca:IssueCertificate\", \"acm-pca:GetCertificate\"], \"Resource\": \"arn:aws:acm-pca:us-east-1:111122223333:certificate-authority/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b\", \"Condition\": {\"StringEquals\": {\"acm-pca:TemplateArn\": \"arn:aws:acm-pca:::template/EndEntityClientAuthCertificate_APIPassthrough/V1\"}}}]}"
+}

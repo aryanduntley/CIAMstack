@@ -1,0 +1,35 @@
+[
+  {
+    "awsAccountId": "111122223333",
+    "requestedByServicePrincipal": "acm.amazonaws.com",
+    "certificateArn": "arn:aws:acm-pca:us-east-1:111122223333:certificate-authority/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/certificate/7a01b2",
+    "serial": "7a:01",
+    "subject": "CN=portal.example-aero.com",
+    "notBefore": "2026-08-15T00:00:00+0000",
+    "notAfter": "2027-09-14T23:59:59+0000",
+    "issuedAt": "2026-08-15T09:12:44+0000",
+    "templateArn": "arn:aws:acm-pca:::template/EndEntityCertificate/V1"
+  },
+  {
+    "awsAccountId": "111122223333",
+    "certificateArn": "arn:aws:acm-pca:us-east-1:111122223333:certificate-authority/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/certificate/7a02c3",
+    "serial": "7a:02",
+    "subject": "CN=harbor-mro-maintenance-client,O=Harbor MRO",
+    "notBefore": "2026-09-01T00:00:00+0000",
+    "notAfter": "2026-12-01T00:00:00+0000",
+    "issuedAt": "2026-09-01T11:20:05+0000",
+    "templateArn": "arn:aws:acm-pca:::template/EndEntityClientAuthCertificate_APIPassthrough/V1"
+  },
+  {
+    "awsAccountId": "111122223333",
+    "certificateArn": "arn:aws:acm-pca:us-east-1:111122223333:certificate-authority/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/certificate/7a03d4",
+    "serial": "7a:03",
+    "subject": "CN=harbor-mro-maintenance-client,O=Harbor MRO",
+    "notBefore": "2026-06-01T00:00:00+0000",
+    "notAfter": "2026-09-01T00:00:00+0000",
+    "issuedAt": "2026-06-01T08:00:00+0000",
+    "revokedAt": "2026-09-01T11:25:00+0000",
+    "revocationReason": "SUPERSEDED",
+    "templateArn": "arn:aws:acm-pca:::template/EndEntityClientAuthCertificate_APIPassthrough/V1"
+  }
+]

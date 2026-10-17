@@ -281,7 +281,11 @@ CA's name; `ciamProviderRef` how its product names it, an AD CS CA's `HOST\CA`; 
 issues from; `ciamCaCertificate`, the operator's, its own certificates in `ou=certificates`), each with its
 revocation endpoints as children (`ciamRevocationEndpoint`: `ciamRevocationKind` crl, delta-crl, ocsp or ca-issuers,
 `ciamEndpointUrl`, the CA's own template in `description` when a variable couldn't be filled). The hierarchy runs
-certificate by certificate: `ciamIssuedBy` names the certificate of the CA that issued one. Templates are
+certificate by certificate: `ciamIssuedBy` names the certificate of the CA that issued one. What a CA's product says of
+the CA itself, when its importer reads it (cloud private CAs), is observed on the CA: `ciamCaType` (root or
+subordinate), `ciamCaState` (active, disabled, pending, expired, deleted, failed), `ciamCaKeyAlgorithm`,
+`ciamCaKeyStorage`, `ciamCaKeyRef` (a customer-managed signing key's name, a reference) and `ciamParentAuthority`
+(the CA above it); the `certificate-authorities` report shows them (state, key; issued by falls back to the parent). Templates are
 `ciamCertTemplate` under `ou=certificate-templates` (display name in `description`, `ciamTemplateOid`,
 `ciamMaxValidityDays`, `ciamExtendedKeyUsage`: what it issues; what it lets requesters do and who may request from
 it, as its importer reads them: `ciamSubjectFromRequest`, `ciamApprovalRequired`, `ciamRequiredSignatures`,

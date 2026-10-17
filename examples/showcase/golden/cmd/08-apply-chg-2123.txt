@@ -1,0 +1,6 @@
+Example Aero Standby Root CA (us-central1/ciam-root, ENTERPRISE): 1 certificate(s), 2 endpoint(s), 3 template(s), complete
+Example Aero Standby Issuing CA (us-central1/ciam-issuing, ENTERPRISE): 3 certificate(s), 2 endpoint(s), 3 template(s), complete
+Example Aero Mesh CA (us-central1/ciam-mesh, DEVOPS): 0 certificate(s), 0 endpoint(s), 3 template(s), incomplete (a DevOps tier pool keeps no certificates: only Cloud Audit Logs record what it issues)
+roles granted on the folders and organization above the project aren't read: they may let more members request certificates
+CHG-2123: 24 change(s) applied, the import run among them
+exit 0
