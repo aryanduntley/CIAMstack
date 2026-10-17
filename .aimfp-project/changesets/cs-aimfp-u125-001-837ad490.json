@@ -1,0 +1,2834 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "reasons.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/reasons.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "private_ca_access.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "private_ca.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "private_ca_access.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "private_ca.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-aws (import opsdir_adapter_aws), registered via entry point opsdir.adapters:aws; depends on opsdir, opsdir-adapter-x509, opsdir-format-terraform, opsdir-format-cloudformation and pyyaml.\n- Network: VPC/subnet data, security groups.\n- Landing zone: plumbing (NAT, route tables, NACLs, peering, transit, VPN, flow logs), OIDC deployer roles, Identity Center permission sets, SCP guardrails.\n- Compute: EC2 instances and Auto Scaling groups.\n- Edge: NLBs, ALBs with WAFv2 and Shield, CloudFront (from the standard account in GovCloud), Route 53 and Resolver rules, VPC endpoints, Network Firewall allowlists.\n- Data: RDS and Aurora, S3, EBS, DLM, AWS Backup.\n- Identity: IAM roles.\n- Security: CloudTrail, GuardDuty, Inspector, Config, Security Hub, Macie, suppressions.\n- Observability: CloudWatch alarms and log groups, Synthetics canaries, Fluent Bit on EKS.\n- Budgets.\n- PKI: AWS Private CA inventory (private_ca.py, private_ca_access.py: CAs with state/key/parent, endpoints, audit-report templates with who may request from IAM, resource policy and ACM, audit-report certificates).\n- Importers: aws/terraform-state, aws/cli-inventory, aws/cloudformation, aws/regions, aws/quotas, aws/private-ca. Collectors for the first three and aws/private-ca (read-only; never creates an audit report).\n- Planner checks: boundary, regulated placement, discovery availability, server inputs.",
+        "external_dependencies": "[\"terraform CLI (applies the rendered roots; terraform state pull for collect --terraform-dir)\", \"hashicorp/aws Terraform provider (~> 6.68)\", \"hashicorp/archive Terraform provider (~> 2.8; canary and Macie scheduler packaging)\", \"AWS CloudFormation (render target cloudformation; stacks read by aws/cloudformation)\", \"AWS CLI (aws-sm resolution, opsdir collect, aws/regions and aws/quotas runs)\", \"amazon.aws Ansible collection (secretsmanager_secret lookup via opsdir-adapter-ansible)\", \"Amazon CloudWatch agent and aws-for-fluent-bit (configured, not installed)\", \"AWS Load Balancer Controller (TargetGroupBinding for cluster gateways)\", \"cfn-lint (CloudFormation validation script and tests only)\"]",
+        "path": "packages/opsdir-adapter-aws/",
+        "purpose": "Amazon Web Services provider adapter (ciamCloudProvider aws, ciamCloudEnvironment public; a us-gov-* ciamRegion selects GovCloud (US) and the aws-us-gov partition).\n- Renders an environment's infrastructure bindings as Terraform for hashicorp/aws, or as AWS CloudFormation translated from the same Terraform data; what CloudFormation can't express stays in a Terraform root.\n- Reads them back from Terraform state, AWS CLI JSON and CloudFormation stacks, and collects all three read-only under the operator's AWS CLI login.\n- Owns the aws-sm, aws-kms, aws-acm and s3 reference schemes and refuses AWS credential forms.\n- Supplies the AWS access model, EKS IRSA and secret delivery, CloudWatch agent host files, and region and quota prerequisites."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-aws"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-gcp (import opsdir_adapter_gcp), registered via entry point opsdir.adapters:gcp; depends on opsdir, opsdir-adapter-x509 and opsdir-format-terraform.\n- Network: Shared VPC network data; firewall rules by network tag, or a network firewall policy by secure tag; Private Service Connect; egress allowlists.\n- Landing zone: plumbing (Cloud NAT, routes, peering, HA VPN), workload identity federation, org-policy guardrails, Assured Workloads, budgets.\n- Compute: Compute Engine instances and regional managed instance groups.\n- Edge: passthrough and Application load balancers with Cloud Armor, Cloud CDN and Cloud DNS.\n- Data: Cloud SQL, buckets, disks, snapshot schedules, Backup and DR.\n- Identity: service accounts and IAM members.\n- Security: audit sinks, Security Command Center, Compliance Manager, mute rules, Sensitive Data Protection.\n- Observability: alert policies, log buckets and sinks, uptime checks, synthetic monitors.\n- PKI: Certificate Authority Service inventory (private_ca.py, private_ca_access.py: pools' CAs with state/key/parent, endpoints, the pool policy and templates as the CA's own with who may request from pool/template/project IAM, an Enterprise pool's certificates).\n- Importers: gcp/terraform-state, gcp/cli-inventory, gcp/regions, gcp/quotas, gcp/frameworks, gcp/private-ca.\n- Collectors: cli-inventory, terraform-state, private-ca.\n- Planner checks: priorities, boundary, regulated placement, server inputs, discovery cadence.",
+        "external_dependencies": "[\"terraform CLI (applies the rendered roots; terraform state pull for collect --terraform-dir)\", \"hashicorp/google Terraform provider (~> 8.6)\", \"hashicorp/archive Terraform provider (~> 2.8; synthetic monitor source packaging)\", \"gcloud CLI (gcp-sm resolution, opsdir collect, gcp/regions, gcp/quotas and gcp/frameworks runs, Policy Troubleshooter in access/evaluate.sh)\", \"Google Cloud Ops Agent (configured, not installed)\"]",
+        "path": "packages/opsdir-adapter-gcp/",
+        "purpose": "Google Cloud provider adapter (ciamCloudProvider gcp, ciamCloudEnvironment public).\n- Renders an environment's infrastructure bindings as Terraform for hashicorp/google, in platform, landing-zone and per-keeper roots.\n- Reads them back from Terraform state and from Cloud Asset Inventory and gcloud JSON, and collects both read-only under the operator's gcloud login.\n- Owns the gcp-sm, gcp-kms, gcp-cert and gs reference schemes (gcp-sm resolved with gcloud) and refuses Google Cloud credential forms.\n- Supplies the Google Cloud access model, GKE workload identity and secret delivery, Ops Agent host files, region, quota and compliance-framework prerequisites, and Assured Workloads boundary checks."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-gcp"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-x509 (kind pki, declaration-only): plan.py (what each endpoint is asked: CRL URLs, OCSP GET requests with a SHA-1 CertID, no nonce, one serial from core revocation.probe_serial), collect.py (estate collector of observing Requests), verify.py (CRL and OCSP response parsing and signature checks: CA-signed, delegated responder with id-kp-OCSPSigning; PSS OCSP unsupported), revocation.py (importer x509/revocation replacing ou=revocation-observations), certificates.py (CA-neutral certificate_facts for CA importers), reasons.py (CA products' revocation reason names as RFC 5280 codes and names: AWS Private CA, Google CAS). The only package depending on cryptography.",
+        "external_dependencies": "[\"cryptography>=50.0.2 (pyca; CRL/OCSP parsing, signature verification, OCSP request building)\"]",
+        "path": "packages/opsdir-adapter-x509/",
+        "purpose": "The X.509 standards (RFC 5280 CRLs, RFC 6960 OCSP), CA-neutral: every recorded CA's revocation endpoints observed read-only and checked against the CA certificates the record holds, into the core pki domain's revocation observations"
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-x509"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"provider_ref\", \"type\": \"str|None\"}, {\"name\": \"templates\", \"type\": \"tuple\"}, {\"name\": \"facts\", \"type\": \"dict|None\", \"required\": false, \"description\": \"{attribute of AUTHORITY_FACTS: value or None}; ciamParentAuthority given as the parent CA's name; None: not read (those attributes not owned)\"}]",
+        "purpose": "Importer builder: a ciamCertAuthority entry (provider ref, published templates and, when given, what the CA's product says of it: AUTHORITY_FACTS type/state/key algorithm/storage/key ref/parent CA), operator attributes kept",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "c1962607b8a6f720"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str|None\"}]",
+        "purpose": "certificate-authorities report rows: config, state (CA type and state), key (algorithm, storage, key ref), issued by (hierarchy; else the product's parent CA), CA certificates, templates, endpoints, inventory, owner",
+        "returns": "{\"type\": \"list of tuple\"}",
+        "source_hash": "3004cf1b39a9dfcc"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/reasons.py",
+        "id_in_name": 0,
+        "name": "revocation_code",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The RFC 5280 CRLReason code a CA product's revocation reason name stands for (AWS Private CA / Google CAS enum names, RFC names; case and separators ignored), or None when it names none.",
+        "returns": "{\"type\": \"int|None\"}",
+        "source_hash": "4221889b95c71907"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-revocation-code-830d3327"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/reasons.py",
+        "id_in_name": 0,
+        "name": "reason_name",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The RFC 5280 reason name the record writes (ciamRevocationReason) for a product's reason name: unspecified when none is given, the product's name as it is when it matches no RFC reason.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "a02f5a1887a94aba"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-reason-name-ec49289a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "statement_grant",
+        "parameters": "[{\"name\": \"s\", \"type\": \"dict\", \"required\": true}, {\"name\": \"action\", \"type\": \"str\", \"required\": true}, {\"name\": \"resource\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "What one IAM policy statement says of an action on a resource (Action/NotAction, Resource/NotResource, IAM wildcards): None, ('all', None), ('only'|'except', acm-pca:TemplateArn patterns) or ('unknown', why) for any other condition.",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "7cc830e419b7a5e8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-statement-grant-36ef44e1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "access",
+        "parameters": "[{\"name\": \"docs\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"action\", \"type\": \"str\", \"required\": true}, {\"name\": \"resource\", \"type\": \"str\", \"required\": true}, {\"name\": \"template\", \"type\": \"str\", \"required\": true, \"description\": \"template ARN\"}]",
+        "purpose": "'yes', 'no' or 'unknown': whether policy documents (None for one not held) allow the action on the resource with a template; an applicable unconditional or template deny wins.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "854cc95a56b4541e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-access-d42fc2df"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "principals",
+        "parameters": "[{\"name\": \"iam\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "((principal ARN, its policy documents; None for a managed policy the export doesn't hold), ...) of a get-account-authorization-details answer: each user (with its groups' policies) and each role.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "762ed9486408df6e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-principals-0acbbde3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "resource_policy_enrollees",
+        "parameters": "[{\"name\": \"policy\", \"type\": \"str|dict|None\", \"required\": true}, {\"name\": \"ca_arn\", \"type\": \"str\", \"required\": true}, {\"name\": \"account\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"template\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "((enrollee, broad), ...) and whether any statement is unknown, of a CA's resource policy for a template: every principal ('*') and other accounts broad, the account's own principals named.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "0dead1d8c5b610d5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resource-policy-enrollees-6682cf4a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "acm_grants",
+        "parameters": "[{\"name\": \"permissions\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "Whether a CA's list-permissions answer lets ACM (acm.amazonaws.com) issue from it.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "134acaa9c6d30091"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-acm-grants-cbf18015"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "enrollment",
+        "parameters": "[{\"name\": \"iam\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"policy\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"permissions\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"ca_arn\", \"type\": \"str\", \"required\": true}, {\"name\": \"account\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"template\", \"type\": \"str\", \"required\": true}, {\"name\": \"through_acm\", \"type\": \"bool\", \"required\": true}]",
+        "purpose": "(enrollees, scope broad|restricted|unknown, why unknown or None) of a CA's template: principals the account's IAM lets issue from it, the CA resource policy's, and (when ACM issues from it) principals allowed acm:RequestCertificate (through ACM).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "f1407d346451dbe7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-enrollment-30cc0dcc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "ca_id",
+        "parameters": "[{\"name\": \"arn\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "A Private CA ARN's id, or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "2f98aa5953d1024b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ca-id-054bf621"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "arn_part",
+        "parameters": "[{\"name\": \"arn\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"n\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "The n-th colon-separated part of an ARN (1 partition, 3 region, 4 account), or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "6893e1805b06b4d3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-arn-part-6d61ac81"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "template_name",
+        "parameters": "[{\"name\": \"arn\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "An AWS Private CA template ARN's name (EndEntityCertificate/V1), any partition, or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "6f6130844a57dc88"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-name-95f42d7d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "template_usages",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The extended key usage OIDs AWS fixes for a template by its family (FAMILY_USAGES); () for Blank* and CA templates.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "68c9ca5e96f57b16"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-usages-987562fa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "endpoints",
+        "parameters": "[{\"name\": \"ca\", \"type\": \"dict\", \"required\": true, \"description\": \"a CertificateAuthority\"}, {\"name\": \"region\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "((kind, n, url, template or None), ...) a CA writes into what it issues: its CRL distribution point (S3 bucket host or CustomCname, CustomPath; partitioned kept as a template; none when the extension is omitted) and OCSP responder (AWS's or OcspCustomCname).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "a56f9ae468b9aa8f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-endpoints-95b0cb00"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "ca_name",
+        "parameters": "[{\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"facts\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "A Private CA's record name: its certificate's subject CN, else its configured subject's, else its id.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "c40bdf9bc189fbed"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ca-name-5e202597"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "report_time",
+        "parameters": "[{\"name\": \"listing\", \"type\": \"list|None\", \"required\": true}]",
+        "purpose": "(GeneralizedTime, datetime) of the newest audit report an audit-report listing names, or (None, None).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "7023e1cdde141224"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-report-time-71052956"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "issued_facts",
+        "parameters": "[{\"name\": \"row\", \"type\": \"dict\", \"required\": true}, {\"name\": \"ca\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The ciamIssuedCertificate facts of an audit report row (serial hex, subject, validity, the CA's own template, ACM requester, revocation time and RFC reason; no fingerprint), or None without a serial.",
+        "returns": "{\"type\": \"dict|None\"}",
+        "source_hash": "b294d88ffaa8cb24"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-facts-087dce7e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "inventory_state",
+        "parameters": "[{\"name\": \"get\", \"type\": \"callable\", \"required\": true, \"description\": \"name -> the CA folder's file text or None\"}, {\"name\": \"arn\", \"type\": \"str\", \"required\": true}, {\"name\": \"region\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": true}]",
+        "purpose": "(state, problems, GeneralizedTime of the inventory, report rows) of a CA's audit reports: complete when the newest is less than FRESH older than the read; incomplete when stale or missing, naming the create command (the CA owner's).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "051e06d8fc873cbc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-state-57e38d4e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "read_ca",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"get\", \"type\": \"callable\", \"required\": true}, {\"name\": \"iam\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"by_subject\", \"type\": \"dict\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": true}]",
+        "purpose": "(Imported groups, notices) of one Private CA: its entry with AWS's facts (type, state, key algorithm/storage, parent) and endpoints, its inventory from the newest audit report, the templates that report shows as its own with who may request.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "847f21e017e9a09b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "read_private_ca",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer aws/private-ca read(): per CA the account owns, its entry, endpoints, inventory and templates, each replacing the record's; shared CAs named; refused without --at.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "0178488f4d842f01"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-private-ca-934f0f7c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py",
+        "id_in_name": 0,
+        "name": "report_bucket",
+        "parameters": "[{\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}]",
+        "purpose": "The audit-report bucket environment m's aws/private-ca collection source names (s3://<bucket>), or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "7c89b4411aa2d85e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-report-bucket-2cce0228"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py",
+        "id_in_name": 0,
+        "name": "private_ca_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps for aws/private-ca: the CA listings (owned, shared) and the account's IAM policies (projected), then each owned CA's certificate, resource policy, ACM permission and, with a report bucket, its audit-report listing and newest report; read-only, never creates a report.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "3592c0fbb1542263"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-private-ca-steps-3b6bc6cf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py",
+        "id_in_name": 0,
+        "name": "private_ca_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector.problems of aws/private-ca: a collection source naming no bucket (s3://<bucket>), or more than one source.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "15c08e5b2fea6836"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-private-ca-problems-d07545a6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "is_broad",
+        "parameters": "[{\"name\": \"member\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether an IAM member is a broad group: allUsers, allAuthenticatedUsers or a whole domain (domain:).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "1480c4d96ed9018c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-broad-16217681"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "holders",
+        "parameters": "[{\"name\": \"policies\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"roles\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "(members holding one of the roles unconditionally, members whose binding can't be judged: conditional or a custom role) of IAM policies (None for one not read).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "42a3c6248d8a12f0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-holders-b45fa3f7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py",
+        "id_in_name": 0,
+        "name": "enrollment",
+        "parameters": "[{\"name\": \"pool_policy\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"template_policy\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"project_policy\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"templated\", \"type\": \"bool\", \"required\": true}]",
+        "purpose": "(enrollees, scope broad|restricted|unknown, why unknown or None) of requesting from a CA pool (certificates.create via pool or project IAM), with a template when templated (templates.use via template or project IAM; a broad side admits the other side's members).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "39b67a286cc05320"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-enrollment-fd28dab5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "resource_part",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"collection\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The id after <collection>/ in a Google resource name (projects/p/locations/l/caPools/x, caPools -> x), or None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "ac56c74c90889fa2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-resource-part-bc8a3575"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "x509_usages",
+        "parameters": "[{\"name\": \"params\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "The extended key usage OIDs CAS X509Parameters set (extendedKeyUsage flags and unknownExtendedKeyUsages).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "38fb43d904f1255f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-x509-usages-d49af21d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "passes_usages",
+        "parameters": "[{\"name\": \"constraints\", \"type\": \"dict|None\", \"required\": false, \"description\": \"*args: CertificateExtensionConstraints\"}]",
+        "purpose": "Whether a request may pass its own extended key usages through (a passthroughExtensions naming EXTENDED_KEY_USAGE).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "eef1882fbbec8afc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-passes-usages-6c6e9d8d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "names_subject",
+        "parameters": "[{\"name\": \"constraints\", \"type\": \"dict|None\", \"required\": false, \"description\": \"*args: CertificateIdentityConstraints\"}]",
+        "purpose": "Whether the requester names the subject: unless every identity constraint given forbids subject and SAN passthrough (none given: allowed).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "f146fe4ea17c2f03"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-names-subject-e8fb6451"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "lifetime_days",
+        "parameters": "[{\"name\": \"lifetimes\", \"type\": \"str|None\", \"required\": false, \"description\": \"*args\"}]",
+        "purpose": "The smallest maximum lifetime ('2592000s') in whole days rounded up, or None when none is set.",
+        "returns": "{\"type\": \"int|None\"}",
+        "source_hash": "8547c27c4620ebe6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-lifetime-days-3e252130"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "template_facts",
+        "parameters": "[{\"name\": \"pool\", \"type\": \"dict\", \"required\": true}, {\"name\": \"template\", \"type\": \"dict|None\", \"required\": false}]",
+        "purpose": "(subject from request, extended key usages, longest validity days) of a pool's issuance policy, combined with a certificate template's when given.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "cb5250493352852a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-template-facts-3f8bda50"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "ca_endpoints",
+        "parameters": "[{\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"pool\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "((kind, n, url, None), ...) a CAS CA writes into what it issues: its CRL and CA certificate URLs (user-defined, else published) and its pool's baseline OCSP servers.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "924b6990b0f18021"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ca-endpoints-8b041679"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "ca_facts",
+        "parameters": "[{\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"names\", \"type\": \"dict\", \"required\": true}, {\"name\": \"by_subject\", \"type\": \"dict\", \"required\": true}, {\"name\": \"facts\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "What Google says of a CA (AUTHORITY_FACTS): type, state, key algorithm, storage (Google-managed HSM / Cloud KMS key), key reference, parent (subordinateConfig, else by issuer subject, else the record's CA by issuer CN).",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "d6993560b7d14de9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ca-facts-8050abea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "ca_name",
+        "parameters": "[{\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"facts\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "A CAS CA's record name: its certificate's subject CN, else its id.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "4754802019ee7abd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ca-name-85fcb365"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "issued_facts",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"dict\", \"required\": true}, {\"name\": \"ca\", \"type\": \"str\", \"required\": true}, {\"name\": \"pool\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The ciamIssuedCertificate facts of a CAS certificate from its public PEM (certificate_facts), its template as the CA's own (<CA>/<pool>[/<template>]), its revocation by RFC name; None without a certificate.",
+        "returns": "{\"type\": \"dict|None\"}",
+        "source_hash": "ad9c2b91421929f9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-facts-c24ee928"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "read_ca",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"pool\", \"type\": \"dict\", \"required\": true}, {\"name\": \"certs\", \"type\": \"tuple|None\", \"required\": true}, {\"name\": \"templates\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"policies\", \"type\": \"tuple\", \"required\": true, \"description\": \"(project IAM, pool IAM, template id -> template IAM)\"}, {\"name\": \"names\", \"type\": \"dict\", \"required\": true}, {\"name\": \"by_subject\", \"type\": \"dict\", \"required\": true}, {\"name\": \"at\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(Imported groups, notices) of one CA of a pool: its entry with Google's facts and endpoints, its inventory (the pool's certificates it issued; DevOps or unread listing incomplete) and its own templates.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "8d8730dd050571b0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "read_pool",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"pool\", \"type\": \"dict\", \"required\": true}, {\"name\": \"get\", \"type\": \"callable\", \"required\": true}, {\"name\": \"location_get\", \"type\": \"callable\", \"required\": true}, {\"name\": \"project_policy\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"names\", \"type\": \"dict\", \"required\": true}, {\"name\": \"by_subject\", \"type\": \"dict\", \"required\": true}, {\"name\": \"at\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(Imported groups, notices) of one CA pool: each of its root and subordinate CAs (read_ca).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "f6e957a556feb522"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-pool-ae213f58"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "read_private_ca",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer gcp/private-ca read(): per CA of the project's pools its entry, endpoints, inventory and own templates, each replacing the record's; refused without --at.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "5b015c47c8ad3164"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py",
+        "id_in_name": 0,
+        "name": "certificate_fields",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A Command keep function: gcloud privateca certificates list output with each certificate only CERTIFICATE_FIELDS (no CSR, config or description).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "71e0a4234c45da74"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-fields-1ed0a4b1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py",
+        "id_in_name": 0,
+        "name": "private_ca_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps for gcp/private-ca: pools (every location) and project IAM, then per pool its roots, subordinates, IAM and (not DevOps) trimmed certificates, per location its templates, then each template's IAM; read-only.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "b424edd59a5c10ce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-private-ca-steps-8dcc39f4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 108 item (e), cloud private CAs (task 559 said they wait for task 557's merge: done). Read AWS Private CA (opsdir-adapter-aws) and Google Cloud Certificate Authority Service (opsdir-adapter-gcp) into the CA-neutral pki model (flow 60), metadata only, never keys: CAs (hierarchy, key algorithm/storage, status), CA pools/templates as CA-scoped templates (ciamTemplateAuthority), revocation configuration (CRL distribution/S3/GCS, OCSP), and the issued certificates the service records (AWS: no list-certificates API: the audit report written to S3; Google: ListCertificates per pool). Read-only collectors with least privilege (exact IAM actions/roles), saved-export importers (pure), certificate parsing via opsdir-adapter-x509 certificate_facts. GovCloud / Assured Workloads availability checked on each vendor's government-cloud page as well as the general one; report disagreements. Use the existing core pki model and GET-only collection; if a core pki change seems needed, escalate to the master first (task 562's worker owns core pki this round). Azure Key Vault certificates are a managed inventory: they wait for task 562's concept (deferred note). Tests, showcase change, README/docs. Reserved: core attrs 910-919, classes 197-198; showcase CHG-2122..2124, A286-A291, B114-B116.",
+        "flows": [
+          "PKI Authorities & Issued-Certificate Reconciliation",
+          "Cloud Private CA Inventory Import"
+        ],
+        "name": "Cloud private CA inventories: AWS Private CA and Google CAS",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Codex read-only research (AWS Private CA APIs + audit report, Google CAS APIs, IAM least privilege, GovCloud/Assured Workloads availability on both pages); design to the master.",
+        "name": "Research and design gate",
+        "parent": {
+          "key": {
+            "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-gate-a1f9d1c6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-aws: collector + pure importer (CAs, templates, revocation config, audit-report certificates).",
+        "name": "AWS Private CA collector and importer",
+        "parent": {
+          "key": {
+            "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-aws-private-ca-collector-and-importer-238b1f0c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-gcp: collector + pure importer (pools, CAs, templates, ListCertificates).",
+        "name": "Google CAS collector and importer",
+        "parent": {
+          "key": {
+            "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-google-cas-collector-and-importer-1fd7d172"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase CHG-2122..2124, README/Known limits; deferred note for Azure Key Vault certificates.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-91c4a8b9"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "fac9977",
+    "branch": "aimfp-u125-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "the code of the product's name",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reason-name-ec49289a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-revocation-code-830d3327"
+      }
+    },
+    {
+      "attributes": {
+        "description": "core pki: the RFC 5280 name of the code",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reason-name-ec49289a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-revocation-reason-f3e4230d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "access calls statements (iam.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-access-d42fc2df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-statements-969d07ce"
+      }
+    },
+    {
+      "attributes": {
+        "description": "access calls statement_grant (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-access-d42fc2df"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-statement-grant-36ef44e1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "principals calls policy_document (iam.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-principals-0acbbde3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-document-3dc158e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resource_policy_enrollees calls statements (iam.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resource-policy-enrollees-6682cf4a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-statements-969d07ce"
+      }
+    },
+    {
+      "attributes": {
+        "description": "resource_policy_enrollees calls statement_grant (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-resource-policy-enrollees-6682cf4a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-statement-grant-36ef44e1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enrollment calls access (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollment-30cc0dcc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-access-d42fc2df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enrollment calls principals (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollment-30cc0dcc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-principals-0acbbde3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enrollment calls resource_policy_enrollees (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollment-30cc0dcc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-policy-enrollees-6682cf4a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enrollment calls acm_grants (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollment-30cc0dcc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-acm-grants-cbf18015"
+      }
+    },
+    {
+      "attributes": {
+        "description": "endpoints calls ca_id (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-endpoints-95b0cb00"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-id-054bf621"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_name calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-name-5e202597"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_name calls common_name (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-name-5e202597"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_name calls ca_id (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-name-5e202597"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-id-054bf621"
+      }
+    },
+    {
+      "attributes": {
+        "description": "report_time calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-report-time-71052956"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-087dce7e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls serial_key (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-087dce7e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serial-key-9f0ee287"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls reason_name (reasons.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-087dce7e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reason-name-ec49289a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls template_name (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-087dce7e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-name-95f42d7d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_state calls json_document (sources.py) via _doc",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-state-57e38d4e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_state calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-state-57e38d4e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_state calls ca_id (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-state-57e38d4e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-id-054bf621"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_state calls report_time (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-state-57e38d4e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-report-time-71052956"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls get_entry (directory.py) via _parent",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls json_document (sources.py) via _doc",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls authority_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls endpoint_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls template_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls cert_inventory_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls issued_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-entry-1438647a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls authority_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls common_name (issued.py) via _parent",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_templates_groups (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls enrollment (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enrollment-30cc0dcc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_id (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-id-054bf621"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls arn_part (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-arn-part-6d61ac81"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls template_name (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-name-95f42d7d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls template_usages (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-usages-987562fa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls endpoints (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-95b0cb00"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_name (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-name-5e202597"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls issued_facts (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-facts-087dce7e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls inventory_state (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-state-57e38d4e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-934f0f7c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-934f0f7c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls certificate_facts (certificates.py) via _subjects",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-934f0f7c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls ca_id (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-934f0f7c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-id-054bf621"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls ca_name (private_ca.py) via _subjects",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-934f0f7c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-name-5e202597"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls read_ca (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-934f0f7c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      }
+    },
+    {
+      "attributes": {
+        "description": "report_bucket calls bucket_of (storage.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-report-bucket-2cce0228"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-bucket-of-c824785e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "report_bucket calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-report-bucket-2cce0228"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_steps calls one (directory.py) via _aws",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-3b6bc6cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_steps calls json_document (sources.py) via _newest_report",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-3b6bc6cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_steps calls fips_endpoints (residency.py) via _aws",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-3b6bc6cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fips-endpoints-5fed42bb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_steps calls report_bucket (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-3b6bc6cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-report-bucket-2cce0228"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_problems calls bucket_of (storage.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-problems-d07545a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-bucket-of-c824785e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-problems-d07545a6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enrollment calls is_broad (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollment-fd28dab5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-broad-16217681"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enrollment calls holders (private_ca_access.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollment-fd28dab5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-holders-b45fa3f7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "lifetime_days calls duration_seconds (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-lifetime-days-3e252130"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-duration-seconds-664d1cc7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_facts calls x509_usages (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-facts-3f8bda50"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-x509-usages-d49af21d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_facts calls passes_usages (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-facts-3f8bda50"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-passes-usages-6c6e9d8d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_facts calls names_subject (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-facts-3f8bda50"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-names-subject-e8fb6451"
+      }
+    },
+    {
+      "attributes": {
+        "description": "template_facts calls lifetime_days (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-facts-3f8bda50"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifetime-days-3e252130"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_facts calls get_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-facts-8050abea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_facts calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-facts-8050abea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_facts calls authority_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-facts-8050abea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_facts calls common_name (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-facts-8050abea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_name calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-name-85fcb365"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_name calls common_name (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-name-85fcb365"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_name calls resource_part (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-name-85fcb365"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-part-bc8a3575"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-c24ee928"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-c24ee928"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls reason_name (reasons.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-c24ee928"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reason-name-ec49289a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls resource_part (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-c24ee928"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-part-bc8a3575"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls authority_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls endpoint_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls template_entry (issued.py) via _templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls cert_inventory_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls issued_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-entry-1438647a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_templates_groups (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls enrollment (private_ca_access.py) via _templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enrollment-fd28dab5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls resource_part (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-part-bc8a3575"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls template_facts (private_ca.py) via _templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-facts-3f8bda50"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_endpoints (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-endpoints-8b041679"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_facts (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-facts-8050abea"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_name (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-name-85fcb365"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls issued_facts (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-facts-c24ee928"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_pool calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-pool-ae213f58"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_pool calls read_ca (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-pool-ae213f58"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-ca-a9808fb8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls certificate_facts (certificates.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls resource_part (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-part-bc8a3575"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls ca_name (private_ca.py) via _naming",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-name-85fcb365"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_private_ca calls read_pool (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-private-ca-1aa213c6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-pool-ae213f58"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_steps calls project_id (account.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-8dcc39f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-project-id-a08dc83b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_steps calls resource_part (private_ca.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-8dcc39f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-resource-part-bc8a3575"
+      }
+    },
+    {
+      "attributes": {
+        "description": "private_ca_steps references certificate_fields (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-8dcc39f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-fields-1ed0a4b1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keep: certificates list trimmed to CERTIFICATE_FIELDS",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-private-ca-steps-8dcc39f4"
+      },
+      "interaction_type": "compose",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-fields-1ed0a4b1"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/reasons.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/reasons.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "flow": {
+        "name": "Cloud Private CA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/reasons.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-aws"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-aws"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-gcp"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-gcp"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/reasons.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca_access.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca_access.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-cloud-private-ca-inventories-aws-private-753b4a17"
+      }
+    }
+  ],
+  "warnings": []
+}

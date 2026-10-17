@@ -1,0 +1,1702 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "profiles.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "inventory.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "package build config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-ejbca/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": "[\"subprocess (provider CLIs: aws, az, gcloud, terraform, ldapsearch)\", \"urllib/ssl (product admin APIs)\"]",
+        "path": "opsdir/opsdir/live.py",
+        "purpose": "Effects of live read-only collection: running collectors' calls (subprocess commands with credentials on stdin only; in-process HTTP GETs, and POSTs of a read-only query's JSON body to URLs the collector declares (Collector.queries, refused in connectors.collecting otherwise), with TLS trust from the record and client certificates via memfd) and resolving credential references once per run, in memory, with redaction of error output"
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "live"
+      }
+    },
+    {
+      "attributes": {
+        "description": "importer ejbca/inventory (inventory.py: export ejbca/<source>/cas.json, certificates/<CA id>/page-<n>.json, profiles/<name>.json, count.json; completeness: pages vs total_certs, total changing, readable count > seen -> incomplete; root CA empty search -> denied), profiles.py (validity in EJBCA's notation, EKUs, available_cas), collect.py (GET /v1/ca, optional GET /v2/certificate/count, POST /v2/certificate/search per CA paged at 500 sorted by ISSUED_DATE, GET /v2/certificate/profile/{name}; Collector.queries declares the search). Least-privilege role proven live against keyfactor/ejbca-ce:9.6.3 (marker ejbca).",
+        "external_dependencies": "[\"EJBCA REST API v1/v2 (Community 9.6.3 tested; protocols REST Certificate Management and V2 enabled), client certificate (mutual TLS)\", \"opsdir-adapter-x509 (certificate_facts incl. endpoints; cryptography)\", \"keyfactor/ejbca-ce:9.6.3 docker image (live tests only)\"]",
+        "path": "packages/opsdir-adapter-ejbca/",
+        "purpose": "Keyfactor EJBCA read into the core pki domain over its REST API, metadata only: CAs (named by subject CN, ciamProviderRef the EJBCA name), revocation endpoints from the latest active certificate's extensions, certificate profiles as CA-scoped templates, issued-certificate inventories with template, requester and revocation reason; a client-certificate collector whose v2 certificate search is the only (declared, read-only) POST."
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-ejbca"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/collecting.py",
+        "id_in_name": 0,
+        "name": "provenance",
+        "parameters": "[{\"name\": \"call\", \"type\": \"Command|Request\", \"required\": true}]",
+        "purpose": "What a call runs, in words that never hold a credential: the command line, GET and the URL, or POST, the URL and the read-only query's body (the evidence's provenance).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "230d45c403961e12"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-provenance-f8cf6178"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/collecting.py",
+        "id_in_name": 0,
+        "name": "refused",
+        "parameters": "[{\"name\": \"call\", \"type\": \"Command|Request|str\", \"required\": true}, {\"name\": \"queries\", \"type\": \"tuple[str]\", \"required\": false, \"description\": \"the collector's read-only query URL patterns (Collector.queries)\"}]",
+        "purpose": "Why a call is never run: a step that is a problem text, a POST (Request with a body) to a URL the collector's queries don't declare a read-only query or an observing one, a debug switch on a command; else None.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "91bbce2e5528076f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-refused-410f2f00"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/live.py",
+        "id_in_name": 0,
+        "name": "run_call",
+        "parameters": "[{\"name\": \"call\", \"type\": \"Command|Request\", \"required\": true}, {\"name\": \"resolve\", \"type\": \"callable\", \"required\": true, \"description\": \"resolver(): ref -> (value, problem)\"}]",
+        "purpose": "Effect: (output, problem) of one call: a Command run as a subprocess, a Request made as an HTTP GET or the POST of its read-only query's body as JSON (an observing one's answer, whatever it is, as its output); (None, None) when it says there is nothing to read (its absent markers).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(output text | None, problem | None)\"}",
+        "source_hash": "0f73bb01179e9134"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-run-call-4195ce4c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py",
+        "id_in_name": 0,
+        "name": "certificate_facts",
+        "parameters": "[{\"name\": \"pem\", \"type\": \"str\", \"required\": true, \"description\": \"PEM text whose first certificate is read\"}]",
+        "purpose": "The public facts of a PEM certificate as the record writes them, CA-neutral (any CA's issued-certificate importer): serial (lowercase even-length hex), SHA-256 fingerprint (ciamFingerprint's form), subject and issuer (RFC 4514), validity (GeneralizedTime), extended key usages (OIDs; None when the certificate has no EKU extension) and the revocation endpoints it names ((kind, url), ...: CRL distribution points crl, freshest CRL delta-crl, OCSP ocsp, CA issuers ca-issuers; URIs only), what a CA whose settings can't be read (EJBCA over REST) is known to publish; None when the text isn't a certificate. Never a key.",
+        "returns": "{\"type\": \"dict | None\", \"description\": \"{serial, sha256, subject, issuer, not_before, not_after, usages, endpoints} or None\"}",
+        "source_hash": "720585b402cc5901"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/collecting.py",
+        "id_in_name": 0,
+        "name": "is_query",
+        "parameters": "[{\"name\": \"call\", \"type\": \"Request\", \"required\": true}, {\"name\": \"queries\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "Whether a POST Request's URL path is one of the read-only query endpoints its collector declares (regular expressions searched in the path).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "9105961fa9f3acd1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-query-0958d907"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py",
+        "id_in_name": 0,
+        "name": "validity_days",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "Whole days (rounded up) of an EJBCA certificate profile's validity in EJBCA's notation (1y 6mo 3d 12h 30m: a year 365 days, a month 30), with why not when it isn't one (an absolute end date, which isn't a length).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(days int | None, why str | None)\"}",
+        "source_hash": "4a3c1aec9165ac1b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-validity-days-db9f80c5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py",
+        "id_in_name": 0,
+        "name": "offered_to",
+        "parameters": "[{\"name\": \"profile\", \"type\": \"dict\", \"required\": true, \"description\": \"a GET /v2/certificate/profile/{name} answer\"}, {\"name\": \"ca\", \"type\": \"str\", \"required\": true, \"description\": \"the CA's EJBCA name\"}]",
+        "purpose": "Whether an EJBCA certificate profile answer offers the CA (its EJBCA name) to issue from: available_cas names it or ANY_CA.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "3f50fbc7b6a52714"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-offered-to-fee0602f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py",
+        "id_in_name": 0,
+        "name": "profile_template",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"ca\", \"type\": \"str\", \"required\": true, \"description\": \"the record's CA name\"}, {\"name\": \"ejbca_ca\", \"type\": \"str\", \"required\": true, \"description\": \"the CA's EJBCA name\"}, {\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"the certificate profile's name\"}, {\"name\": \"profile\", \"type\": \"dict\", \"required\": true}, {\"name\": \"ee_profiles\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "(the CA-scoped template entry of an EJBCA certificate profile the CA issued from, or None, notices): cn '<CA>/<profile>', description naming the end entity profiles its certificates came through, the longest validity in days, its extended key usages; rights not read (Community REST exposes no roles, approval profiles or DN override): None. A profile no longer offered to the CA is left out, named.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(Entry | None, (notice, ...))\"}",
+        "source_hash": "41214736723bb32e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-profile-template-98444c0f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "certificate_pem",
+        "parameters": "[{\"name\": \"b64\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The PEM of an EJBCA search answer's base64Cert (base64 of the PEM body as EJBCA 9.6 sends it, or of the DER), or None when it holds no certificate data.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "7c17963b77a091f3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-pem-d6fa5f62"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "issued_facts",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"dict\", \"required\": true}, {\"name\": \"ca\", \"type\": \"str\", \"required\": true, \"description\": \"the record's CA name\"}]",
+        "purpose": "(the issued-certificate facts of one EJBCA search result, the x509 facts or None): read from its certificate (certificate_facts) when EJBCA stored it, else from EJBCA's columns (no SHA-256); the template '<CA>/<certificate profile>', the end entity username as requester, revocation date and RFC 5280 reason when revoked (status 40/60 or a revocation date).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(facts dict of ISSUED_ATTRS, x509 facts dict | None)\"}",
+        "source_hash": "fc331962f74e99f4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-facts-4d0d5357"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "page_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"ca_id\", \"type\": \"int|str\", \"required\": true}, {\"name\": \"n\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "The export path of one CA's n-th certificate search page for a collection source: ejbca/<source>/certificates/<CA id>/page-<n>.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "017fe97e62bc15ac"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-page-path-c8fa384e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "profile_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The export path of a certificate profile answer for a collection source: ejbca/<source>/profiles/<name, percent-encoded>.json.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "67957144fb32d983"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-profile-path-f74e108c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "listed_cas",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The CAs of a GET /v1/ca answer ({id, name, subject_dn, issuer_dn, external}, ...), or None when the text isn't one.",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "5e86c604856437ab"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-listed-cas-3b9bdc42"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "search_page",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "(certificates, total_certs or None, problem or None) of a saved v2 certificate search page: an error answer or text that isn't one is a problem.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "724c53fa6f854f5b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-page-cd27d5e2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "profile_names",
+        "parameters": "[{\"name\": \"certs\", \"type\": \"tuple[dict]\", \"required\": true}]",
+        "purpose": "The certificate profile names the certificates of search results name, in first-seen order.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "d33c5ea851cbc84a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-profile-names-76c8524a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "read_ca",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"source\", \"type\": \"str\", \"required\": true, \"description\": \"the collection source's name (ejbca/<source>/)\"}, {\"name\": \"listed\", \"type\": \"dict\", \"required\": true, \"description\": \"the CA as GET /v1/ca lists it\"}, {\"name\": \"files\", \"type\": \"dict\", \"required\": true, \"description\": \"the export\"}, {\"name\": \"when\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime of the inventory\"}, {\"name\": \"extra\", \"type\": \"tuple[str]\", \"required\": false, \"description\": \"problems every CA of the source shares (EJBCA counting more than the reader saw)\"}]",
+        "purpose": "(Imported groups, notices) of one EJBCA CA of a collection source: its authority (ciamProviderRef its EJBCA name) with the revocation endpoints its most recently issued active certificate other than its own names (a root's sub-CA certificates count; none: the record's kept), its issued-certificate inventory (complete; incomplete: a page missing or failed, the pages not holding the counted total, the total changing, extra; denied: a root's search empty) and its certificate profiles as CA-scoped templates.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(groups, notices)\"}",
+        "source_hash": "1aadd6c402f7f0cc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py",
+        "id_in_name": 0,
+        "name": "read_inventory",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Imported (importer ejbca/inventory): per collection source in the export and per CA it lists, the CA with its revocation endpoints, its issued-certificate inventory and its certificate profiles as its own templates, each replacing the record's; dated by --at.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "1c2c2907f1d7aa44"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py",
+        "id_in_name": 0,
+        "name": "base_of",
+        "parameters": "[{\"name\": \"location\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The REST API base (https://<host>:<port>/ejbca/ejbca-rest-api) of an ejbca/inventory collection source location (https://<host>:<port>/ejbca), or None when it isn't an https URL.",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "323c108adc3edb59"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-base-of-108d5b60"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py",
+        "id_in_name": 0,
+        "name": "search_body",
+        "parameters": "[{\"name\": \"ca\", \"type\": \"str\", \"required\": true, \"description\": \"the CA's EJBCA name\"}, {\"name\": \"page\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "The JSON body of the read-only v2 certificate search for one page of a CA's certificates (CA EQUAL its name, sorted by issue date, PAGE_SIZE per page).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "a0481e1daf6e6d9f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-body-28acfccd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py",
+        "id_in_name": 0,
+        "name": "kept",
+        "parameters": "[{\"name\": \"fields\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"items\", \"type\": \"dict\", \"required\": false, \"description\": \"{list field: its items' fields}\"}]",
+        "purpose": "A Request keep function: a JSON answer reduced to the fields the importer reads (top level, and per item of its list fields); text that isn't JSON kept as it is.",
+        "returns": "{\"type\": \"callable\"}",
+        "source_hash": "8ad3cad8cbcb8954"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-295f120d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py",
+        "id_in_name": 0,
+        "name": "inventory_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps for ejbca/inventory per readable source (client-certificate): GET /v1/ca and the optional count; per CA it lists (not external) the first search page; then the rest of the pages its total names and each certificate profile the certificates name.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "f5e48a8ad8456a5e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why ejbca/inventory collection sources can't be read: their own problems, a credential scheme other than client-certificate, a location that isn't an https URL.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "a677ebc4cfee2df0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-c6290c5c"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"url\": \"str\", \"headers\": \"((name, value), ...) no credentials\", \"credential\": \"(basic|bearer|token|api-key|client-certificate, ref, login, ...) | (headers, ref, login, (login_header, secret_header)) | None\", \"ca\": \"ref of a PEM certificate | None\", \"absent\": \"tuple[int]\", \"keep\": \"fn(output) -> output | None\", \"observe\": \"bool: the answer, whatever it is, as an observation's JSON text (core.observation); never a failed call\", \"body\": \"str | None: a read-only query's JSON text; the Request is then a POST of it (Content-Type application/json), only to a URL its collector's queries declare, never a credential, never observing\"}",
+        "description": "An HTTP call a collector asks opsdir to make itself: a GET, or the POST of a read-only query's body (EJBCA's certificate search) to a URL its collector declares a query (Collector.queries, enforced by connectors.collecting.refused); an observing one (observe=True, GET only) records whatever the endpoint answers (a revocation endpoint's binary answer as base64) or why it answered nothing",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Request"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-request-e212bfd1"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"importer\": \"str\", \"scope\": \"environment|estate\", \"steps\": \"fn(d, m, done, options) -> ((path, Command|Request), ...)\", \"verify\": \"fn(d, m) -> (call, check(output) -> problem|None) | None\", \"problems\": \"fn(d, m, options) -> (problem, ...) | None: why it can't collect here (nothing run)\", \"options\": \"tuple[CollectOption] = (): the run-time options it takes, offered as `opsdir collect` flags (U.14 task 519)\", \"queries\": \"tuple[str] = (): regular expressions searched in a URL's path: the read-only query endpoints it may POST a body to; any other POST is refused (task 561)\"}",
+        "description": "How opsdir collect reads one importer's export from the live system, read-only (Adapter.collectors), the options it takes (CollectOption: the CLI builds its collect flags from the installed collectors' declarations) and the read-only query endpoints it may POST to (queries).",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Collector"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-collector-de208f33"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 108 item (e), EJBCA part (deferred note 3228 on file 1119; research in decision 3210). Read EJBCA (Keyfactor; Community 9.6 / Enterprise 9.7) into the CA-neutral pki model (flow 60), metadata only. (1) Core: the collector Request is GET-only today (opsdir/opsdir/live.py, core/contract.py); add a read-only POST (a search body, no state change) under the existing collector contract, least privilege and evidence; this worker OWNS live.py/contract.py changes in this round. Reuse the 'client-certificate' credential scheme from task 558 for mTLS. (2) A new adapter package (decide name at design, e.g. opsdir-adapter-ejbca): collector (GET /v1/ca, POST v2 certificate/search paginated, GET v2 certificate/profile/{name}, v2 endentity/profiles/authorized) and a saved-export importer (pure) that parses base64Cert with opsdir-adapter-x509 certificate_facts; certificate profiles (+ end entity profile) as CA-scoped templates (ciamTemplateAuthority, cn '<CA>/<profile>'); revocation status/reason/date; CRL/OCSP/AIA defaults aren't in REST (Known limit or ConfigDump). (3) Validate live against the keyfactor/ejbca-ce container (sources disagree on whether Community has certificate search: find out). (4) Tests, showcase change, README/docs. Design gate to the master before coding if the record changes. Reserved: core attrs 900-909, classes 195-196; showcase CHG-2121, A282-A285, B112-B113.",
+        "flows": [
+          "PKI Authorities & Issued-Certificate Reconciliation",
+          "EJBCA Inventory Import"
+        ],
+        "name": "EJBCA issued-certificate inventory (POST collection, mTLS)",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Codex read-only research (EJBCA REST v1/v2 current shapes, Community vs Enterprise search, least-privilege role); live probe of keyfactor/ejbca-ce; design to the master.",
+        "name": "Research and design gate",
+        "parent": {
+          "key": {
+            "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-gate-6065ced4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "live.py/contract.py: POST Request with a body, read-only by contract, evidence, tests; client-certificate reuse.",
+        "name": "Core read-only POST collection",
+        "parent": {
+          "key": {
+            "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-core-read-only-post-collection-b01d76a3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "New adapter package: collector + pure saved-export importer into the pki model; profiles as CA-scoped templates.",
+        "name": "EJBCA collector and importer",
+        "parent": {
+          "key": {
+            "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-ejbca-collector-and-importer-46d09b54"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit + live (container) tests, showcase CHG-2121, README/Known limits.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-77e5a130"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "fac9977",
+    "branch": "aimfp-u123-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "a POST is refused unless its URL is a declared read-only query",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-refused-410f2f00"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-query-0958d907"
+      }
+    },
+    {
+      "attributes": {
+        "description": "profile_template calls template_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-template-98444c0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "profile_template calls validity_days (profiles.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-template-98444c0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-validity-days-db9f80c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "profile_template calls offered_to (profiles.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-profile-template-98444c0f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-offered-to-fee0602f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls gtime (directory.py) via _ms",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-4d0d5357"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls revocation_reason (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-4d0d5357"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-revocation-reason-f3e4230d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls serial_hex (verify.py) via _serial",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-4d0d5357"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serial-hex-319ec339"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-4d0d5357"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls certificate_pem (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-4d0d5357"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-pem-d6fa5f62"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listed_cas calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listed-cas-3b9bdc42"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_page calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-page-cd27d5e2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls get_entry (directory.py) via _endpoints",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls json_document (sources.py) via _template",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls authority_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls endpoint_entry (issued.py) via _endpoints",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls cert_inventory_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls issued_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-entry-1438647a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls endpoints (issued.py) via _endpoints",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoints-a82580c5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls authority_dn (naming.py) via _endpoints",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls template_dn (naming.py) via _template",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-dn-036b18f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls common_name (issued.py) via _ca_name",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls ca_templates_groups (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls profile_template (profiles.py) via _template",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-profile-template-98444c0f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls issued_facts (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-facts-4d0d5357"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls page_path (inventory.py) via _search",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-c8fa384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls profile_path (inventory.py) via _template",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-profile-path-f74e108c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls search_page (inventory.py) via _search",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-page-cd27d5e2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls profile_names (inventory.py) via _templates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-profile-names-76c8524a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls rdn_safe (naming.py) via _ca_name",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls json_document (sources.py) via _count_problem",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls common_name (issued.py) via _ca_name",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls page_path (inventory.py) via _search",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-c8fa384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls listed_cas (inventory.py) via _read_source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listed-cas-3b9bdc42"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls search_page (inventory.py) via _search",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-page-cd27d5e2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_inventory calls read_ca (inventory.py) via _read_source",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-inventory-33e17e73"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-ca-0aa84c1f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-295f120d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls page_path (inventory.py) via _ca_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-c8fa384e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls profile_path (inventory.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-profile-path-f74e108c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls listed_cas (inventory.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listed-cas-3b9bdc42"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls search_page (inventory.py) via _ca_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-page-cd27d5e2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls profile_names (inventory.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-profile-names-76c8524a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls base_of (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-base-of-108d5b60"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls search_body (collect.py) via _search",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-body-28acfccd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inventory_steps calls kept (collect.py) via _search",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inventory-steps-f6150f24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-295f120d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-c6290c5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-c6290c5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls base_of (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-c6290c5c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-base-of-108d5b60"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-is-query-0958d907"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-request-e212bfd1"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-refused-410f2f00"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "validator",
+      "type": {
+        "entity_key": "ty-request-e212bfd1"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/__init__.py"
+      },
+      "flow": {
+        "name": "EJBCA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/adapter.py"
+      },
+      "flow": {
+        "name": "EJBCA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py"
+      },
+      "flow": {
+        "name": "EJBCA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py"
+      },
+      "flow": {
+        "name": "EJBCA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py"
+      },
+      "flow": {
+        "name": "EJBCA Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-ejbca"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-ejbca"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-ejbca"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-ejbca"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-ejbca"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-ejbca"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/collecting.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/live.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/profiles.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/inventory.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/src/opsdir_adapter_ejbca/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-ejbca/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/pki.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ejbca-issued-certificate-inventory-post-67ec70c3"
+      }
+    }
+  ],
+  "warnings": []
+}

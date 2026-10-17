@@ -1,0 +1,2759 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "managed.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "opsdir/opsdir/domains/pki/managed.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "certificates.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "adapter.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/adapter.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "__init__.py",
+        "no_flow_reason": "package marker"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/__init__.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "toml",
+        "name": "pyproject.toml",
+        "no_flow_reason": "build config"
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/pyproject.toml"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "bash",
+        "name": "export-venafi.sh",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/scripts/export-venafi.sh"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "external_dependencies": null,
+        "path": "opsdir/opsdir/domains/pki/",
+        "purpose": "Keys, secrets and certificates as metadata and references, never material: ciamCredential, plus each environment's secret, key and certificate references with cloud key-service facts. Certificate expiry. Reports: credentials (sprawl), rotation-impact and expiring. The keys report's rows (placement_rows, unbound_status) live here; connectors.keys_report composes them with the installed adapters. Planner checks: certificate expiry, and key placement (HSM shortfall via hsm_shortfall, including an unrecorded protection level; carry-over; weakened stores). Secret-store inventories (inventory.py, ou=secret-inventory: ciamSecretInventory, ciamSecretObject): importer entry builders, reconciliation of secret references through adapters' locators (six states + unreferenced), rotation problems, the planner findings and the secret-inventory report rows (connectors.secret_inventory composes them with the installed adapters). Certificate managers' inventories (managed.py, ou=managed-certificates: ciamManagedInventory, ciamManagedCertificate; never an issuance record, absence never confirmed-missing): importer entry builders, vendor-neutral reconciliation of record certificates (SHA-256 > SHA-1 of the record PEM (pem_thumbprint) > serial+issuer > subject+validity; managed, renewed, revoked, disabled, in-error, not-managed; unrecorded), check_managed_certificates and the managed-certificates report."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "domain-pki"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Per collection source (ciamSourceRef https://<host>/<folder path>, e.g. https://tpp.example.test/VED/Policy/Example Aero): GET /vedsdk/certificates/ pages (ParentDnRecursive, Limit 500, OptionalFields Issuer,Subject) then GET /vedsdk/certificates/{guid} details up to a budget; the importer maps X509/CertificateDetails, ManagementType, Disabled, CreatedBy, Contact, Consumers, CertificateAuthorityDN, ProcessingDetails and RevocationStatus to ciamManagedCertificate facts. No public-certificate retrieval (Certificate:Manage). SaaS deferred.",
+        "external_dependencies": "[\"CyberArk Certificate Manager - Self-Hosted (Venafi TPP) Web SDK: GET /vedsdk/certificates/, GET /vedsdk/certificates/{guid} (OAuth scope certificate; View + Read)\", \"curl and jq (scripts/export-venafi.sh only)\"]",
+        "path": "packages/opsdir-adapter-venafi/",
+        "purpose": "Venafi / CyberArk Certificate Manager - Self-Hosted (TPP) read into the core pki domain as a certificate manager's inventory (never an issuance record), metadata only: pure importer venafi/certificates, GET-only collector with a pre-issued bearer token, export script for large folders"
+      },
+      "kind": "modules",
+      "op": "add",
+      "semantic_key": {
+        "name": "adapter-venafi"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/checks.py",
+        "id_in_name": 0,
+        "name": "_certificate_action",
+        "parameters": "[{\"name\": \"d\", \"type\": null, \"required\": true}, {\"name\": \"as_of\", \"type\": null, \"required\": true}, {\"name\": \"c\", \"type\": null, \"required\": true}, {\"name\": \"margin\", \"type\": null, \"required\": true}]",
+        "purpose": "Dated action for a certificate expiring before cutover + 30 days: its users (integrations via ciamUsesCertificate, service names via ciamTlsCertificate), partner, runbook, owner",
+        "returns": "{\"type\": \"tuple[area, text, owner, do_by]\"}",
+        "source_hash": "5140c7f379130f56"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-certificate-action-7596c607"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/pem.py",
+        "id_in_name": 0,
+        "name": "pem_fingerprint",
+        "parameters": "[{\"name\": \"pem\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "SHA-256 fingerprint of a PEM's first certificate (its DER), as colon-separated upper-case hex like ciamFingerprint.",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "ccc15d07e1463263"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-pem-fingerprint-cd569fdf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "managed_inventory_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"the collection source's name (cn)\"}, {\"name\": \"at\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime\"}, {\"name\": \"state\", \"type\": \"str\", \"required\": true, \"description\": \"complete|incomplete|denied\"}, {\"name\": \"problems\", \"type\": \"tuple[str]\", \"required\": false}, {\"name\": \"prefixes\", \"type\": \"tuple[str]\", \"required\": false, \"description\": \"the folders listed\"}, {\"name\": \"provider_ref\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Importer builder: a certificate manager source's ciamManagedInventory entry (when, complete/incomplete/denied, problems, folders listed, the manager's address), operator attributes kept",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "0b1653844de88894"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "managed_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"inventory\", \"type\": \"str\", \"required\": true, \"description\": \"the inventory's name\"}, {\"name\": \"key\", \"type\": \"str\", \"required\": true, \"description\": \"the manager's id for the certificate\"}, {\"name\": \"facts\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Importer builder: a ciamManagedCertificate under a manager inventory, by the manager's id, from facts of MANAGED_ATTRS (a tuple for multi-valued ones; None: the manager didn't say)",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "4e91ad397415a813"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "managed_inventories",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The certificate manager inventories the record holds",
+        "returns": "{\"type\": \"tuple of Entry\"}",
+        "source_hash": "c852895e562c0e44"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-inventories-8f0e3d9d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "managed_of",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"inventory\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The certificates a manager inventory holds, by the manager's id",
+        "returns": "{\"type\": \"tuple of Entry\"}",
+        "source_hash": "94290d839a994294"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-of-a45d5f06"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "in_service",
+        "parameters": "[{\"name\": \"managed\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Whether a managed certificate is in service on as_of: current, not revoked, its management not disabled",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "aa9cd4f50de67927"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-in-service-410b0095"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "covers",
+        "parameters": "[{\"name\": \"pattern\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a name a certificate names covers a host name: the same name, or a wildcard (*.zone) for one label under the zone; case-insensitive",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "5eeba4c8c4b91d63"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-covers-23f70f3d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "find_managed",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamCertificate\"}, {\"name\": \"rows\", \"type\": \"tuple of Entry\", \"required\": true, \"description\": \"managed certificates\"}]",
+        "purpose": "The managed certificate matching a record certificate: SHA-256 fingerprint > SHA-1 thumbprint (of the record's PEM) > serial with issuer (subject when either lacks an issuer) > subject and validity; None when none matches",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "a3786bda7f51e669"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-find-managed-820a24cf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "same_subject",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"managed\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "Whether a managed certificate is for what a record certificate is for (a renewal candidate): the same subject when both record one, else the record's alternative names all among the certificate's names; the same issuer when both record one",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "5b50f0f1d38b2b51"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-same-subject-e4bc2455"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "renewal_of",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"found\", \"type\": \"Entry|None\", \"required\": true}, {\"name\": \"rows\", \"type\": \"tuple of Entry\", \"required\": true, \"description\": \"managed certificates no record certificate matches\"}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "The latest in-service managed certificate among rows issued after a record certificate (or after the one found for it) for the same subject: what the manager renewed it as, or None",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "303232301e0e97b6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-renewal-of-aad94390"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "reconcile_managed",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Every record certificate reconciled with the managers' inventories: managed, renewed, revoked, in-error, disabled or not-managed (never missing); empty when the record holds no manager inventory",
+        "returns": "{\"type\": \"tuple of ManagedReconciled\"}",
+        "source_hash": "672ab97c7ca1b7d6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "unrecorded",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"done\", \"type\": \"tuple of ManagedReconciled\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "((inventory, managed certificate), ...): every in-service managed certificate no record certificate was found or renewed as",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "704f54143df542ff"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-unrecorded-486ad2d7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "record_names",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "{host name, lowercase: the record entry naming it}: every record certificate's alternative names, then every service name (ciamFqdn), first mention kept",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "aca28326bf8bf188"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-record-names-b59e572d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "check_managed_certificates",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Planner check (estate-wide, silent without a manager inventory): a record certificate the manager says is revoked that the record uses = blocker; revoked unused, renewed by the manager, in error, disabled while used, unrecorded certificates for names the record holds, and inventories incomplete or refused = actions; issued.py's revoked/superseded not repeated; absence never a finding",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "68e8cc538f654ea8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "managed_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "managed-certificates report rows: each record certificate (its state, the managed certificate found or renewed as, management, contacts, installations, renewal owner, detail), then each unrecorded in-service managed certificate",
+        "returns": "{\"type\": \"list of tuple\"}",
+        "source_hash": "5a3af33d71e789f5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/naming.py",
+        "id_in_name": 0,
+        "name": "managed_inventory_dn",
+        "parameters": "[{\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The certificate manager inventory of the collection source of that name (cn=<name>,ou=managed-certificates)",
+        "returns": "{\"type\": \"str\", \"description\": \"DN\"}",
+        "source_hash": "a21c509c21ef7673"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-managed-inventory-dn-d644b324"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/pem.py",
+        "id_in_name": 0,
+        "name": "pem_thumbprint",
+        "parameters": "[{\"name\": \"pem\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "The SHA-1 thumbprint of a PEM's first certificate, as colon-separated upper-case hex (ciamThumbprint's form): what a certificate manager giving no SHA-256 is matched by",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "72aa7fd1c9e58bc7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-pem-thumbprint-0476951b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/checks.py",
+        "id_in_name": 0,
+        "name": "certificate_users",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"cert\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "The entries that depend on a certificate through CERTIFICATE_USE (integrations, service names presenting it, truststores adding it), each once, in the order first found",
+        "returns": "{\"type\": \"tuple of Entry\"}",
+        "source_hash": "5fa8bad55a38a38c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-users-728912fe"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "guid_key",
+        "parameters": "[{\"name\": \"guid\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "A Certificate Manager certificate GUID as the record names it: without braces, lowercase",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "8ab7f131fd7001fd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-guid-key-01a6a0c0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "page_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"offset\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "Where a source's listing page starting at offset is kept in the export (venafi/<source>/certificates-<offset>.json)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "080a42b23dd1ed7f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-page-path-f3d74441"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "detail_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"guid\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Where a source's certificate details are kept in the export (venafi/<source>/details/<guid key>.json)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "411cebd3fd5283e8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-detail-path-c60469b8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "sources",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true, \"description\": \"{relative path: text}\"}]",
+        "purpose": "The collection sources an export holds (each with a listing page), sorted",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "9b134546a5789d90"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sources-b042f7f8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "listing_pages",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"source\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "((offset, the page's JSON document or None), ...) of a source's listing pages, by offset (shared by the importer and the collector)",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "ce0ed343a4b8d67c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-listing-pages-8181f076"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "certificate_facts",
+        "parameters": "[{\"name\": \"listed\", \"type\": \"dict\", \"required\": true}, {\"name\": \"detail\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "(ciamManagedCertificate facts, notices) of one listed certificate and its details (None: not read): names, serial, SHA-1 thumbprint, validity, subject, issuer, path, management, disabled state, origin, contacts, installations, CA template, problems (in error, revocation pending/failed), revocation (Complete/Confirmed: date, reason unspecified); details win over the listing; an unknown ManagementType named",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(facts dict, notices tuple)\"}",
+        "source_hash": "28ea84eac0869fb8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-facts-c4516d03"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "read_source",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"when\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime\"}]",
+        "purpose": "(Imported group, notices) of one collection source: its managed inventory (denied on an Error page with what to grant; incomplete when listed < TotalCount, a page isn't a listing, details unread or GUIDs unnamed; else complete) and its certificates",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "23964b6a456913ce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-source-e3f8328f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "read_certificates",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer venafi/certificates: per collection source in the export, its certificate manager inventory replacing the record's (needs --at)",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "54b652bcbecf6dc0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-certificates-9eb01369"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "kept_page",
+        "parameters": "[{\"name\": \"folder\", \"type\": \"str\", \"required\": true}, {\"name\": \"address\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A Request keep function factory: a listing page reduced to TotalCount and each certificate's LIST_FIELDS (X509 to X509_FIELDS), with the folder and address it was read from; non-listing text kept as is",
+        "returns": "{\"type\": \"callable\", \"description\": \"(text) -> text\"}",
+        "source_hash": "a96fe55d07016195"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-page-03505b24"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "kept_detail",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A Request keep function: a certificate's details reduced to DETAIL_FIELDS (ProcessingDetails and CertificateDetails to NESTED_FIELDS); non-JSON text kept as is",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "1cc4925fe8bc1eb1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-detail-4a8579fe"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "folder_of",
+        "parameters": "[{\"name\": \"location\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "(the Web SDK's address https://<host>/vedsdk, the folder's DN) a collection source's location https://<host>[:<port>]/VED/... names, or None",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "f02074d16bbcc3ff"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-folder-of-bdf8b4a4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "certificate_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps: each readable source's first listing page, then the pages its TotalCount says there are, then each listed certificate's details (at most DETAIL_CALLS), all GET with the bearer token",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Request), ...)\"}",
+        "source_hash": "8da0631ebe39752f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why the venafi/certificates collection sources can't be read: unbound credential or trust anchor, no location, a credential scheme other than bearer, a location naming no folder",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "1848946d370e2e67"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-bf336ba3"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"NamedTuple\", \"fields\": {\"cert\": \"Entry\", \"inventory\": \"Entry|None\", \"found\": \"Entry|None\", \"state\": \"str\", \"newer\": \"Entry|None\"}}",
+        "description": "A record certificate reconciled with the certificate managers' inventories: the certificate, the inventory holding what was found or renewed (None: neither), the managed certificate found (None), its state (managed, renewed, revoked, disabled, in-error, not-managed) and the newer managed certificate it was renewed as (None).",
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "ManagedReconciled"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-managedreconciled-e1881906"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 108 item (e), Venafi part (deferred note 3229 on file 1119; research in decision 3210). (1) Core pki: a managed/discovered certificate inventory concept, distinct from a CA's issuance record: absence from it is never confirmed-missing; what it adds (discovered certificates the record lacks, managed vs record owner/expiry/renewal) and how reconciliation and the issued-certificates report show it. This worker OWNS the core pki domain changes in this round (opsdir/opsdir/domains/pki/*); design gate to the master before coding (it changes what the record holds). Azure Key Vault certificates are expected to use the same concept later: keep it CA/vendor-neutral. (2) Venafi / CyberArk Certificate Manager, Self-Hosted (TPP, docs 26.1): a GET-only collector (GET /vedsdk/certificates Limit/Offset, ParentDn Recursive, OptionalFields; /vedsdk/certificates/{guid}) with an OAuth bearer token (credential reference, never stored), and a saved-export importer (pure). Check current permissions (docs disagree: View+Read vs Private Key Read) and the least privilege. SaaS (POST certificatesearch) only if the core POST from task 561 has merged; otherwise a deferred note. New adapter package (name at design). No local validation possible: say so in README Known limits and keep a fixture-based test. (3) Tests, showcase change, README/docs. Reserved: core attrs 920-929, classes 199-200; showcase CHG-2125, A292-A295, B117-B118.",
+        "flows": [
+          "PKI Authorities & Issued-Certificate Reconciliation",
+          "Managed Certificate Inventory Import"
+        ],
+        "name": "Managed/discovered certificate inventory; Venafi / CyberArk Certificate Manager",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Codex read-only research (Venafi TPP 26.1 certificates API, permissions, SaaS); record design for a managed/discovered inventory; design to the master (record change).",
+        "name": "Research and design gate",
+        "parent": {
+          "key": {
+            "slug": "task-managed-discovered-certificate-inventory-610d5198"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-research-and-design-gate-d401a45f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki domain: schema, reconciliation, report rows; absence never confirmed-missing; vendor-neutral.",
+        "name": "Core managed inventory concept",
+        "parent": {
+          "key": {
+            "slug": "task-managed-discovered-certificate-inventory-610d5198"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-core-managed-inventory-concept-4d5f43c9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "New adapter package: GET-only TPP collector + pure saved-export importer.",
+        "name": "Venafi collector and importer",
+        "parent": {
+          "key": {
+            "slug": "task-managed-discovered-certificate-inventory-610d5198"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-venafi-collector-and-importer-94ee9ad2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase CHG-2125, README/Known limits (no local validation).",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-managed-discovered-certificate-inventory-610d5198"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-347c984a"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "fac9977",
+    "branch": "aimfp-u124-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "certificate_users calls referrers (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-users-728912fe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "_certificate_action calls certificate_users (checks.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-action-7596c607"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-users-728912fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "rotation_impact_rows calls certificate_users (checks.py) via _certificate_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-impact-rows-ea112360"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-users-728912fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls certificate_users (checks.py) via _used_by",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-users-728912fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_inventory_entry calls make_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_inventory_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_inventory_entry calls merged_attrs (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_inventory_entry calls managed_inventory_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventory-dn-d644b324"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_entry calls make_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-make-entry-ef62e995"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_entry calls get (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_entry calls merged_attrs (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merged-attrs-bd16e96f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_entry calls managed_inventory_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventory-dn-d644b324"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_inventories calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-inventories-8f0e3d9d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_of calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-of-a45d5f06"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "in_service calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-in-service-410b0095"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "in_service calls is_active (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-in-service-410b0095"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-active-83c779d1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_managed calls norm_dn (directory.py) via _issuer",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-managed-820a24cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_managed calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-managed-820a24cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_managed calls fingerprint (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-managed-820a24cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_managed calls date_of (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-managed-820a24cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_managed calls certificate_pem (pem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-managed-820a24cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-pem-4b86c6be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_managed calls serial_key (issued.py) via _serial_match",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-managed-820a24cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serial-key-9f0ee287"
+      }
+    },
+    {
+      "attributes": {
+        "description": "find_managed calls pem_thumbprint (pem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-find-managed-820a24cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pem-thumbprint-0476951b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "same_subject calls norm_dn (directory.py) via _issuer",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-same-subject-e4bc2455"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "same_subject calls one (directory.py) via _issuer",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-same-subject-e4bc2455"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "same_subject calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-same-subject-e4bc2455"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renewal_of calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-of-aad94390"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renewal_of calls in_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-of-aad94390"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-in-service-410b0095"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renewal_of calls same_subject (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-of-aad94390"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-same-subject-e4bc2455"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls one (directory.py) via _state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls values (directory.py) via _state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls get (directory.py) via _inventory_of",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls is_revoked (issued.py) via _state",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls managed_inventories (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventories-8f0e3d9d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls managed_of (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-of-a45d5f06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls find_managed (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-find-managed-820a24cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "reconcile_managed calls renewal_of (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renewal-of-aad94390"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unrecorded calls managed_inventories (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unrecorded-486ad2d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventories-8f0e3d9d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unrecorded calls managed_of (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unrecorded-486ad2d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-of-a45d5f06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "unrecorded calls in_service (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-unrecorded-486ad2d7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-in-service-410b0095"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_names calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-names-b59e572d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_names calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-names-b59e572d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_names calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-names-b59e572d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "record_names calls sorted_by_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-record-names-b59e572d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sorted-e68526f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls owner_label (findings.py) via _state_finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls one (directory.py) via _inventory_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls values (directory.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls rdn_value (directory.py) via _inventory_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-findings-77108539"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls merge_findings (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-merge-findings-d9c965e8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls responsible (findings.py) via _inventory_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls date_of (directory.py) via _inventory_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls reconciled (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconciled-b49b00a1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls managed_inventories (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventories-8f0e3d9d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls covers (managed.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-covers-23f70f3d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls reconcile_managed (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls unrecorded (managed.py) via _unrecorded_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unrecorded-486ad2d7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls record_names (managed.py) via _unrecorded_findings",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-record-names-b59e572d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls certificate_users (checks.py) via _uses",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-users-728912fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls owner_label (findings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-owners-bdd54214"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls one (directory.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls rdn_value (directory.py) via _label",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls date_of (directory.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-date-of-bbeba6ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls is_revoked (issued.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-revoked-f412c4d2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls covers (managed.py) via _named",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-covers-23f70f3d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls reconcile_managed (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls unrecorded (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-unrecorded-486ad2d7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls record_names (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-record-names-b59e572d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "detail_path calls guid_key (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-detail-path-c60469b8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-guid-key-01a6a0c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listing_pages calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listing-pages-8181f076"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_facts calls fingerprint (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-facts-c4516d03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_facts calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-facts-c4516d03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls managed_inventory_entry (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls managed_entry (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls guid_key (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-guid-key-01a6a0c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls detail_path (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detail-path-c60469b8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls listing_pages (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listing-pages-8181f076"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-c4516d03"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_certificates calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-certificates-9eb01369"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_certificates calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-certificates-9eb01369"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_certificates calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-certificates-9eb01369"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_certificates calls sources (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-certificates-9eb01369"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sources-b042f7f8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_certificates calls read_source (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-certificates-9eb01369"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-source-e3f8328f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_page calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-page-03505b24"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_detail calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-detail-4a8579fe"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls json_document (sources.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls guid_key (certificates.py) via _listed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-guid-key-01a6a0c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls page_path (certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-f3d74441"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls detail_path (certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detail-path-c60469b8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls listing_pages (certificates.py) via _listed",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listing-pages-8181f076"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls kept_page (collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-page-03505b24"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps references kept_detail (collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-detail-4a8579fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls folder_of (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-folder-of-bdf8b4a4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-bf336ba3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-bf336ba3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls folder_of (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-bf336ba3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-folder-of-bdf8b4a4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls get (directory.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_managed_certificates calls environment_of (environment.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-managed-certificates-b6154b94"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-3ca01c81"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls get (directory.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls responsible (findings.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-responsible-7628d703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "managed_rows calls environment_of (environment.py) via _owner",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-3ca01c81"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-reconcile-managed-66455566"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-managedreconciled-e1881906"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-unrecorded-486ad2d7"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-managedreconciled-e1881906"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/managed.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/managed.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/adapter.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/scripts/export-venafi.sh"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/managed.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "domain-pki"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/adapter.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/__init__.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/pyproject.toml"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/scripts/export-venafi.sh"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/managed.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/pem.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/checks.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/naming.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/reports.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/__init__.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/scripts/export-venafi.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-managed-discovered-certificate-inventory-610d5198"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-action-7596c607"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate users",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-rotation-impact-rows-ea112360"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _used_by",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-referrers-2307dc09"
+      }
+    }
+  ],
+  "warnings": []
+}
