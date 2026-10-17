@@ -43,7 +43,7 @@ from .quotas import quota_notes, render_quota_requests
 from .suppressions import azapi_provider, render_suppressions, suppression_notes, uses_azapi
 from .discovery import discovery_notes, discovery_plans, render_discovery
 from .purview import purview_inputs, render_purview, renders as purview_renders
-from .security import render_security, security_notes
+from .security import render_security, renders_azapi, security_notes
 from .backups import backup_notes, render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes, volume_notes
 from .dns import (FORWARDING_RULESET, forwarder_notes, forwarding_rules, records, service_record,
@@ -253,11 +253,11 @@ def terraform_parts(m, services):
            *render_external_id(m), *render_domain_services(m))
     out = tuple(x for i, x in enumerate(out) if not (x in blocks_of(out[:i], "data")))     # a data source once
     notes = "\n".join(_interconnect_note(m, ic) for ic in of_class(m, "ciamInterconnect"))
+    azapi = uses_azapi(m) or purview_renders(m) or renders_tenant(m) or renders_azapi(m)
     providers = (
-        required_providers(uses_azapi(m) or purview_renders(m) or renders_tenant(m),
-                           uses_azuread(m) or renders_applications(m)),
+        required_providers(azapi, uses_azuread(m) or renders_applications(m)),
         provider_block(m),
-        *((azapi_provider(m),) if uses_azapi(m) or purview_renders(m) or renders_tenant(m) else ()),
+        *((azapi_provider(m),) if azapi else ()),
         *((azuread_provider(m),) if uses_azuread(m) else ()),
         *external_id_providers(m),
         subscription_variable(m),

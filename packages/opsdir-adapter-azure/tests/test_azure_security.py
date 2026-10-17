@@ -291,15 +291,76 @@ MAIL = entry(ALPHA, "soc-mail", "ciamAlertChannel", ciamBindingRole="soc-mail", 
              ciamProviderRef="mailto:soc@example.test")
 
 
-def test_findings_go_to_an_event_hub_with_the_connection_string_its_send_secret_holds():
-    out = _render(STREAM, SEND, svc("defender", "threat-detection", ciamFindingsRole="sec-hub"))
-    assert 'type              = "EventHub"' in out and f'resource_id       = "{HUB_ID}"' in out
-    assert "connection_string = data.azurerm_key_vault_secret.defender_export.value" in out
-    assert 'data "azurerm_key_vault_secret" "defender_export"' in out and 'name                = "ciam-kv"' in out
-    assert "Terraform state keeps it (sensitive): protect the state" in out
+def _with_azapi(alpha):
+    return alpha._replace(cloud=make_entry(alpha.cloud.dn, alpha.cloud.classes,
+                                           {**alpha.cloud.attrs, "ciamProviderAddOn": ("azapi",)}))
+
+
+def _hub_model(add_on, **more):
+    _, alpha, _ = model(alpha=(LOGS, STREAM, SEND, svc("defender", "threat-detection", ciamFindingsRole="sec-hub",
+                                                       **more)), tree=OWNERS)
+    return _with_azapi(alpha) if add_on else alpha
+
+
+def test_an_event_hub_export_keeps_its_connection_string_out_of_terraform_state():
+    # U.5 (task 581): azurerm's action has no write-only argument, so the export goes through azapi with the add-on
+    from opsdir_adapter_azure.security import renders_azapi
+    alpha = _hub_model(True, ciamIncidentRole="sec-hub", ciamIncidentSeverity="medium")
+    out = "\n\n".join(as_text(render_security(alpha)))
+    assert renders_azapi(alpha) and 'data "azurerm_key_vault_secret"' not in out and "connection_string" not in out
+    assert 'ephemeral "azurerm_key_vault_secret" "defender_export"' in out and 'name         = "sec-hub-send"' in out
+    assert 'resource "azapi_resource" "defender_export"' in out and "azurerm_security_center_automation" not in out
+    assert 'type      = "Microsoft.Security/automations@2023-12-01-preview"' in out
+    assert out.count("connectionString   = ephemeral.azurerm_key_vault_secret.defender_export.value") == 1
+    body, sensitive = out.split('resource "azapi_resource" "defender_export"')[1].split("sensitive_body = {")[:2]
+    assert f'eventHubResourceId = "{HUB_ID}"' in body and "connectionString" not in body
+    assert "connectionString" in sensitive.split('resource "')[0]
+    assert "sensitive_body_version" not in out          # azapi resends the string on every update
+    incidents = out.split('resource "azapi_resource" "defender_incidents"')[1]
+    assert 'expectedValue = "high"' in incidents and 'expectedValue = "medium"' in incidents
+    assert 'description = "defender\'s medium and worse findings to sec-hub (incident process)"' in incidents
     unsent = STREAM.replace("ciamSendSecretRole: sec-hub-send\n", "")
     assert "names no secret holding its connection string (ciamSendSecretRole)" in _render(
         unsent, svc("defender", "threat-detection", ciamFindingsRole="sec-hub"))
+
+
+def test_a_root_with_an_azapi_export_requires_the_azapi_provider():
+    from opsdir_adapter_azure.terraform import render_files
+    from opsdir_format_terraform.hcl import written
+    providers = [written(render_files(_hub_model(add_on), None))["terraform/providers.tf"] for add_on in (True, False)]
+    assert 'source  = "Azure/azapi"' in providers[0] and 'provider "azapi"' in providers[0]
+    assert "azapi" not in providers[1]
+
+
+def test_without_the_azapi_add_on_an_event_hub_export_is_an_action_for_its_owner():
+    from opsdir_adapter_azure.security import renders_azapi, security_notes
+    alpha = _hub_model(False, ciamIncidentRole="sec-hub", ciamIncidentSeverity="high")
+    items = render_security(alpha)
+    out = "\n\n".join(as_text(items))
+    assert not renders_azapi(alpha) and "EventHub" not in out and "azapi_resource" not in out
+    assert "azurerm_key_vault_secret" not in out and "azurerm_security_center_automation" not in out
+    notes = {n.subject: n for n in security_notes(alpha)}
+    assert _noted(notes.values(), items)
+    found = notes["defender's findings to Event Hub sec-hub"]
+    incidents = notes["defender's incidents to Event Hub sec-hub"]
+    assert found.severity == incidents.severity == "action" and "U.5" in found.text
+    assert found.how[0].startswith("In Defender for Cloud (continuous export, or the Microsoft.Security/automations "
+                                   "API), create automation defender-export")
+    assert f"exporting Alerts to Event Hub {HUB_ID} (sec-hub)" in found.how[0]
+    assert "Key Vault ciam-kv secret sec-hub-send" in found.how[0]
+    assert "exporting Alerts where Severity is high to Event Hub" in incidents.how[0]
+    assert "ciamProviderAddOn azapi" in found.how[1]
+
+
+def test_an_azapi_export_is_read_back_as_its_automation():
+    state = [*STATE[:-1], ("azapi_resource", {
+        "id": f"{SUB}/resourceGroups/rg/providers/Microsoft.Security/automations/defender-export",
+        "name": "defender-export",
+        "type": "Microsoft.Security/automations@2023-12-01-preview",
+        "body": {"properties": {"sources": [{"eventSource": "Alerts"}],
+                                "actions": [{"actionType": "EventHub", "eventHubResourceId": HUB_ID}]}}})]
+    found = {r.attrs["ciamSecurityKind"][0]: r for r in security_resources(state)}
+    assert dict(found["threat-detection"].links) == {"ciamFindingsRole": HUB_ID}
 
 
 def test_email_channels_are_the_subscription_s_one_security_contact():
