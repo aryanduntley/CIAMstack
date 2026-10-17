@@ -1615,6 +1615,30 @@
       "raised_by": "CHG-2120"
     },
     {
+      "id": "A286",
+      "area": "Certificate",
+      "match": "Certificate template `Example Aero Cloud Issuing CA/EndEntityClientAuthCertificate_APIPassthrough/V1` lets the requester name the subject",
+      "planted": "the issuing CA's resource policy lets Harbor MRO's AWS account issue client certificates from it, in any name",
+      "cleared_by": null,
+      "raised_by": "CHG-2122"
+    },
+    {
+      "id": "A287",
+      "area": "Certificate",
+      "match": "Certificate template `Example Aero Standby Issuing CA/ciam-issuing/ciam-client` lets the requester name the subject",
+      "planted": "the standby's issuing pool and its client template let everyone in the example-aero.test domain request client certificates in any name",
+      "cleared_by": null,
+      "raised_by": "CHG-2123"
+    },
+    {
+      "id": "A288",
+      "area": "Certificate",
+      "match": "Certification authority `Example Aero Mesh CA` publishes no CRL distribution point or OCSP responder",
+      "planted": "the mesh's DevOps pool publishes no CRL: nothing can check its certificates' revocation",
+      "cleared_by": null,
+      "raised_by": "CHG-2123"
+    },
+    {
       "id": "A150",
       "area": "Logs",
       "match": "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 days in all but searchable only 90",

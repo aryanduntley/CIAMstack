@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "opsdir adapter for Google Cloud: Terraform for Google Cloud environments; Google Cloud Terraform state and inventories read back into the record; gcp-sm:// secret references."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["opsdir>=0.1", "opsdir-format-terraform>=0.1"]
+# the private CA importer reads certificates with opsdir-adapter-x509 (the cryptography library)
+dependencies = ["opsdir>=0.1", "opsdir-adapter-x509>=0.1", "opsdir-format-terraform>=0.1"]
 
 [project.entry-points."opsdir.adapters"]
 gcp = "opsdir_adapter_gcp.adapter:ADAPTER"

@@ -1,0 +1,67 @@
+[
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-root",
+    "tier": "ENTERPRISE",
+    "issuancePolicy": {
+      "maximumLifetime": "157680000s",
+      "baselineValues": {
+        "caOptions": {
+          "isCa": true,
+          "maxIssuerPathLength": 0
+        },
+        "keyUsage": {
+          "baseKeyUsage": {
+            "certSign": true,
+            "crlSign": true
+          }
+        }
+      }
+    },
+    "publishingOptions": {
+      "publishCaCert": true,
+      "publishCrl": true,
+      "encodingFormat": "PEM"
+    }
+  },
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-issuing",
+    "tier": "ENTERPRISE",
+    "issuancePolicy": {
+      "maximumLifetime": "31536000s",
+      "baselineValues": {
+        "caOptions": {
+          "isCa": false
+        },
+        "keyUsage": {
+          "baseKeyUsage": {
+            "digitalSignature": true,
+            "keyEncipherment": true
+          },
+          "extendedKeyUsage": {
+            "serverAuth": true
+          }
+        }
+      },
+      "identityConstraints": {
+        "allowSubjectPassthrough": true,
+        "allowSubjectAltNamesPassthrough": true
+      }
+    },
+    "publishingOptions": {
+      "publishCaCert": true,
+      "publishCrl": true,
+      "encodingFormat": "PEM"
+    }
+  },
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-mesh",
+    "tier": "DEVOPS",
+    "issuancePolicy": {
+      "maximumLifetime": "86400s"
+    },
+    "publishingOptions": {
+      "publishCaCert": false,
+      "publishCrl": false
+    }
+  }
+]

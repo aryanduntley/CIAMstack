@@ -87,7 +87,8 @@ def _run(call):
 
 def test_the_collectors_are_declared_on_the_adapter():
     assert [(c.importer, c.scope) for c in ADAPTER.collectors] == [("cli-inventory", "environment"),
-                                                                    ("terraform-state", "environment")]
+                                                                    ("terraform-state", "environment"),
+                                                                    ("private-ca", "environment")]
 
 
 def test_the_login_must_be_the_project_the_cloud_records():

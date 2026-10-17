@@ -9,6 +9,7 @@ from .collect import COLLECTORS
 from .discovery import check_discovery_cadence
 from .frameworks import FRAMEWORKS, PREREQUISITE as FRAMEWORK_PREREQUISITE
 from .inventory import TERRAFORM_STATE
+from .private_ca import PRIVATE_CA_IMPORTER
 from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
 from .ops_agent import host_files
@@ -42,7 +43,7 @@ ADAPTER = Adapter(name="gcp", kind="provider", applies=applies, required_roles=(
                            ("terraform/*checks/*/package.json", "json"), ("access/*.sh", "shell")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS,
-                  importers=(TERRAFORM_STATE, CLI_INVENTORY, REGIONS, QUOTAS, FRAMEWORKS),
+                  importers=(TERRAFORM_STATE, CLI_INVENTORY, REGIONS, QUOTAS, FRAMEWORKS, PRIVATE_CA_IMPORTER),
                   profile_terms=None, access=ACCESS,
                   prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE, FRAMEWORK_PREREQUISITE),
                   collectors=COLLECTORS,

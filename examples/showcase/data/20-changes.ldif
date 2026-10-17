@@ -802,6 +802,27 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's internal CA from its Vault PKI mount (its endpoints,
   roles and the certificates it keeps, metadata only)
 
+dn: cn=CHG-2122,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2122
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read production's AWS Private CA hierarchy (its CAs, endpoints, the
+  templates its audit reports show and the certificates they list, metadata on
+ ly)
+
+dn: cn=CHG-2123,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2123
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the standby's Google Cloud CA pools (their CAs, endpoints, iss
+ uance policies, templates and the certificates they keep, metadata only)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

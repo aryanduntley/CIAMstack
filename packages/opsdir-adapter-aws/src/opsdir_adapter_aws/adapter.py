@@ -8,6 +8,7 @@ from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .cloudformation import CLOUDFORMATION
 from .inventory import TERRAFORM_STATE
+from .private_ca import PRIVATE_CA_IMPORTER
 from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
 from .log_agent import host_files
@@ -48,7 +49,7 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                            ("access/*.sh", "shell"), ("kubernetes/fluent-bit/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS,
-                  importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS, QUOTAS),
+                  importers=(TERRAFORM_STATE, CLI_INVENTORY, CLOUDFORMATION, REGIONS, QUOTAS, PRIVATE_CA_IMPORTER),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
                   collectors=COLLECTORS, render_targets=TARGETS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,

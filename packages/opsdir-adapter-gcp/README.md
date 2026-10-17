@@ -365,6 +365,79 @@ Account Viewer (or Costs Manager) on the billing account for its budgets, and St
 predefined roles reference before use). The tests pin every command the collector may run
 (`tests/test_gcp_collect.py`, OPERATIONS) and check what is trimmed.
 
+## Certificate Authority Service inventory (`gcp/private-ca`)
+
+The importer `gcp/private-ca` reads the CAs of the project's CA pools (every location) into the core pki domain
+(certificate authorities, revocation endpoints, CA-scoped templates and issued-certificate inventories), metadata
+only: never a key. **Collect** with `opsdir collect --adapter gcp/private-ca --env CLOUD/ENV` (after the same
+`gcloud config list` check as the other collectors), or **import** a saved export with
+`opsdir import --change CHG-… --at YYYYMMDDhhmmssZ gcp/private-ca DIR` (`--at` dates the inventory).
+
+What each CA becomes:
+- **The CA** (cn its certificate's subject CN, else its id; `ciamProviderRef` its resource name
+  `projects/<p>/locations/<l>/caPools/<pool>/certificateAuthorities/<ca>`): `ciamCaType` root (SELF_SIGNED) or
+  subordinate, `ciamCaState` (ENABLED active; STAGED and AWAITING_USER_ACTIVATION pending; DISABLED; DELETED), its
+  key: `ciamCaKeyAlgorithm` and `ciamCaKeyStorage` `Google-managed HSM` for a `keySpec.algorithm`, or
+  `ciamCaKeyStorage` `Cloud KMS key` with `ciamCaKeyRef` the key version it signs with (a reference), and for a
+  subordinate `ciamParentAuthority` (its `subordinateConfig` CA, else the CA whose certificate's subject is its
+  issuer).
+- **Its revocation endpoints**: its CRL and CA certificate URLs (`userDefinedAccessUrls` when it sets them, else the
+  `accessUrls` it publishes) and the OCSP servers its pool's baseline writes into certificates. CAS runs no OCSP
+  responder: a CA publishing no CRL is an action of the planner (nothing can check its certificates' revocation).
+- **Its templates**, its own (`ciamTemplateAuthority`): `<CA>/<pool>` for requests without a certificate template
+  (the pool's issuance policy) and `<CA>/<pool>/<template>` for each certificate template of the pool's location
+  (the pool's policy and the template's together). The requester names the subject unless every identity constraint
+  forbids both subject and alternative-name passthrough; the extended key usages are the pool baseline's and the
+  template's (none, so any purpose, when a passthrough lets the request bring its own or neither sets any); the
+  longest validity is the smaller `maximumLifetime`; no approval, no signature. Who may request from it: the members
+  holding `privateca.certificates.create` (roles/privateca.certificateRequester, certificateManager, admin) on the
+  pool or the project and, with a template, `privateca.certificateTemplates.use` (roles/privateca.templateUser,
+  admin) on the template or the project; `allUsers`, `allAuthenticatedUsers` and `domain:` members are broad.
+  `workloadCertificateRequester` (createForSelf: the caller's own identity is reflected) isn't counted. A conditional
+  binding or a custom role is unknown; roles granted on folders and the organization aren't read (named).
+- **Its inventory**: the certificates its pool keeps that it issued (`certificates list` per pool; cn the serial),
+  read from their public PEM (`opsdir-adapter-x509`'s certificate_facts: serial, SHA-256, subject, validity), their
+  template as the CA's own, their revocation (time; the RFC 5280 name of Google's enum name, never its number:
+  Google's numbers aren't RFC 5280's). Complete for an Enterprise pool whose listing was read; a DevOps pool keeps no
+  certificates (only Cloud Audit Logs record what it issues), so its inventory is incomplete. Google records no
+  requester.
+
+The export, as `opsdir collect` saves it (each `--project=<p> --format=json`):
+
+```sh
+gcloud privateca pools list                                     > private-ca/pools.json   # every location
+gcloud projects get-iam-policy <p>                              > private-ca/project-iam.json  # refused: left out
+# per pool <pool> in location <l>:
+gcloud privateca roots list --pool=<pool> --location=<l>        > private-ca/<l>/<pool>/roots.json
+gcloud privateca subordinates list --pool=<pool> --location=<l> > private-ca/<l>/<pool>/subordinates.json
+gcloud privateca pools get-iam-policy <pool> --location=<l>     > private-ca/<l>/<pool>/iam.json
+gcloud privateca certificates list --issuer-pool=<pool> --location=<l> > private-ca/<l>/<pool>/certificates.json
+#   (not for a DevOps pool; trimmed to name, issuing CA, template, subject mode, revocation, PEM, creation time)
+# per location <l>, then per template <t>:
+gcloud privateca templates list --location=<l>                  > private-ca/<l>/templates.json
+gcloud privateca templates get-iam-policy <t> --location=<l>    > private-ca/<l>/templates/<t>/iam.json
+```
+
+Least privilege: roles/privateca.auditor (read-only over CA Service, certificate listings and pool and template IAM
+policies included), plus `resourcemanager.projects.getIamPolicy` for the project's policy. `certificates list` is
+quota'd at 10 requests a second per location and project; gcloud fetches every page (100 per page) by default.
+
+Assured Workloads: Certificate Authority Service (`privateca.googleapis.com`) is listed as a supported product for
+every Assured Workloads control package (FedRAMP Moderate and High, IL2, IL4, IL5, CJIS, ITAR, US Data Boundary and
+Support; Assured Workloads supported products, October 2026), and its own compliance page states FedRAMP
+Moderate/High, CJIS and ITAR. Google's general FedRAMP/DoD services-in-scope table and the FedRAMP Marketplace listing
+couldn't be read for a per-column comparison: unverified, not a disagreement. Assured Workloads restricts a workload's
+resources to the locations its package allows; CAS's DevOps tier can't use a customer-managed signing key.
+
+Known limits: not run against a live project (recorded fixtures follow the v1 REST resources gcloud prints). Whether
+gcloud requests policy version 3 (conditional bindings) for these get-iam-policy calls is undocumented: a conditional
+binding read is judged unknown either way. A pool CEL identity constraint (`celExpression`) narrowing what may be
+requested isn't judged (the subject still counts as the requester's). The CMEK `encryptionSpec` the pool guide
+describes isn't in the v1 REST reference and isn't read. A CA that is disabled or deleted isn't judged by the planner
+yet (deferred). Sources: Certificate Authority Service REST reference (v1: caPools, certificateAuthorities,
+certificates, certificateTemplates, RevocationReason), gcloud privateca reference, CA Service tiers and IAM
+permissions pages.
+
 ## Reading an environment from Cloud Asset Inventory and gcloud
 
 Where there is no Terraform state (or to check it against what the project actually runs), `gcp/cli-inventory` reads Cloud Asset Inventory and `gcloud … --format=json` output. Collect it once per environment, into one folder per `<cloud>/<env>`; file names are free (`.json`, or `.jsonl` for an export), because every item says what it is: an asset by its asset type, a compute item by its `kind`, the others by their resource names. The one exception is DNS: `gcloud dns record-sets list` doesn't print the zone, so each zone's record sets go in a file named after the zone (record sets in an asset export name their zone).

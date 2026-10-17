@@ -45,6 +45,14 @@ list-stack-resources, and get-template of the processed template (transforms exp
 (an AWS::CloudFormation::Stack resource that was created) the same way, in its own folder. A stack in another account
 is a problem, never read.
 
+AWS Private CA (aws/private-ca, private_ca.py): the CAs the account owns in the cloud's region
+(list-certificate-authorities, the CAs shared from other accounts named only), the account's IAM policies (get-account-
+authorization-details projected to them, as cli-inventory reads it), then per CA its certificate, resource policy and
+ACM permission, and the newest audit report in the bucket the environment's aws/private-ca collection source names
+(ciamSourceRef s3://<bucket>): its audit-report/<CA id>/ listing (s3api list-objects-v2), then that report (s3 cp).
+Nothing creates a report (a write; the CA's owner does it); without a source no report is read. A policy-less CA
+leaves its policy out; a CA without its certificate yet leaves that out.
+
 Terraform state: (a) by default the state object a collection source names (ciamCollectionSource, importer
 aws/terraform-state, ciamSourceRef s3://bucket/key, the workspace prefix included) read with `aws s3 cp URI -`: no
 init, no lock, read access to one object; (b) with --terraform-dir, `terraform state pull` in that initialized
@@ -55,7 +63,7 @@ import re
 from opsdir.core.contract import Collector, Command
 from opsdir.core.directory import one, values
 from opsdir.core.environment import of_class, one_role
-from opsdir.core.sources import env_relative
+from opsdir.core.sources import env_relative, json_document
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.governance.collection import collection_sources
 from opsdir_format_terraform.state import TERRAFORM_DIR, state_steps as terraform_state_steps
@@ -661,6 +669,67 @@ def identity_check(d, m):
                    env=(("AWS_USE_FIPS_ENDPOINT", "true"),) if fips_endpoints(m) else ()), check
 
 
+PRIVATE_CA = "aws/private-ca"
+CA_FOLDER = "private-ca/"
+IAM_POLICIES = ("{UserDetailList: UserDetailList[].{Arn: Arn, UserPolicyList: UserPolicyList, AttachedManagedPolicies: "
+                "AttachedManagedPolicies, GroupList: GroupList}, GroupDetailList: GroupDetailList[].{GroupName: "
+                "GroupName, GroupPolicyList: GroupPolicyList, AttachedManagedPolicies: AttachedManagedPolicies}, "
+                "RoleDetailList: RoleDetailList[].{Arn: Arn, RolePolicyList: RolePolicyList, AttachedManagedPolicies: "
+                "AttachedManagedPolicies}, Policies: Policies[].{Arn: Arn, PolicyVersionList: "
+                "PolicyVersionList[?IsDefaultVersion]}}")
+SHARED_CAS = "{CertificateAuthorities: CertificateAuthorities[].{Arn: Arn, OwnerAccount: OwnerAccount, Status: Status}}"
+REPORTS = "Contents[?ends_with(Key, '.json')].{Key: Key, LastModified: LastModified}"
+
+
+def report_bucket(m):
+    """The audit-report bucket environment m's aws/private-ca collection source names (s3://<bucket>), or None."""
+    return next((b for s in collection_sources(m, PRIVATE_CA) for loc in s.locations for b in (bucket_of(loc),) if b),
+                None)
+
+
+def _newest_report(done, folder):
+    found = [r for r in json_document(done.get(f"{folder}audit-reports.json") or "", list) or ()
+             if isinstance(r, dict) and r.get("Key")]
+    return max(found, key=lambda r: str(r.get("LastModified") or "")).get("Key") if found else None
+
+
+def _ca_steps(m, done, arn, bucket):
+    ca = arn.rsplit("/", 1)[-1]
+    folder, given = f"{CA_FOLDER}{ca}/", ("--certificate-authority-arn", arn)
+    key = _newest_report(done, folder) if bucket else None
+    return ((f"{folder}certificate.json", _aws(m, "acm-pca", "get-certificate-authority-certificate", *given,
+                                               absent=("InvalidStateException", "ResourceNotFoundException"))),
+            (f"{folder}policy.json", _aws(m, "acm-pca", "get-policy", "--resource-arn", arn,
+                                          absent=("ResourceNotFoundException",))),
+            (f"{folder}permissions.json", _aws(m, "acm-pca", "list-permissions", *given)),
+            *(((f"{folder}audit-reports.json", _aws(m, "s3api", "list-objects-v2", "--bucket", bucket, "--prefix",
+                                                     f"audit-report/{ca}/", query=REPORTS)),) if bucket else ()),
+            *(((f"{folder}audit-report.json", _aws(m, "s3", "cp", f"s3://{bucket}/{key}", "-")),) if key else ()))
+
+
+def private_ca_steps(d, m, done, options):
+    """The aws/private-ca calls still to make: the CA listings and the account's IAM policies, then each owned CA's
+    certificate, resource policy, ACM permission and (with a report bucket) its newest audit report."""
+    listed = _doc(done, f"{CA_FOLDER}cas.json").get("CertificateAuthorities") or ()
+    arns = tuple(c.get("Arn") for c in listed if isinstance(c, dict) and ":certificate-authority/" in (c.get("Arn")
+                                                                                                    or ""))
+    return ((f"{CA_FOLDER}cas.json", _aws(m, "acm-pca", "list-certificate-authorities", "--resource-owner", "SELF")),
+            (f"{CA_FOLDER}shared-cas.json", _aws(m, "acm-pca", "list-certificate-authorities", "--resource-owner",
+                                                 "OTHER_ACCOUNTS", query=SHARED_CAS)),
+            (f"{CA_FOLDER}iam.json", _aws(m, "iam", "get-account-authorization-details", query=IAM_POLICIES)),
+            *(c for arn in arns for c in _ca_steps(m, done, arn, report_bucket(m))))
+
+
+def private_ca_problems(d, m, options):
+    """Collector.problems of aws/private-ca: a collection source naming no bucket (s3://<bucket>), or more than one."""
+    locations = tuple(loc for s in collection_sources(m, PRIVATE_CA) for loc in s.locations)
+    return (*(f"aws/private-ca collection source {loc}: not a bucket (s3://<the audit-report bucket>)"
+              for loc in locations if not bucket_of(loc)),
+            *(("more than one aws/private-ca collection source: name the one audit-report bucket",)
+              if len(locations) > 1 else ()))
+
+
 COLLECTORS = (Collector("cli-inventory", "environment", inventory_steps, identity_check, inventory_problems),
               Collector("terraform-state", "environment", state_steps, identity_check, options=(TERRAFORM_DIR,)),
-              Collector("cloudformation", "environment", stack_steps, identity_check, stack_problems))
+              Collector("cloudformation", "environment", stack_steps, identity_check, stack_problems),
+              Collector("private-ca", "environment", private_ca_steps, identity_check, private_ca_problems))

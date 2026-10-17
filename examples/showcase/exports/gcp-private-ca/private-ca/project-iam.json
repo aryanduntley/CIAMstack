@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "etag": "BwYz7Q==",
+  "bindings": [
+    {
+      "role": "roles/owner",
+      "members": [
+        "group:ciam-platform-admins@example-aero.test"
+      ]
+    },
+    {
+      "role": "roles/privateca.auditor",
+      "members": [
+        "serviceAccount:opsdir-inventory@example-aero-ciam-standby.iam.gserviceaccount.com"
+      ]
+    }
+  ]
+}

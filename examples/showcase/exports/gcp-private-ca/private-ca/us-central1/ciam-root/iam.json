@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "etag": "BwYz8A==",
+  "bindings": [
+    {
+      "role": "roles/privateca.certificateManager",
+      "members": [
+        "group:ciam-pki-admins@example-aero.test"
+      ]
+    }
+  ]
+}

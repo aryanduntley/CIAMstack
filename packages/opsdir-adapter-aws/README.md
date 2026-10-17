@@ -498,6 +498,90 @@ account or a delegated administrator for policy management): `organizations:Desc
 tests pin every (service, operation) the collector may run (`tests/test_aws_collect.py`, OPERATIONS) and refuse any
 call that returns secret material.
 
+## AWS Private CA inventory (`aws/private-ca`)
+
+The importer `aws/private-ca` reads the CAs the account owns in the cloud's region into the core pki domain
+(certificate authorities, revocation endpoints, CA-scoped templates and issued-certificate inventories), metadata
+only: never a key. **Collect** with `opsdir collect --adapter aws/private-ca --env CLOUD/ENV` (after the same
+`aws sts get-caller-identity` check as the other collectors), or **import** a saved export with
+`opsdir import --change CHG-… --at YYYYMMDDhhmmssZ aws/private-ca DIR` (an inventory is dated: `--at` is required).
+
+What each CA becomes:
+- **The CA** (`ou=certificate-authorities`, cn its certificate's subject CN, else its configured subject's, else its
+  id; `ciamProviderRef` its ARN): `ciamCaType` root or subordinate, `ciamCaState` (ACTIVE active; CREATING and
+  PENDING_CERTIFICATE pending; DISABLED, EXPIRED, FAILED; DELETED deleted, restorable until `RestorableUntil`),
+  `ciamCaKeyAlgorithm` (`EC_secp384r1`, `RSA_4096`, ...), `ciamCaKeyStorage` (`KeyStorageSecurityStandard`, such as
+  `FIPS_140_2_LEVEL_3_OR_HIGHER`; AWS-managed HSM keys, so no `ciamCaKeyRef`) and, for a subordinate,
+  `ciamParentAuthority`: the CA in the export (else the record) whose certificate's subject is its issuer.
+- **Its revocation endpoints**, as it writes them into what it issues: `crl-1`
+  `http://<CustomCname, else <bucket>.s3.<region>.amazonaws.com>/<CustomPath, else crl>/<CA id>.crl` (none when the
+  CDP extension is omitted; a partitioned CRL's file name is a GUID per partition, kept as the template
+  `{partition}`), and `ocsp-1` `http://<OcspCustomCname, else ocsp.acm-pca.<region>.amazonaws.com>`.
+- **Its templates**: each AWS template the newest audit report shows the CA issued from, as the CA's own template
+  (cn `<CA>/<template name>`, such as `Example Aero Cloud Issuing CA/EndEntityCertificate/V1`): the extended key
+  usages AWS fixes for the template's family (EndEntity: server and client authentication; EndEntityClientAuth;
+  EndEntityServerAuth; CodeSigning; OCSPSigning; none for the Blank* and CA templates), the subject always from the
+  request (the CSR), no approval or signature, and no validity of its own (the CA's bounds it). Who may request from
+  it (`ciamEnrollee`, `ciamEnrollmentScope`): the account's IAM principals whose policies allow
+  `acm-pca:IssueCertificate` on the CA (Action or NotAction, Resource or NotResource, wildcards; an
+  `acm-pca:TemplateArn` condition narrows them to its templates; a deny takes them away), the CA's resource policy
+  (every principal, or another account: broad), and when ACM issued from the template and the CA grants ACM
+  (`list-permissions`), the principals allowed `acm:RequestCertificate` (`<ARN> (through ACM)`). Any other condition,
+  or a managed policy whose document the export doesn't hold, makes it unknown; permissions boundaries, session
+  policies and organization control policies only take access away and aren't judged.
+- **Its inventory**: the newest audit report. AWS has no call that lists a CA's certificates, and creating a report is
+  a write (`acm-pca:CreateCertificateAuthorityAuditReport`, at most one per 30 minutes), so `opsdir collect` never
+  creates one: the CA's owner does, on a schedule (an EventBridge Scheduler schedule calling
+  `CreateCertificateAuthorityAuditReport` with the JSON format into the report bucket, under a role allowed that one
+  action). The inventory is dated at that report: complete when it is less than a day older than `--at`, else
+  incomplete, and incomplete without one; the problem names the command that creates it. Each row (cn its serial as
+  hex) is serial, subject as AWS writes it, validity, template, ACM as the requester of what ACM issued, and once
+  revoked when and why (the RFC 5280 name).
+
+Where the reports are: a collection source for `aws/private-ca` names the bucket (`ciamSourceRef s3://<bucket>`, one
+source); without one no report is read. The export, as `opsdir collect` saves it:
+
+```sh
+REGION=us-east-1; BUCKET=<the audit-report bucket>
+aws acm-pca list-certificate-authorities --resource-owner SELF --output json --region $REGION > private-ca/cas.json
+aws acm-pca list-certificate-authorities --resource-owner OTHER_ACCOUNTS --output json --region $REGION \
+  --query '{CertificateAuthorities: CertificateAuthorities[].{Arn: Arn, OwnerAccount: OwnerAccount, Status: Status}}' \
+  > private-ca/shared-cas.json                     # named only: their owner holds their audit reports
+aws iam get-account-authorization-details --output json --query '<collect.py IAM_POLICIES>' > private-ca/iam.json
+# per CA <id> (its ARN <arn>):
+aws acm-pca get-certificate-authority-certificate --certificate-authority-arn <arn> ... > private-ca/<id>/certificate.json
+aws acm-pca get-policy --resource-arn <arn> ...                 > private-ca/<id>/policy.json      # none: left out
+aws acm-pca list-permissions --certificate-authority-arn <arn> ... > private-ca/<id>/permissions.json
+aws s3api list-objects-v2 --bucket $BUCKET --prefix audit-report/<id>/ \
+  --query "Contents[?ends_with(Key, '.json')].{Key: Key, LastModified: LastModified}" ... > private-ca/<id>/audit-reports.json
+aws s3 cp s3://$BUCKET/<the newest key> -                       > private-ca/<id>/audit-report.json
+```
+
+Least privilege for the collecting login: `acm-pca:ListCertificateAuthorities` (resource `*`),
+`acm-pca:GetCertificateAuthorityCertificate`, `acm-pca:GetPolicy` and `acm-pca:ListPermissions` (scopable to the CAs'
+ARNs), `iam:GetAccountAuthorizationDetails`, and on the report bucket `s3:ListBucket` (prefix `audit-report/`) and
+`s3:GetObject` (`audit-report/*`), plus `kms:Decrypt` when the reports are encrypted with a customer key. The AWS
+managed policy `AWSPrivateCAReadOnly` covers the `acm-pca` part; `AWSPrivateCAAuditor` also grants
+`CreateCertificateAuthorityAuditReport` (a write) and isn't needed.
+
+GovCloud (US): AWS Private CA is offered in us-gov-west-1 and us-gov-east-1 (AWS GovCloud (US) User Guide,
+govcloud-acmpca.html: endpoints `acm-pca.us-gov-*.amazonaws.com`, ARNs `arn:aws-us-gov:acm-pca:...`), in scope for
+FedRAMP High and DoD SRG IL2, IL4 and IL5 there (AWS services in scope by compliance program, October 2026).
+Sources disagree on its FIPS endpoints: AWS's FIPS endpoints table lists the plain GovCloud names as FIPS endpoints,
+while the General Reference (pca.html) lists no `-fips` name for GovCloud; how the AWS CLI resolves
+`AWS_USE_FIPS_ENDPOINT=true` for acm-pca there is unverified. The GovCloud page documents no feature differences
+(OCSP, short-lived mode, custom CNAMEs, partitioned CRLs, ACM): their silence isn't proof of parity. The importer names
+the CRL and OCSP hostnames it derives in GovCloud, since only the general patterns are documented.
+
+Known limits: not run against a live account (recorded fixtures follow the AWS CLI reference's documented shapes). An
+audit report holds no certificate, so no fingerprint: a record certificate is found by its serial (then subject and
+validity), and AWS writes the subject in its own form; the CSV report form isn't read. The audit report's completeness
+for short-lived-certificate-mode CAs isn't documented. Whether Private CA writes a CA-issuers AIA URL isn't
+documented: none is recorded. CAs shared from other accounts are named only. A CA that is disabled, expired or deleted
+isn't judged by the planner yet (deferred). The importer's sources: AWS CLI reference (acm-pca), AWS Private CA User
+Guide (PcaAuditReport, crl-planning, ocsp-customize, template-varieties, template-definitions), Service Authorization
+Reference (list_acm-pca).
+
 ## Reading an environment from the AWS CLI
 
 Where there is no Terraform state (or to check it against what the account actually runs), `aws/cli-inventory` reads the JSON the AWS CLI prints. Collect it once per environment, into one folder per `<cloud>/<env>`:

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "etag": "BwYz8C==",
+  "bindings": [
+    {
+      "role": "roles/privateca.workloadCertificateRequester",
+      "members": [
+        "serviceAccount:mesh-workloads@example-aero-ciam-standby.iam.gserviceaccount.com"
+      ]
+    }
+  ]
+}

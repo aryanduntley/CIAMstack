@@ -1,0 +1,32 @@
+[
+  {
+    "name": "projects/example-aero-ciam-standby/locations/us-central1/caPools/ciam-root/certificateAuthorities/standby-root",
+    "type": "SELF_SIGNED",
+    "config": {
+      "subjectConfig": {
+        "subject": {
+          "commonName": "Example Aero Standby Root CA",
+          "organization": "Example Aero"
+        }
+      }
+    },
+    "lifetime": "315360000s",
+    "keySpec": {
+      "cloudKmsKeyVersion": "projects/example-aero-ciam-standby/locations/us-central1/keyRings/ciam-pki/cryptoKeys/standby-root/cryptoKeyVersions/1"
+    },
+    "tier": "ENTERPRISE",
+    "state": "ENABLED",
+    "pemCaCertificates": [
+      "-----BEGIN CERTIFICATE-----\nMIIBvDCCAUKgAwIBAgICbQEwCgYIKoZIzj0EAwMwPjEVMBMGA1UECgwMRXhhbXBs\nZSBBZXJvMSUwIwYDVQQDDBxFeGFtcGxlIEFlcm8gU3RhbmRieSBSb290IENBMB4X\nDTI2MDMwMTAwMDAwMFoXDTM2MDIyNzAwMDAwMFowPjEVMBMGA1UECgwMRXhhbXBs\nZSBBZXJvMSUwIwYDVQQDDBxFeGFtcGxlIEFlcm8gU3RhbmRieSBSb290IENBMHYw\nEAYHKoZIzj0CAQYFK4EEACIDYgAEPJ0WDEwV5DgM8NSzL7HywASsVFYc8KhbAdDg\nnjWe9Mf5fhDEun6bZi1tHpGNebsWXi02Uop2CQW5X22R8Ff+gSNYq7HArlby0jQH\nqHJrP02Vjxu1t+ES5ip9xaig5fCXoxMwETAPBgNVHRMBAf8EBTADAQH/MAoGCCqG\nSM49BAMDA2gAMGUCMQCg1CXM/yAkWxt95TerD/b9fRMeJQO1hAVUvdATSNK/WR0x\nsdiVtUGk3nit/Uc/yW8CMCkqt7F+eISiriZMHFiKTJ0S9XlGftqAp6906w7e92KU\nJmVQaKoSWvnusZLU835ufQ==\n-----END CERTIFICATE-----\n"
+    ],
+    "accessUrls": {
+      "caCertificateAccessUrl": "http://storage.googleapis.com/privateca-content-example-aero-standby/standby-root/ca.crt",
+      "crlAccessUrls": [
+        "http://storage.googleapis.com/privateca-content-example-aero-standby/standby-root/crl.crl"
+      ]
+    },
+    "gcsBucket": "privateca-content-example-aero-standby",
+    "createTime": "2026-03-01T10:00:00.000000Z",
+    "updateTime": "2026-03-02T10:00:00.000000Z"
+  }
+]
