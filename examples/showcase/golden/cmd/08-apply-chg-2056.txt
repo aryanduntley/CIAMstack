@@ -1,4 +1,5 @@
-change model Legacy change (0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f) isn't named in servicenow-standard-state-models: the state of CHG0029931 is kept as ServiceNow gives it (neutral state unknown)
+change model Legacy change (0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f) isn't named in servicenow-standard-state-models or servicenow-legacy-state-models: the state of CHG0029931 is kept as ServiceNow gives it (neutral state unknown)
+not linked to a change record: CHG0030117 (left out)
 linked but not in the export: CHG0030107 (the record keeps what it last read; nothing is removed)
 7 ticket(s) read from itsm.example-aero.test
 CHG-2056: 10 change(s) applied, the import run among them

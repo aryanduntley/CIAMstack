@@ -1930,6 +1930,47 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Record the corporate identity team's managed domain in the target (
  Entra Domain Services) and its trusts
 
+dn: cn=CHG-2115,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2115
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Name the ServiceNow instance's legacy change model (its pre-Geneva 
+ state codes); link CHG-2117 to its ticket
+
+dn: cn=CHG-2116,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2116
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the linked ServiceNow tickets again as evidence (the legacy mo
+ del's states in neutral terms)
+
+dn: cn=CHG-2117,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2117
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTicketRef: servicenow:CHG0030117
+ciamTitle: Restart the target directory servers for the September kernel patch
+ es
+
+dn: cn=CHG-2120,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2120
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the lab's internal CA from its Vault PKI mount (its endpoints,
+  roles and the certificates it keeps, metadata only)
+
 dn: cn=ciam-admins,ou=principals,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -2668,6 +2709,54 @@ ciamTagKey: Environment
 ciamTagSource: environment
 description: Every rendered resource carries Environment
 
+dn: cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertAuthority
+cn: Example Aero CIAM Internal CA
+ciamProviderRef: pki-internal
+ciamTemplateName: Example Aero CIAM Internal CA/ciam-client
+ciamTemplateName: Example Aero CIAM Internal CA/lab-tls
+
+dn: cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertInventory
+cn: Example Aero CIAM Internal CA
+ciamInventoryAt: 20260923090000Z
+ciamInventoryState: complete
+ciamProviderRef: pki-internal
+
+dn: cn=Example Aero CIAM Internal CA/ciam-client,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: Example Aero CIAM Internal CA/ciam-client
+ciamApprovalRequired: FALSE
+ciamEnrollee: policy default
+ciamEnrollmentScope: broad
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.2
+ciamMaxValidityDays: 1
+ciamRequiredSignatures: 0
+ciamSubjectFromRequest: TRUE
+ciamTemplateAuthority: cn=Example Aero CIAM Internal CA,ou=certificate-authori
+ ties,dc=ciam-ops
+
+dn: cn=Example Aero CIAM Internal CA/lab-tls,ou=certificate-templates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCertTemplate
+cn: Example Aero CIAM Internal CA/lab-tls
+ciamApprovalRequired: FALSE
+ciamEnrollee: policy lab-tls-issuers
+ciamEnrollmentScope: restricted
+ciamExtendedKeyUsage: 1.3.6.1.5.5.7.3.1
+ciamMaxValidityDays: 365
+ciamRequiredSignatures: 0
+ciamSubjectFromRequest: TRUE
+ciamTemplateAuthority: cn=Example Aero CIAM Internal CA,ou=certificate-authori
+ ties,dc=ciam-ops
+
 dn: cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -3151,6 +3240,23 @@ ciamRecordedCidr: 203.0.113.10/32
 ciamRecordedCidr: 203.0.113.200/32
 ciamRefersToRole: pf-egress
 ciamRequestStatus: done
+
+dn: cn=hashicorp-vault.pki.shared.s1-411f1c33e8ce1881,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: hashicorp-vault.pki.shared.s1-411f1c33e8ce1881
+ciamChangeRef: cn=CHG-2120,ou=changes,dc=ciam-ops
+ciamImportScope: cn=Example Aero CIAM Internal CA,ou=certificate-authorities,d
+ c=ciam-ops
+ciamImportScope: cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ci
+ am-ops
+ciamImportScope: cn=Example Aero CIAM Internal CA/ciam-client,ou=certificate-t
+ emplates,dc=ciam-ops
+ciamImportScope: cn=Example Aero CIAM Internal CA/lab-tls,ou=certificate-templ
+ ates,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: hashicorp-vault/pki
 
 dn: cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
 objectClass: top
@@ -4762,6 +4868,13 @@ ciamOwnerKind: team
 mail: soc@example-aero.test
 telephoneNumber: +1 202 555 0100
 
+dn: cn=servicenow-legacy-state-models,ou=settings,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEstateSetting
+cn: servicenow-legacy-state-models
+ciamEstateValue: 0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f
+
 dn: cn=servicenow-standard-state-models,ou=settings,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -4782,6 +4895,23 @@ ciamImportScope: cn=CHG0030104,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030105,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportedAt: 20260923090000Z
+ciamImporter: servicenow/change-requests
+
+dn: cn=servicenow.change-requests.shared.s1-1aec80b213d4b2a0,ou=imports,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamImportRun
+cn: servicenow.change-requests.shared.s1-1aec80b213d4b2a0
+ciamChangeRef: cn=CHG-2116,ou=changes,dc=ciam-ops
+ciamImportScope: cn=CHG0029931,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030101,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030103,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030104,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030105,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
+ciamImportScope: cn=CHG0030117,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
 ciamImporter: servicenow/change-requests
 
@@ -6018,6 +6148,18 @@ ciamLocator: pf.operational.mode
 ciamSettingRaw: CLUSTERED_ENGINE
 ciamSettingValue: CLUSTERED_ENGINE
 
+dn: cn=44:a4:1c:4c:b2:89:7e:e6:ac:a4:da:14:6a:d5:6c:16:ec:fd:db:7f,cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 44:a4:1c:4c:b2:89:7e:e6:ac:a4:da:14:6a:d5:6c:16:ec:fd:db:7f
+ciamFingerprint: CD:30:CE:1B:53:D1:5D:79:98:7D:BA:26:A8:96:64:5C:60:40:05:7C:3
+ C:8B:2A:11:D9:78:50:EE:2A:29:A8:F3
+ciamNotAfter: 20270915000000Z
+ciamNotBefore: 20260915000000Z
+ciamSerialNumber: 44a41c4cb2897ee6aca4da146ad56c16ecfddb7f
+ciamSubject: CN=sso.lab.example-aero.test
+
 dn: cn=48436b87e3d1660b,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops
 objectClass: top
 objectClass: ciamConfigSetting
@@ -6041,6 +6183,44 @@ cn: 560abbbd33f5d737
 ciamLineNumber: 6
 ciamOccurrenceOf: cn=aci-legacy-all,ou=acis,dc=ciam-ops
 ciamOccurringAttr: ciamAciTargetDn
+
+dn: cn=58:c7:45:6b:43:08:8e:1c:2e:3f:50:0c:3b:2d:d6:02:9d:78:9f:be,cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 58:c7:45:6b:43:08:8e:1c:2e:3f:50:0c:3b:2d:d6:02:9d:78:9f:be
+ciamFingerprint: 30:4D:FB:7F:8E:A3:C0:C4:05:D3:C7:C3:42:0E:85:F5:70:16:D4:BB:6
+ 3:22:92:AD:0D:C9:01:ED:62:F7:30:FC
+ciamNotAfter: 20270901000000Z
+ciamNotBefore: 20260901000000Z
+ciamSerialNumber: 58c7456b43088e1c2e3f500c3b2dd6029d789fbe
+ciamSubject: CN=sso.lab.example-aero.test
+
+dn: cn=5b:34:27:fa:a7:d9:71:ba:16:23:9a:aa:7e:28:dc:c3:4b:3d:1e:e6,cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 5b:34:27:fa:a7:d9:71:ba:16:23:9a:aa:7e:28:dc:c3:4b:3d:1e:e6
+ciamFingerprint: 95:E0:5B:C7:CF:69:35:9D:C5:AC:D2:73:C1:4C:CC:03:1E:C2:89:09:2
+ B:7E:BB:7B:FD:03:87:D0:3E:C0:91:BA
+ciamNotAfter: 20260917000000Z
+ciamNotBefore: 20260916000000Z
+ciamRevocationReason: unspecified
+ciamRevokedAt: 20260916140500Z
+ciamSerialNumber: 5b3427faa7d971ba16239aaa7e28dcc34b3d1ee6
+ciamSubject: CN=lab-tester
+
+dn: cn=5e:f7:4b:e9:02:0a:8b:47:3f:e3:6f:f9:88:32:0c:8b:15:6f:9d:45,cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 5e:f7:4b:e9:02:0a:8b:47:3f:e3:6f:f9:88:32:0c:8b:15:6f:9d:45
+ciamFingerprint: 62:67:5A:45:CF:C4:F0:CB:F1:B4:AD:D9:9E:65:53:8A:75:26:05:0B:5
+ C:B2:4A:90:C4:E7:28:2A:1F:F1:EB:E8
+ciamNotAfter: 20270905000000Z
+ciamNotBefore: 20260905000000Z
+ciamSerialNumber: 5ef74be9020a8b473fe36ff988320c8b156f9d45
+ciamSubject: CN=idm.lab.example-aero.test
 
 dn: cn=61c9f2288797f75f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
@@ -6067,6 +6247,18 @@ ciamLineNumber: 6
 ciamOccurrenceOf: cn=aci-supplier-read,ou=acis,dc=ciam-ops
 ciamOccurringAttr: ciamAciTargetDn
 
+dn: cn=74:51:48:f6:17:0c:cb:c9:df:9b:e4:80:9e:36:4c:aa:18:5f:0e:e6,cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 74:51:48:f6:17:0c:cb:c9:df:9b:e4:80:9e:36:4c:aa:18:5f:0e:e6
+ciamFingerprint: 0B:14:B8:72:FF:36:A5:B2:AC:98:55:00:91:C7:EA:FA:B9:B7:C0:C1:5
+ A:78:44:09:12:35:C6:32:7A:71:1E:8C
+ciamNotAfter: 20310115000000Z
+ciamNotBefore: 20260115000000Z
+ciamSerialNumber: 745148f6170ccbc9df9be4809e364caa185f0ee6
+ciamSubject: CN=Example Aero CIAM Internal CA
+
 dn: cn=75db0bb73adad0f5,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops
 objectClass: top
 objectClass: ciamOccurrence
@@ -6090,6 +6282,18 @@ cn: 78285a76d0ca9c9d
 ciamLocator: pf.https.port
 ciamSettingRaw: 9031
 ciamSettingValue: 9031
+
+dn: cn=7b:69:8d:f1:df:70:b3:ee:26:0b:52:83:53:a1:50:bd:86:86:aa:ac,cn=Example Aero CIAM Internal CA,ou=issued-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamIssuedCertificate
+cn: 7b:69:8d:f1:df:70:b3:ee:26:0b:52:83:53:a1:50:bd:86:86:aa:ac
+ciamFingerprint: D6:65:37:8A:B4:E4:D1:13:13:A8:E1:B0:F7:06:E5:39:91:92:C4:F3:E
+ D:E5:BA:8B:4B:56:03:6D:C1:A4:CA:BA
+ciamNotAfter: 20270901000000Z
+ciamNotBefore: 20260901000000Z
+ciamSerialNumber: 7b698df1df70b3ee260b528353a150bd8686aaac
+ciamSubject: CN=ldap.lab.example-aero.test
 
 dn: cn=827b5d26323c2ba0,cn=483017ca92ce3ac8,ou=census,dc=ciam-ops
 objectClass: top
@@ -6368,6 +6572,15 @@ cn: ca-central-1
 ciamCloudEnvironment: public
 ciamRegionStatus: available
 
+dn: cn=ca-issuers-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: ca-issuers-1
+ciamEndpointUrl: http://pki.lab.example-aero.test/v1/pki-internal/issuer/2f6d3
+ c41-8a5e-4b7c-9d10-6e2a7f5b1c08/der
+ciamRevocationKind: ca-issuers
+
 dn: cn=ca-issuers-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -6418,6 +6631,7 @@ ciamTicketFact: sys_updated_on 2026-09-22 16:00:00
 ciamTicketNativeState: 3 Closed
 ciamTicketPlannedEnd: 20260614030000Z
 ciamTicketPlannedStart: 20260614010000Z
+ciamTicketState: closed
 ciamTicketWorkEnd: 20260614034000Z
 ciamTicketWorkStart: 20260614003000Z
 ciamTitle: Reconfigure mail index (equality only)
@@ -6574,6 +6788,32 @@ ciamTicketPlannedStart: 20260923020000Z
 ciamTicketState: cancelled
 ciamTitle: Import PingFederate's configuration (bulk export)
 
+dn: cn=CHG0030117,ou=servicenow,ou=tickets,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamTicket
+cn: CHG0030117
+ciamDocUrl: https://itsm.example-aero.test/api/now/table/change_request/111122
+ 22333344445555666677772117
+ciamImportedAt: 20260923090000Z
+ciamProviderRef: 11112222333344445555666677772117
+ciamTicketApproval: approved
+ciamTicketApprover: approved 2a3b4c5d6e7f8091a2b3c4d5e6f70811 updated 20260921
+ 150000Z
+ciamTicketChangeType: normal
+ciamTicketFact: type normal
+ciamTicketFact: chg_model 7f4a1c2e9b3d4e5f8a6b7c8d9e0f1a2b
+ciamTicketFact: assignment_group 5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
+ciamTicketFact: requested_by 9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d
+ciamTicketFact: sys_updated_on 2026-09-23 10:15:00
+ciamTicketNativeState: -1 Implement
+ciamTicketPlannedEnd: 20260924060000Z
+ciamTicketPlannedStart: 20260923080000Z
+ciamTicketState: implement
+ciamTicketWorkStart: 20260923101500Z
+ciamTitle: Restart the target directory servers for the September kernel patch
+ es
+
 dn: cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 objectClass: top
 objectClass: ciamObject
@@ -6726,6 +6966,14 @@ smClass: CA.SM::Agent
 smWithheld: SharedSecret: the shared secret an agent or trusted host signs its
   requests with; re-provision in the target
 smXid: CA.SM::Agent@01-4f1c7a2e-crew-web
+
+dn: cn=crl-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: crl-1
+ciamEndpointUrl: http://pki.lab.example-aero.test/v1/pki-internal/crl
+ciamRevocationKind: crl
 
 dn: cn=crl-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
 objectClass: top
@@ -7504,6 +7752,14 @@ pingfedScope: profile
 pingfedScope: offline_access
 pingfedScope: reports.read
 pingfedSourceVersion: 12.1.4.0
+
+dn: cn=ocsp-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamRevocationEndpoint
+cn: ocsp-1
+ciamEndpointUrl: http://pki.lab.example-aero.test/v1/pki-internal/ocsp
+ciamRevocationKind: ocsp
 
 dn: cn=ocsp-1,cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ciam-ops
 objectClass: top

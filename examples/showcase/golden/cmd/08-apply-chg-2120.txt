@@ -1,0 +1,4 @@
+Example Aero CIAM Internal CA: auto-tidy removes certificates expired more than 259200s ago from the store: they leave the inventory
+Example Aero CIAM Internal CA (pki-internal): 6 certificate(s), 3 endpoint(s), 2 role(s), complete
+CHG-2120: 14 change(s) applied, the import run among them
+exit 0

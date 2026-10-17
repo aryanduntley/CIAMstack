@@ -1,0 +1,4 @@
+linked but not in the export: CHG0030107 (the record keeps what it last read; nothing is removed)
+8 ticket(s) read from itsm.example-aero.test
+CHG-2116: 3 change(s) applied, the import run among them
+exit 0

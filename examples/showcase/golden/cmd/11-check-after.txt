@@ -47,7 +47,7 @@ Expected findings check (after changes)
            B82  raised by CHG-2082: the roster admins group must reach PingAccess as a claim → reported
            B110 raised by CHG-2110: the corporate identity team asks for an external trust with the engineering lab's domain, and a managed domain keeps forest trusts only → reported
            B111 raised by CHG-2110: the corporate managed domain's service isn't in the target's recorded authorization boundary → reported
-  actions  planted 185   expected now 152   detected 152   missed 0   unexpected 0
+  actions  planted 188   expected now 155   detected 155   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -96,10 +96,13 @@ Expected findings check (after changes)
            A171 raised by CHG-2056: the record approves CHG-2003, but its ticket still waits for one CAB member (one approver approved: not the change's approval) → reported
            A172 raised by CHG-2056: CHG-2005's ticket closed successful, while the record still has the change approved, not applied → reported
            A173 raised by CHG-2056: the record plans CHG-2006 for 2026-09-20; its ticket's window is 2026-09-27 to 2026-09-28 → reported
-           A174 raised by CHG-2056: CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state is kept native) → reported
+           A174 raised by CHG-2056: CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state reads as closed once CHG-2115 names the model) → reported
            A175 raised by CHG-2056: CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed → reported
            A236 raised by CHG-2099: the record approves CHG-2081, but its ticket's CAB step is still pending (one CAB member approved: not the step's decision, and the change manager's earlier step doesn't approve the change) → reported
            A250 raised by CHG-2106: CHG-2092's expedited change request is being implemented: its rollout started 2026-09-22, before the planned window opens on 2026-09-24 → reported
+           A270 raised by CHG-2116: CHG-2117's ticket says its patch restarts began an hour after the export it was read from was taken: evidence from after the read (the read time given is wrong, or the export was taken later) → reported
+           A280 raised by CHG-2120: the lab's SSO certificate was renewed on 2026-09-15 in Vault; the record still names the old one → reported
+           A281 raised by CHG-2120: the lab's ciam-client role issues client certificates in any name, and Vault's default policy lets every token request them → reported
            A152 raised by CHG-2049: Splunk keeps production's security events 180 days, short of the 365 the route needs → reported
            A181 raised by CHG-2062: nobody has confirmed PingAccess removes a client's own X-TechPubs-User, which Tech Pubs trusts for who the user is → reported
            A182 raised by CHG-2061: the media application's CDN is reached at the same host from every environment → reported

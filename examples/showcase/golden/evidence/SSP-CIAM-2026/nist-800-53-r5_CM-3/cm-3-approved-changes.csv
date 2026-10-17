@@ -74,3 +74,7 @@ dn,ciamTitle,ciamApprovedBy,ciamChangeStatus
 "cn=CHG-2105,ou=changes,dc=ciam-ops",Link the security operations team's changes to their BMC Helix ITSM change requests,CAB 2026-09-18,approved
 "cn=CHG-2106,ou=changes,dc=ciam-ops","Read the linked BMC Helix ITSM change requests as evidence (status, approval signatures, windows)",CAB 2026-09-18,approved
 "cn=CHG-2110,ou=changes,dc=ciam-ops",Record the corporate identity team's managed domain in the target (Entra Domain Services) and its trusts,CAB 2026-09-18,approved
+"cn=CHG-2115,ou=changes,dc=ciam-ops",Name the ServiceNow instance's legacy change model (its pre-Geneva state codes); link CHG-2117 to its ticket,CAB 2026-09-18,approved
+"cn=CHG-2116,ou=changes,dc=ciam-ops",Read the linked ServiceNow tickets again as evidence (the legacy model's states in neutral terms),CAB 2026-09-18,approved
+"cn=CHG-2117,ou=changes,dc=ciam-ops",Restart the target directory servers for the September kernel patches,CAB 2026-09-18,approved
+"cn=CHG-2120,ou=changes,dc=ciam-ops","Read the lab's internal CA from its Vault PKI mount (its endpoints, roles and the certificates it keeps, metadata only)",CAB 2026-09-18,approved

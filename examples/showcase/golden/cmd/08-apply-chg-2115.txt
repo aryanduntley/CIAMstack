@@ -1,0 +1,3 @@
+CHG-2115: add cn=servicenow-legacy-state-models,ou=settings,dc=ciam-ops
+CHG-2115: modify cn=CHG-2117,ou=changes,dc=ciam-ops
+exit 0
