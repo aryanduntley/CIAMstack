@@ -231,6 +231,11 @@ ATTRIBUTES = (
                  'observed', True,
                  "What an OCSP responder said of the certificate it was asked about (ciamSerialNumber): good, "
                  "revoked or unknown, or the status of a response that wasn't successful (RFC 6960 4.2.1)"),
+    # ------------------------------------------------------------------ CA-scoped certificate templates
+    AttributeDef(890, 'ciamTemplateAuthority', 'dn', 'observed', True,
+                 "The certification authority (ou=certificate-authorities) a CA-scoped certificate template is its "
+                 "own (a Vault PKI role): only that CA issues from it and only its importer replaces it; absent on "
+                 "templates a directory shares with every CA (AD CS's forest templates)"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -279,10 +284,11 @@ CLASSES = (
     ClassDef(152, 'ciamCertTemplate', 'ciamObject', 'STRUCTURAL', ('cn',),
              ('ciamTemplateOid', 'ciamMaxValidityDays', 'ciamExtendedKeyUsage', 'ciamCertPurpose', 'ciamRenewalOwner',
               'ciamSubjectFromRequest', 'ciamApprovalRequired', 'ciamRequiredSignatures', 'ciamTemplateVersion',
-              'ciamEnrollee', 'ciamEnrollmentScope'),
+              'ciamEnrollee', 'ciamEnrollmentScope', 'ciamTemplateAuthority'),
              'A certificate template CAs issue from (cn: its name; description: its display name): what it issues, '
-             'who renews what it issues that the record holds no certificate for, and what it lets requesters do '
-             '(name the subject, skip approval) and who may request from it'),
+             'who renews what it issues that the record holds no certificate for, what it lets requesters do '
+             '(name the subject, skip approval) and who may request from it, and the CA it belongs to when it is '
+             "that CA's own"),
     ClassDef(153, 'ciamRevocationEndpoint', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamRevocationKind', 'ciamEndpointUrl'),
              (),
              'Where the certificates a CA issues say to check their revocation or find their issuer (a child of the '

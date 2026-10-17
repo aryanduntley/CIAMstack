@@ -1,0 +1,6 @@
+{
+ "data": {
+  "name": "default",
+  "policy": "# Allow tokens to look up their own properties\npath \"auth/token/lookup-self\" {\n    capabilities = [\"read\"]\n}\n\n# Allow tokens to renew themselves\npath \"auth/token/renew-self\" {\n    capabilities = [\"update\"]\n}\n\n# Allow a token to look up its own capabilities on a path\npath \"sys/capabilities-self\" {\n    capabilities = [\"update\"]\n}\n\n# The lab's test clients request their own certificates (added 2026-06)\npath \"pki-internal/issue/ciam-client\" {\n    capabilities = [\"update\"]\n}\n"
+ }
+}

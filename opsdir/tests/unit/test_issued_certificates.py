@@ -5,17 +5,17 @@ certificates judged only for the templates the record cares about, the planner's
 import datetime as dt
 
 from opsdir.core.contract import Imported, PlanContext
-from opsdir.core.directory import get, gtime, ou_entry
+from opsdir.core.directory import get, gtime, one, ou_entry
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.pki.domain import DOMAIN
 from opsdir.domains.pki.inventory import INACCESSIBLE, INCOMPLETE, MISSING, NOT_INVENTORIED, PRESENT
 from opsdir.domains.pki.issued import (AREA, REVOKED, SCHEDULED, SUPERSEDED, UNTRACKED, authority_entry,
-                                       authority_rows, cert_inventory_entry, check_issued_certificates,
-                                       endpoint_entry, issued_entry, issued_rows, reconciled, revocation_reason,
-                                       template_entry, templates_group)
+                                       authority_rows, ca_templates_groups, cert_inventory_entry,
+                                       check_issued_certificates, endpoint_entry, is_ca_scoped, issued_entry,
+                                       issued_rows, reconciled, revocation_reason, template_entry, templates_group)
 from opsdir.domains.pki.inventory import inventory_group
-from opsdir.domains.pki.naming import AUTHORITIES, ISSUED, authority_dn
+from opsdir.domains.pki.naming import AUTHORITIES, ISSUED, authority_dn, template_dn
 import mini_estate
 from support import after_import
 
@@ -169,3 +169,19 @@ def test_reports():
 def test_reason_codes():
     assert [revocation_reason(c) for c in (0, 4, 7, 10, -1, 4294967295)] == [
         "unspecified", "superseded", "7", "aACompromise", "-1", "4294967295"]
+
+
+def test_a_directorys_templates_keep_each_cas_own_and_a_ca_replaces_only_its_own():
+    d = _imported(_base(), templates=("WebServer",))
+    own = (template_entry(d, f"{CA}/web", authority=CA), template_entry(d, f"{CA}/client", authority=CA))
+    d = after_import(d, Imported((), ca_templates_groups(d, CA, own), ()))
+    assert one(get(d, template_dn(f"{CA}/web")), "ciamTemplateAuthority") == authority_dn(CA)
+    assert is_ca_scoped(get(d, template_dn(f"{CA}/web"))) and not is_ca_scoped(get(d, template_dn("WebServer")))
+    d = after_import(d, Imported((), (templates_group(d, (template_entry(d, "UserAuth"),)),), ()))
+    assert get(d, template_dn("WebServer")) is None and get(d, template_dn("UserAuth")) is not None
+    assert get(d, template_dn(f"{CA}/web")) is not None and get(d, template_dn(f"{CA}/client")) is not None
+    d = after_import(d, Imported((), ca_templates_groups(d, CA, own[:1]), ()))
+    assert get(d, template_dn(f"{CA}/client")) is None
+    assert get(d, template_dn(f"{CA}/web")) is not None and get(d, template_dn("UserAuth")) is not None
+    other = after_import(d, Imported((), ca_templates_groups(d, "Other CA", ()), ()))
+    assert get(other, template_dn(f"{CA}/web")) is not None

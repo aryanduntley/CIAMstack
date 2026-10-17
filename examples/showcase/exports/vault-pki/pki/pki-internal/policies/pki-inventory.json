@@ -1,0 +1,6 @@
+{
+ "data": {
+  "name": "pki-inventory",
+  "policy": "path \"pki-internal/issuers\" { capabilities = [\"list\"] }\npath \"pki-internal/issuer/+\" { capabilities = [\"read\"] }\npath \"pki-internal/roles\" { capabilities = [\"list\"] }\npath \"pki-internal/roles/+\" { capabilities = [\"read\"] }\npath \"pki-internal/certs\" { capabilities = [\"list\"] }\npath \"pki-internal/cert/+\" { capabilities = [\"read\"] }\npath \"pki-internal/config/urls\" { capabilities = [\"read\"] }\npath \"pki-internal/config/issuers\" { capabilities = [\"read\"] }\npath \"pki-internal/config/cluster\" { capabilities = [\"read\"] }\npath \"pki-internal/config/crl\" { capabilities = [\"read\"] }\npath \"pki-internal/config/auto-tidy\" { capabilities = [\"read\"] }\n# optional: who may request from each role\npath \"sys/policies/acl\" { capabilities = [\"list\"] }\npath \"sys/policies/acl/+\" { capabilities = [\"read\"] }\n"
+ }
+}

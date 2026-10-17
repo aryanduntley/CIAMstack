@@ -1,0 +1,8 @@
+{
+ "data": {
+  "disable": false,
+  "enable_delta": false,
+  "expiry": "72h",
+  "ocsp_disable": false
+ }
+}

@@ -344,6 +344,11 @@ echo "   neighbour directory with a forest trust to the corporate forest (kept) 
 echo "   domain, which a managed domain can't keep (a blocker); the target's authorization doesn't list the service"
 od modify --change CHG-2110 changes/CHG-2110-target-corporate-managed-domain.ldif
 od report managed-directory
+echo "-- the lab's internal CA is a Vault PKI mount, read as the Vault add-on's collector saves it (CHG-2120): the CA,"
+echo "   its endpoints, its roles (ciam-client: any name, client authentication, requested through the default policy)"
+echo "   and the certificates Vault keeps; the lab's SSO certificate was renewed there, and the record names the old one"
+od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
+od report issued-certificates
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

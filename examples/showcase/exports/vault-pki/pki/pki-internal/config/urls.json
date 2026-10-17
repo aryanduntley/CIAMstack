@@ -1,0 +1,15 @@
+{
+ "data": {
+  "crl_distribution_points": [
+   "http://pki.lab.example-aero.test/v1/pki-internal/crl"
+  ],
+  "delta_crl_distribution_points": [],
+  "enable_templating": true,
+  "issuing_certificates": [
+   "{{cluster_aia_path}}/issuer/{{issuer_id}}/der"
+  ],
+  "ocsp_servers": [
+   "http://pki.lab.example-aero.test/v1/pki-internal/ocsp"
+  ]
+ }
+}

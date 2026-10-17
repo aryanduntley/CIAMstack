@@ -195,6 +195,8 @@ sed -i -E 's/(2026-1[0-2]|202[7-9]-[0-9]{2}|20[3-9][0-9]-[0-9]{2})-[0-9]{2} [0-9
 cap 08-report-tickets-jira-sm od report tickets
 cap 08-apply-chg-2110 od modify --change CHG-2110 changes/CHG-2110-target-corporate-managed-domain.ldif
 cap 08-report-managed-directory od report managed-directory
+cap 08-apply-chg-2120 od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
+cap 08-report-issued-certificates-vault od report issued-certificates
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency

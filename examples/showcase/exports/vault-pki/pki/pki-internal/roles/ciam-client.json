@@ -1,0 +1,16 @@
+{
+ "data": {
+  "allow_any_name": true,
+  "allowed_domains": [],
+  "allowed_domains_template": false,
+  "client_flag": true,
+  "code_signing_flag": false,
+  "email_protection_flag": false,
+  "ext_key_usage": [],
+  "ext_key_usage_oids": [],
+  "issuer_ref": "default",
+  "max_ttl": 86400,
+  "no_store": false,
+  "server_flag": false
+ }
+}

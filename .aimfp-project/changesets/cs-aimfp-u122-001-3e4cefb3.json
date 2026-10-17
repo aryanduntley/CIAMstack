@@ -1,0 +1,2183 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "certificates.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "policies.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "roles.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "pki.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "pki_collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "bash",
+        "name": "export-vault-pki.sh",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/scripts/export-vault-pki.sh"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-hashicorp-vault (import opsdir_adapter_hashicorp_vault), registered via entry point opsdir.adapters:hashicorp-vault; depends on opsdir.",
+        "external_dependencies": "[\"Vault CLI (1.11+ for -mount; pinned 2.2.0 for the vault marker tests)\", \"Vault HTTP API v1 (PKI secrets engine: issuers, roles, certs, cert, config; sys/policies/acl), GET only\", \"opsdir-adapter-x509 (certificate_facts; cryptography)\"]",
+        "path": "packages/opsdir-adapter-hashicorp-vault/",
+        "purpose": "HashiCorp Vault secret store: resolves vault:// references (owns the vault scheme); inventories its KV mounts, metadata only (importer hashicorp-vault/kv-metadata from `vault kv list` / `vault kv metadata get` output; collector running them with the operator's login, VAULT_ADDR from the store's ciamStoreEndpoint; inventory_locator mount/path). Reads Vault PKI mounts into the core pki domain (importer hashicorp-vault/pki, pki.py: CA per mount named after its default issuer's CN, AIA endpoints, roles as the CA's own templates via roles.py and ACL-policy enrollment via policies.py, the certificates Vault keeps parsed with opsdir-adapter-x509's certificate_facts; GET-only collector pki_collect.py per ciamCollectionSource naming a mount, X-Vault-Token/Bearer from the credential reference; scripts/export-vault-pki.sh for large mounts)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-hashicorp-vault"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.85,
+        "description": "HashiCorp Vault PKI mounts read into the core pki domain by the hashicorp-vault adapter (importer hashicorp-vault/pki), metadata only. A GET-only collector per collection source naming a mount (X-Vault-Token/Bearer from the credential reference, never stored) lists issuers, roles, certificates and the ACL policies (optional), reads each item and five config answers, trimmed; scripts/export-vault-pki.sh writes the same export for large mounts. The importer (pure) makes the mount one CA named after its default issuer's CN (else the mount), its revocation endpoints from the issuer's AIA overrides else config/urls (template variables filled or kept), each role a CA-scoped template '<CA>/<role>' (ciamTemplateAuthority: validity, usages, requester-named subject, no approval, the policies granting issue/sign, broad via default) and the certificates Vault keeps parsed by opsdir-adapter-x509's certificate_facts; the inventory is complete only for what Vault keeps (incomplete for no_store roles, unread certificates, a missing listing; denied when refused). Vault records no revocation reason, role or requester per certificate."
+      },
+      "kind": "flows",
+      "op": "add",
+      "semantic_key": {
+        "name": "Vault PKI Inventory Import"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "template_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}, {\"name\": \"display\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"oid\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"max_days\", \"type\": \"int|None\", \"required\": false}, {\"name\": \"usages\", \"type\": \"tuple[str]\", \"required\": false}, {\"name\": \"rights\", \"type\": \"dict|None\", \"required\": false, \"description\": \"{attribute of TEMPLATE_RIGHTS: value, or a tuple for ciamEnrollee}\"}, {\"name\": \"authority\", \"type\": \"str|None\", \"required\": false, \"description\": \"the CA name whose own template it is; None for a directory-wide template\"}]",
+        "purpose": "A certificate template's entry (its purpose and renewal owner, the operator's, kept): display name, OID, the longest validity it issues in days, its extended key usages, its rights (what it lets requesters do and who may request from it; None: not read) and, for a CA-scoped template, the CA whose own it is (ciamTemplateAuthority).",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "edb5f9c556ed665b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "templates_group",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"templates\", \"type\": \"tuple[Entry]\", \"required\": true}]",
+        "purpose": "An Imported group: ou=certificate-templates made exactly these directory-wide templates (AD CS's forest list), the record's container and every CA-scoped template (ciamTemplateAuthority) kept; a directory template gone leaves the record.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(scope DN, entries)\"}",
+        "source_hash": "229e4f734d9655da"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-templates-group-bf6590a7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py",
+        "id_in_name": 0,
+        "name": "certificate_facts",
+        "parameters": "[{\"name\": \"pem\", \"type\": \"str\", \"required\": true, \"description\": \"PEM text whose first certificate is read\"}]",
+        "purpose": "The public facts of a PEM certificate as the record writes them, CA-neutral (any CA's issued-certificate importer): serial (lowercase even-length hex), SHA-256 fingerprint (colon upper-case hex, ciamFingerprint's form), subject and issuer (RFC 4514), validity (GeneralizedTime) and extended key usages (OIDs; None when the certificate has no EKU extension); None when the text isn't a certificate. Never a key.",
+        "returns": "{\"type\": \"dict | None\", \"description\": \"{serial, sha256, subject, issuer, not_before, not_after, usages} or None\"}",
+        "source_hash": "3d5159fa3153a517"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "is_ca_scoped",
+        "parameters": "[{\"name\": \"template\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamCertTemplate entry\"}]",
+        "purpose": "Whether a certificate template is one CA's own (it records ciamTemplateAuthority), not one a directory shares with every CA.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "80087e72964f1fd5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-ca-scoped-facde6d1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "ca_templates_groups",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}, {\"name\": \"authority\", \"type\": \"str\", \"required\": true, \"description\": \"the CA's name (cn under ou=certificate-authorities)\"}, {\"name\": \"templates\", \"type\": \"tuple[Entry]\", \"required\": true, \"description\": \"the CA's template entries (template_entry with authority)\"}]",
+        "purpose": "Imported groups making the CA named authority's own templates exactly these: one group per template made as given, and an empty group (it leaves the record) for each template the record holds as that CA's (ciamTemplateAuthority) that it no longer has; every other template, directory-wide or another CA's, kept.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((scope DN, entries), ...) Imported groups\"}",
+        "source_hash": "fe9ec0512fb7c937"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "policy_rules",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "((path, capabilities), ...) of a Vault ACL policy's text, HCL (path blocks found by a brace-depth scan outside strings and comments; nested blocks such as allowed_parameters allowed) or JSON; the legacy policy = \"read|write|deny|sudo\" form as its capabilities; None when a block is unclosed.",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "e0e6a4b85d1c94ce"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-policy-rules-580d0790"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "path_matches",
+        "parameters": "[{\"name\": \"pattern\", \"type\": \"str\", \"required\": true}, {\"name\": \"path\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Whether a Vault policy path pattern covers a request path: + one whole segment, a trailing * any rest, a templated {{...}} segment any one segment.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "fbf9a5a7c9d2ecc2"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-path-matches-8ca36b05"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "path_priority",
+        "parameters": "[{\"name\": \"pattern\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Sort key of a policy path among those matching one request (highest applies), Vault's priority rules in order: first + or * later, not ending in *, fewer + segments, longer, lexically larger.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "693a00529aa68ec6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-path-priority-f2793db9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "grants",
+        "parameters": "[{\"name\": \"rules\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"path\", \"type\": \"str\", \"required\": true}, {\"name\": \"wanted\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "Whether one policy's rules give a request path any of the wanted capabilities (default create/update): the merged capabilities of its highest-priority matching paths, unless they deny.",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "4baae4aa84b62190"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-grants-701ede08"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "role_paths",
+        "parameters": "[{\"name\": \"mount\", \"type\": \"str\", \"required\": true}, {\"name\": \"role\", \"type\": \"str\", \"required\": true}, {\"name\": \"issuers\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "The request paths that issue or sign from a PKI role: <mount>/issue|sign/<role>, and through each issuer reference given <mount>/issuer/<ref>/issue|sign/<role>.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "33d6241389726a1e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-role-paths-192fc2fb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "verbatim_paths",
+        "parameters": "[{\"name\": \"mount\", \"type\": \"str\", \"required\": true}, {\"name\": \"issuers\", \"type\": \"tuple[str]\", \"required\": false}]",
+        "purpose": "The request paths signing any request whatever the roles allow (sign-verbatim, with or without a role, through each issuer reference).",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "428d8fc3fa3327e3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-verbatim-paths-9fc1c6f9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "granting",
+        "parameters": "[{\"name\": \"policies\", \"type\": \"dict\", \"required\": true}, {\"name\": \"paths\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "The names of the policies ({name: rules}) granting any of the request paths, root and unread ones left out, in name order.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "2becf98f0b7f9c15"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-granting-5efc2dbd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py",
+        "id_in_name": 0,
+        "name": "enrollment",
+        "parameters": "[{\"name\": \"policies\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"paths\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "(enrollees, scope, why) of a role reached at these request paths: 'policy <name>' per granting policy; broad when default grants it, restricted otherwise; unknown with why when the policies weren't read (None) or one couldn't be read.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(tuple[str], 'broad'|'restricted'|'unknown', str|None)\"}",
+        "source_hash": "d8398bc907ea9b5f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-enrollment-4d44a49f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py",
+        "id_in_name": 0,
+        "name": "seconds",
+        "parameters": "[{\"name\": \"v\", \"type\": \"int|str|None\", \"required\": true}]",
+        "purpose": "A Vault duration (integer seconds, its text, or 72h/30m/1d via the core's duration_seconds) in seconds, or None.",
+        "returns": "{\"type\": \"int|None\"}",
+        "source_hash": "51f63ec29eac0126"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-seconds-5e0e5375"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py",
+        "id_in_name": 0,
+        "name": "max_validity_days",
+        "parameters": "[{\"name\": \"role\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "(whole days rounded up of a role's max_ttl, or None; why not, or None): 0 or none is the mount's maximum, which the role doesn't say.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "872173b2b8988935"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-max-validity-days-7f528eda"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py",
+        "id_in_name": 0,
+        "name": "role_usages",
+        "parameters": "[{\"name\": \"role\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "(the extended key usage OIDs a role puts in its certificates: its server/client/code-signing/email flags, its ext_key_usage Go names, its ext_key_usage_oids; the names it doesn't know).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "0d936ea4098c8768"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-role-usages-374ae0aa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py",
+        "id_in_name": 0,
+        "name": "subject_from_request",
+        "parameters": "[{\"name\": \"role\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Whether a role lets the requester name the subject: always, unless every allowed name is templated from the requester's identity (allowed_domains_template, only {{identity...}} domains, not allow_any_name).",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "a8a59b1e476eee12"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-subject-from-request-bb4e201a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "answer_data",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The data of a Vault answer (its JSON envelope's data, or a bare object), or None.",
+        "returns": "{\"type\": \"dict|None\"}",
+        "source_hash": "c63b108493824648"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-answer-data-9e4f4968"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "listing",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The keys of a Vault listing (the CLI's bare array, or an answer's data.keys), or None when it isn't one.",
+        "returns": "{\"type\": \"tuple[str]|None\"}",
+        "source_hash": "8ffb2f5e7c48ae60"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-listing-bda843ba"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "file_name",
+        "parameters": "[{\"name\": \"key\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A listed key as the export file holding its answer is named (a serial's colons as dashes).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "7954c876a70edf73"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-file-name-ec886e23"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "mounts",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The PKI mounts an export holds (each with its pki/<mount>/issuers.json), in order; a mount's own config/issuers.json is never taken for a mount <mount>/config.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "9789ac53b84d104c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-mounts-4c2dff26"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "aia_endpoints",
+        "parameters": "[{\"name\": \"issuer\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"urls\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"cluster\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"issuer_id\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "((kind, n, url, template or None), ...) of the URLs an issuer writes into what it issues: its own AIA fields when it sets any, else the mount's config/urls; {{issuer_id}}/{{cluster_path}}/{{cluster_aia_path}} filled when templating is on, an unfilled one kept with its template.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "ad0284f3c04416e9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-aia-endpoints-76c212cf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "issued_facts",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "The ciamIssuedCertificate facts of a Vault certificate answer from its public PEM (certificate_facts) and its revocation (time; reason unspecified, Vault records none), or None when it holds no certificate.",
+        "returns": "{\"type\": \"dict|None\"}",
+        "source_hash": "29a56d41fb0d61f9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issued-facts-6b542491"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "read_mount",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"mount\", \"type\": \"str\", \"required\": true}, {\"name\": \"get\", \"type\": \"callable\", \"required\": true, \"description\": \"name -> the mount's file text or None\"}, {\"name\": \"when\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime of the inventory\"}]",
+        "purpose": "(Imported groups, notices) of one PKI mount: its CA (named after the default issuer's CN, else the mount) with its revocation endpoints, its issued-certificate inventory (complete for what Vault keeps; incomplete for unread certificates, a missing listing, no_store or unread roles; denied when refused) and its roles as the CA's own templates (ca_templates_groups).",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "14ab4a424bd65a3a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-mount-997fb99f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py",
+        "id_in_name": 0,
+        "name": "read_pki",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer hashicorp-vault/pki read(): per mount in the export its CA with revocation endpoints, its issued-certificate inventory and its roles as the CA's own templates, each replacing the record's; refused without --at.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "b31e7509650f18bd"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-pki-82fe48fb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py",
+        "id_in_name": 0,
+        "name": "trimmed",
+        "parameters": "[{\"name\": \"fields\", \"type\": \"tuple[str]\", \"required\": true}]",
+        "purpose": "A Request keep function: a Vault answer reduced to {\"data\": the given fields of its data}; text that isn't one kept as it is.",
+        "returns": "{\"type\": \"callable\"}",
+        "source_hash": "59e9d2eb4c27baae"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-trimmed-b3fb1874"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py",
+        "id_in_name": 0,
+        "name": "credential",
+        "parameters": "[{\"name\": \"s\", \"type\": \"Source\", \"required\": true}]",
+        "purpose": "The Request credential sending a collection source's Vault token: X-Vault-Token (scheme api-key), else Authorization: Bearer; None without a credential.",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "40e5acb0235d89b9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-credential-9cf47a84"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py",
+        "id_in_name": 0,
+        "name": "mount_of",
+        "parameters": "[{\"name\": \"location\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "(Vault's address, the mount) a source location https://<vault>:<port>/<mount> names, or None.",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "2ec0dd1b22fc2678"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-mount-of-357c5820"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py",
+        "id_in_name": 0,
+        "name": "pki_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps for hashicorp-vault/pki: per readable source's mount, the issuers/roles/certs listings, five config reads and the ACL policy listing (optional, 403/404 nothing), then each issuer, role, certificate and policy the listings name; GETs only, answers trimmed.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "db534e31eeb7998d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-pki-steps-14e252e4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py",
+        "id_in_name": 0,
+        "name": "source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why hashicorp-vault/pki collection sources can't be read: their own problems, a credential scheme other than api-key/bearer, a location naming no mount.",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "eed9aed65135df75"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-source-problems-92e90327"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/scripts/export-vault-pki.sh",
+        "id_in_name": 0,
+        "name": "listing",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\", \"required\": true}, {\"name\": \"file\", \"type\": \"str\", \"required\": true}, {\"name\": \"optional\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "Bash: save a Vault listing (vault list -format=json) as a file and print its keys; an empty listing saves nothing; with optional, a refused one too; any other failure aborts.",
+        "returns": "{\"type\": \"stdout keys\"}",
+        "source_hash": null
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-listing-1ddcb46a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-hashicorp-vault/scripts/export-vault-pki.sh",
+        "id_in_name": 0,
+        "name": "answer",
+        "parameters": "[{\"name\": \"path\", \"type\": \"str\", \"required\": true}, {\"name\": \"file\", \"type\": \"str\", \"required\": true}, {\"name\": \"optional\", \"type\": \"str\", \"required\": false}]",
+        "purpose": "Bash: save one vault read -format=json answer as a file; with optional, a missing or refused one saves nothing; else the failure aborts.",
+        "returns": "{\"type\": \"exit status\"}",
+        "source_hash": null
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-answer-595a5fa5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "issue_label",
+        "parameters": "[{\"name\": \"issued\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamIssuedCertificate\"}]",
+        "purpose": "How a finding or report names a certificate an inventory holds: `request <id>` when its cn is a request id (AD CS), else `serial <serial>` (a CA naming them by serial, Vault).",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "9ec4df4b3e486c87"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issue-label-5ca0a50f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 108 item (e) of analysis note 3068, non-cloud CAs only (worker). The pki domain's authorities / issued-certificate inventory / revocation endpoints (flow 60) are CA-neutral and AD CS fills them today (flow 61). Read other CAs into the same model, metadata only, never keys: HashiCorp Vault PKI secrets engine (issuers, roles as templates, certificate list/serials, CRL/OCSP config; in opsdir-adapter-hashicorp-vault or a new package, decide at design), EJBCA (REST v1/v2: CAs, certificate profiles, certificate search) and Venafi / CyberArk Certificate Manager (TPP/TLS Protect: certificates, policy folders, issuing templates). Read-only collectors with least privilege, saved-export importers, matching rules unchanged. Research each current API and edition (incl. any FedRAMP/government offering) via Codex first; propose in the design gate which of the three to build now and which to defer. Cloud private CAs (AWS Private CA, Azure Key Vault certificates, Google CAS) wait until task 557's merge (same cloud adapters); DoD PKI/ECA partner trust stays for later.",
+        "flows": [
+          "PKI Authorities & Issued-Certificate Reconciliation",
+          "Vault PKI Inventory Import"
+        ],
+        "name": "Issued-certificate inventories from other CAs (Vault PKI, EJBCA, Venafi/CyberArk Certificate Manager)",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Codex read-only research of Vault PKI, EJBCA, Venafi/CyberArk Certificate Manager APIs, editions, least privilege, exports; design escalation with which CAs to build now vs defer.",
+        "name": "Research and design gate",
+        "parent": {
+          "key": {
+            "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-research-and-design-gate-a85ad738"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Saved-export importers mapping each chosen CA into the pki domain's authorities / templates / issued-certificates model (metadata only).",
+        "name": "CA inventory importers",
+        "parent": {
+          "key": {
+            "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-ca-inventory-importers-0b0d9a16"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Least-privilege read-only collectors using governance/collection.py's readable_source(s)/source_problems/scheme_problems.",
+        "name": "Read-only collectors",
+        "parent": {
+          "key": {
+            "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-read-only-collectors-139a4f5f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase change(s) CHG-2120.., planted ids, READMEs (U.4 standard), root README package list.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-068f355a"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "f532756",
+    "branch": "aimfp-u122-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "template_entry calls authority_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-template-entry-d15306c0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": "templates_group calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-group-bf6590a7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "templates_group calls is_ca_scoped (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-templates-group-bf6590a7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-ca-scoped-facde6d1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_facts calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_facts calls pem_fingerprint (pem.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pem-fingerprint-cd569fdf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_facts calls load_certificate (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-load-certificate-5888d789"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_facts calls serial_hex (verify.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-serial-hex-319ec339"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_ca_scoped calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-ca-scoped-facde6d1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_templates_groups calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_templates_groups calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_templates_groups calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_templates_groups calls authority_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": "policy_rules calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-policy-rules-580d0790"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "grants calls path_matches (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-grants-701ede08"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-matches-8ca36b05"
+      }
+    },
+    {
+      "attributes": {
+        "description": "grants calls path_priority (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-grants-701ede08"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-path-priority-f2793db9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "granting calls grants (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-granting-5efc2dbd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-grants-701ede08"
+      }
+    },
+    {
+      "attributes": {
+        "description": "enrollment calls granting (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-enrollment-4d44a49f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-granting-5efc2dbd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "seconds calls duration_seconds (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-seconds-5e0e5375"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-duration-seconds-664d1cc7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "max_validity_days calls seconds (roles.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-max-validity-days-7f528eda"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-seconds-5e0e5375"
+      }
+    },
+    {
+      "attributes": {
+        "description": "answer_data calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-answer-data-9e4f4968"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listing calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listing-bda843ba"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "listing calls answer_data (pki.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-listing-bda843ba"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-data-9e4f4968"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-6b542491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls revocation_reason (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-6b542491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-revocation-reason-f3e4230d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_facts calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-facts-6b542491"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls get_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls authority_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls endpoint_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-endpoint-entry-a439098e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls template_entry (issued.py) via _role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-entry-d15306c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls cert_inventory_entry (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-inventory-entry-01ab1779"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls issued_entry (issued.py) via _certificates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-entry-1438647a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls template_dn (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-template-dn-036b18f1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls common_name (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-common-name-55a4a04b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls ca_templates_groups (issued.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ca-templates-groups-060072e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls policy_rules (policies.py) via _policies",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-rules-580d0790"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls role_paths (policies.py) via _role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-paths-192fc2fb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls verbatim_paths (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-verbatim-paths-9fc1c6f9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls granting (policies.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-granting-5efc2dbd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls enrollment (policies.py) via _role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-enrollment-4d44a49f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls max_validity_days (roles.py) via _role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-max-validity-days-7f528eda"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls role_usages (roles.py) via _role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-role-usages-374ae0aa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls subject_from_request (roles.py) via _role",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-subject-from-request-bb4e201a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls answer_data (pki.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-answer-data-9e4f4968"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls listing (pki.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listing-bda843ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls file_name (pki.py) via _certificates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-name-ec886e23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls aia_endpoints (pki.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-aia-endpoints-76c212cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_mount calls issued_facts (pki.py) via _certificates",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-mount-997fb99f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issued-facts-6b542491"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_pki calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-pki-82fe48fb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_pki calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-pki-82fe48fb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_pki calls mounts (pki.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-pki-82fe48fb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-mounts-4c2dff26"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_pki calls read_mount (pki.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-pki-82fe48fb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-mount-997fb99f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "trimmed calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-trimmed-b3fb1874"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki_steps calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pki-steps-14e252e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki_steps calls listing (pki.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pki-steps-14e252e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-listing-bda843ba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki_steps calls file_name (pki.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pki-steps-14e252e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-file-name-ec886e23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki_steps calls trimmed (pki_collect.py) via _get",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pki-steps-14e252e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-trimmed-b3fb1874"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki_steps calls credential (pki_collect.py) via _get",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pki-steps-14e252e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-9cf47a84"
+      }
+    },
+    {
+      "attributes": {
+        "description": "pki_steps calls mount_of (pki_collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pki-steps-14e252e4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-mount-of-357c5820"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-92e90327"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-92e90327"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "source_problems calls mount_of (pki_collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-source-problems-92e90327"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-mount-of-357c5820"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls issue_label (issued.py) via _replacement",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-label-5ca0a50f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issued_rows calls issue_label (issued.py) via _detail",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issued-rows-f9f00177"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-label-5ca0a50f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issue_label calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issue-label-5ca0a50f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py"
+      },
+      "flow": {
+        "name": "PKI Authorities & Issued-Certificate Reconciliation"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/scripts/export-vault-pki.sh"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/adapter.py"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/README.md"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/pyproject.toml"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/README.md"
+      },
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-x509"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-hashicorp-vault"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-hashicorp-vault"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-hashicorp-vault"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-hashicorp-vault"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/scripts/export-vault-pki.sh"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-hashicorp-vault"
+      },
+      "op": "add"
+    },
+    {
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Importers (files/APIs -> DB)"
+      }
+    },
+    {
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "flow_theme",
+      "op": "add",
+      "theme": {
+        "name": "Keys, Secrets & PKI Metadata"
+      }
+    },
+    {
+      "flow": {
+        "name": "Vault PKI Inventory Import"
+      },
+      "kind": "milestone_flow",
+      "milestone": {
+        "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/policies.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/roles.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/pki_collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/scripts/export-vault-pki.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-adcs/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-hashicorp-vault/src/opsdir_adapter_hashicorp_vault/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-issued-certificate-inventories-from-othe-693fd627"
+      }
+    }
+  ],
+  "warnings": []
+}

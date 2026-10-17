@@ -3668,6 +3668,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.877 NAME 'ciamSelectiveAuth' DESC 'A
  h the trusting side)' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121
  .1.7 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'bool' X-ORIGIN 'ops
  dir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.890 NAME 'ciamTemplateAuthority' DES
+ C 'The certification authority (ou=certificate-authorities) a CA-scoped cer
+ tificate template is its own (a Vault PKI role): only that CA issues from i
+ t and only its importer replaces it; absent on templates a directory shares
+  with every CA (AD CS\27s forest templates)' EQUALITY distinguishedNameMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'observed
+ ' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4498,12 +4505,13 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.151 NAME 'ciamCertAuthority' DESC 'A
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.152 NAME 'ciamCertTemplate' DESC 'A c
  ertificate template CAs issue from (cn: its name; description: its display 
  name): what it issues, who renews what it issues that the record holds no c
- ertificate for, and what it lets requesters do (name the subject, skip appr
- oval) and who may request from it' SUP ciamObject STRUCTURAL MUST cn MAY ( 
- ciamTemplateOid $ ciamMaxValidityDays $ ciamExtendedKeyUsage $ ciamCertPurp
- ose $ ciamRenewalOwner $ ciamSubjectFromRequest $ ciamApprovalRequired $ ci
- amRequiredSignatures $ ciamTemplateVersion $ ciamEnrollee $ ciamEnrollmentS
- cope ) X-ORIGIN 'opsdir' )
+ ertificate for, what it lets requesters do (name the subject, skip approval
+ ) and who may request from it, and the CA it belongs to when it is that CA\
+ 27s own' SUP ciamObject STRUCTURAL MUST cn MAY ( ciamTemplateOid $ ciamMaxV
+ alidityDays $ ciamExtendedKeyUsage $ ciamCertPurpose $ ciamRenewalOwner $ c
+ iamSubjectFromRequest $ ciamApprovalRequired $ ciamRequiredSignatures $ cia
+ mTemplateVersion $ ciamEnrollee $ ciamEnrollmentScope $ ciamTemplateAuthori
+ ty ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.153 NAME 'ciamRevocationEndpoint' DES
  C 'Where the certificates a CA issues say to check their revocation or find
   their issuer (a child of the ciamCertAuthority; cn: <kind>-<n>)' SUP ciamO
