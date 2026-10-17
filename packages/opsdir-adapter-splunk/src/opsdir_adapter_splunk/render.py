@@ -11,13 +11,18 @@ freeze them sooner: the days are a ceiling the record states, not a guarantee (t
 savedsearches.conf: a scheduled search per alert rule a detection realizes on a Splunk index here
 (alarms.detection_specs): the detection's search (ciamMetric) counted per window and compared with the rule's
 threshold, firing when every window of the rule's evaluation period breaches (alarms.detection_condition), run as often
-as that period, over it. Its description names the rule, which the importers read back.
+as that period, over it. Its description names the rule, which the importers read back. A rows detection (core
+ciamDetectionMode rows) runs its search as written, every evaluation period of its rule (5 minutes when none) over
+that period, its alert actions applied to each result (alert.digest_mode = 0: one alert per row). Where the stack
+declares Splunk Enterprise Security (offering enterprise-security), each is an ES correlation search, with its ATT&CK
+annotations, notable and risk objects (es.correlation_settings); elsewhere ATT&CK and entity mappings are notes.
 
 inputs.conf: per server role and install root, a [monitor://<file>] per log file a route ships to a Splunk index, with
 the index and a sourcetype (_json for JSON lines, else ciam:<role>:<file>). A file is monitored once.
 
 Named instead, each a render note written as its comment: installing the app (an action), the forwarders' outputs
-(the Splunk team's: an action), detections not rendered (alarms.alarm_note), retention Splunk can't express, files
+(the Splunk team's: an action), detections not rendered (alarms.alarm_note), the ATT&CK and entity mappings a
+detection records that aren't rendered and what ES leaves to the Splunk team (es), retention Splunk can't express, files
 shipped whole where the route takes only some of their lines, records spanning lines, container output (not shipped
 by this add-on: a blocker) and a file two routes ship to different indexes (a blocker).
 """
@@ -26,20 +31,24 @@ import re
 from opsdir.core.contract import HostFile
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.formats import INI
+from opsdir.core.inventory import duration_seconds
 from opsdir.core.manifest import header
 from opsdir.core.notes import note, note_comment
 from opsdir.core.settings import setting_value
 from opsdir.domains.observability.alarms import alarm_note, detection_condition, detection_specs
 from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.retention import INDEFINITE, retention_days
-from opsdir.domains.observability.siem import described, detection_index
+from opsdir.domains.observability.siem import described, detection_index, detection_mode
 from opsdir.domains.observability.sources import ALL, shipments
 from .conf import write_conf
+from .es import correlation_settings, es_notes, platform_notes
 from .kubernetes import collector_notes, render_collectors
-from .naming import APP, FORWARDER_HOME, INDEXES, SAVED_SEARCHES, index_name, kept_indexes
+from .naming import (APP, FORWARDER_HOME, INDEXES, SAVED_SEARCHES, enterprise_security, index_name,
+                     kept_indexes)
 
 DAY = 86400
 OPERATORS = {"gt": ">", "ge": ">="}
+ROWS_PERIOD = 300                   # a rows detection's period when its rule records none
 
 
 def splunk_shipments(m, services):
@@ -78,7 +87,17 @@ def detection_search(metric, rule, c):
             f"| where breaching >= {c.windows}")
 
 
+def rows_period(s):
+    """A rows detection spec's period in seconds: its rule's ciamEvaluationPeriod, else ROWS_PERIOD."""
+    return duration_seconds(one(s.rule, "ciamEvaluationPeriod")) or ROWS_PERIOD
+
+
 def _detection(s):
+    """(condition or None, cron schedule, why it isn't rendered or None) of detection spec s: a rows detection has no
+    condition (its search holds its threshold) and runs every period of its rule."""
+    if detection_mode(s.alarm) == "rows":
+        cron, late = cron_schedule(rows_period(s))
+        return None, cron, late
     c, why = detection_condition(s.rule)
     cron, late = cron_schedule(c.window * c.windows) if c is not None else (None, None)
     return c, cron, why or late
@@ -91,18 +110,22 @@ def splunk_detections(m):
                  if s.keeper is None and index_name(detection_index(m, s.alarm)) is not None)
 
 
-def search_stanza(s):
-    """The savedsearches.conf stanza of detection spec s, or None when it isn't rendered (detection_notes)."""
+def search_stanza(m, s):
+    """The savedsearches.conf stanza of environment m's detection spec s, or None when it isn't rendered
+    (detection_notes): an ES correlation search where m runs Splunk Enterprise Security."""
     c, cron, why = _detection(s)
     if s.why or why:
         return None
-    period = c.window * c.windows
+    rows = c is None
+    period = rows_period(s) if rows else c.window * c.windows
+    search = one(s.alarm, "ciamMetric") if rows else detection_search(one(s.alarm, "ciamMetric"), s.rule, c)
     return (one(s.alarm, "ciamProviderRef"),
-            (("description", described(rdn_value(s.rule))),
-             ("search", detection_search(one(s.alarm, "ciamMetric"), s.rule, c)),
+            (("description", described(rdn_value(s.rule))), ("search", search),
              ("is_scheduled", "1"), ("cron_schedule", cron), ("dispatch.earliest_time", f"-{period}s"),
              ("dispatch.latest_time", "now"), ("alert_type", "number of events"),
-             ("alert_comparator", "greater than"), ("alert_threshold", "0"), ("disabled", "0")))
+             ("alert_comparator", "greater than"), ("alert_threshold", "0"), ("disabled", "0"),
+             *((("alert.digest_mode", "0"),) if rows else ()),
+             *(correlation_settings(s) if enterprise_security(m) else ())))
 
 
 def detection_notes(m):
@@ -112,6 +135,14 @@ def detection_notes(m):
         _, _, why = _detection(s)
         return alarm_note(m, s) if s.why else alarm_note(m, s, why) if why else None
     return tuple(n for n in map(of, splunk_detections(m)) if n is not None)
+
+
+def mapping_notes(m):
+    """The render notes of what environment m's rendered Splunk detections record of ATT&CK and entities: an ES
+    correlation search's (es.es_notes) where it runs Splunk Enterprise Security, else what a saved search can't hold
+    (es.platform_notes)."""
+    rendered = tuple(s for s in splunk_detections(m) if search_stanza(m, s) is not None)
+    return es_notes(m, rendered) if enterprise_security(m) else platform_notes(m, rendered)
 
 
 def _retention_notes(m):
@@ -175,14 +206,15 @@ def _team_notes(m, found, rendered):
         *((note("Monitoring", "action", "Splunk alert actions", "the detections' saved searches fire, but who they "
                 "notify (their alert actions) is set in Splunk, not rendered",
                 ("Set each detection's alert actions to the channel its alert rule names",), None, m.label),)
-          if any(search_stanza(s) for s in splunk_detections(m)) else ()))
+          if any(search_stanza(m, s) for s in splunk_detections(m)) else ()))
 
 
 def render_notes(m, services):
     """Adapter notes: what environment m's Splunk render leaves out or to a person."""
     found = splunk_shipments(m, services)
     rendered = bool(kept_indexes(m) or splunk_detections(m))
-    return (*_team_notes(m, found, rendered), *_retention_notes(m), *detection_notes(m), *_route_notes(m, found))
+    return (*_team_notes(m, found, rendered), *_retention_notes(m), *detection_notes(m), *mapping_notes(m),
+            *_route_notes(m, found))
 
 
 def _comments(notes):
@@ -196,7 +228,8 @@ def render(m, services):
     if not indexes and not searches:
         return {}
     collectors = render_collectors(m, splunk_shipments(m, services))
-    notes, stanzas = render_notes(m, services), tuple(x for x in map(search_stanza, searches) if x is not None)
+    notes = render_notes(m, services)
+    stanzas = tuple(x for x in (search_stanza(m, s) for s in searches) if x is not None)
     return {INDEXES: write_conf(header(m, f"Splunk indexes (app {APP})", INI) + _comments(notes),
                                 tuple(index_stanza(b) for b in indexes)),
             **({SAVED_SEARCHES: write_conf(header(m, f"Splunk saved searches: the detections (app {APP})", INI),

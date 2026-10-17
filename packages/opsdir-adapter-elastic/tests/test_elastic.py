@@ -1,7 +1,8 @@
 """The Elastic add-on: the data streams an environment keeps logs in (an ILM policy per stream attached through its
 dataset's component template, a snapshot policy archiving what it keeps longer in all; on Serverless the data stream
-lifecycle), its detections as ES|QL rules counting events per window, the Fleet policies shipping the logs there (from
-servers' files and Kubernetes containers), all as API documents and as Terraform for the elasticstack provider, what
+lifecycle), its detections as ES|QL rules counting events per window (a rows detection as written, with its ATT&CK
+threat mapping and entity columns), the Fleet policies shipping the logs there (from servers' files and Kubernetes
+containers), all as API documents and as Terraform for the elasticstack provider, what
 it leaves to the Elastic team as render notes; read back from its own documents unchanged and from the Elasticsearch
 and Kibana answers (ILM or the data stream lifecycle, snapshot archives, rules of every language, the offering);
 collected read-only with an API key; and the provider adapters leaving its streams to it."""
@@ -148,6 +149,56 @@ def test_a_detection_counts_events_per_window_every_window_of_the_period_breachi
     assert esql_query(SEARCH, spec.rule, detection_condition(spec.rule)[0]) == query
     assert base_query(query) == SEARCH and source_of(SEARCH) == STREAM and source_of("ROW a = 1") is None
     assert rule_body(m, _spec(m, "in-kql")) is None and rule_body(m, _spec(m, "elsewhere")) is None
+
+
+SPRAY = (f"FROM {STREAM} | WHERE event.outcome == \"failure\" | STATS users = COUNT_DISTINCT(user.name) BY source.ip, "
+         "hostname | WHERE users > 10")
+ATTACK_TREE = (*TREE, _rule("password-spray", ciamSignal="spray", ciamComparison="gt", ciamThreshold="10",
+                            ciamEvaluationPeriod="15m", ciamAlertRole="alerts-page", ciamSeverity="sev2",
+                            ciamAttackTactic="credential-access\nciamAttackTactic: initial-access",
+                            ciamAttackTechnique="T1110.003\nciamAttackTechnique: T1110\nciamAttackTechnique: T1078.004"
+                                                "\nciamAttackTechnique: T1595"))
+SPRAYING = _detection("det-spray", "password-spray", ciamMetric=SPRAY, ciamDetectionMode="rows",
+                      ciamEntityMapping=("ip address=source.ip", "account name=user.name", "host hostname=hostname"))
+
+
+def test_a_rows_detection_runs_as_written_with_its_attack_mapping_and_entity_columns():
+    m = _alpha(*BINDINGS, SPRAYING, tree=ATTACK_TREE)
+    body = rule_body(m, _spec(m, "password-spray"))
+    assert (body["query"], body["interval"], body["from"]) == (SPRAY, "15m", "now-15m")
+    assert body["investigation_fields"] == {"field_names": ["source.ip", "user.name", "hostname"]}
+    tactic = {"id": "TA0006", "name": "Credential Access", "reference": "https://attack.mitre.org/tactics/TA0006/"}
+    assert body["threat"] == [
+        {"framework": "MITRE ATT&CK", "tactic": tactic, "technique": [
+            {"id": "T1110", "name": "Brute Force", "reference": "https://attack.mitre.org/techniques/T1110/",
+             "subtechnique": [{"id": "T1110.003", "name": "Password Spraying",
+                               "reference": "https://attack.mitre.org/techniques/T1110/003/"}]}]},
+        {"framework": "MITRE ATT&CK", "tactic": {"id": "TA0001", "name": "Initial Access",
+                                                 "reference": "https://attack.mitre.org/tactics/TA0001/"},
+         "technique": [{"id": "T1078", "name": "Valid Accounts",
+                        "reference": "https://attack.mitre.org/techniques/T1078/",
+                        "subtechnique": [{"id": "T1078.004", "name": "Cloud Accounts",
+                                          "reference": "https://attack.mitre.org/techniques/T1078/004/"}]}]}]
+    counted = rule_body(m, _spec(m, "login-failures"))        # a count detection, its rule mapping no ATT&CK
+    assert "threat" not in counted and "investigation_fields" not in counted and "STATS breaching" in counted["query"]
+    texts = [(n.severity, note_comment(n)) for n in render_notes(m, SERVICES)]
+    assert ("note", "NOTE: alert rule password-spray: its ATT&CK techniques T1595 aren't in its Elastic rule's threat "
+            "mapping: a technique is mapped under a tactic it serves, and these serve none of the rule's tactics "
+            "(ciamAttackTactic) or aren't in ATT&CK v18.0") in texts
+    assert ("note", "NOTE: alert rule password-spray: its entity mappings name host hostname by column hostname, not "
+            "host.name: Elastic's entity risk scoring groups alerts by user.name and host.name, so its alerts add to "
+            "no entity's risk score (the columns are only its investigation fields)") in texts
+    main = render_env(m, SERVICES, ("terraform",))["elastic/terraform/main.tf"]
+    assert 'investigation_fields = ["source.ip", "user.name", "hostname"]' in main
+    assert '      tactic = {\n        id        = "TA0006"' in main and 'framework = "MITRE ATT&CK"' in main
+
+
+def test_a_rows_detection_reads_back_through_the_round_trip_without_drift():
+    from opsdir.connectors.roundtrip import round_trip
+    from mini_estate import FAKE
+    d = _alpha(*BINDINGS, SPRAYING, tree=ATTACK_TREE).d
+    trips = round_trip(d, "alpha/prod", installed=(FAKE, ADAPTER._replace(logs=SOURCES)))
+    assert all(rt.drift == () for rt in trips)
 
 
 def test_the_terraform_target_says_the_same_with_credentials_left_to_the_environment():
@@ -516,7 +567,9 @@ def test_the_rendered_terraform_is_valid(tmp_path):
             (root / path).write_text(text)
         return root
     trees = (written(tmp_path / "stateful", render_env(m, found, ("terraform",))),
-             written(tmp_path / "serverless", render_env(_alpha(tree=SERVERLESS), found, ("terraform",))))
+             written(tmp_path / "serverless", render_env(_alpha(tree=SERVERLESS), found, ("terraform",))),
+             written(tmp_path / "attack", render_env(_alpha(*BINDINGS, SPRAYING, tree=ATTACK_TREE), found,
+                                                     ("terraform",))))
     done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-terraform.sh"), *map(str, trees)],
                           capture_output=True, text=True)
     assert done.returncode == 0, done.stdout + done.stderr

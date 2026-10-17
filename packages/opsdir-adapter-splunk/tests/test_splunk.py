@@ -1,7 +1,8 @@
 """The Splunk add-on: the indexes an environment keeps logs in (searchable and archived days), its detections as
-scheduled saved searches counting events per window, the forwarders' inputs per role and install root, what it leaves
-to the Splunk team as render notes; read back from its own .conf files unchanged, and from the management API's
-answers; collected read-only; and the provider adapters leaving its indexes to it."""
+scheduled saved searches counting events per window (a rows detection as written, alerting per row; on Splunk ES a
+correlation search with its ATT&CK annotations, notable and risk objects), the forwarders' inputs per role and
+install root, what it leaves to the Splunk team as render notes; read back from its own .conf files unchanged, and
+from the management API's answers; collected read-only; and the provider adapters leaving its indexes to it."""
 import json
 
 from opsdir.connectors.collecting import collect
@@ -119,6 +120,100 @@ def test_a_detection_counts_events_per_window_every_window_of_the_period_breachi
     assert cron_schedule(7200) == ("0 */2 * * *", None) and cron_schedule(420)[0] is None
     assert base_search(detection_search(SEARCH, next(r for r in m.d.entries.values()
                                                      if r.dn.startswith("cn=login-failures,")), c)) == SEARCH
+
+
+SPRAY = "index=ciam_security action=failure | stats dc(user) AS users BY src, dest, user | where users > 10"
+ATTACK_RULES = (_rule("password-spray", ciamSignal="spray", ciamComparison="gt", ciamThreshold="10",
+                      ciamEvaluationPeriod="15m", ciamSeverity="sev1", ciamAlertRole="alerts-page",
+                      ciamAttackTactic="credential-access",
+                      ciamAttackTechnique="T1110.003\nciamAttackTechnique: T1078.004"),
+                _rule("admin-changes", ciamSignal="changes", ciamComparison="gt", ciamThreshold="5 /min",
+                      ciamEvaluationPeriod="5m", ciamAlertRole="alerts-page", ciamAttackTactic="persistence"))
+ES_STACK = TREE[-1].replace("ciamAdapterSource: https://example.test/splunk\n",
+                            "ciamAdapterSource: https://example.test/splunk\nciamOffering: enterprise-security\n")
+ES_TREE = (*TREE[:-1], *ATTACK_RULES, ES_STACK)
+PLATFORM_TREE = (*TREE, *ATTACK_RULES)
+SPRAYING = entry(ALPHA, "det-spray", "ciamAlarmBinding", ciamBindingRole="alarm-password-spray",
+                 ciamProviderRef="ciam-password-spray", ciamRealizes="password-spray", ciamMetric=SPRAY,
+                 ciamLogDestinationRole="siem", ciamDetectionMode="rows",
+                 ciamEntityMapping=("account name=user", "ip address=src", "host hostname=dest"))
+CHANGES = entry(ALPHA, "det-changes", "ciamAlarmBinding", ciamBindingRole="alarm-admin-changes",
+                ciamProviderRef="ciam-admin-changes", ciamRealizes="admin-changes", ciamMetric=SEARCH,
+                ciamLogDestinationRole="siem")
+
+
+def _attack(tree, spraying=SPRAYING):
+    _, alpha, _ = model(alpha=(*BINDINGS, spraying, CHANGES), tree=tree,
+                        changes=(_root("ds-1", "/opt/ds"), _root("ds-2", "/srv/ds"), _root("web-1", "/opt/web")))
+    return alpha
+
+
+def test_on_enterprise_security_a_detection_is_a_correlation_search_with_its_attack_and_risk_objects():
+    searches = dict(read_conf(render(_attack(ES_TREE), SERVICES)[SAVED_SEARCHES]))
+    assert dict(searches["ciam-password-spray"]) == {
+        "description": "opsdir: realizes alert rule password-spray", "search": SPRAY, "is_scheduled": "1",
+        "cron_schedule": "*/15 * * * *", "dispatch.earliest_time": "-900s", "dispatch.latest_time": "now",
+        "alert_type": "number of events", "alert_comparator": "greater than", "alert_threshold": "0",
+        "disabled": "0", "alert.digest_mode": "0",
+        "action.correlationsearch.enabled": "1", "action.correlationsearch.label": "password-spray",
+        "action.correlationsearch.annotations": '{"mitre_attack":["T1110.003","T1078.004"]}',
+        "action.notable": "1", "action.notable.param.rule_title": "password-spray",
+        "action.notable.param.rule_description": "opsdir: realizes alert rule password-spray",
+        "action.risk": "1",
+        "action.risk.param._risk": '[{"risk_object_field": "user", "risk_object_type": "user", "risk_score": 73}, '
+                                   '{"threat_object_field": "src", "threat_object_type": "ip_address"}, '
+                                   '{"risk_object_field": "dest", "risk_object_type": "system", "risk_score": 73}]'}
+    counted = dict(searches["ciam-login-failures"])          # a count detection: no annotations, no risk objects
+    assert counted["action.correlationsearch.enabled"] == "1" and counted["action.notable"] == "1"
+    assert "action.risk" not in counted and "action.correlationsearch.annotations" not in counted
+    assert "alert.digest_mode" not in counted and counted["search"].endswith("| where breaching >= 5")
+
+
+def test_what_enterprise_security_leaves_to_the_splunk_team_is_named():
+    with_url = entry(ALPHA, "det-spray", "ciamAlarmBinding", ciamBindingRole="alarm-password-spray",
+                     ciamProviderRef="ciam-password-spray", ciamRealizes="password-spray", ciamMetric=SPRAY,
+                     ciamLogDestinationRole="siem", ciamDetectionMode="rows",
+                     ciamEntityMapping=("account name=user", "url url=uri", "account object-id=user_id"))
+    texts = [(n.severity, note_comment(n)) for n in render_notes(_attack(ES_TREE, with_url), SERVICES)]
+    assert ("note", "NOTE: alert rule password-spray: its entity mappings url url, account object-id aren't risk or "
+            "threat objects of its correlation search: opsdir renders an account's name and a host's name as risk "
+            "objects and an IP address as a threat object, the types ES documents") in texts
+    assert ("note", "NOTE: alert rule admin-changes: its ATT&CK tactics persistence aren't annotated: ES annotates a "
+            "correlation search by technique (mitre_attack) and derives the tactics, and the rule records no "
+            "technique (ciamAttackTechnique)") in texts
+    (es,) = (n for n in render_notes(_attack(ES_TREE), SERVICES) if n.subject == "Splunk Enterprise Security")
+    assert es.severity == "action" and es.how[0] == ("Set each correlation search's finding severity and security "
+                                                     "domain in ES")
+
+
+def test_on_the_plain_platform_a_rows_detection_alerts_per_row_and_its_mappings_are_named():
+    m = _attack(PLATFORM_TREE)
+    searches = dict(read_conf(render(m, SERVICES)[SAVED_SEARCHES]))
+    spray = dict(searches["ciam-password-spray"])
+    assert spray["search"] == SPRAY and spray["alert.digest_mode"] == "0" and spray["cron_schedule"] == "*/15 * * * *"
+    assert not any(k.startswith("action.") for s in searches.values() for k, _ in s)
+    texts = [(n.severity, note_comment(n)) for n in render_notes(m, SERVICES)]
+    assert ("note", "NOTE: alert rule password-spray: its ATT&CK tactics and techniques and its entity mappings "
+            "aren't rendered: a saved search has no place for them (a Splunk Enterprise Security correlation search "
+            "does)") in texts
+    assert ("note", "NOTE: alert rule admin-changes: its ATT&CK tactics and techniques aren't rendered: a saved "
+            "search has no place for them (a Splunk Enterprise Security correlation search does)") in texts
+    assert not any(n.subject == "Splunk Enterprise Security" for n in render_notes(m, SERVICES))
+
+
+def test_a_rows_detection_reads_back_with_its_entity_mappings_without_drift():
+    from opsdir.connectors.roundtrip import round_trip
+    from mini_estate import FAKE
+    for tree in (ES_TREE, PLATFORM_TREE):
+        m = _attack(tree)
+        (rt,) = round_trip(m.d, "alpha/prod", installed=(FAKE, ADAPTER._replace(logs=SOURCES)))
+        assert rt.drift == ()
+    resources, _ = parse_conf({"savedsearches.conf": render(_attack(ES_TREE), SERVICES)[SAVED_SEARCHES]})
+    spray = next(r for r in resources if r.ref == "ciam-password-spray")
+    assert spray.attrs["ciamDetectionMode"] == ("rows",) and spray.attrs["ciamEntityMapping"] == (
+        "account name=user", "ip address=src", "host hostname=dest")
+    counted = next(r for r in resources if r.ref == "ciam-login-failures")
+    assert "ciamDetectionMode" not in counted.attrs and "ciamEntityMapping" not in counted.attrs
 
 
 def test_forwarder_inputs_per_role_and_install_root():

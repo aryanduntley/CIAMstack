@@ -1,5 +1,6 @@
-"""Splunk names: which log destinations are Splunk indexes this add-on keeps, the app its configuration ships in, and
-the estate setting saying where the Universal Forwarder is installed on the servers. Pure.
+"""Splunk names: which log destinations are Splunk indexes this add-on keeps, the app its configuration ships in, the
+offerings of Splunk its stack component can declare (ciamOffering), and the estate setting saying where the Universal
+Forwarder is installed on the servers. Pure.
 
 A log destination of kind siem-index whose provider reference is a Splunk index name (lowercase letters, digits,
 underscores and hyphens, not starting with an underscore or a hyphen: Splunk's rule for index names) is a Splunk
@@ -10,10 +11,17 @@ import re
 
 from opsdir.core.contract import Setting
 from opsdir.core.directory import one
+from opsdir.core.environment import offering
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.siem import is_siem, siem_destinations
 
-APP = "opsdir_ciam"                                 # the Splunk app holding the indexes and saved searches
+ADAPTER_NAME = "splunk"
+# the offerings of Splunk a stack component of this adapter can declare (ciamOffering): platform, its default, for
+# Splunk Enterprise or Splunk Cloud Platform searching on its own (detections as scheduled saved searches), and
+# enterprise-security for either running Splunk Enterprise Security (detections as ES correlation searches)
+PLATFORM, ENTERPRISE_SECURITY = "platform", "enterprise-security"
+OFFERINGS = (PLATFORM, ENTERPRISE_SECURITY)
+APP = "opsdir_ciam"                               # the Splunk app holding the indexes and saved searches
 APP_DIR = f"splunk/apps/{APP}/default"              # where the render writes it
 INDEXES = f"{APP_DIR}/indexes.conf"
 SAVED_SEARCHES = f"{APP_DIR}/savedsearches.conf"
@@ -31,6 +39,12 @@ def index_name(b):
     reference isn't a Splunk index name."""
     ref = one(b, "ciamProviderRef") if is_siem(b) else None
     return ref if ref and _INDEX.match(ref) else None
+
+
+def enterprise_security(m):
+    """Whether environment m's stack declares its Splunk component as running Splunk Enterprise Security
+    (ciamOffering enterprise-security)."""
+    return offering(m, ADAPTER_NAME, PLATFORM) == ENTERPRISE_SECURITY
 
 
 def keeps(m, b):
