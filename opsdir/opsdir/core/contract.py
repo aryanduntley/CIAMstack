@@ -13,27 +13,27 @@ from collections import namedtuple
 from types import MappingProxyType
 from typing import Callable, Mapping, NamedTuple, Optional
 
-from .directory import Directory
-from .environment import EnvModel
-
 # A report's rows come from exactly one source: `sql` (run against the store; the report's DN argument is its one
 # parameter when needs_dn), `from_directory(directory, dn)` (a pure function of the snapshot), or `fetch(conn, dn)`
 # (a store-level query; for the store's own reports, never a domain's).
 Report = NamedTuple("Report", [("headers", tuple), ("sql", Optional[str]), ("from_directory", Optional[Callable]),
                                ("fetch", Optional[Callable]), ("needs_dn", bool),
-                               ("dated", bool)])   # from_directory(d, dn, as_of): it evaluates dates as of a day
+                               ("dated", bool),    # from_directory(d, dn, as_of): it evaluates dates as of a day
+                               ("writes", bool)])  # from_directory(d, dn, writes): with when each change record's
+# writes landed ({change id: (first, last, count)}), which the runner reads from the store's history up to the end of
+# the day the report is run as of: still a pure function, its history given
 
 
 def sql_report(headers, sql, needs_dn=False):
-    return Report(tuple(headers), sql, None, None, needs_dn, False)
+    return Report(tuple(headers), sql, None, None, needs_dn, False, False)
 
 
-def directory_report(headers, from_directory, needs_dn=False, dated=False):
-    return Report(tuple(headers), None, from_directory, None, needs_dn, dated)
+def directory_report(headers, from_directory, needs_dn=False, dated=False, writes=False):
+    return Report(tuple(headers), None, from_directory, None, needs_dn, dated, writes)
 
 
 def fetch_report(headers, fetch, needs_dn=False):
-    return Report(tuple(headers), None, None, fetch, needs_dn, False)
+    return Report(tuple(headers), None, None, fetch, needs_dn, False, False)
 
 
 # How one kind of resource the cloud importers report is read into the record (core.inventory places it); declared
@@ -329,8 +329,10 @@ Command = namedtuple("Command", ("argv", "secrets", "stdin", "env", "absent", "k
                      defaults=((), None, (), (), None, False, (), None))
 # An HTTP GET opsdir makes itself (no other method exists): url, headers ((name, value), ...: never a credential),
 # credential (scheme 'basic', 'bearer', 'token' (sent as the Authorization header's whole value: a session token a
-# product's own logon issued), 'headers' or 'api-key', the reference to resolve, the login name (None for token and
-# api-key), and for 'headers' the names of the header carrying the login and of the one carrying the secret
+# product's own logon issued), 'headers', 'api-key' or 'client-certificate' (the reference resolves to a PEM holding a
+# client certificate, its chain and private key, presented in the TLS handshake: mutual TLS, no header; held in memory
+# only), the reference to resolve, the login name (None for token, api-key and client-certificate), and for
+# 'headers' the names of the header carrying the login and of the one carrying the secret
 # (PingIDM's X-OpenIDM-Username and X-OpenIDM-Password), for 'api-key' the name of the header carrying the secret
 # (PAN-OS's X-PAN-KEY: ('api-key', reference, None, 'X-PAN-KEY')) and, when the value carries a prefix before the
 # secret, that prefix (Elasticsearch's ('api-key', reference, None, 'Authorization', 'ApiKey '))) or None, ca the
@@ -471,7 +473,8 @@ ROLE_KINDS = ("server", "keystore", "service", "cluster-discovery")
 DiscoveryAnswer = NamedTuple("DiscoveryAnswer", [("product", str), ("namespace", str), ("name", str), ("kit", str),
                                                  ("setting", str)])
 
-# What every planner check receives.
-PlanContext = NamedTuple("PlanContext", [("d", Directory), ("src", EnvModel), ("dst", EnvModel),
-                                         ("cutover", Optional[object]), ("as_of", object),
-                                         ("src_files", dict), ("dst_files", dict), ("neutral_paths", tuple)])
+# What every planner check receives. writes: when each change record's writes landed in the record ({change id:
+# (first, last, count)}, UTC datetimes), read from the store's history at the edge up to the end of the as_of day;
+# None when not read (a plan of a snapshot alone).
+PlanContext = namedtuple("PlanContext", ("d", "src", "dst", "cutover", "as_of", "src_files", "dst_files",
+                                         "neutral_paths", "writes"), defaults=(None,))

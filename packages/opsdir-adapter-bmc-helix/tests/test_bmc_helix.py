@@ -11,8 +11,8 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from opsdir.connectors.collecting import collect
 from opsdir.core.directory import get, one, subtree, values, within
 from opsdir.domains.governance.naming import CHANGES
-from opsdir.domains.governance.tickets import (IN_STEP, OUTSIDE_WINDOW, REJECTED, UNAPPROVED, linked, ticket_dn,
-                                               ticket_rows, ticket_state_map)
+from opsdir.domains.governance.tickets import (AFTER_READ, IN_STEP, OUTSIDE_WINDOW, REJECTED, UNAPPROVED, linked,
+                                               ticket_dn, ticket_rows, ticket_state_map)
 from opsdir_adapter_bmc_helix.adapter import ADAPTER
 from opsdir_adapter_bmc_helix.changes import (CHANGES_IMPORTER, approval_key, ar_error, read_changes, signatures_of,
                                               steps_of)
@@ -159,7 +159,8 @@ def test_work_outside_the_planned_window_and_classes_that_arent_a_change_type():
     assert (one(t, "ciamTicketWorkStart"), one(t, "ciamTicketWorkEnd"), one(t, "ciamTicketChangeType")) == (
         "20260924013000Z", None, None)
     assert "change-timing Expedited" in values(t, "ciamTicketFact")
-    assert {one(link.change, "cn"): link.states for link in linked(after)}["CHG-1"] == (OUTSIDE_WINDOW,)
+    # read before the work it reports began: evidence from after the read (governance.tickets after-read)
+    assert {one(link.change, "cn"): link.states for link in linked(after)}["CHG-1"] == (OUTSIDE_WINDOW, AFTER_READ)
     assert ("CRQ000000000001: Actual End Date: a date without a time (its time zone is unknown)" in imported.notices)
     assert ("CRQ000000000001: Change Timing `Expedited` isn't Emergency, Normal or Standard: kept as a fact"
             in imported.notices)

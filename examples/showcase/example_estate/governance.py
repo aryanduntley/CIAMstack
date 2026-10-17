@@ -181,6 +181,12 @@ CHANGES = (
      "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2110", "Record the corporate identity team's managed domain in the target (Entra Domain Services) and its "
      "trusts", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2115", "Name the ServiceNow instance's legacy change model (its pre-Geneva state codes); link CHG-2117 to "
+     "its ticket", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2116", "Read the linked ServiceNow tickets again as evidence (the legacy model's states in neutral terms)",
+     "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2117", "Restart the target directory servers for the September kernel patches", "approved",
+     "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

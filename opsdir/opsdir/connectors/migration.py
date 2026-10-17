@@ -18,14 +18,15 @@ MigrationRun = NamedTuple("MigrationRun", [("src", str), ("dst", str),
                                            ("ready", bool)])
 
 
-def run(d, src, dst, as_of, adapters, versions, requester=None):
-    """Check both stacks, then plan the move and render the target (its MANIFEST naming requester, who runs it)."""
+def run(d, src, dst, as_of, adapters, versions, requester=None, writes=None):
+    """Check both stacks, then plan the move and render the target (its MANIFEST naming requester, who runs it);
+    writes: when each change record's writes landed (connectors.plan), or None."""
     checked = [stack_rows(m, adapters, versions, host_files_of(m, adapters))
                for m in (env_model(d, spec) for spec in (src, dst))]
     rows, problems = tuple(r for rs, _ in checked for r in rs), sum(n for _, n in checked)
     if problems:
         return MigrationRun(src, dst, rows, problems, None, False)
-    p = plan(d, src, dst, as_of, adapters, requester=requester)
+    p = plan(d, src, dst, as_of, adapters, requester=requester, writes=writes)
     return MigrationRun(src, dst, rows, 0, p, not p.blockers)
 
 

@@ -5,8 +5,9 @@ import datetime as dt
 import sys
 
 from ..core.contract import fetch_report, sql_report
+from ..domains.governance.naming import CHANGES
 from ..store.postgres import load_directory
-from ..store.queries import fetch_blast_radius, fetch_rows
+from ..store.queries import fetch_blast_radius, fetch_change_writes, fetch_rows
 from .keys import keys_report
 from .network import ports_report
 from .observability import coverage_report, log_collection_report
@@ -33,11 +34,21 @@ def catalogue(domains=DOMAINS):
             "settings": SETTINGS_REPORT}
 
 
+def change_writes(conn, as_of):
+    """Effect (reads history): {change id: (first, last, count)} of when each change record's writes landed, counted
+    up to the end of the as_of day (UTC): a plan or report as of a day sees the writes landed by then."""
+    until = dt.datetime.combine(as_of + dt.timedelta(days=1), dt.time.min, dt.timezone.utc)
+    return fetch_change_writes(conn, until, CHANGES)
+
+
 def run_report(conn, report, dn=None, as_of=None):
     """Effect: a report's rows, from whichever source it declares; a dated directory report evaluates dates as of
-    as_of (a date; today when not given), as the SQL reports do."""
+    as_of (a date; today when not given), as the SQL reports do, and one with the record's writes is given them as
+    the history holds them up to that day's end."""
     if report.sql:
         return fetch_rows(conn, report.sql, (dn,) if report.needs_dn else ())
+    if report.from_directory and report.writes:
+        return report.from_directory(load_directory(conn), dn, change_writes(conn, as_of or dt.date.today()))
     if report.from_directory and report.dated:
         return report.from_directory(load_directory(conn), dn, as_of or dt.date.today())
     if report.from_directory:

@@ -1,0 +1,1415 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-servicenow (import opsdir_adapter_servicenow), registered via entry point opsdir.adapters:servicenow; depends on opsdir.",
+        "external_dependencies": "[\"ServiceNow Table API (GET /api/now/table/change_request, /api/now/table/sysapproval_approver, read-only)\"]",
+        "path": "packages/opsdir-adapter-servicenow/",
+        "purpose": "ServiceNow as an ITSM add-on (kind itsm): reads the change tickets the record's change records link (servicenow:<number>) as evidence, one instance per record (enforced). Importer servicenow/change-requests reads Table API answers or JSON list exports of change_request + sysapproval_approver (raw UTC values; the state map is keyed by change model through estate settings: servicenow-standard-state-models, servicenow-legacy-state-models + servicenow-legacy-states for pre-Geneva codes; approval raw values through servicenow-approval-values; change type from `type`). A read-only collector pages GET /api/now/table/... until an empty page, with basic, bearer or client-certificate (mutual TLS) credentials."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-servicenow"
+      }
+    },
+    {
+      "attributes": {
+        "ai_generated": 1,
+        "confidence_score": 0.0,
+        "description": "Read-only linkage of recorded changes (ciamTicketRef '<adapter>:<number>') to their ITSM tickets. An ITSM add-on's importer (an export, or a read-only collector) records each linked ticket as observed evidence under ou=<adapter>,ou=tickets: neutral state, overall approval (derived from step decisions where the system approves by steps), change type, planned and work windows, approver rows, raw facts. A ticket is never written under ou=changes and never approves anything. Site-specific states, approval values and fields are mapped by the operator in the add-on's estate settings. The governance domain reconciles record vs ticket in a planner check and the tickets report: in-step, not-imported, rejected, cancelled, unapproved, closed-pending, live-but-rejected, window-differs, outside-window, applied-outside-window (the record's own write history, read at the edge up to the end of the as_of day) and after-read (ticket times later than the read). Add-ons (kind itsm): ServiceNow, Jira Service Management, BMC Helix ITSM / Remedy."
+      },
+      "kind": "flows",
+      "op": "modify",
+      "semantic_key": {
+        "name": "ITSM Ticket Evidence"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/plan.py",
+        "id_in_name": 0,
+        "name": "plan",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"src_spec\", \"type\": \"str\", \"required\": true}, {\"name\": \"dst_spec\", \"type\": \"str\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"installed\", \"type\": \"tuple[Adapter]\", \"required\": false}, {\"name\": \"domains\", \"type\": \"tuple[Domain]\", \"required\": false}, {\"name\": \"requester\", \"type\": \"str\", \"required\": false}, {\"name\": \"writes\", \"type\": \"dict | None\", \"required\": false, \"description\": \"{change id: (first, last, count)} of the record's writes up to the end of the as_of day, or None\"}]",
+        "purpose": "Plan moving src to dst with the installed adapters: render both (the target whole, its MANIFEST naming requester when given), run every check (the target's adapters' and domains', then the source checks of the adapters applying to the source), collect the findings; writes (when each change record's writes landed, read from history at the edge) reach the checks as PlanContext.writes.",
+        "returns": "{\"type\": \"Plan\"}",
+        "source_hash": "e1bccab02bf2b2b0"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-plan-b824361b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/reports.py",
+        "id_in_name": 0,
+        "name": "run_report",
+        "parameters": "[{\"name\": \"conn\"}, {\"name\": \"report\", \"type\": \"Report\"}, {\"name\": \"dn\", \"type\": \"str|None\"}, {\"name\": \"as_of\", \"type\": \"date|None\"}]",
+        "purpose": "Effect: a report's rows from whichever source it declares; a dated directory report gets as_of (today when not given), and one with writes gets when each change record's writes landed (change_writes, up to the end of that day).",
+        "returns": "{\"type\": \"list[tuple]\"}",
+        "source_hash": "f6b5bd8d2979c327"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-run-report-b942222b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "name": "sql_report",
+        "parameters": "[{\"name\": \"headers\", \"type\": \"Sequence[str]\"}, {\"name\": \"sql\", \"type\": \"str\"}, {\"name\": \"needs_dn\", \"type\": \"bool\", \"required\": false}]",
+        "purpose": "Pure constructor: a Report whose rows come from SQL run against the store.",
+        "returns": "{\"type\": \"Report\"}",
+        "source_hash": "6c2a0e893a7cdd06"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-sql-report-08b2f918"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "name": "directory_report",
+        "parameters": "[{\"name\": \"headers\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"from_directory\", \"type\": \"Callable\", \"required\": true}, {\"name\": \"needs_dn\", \"type\": \"bool\", \"required\": false}, {\"name\": \"dated\", \"type\": \"bool\", \"required\": false}, {\"name\": \"writes\", \"type\": \"bool\", \"required\": false, \"description\": \"the function takes the record's writes ({change id: (first, last, count)})\"}]",
+        "purpose": "A report whose rows are a pure function of the directory snapshot: from_directory(d, dn), from_directory(d, dn, as_of) when dated, or from_directory(d, dn, writes) when it is given when each change record's writes landed (the runner reads them from history up to the end of the as_of day).",
+        "returns": "{\"type\": \"Report\"}",
+        "source_hash": "90e17adf51a1cbc8"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-directory-report-ce22e53e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "name": "fetch_report",
+        "parameters": "[{\"name\": \"headers\", \"type\": \"Sequence[str]\"}, {\"name\": \"fetch\", \"type\": \"Callable[[conn, dn], rows]\"}, {\"name\": \"needs_dn\", \"type\": \"bool\", \"required\": false}]",
+        "purpose": "Pure constructor: a Report whose rows come from a store-level fetch(conn, dn) (store and connector reports only).",
+        "returns": "{\"type\": \"Report\"}",
+        "source_hash": "d5adf79db37837ac"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-fetch-report-083a1ad6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/migration.py",
+        "id_in_name": 0,
+        "name": "run",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"src\", \"type\": \"str\", \"required\": true}, {\"name\": \"dst\", \"type\": \"str\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"adapters\", \"type\": \"tuple[Adapter]\", \"required\": true}, {\"name\": \"versions\", \"type\": \"dict\", \"required\": true}, {\"name\": \"requester\", \"type\": \"str\", \"required\": false}, {\"name\": \"writes\", \"type\": \"dict | None\", \"required\": false, \"description\": \"{change id: (first, last, count)} of the record's writes, or None\"}]",
+        "purpose": "Check both stacks, then plan the move and render the target (its MANIFEST naming requester, who runs it), the plan given the record's writes when read (connectors.plan).",
+        "returns": "{\"type\": \"MigrationRun\"}",
+        "source_hash": "ae41f64f44a5c0e4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-run-0a34f47b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "plan",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"src\", \"type\": \"str\", \"required\": true}, {\"name\": \"dst\", \"type\": \"str\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Effect (reads the record and its history): migration plan src->dst with markdown and request drafts, given when each change record's writes landed (reports.change_writes up to the end of the as_of day).",
+        "returns": "{\"type\": \"Planned\"}",
+        "source_hash": "c83aa6d74d5b4f3b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-plan-ff0fd18d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "migrate",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"src\", \"type\": \"str\", \"required\": true}, {\"name\": \"dst\", \"type\": \"str\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"requester\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"policy\", \"type\": \"Callable[[str, str, Area], str|None]\", \"required\": false, \"description\": \"default governance.authorization.allow_all\"}]",
+        "purpose": "Effect (reads the record and its history): check both stacks, plan (given the change records' writes up to the end of the as_of day), render the target; files as data. requester (default the database login) is authorized first by policy (authorize, action 'migrate', Area(dst, ENVIRONMENT, src); default allow_all) before the record is loaded, and recorded in the target's MANIFEST (decision 2767).",
+        "returns": "{\"type\": \"Migrated\"}",
+        "source_hash": "28ff8d6f9d05d22d"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-migrate-6f35e818"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "fixes",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"src\", \"type\": \"str\", \"required\": true}, {\"name\": \"dst\", \"type\": \"str\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Effect (reads the record and its history): the Fixes a plan src->dst offers, the plan given the change records' writes up to the end of the as_of day (against the workspace connection: the workspace's).",
+        "returns": "{\"type\": \"tuple[Fix]\"}",
+        "source_hash": "d0d2e09752493755"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-fixes-10cdb862"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/operations.py",
+        "id_in_name": 0,
+        "name": "summary",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"src\", \"type\": \"str|None\", \"required\": false}, {\"name\": \"dst\", \"type\": \"str|None\", \"required\": false}]",
+        "purpose": "Operation (reads the record and its history): the estate in counts with their evidence (connectors.summary.estate_counts) and, given src and dst, the plan's blockers, actions and ok lines (plan_counts), the plan given the change records' writes up to the end of the as_of day. No percentages.",
+        "returns": "{\"type\": \"tuple[Count]\"}",
+        "source_hash": "933436eb46eb9659"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-summary-a1d23644"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/evidence.py",
+        "id_in_name": 0,
+        "name": "directory_output",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"q\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}, {\"name\": \"reports\", \"type\": \"dict[str, Report]\", \"required\": true}]",
+        "purpose": "(headers, rows) of an evidence query the directory alone answers (a directory report of the catalogue, or a search), or None (the change history, a report the store runs, or a report given the record's writes from history).",
+        "returns": "{\"type\": \"(tuple[str], tuple[tuple])|None\"}",
+        "source_hash": "d9a9ab7d65c2d3c6"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-directory-output-216154ae"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "drift_states",
+        "parameters": "[{\"name\": \"change\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamChange entry\"}, {\"name\": \"ticket\", \"type\": \"Entry\", \"required\": true, \"description\": \"its ciamTicket as last read\"}, {\"name\": \"writes\", \"type\": \"tuple | None\", \"required\": false, \"description\": \"(first, last, count) of the record's writes under the change, or None (not read, or none)\"}]",
+        "purpose": "The drift states of a change record against its ticket as read (rejected, cancelled, unapproved, closed-pending, live-but-rejected, window-differs, outside-window, applied-outside-window from the record's own writes under the change, after-read for times later than the read), or in-step alone; approval judged only from the ticket's overall approval.",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"drift states\"}",
+        "source_hash": "037bc8c9e361e5a0"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "linked",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"writes\", \"type\": \"dict | None\", \"required\": false, \"description\": \"{change id: (first, last, count)} of the record's writes, read at the edge; None: not read\"}]",
+        "purpose": "Every linked change compared with its ticket (Linked): drift states (applied-outside-window with the record's writes under each change when given), not-imported when the ticket wasn't read but its system's tickets were, nothing when that system was never read.",
+        "returns": "{\"type\": \"tuple[Linked]\", \"description\": \"by change name\"}",
+        "source_hash": "b6f64472a42c3c56"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-linked-ea9b0f62"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "finding_text",
+        "parameters": "[{\"name\": \"link\", \"type\": \"Linked\", \"required\": true}, {\"name\": \"state\", \"type\": \"str\", \"required\": true}, {\"name\": \"writes\", \"type\": \"tuple | None\", \"required\": false, \"description\": \"(first, last, count) of the record's writes under the change, for applied-outside-window\"}]",
+        "purpose": "What one drift state of a linked change says in words ('ITSM says': evidence, never the record's approval); applied-outside-window names only the ticket's planned window and which side of it the record's writes fell (never their wall-clock times); after-read names what happened after the read and when.",
+        "returns": "{\"type\": \"str\", \"description\": \"finding text\"}",
+        "source_hash": "dbef8bab04e5bfc9"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "check_tickets",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\", \"required\": true}]",
+        "purpose": "Governance planner check: blockers for linked changes whose ticket ITSM says was rejected or cancelled while the record approves them, actions (for the change's owner, else the operator) for the other drift (applied-outside-window from ctx.writes, the record's writes read at the edge up to the end of the as_of day; after-read), in-step changes as fine; silent while the record holds no ticket; no fixes.",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "8921902d92593bac"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-tickets-8857c2f9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str\", \"required\": false}, {\"name\": \"writes\", \"type\": \"dict | None\", \"required\": false, \"description\": \"{change id: (first, last, count)}, given by the report runner from history\"}]",
+        "purpose": "Rows of the `tickets` report (a directory report given the record's writes): per linked change, its record status and planned day, the ticket, ITSM's state (with native), approval (with its steps' decision counts when the system approves by steps), planned and work windows, when the record's writes under the change landed (first to last), when read and the drift.",
+        "returns": "{\"type\": \"list[tuple]\", \"description\": \"report rows (TICKET_HEADERS)\"}",
+        "source_hash": "ab90e35395dbc90d"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ticket-rows-a12f7088"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "neutral_state",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true, \"description\": \"a change_request record\"}, {\"name\": \"maps\", \"type\": \"InstanceMaps\", \"required\": true}]",
+        "purpose": "A ticket's neutral state from its change model's code map: the standard state model map (STATE_MODELS) when the model is named in servicenow-standard-state-models, the operator's legacy codes map when named in servicenow-legacy-state-models; None for a model named in neither or both (model_kind).",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(neutral state or None, the model's kind: standard, legacy, both or None, the model's description)\"}",
+        "source_hash": "1e19c95a2dffcfb2"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-neutral-state-0c31aa16"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "ticket_facts",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true}, {\"name\": \"approvers\", \"type\": \"tuple[str]\", \"required\": true}, {\"name\": \"host\", \"type\": \"str | None\", \"required\": true}, {\"name\": \"maps\", \"type\": \"InstanceMaps\", \"required\": true}]",
+        "purpose": "The ticket attributes (governance TICKET_ATTRS) of one raw change_request record: its title, its sys_id as ciamProviderRef, the Table API record URL when the instance is known, the neutral state (neutral_state), the overall approval through the operator's approval-values map (an unmapped raw value: approval unknown, kept as the fact 'approval <raw>'), the native state, the neutral change type from `type`, the windows, the approver rows and the raw facts.",
+        "returns": "{\"type\": \"dict\", \"description\": \"{attribute: value or tuple or None}\"}",
+        "source_hash": "67197f566df41910"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ticket-facts-9a963364"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "read_changes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the export was taken (required)\"}]",
+        "purpose": "Importer servicenow/change-requests: each ticket the record links that the export holds, its own import group under ou=servicenow,ou=tickets; refuses an export from another instance than the record's tickets were read from (one instance per record); notices for the settings' problems, unlinked tickets, linked ones missing (never removed), display-only records, models named in neither or both state-model settings, unmapped approval values, fields never carried, error answers, several instances.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "8a9c53ad18f90ff8"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-changes-aefcd434"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_state_map",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"setting\", \"type\": \"Setting\", \"required\": true, \"description\": \"the add-on's declared status-mapping setting\"}]",
+        "purpose": "An ITSM add-on's status-mapping setting ('<status>=<state>, ...', the record's value or the add-on's default) as {the system's status: neutral ticket state}: ticket_map over TICKET_STATES. Shared by jira-sm, bmc-helix and servicenow (legacy states).",
+        "returns": "{\"type\": \"tuple[dict[str, str], tuple[str]]\", \"description\": \"({status: state}, problems)\"}",
+        "source_hash": "66e78407b55e30b7"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "ticket_map",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"setting\", \"type\": \"Setting\", \"required\": true, \"description\": \"the add-on's declared mapping setting\"}, {\"name\": \"allowed\", \"type\": \"tuple[str]\", \"required\": true, \"description\": \"the neutral values the mapping may give (TICKET_STATES, TICKET_APPROVALS)\"}, {\"name\": \"what\", \"type\": \"str\", \"required\": false, \"description\": \"what a neutral value is, in words, for the problem text (default 'a ticket value')\"}]",
+        "purpose": "An ITSM add-on's mapping setting ('<value>=<neutral>, ...', the record's value or the add-on's default) as {the system's value: neutral value}: the first mapping of a value is used, and neutral values outside `allowed` are named (as not `what`) and left out. Shared by status maps (ticket_state_map: jira-sm, bmc-helix, servicenow legacy states) and approval maps (servicenow).",
+        "returns": "{\"type\": \"tuple[dict[str, str], tuple[str]]\", \"description\": \"({value: neutral}, problems)\"}",
+        "source_hash": "8a9ca2c428659ec1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-map-776d5235"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "after_read",
+        "parameters": "[{\"name\": \"ticket\", \"type\": \"Entry\", \"required\": true}]",
+        "purpose": "What a ticket says happened later than it was read (ciamImportedAt), by time: work started/ended, an approval step created/completed, an approver record updated (the 'created|completed|updated <GeneralizedTime>' parts of step and approver values); planned times never count (a plan may lie ahead).",
+        "returns": "{\"type\": \"tuple[tuple[str, str]]\", \"description\": \"((what, GeneralizedTime), ...) by time; () when nothing or no read time\"}",
+        "source_hash": "8c45226559b68e63"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-after-read-ac798110"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/governance/tickets.py",
+        "id_in_name": 0,
+        "name": "applied_outside_window",
+        "parameters": "[{\"name\": \"ticket\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"writes\", \"type\": \"tuple | None\", \"required\": true, \"description\": \"(first, last, count) of the change's writes (UTC datetimes), or None\"}]",
+        "purpose": "Where the record's own writes under a change landed against its ticket's planned window (exact UTC; an end the ticket doesn't give is open): 'before' (first write before the planned start), 'after' (last write after the planned end), 'before and after', or None (inside, or no writes to compare).",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "56d89689f9608332"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-applied-outside-window-8419d754"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/store/queries.py",
+        "id_in_name": 0,
+        "name": "fetch_change_writes",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"until\", \"type\": \"datetime\", \"required\": true, \"description\": \"UTC; writes at or after it are left out\"}, {\"name\": \"branch\", \"type\": \"str\", \"required\": true, \"description\": \"the DN of the branch holding change records\"}]",
+        "purpose": "Effect (reads history): when each governed change's writes landed in the record before a time: {change id: (first, last, count)} from entry_history as UTC datetimes (the session's time zone is the server's), the bootstrap load and each change's own change record (cn=<id>,<branch>) left out.",
+        "returns": "{\"type\": \"dict[str, tuple]\", \"description\": \"{change id: (first, last, count)}\"}",
+        "source_hash": "7bb94570910976b1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-fetch-change-writes-c1704fb3"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/connectors/reports.py",
+        "id_in_name": 0,
+        "name": "change_writes",
+        "parameters": "[{\"name\": \"conn\", \"type\": \"Connection\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Effect (reads history): when each change record's writes landed (fetch_change_writes under the governance changes branch), counted up to the end of the as_of day (UTC): a plan or report as of a day sees the writes landed by then.",
+        "returns": "{\"type\": \"dict[str, tuple]\", \"description\": \"{change id: (first, last, count)}\"}",
+        "source_hash": "9d4f3e214e1a0c93"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-change-writes-ab2ee686"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/live.py",
+        "id_in_name": 0,
+        "name": "load_client_certificate",
+        "parameters": "[{\"name\": \"context\", \"type\": \"ssl.SSLContext\", \"required\": true}, {\"name\": \"pem\", \"type\": \"str\", \"required\": true, \"description\": \"certificate, chain and private key\"}]",
+        "purpose": "Effect: load a client certificate, its chain and private key (PEM text, a resolved client-certificate credential) into an SSL context through an anonymous in-memory file (os.memfd_create, read back as /proc/self/fd/N: the ssl module reads certificates from paths only), never a file on disk; the problem in words where the system has no memfd (no fallback).",
+        "returns": "{\"type\": \"str | None\", \"description\": \"None when loaded, else why not\"}",
+        "source_hash": "67ac179e1d14d28a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-load-client-certificate-e00b03df"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "instance_maps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "What the operator's estate settings say of the instance (InstanceMaps): the change models on the standard state model (servicenow-standard-state-models), those still on the legacy pre-Geneva codes (servicenow-legacy-state-models), the legacy codes' neutral states (servicenow-legacy-states via ticket_state_map) and the approval field's raw values' neutral approvals (servicenow-approval-values via ticket_map), each setting's value or the add-on's default, with the settings' problems.",
+        "returns": "{\"type\": \"tuple[InstanceMaps, tuple[str]]\", \"description\": \"(maps, problems)\"}",
+        "source_hash": "145240c315a36e51"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "model_kind",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true, \"description\": \"a change_request record\"}, {\"name\": \"maps\", \"type\": \"InstanceMaps\", \"required\": true}]",
+        "purpose": "Which state model a change_request record's chg_model (sys_id or name; '(none)' names the changes without one) is named on: 'standard', 'legacy', 'both' (named in both settings: refused, the state kept native) or None, with the model's description for notices.",
+        "returns": "{\"type\": \"tuple[str | None, str]\", \"description\": \"(kind, model text)\"}",
+        "source_hash": "f75abbf7d1721abb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-model-kind-d86ecb4b"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "instance_hosts",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "The ServiceNow instance hosts the record's tickets were read from (the hosts of their ciamDocUrl under ou=servicenow,ou=tickets), sorted: the importer refuses an export from another instance (one instance per record).",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"hosts, sorted\"}",
+        "source_hash": "bb88a8df93470f8e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-instance-hosts-eef4daef"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"NamedTuple\", \"fields\": {\"headers\": \"tuple[str]\", \"sql\": \"str|None (run against the store; DN is the one parameter when needs_dn)\", \"from_directory\": \"Callable[[Directory, dn], rows]; when dated Callable[[Directory, dn, as_of], rows]; when writes Callable[[Directory, dn, writes], rows] |None (pure)\", \"fetch\": \"Callable[[conn, dn], rows]|None (store-level only)\", \"needs_dn\": \"bool\", \"dated\": \"bool (a directory report that evaluates dates as of a day: passed the CLI's --as-of)\", \"writes\": \"bool (a directory report given when each change record's writes landed, {change id: (first, last, count)}, which the runner reads from history up to the end of the as_of day)\"}, \"constructors\": [\"sql_report\", \"directory_report(headers, from_directory, needs_dn=False, dated=False, writes=False)\", \"fetch_report\"]}",
+        "description": "A named question the directory answers, as data: exactly one row source (SQL, a pure function of the snapshot, or a store fetch). Domains declare SQL or directory reports only, so they depend on core alone; connectors.run_report executes them.",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "Report"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-report-3b52f365"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"kind\": \"namedtuple\", \"fields\": {\"d\": \"Directory\", \"src\": \"EnvModel\", \"dst\": \"EnvModel\", \"cutover\": \"date|None\", \"as_of\": \"date\", \"src_files\": \"dict\", \"dst_files\": \"dict\", \"neutral_paths\": \"tuple\", \"writes\": \"dict|None (default None): {change id: (first, last, count)} of each change record's writes, read from history at the edge up to the end of the as_of day\"}}",
+        "description": "Input every planner check receives (checks are (PlanContext) -> Findings); writes is filled at the edge (operations) so checks stay pure.",
+        "file": "opsdir/opsdir/core/contract.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "PlanContext"
+      },
+      "kind": "types",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "ty-plancontext-a53b53b6"
+      }
+    },
+    {
+      "attributes": {
+        "definition_json": "{\"type\": \"NamedTuple\", \"fields\": {\"standard\": \"frozenset[str]\", \"legacy\": \"frozenset[str]\", \"legacy_states\": \"dict[str, str]\", \"approvals\": \"dict[str, str]\"}}",
+        "description": "What the operator's estate settings say of one ServiceNow instance: the change models (sys_ids or names, '(none)' for none) on the standard state model, those on the legacy (pre-Geneva) codes, the legacy codes' neutral states and the approval field's raw values' neutral approvals.",
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "links": null,
+        "name": "InstanceMaps"
+      },
+      "kind": "types",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "ty-instancemaps-1a27012b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Milestone 107 items (3)-(5) of analysis note 3064 (worker). (3) Window drift from the record's own apply times: when a change's writes landed in the record (entry_history rows under the change id) compared with its ticket's planned window, for every ITSM add-on (servicenow, jira-sm, bmc-helix): an effectful report column / drift state; the showcase golden masks history times, so decide how the comparison stays deterministic (as_of, masked times). (4) ServiceNow leftovers: legacy state-model maps (now possible with core setting_mapping/ticket_state_map from task 556), the approval raw-value map per instance (values other than not requested/requested/approved/rejected), mTLS collector authentication, a per-instance link form if one record spans several instances, and GCC/NSC (government community/national security cloud) parity: research first. (5) A check that ticket times later than the import's read time (ciamImportedAt) are suspect (evidence from the future). Research ServiceNow facts via Codex (read-only); design to the master before coding (anything changing what the record holds is the user's).",
+        "flows": [
+          "ITSM Ticket Evidence"
+        ],
+        "name": "Ticket window drift from apply times; ServiceNow leftovers",
+        "parent": {
+          "slug": "milestone-6-2f-follow-ups-more-itsm-systems-and-ti-74e8fe27"
+        },
+        "priority": "medium",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Codex read-only research on ServiceNow (legacy states, approval values, inbound mTLS, GCC/NSC/FedRAMP High parity, multi-instance); check key claims on official pages; design escalated to the master (kind=decision) before coding.",
+        "name": "Research and design gate",
+        "parent": {
+          "key": {
+            "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-research-and-design-gate-3ded8ab5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Compare a change's write times in the record (entry_history rows under the change id) with its ticket's planned window for every ITSM add-on: drift state / report column, deterministic in the showcase.",
+        "name": "Apply-time window drift",
+        "parent": {
+          "key": {
+            "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-apply-time-window-drift-2c45da8f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Check: ticket times later than the import's read time (ciamImportedAt) are suspect evidence from the future.",
+        "name": "Ticket times after the read",
+        "parent": {
+          "key": {
+            "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-ticket-times-after-the-read-f9aa5869"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Legacy state-model maps via core setting_mapping/ticket_state_map; approval raw-value map per instance; mTLS collector authentication (key as reference); per-instance link form if one record spans instances; GCC/NSC parity in Known limits.",
+        "name": "ServiceNow leftovers",
+        "parent": {
+          "key": {
+            "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-servicenow-leftovers-68516495"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase change(s) CHG-2115.., planted ids, data/ regenerated, READMEs (Known limits), predicted golden changes.",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "add",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-7f6ae22c"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "f532756",
+    "branch": "aimfp-u121-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "ticket_map calls setting_mapping (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-map-776d5235"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_report calls change_writes (reports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-report-b942222b"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-change-writes-ab2ee686"
+      }
+    },
+    {
+      "attributes": {
+        "description": "plan calls change_writes (reports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-plan-ff0fd18d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-change-writes-ab2ee686"
+      }
+    },
+    {
+      "attributes": {
+        "description": "migrate calls change_writes (reports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-migrate-6f35e818"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-change-writes-ab2ee686"
+      }
+    },
+    {
+      "attributes": {
+        "description": "fixes calls change_writes (reports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-fixes-10cdb862"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-change-writes-ab2ee686"
+      }
+    },
+    {
+      "attributes": {
+        "description": "run_call calls load_client_certificate (live.py) via _context",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-run-call-4195ce4c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-load-client-certificate-e00b03df"
+      }
+    },
+    {
+      "attributes": {
+        "description": "summary calls change_writes (reports.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-summary-a1d23644"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-change-writes-ab2ee686"
+      }
+    },
+    {
+      "attributes": {
+        "description": "drift_states calls after_read (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-after-read-ac798110"
+      }
+    },
+    {
+      "attributes": {
+        "description": "drift_states calls applied_outside_window (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-drift-states-a7eba4cc"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-applied-outside-window-8419d754"
+      }
+    },
+    {
+      "attributes": {
+        "description": "linked calls rdn_value (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-linked-ea9b0f62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-rdn-value-96e1b5be"
+      }
+    },
+    {
+      "attributes": {
+        "description": "finding_text calls after_read (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-after-read-ac798110"
+      }
+    },
+    {
+      "attributes": {
+        "description": "finding_text calls applied_outside_window (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-finding-text-1f0ecfec"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-applied-outside-window-8419d754"
+      }
+    },
+    {
+      "attributes": {
+        "description": "neutral_state calls model_kind (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-neutral-state-0c31aa16"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-model-kind-d86ecb4b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls instance_maps (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls instance_hosts (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instance-hosts-eef4daef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_state_map calls ticket_map (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-map-776d5235"
+      }
+    },
+    {
+      "attributes": {
+        "description": "after_read calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-after-read-ac798110"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "after_read calls values (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-after-read-ac798110"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-values-8372af9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "after_read calls gtime_at (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-after-read-ac798110"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-at-675ef8b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "applied_outside_window calls one (directory.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-applied-outside-window-8419d754"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "applied_outside_window calls gtime_at (directory.py) via _at",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-applied-outside-window-8419d754"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-at-675ef8b0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "fetch_change_writes calls fetch_rows (queries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-fetch-change-writes-c1704fb3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fetch-rows-9c14c274"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_writes calls fetch_change_writes (queries.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-writes-ab2ee686"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fetch-change-writes-c1704fb3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_maps calls setting_value (settings.py) via _models",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_maps calls ticket_state_map (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_maps calls ticket_map (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-map-776d5235"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_hosts calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-hosts-eef4daef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_hosts calls children (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-hosts-eef4daef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-children-97ce4e66"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_hosts calls adapter_dn (tickets.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-hosts-eef4daef"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-adapter-dn-ea2a1858"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "factory",
+      "type": {
+        "entity_key": "ty-instancemaps-1a27012b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-model-kind-d86ecb4b"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-instancemaps-1a27012b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-neutral-state-0c31aa16"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-instancemaps-1a27012b"
+      }
+    },
+    {
+      "function": {
+        "entity_key": "fn-ticket-facts-9a963364"
+      },
+      "kind": "type_usage",
+      "op": "add",
+      "role": "accessor",
+      "type": {
+        "entity_key": "ty-instancemaps-1a27012b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/store/queries.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/reports.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/tickets.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/store/queries.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/reports.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/plan.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/migration.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/core/contract.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/live.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/connectors/evidence.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/operations.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/collection.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/README.md"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/schema/ciam-ops.schema.ldif"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/governance/domain.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-ticket-window-drift-from-apply-times-ser-31c5237a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls setting_value (settings.py) via _models",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_state_map reads the status-mapping setting's pairs with setting_mapping",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-state-map-b2c815e0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    }
+  ],
+  "warnings": []
+}

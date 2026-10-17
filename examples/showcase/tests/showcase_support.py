@@ -107,6 +107,9 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2105", SHOWCASE / "changes" / "CHG-2105-bmc-helix-ticket-links.ldif"),
             ("CHG-2106", ImportStep("bmc-helix/change-requests", SHOWCASE / "exports" / "bmc-helix",
                                     "20260923090000Z")),
+            ("CHG-2115", SHOWCASE / "changes" / "CHG-2115-servicenow-legacy-model-and-links.ldif"),
+            ("CHG-2116", ImportStep("servicenow/change-requests", SHOWCASE / "exports" / "servicenow",
+                                    "20260923090000Z")),
             ("CHG-2110", SHOWCASE / "changes" / "CHG-2110-target-corporate-managed-domain.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)

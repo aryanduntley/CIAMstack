@@ -580,7 +580,7 @@ EXPECTED = MappingProxyType({
          "CHG-2056"),
         ("A174", "Change tickets", "ITSM says the work on its ticket servicenow:CHG0029931 (read 2026-09-23) ran",
          "CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; "
-         "its legacy change model's state is kept native)", None, "CHG-2056"),
+         "its legacy change model's state reads as closed once CHG-2115 names the model)", None, "CHG-2056"),
         ("A175", "Change tickets", "names ticket servicenow:CHG0030107, but no import has read it",
          "CHG-2007's ticket isn't in the export (or the reader can't see it): nothing is removed", None, "CHG-2056"),
         ("A236", "Change tickets", "the approval of its ticket jira-sm:ITOPS-42 (read 2026-09-23) is requested",
@@ -589,6 +589,10 @@ EXPECTED = MappingProxyType({
         ("A250", "Change tickets", "ITSM says the work on its ticket bmc-helix:CRQ000000001203 (read 2026-09-23) ran",
          "CHG-2092's expedited change request is being implemented: its rollout started 2026-09-22, before the "
          "planned window opens on 2026-09-24", None, "CHG-2106"),
+        ("A270", "Change tickets", "its ticket servicenow:CHG0030117 was read as of 2026-09-23 09:00Z, but ITSM says "
+         "of it: work started 2026-09-23 10:15Z", "CHG-2117's ticket says its patch restarts began an hour after the "
+         "export it was read from was taken: evidence from after the read (the read time given is wrong, or the "
+         "export was taken later)", None, "CHG-2116"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "

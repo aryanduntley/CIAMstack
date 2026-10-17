@@ -330,7 +330,15 @@ echo "-- the security operations team's changes name their BMC Helix ITSM change
 echo "   and their approval signatures are read as evidence (CHG-2106: as the AR System REST API answers)"
 od modify --change CHG-2105 changes/CHG-2105-bmc-helix-ticket-links.ldif
 od import --change CHG-2106 --at 20260923090000Z bmc-helix/change-requests exports/bmc-helix
+echo "-- the ServiceNow instance's legacy change model is named, so its pre-Geneva state codes read in neutral terms, and"
+echo "   CHG-2117 names its ticket (CHG-2115); the tickets are read again (CHG-2116): CHG-2117's ticket says its work"
+echo "   began after the export was read (evidence from after the read)"
+od modify --change CHG-2115 changes/CHG-2115-servicenow-legacy-model-and-links.ldif
+od import --change CHG-2116 --at 20260923090000Z servicenow/change-requests exports/servicenow
 od report tickets
+echo "-- the same report as of today: the record's own writes under each linked change (its history) against the"
+echo "   ticket's planned window"
+"$CORE/opsdir.sh" report tickets
 echo "-- the corporate identity team's managed domain in the target is recorded (CHG-2110): Entra Domain Services, a"
 echo "   neighbour directory with a forest trust to the corporate forest (kept) and an external trust with the lab's"
 echo "   domain, which a managed domain can't keep (a blocker); the target's authorization doesn't list the service"

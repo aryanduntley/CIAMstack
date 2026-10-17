@@ -215,10 +215,11 @@ def render_summary(adapters):
     return ", ".join(items[:-1]) + ", and " + items[-1] if len(items) > 1 else (items[0] if items else "nothing")
 
 
-def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requester=None):
+def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requester=None, writes=None):
     """Plan moving src to dst with the installed adapters: render both (the target whole, its MANIFEST naming
     requester when given: who runs the migration), run every check (the target's adapters' and domains', then the
-    source checks of the adapters applying to the source: a product the move retires), collect the findings."""
+    source checks of the adapters applying to the source: a product the move retires), collect the findings. writes:
+    when each change record's writes landed, as the store's history holds them (PlanContext.writes), or None."""
     src, src_adapters, src_neutral, src_specific, src_targets = render_parts(d, src_spec, installed)
     dst, adapters, dst_neutral, dst_specific, dst_targets = render_parts(d, dst_spec, installed,   # every target
                                                                          scope=ENVIRONMENT)
@@ -228,7 +229,7 @@ def plan(d, src_spec, dst_spec, as_of, installed=ADAPTERS, domains=DOMAINS, requ
     ctx = PlanContext(d, src, dst, cutover, as_of,
                       assemble(src, src_adapters, src_neutral, src_specific, src_targets, installed=installed),
                       dst_files,
-                      tuple(src_neutral))
+                      tuple(src_neutral), writes)
     f = merge_findings([*(run_check(check, ctx) for check in checks(adapters, domains)),
                         *(run_check(check, ctx) for a in src_adapters for check in a.source_checks),
                         run_check(access_check(src_adapters, adapters), ctx),

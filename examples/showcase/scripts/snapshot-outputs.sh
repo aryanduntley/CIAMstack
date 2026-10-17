@@ -185,6 +185,13 @@ cap 08-apply-chg-2098 od modify --change CHG-2098 changes/CHG-2098-jira-sm-ticke
 cap 08-apply-chg-2099 od import --change CHG-2099 --at 20260923090000Z jira-sm/change-requests exports/jira-sm
 cap 08-apply-chg-2105 od modify --change CHG-2105 changes/CHG-2105-bmc-helix-ticket-links.ldif
 cap 08-apply-chg-2106 od import --change CHG-2106 --at 20260923090000Z bmc-helix/change-requests exports/bmc-helix
+cap 08-apply-chg-2115 od modify --change CHG-2115 changes/CHG-2115-servicenow-legacy-model-and-links.ldif
+cap 08-apply-chg-2116 od import --change CHG-2116 --at 20260923090000Z servicenow/change-requests exports/servicenow
+# the record's own writes under each linked change against its ticket's window: as of a far day, so every write this
+# run made counts; the write times (this run's) are masked, every fixture time is before October 2026
+cap 08-report-tickets-applied "$PY" -m opsdir --as-of 2099-12-31 report tickets
+sed -i -E 's/(2026-1[0-2]|202[7-9]-[0-9]{2}|20[3-9][0-9]-[0-9]{2})-[0-9]{2} [0-9]{2}:[0-9]{2}Z/<RUN-DATE> --:--Z/g' \
+  "$OUT/cmd/08-report-tickets-applied.txt"
 cap 08-report-tickets-jira-sm od report tickets
 cap 08-apply-chg-2110 od modify --change CHG-2110 changes/CHG-2110-target-corporate-managed-domain.ldif
 cap 08-report-managed-directory od report managed-directory
