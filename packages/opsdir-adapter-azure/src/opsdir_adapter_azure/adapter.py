@@ -14,6 +14,8 @@ from .external_id_graph import GRAPH_COLLECTOR, GRAPH_IMPORTER
 from .identity_protection import check_identity_protection
 from .purview import check_discovery_cadence
 from .inventory import TERRAFORM_STATE
+from .keyvault_certificates import KEYVAULT_CERTIFICATES
+from .keyvault_collect import KEYVAULT_COLLECTOR
 from .ingress import gateway_plug
 from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
@@ -52,9 +54,11 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                            ("arm/*.json", "arm-json"), ("arm/*.tf", "hcl"), ("kubernetes/azure-monitor/*", "yaml")),
                   products=(),
                   secret_patterns=SECRET_PATTERNS,
-                  importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS, GRAPH_IMPORTER),
+                  importers=(TERRAFORM_STATE, CLI_INVENTORY, ARM, REGIONS, QUOTAS, GRAPH_IMPORTER,
+                             KEYVAULT_CERTIFICATES),
                   profile_terms=None, access=ACCESS, prerequisites=(PREREQUISITE, QUOTA_PREREQUISITE),
-                  collectors=(*COLLECTORS, GRAPH_COLLECTOR), render_targets=TARGETS, settings=(IMAGE, DELIVERY),
+                  collectors=(*COLLECTORS, GRAPH_COLLECTOR, KEYVAULT_COLLECTOR), render_targets=TARGETS,
+                  settings=(IMAGE, DELIVERY),
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"azkv": keyvault_lookup},
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,

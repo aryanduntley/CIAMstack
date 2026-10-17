@@ -1,0 +1,1857 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "keyvault_certificates.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "keyvault_collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-azure (import opsdir_adapter_azure), registered via entry point opsdir.adapters:azure; depends on opsdir, opsdir-format-terraform, opsdir-format-arm and opsdir-adapter-x509 (Key Vault certificates' public facts).",
+        "external_dependencies": "[\"hashicorp/azurerm Terraform provider\", \"Azure CLI\", \"Azure Key Vault REST API (certificates, api-version 2025-07-01)\"]",
+        "path": "packages/opsdir-adapter-azure/",
+        "purpose": "Azure provider: Terraform (hashicorp/azurerm) from infrastructure bindings with pinned NSG priorities, and Bicep / ARM JSON translated from the same Terraform data (render targets bicep and arm: the arm_render ARM target on format-terraform's native engine plus the arm_types table, 5.6; a template per deployment scope, lookups as existing resources, parts inline where a parent's PUT would drop them); azkv secret resolver; owns azkv/azkv-key/azblob schemes; Key Vault certificates (every version) read as a certificate manager's inventory (importer azure/keyvault-certificates + az rest GET-only collector, task 564)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-azure"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py",
+        "id_in_name": 0,
+        "name": "certificate_facts",
+        "parameters": "[{\"name\": \"pem\", \"type\": \"str\", \"required\": true, \"description\": \"PEM text whose first certificate is read\"}]",
+        "purpose": "{serial, sha256, subject, issuer, not_before, not_after, usages, endpoints, names} of a PEM's first certificate: serial as even-length lowercase hex, SHA-256 as ciamFingerprint, RFC 4514 subject/issuer, validity as GeneralizedTime, extended key usages as OIDs (None without), revocation endpoints ((kind, url), ...) and the DNS names and IP addresses it names (subject common names, then alternative names: ciamCertificateName's); None when no certificate",
+        "returns": "{\"type\": \"dict | None\", \"description\": \"{serial, sha256, subject, issuer, not_before, not_after, usages, endpoints} or None\"}",
+        "source_hash": "06851f772698d206"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "page_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"n\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "Where a source's certificate listing page n (0: the first) is kept in the export",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "bb27fb3cd59d24eb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-page-path-a25576f4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "versions_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true, \"description\": \"the certificate's name\"}, {\"name\": \"n\", \"type\": \"int\", \"required\": true}]",
+        "purpose": "Where page n of a certificate's version listing is kept",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "7a9648c8982adb1c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-versions-path-04454ec1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "version_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}, {\"name\": \"version\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Where a certificate version's answer (its public certificate) is kept",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "ec9cea18f774a4d3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-version-path-8fc0fcd8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "policy_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Where a certificate's policy is kept",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e03cf4b2b88a8f60"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-policy-path-441d1ea2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "pending_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Where a certificate's pending operation is kept (absent: none pending)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "0f889d252b87fd01"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-pending-path-adeaedce"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "vault_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"what\", \"type\": \"str\", \"required\": true, \"description\": \"contacts|issuers\"}]",
+        "purpose": "Where a vault-wide answer (contacts, issuers) is kept",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "6a8e0fc2a78a9faf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-vault-path-7b7ce8a8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "sources",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true, \"description\": \"{path: text}\"}]",
+        "purpose": "The collection sources an export holds (each with a first listing page), in order",
+        "returns": "{\"type\": \"tuple of str\"}",
+        "source_hash": "fcb5632a4e9936d1"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sources-71926959"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "id_parts",
+        "parameters": "[{\"name\": \"kid\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "(certificate name, version or None) a Key Vault certificate id names (https://<vault>/certificates/<name>[/<version>]), or None",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "84680c77da83a22e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-id-parts-e6721ad0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "pages",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"path_of\", \"type\": \"callable\", \"required\": true, \"description\": \"n -> path\"}]",
+        "purpose": "((n, the page's document or None), ...) of a paged listing whose page n is kept at path_of(n), from the first up to the first page missing",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "e2f51360382f520c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-pages-058642cf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "thumbprint",
+        "parameters": "[{\"name\": \"x5t\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "A certificate's SHA-1 thumbprint as ciamThumbprint writes it, from Key Vault's x5t (base64url), or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "27845d554faafd89"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-thumbprint-160c9e9e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "epoch_time",
+        "parameters": "[{\"name\": \"v\", \"type\": \"int|float\", \"required\": true}]",
+        "purpose": "GeneralizedTime of Key Vault's seconds since 1970 (nbf, exp), or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "50da07a54c66631d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-epoch-time-af27bc80"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "lifetime_actions",
+        "parameters": "[{\"name\": \"policy\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "((action type, when), ...) of a certificate policy's lifetime actions, when in words (80% of its lifetime, 30 days before expiry, or None)",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "81f74fd6a0c10dbe"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-lifetime-actions-ba942c86"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "management",
+        "parameters": "[{\"name\": \"policy\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "What the vault does for a certificate as ciamManagement says it: enrolled (AutoRenew), monitored (EmailContacts only) or unassigned; None when the policy wasn't read; action types matched case-insensitively",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "e06c5185d4a6075a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-management-c61ceddd"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "authority",
+        "parameters": "[{\"name\": \"policy\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"providers\", \"type\": \"dict\", \"required\": true, \"description\": \"{issuer name: provider}\"}]",
+        "purpose": "The issuer a certificate's policy renews it through as the vault names it (Self, Unknown, or a configured issuer with its provider), or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "0d73d30d0943d4a5"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authority-eace3744"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "issuer_providers",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"dict|None\", \"required\": true, \"description\": \"the issuers answer\"}]",
+        "purpose": "{issuer name: provider} of the vault's configured certificate issuers",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "6bd41e677344cd2b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issuer-providers-5695a7a2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "contact_emails",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"dict|None\", \"required\": true, \"description\": \"the contacts answer\"}]",
+        "purpose": "The email addresses of the vault's certificate contacts",
+        "returns": "{\"type\": \"tuple of str\"}",
+        "source_hash": "00d6b4d311775c45"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-contact-emails-c5d05a81"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "pending_problems",
+        "parameters": "[{\"name\": \"doc\", \"type\": \"dict|None\", \"required\": true, \"description\": \"the pending operation answer\"}]",
+        "purpose": "What a certificate's pending operation reports wrong now (failed or canceled, in Key Vault's words), or ()",
+        "returns": "{\"type\": \"tuple of str\"}",
+        "source_hash": "eb7c5edf8759bc4a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-pending-problems-c15976ab"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "policy_facts",
+        "parameters": "[{\"name\": \"policy\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"providers\", \"type\": \"dict\", \"required\": true}, {\"name\": \"contacts\", \"type\": \"tuple of str\", \"required\": true}]",
+        "purpose": "The managed certificate facts a certificate's policy gives every version of it: ciamManagement, ciamManagedAuthority, ciamManagerContact (when it has a lifetime action), ciamManagerAction, ciamManagedOrigin added",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "531041f48e9d4f7b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-policy-facts-71dbadff"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "version_facts",
+        "parameters": "[{\"name\": \"vault\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}, {\"name\": \"version\", \"type\": \"str\", \"required\": true}, {\"name\": \"item\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"detail\", \"type\": \"dict|None\", \"required\": true}]",
+        "purpose": "The managed certificate facts of one version: from its public certificate (cer via x509 certificate_facts) when read, else from its version listing item (thumbprint, validity); path, enabled state",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "a6608f135a323ade"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-version-facts-99c395bb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "certificate_rows",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"vault\", \"type\": \"str\", \"required\": true}, {\"name\": \"name\", \"type\": \"str\", \"required\": true}, {\"name\": \"current\", \"type\": \"str|None\", \"required\": true, \"description\": \"the listing's x5t\"}, {\"name\": \"providers\", \"type\": \"dict\", \"required\": true}, {\"name\": \"contacts\", \"type\": \"tuple\", \"required\": true}]",
+        "purpose": "((cn, facts), ...) of every version of one certificate oldest first, with (versions unread, version answers unread, policy unread): policy facts on each, ciamRenewedAs (the next version's cn) on each but the newest, the pending operation's problems on the current version",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(rows, gaps)\"}",
+        "source_hash": "b39e2bc999d01b7d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "read_source",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"when\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime\"}]",
+        "purpose": "(Imported group, notices) of one collection source: its vault's managed inventory (complete/incomplete/denied with problems) and every version of every certificate",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "231b2804b2b3de56"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-source-87085436"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py",
+        "id_in_name": 0,
+        "name": "read_keyvault_certificates",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime|None\", \"required\": false}]",
+        "purpose": "Importer azure/keyvault-certificates: per collection source in the export, its vault's certificate manager inventory, replacing the record's",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "cfd943d029731e3a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-keyvault-certificates-da396bf8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "kept_page",
+        "parameters": "[{\"name\": \"address\", \"type\": \"str\", \"required\": true}, {\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Keep function (bound to the vault's address with partial): a certificate listing page reduced to items' id, x5t and dates (tags dropped), nextLink and the vault's address (Vault); an error answer kept as its error; non-JSON kept as is",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "26b27443f164448c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-page-52f80f1f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "kept_listing",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Keep function: a version listing page reduced as a listing page is (without the vault's address)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "97ea1ba281f8fec9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-listing-13e63fb8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "kept_version",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Keep function: a certificate version's answer reduced to id, x5t, cer and dates (kid, sid, policy, tags dropped)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "d02a02798a85e9d6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-version-d2a01d6f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "kept_policy",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Keep function: a certificate policy reduced to issuer, lifetime actions, subject/sans/validity and enabled (key and secret properties dropped)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "3c0c180339f8b719"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-policy-513db9e6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "kept_pending",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Keep function: a pending operation reduced to status, status_details, cancellation_requested, error code/message and issuer name (CSR dropped)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "f4894f647a6f9063"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-pending-6a24d1c9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "kept_contacts",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Keep function: the vault's certificate contacts reduced to emails and names (phones dropped)",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e942b1e7413bb07f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-contacts-2eaa8ff8"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "kept_issuers",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true}]",
+        "purpose": "Keep function: the vault's configured issuers reduced to ids and providers",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e9dcf2cfec23d31d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-issuers-26d3c025"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "vault_of",
+        "parameters": "[{\"name\": \"location\", \"type\": \"str\", \"required\": true}, {\"name\": \"cloud\", \"type\": \"str|None\", \"required\": true, \"description\": \"ciamCloudEnvironment\"}]",
+        "purpose": "(the vault's address, the token audience) a source's location names in a cloud (public: vault.azure.net, usgovernment: vault.usgovcloudapi.net), https and nothing after the host; None otherwise",
+        "returns": "{\"type\": \"tuple|None\"}",
+        "source_hash": "ec981b46506c6b79"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-vault-of-b301f782"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "keyvault_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps: per readable source's vault, az rest GETs (api-version 2025-07-01, --resource the cloud's audience): listing pages (nextLink only on the vault's own address), contacts, issuers, then per certificate version pages, policy, pending, then each version's answer (at most DETAIL_CALLS)",
+        "returns": "{\"type\": \"tuple of (path, Command)\"}",
+        "source_hash": "08c625cb8856a7c7"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py",
+        "id_in_name": 0,
+        "name": "keyvault_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Why the collection sources can't be read: their own problems, or a location naming no vault of the environment's cloud",
+        "returns": "{\"type\": \"tuple of str\"}",
+        "source_hash": "a53878e9c3e8acf9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-keyvault-problems-5d62223f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py",
+        "id_in_name": 0,
+        "name": "der_pem",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str|None\", \"required\": true}]",
+        "purpose": "The PEM of a certificate given as base64 of its DER (a store API's certificate: Key Vault's cer), or None when the text isn't base64 of DER",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "d25ebc1506680197"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-der-pem-8d0ee5d7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "From deferred note 3248 (file 1131). Azure Key Vault certificates (list / versions / get / policy) are a MANAGED/discovered certificate inventory on task 562's model (flow 80, ou=managed-certificates, ciamManagedInventory per vault; an absent certificate never confirms one missing), not a CA's issuance record. Build an importer (and read-only collector on the core collection helpers) in opsdir-adapter-azure: certificate facts via opsdir-adapter-x509 certificate_facts and reasons.reason_name; the policy's issuer (Self, Unknown, a DigiCert/GlobalSign issuer name) and lifetime actions (AutoRenew/EmailContacts, days/percentage before expiry) are the managed inventory's facts; contacts -> ciamManagerContact where the model has it. Check Azure Government (vault.usgovcloudapi.net) and Azure public endpoints and current api-version on official docs (record the sources; report disagreements). Metadata only: never the certificate's private key, never the secret behind it. Acceptance: unit tests, showcase change + golden diff reviewed by the master, README/docs; live validation deferred to 7.2 as a deferred note.",
+        "flows": [
+          "Managed Certificate Inventory Import"
+        ],
+        "name": "Azure Key Vault certificates as a managed certificate inventory",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Official docs: list/versions/get/policy shapes, api-version, endpoints per cloud, least-privilege read role; sources recorded",
+        "name": "Vendor facts (Key Vault certificates API, Azure Government)",
+        "parent": {
+          "key": {
+            "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-vendor-facts-key-vault-certificates-api-f94c4eba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "opsdir-adapter-azure, managed-inventory model (flow 80), x509 certificate_facts",
+        "name": "Key Vault certificate collector and importer",
+        "parent": {
+          "key": {
+            "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-key-vault-certificate-collector-and-impo-6fa3d6db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase CHG, golden diff for master review, README/docs, deferred live-validation note",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-54b61722"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "0aceb93",
+    "branch": "aimfp-u126-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "pages calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-pages-058642cf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "thumbprint calls fingerprint (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-thumbprint-160c9e9e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "epoch_time calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-epoch-time-af27bc80"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "management calls lifetime_actions (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-management-c61ceddd"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifetime-actions-ba942c86"
+      }
+    },
+    {
+      "attributes": {
+        "description": "policy_facts calls lifetime_actions (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-policy-facts-71dbadff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-lifetime-actions-ba942c86"
+      }
+    },
+    {
+      "attributes": {
+        "description": "policy_facts calls management (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-policy-facts-71dbadff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-management-c61ceddd"
+      }
+    },
+    {
+      "attributes": {
+        "description": "policy_facts calls authority (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-policy-facts-71dbadff"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-eace3744"
+      }
+    },
+    {
+      "attributes": {
+        "description": "version_facts calls certificate_facts (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-version-facts-99c395bb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "version_facts calls thumbprint (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-version-facts-99c395bb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-thumbprint-160c9e9e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "version_facts calls epoch_time (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-version-facts-99c395bb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-epoch-time-af27bc80"
+      }
+    },
+    {
+      "attributes": {
+        "description": "version_facts calls der_pem (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-version-facts-99c395bb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-der-pem-8d0ee5d7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls certificate_facts (certificates.py) via _issued",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-facts-21fc6580"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls versions_path (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-versions-path-04454ec1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls version_path (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-version-path-8fc0fcd8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls policy_path (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-path-441d1ea2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls pending_path (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pending-path-adeaedce"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls id_parts (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-id-parts-e6721ad0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls pages (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pages-058642cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls epoch_time (keyvault_certificates.py) via _issued",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-epoch-time-af27bc80"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls pending_problems (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pending-problems-c15976ab"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls policy_facts (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-facts-71dbadff"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls version_facts (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-version-facts-99c395bb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_rows calls der_pem (certificates.py) via _issued",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-der-pem-8d0ee5d7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls managed_inventory_entry (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls managed_entry (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls page_path (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-a25576f4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls vault_path (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-vault-path-7b7ce8a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls id_parts (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-id-parts-e6721ad0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls pages (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pages-058642cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls issuer_providers (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issuer-providers-5695a7a2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls contact_emails (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-contact-emails-c5d05a81"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls certificate_rows (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-87085436"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-rows-9e0f9111"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_keyvault_certificates calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-keyvault-certificates-da396bf8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_keyvault_certificates calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-keyvault-certificates-da396bf8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_keyvault_certificates calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-keyvault-certificates-da396bf8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_keyvault_certificates calls sources (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-keyvault-certificates-da396bf8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sources-71926959"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_keyvault_certificates calls read_source (keyvault_certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-keyvault-certificates-da396bf8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-source-87085436"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_page calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-page-52f80f1f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_listing calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-listing-13e63fb8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_version calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-version-d2a01d6f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_policy calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-policy-513db9e6"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_pending calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-pending-6a24d1c9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_contacts calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-contacts-2eaa8ff8"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_issuers calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-issuers-26d3c025"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls page_path (keyvault_certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-a25576f4"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls versions_path (keyvault_certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-versions-path-04454ec1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls version_path (keyvault_certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-version-path-8fc0fcd8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls policy_path (keyvault_certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-policy-path-441d1ea2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls pending_path (keyvault_certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pending-path-adeaedce"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls vault_path (keyvault_certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-vault-path-7b7ce8a8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls id_parts (keyvault_certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-id-parts-e6721ad0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls pages (keyvault_certificates.py) via _paged",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-pages-058642cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps references kept_page (keyvault_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-page-52f80f1f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps references kept_listing (keyvault_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-listing-13e63fb8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps references kept_version (keyvault_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-version-d2a01d6f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps references kept_policy (keyvault_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-policy-513db9e6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps references kept_pending (keyvault_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-pending-6a24d1c9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps references kept_contacts (keyvault_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-contacts-2eaa8ff8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps references kept_issuers (keyvault_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-issuers-26d3c025"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_steps calls vault_of (keyvault_collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-steps-858369f7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-vault-of-b301f782"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_problems calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-problems-5d62223f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-problems-5d62223f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "keyvault_problems calls vault_of (keyvault_collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-keyvault-problems-5d62223f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-vault-of-b301f782"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-azure"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-azure"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_certificates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/keyvault_collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-x509/src/opsdir_adapter_x509/certificates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/src/opsdir_adapter_azure/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-azure/pyproject.toml"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/demo.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/scripts/snapshot-outputs.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-azure-key-vault-certificates-as-a-manage-ba64ec0d"
+      }
+    }
+  ],
+  "warnings": []
+}

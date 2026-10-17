@@ -116,6 +116,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2122", ImportStep("aws/private-ca", SHOWCASE / "exports" / "aws-private-ca", "20260923090000Z")),
             ("CHG-2123", ImportStep("gcp/private-ca", SHOWCASE / "exports" / "gcp-private-ca", "20260923090000Z")),
             ("CHG-2125", ImportStep("venafi/certificates", SHOWCASE / "exports" / "venafi", "20260923090000Z")),
+            ("CHG-2126", ImportStep("azure/keyvault-certificates", SHOWCASE / "exports" / "keyvault",
+                                    "20260923090000Z")),
             ("CHG-2127", ImportStep("venafi/saas", SHOWCASE / "exports" / "venafi-saas", "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)

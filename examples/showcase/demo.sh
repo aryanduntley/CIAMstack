@@ -369,6 +369,11 @@ echo "   SSO certificate the record still names, its LDAPS renewal is in error, 
 echo "   the record has none of"
 od import --change CHG-2125 --at 20260923090000Z venafi/certificates exports/venafi
 od report managed-certificates
+echo "-- production's Key Vault certificates (kv-ciam-prod), every version, read as the Azure add-on's collector saves"
+echo "   them (CHG-2126): a second certificate manager's inventory; the vault renewed the supplier portal's SP signing"
+echo "   certificate itself in April and the record still names the old version, and it holds a DigiCert certificate"
+echo "   for apps.example-aero.test the record has none of"
+od import --change CHG-2126 --at 20260923090000Z azure/keyvault-certificates exports/keyvault
 echo "-- the Example Aero SaaS tenant's certificates (CyberArk Certificate Manager - SaaS), read as its collector saves"
 echo "   the certificate search (CHG-2127): it renewed the supplier portal's SP signing certificate the record still"
 echo "   names, PingFederate's signing certificate is retired there, and a scan of the CDN edge found a second"

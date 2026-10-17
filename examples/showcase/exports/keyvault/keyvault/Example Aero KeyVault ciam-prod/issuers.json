@@ -1,0 +1,9 @@
+{
+ "nextLink": null,
+ "value": [
+  {
+   "id": "https://kv-ciam-prod.vault.azure.net/certificates/issuers/DigiCertIssuer",
+   "provider": "DigiCert"
+  }
+ ]
+}

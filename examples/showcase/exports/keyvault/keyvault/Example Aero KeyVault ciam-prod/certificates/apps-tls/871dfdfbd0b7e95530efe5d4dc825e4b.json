@@ -1,0 +1,12 @@
+{
+ "attributes": {
+  "created": 1780304400,
+  "enabled": true,
+  "exp": 1811808000,
+  "nbf": 1780272000,
+  "updated": 1780304400
+ },
+ "cer": "MIIBWzCCAQCgAwIBAgIDCp8xMAoGCCqGSM49BAMCMCMxITAfBgNVBAMMGFB1YmxpYyBDQSBHMiAoc3ludGhldGljKTAeFw0yNjA2MDEwMDAwMDBaFw0yNzA2MDEwMDAwMDBaMCExHzAdBgNVBAMMFmFwcHMuZXhhbXBsZS1hZXJvLnRlc3QwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAT7x3yFyRDscrm0aSXKLf5L1oZ3XhAg2Udw/B4rjjmOUBgPfJE+dGg59xtF9yfcoHFOna3AxMyoGN/UlerOTJvqoyUwIzAhBgNVHREEGjAYghZhcHBzLmV4YW1wbGUtYWVyby50ZXN0MAoGCCqGSM49BAMCA0kAMEYCIQDa55QkOE8YPlPszHaNfCAxj60k22VYNMyxebsUI93L7QIhAJdn/Mgv2YRP5GuIrhy6UZjt0I42y7D4Numg1kxiq1U4",
+ "id": "https://kv-ciam-prod.vault.azure.net/certificates/apps-tls/871dfdfbd0b7e95530efe5d4dc825e4b",
+ "x5t": "VzDaFF-Jgl5FbSBU_T-QplA015k"
+}

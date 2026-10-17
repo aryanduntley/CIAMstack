@@ -638,6 +638,15 @@ EXPECTED = MappingProxyType({
         ("A294", "Certificate", "venafi-prod holds 1 certificate(s) in service for names the record holds",
          "network discovery found a certificate for login.example-aero.test that the record has none of", None,
          "CHG-2125"),
+        # production Key Vault kv-ciam-prod's certificates (CHG-2126), every version: the vault renewed the supplier
+        # portal's SP signing certificate itself (AutoRenew at 80% of its lifetime), and holds a DigiCert certificate
+        # for apps.example-aero.test the record has none of
+        ("A296", "Certificate", "Certificate `supplier-portal-sp-signing` was renewed by Example Aero KeyVault "
+         "ciam-prod", "Key Vault renewed the supplier portal's SP signing certificate on 2026-04-30 (a new version); "
+         "the record still names the old one, which expires 2026-11-30", None, "CHG-2126"),
+        ("A297", "Certificate", "Example Aero KeyVault ciam-prod holds 1 certificate(s) in service for names the "
+         "record holds", "the vault holds a DigiCert certificate for apps.example-aero.test that the record has none "
+         "of", None, "CHG-2126"),
         # the Example Aero SaaS tenant's inventory (CHG-2127, CyberArk Certificate Manager - SaaS): a renewal linked
         # exactly through the certificate's earlier version, a retired certificate the record still uses, and a scan
         # finding a second certificate for a name the record holds
