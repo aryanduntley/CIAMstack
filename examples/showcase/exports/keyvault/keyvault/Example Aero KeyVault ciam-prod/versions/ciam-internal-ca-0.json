@@ -1,0 +1,16 @@
+{
+ "nextLink": null,
+ "value": [
+  {
+   "attributes": {
+    "created": 1768467600,
+    "enabled": true,
+    "exp": 1926201600,
+    "nbf": 1768435200,
+    "updated": 1768467600
+   },
+   "id": "https://kv-ciam-prod.vault.azure.net/certificates/ciam-internal-ca/5813ca7c27e1b3b6628e0cdc51b5558a",
+   "x5t": "q4mPkyNqrQyHdCJY4cyYzERPTyI"
+  }
+ ]
+}

@@ -1687,6 +1687,22 @@
       "raised_by": "CHG-2125"
     },
     {
+      "id": "A296",
+      "area": "Certificate",
+      "match": "Certificate `supplier-portal-sp-signing` was renewed by Example Aero KeyVault ciam-prod",
+      "planted": "Key Vault renewed the supplier portal's SP signing certificate on 2026-04-30 (a new version); the record still names the old one, which expires 2026-11-30",
+      "cleared_by": null,
+      "raised_by": "CHG-2126"
+    },
+    {
+      "id": "A297",
+      "area": "Certificate",
+      "match": "Example Aero KeyVault ciam-prod holds 1 certificate(s) in service for names the record holds",
+      "planted": "the vault holds a DigiCert certificate for apps.example-aero.test that the record has none of",
+      "cleared_by": null,
+      "raised_by": "CHG-2126"
+    },
+    {
       "id": "A150",
       "area": "Logs",
       "match": "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 days in all but searchable only 90",

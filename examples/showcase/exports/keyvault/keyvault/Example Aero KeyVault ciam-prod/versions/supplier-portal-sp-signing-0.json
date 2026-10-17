@@ -1,0 +1,27 @@
+{
+ "nextLink": null,
+ "value": [
+  {
+   "attributes": {
+    "created": 1701334800,
+    "enabled": true,
+    "exp": 1795996800,
+    "nbf": 1701302400,
+    "updated": 1701334800
+   },
+   "id": "https://kv-ciam-prod.vault.azure.net/certificates/supplier-portal-sp-signing/a945c22093e1d32038767c4c525b43ea",
+   "x5t": "cQC1QO_PTwFWQhHF-jWeqUE1fCk"
+  },
+  {
+   "attributes": {
+    "created": 1777539600,
+    "enabled": true,
+    "exp": 1872201600,
+    "nbf": 1777507200,
+    "updated": 1777539600
+   },
+   "id": "https://kv-ciam-prod.vault.azure.net/certificates/supplier-portal-sp-signing/fe7536e6fca8366e99405584259a9f15",
+   "x5t": "OKiAICKgFMvZWh077B3U92osozQ"
+  }
+ ]
+}

@@ -1,0 +1,39 @@
+{
+ "Vault": "https://kv-ciam-prod.vault.azure.net",
+ "nextLink": null,
+ "value": [
+  {
+   "attributes": {
+    "created": 1768467600,
+    "enabled": true,
+    "exp": 1926201600,
+    "nbf": 1768435200,
+    "updated": 1768467600
+   },
+   "id": "https://kv-ciam-prod.vault.azure.net/certificates/ciam-internal-ca",
+   "x5t": "q4mPkyNqrQyHdCJY4cyYzERPTyI"
+  },
+  {
+   "attributes": {
+    "created": 1777539600,
+    "enabled": true,
+    "exp": 1872201600,
+    "nbf": 1777507200,
+    "updated": 1777539600
+   },
+   "id": "https://kv-ciam-prod.vault.azure.net/certificates/supplier-portal-sp-signing",
+   "x5t": "OKiAICKgFMvZWh077B3U92osozQ"
+  },
+  {
+   "attributes": {
+    "created": 1780304400,
+    "enabled": true,
+    "exp": 1811808000,
+    "nbf": 1780272000,
+    "updated": 1780304400
+   },
+   "id": "https://kv-ciam-prod.vault.azure.net/certificates/apps-tls",
+   "x5t": "VzDaFF-Jgl5FbSBU_T-QplA015k"
+  }
+ ]
+}

@@ -1,0 +1,29 @@
+{
+ "attributes": {
+  "created": 1767225600,
+  "enabled": true,
+  "updated": 1767225600
+ },
+ "issuer": {
+  "name": "DigiCertIssuer"
+ },
+ "lifetime_actions": [
+  {
+   "action": {
+    "action_type": "AutoRenew"
+   },
+   "trigger": {
+    "days_before_expiry": 30
+   }
+  }
+ ],
+ "x509_props": {
+  "sans": {
+   "dns_names": [
+    "apps.example-aero.test"
+   ]
+  },
+  "subject": "CN=apps.example-aero.test",
+  "validity_months": 12
+ }
+}

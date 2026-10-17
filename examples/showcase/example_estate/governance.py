@@ -197,6 +197,8 @@ CHANGES = (
      "the certificates they keep, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2125", "Read the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate "
      "Manager; metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2126", "Read production Key Vault kv-ciam-prod's certificates as a certificate manager's inventory (every "
+     "version, its policies; metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

@@ -1,0 +1,12 @@
+{
+ "attributes": {
+  "created": 1777539600,
+  "enabled": true,
+  "exp": 1872201600,
+  "nbf": 1777507200,
+  "updated": 1777539600
+ },
+ "cer": "MIIBQDCB5qADAgECAgJaAjAKBggqhkjOPQQDAjApMScwJQYDVQQDDB5zdXBwbGllcnMuZXhhbXBsZS1hZXJvLnRlc3QgU1AwHhcNMjYwNDMwMDAwMDAwWhcNMjkwNDMwMDAwMDAwWjApMScwJQYDVQQDDB5zdXBwbGllcnMuZXhhbXBsZS1hZXJvLnRlc3QgU1AwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAASpgquXntxns3OaSAeff6NJVLBGblmyDbKF5Acbp9OlCMndPEhg+wdHp2CM/ooestKR0RzyK0T9nBjp1283y3vMMAoGCCqGSM49BAMCA0kAMEYCIQDHWJdCeG8025SvQMryBp3+7eGbzIfzqy9BfHVv3cU8RQIhAIfhn3G/ko/IH3wSLg2KCwVEKlG2r6lKlYBzIc2Bq5xk",
+ "id": "https://kv-ciam-prod.vault.azure.net/certificates/supplier-portal-sp-signing/fe7536e6fca8366e99405584259a9f15",
+ "x5t": "OKiAICKgFMvZWh077B3U92osozQ"
+}

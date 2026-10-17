@@ -1,6 +1,6 @@
 # opsdir-adapter-azure
 
-opsdir adapter for Microsoft Azure: Terraform for Azure environments, and Bicep / ARM template JSON translated from it on request; Azure Terraform state, Azure CLI output and ARM/Bicep deployments read back into the record; `azkv://` secret references.
+opsdir adapter for Microsoft Azure: Terraform for Azure environments, and Bicep / ARM template JSON translated from it on request; Azure Terraform state, Azure CLI output and ARM/Bicep deployments read back into the record; `azkv://` secret references; Key Vault certificates read as a certificate manager's inventory.
 
 **Applies to** environments whose cloud has `ciamCloudProvider: azure`, in the commercial (`ciamCloudEnvironment: public`) or government (`usgovernment`) partition. A provider adapter: it renders and reads an environment's infrastructure bindings; products (PingDS, PingFederate, …) are other adapters.
 
@@ -388,6 +388,35 @@ In target/prod, applying would record the edge facts the policies ask for, WAF p
 
 Found by the round trip and fixed: the CMK's helper identity carried the database's `Role` tag. Reading it back bound the database's role twice, and PingFederate's JDBC URL became UNBOUND. It is tagged `ManagedBy` only now.
 
+## Key Vault certificates as a certificate manager's inventory (`azure/keyvault-certificates`)
+
+A vault's certificates are what a certificate manager holds, read into the core pki domain's managed inventories
+(`ciamManagedInventory` under `ou=managed-certificates`, one per collection source: one vault), never a CA's issuance
+record: a certificate the vault doesn't hold isn't missing anywhere (`keyvault_certificates.py`). Metadata only: the
+public certificate (`cer`) is read for its facts, the key's and secret's ids are dropped before anything sees them,
+and the secret (where the private key is) is never asked for.
+
+- Every version of every certificate is one `ciamManagedCertificate` (cn `<name>/<version>`, `ciamManagerPath`
+  `<vault>/<name>/<version>`): serial, SHA-256, subject, issuer, validity and names from its certificate
+  (opsdir-adapter-x509's `certificate_facts`), else from its version listing (the SHA-1 thumbprint `x5t`, validity);
+  disabled when the vault disables it. Each version but the newest names the one that replaced it (`ciamRenewedAs`),
+  so a record certificate still naming an old version is renewed as its successor.
+- The certificate's policy says how the vault manages it: an `AutoRenew` lifetime action is `enrolled`, `EmailContacts`
+  only `monitored`, neither `unassigned`; the issuer it renews through is `ciamManagedAuthority` (`Self`, `Unknown`:
+  issued outside the vault, which then can't renew it, or a configured issuer with its provider, `DigiCertIssuer
+  (DigiCert)`); each action and when it fires is `ciamManagerAction` (`AutoRenew at 80% of its lifetime`); the vault's
+  certificate contacts (by email) are who it notifies when the policy has an action. Action types are matched without
+  case (the REST reference writes `AutoRenew`, the concepts page `autoRenew`).
+- What the vault reports wrong now is a pending operation that `failed` or was `canceled` (its status details and
+  error, on the current version). Key Vault records no revocation.
+- The inventory is complete, incomplete (a page that isn't one, a next page or a certificate's versions, policy or
+  version unread) or denied (the listing refused: what to grant is named).
+
+The record's certificates reconcile with it like any manager's (core `managed-certificates` report, planner findings).
+The export is Key Vault's REST answers (api-version `2025-07-01`, the current GA), as the collector saves them:
+`keyvault/<source>/certificates-<n>.json` (pages, with the vault's address), `versions/<name>-<n>.json`,
+`certificates/<name>/<version>.json`, `policies/<name>.json`, `pending/<name>.json`, `contacts.json`, `issuers.json`.
+
 ## Collecting from Azure (`opsdir collect`)
 
 `opsdir collect --env CLOUD/ENV --adapter azure` reads what the two importers below read, read-only, under your own
@@ -426,6 +455,29 @@ Azure CLI login (`opsdir_adapter_azure.collect`), and imports it like an export 
   (see Microsoft Entra External ID above): the login must be that tenant in `AzureCloud`, and every output is kept to
   an allowlist before anything else sees it. Least privilege there: Graph `Application.Read.All`,
   `EventListener.Read.All`, `IdentityProvider.Read.All` and `CustomAuthenticationExtension.Read.All`.
+- `azure/keyvault-certificates`: each vault a collection source names (its address: `https://<vault>.vault.azure.net`,
+  or `https://<vault>.vault.usgovcloudapi.net` in Azure Government; no credential role), read with `az rest --method
+  get` against Key Vault's data plane, `--resource` the cloud's Key Vault audience (`https://vault.azure.net`,
+  `https://vault.usgovcloudapi.net`: `az rest` doesn't derive it for a vault's host): the certificate listing (pending
+  ones included, every page; a next page only on the vault's own address, so the token goes nowhere else), contacts
+  and issuers, then per certificate its version pages, policy and pending operation, then each version (at most 1500
+  per collection). Every answer is trimmed to what the importer reads (tags, key and secret ids, key and secret
+  properties, CSRs and phone numbers never kept):
+
+  ```ldif
+  dn: cn=kv-ciam-prod,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+  objectClass: ciamCollectionSource
+  ciamBindingRole: collect-keyvault
+  ciamImporter: azure/keyvault-certificates
+  ciamSourceRef: https://kv-ciam-prod.vault.azure.net
+  ```
+
+  Least privilege: `Key Vault Reader` on the vault (certificates and issuers read; secrets' metadata, never values),
+  or the access-policy certificate permissions `get`, `list`, `getissuers` and `listissuers`. Not `Key Vault
+  Certificate User`: it also reads secrets' values, where a certificate's private key is. Reading the contacts takes
+  `managecontacts` (`certificatecontacts/write`), which also changes them: refused, they are left unread and the import
+  says so. Microsoft documents no Azure Government API-version matrix for Key Vault certificates: `2025-07-01` there is
+  to be confirmed on a live vault.
 
 Least privilege: `Reader` on the subscription (management-plane reads: networks, compute, role assignments and
 definitions, policy assignments and exemptions, PIM eligibility, deny assignments, diagnostic settings, alerts,

@@ -1,0 +1,12 @@
+{
+ "attributes": {
+  "created": 1768467600,
+  "enabled": true,
+  "exp": 1926201600,
+  "nbf": 1768435200,
+  "updated": 1768467600
+ },
+ "cer": "MIIBtDCCAVugAwIBAgIUdFFI9hcMy8nfm+SAnjZMqhhfDuYwCgYIKoZIzj0EAwIwKDEmMCQGA1UEAwwdRXhhbXBsZSBBZXJvIENJQU0gSW50ZXJuYWwgQ0EwHhcNMjYwMTE1MDAwMDAwWhcNMzEwMTE1MDAwMDAwWjAoMSYwJAYDVQQDDB1FeGFtcGxlIEFlcm8gQ0lBTSBJbnRlcm5hbCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFukceCbj6dsVm05/SKplTxvf91fajLcKAt+l+VUNyvBhiFp1zzunPDfl8MJuJDMvXw/6devbWx25K7B6+8zIaqjYzBhMB0GA1UdDgQWBBSrZ9vMly7Mpiou6jznd3CshN/DfjAfBgNVHSMEGDAWgBSrZ9vMly7Mpiou6jznd3CshN/DfjAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNHADBEAiAaXitzJFy+mPmoBBHCWj8mb2YM+89p6Gpuas28NIh6RQIgfmcpV/B24yL5bhlmHcBfalG/tZwoya2HRk0OrpXT1sQ=",
+ "id": "https://kv-ciam-prod.vault.azure.net/certificates/ciam-internal-ca/5813ca7c27e1b3b6628e0cdc51b5558a",
+ "x5t": "q4mPkyNqrQyHdCJY4cyYzERPTyI"
+}

@@ -638,6 +638,15 @@ EXPECTED = MappingProxyType({
         ("A294", "Certificate", "venafi-prod holds 1 certificate(s) in service for names the record holds",
          "network discovery found a certificate for login.example-aero.test that the record has none of", None,
          "CHG-2125"),
+        # production Key Vault kv-ciam-prod's certificates (CHG-2126), every version: the vault renewed the supplier
+        # portal's SP signing certificate itself (AutoRenew at 80% of its lifetime), and holds a DigiCert certificate
+        # for apps.example-aero.test the record has none of
+        ("A296", "Certificate", "Certificate `supplier-portal-sp-signing` was renewed by Example Aero KeyVault "
+         "ciam-prod", "Key Vault renewed the supplier portal's SP signing certificate on 2026-04-30 (a new version); "
+         "the record still names the old one, which expires 2026-11-30", None, "CHG-2126"),
+        ("A297", "Certificate", "Example Aero KeyVault ciam-prod holds 1 certificate(s) in service for names the "
+         "record holds", "the vault holds a DigiCert certificate for apps.example-aero.test that the record has none "
+         "of", None, "CHG-2126"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "

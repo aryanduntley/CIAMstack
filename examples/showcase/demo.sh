@@ -369,6 +369,12 @@ echo "   SSO certificate the record still names, its LDAPS renewal is in error, 
 echo "   the record has none of"
 od import --change CHG-2125 --at 20260923090000Z venafi/certificates exports/venafi
 od report managed-certificates
+echo "-- production's Key Vault certificates (kv-ciam-prod), every version, read as the Azure add-on's collector saves"
+echo "   them (CHG-2126): a second certificate manager's inventory; the vault renewed the supplier portal's SP signing"
+echo "   certificate itself in April and the record still names the old version, and it holds a DigiCert certificate"
+echo "   for apps.example-aero.test the record has none of"
+od import --change CHG-2126 --at 20260923090000Z azure/keyvault-certificates exports/keyvault
+od report managed-certificates
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines
