@@ -6,7 +6,10 @@ from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir_format_terraform.hcl import as_text, comment
 from opsdir.core.notes import note_comment
+from opsdir_format_arm.template import Param
+from opsdir_adapter_azure.arm_types import arm_translation
 from opsdir_adapter_azure.landing import render_landing
+from opsdir_adapter_azure.network_inventory import network_resources
 from opsdir_adapter_azure.plumbing import plumbing_notes
 from edge_fixtures import note_lines
 from network_fixtures import ALPHA, BETA, entry, model
@@ -18,6 +21,8 @@ PARTIES = ("dn: ou=parties,dc=ciam-ops\nobjectClass: top\nobjectClass: organizat
            f"dn: {TEAM}\nobjectClass: top\nobjectClass: ciamParty\ncn: network-security\nciamOwnerKind: team\n"
            "ciamTakesGeneratedInfra: TRUE\n")
 ARM = "/subscriptions/s/resourceGroups/rg/providers/Microsoft.Network"
+ADD_ON = tuple(parse("dn: cloud=alpha,ou=environments,dc=ciam-ops\nchangetype: modify\nadd: ciamProviderAddOn\n"
+                     "ciamProviderAddOn: azapi\n"))
 GAMMA = "env=prod,cloud=gamma,ou=environments,dc=ciam-ops"
 AZURE_PEER = ("dn: cloud=gamma,ou=environments,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCloud\ncloud: gamma\n"
               "ciamCloudProvider: azure\nciamRegion: eastus2\n",
@@ -121,17 +126,84 @@ def test_peering_across_providers_and_a_link_without_a_kind_are_named():
     assert "a link: what kind of link it is isn't recorded" in out and "azurerm_virtual_network_peering" not in out
 
 
-def test_a_site_to_site_vpn_with_bgp_and_its_shared_key_as_a_sensitive_input():
-    files = _files(_link("vpn-dc", "vpn", ciamPeerGateway="198.51.100.1", ciamPeerAsn="65010", ciamLocalAsn="65515",
-                         ciamAcceptedCidr="192.168.0.0/16", ciamProviderRef=f"{ARM}/connections/cn-1"))
+def _vpn_dc(**attrs):
+    return _link("vpn-dc", "vpn", ciamPeerGateway="198.51.100.1", ciamPeerAsn="65010", ciamLocalAsn="65515",
+                 ciamAcceptedCidr="192.168.0.0/16", **attrs)
+
+
+def test_a_site_to_site_vpn_through_azapi_its_shared_key_write_only_from_key_vault():
+    m = model(alpha=(_vpn_dc(),), changes=ADD_ON)[1]
+    files = as_text(render_landing(m))
     out, providers = files[NET], files[f"{LZ}/providers.tf"]
     assert 'gateway_address     = "198.51.100.1"' in out and 'address_space       = ["192.168.0.0/16"]' in out
     assert "asn                 = 65010" in out and "bgp_peering_address = var.vpn_dc_bgp_peer_ip" in out
-    assert 'type                       = "IPsec"' in out and "bgp_enabled                = true" in out
-    assert "shared_key                 = var.vpn_dc_shared_key" in out and f'id = "{ARM}/connections/cn-1"' in out
-    assert "our side's BGP ASN 65515 is set on the virtual network gateway" in out
-    assert 'variable "vpn_dc_shared_key"' in providers and "sensitive   = true" in providers
-    assert 'variable "virtual_network_gateway_id"' in providers
+    assert 'ephemeral "azurerm_key_vault_secret" "vpn_dc_shared_key"' in out
+    assert "name         = var.vpn_dc_shared_key_secret" in out
+    assert "key_vault_id = var.vpn_dc_shared_key_vault_id" in out
+    assert 'resource "azapi_resource" "vpn_dc"' in out and '"Microsoft.Network/connections@2025-07-01"' in out
+    assert 'connectionType = "IPsec"' in out and "enableBgp      = true" in out
+    assert "id = var.virtual_network_gateway_id" in out and "id = azurerm_local_network_gateway.vpn_dc.id" in out
+    # the key only in the write-only sensitive_body, read when applied: no input, no azurerm connection, no note
+    sensitive = out[out.index("sensitive_body = {"):]
+    assert "sharedKey = ephemeral.azurerm_key_vault_secret.vpn_dc_shared_key.value" in sensitive
+    assert "sharedKey" not in out[:out.index("sensitive_body = {")]
+    assert "shared_key" not in out.replace("_shared_key", "")
+    assert "azurerm_virtual_network_gateway_connection" not in out
+    assert "connection isn't rendered" not in out and "import {" not in out
+    assert 'variable "vpn_dc_shared_key_vault_id"' in providers and 'variable "vpn_dc_shared_key_secret"' in providers
+    assert "sensitive" not in providers and 'variable "virtual_network_gateway_id"' in providers
+    assert 'source  = "Azure/azapi"' in providers and 'provider "azapi"' in providers
+    assert [n.severity for n in plumbing_notes(m)] == ["action"]      # the BGP ASN on the gateway alone
+
+
+def test_without_the_azapi_add_on_a_vpn_s_connection_is_made_by_hand():
+    m = model(alpha=(_vpn_dc(),))[1]
+    files = as_text(render_landing(m))
+    out, providers = files[NET], files[f"{LZ}/providers.tf"]
+    assert 'resource "azurerm_local_network_gateway" "vpn_dc"' in out
+    assert "azurerm_virtual_network_gateway_connection" not in out and "azapi_resource" not in out
+    assert "shared_key" not in out and "shared_key" not in providers and "azapi" not in providers
+    assert 'variable "virtual_network_gateway_id"' not in providers
+    (found,) = (n for n in plumbing_notes(m) if "connection isn't rendered" in n.text)
+    assert found.severity == "action" and "reads the key back even when not set" in found.text
+    assert "Create connection cn-ciam-prod-vpn-dc on the virtual network gateway (type IPsec, to local network " \
+           "gateway lgw-ciam-prod-vpn-dc, BGP on)" in found.how[0]
+    assert "ciamProviderAddOn azapi" in found.how[1]
+    assert note_comment(found) in out
+
+
+def test_an_existing_vpn_connection_is_not_adopted():
+    for changes in ((), ADD_ON):
+        m = model(alpha=(_vpn_dc(ciamProviderRef=f"{ARM}/connections/cn-1"),), changes=changes)[1]
+        out = as_text(render_landing(m))[NET]
+        assert "import {" not in out and "azapi_resource" not in out and "shared_key" not in out
+        assert f"the existing connection {ARM}/connections/cn-1 stays as its keeper has it" in out
+        assert [n.severity for n in plumbing_notes(m)] == ["action", "note"]
+
+
+def test_an_azapi_vpn_connection_translates_its_shared_key_a_secure_parameter():
+    group = parse(f"dn: {ALPHA}\nchangetype: modify\nadd: ciamResourceGroup\nciamResourceGroup: rg-ciam-prod\n")
+    m = model(alpha=(_vpn_dc(),), changes=(*ADD_ON, *group))[1]
+    templates = arm_translation(m, render_landing(m), "Azure network").templates.values()
+    connection = next(r for t in templates for r in t.resources if r.type == "Microsoft.Network/connections")
+    template = next(t for t in templates if connection in t.resources)
+    secret = next(p for p in template.parameters if p.secure)
+    assert connection.properties["sharedKey"] == Param(secret.name) and "fills it from the vault" in secret.description
+    assert connection.properties["connectionType"] == "IPsec" and "Role" in str(connection.fields["tags"])
+
+
+def test_an_azapi_vpn_connection_reads_back_as_the_connection_it_is():
+    lng = f"{ARM}/localNetworkGateways/lgw-1"
+    pairs = [("azurerm_local_network_gateway", {"id": lng, "gateway_address": "198.51.100.1",
+                                                "address_space": ["192.168.0.0/16"], "bgp_settings": [{"asn": 65010}]}),
+             ("azapi_resource", {"id": f"{ARM}/connections/cn-1", "name": "cn-1",
+                                 "type": "Microsoft.Network/connections@2025-07-01", "tags": {"Role": "vpn-dc"},
+                                 "body": {"properties": {"connectionType": "IPsec", "enableBgp": True,
+                                                         "localNetworkGateway2": {"id": lng, "properties": {}}}}})]
+    (link,) = network_resources(pairs)[0]
+    assert link.ref == f"{ARM}/connections/cn-1" and link.attrs["ciamLinkKind"] == ("vpn",)
+    assert link.attrs["ciamPeerGateway"] == ("198.51.100.1",) and link.attrs["ciamPeerAsn"] == ("65010",)
+    assert link.role == "vpn-dc"
 
 
 def test_a_vpn_without_its_peer_gateway_is_unbound():
@@ -235,5 +307,5 @@ def test_the_plumbing_notes_are_the_comments_every_keeper_s_root_writes():
     notes = plumbing_notes(m)
     written = note_lines("\n".join(t for p, t in as_text(render_landing(m)).items() if p.endswith("network.tf")))
     assert written == sorted(note_comment(n) for n in notes)
-    assert {n.severity for n in notes} == {"blocker", "action", "note"} and len(notes) == 17
+    assert {n.severity for n in notes} == {"blocker", "action", "note"} and len(notes) == 18   # vpn's by hand
     assert [n.severity for n in notes if n.subject == "interconnect `refused`"] == ["note"]

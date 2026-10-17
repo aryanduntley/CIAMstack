@@ -13,13 +13,21 @@ doesn't is created.
   network ACLs      none in Azure (stateless ACLs are another provider's; the NSGs are the stack's rules): named
   interconnects     our half of a VNet peering (the other environment's VNet, Azure only), a site-to-site VPN (local
                     network gateway with the peer's address, ranges and BGP; the connection on the virtual network
-                    gateway, an input, its shared key a sensitive input from the secret store), a virtual WAN hub
-                    connection (the hub an input). Transit and ExpressRoute circuits are named, not rendered
+                    gateway, an input, through azapi: below), a virtual WAN hub connection (the hub an input).
+                    Transit and ExpressRoute circuits are named, not rendered
   flow logs         virtual network flow logs (Network Watcher, an input) on the VNet or each subnet, to the storage
                     account the destination names (traffic analytics when it is a Log Analytics workspace, the
                     storage account then an input), retention as recorded. Never NSG flow logs (they retire)
   kept elsewhere    private endpoints and egress firewalls' rule collection groups someone else keeps
                     (opsdir_adapter_azure.network)
+A VPN connection's shared key never enters Terraform state (U.5, task 586): azurerm's connection has no write-only
+argument for it and reads it back (Get Shared Key) even when it isn't set, so the connection is rendered through
+Microsoft's azapi provider when the cloud allows that add-on (ciamProviderAddOn azapi): a Microsoft.Network/connections
+azapi_resource whose body holds everything but the key, and whose write-only sensitive_body holds the key read from Key
+Vault (its vault and secret name inputs: the record has no reference for it) by an ephemeral azurerm_key_vault_secret.
+Without the add-on it is an action for the network's keeper: create the connection by hand. An existing connection is
+not adopted (an import would read its key into state and plan): a note. Bicep/ARM take the merged body, the key a
+secure parameter filled from the vault.
 Tags Role (and opsdir's mark), read back by the importers. What it leaves out or to a person is a render note
 (core.notes, flow 43) written as its comment, enumerated the way the keepers' roots are walked (plumbing_notes). Pure.
 """
@@ -38,9 +46,9 @@ from opsdir_format_terraform.placing import Rendered, keeper_rendered
 from opsdir_format_terraform.hcl import (Block, blocks_of, comment, ref, tf_block, tf_import,
                                          tf_name)
 from .arm_ids import arm_segment
-from .identities import LOC, RG
+from .identities import GROUP, LOC, RG
 from .network import application_rules, binding_tags, endpoint_notes, firewall_notes, private_endpoint
-from .account import tagged
+from .account import azapi_allowed, tagged
 
 VNET = "data.azurerm_virtual_network.main"
 # the next hop each kind of route target is in Azure (VirtualAppliance needs its address)
@@ -48,6 +56,10 @@ NEXT_HOPS = {"internet": "Internet", "local": "VnetLocal", "none": "None", "vpn"
              "transit": "VirtualNetworkGateway", "firewall": "VirtualAppliance", "appliance": "VirtualAppliance"}
 GATEWAY = "virtual_network_gateway_id"
 WATCHER = ("network_watcher_name", "network_watcher_resource_group")
+AZAPI = "azapi_resource"
+# A VPN connection through azapi: the newest Microsoft.Network/connections API version azapi 2.13's schemas know
+# (research 586; ARM's newest is 2026-01-01)
+CONNECTION = "Microsoft.Network/connections@2025-07-01"
 
 
 def _subnet_data(s):
@@ -73,9 +85,8 @@ def network_data(m):
             *(_subnet_data(s) for s in of_class(m, "ciamSubnetBinding")))
 
 
-def _var(name, description, sensitive=False):
-    return tf_block("variable", [name], [("type", ref("string")), ("description", description),
-                                         *((("sensitive", True),) if sensitive else ())])
+def _var(name, description):
+    return tf_block("variable", [name], [("type", ref("string")), ("description", description)])
 
 
 def arm_id(b, kind=None):
@@ -311,12 +322,70 @@ def _peering(m, b, n):
         *_adopt(f"azurerm_virtual_network_peering.{n}", b)), variables, ())
 
 
+def _kept_connection_note(m, b):
+    return network_note(m, b, "note", f"the existing connection {one(b, 'ciamProviderRef')} stays as its keeper has "
+                        "it, its shared key where it is: adopting it would read the key into Terraform state and plan "
+                        "(U.5: no secret in state): not imported")
+
+
+def _hand_connection_note(m, b):
+    bgp = "on" if one(b, "ciamPeerAsn") else "off"
+    return network_note(m, b, "action", "its connection isn't rendered: azurerm keeps an IPsec connection's shared key "
+                        "in Terraform state (it reads the key back even when not set; U.5: no secret in state), and "
+                        "the cloud doesn't allow the azapi add-on, whose write-only body keeps it out",
+                        (f"Create connection {_name(m, b, 'cn')} on the virtual network gateway (type IPsec, to local "
+                         f"network gateway {_name(m, b, 'lgw')}, BGP {bgp}) in the environment's resource group, its "
+                         "shared key the one Key Vault holds for it (pasted there, never written down elsewhere), by "
+                         "hand (the portal, or az network vpn-connection create)",
+                         f"Or allow the azapi add-on on {rdn_value(m.cloud)} (ciamProviderAddOn azapi), {RECORD}: the "
+                         "connection is then rendered, its shared key write-only"))
+
+
+def vpn_connection_note(m, b):
+    """The render note of VPN link b's connection when it isn't rendered (U.5: azurerm keeps the shared key in state):
+    an existing connection kept as it is (a plain note), a new one without the azapi add-on created by hand (an
+    action); None when azapi renders it (or the link has no peer gateway)."""
+    if one(b, "ciamPeerGateway") is None:
+        return None
+    return _kept_connection_note(m, b) if adopted(b) else None if azapi_allowed(m) else _hand_connection_note(m, b)
+
+
+def _connection(m, b, n):
+    """(blocks, variables) of VPN link b's connection through azapi: the Key Vault secret holding its shared key read
+    ephemerally (its vault and name inputs) and a Microsoft.Network/connections resource whose write-only
+    sensitive_body alone holds the key (in no Terraform state or plan, U.5; resent on every update: no
+    sensitive_body_version); the note's comment instead when it isn't rendered (vpn_connection_note)."""
+    found = vpn_connection_note(m, b)
+    if found is not None:
+        return (comment(note_comment(found)),), ()
+    secret = ref(f"ephemeral.azurerm_key_vault_secret.{n}_shared_key.value")
+    return (
+        tf_block("ephemeral", ["azurerm_key_vault_secret", f"{n}_shared_key"], [
+            ("name", ref(f"var.{n}_shared_key_secret")), ("key_vault_id", ref(f"var.{n}_shared_key_vault_id"))]),
+        tf_block("resource", [AZAPI, n], [
+            ("#", "the IPsec shared key is write-only (azapi's sensitive_body; a secure parameter in Bicep/ARM): in no "
+                  "Terraform state (U.5)"),
+            ("type", CONNECTION), ("name", _name(m, b, "cn")), ("parent_id", GROUP), ("location", LOC),
+            ("body", {"properties": {
+                "connectionType": "IPsec", "enableBgp": one(b, "ciamPeerAsn") is not None,
+                "virtualNetworkGateway1": {"id": ref(f"var.{GATEWAY}"), "properties": {}},
+                "localNetworkGateway2": {"id": ref(f"azurerm_local_network_gateway.{n}.id"), "properties": {}}}}),
+            ("sensitive_body", {"properties": {"sharedKey": secret}}),
+            ("tags", tagged(m, binding_tags(b)))])), (
+        _var(GATEWAY, "The virtual network gateway (VPN) the connections are made on"),
+        _var(f"{n}_shared_key_vault_id", f"The Key Vault (its resource ID) holding the IPsec shared key of "
+                                         f"{rdn_value(b)} (read when applied, never in state)"),
+        _var(f"{n}_shared_key_secret", f"The name of the Key Vault secret holding the IPsec shared key of "
+                                       f"{rdn_value(b)}"))
+
+
 def _vpn(m, b, n):
     gateway, peer_asn, local_asn = one(b, "ciamPeerGateway"), one(b, "ciamPeerAsn"), one(b, "ciamLocalAsn")
     if gateway is None:
         return _note(b, "UNBOUND: a VPN needs the other end's gateway address (ciamPeerGateway). Not rendered.")
     bgp = (("bgp_settings", Block((("asn", int(peer_asn)), ("bgp_peering_address", ref(f"var.{n}_bgp_peer_ip"))))),) \
         if peer_asn else ()
+    blocks, variables = _connection(m, b, n)
     return Rendered((
         *((comment(note_comment(_asn_note(m, b, local_asn))),) if local_asn else ()),
         tf_block("resource", ["azurerm_local_network_gateway", n], [
@@ -324,25 +393,25 @@ def _vpn(m, b, n):
             ("gateway_address", gateway),
             *((("address_space", values(b, "ciamAcceptedCidr")),) if values(b, "ciamAcceptedCidr") else ()),
             *bgp, ("tags", tagged(m, binding_tags(b)))]),
-        tf_block("resource", ["azurerm_virtual_network_gateway_connection", n], [
-            ("name", _name(m, b, "cn")), ("location", LOC), ("resource_group_name", RG), ("type", "IPsec"),
-            ("virtual_network_gateway_id", ref(f"var.{GATEWAY}")),
-            ("local_network_gateway_id", ref(f"azurerm_local_network_gateway.{n}.id")),
-            ("shared_key", ref(f"var.{n}_shared_key")), ("bgp_enabled", peer_asn is not None),
-            ("tags", tagged(m, binding_tags(b)))]),
-        *_adopt(f"azurerm_virtual_network_gateway_connection.{n}", b, "connections")),
-        (_var(GATEWAY, "The virtual network gateway (VPN) the connections are made on"),
-         _var(f"{n}_shared_key", f"The IPsec shared key of {rdn_value(b)}, from the secret store (never recorded)",
-              sensitive=True),
-         *((_var(f"{n}_bgp_peer_ip", f"The BGP peering address of {rdn_value(b)}'s other end"),) if bgp else ())),
+        *blocks),
+        (*variables, *((_var(f"{n}_bgp_peer_ip", f"The BGP peering address of {rdn_value(b)}'s other end"),) if bgp
+                       else ())),
         ())
+
+
+def plumbing_azapi(m):
+    """Whether environment m's plumbing writes an azapi resource: a new VPN connection (_connection) with the add-on
+    allowed."""
+    return azapi_allowed(m) and any(
+        one(b, "ciamLinkKind") == "vpn" and one(b, "ciamPeerGateway") and not adopted(b)
+        for b in of_class(m, "ciamInterconnect"))
 
 
 def interconnect_notes(m, b, here=()):
     """The render notes of interconnect b as interconnect writes them: a peering to another cloud (a blocker), the
     other side's half of a peering (peer_half_note), our side's BGP ASN set on the virtual network gateway (an action),
-    a transit link (a blocker), an ExpressRoute circuit ordered by hand (an action), an unrecorded kind of link (a
-    blocker); an UNBOUND link has none."""
+    a VPN connection left out (vpn_connection_note), a transit link (a blocker), an ExpressRoute circuit ordered by
+    hand (an action), an unrecorded kind of link (a blocker); an UNBOUND link has none."""
     kind = one(b, "ciamLinkKind")
     if kind == "peering" and _cross_cloud(m, b):
         return (cross_cloud_peering_note(m, b, "Azure"),)
@@ -351,8 +420,9 @@ def interconnect_notes(m, b, here=()):
         bound = net is not None and one(net, "ciamProviderRef") is not None
         return (_half_note(m, b),) if bound and one(b, "ciamPeerAccepted") != "TRUE" else ()
     if kind == "vpn":
-        return (_asn_note(m, b, one(b, "ciamLocalAsn")),) if one(b, "ciamPeerGateway") and one(b, "ciamLocalAsn") \
-            else ()
+        found = vpn_connection_note(m, b)
+        return (*((_asn_note(m, b, one(b, "ciamLocalAsn")),) if one(b, "ciamPeerGateway") and one(b, "ciamLocalAsn")
+                  else ()), *((found,) if found is not None else ()))
     if kind == "hub":
         return ()
     if kind == "transit":

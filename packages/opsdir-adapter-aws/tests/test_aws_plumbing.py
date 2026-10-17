@@ -118,6 +118,25 @@ def test_a_vpn_with_bgp_or_static_routes_and_the_vpc_s_vpn_gateway_once():
     assert 'destination_cidr_block = "192.168.0.0/16"' in out
 
 
+def test_a_vpn_s_pre_shared_keys_stay_in_secrets_manager_out_of_terraform_state():
+    def vpn(cn, gateway, **attrs):
+        return entry(ALPHA, cn, "ciamInterconnect", ciamBindingRole=cn, ciamInterconnectKind="VPN", ciamLinkKind="vpn",
+                     ciamPeerEnvironment=BETA, ciamSourceCidr="10.9.0.0/16", ciamPeerGateway=gateway, **attrs)
+    m = model(alpha=(vpn("vpn-a", "198.51.100.1", ciamProviderRef="vpn-1"), vpn("vpn-b", "198.51.100.2")),
+              tree=OWNERS)[1]
+    out, variables = _main(vpn("vpn-a", "198.51.100.1", ciamProviderRef="vpn-1"), vpn("vpn-b", "198.51.100.2"))
+    assert out.count('preshared_key_storage = "SecretsManager"') == 2 and "preshared_key " not in out
+    assert "tunnel1_preshared_key" not in out and "preshared" not in variables
+    found = {n.subject: n for n in plumbing_notes(m)}
+    adopted, new = found["interconnect `vpn-a`"], found["interconnect `vpn-b`"]
+    assert adopted.severity == new.severity == "action" and "Terraform state holds none (U.5" in new.text
+    assert "Before applying, move each tunnel of the existing connection vpn-1 to Secrets Manager storage" in \
+        adopted.how[0] and "otherwise the import reads its keys into the plan" in adopted.how[0]
+    assert len(new.how) == 1 and "Configure the other end's device (198.51.100.2)" in new.how[0]
+    assert "preshared_key_arn; aws secretsmanager get-secret-value" in new.how[0]
+    assert f"# {note_comment(new)}" in out
+
+
 def test_links_aws_doesn_t_render_are_named():
     def link(cn, **kind):
         return entry(ALPHA, cn, "ciamInterconnect", ciamBindingRole=cn, ciamInterconnectKind=f"{cn} link",
@@ -210,6 +229,7 @@ def test_the_plumbing_notes_are_the_comments_every_keeper_s_root_writes():
         link("same", ciamLinkKind="peering", ciamPeerEnvironment=GAMMA),
         link("refused", ciamLinkKind="peering", ciamPeerEnvironment=GAMMA, ciamPeerAccepted="FALSE"),
         link("dx", ciamLinkKind="dedicated"), link("hub", ciamLinkKind="hub"), link("odd"),
+        link("vpn", ciamLinkKind="vpn", ciamPeerEnvironment=BETA, ciamPeerGateway="198.51.100.1"),
         entry(ALPHA, "fl", "ciamFlowLog", ciamBindingRole="fl", ciamFlowScope="network",
               ciamLogDestinationRole="flow-logs", ciamRetentionDays="90"),
         entry(ALPHA, "fl-eni", "ciamFlowLog", ciamBindingRole="fl-eni", ciamFlowScope="interface",
@@ -224,3 +244,4 @@ def test_the_plumbing_notes_are_the_comments_every_keeper_s_root_writes():
     assert {n.severity for n in notes} == {"blocker", "action", "note"}
     assert [n.severity for n in notes if n.subject == "interconnect `refused`"] == ["note"]   # the planner raises it
     assert [n.severity for n in notes if n.subject == "interconnect `same`"] == ["action"]
+    assert [n.severity for n in notes if n.subject == "interconnect `vpn`"] == ["action"]     # its keys' storage
