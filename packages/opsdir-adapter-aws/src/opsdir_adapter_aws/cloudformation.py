@@ -179,6 +179,7 @@ GETATT = MappingProxyType({
     "AWS::Events::EventBus": {"Arn": lambda pid, ps: stack_arn(ps, "events", f"event-bus/{pid}"),
                               "Name": lambda pid, ps: pid},      # its Ref is its name (a partner bus's holds '/')
     "AWS::Kinesis::Stream": {"Arn": _arn("kinesis", "stream/{id}")},
+    "AWS::KinesisFirehose::DeliveryStream": {"Arn": _arn("firehose", "deliverystream/{id}")},    # Ref: its name
     "AWS::SecretsManager::Secret": {"Id": lambda pid, ps: pid},
     "AWS::WAFv2::WebACL": {"Arn": lambda pid, ps: _waf_arn(pid, ps, "webacl")},
     "AWS::WAFv2::IPSet": {"Arn": lambda pid, ps: _waf_arn(pid, ps, "ipset")},

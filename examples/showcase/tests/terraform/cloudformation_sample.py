@@ -6,8 +6,9 @@ fixtures' DNS estate), an Aurora cluster, a Cognito user pool with its domain, c
 partner, a suppression, a quota request, Macie's scheduled job, a compute group with
 its role's boot and data disks (a launch template and an autoscaling group), and Fluent Bit's role
 its pods assume through the cluster's OIDC provider (IRSA), and an AWS Managed Microsoft AD directory as its
-CloudFormation stack with a further region and a conditional forwarder (flow 76): every resource and data source type
-the AWS renderers write that the showcase doesn't."""
+CloudFormation stack with a further region and a conditional forwarder (flow 76), and a log group forwarded on to a
+Splunk index through Firehose (the siem sample, milestone 109): every resource and data source type the AWS renderers
+write that the showcase doesn't."""
 import pathlib
 
 from opsdir.connectors.registry import services
@@ -116,8 +117,9 @@ GROUP = (entry(ALPHA, "asg-app", "ciamComputeGroup", ciamBindingRole="compute-ap
                ciamSnapshotPolicyRole="app-snapshots"),
          entry(ALPHA, "app-snapshots", "ciamSnapshotPolicy", ciamBindingRole="app-snapshots", ciamRetentionDays="7",
                ciamSnapshotAt="02:00"))
-# a Cognito user pool running the identity service (flow 63): its custom domain, an OIDC client with a custom scope,
-# a partner SAML identity provider
+# a Cognito user pool running the identity service (flow 63): its custom domain, a confidential OIDC client with a
+# custom scope (its own stack: Cognito generates its secret), a public one (a native app, no secret: the user pool
+# client itself), a partner SAML identity provider
 INTEGRATIONS = "ou=integrations,dc=ciam-ops"
 IDENTITY = (OU.format(INTEGRATIONS, "integrations"),
             "dn: cn=sso-tls,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCertificate\ncn: sso-tls\n"
@@ -125,6 +127,9 @@ IDENTITY = (OU.format(INTEGRATIONS, "integrations"),
             entry(INTEGRATIONS, "portal", "ciamIntegration", ciamProtocolType="oidc-client", ciamClientId="portal",
                   ciamGrantType=("authorization_code", "refresh_token"), ciamTokenAuthMethod="client_secret_basic",
                   ciamRedirectUri="https://portal.example.test/cb", ciamScope=("openid", "orders.read")),
+            entry(INTEGRATIONS, "mobile", "ciamIntegration", ciamProtocolType="oidc-client", ciamClientId="mobile",
+                  ciamGrantType=("authorization_code", "refresh_token"), ciamTokenAuthMethod="none",
+                  ciamRedirectUri="com.example.mobile:/cb", ciamScope=("openid", "profile")),
             entry(INTEGRATIONS, "skyline", "ciamIntegration", ciamProtocolType="saml2-idp",
                   ciamEntityId="https://idp.skyline.test", ciamSsoUrl="https://idp.skyline.test/sso"))
 POOL = (entry(ALPHA, "cert-sso", "ciamCertificateRef", ciamBindingRole="sso-cert",
@@ -182,6 +187,18 @@ CLUSTER = (entry(ALPHA, "am", "ciamWorkloadBinding", ciamBindingRole="am-workloa
            entry(ALPHA, "audit", "ciamLogDestination", ciamBindingRole="audit-logs", ciamDestinationKind="log-group",
                  ciamProviderRef=f"arn:aws:logs:us-east-1:{ACCOUNT}:log-group:/ciam/audit"))
 
+# a log group forwarded on to a Splunk index (milestone 109, siem_forwarding.py): subscribed to a Firehose stream that
+# reads the HEC token from Secrets Manager and keeps what it can't deliver in S3
+SIEM = (entry(ALPHA, "security-logs", "ciamLogDestination", ciamBindingRole="security-logs",
+              ciamDestinationKind="log-group", ciamRetentionDays="30", ciamForwardsToRole="siem",
+              ciamProviderRef=f"arn:aws:logs:us-east-1:{ACCOUNT}:log-group:/ciam/security",
+              ciamStorageRef="s3://ciam-siem-failed/firehose"),
+        entry(ALPHA, "siem", "ciamLogDestination", ciamBindingRole="siem", ciamDestinationKind="siem-index",
+              ciamProviderRef="ciam_security", ciamRetentionDays="90", ciamCredentialRole="siem-intake",
+              ciamIntakeUrl="https://hec.example.test"),
+        entry(ALPHA, "siem-intake", "ciamSecretRef", ciamBindingRole="siem-intake",
+              ciamRefUri=f"aws-sm://arn:aws:secretsmanager:us-east-1:{ACCOUNT}:secret:ciam/hec-AbCdEf"))
+
 
 def environments(region):
     """((name, environment model, services), ...): the sample's environments in region, each rendered with
@@ -195,7 +212,10 @@ def environments(region):
             ("services", model(alpha=RECORDS, tree=(*EXCEPTIONS, *IDENTITY),
                                changes=(*placed(region), *bound(region)))[1], found),
             ("logs", model(alpha=CLUSTER, tree=LOGS, changes=(*placed(region), *bound(region)))[1],
-             found._replace(logs=lambda m: (AM,))))
+             found._replace(logs=lambda m: (AM,))),
+            # the index kept by the Splunk adapter, as a stack declaring it would
+            ("siem", model(alpha=SIEM, changes=(*placed(region), *bound(region)))[1],
+             found._replace(siem_keeper=lambda m, b: "splunk")))
 
 
 def renders(region):
@@ -203,7 +223,7 @@ def renders(region):
     return tuple((name, m, render_files(m, found)) for name, m, found in environments(region))
 
 
-def write_samples(root, region="us-east-1", names=("services",)):
+def write_samples(root, region="us-east-1", names=("services", "siem")):
     """Write the Terraform roots of the sample's environments named (in region) under root/<name>/; the root."""
     for name, _, files in renders(region):
         if name in names:

@@ -174,6 +174,28 @@ def test_an_arm_render_deploys_sentinel_on_the_workspace_at_the_stable_api():
         "triggerThreshold": 0}
 
 
+def test_the_arm_read_back_puts_sentinels_parts_under_the_workspace_they_extend():
+    """An extension resource (its scope the workspace) has its ID under the workspace, as Azure gives it: the
+    onboarding makes the workspace a SIEM index and the rule is the detection the record names by that ID."""
+    from opsdir_adapter_azure.arm import arm_resources
+    scope = "[resourceId('Microsoft.OperationalInsights/workspaces', 'law-ciam-sentinel')]"
+    template = {"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0", "resources": [
+                    {"type": "Microsoft.OperationalInsights/workspaces", "apiVersion": "2025-07-01",
+                     "name": "law-ciam-sentinel", "location": "eastus2", "properties": {"retentionInDays": 90}},
+                    {"type": "Microsoft.SecurityInsights/onboardingStates", "apiVersion": "2025-09-01",
+                     "scope": scope, "name": "default"},
+                    {"type": "Microsoft.SecurityInsights/alertRules", "apiVersion": "2025-09-01", "scope": scope,
+                     "name": "ciam-login-failures", "kind": "Scheduled",
+                     "properties": {"description": "opsdir: realizes alert rule login-failures", "query": QUERY}}]}
+    deployment = {"id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam/providers/"
+                        "Microsoft.Resources/deployments/ciam", "properties": {}}
+    found = {r.ref: r for r in arm_resources({"d/template.json": json.dumps(template),
+                                              "d/deployment.json": json.dumps(deployment)})[0]}
+    assert found[WS].attrs["ciamDestinationKind"] == ("siem-index",)
+    assert (found[RULE_ID].kind, found[RULE_ID].role) == ("alarm", "alarm-login-failures")
+
+
 # ------------------------------------------------------------------ the Azure CLI reader (milestone 109, task 571)
 def test_the_cli_reads_sentinel_back_like_state_and_ignores_rules_it_doesnt_render():
     from opsdir.domains.observability.alarms import condition

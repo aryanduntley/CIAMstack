@@ -9,7 +9,8 @@ render was made from:
     provider reference as the importer reads it: an ARN as arn (its last part as id), a composite reference
     (inspector2:<id>) as id, any other as id;
   - any other resource an AWS-shaped synthetic id and ARN, in the root's partition, region and account (its provider
-    block: region, allowed_account_ids), and what AWS assigns its type (ASSIGNS: a load balancer's DNS name and zone);
+    block: region, allowed_account_ids), and what AWS assigns its type (ASSIGNS: a load balancer's DNS name and zone,
+    a Firehose stream's ARN);
   - tags_all: the provider's default_tags under the resource's tags, as the provider records them;
   - the data sources AWS answers from the account itself (aws_partition, aws_caller_identity, aws_region).
 
@@ -57,7 +58,10 @@ ASSIGNS = MappingProxyType({
         "id": configured.get("cluster_identifier", name)},
     "aws_iam_openid_connect_provider": lambda name, configured, partition, region, account: {
         "arn": f"arn:{partition}:iam::{account}:oidc-provider/"
-               + str(configured.get("url", name)).removeprefix("https://")}})
+               + str(configured.get("url", name)).removeprefix("https://")},
+    # a Firehose stream's ARN names it (what a role's grant on it reads, as the CloudFormation read-back makes it)
+    "aws_kinesis_firehose_delivery_stream": lambda name, configured, partition, region, account: {
+        "arn": f"arn:{partition}:firehose:{region}:{account}:deliverystream/{configured.get('name', name)}"}})
 
 
 def _unquote(k):
@@ -114,7 +118,7 @@ PHYSICAL_NAMES = MappingProxyType({
     "AWS::RDS::DBClusterParameterGroup": "DBClusterParameterGroupName", "AWS::Logs::LogGroup": "LogGroupName",
     "AWS::Backup::BackupVault": "BackupVaultName", "AWS::CloudWatch::Alarm": "AlarmName",
     "AWS::Synthetics::Canary": "Name", "AWS::Config::ConfigurationRecorder": "Name",
-    "AWS::Config::DeliveryChannel": "Name"})
+    "AWS::Config::DeliveryChannel": "Name", "AWS::KinesisFirehose::DeliveryStream": "DeliveryStreamName"})
 # Physical ids made from the template's properties (an OIDC provider's ARN names its issuer), as aws_assigned makes
 # the ARN of the Terraform type it came from: (properties, partition, account) -> the physical id
 PHYSICAL_MADE = MappingProxyType({
