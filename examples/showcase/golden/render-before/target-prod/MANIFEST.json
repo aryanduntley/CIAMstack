@@ -409,7 +409,7 @@
     "terraform/landing-zone/network-security/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "96723a407740549aebae6a2d7227259fe681dafb3ffbd5391f932a554129489f"
+      "sha256": "0abca6023f99e998af38ae07147391bf6bd08d6c78a38df3952dfdd2be24be6c"
     },
     "terraform/landing-zone/network.tf": {
       "scope": "landing-zone",
@@ -419,7 +419,7 @@
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "e9549e7fbe68691423be56fb239d68ae191c5488f984731584a86458408d5394"
+      "sha256": "34721b3629d392c9a63f14e82979550fa9dd70afbd2bfbd2b6df637c4fc93cc8"
     },
     "terraform/main.tf": {
       "scope": "environment-specific",
@@ -429,7 +429,7 @@
     "terraform/providers.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "f2fd073cdfe95bacf2d1d7937e0b93133705aebe661c2193747d65187f1093ea"
+      "sha256": "a5738bc5982b67429d8c75bdce4329bcd20269f0ab09de140fd2c32f9c21563b"
     }
   }
 }

@@ -8,7 +8,7 @@ opsdir adapter for Amazon Web Services: Terraform for AWS environments, and Clou
 
 ## What it renders
 
-Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 6.68`, the current release it is validated against, and `hashicorp/archive ~> 2.8` when it packages scripts; the same pins in the landing-zone roots; `region` from the cloud's `ciamRegion`; `use_fips_endpoint = true` when the cloud's `ciamFipsEndpoints` is TRUE (core `estate` domain); credentials come from the usual AWS environment, never from the record) and `terraform/main.tf`:
+Per environment, `terraform/providers.tf` (`hashicorp/aws ~> 6.69`, the current release it is validated against, and `hashicorp/archive ~> 2.8` when it packages scripts; the same pins in the landing-zone roots; `region` from the cloud's `ciamRegion`; `use_fips_endpoint = true` when the cloud's `ciamFipsEndpoints` is TRUE (core `estate` domain); credentials come from the usual AWS environment, never from the record) and `terraform/main.tf`:
 
 | From the record | Rendered as |
 |---|---|
@@ -930,7 +930,7 @@ It adds no required roles or schema of its own (its planner checks are listed ab
 ## Known limits
 
 - **Private-CA trust in canaries is verified locally, not live.** The probes' CA trust ran against openssl-made root and intermediate-only private CAs over HTTPS and LDAPS on Python 3.12 and 3.14 (task 540); a canary on a live CloudWatch Synthetics runtime trusting a recorded CA stays with 7.2. A CA the record holds is always given to the check (a public root recorded there is harmless to add); the record says nothing of a CA it doesn't hold, so such a service's certificate is left to the runtime's own trust store.
-- **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 6.x schema (the showcase's renders pass `terraform validate` against 6.68) and the AWS CLI's output shapes; `terraform plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
+- **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 6.x schema (the showcase's renders pass `terraform validate` against 6.69) and the AWS CLI's output shapes; `terraform plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
 - **No China partition.** China regions (`cn-*`, partition `aws-cn`) aren't recognized: their ARNs would be written with `aws`. GovCloud (US) is recognized by its region (above).
 - **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
 - **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.

@@ -23,7 +23,7 @@
     "terraform/landing-zone/providers.tf": {
       "scope": "landing-zone",
       "format": "hcl",
-      "sha256": "388e6816b2a84b042bfe5e88a195839ac1e5bcfd6bdd5aebcbe6480e667c7e53"
+      "sha256": "907f28923e06e9ea24aff9b94162b90be0b3384b62b9ad1bd4f31ec61ce9ba86"
     }
   }
 }

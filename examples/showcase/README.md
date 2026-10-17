@@ -134,7 +134,7 @@ The appliances' logins and the lab's secrets are CyberArk references, read when 
 
 | Verified | Not verified |
 |---|---|
-| Rendered Terraform passes `terraform fmt -check` and **`terraform validate`** against the `hashicorp/aws ~> 6.68`, `hashicorp/azurerm ~> 5.9` and `hashicorp/google ~> 8.6` provider schemas | No `plan`/`apply` against real accounts (fictional IDs) |
+| Rendered Terraform passes `terraform fmt -check` and **`terraform validate`** against the `hashicorp/aws ~> 6.69`, `hashicorp/azurerm ~> 5.10` and `hashicorp/google ~> 8.7` provider schemas | No `plan`/`apply` against real accounts (fictional IDs) |
 | Every database rule (schema, references, change governance, secret references, vocabulary) exercised | `dsconfig` / `setup` flags follow the PingDS 7.x documentation but haven't been run against a real PingDS |
 | LDIF round trip (load, export) and change sets (diff, apply) | PingFederate's Admin API requests are checked against the OpenAPI spec of the version it runs, offline: not sent to a live Admin API |
 | Rendered Kubernetes output (`kubernetes/`, ForgeOps Helm values and Kustomize overlay, ping-devops values) passes `kustomize build`, `helm template` and kubeconform `-strict` (`tests/kubernetes/`) | Nothing deployed to a cluster; the kits at their pinned releases only (ForgeOps 2026.3.2, ping-devops 0.16.0) |

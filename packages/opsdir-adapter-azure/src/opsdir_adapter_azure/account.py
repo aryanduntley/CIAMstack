@@ -12,7 +12,7 @@ from opsdir_format_terraform.hcl import Block, comment, ref, tf_block
 
 FIPS_NOTE = ("Azure has no separate FIPS endpoints for the provider to use; FIPS 140 is met by the services' own "
              "validated modules, or by Azure Government (ciamCloudEnvironment usgovernment)")
-AZURERM_VERSION = "~> 5.9"          # validated against hashicorp/azurerm 5.9.0
+AZURERM_VERSION = "~> 5.10"         # validated against hashicorp/azurerm 5.10.0
 AZAPI_VERSION = "~> 2.13"           # validated against Azure/azapi 2.13.0
 AZUREAD_VERSION = "~> 3.10"         # validated against hashicorp/azuread 3.10.0
 AZAPI_ADD_ON = "azapi"              # ciamProviderAddOn: the cloud allows Microsoft's azapi provider

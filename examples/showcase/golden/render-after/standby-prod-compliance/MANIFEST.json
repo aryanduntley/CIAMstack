@@ -18,7 +18,7 @@
     "terraform/slice/providers.tf": {
       "scope": "environment-specific",
       "format": "hcl",
-      "sha256": "bec71e0002b09ef499fd27083cdd7fc3c66ccf84a954f35f107e695ddc741c24"
+      "sha256": "34da1165a3de5bfa9478636cd28855fc6c11bea5d195cbbcec4eae5b8f9352c5"
     }
   }
 }

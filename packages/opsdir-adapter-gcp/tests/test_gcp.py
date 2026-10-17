@@ -96,7 +96,7 @@ def test_the_store_refuses_google_cloud_credentials():
 
 def test_providers_take_the_project_and_region():
     providers = _render()["terraform/providers.tf"]
-    assert 'source  = "hashicorp/google"' in providers and 'version = "~> 8.6"' in providers
+    assert 'source  = "hashicorp/google"' in providers and 'version = "~> 8.7"' in providers
     assert 'default = "us-central1"' in providers and "project = var.project_id" in providers
 
 

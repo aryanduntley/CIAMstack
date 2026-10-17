@@ -16,7 +16,7 @@ from opsdir.core.notes import note, note_comment
 from opsdir_format_terraform.hcl import Block, ref, tf_block
 from .names import label
 
-GOOGLE_VERSION = "~> 8.6"           # validated against hashicorp/google 8.6.0
+GOOGLE_VERSION = "~> 8.7"           # validated against hashicorp/google 8.7.0
 ARCHIVE_VERSION = "~> 2.8"          # validated against hashicorp/archive 2.8.1 (the current release, 2026-10-14)
 
 

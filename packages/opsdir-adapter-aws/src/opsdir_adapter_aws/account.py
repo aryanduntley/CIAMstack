@@ -7,7 +7,7 @@ from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.estate.tags import required_tags
 from opsdir_format_terraform.hcl import Block, tf_block, tf_name
 
-AWS_VERSION = "~> 6.68"             # validated against hashicorp/aws 6.68.0
+AWS_VERSION = "~> 6.69"             # validated against hashicorp/aws 6.69.1
 ARCHIVE_VERSION = "~> 2.8"          # validated against hashicorp/archive 2.8.1
 
 

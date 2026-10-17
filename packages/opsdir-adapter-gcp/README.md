@@ -8,7 +8,7 @@ opsdir adapter for Google Cloud: Terraform for Google Cloud environments, read b
 
 ## What it renders
 
-Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.6`, the current release it is validated against, the same pin in the landing-zone roots; the project as variable `project_id`, the region as variable `region`, defaulting to the cloud's `ciamRegion`; when the cloud's `ciamFipsEndpoints` is TRUE, a comment that the google provider has no FIPS endpoint switch: FIPS 140 is met by Google Cloud's own validated modules or enforced with Assured Workloads; credentials come from the usual Google Cloud environment, never from the record) and `terraform/main.tf`:
+Per environment, `terraform/providers.tf` (`hashicorp/google ~> 8.7`, the current release it is validated against, the same pin in the landing-zone roots; the project as variable `project_id`, the region as variable `region`, defaulting to the cloud's `ciamRegion`; when the cloud's `ciamFipsEndpoints` is TRUE, a comment that the google provider has no FIPS endpoint switch: FIPS 140 is met by Google Cloud's own validated modules or enforced with Assured Workloads; credentials come from the usual Google Cloud environment, never from the record) and `terraform/main.tf`:
 
 | From the record | Rendered as |
 |---|---|
