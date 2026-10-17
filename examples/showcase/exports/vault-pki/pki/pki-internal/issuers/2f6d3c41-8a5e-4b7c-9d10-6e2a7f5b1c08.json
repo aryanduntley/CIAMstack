@@ -1,0 +1,13 @@
+{
+ "data": {
+  "certificate": "-----BEGIN CERTIFICATE-----\nMIIBtDCCAVugAwIBAgIUdFFI9hcMy8nfm+SAnjZMqhhfDuYwCgYIKoZIzj0EAwIw\nKDEmMCQGA1UEAwwdRXhhbXBsZSBBZXJvIENJQU0gSW50ZXJuYWwgQ0EwHhcNMjYw\nMTE1MDAwMDAwWhcNMzEwMTE1MDAwMDAwWjAoMSYwJAYDVQQDDB1FeGFtcGxlIEFl\ncm8gQ0lBTSBJbnRlcm5hbCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABFuk\nceCbj6dsVm05/SKplTxvf91fajLcKAt+l+VUNyvBhiFp1zzunPDfl8MJuJDMvXw/\n6devbWx25K7B6+8zIaqjYzBhMB0GA1UdDgQWBBSrZ9vMly7Mpiou6jznd3CshN/D\nfjAfBgNVHSMEGDAWgBSrZ9vMly7Mpiou6jznd3CshN/DfjAPBgNVHRMBAf8EBTAD\nAQH/MA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNHADBEAiAaXitzJFy+mPmo\nBBHCWj8mb2YM+89p6Gpuas28NIh6RQIgfmcpV/B24yL5bhlmHcBfalG/tZwoya2H\nRk0OrpXT1sQ=\n-----END CERTIFICATE-----\n",
+  "crl_distribution_points": [],
+  "delta_crl_distribution_points": [],
+  "enable_aia_url_templating": false,
+  "issuer_id": "2f6d3c41-8a5e-4b7c-9d10-6e2a7f5b1c08",
+  "issuer_name": "internal-2026",
+  "issuing_certificates": [],
+  "key_id": "8b0f5d2e-3c47-4a91-b6de-0c5e9f7a2d13",
+  "ocsp_servers": []
+ }
+}

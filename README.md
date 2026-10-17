@@ -110,7 +110,7 @@ Adapters are separate installable packages. Installing one registers it with the
 
 **Secret stores** (resolved at run time; values never reach the database or a rendered file)
 - AWS Secrets Manager and KMS (in `opsdir-adapter-aws`), Azure Key Vault (in `opsdir-adapter-azure`), Google Cloud Secret Manager and Cloud KMS (in `opsdir-adapter-gcp`).
-- `opsdir-adapter-hashicorp-vault`: `vault://` references, resolved with the Vault CLI.
+- `opsdir-adapter-hashicorp-vault`: `vault://` references, resolved with the Vault CLI; inventories its KV mounts, and **imports each PKI mount** (its CA, revocation endpoints, roles as that CA's own templates with who may request from them per the ACL policies, and the certificates Vault keeps, metadata only) with a GET-only `opsdir collect` or `scripts/export-vault-pki.sh`.
 - `opsdir-adapter-kubernetes`: `k8s-secret://` references, resolved with `kubectl`; also **imports Kubernetes manifests** as workloads (below).
 - `opsdir-adapter-cyberark`: `cyberark://` references, resolved with the Credential Provider SDK.
 

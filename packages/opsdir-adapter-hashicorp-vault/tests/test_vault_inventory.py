@@ -44,7 +44,7 @@ def _source():
 
 
 def test_registered_with_its_importer_collector_and_locator():
-    assert ADAPTER.importers == (KV_METADATA_IMPORTER,) and ADAPTER.collectors == COLLECTORS
+    assert ADAPTER.importers[0] == KV_METADATA_IMPORTER and ADAPTER.collectors[:1] == COLLECTORS
     assert ADAPTER.inventory_locator["vault"] is locate
     assert locate("secret/ciam/db") == ("secret", "ciam/db") and locate("transit") is None
 

@@ -252,12 +252,16 @@ certificate by certificate: `ciamIssuedBy` names the certificate of the CA that 
 it, as its importer reads them: `ciamSubjectFromRequest`, `ciamApprovalRequired`, `ciamRequiredSignatures`,
 `ciamTemplateVersion`, `ciamEnrollee` and `ciamEnrollmentScope` (broad, restricted or unknown); the operator's
 `ciamCertPurpose` and `ciamRenewalOwner`: who renews what the template issues that the record holds no certificate
-for). What a CA's database says it issued is observed
+for). A template is either one a directory shares with every CA it serves (AD CS's forest templates, which its
+importer replaces as a whole) or one CA's own (`ciamTemplateAuthority`: the CA; a Vault PKI role, cn `<CA>/<role>`),
+which only that CA's importer replaces; each kind of import keeps the other's. What a CA's database says it issued is
+observed
 metadata, never a key, under `ou=issued-certificates`: per CA a `ciamCertInventory` (`ciamInventoryAt`,
 `ciamInventoryState`, `ciamInventoryProblem`) and a `ciamIssuedCertificate` per issued or revoked certificate (cn: the
-request id; `ciamSerialNumber`, `ciamFingerprint`, `ciamSubject`, validity, `ciamTemplateName`, `ciamRequester`; once
-revoked `ciamRevokedAt`, the effective time, and `ciamRevocationReason`, the RFC 5280 name or the CA's value). The PKI
-adapters' importers write them (`adcs/inventory`); nothing is written onto the record's certificates.
+request id, or the serial for a CA that keeps none; `ciamSerialNumber`, `ciamFingerprint`, `ciamSubject`, validity,
+`ciamTemplateName`, `ciamRequester`; once revoked `ciamRevokedAt`, the effective time, and `ciamRevocationReason`, the
+RFC 5280 name or the CA's value). The PKI adapters' importers write them (`adcs/inventory`, `hashicorp-vault/pki`);
+nothing is written onto the record's certificates.
 
 A record certificate's CA is the one listing its `ciamIssuedBy` certificate as its own, else the one whose own
 certificate's subject is its `ciamIssuer`, else the one its issuer's CN names; it is found in the inventories by

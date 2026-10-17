@@ -1,10 +1,10 @@
 # opsdir-adapter-x509
 
-opsdir adapter for the X.509 standards themselves, CA-neutral: every certification authority the record holds has its revocation endpoints observed (RFC 5280 CRLs and delta CRLs, RFC 6960 OCSP responders) and what each answered checked against the CA certificates the record holds, into the core `pki` domain's revocation observations. A PKI adapter (kind `pki`), declaration-only: it renders nothing, owns no reference scheme, and works for any CA whose importer records its endpoints (`opsdir-adapter-adcs` today).
+opsdir adapter for the X.509 standards themselves, CA-neutral: every certification authority the record holds has its revocation endpoints observed (RFC 5280 CRLs and delta CRLs, RFC 6960 OCSP responders) and what each answered checked against the CA certificates the record holds, into the core `pki` domain's revocation observations. A PKI adapter (kind `pki`), declaration-only: it renders nothing, owns no reference scheme, and works for any CA whose importer records its endpoints (`opsdir-adapter-adcs`, `opsdir-adapter-hashicorp-vault`'s PKI inventory). It also gives the CA importers that receive certificates as PEM one CA-neutral reader of their public facts (`certificate_facts`, below).
 
 **Applies to** no environment by itself (`applies` is `None`): its collector and importer cover the whole estate's CAs.
 
-**Depends on** `opsdir` and `cryptography` (pyca), 50.0.2 or later: the current release when this adapter was written (2026-09-30), which this package requires; the APIs it uses (`load_der_x509_crl`, `is_signature_valid`, `last_update_utc` / `next_update_utc`, `OCSPRequestBuilder.add_certificate_by_hash`, `load_der_ocsp_response`, `this_update_utc` / `produced_at_utc`, `verify_directly_issued_by`) all exist from 43.0. It is the only opsdir package that depends on a cryptography library: the core judges what this adapter recorded and never parses a CRL itself.
+**Depends on** `opsdir` and `cryptography` (pyca), 50.0.2 or later: the current release when this adapter was written (2026-09-30), which this package requires; the APIs it uses (`load_der_x509_crl`, `is_signature_valid`, `last_update_utc` / `next_update_utc`, `OCSPRequestBuilder.add_certificate_by_hash`, `load_der_ocsp_response`, `this_update_utc` / `produced_at_utc`, `verify_directly_issued_by`) all exist from 43.0. It is the only opsdir package that depends on a cryptography library directly (others read certificates through it: `opsdir-adapter-hashicorp-vault`): the core judges what this adapter recorded and never parses a CRL itself.
 
 ## What it renders
 
@@ -38,6 +38,10 @@ Not fetched (recorded as not observed, with why): an endpoint whose URL isn't ht
 
 **Signatures** (`ciamSignatureCheck`, `ciamSignedBy` the record's CA certificate): a CRL is `valid` when one of the CA's certificates has its issuer's name and its key verifies the signature (and, when the certificate says how its key may be used, it may sign CRLs); `invalid` when the key doesn't verify it; `other-issuer` when no CA certificate has its issuer's name (an indirect CRL included). An OCSP response is `valid` when the CA's key signed it, or a responder certificate in the response that the CA issued directly for OCSP signing (`id-kp-OCSPSigning`), valid when the response was produced, signed it (`ciamInventoryProblem` names the responder); `unauthorized-responder` otherwise. `no-ca-certificate` when the record holds none of the CA's certificates with a PEM; `unsupported` for a signature it can't verify. These checks are evidence of what the endpoint serves, never a trust decision for the platform.
 
+## Reading certificates for other adapters (`certificates.py`)
+
+`certificate_facts(pem)`: the public facts of a PEM's first certificate as the record writes them, for any CA importer whose product gives its issued certificates as PEM rather than as facts (`hashicorp-vault/pki`): `serial` (lowercase hex of even length, `ciamSerialNumber`'s form), `sha256` (colon-separated upper-case hex, `ciamFingerprint`'s form, the core's `pem_fingerprint`), `subject` and `issuer` (RFC 4514 strings, most specific RDN first), `not_before` / `not_after` (GeneralizedTime), `usages` (the extended key usage OIDs, `None` without the extension); `None` for text holding no certificate. Public material only: a key is never read.
+
 ## Known limits
 
 - **Not run against a CA yet**: the collector and importer are tested on CRLs and OCSP responses the tests generate. Microsoft's documentation doesn't say (Codex research, 2026-10-16) whether the AD CS Online Responder answers GET requests as well as POST, or whether it signs with a delegated responder certificate by default; the first live run settles both.
@@ -49,7 +53,7 @@ Not fetched (recorded as not observed, with why): an endpoint whose URL isn't ht
 
 ## Tests
 
-`tests/test_x509_revocation.py`: registration (kind `pki`, declaration-only, the estate collector), what the observation fetches (CRL URLs, the OCSP GET request and its CertID against the library's own, no nonce, why an endpoint isn't fetched), CRLs (valid, numbers and delta indicator, PEM, wrong key, another issuer, no CA certificate, key usage without CRL signing, unreadable), OCSP responses (CA-signed, a delegated responder with and without OCSP signing, a forged signature, revoked, refused, unreadable, RSA), the importer (each answer recorded, unplanned files left out, an endpoint missing from the export, `--at`) and a collection that stays complete when an endpoint can't be reached.
+`tests/test_x509_certificates.py`: a certificate's facts (serial, SHA-256, RFC 4514 names, validity, usages, none without the extension) and text without a certificate. `tests/test_x509_revocation.py`: registration (kind `pki`, declaration-only, the estate collector), what the observation fetches (CRL URLs, the OCSP GET request and its CertID against the library's own, no nonce, why an endpoint isn't fetched), CRLs (valid, numbers and delta indicator, PEM, wrong key, another issuer, no CA certificate, key usage without CRL signing, unreadable), OCSP responses (CA-signed, a delegated responder with and without OCSP signing, a forged signature, revoked, refused, unreadable, RSA), the importer (each answer recorded, unplanned files left out, an endpoint missing from the export, `--at`) and a collection that stays complete when an endpoint can't be reached.
 
 From the repository root: `opsdir/.venv/bin/python -m pytest packages/opsdir-adapter-x509/tests`.
 

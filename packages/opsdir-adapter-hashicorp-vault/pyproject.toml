@@ -5,10 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opsdir-adapter-hashicorp-vault"
 version = "0.1.0"
-description = "opsdir adapter for HashiCorp Vault: vault:// secret references."
+description = "opsdir adapter for HashiCorp Vault: vault:// secret references, and its PKI mounts read into the record's PKI, metadata only."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["opsdir>=0.1"]
+# the PKI importer reads certificates with opsdir-adapter-x509 (the cryptography library)
+dependencies = ["opsdir>=0.1", "opsdir-adapter-x509>=0.1"]
 
 [project.entry-points."opsdir.adapters"]
 hashicorp-vault = "opsdir_adapter_hashicorp_vault.adapter:ADAPTER"

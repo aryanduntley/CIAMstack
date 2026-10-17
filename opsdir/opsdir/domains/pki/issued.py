@@ -3,9 +3,12 @@ of a snapshot.
 
 A CA's inventory (ciamCertInventory under ou=issued-certificates, cn: the CA's name) is what its database said it
 issued when its importer read it, metadata only: complete, incomplete or denied (inventory.py's states), with the
-certificates found as its children (ciamIssuedCertificate, cn: the request id). The CA itself (ciamCertAuthority under
-ou=certificate-authorities, the same name) holds its revocation endpoints and the templates it issues from; templates
-(ciamCertTemplate under ou=certificate-templates) say who renews what they issue (ciamRenewalOwner).
+certificates found as its children (ciamIssuedCertificate, cn: the request id, or the serial number for a CA that
+keeps none). The CA itself (ciamCertAuthority under ou=certificate-authorities, the same name) holds its revocation
+endpoints and the templates it issues from; templates (ciamCertTemplate under ou=certificate-templates) say who renews
+what they issue (ciamRenewalOwner). A template is either shared by every CA a directory serves (AD CS's forest
+templates, replaced by the directory's list) or one CA's own (ciamTemplateAuthority: a Vault PKI role, named
+<CA>/<role>, replaced by that CA's list alone).
 
 A record certificate's CA is the one listing the certificate it was issued by (ciamIssuedBy) among its own
 (ciamCaCertificate), else the one whose own certificate's subject is its issuer (ciamIssuer), else the one named as
@@ -50,7 +53,7 @@ AUTHORITY_ATTRS = ("cn", "ciamProviderRef", "ciamTemplateName")
 TEMPLATE_RIGHTS = ("ciamSubjectFromRequest", "ciamApprovalRequired", "ciamRequiredSignatures", "ciamTemplateVersion",
                    "ciamEnrollee", "ciamEnrollmentScope")
 TEMPLATE_ATTRS = ("cn", "description", "ciamTemplateOid", "ciamMaxValidityDays", "ciamExtendedKeyUsage",
-                  *TEMPLATE_RIGHTS)
+                  *TEMPLATE_RIGHTS, "ciamTemplateAuthority")
 ENDPOINT_ATTRS = ("cn", "ciamRevocationKind", "ciamEndpointUrl", "description")
 CERT_INVENTORY_ATTRS = ("cn", "ciamInventoryAt", "ciamInventoryState", "ciamInventoryProblem", "ciamProviderRef")
 ISSUED_ATTRS = ("cn", "ciamSerialNumber", "ciamFingerprint", "ciamSubject", "ciamNotBefore", "ciamNotAfter",
@@ -97,12 +100,14 @@ def endpoint_entry(d, authority, kind, n, url, template=None):
     return _observed(d, dn, ENDPOINT_CLASS, owned, ENDPOINT_ATTRS)
 
 
-def template_entry(d, name, display=None, oid=None, max_days=None, usages=(), rights=None):
+def template_entry(d, name, display=None, oid=None, max_days=None, usages=(), rights=None, authority=None):
     """A certificate template's entry (its purpose and renewal owner, the operator's, kept): display name, OID, the
     longest validity it issues in days, its extended key usages and rights {attribute of TEMPLATE_RIGHTS: value, or
-    a tuple of values for ciamEnrollee; None: not read} (what it lets requesters do and who may request from it)."""
+    a tuple of values for ciamEnrollee; None: not read} (what it lets requesters do and who may request from it), and
+    the name of the CA whose own template it is (a CA-scoped template; None: one a directory shares with every CA)."""
     told = {k: v for k, v in (rights or {}).items() if k in TEMPLATE_RIGHTS}
     owned = {"cn": (name,), "description": (display,), "ciamTemplateOid": (oid,),
+             "ciamTemplateAuthority": (authority_dn(authority) if authority else None,),
              "ciamMaxValidityDays": (None if max_days is None else str(max_days),),
              "ciamExtendedKeyUsage": tuple(dict.fromkeys(usages)),
              **{k: tuple(dict.fromkeys(v)) if isinstance(v, tuple) else (None if v is None else setting_text(v),)
@@ -126,10 +131,27 @@ def issued_entry(d, authority, request, facts):
     return _observed(d, dn, ISSUED_CLASS, owned, ISSUED_ATTRS)
 
 
+def is_ca_scoped(template):
+    """Whether a template is one CA's own (ciamTemplateAuthority), not one a directory shares with every CA."""
+    return one(template, "ciamTemplateAuthority") is not None
+
+
 def templates_group(d, templates):
-    """An Imported group: ou=certificate-templates made exactly these templates (the record's container kept; a
-    template gone from the directory leaves the record)."""
-    return TEMPLATES, (get(d, TEMPLATES) or ou_entry(TEMPLATES), *sorted(templates, key=lambda e: e.norm))
+    """An Imported group: ou=certificate-templates made exactly these directory-wide templates (the record's container
+    and every CA's own templates kept; a template gone from the directory leaves the record)."""
+    made = {e.norm: e for e in templates}
+    kept = tuple(t for t in children(d, TEMPLATES, TEMPLATE_CLASS) if is_ca_scoped(t) and t.norm not in made)
+    return TEMPLATES, (get(d, TEMPLATES) or ou_entry(TEMPLATES), *sorted((*made.values(), *kept),
+                                                                       key=lambda e: e.norm))
+
+
+def ca_templates_groups(d, authority, templates):
+    """Imported groups making the CA named authority's own templates exactly these (each made as given; one the
+    record holds as that CA's that it no longer has leaves the record), every other template kept."""
+    made = {e.norm: e for e in templates}
+    gone = tuple(t for t in children(d, TEMPLATES, TEMPLATE_CLASS) if t.norm not in made
+                 and norm_dn(one(t, "ciamTemplateAuthority") or "") == norm_dn(authority_dn(authority)))
+    return (*((e.dn, (e,)) for e in sorted(made.values(), key=lambda e: e.norm)), *((t.dn, ()) for t in gone))
 
 
 # ------------------------------------------------------------------ reading the record
@@ -304,14 +326,25 @@ def _why(inventory):
     return f" ({'; '.join(problems)})" if problems else ""
 
 
+def issue_label(issued):
+    """How a finding names a certificate an inventory holds: `request <id>` (a CA naming them by request id), else
+    `serial <serial>` (one naming them by serial)."""
+    return f"request {rdn_value(issued)}" if rdn_value(issued).isdigit() else f"serial {rdn_value(issued)}"
+
+
 def _revoked_text(r):
-    return (f"was revoked by {rdn_value(r.inventory)} (request {rdn_value(r.found)}: "
+    return (f"was revoked by {rdn_value(r.inventory)} ({issue_label(r.found)}: "
             f"{one(r.found, 'ciamRevocationReason')}, effective {date_of(r.found, 'ciamRevokedAt') or 'unrecorded'})")
 
 
 def _replacement(r):
-    return (f"its replacement (request {rdn_value(r.newer)}, valid until {date_of(r.newer, 'ciamNotAfter')})"
+    return (f"its replacement ({issue_label(r.newer)}, valid until {date_of(r.newer, 'ciamNotAfter')})"
             if r.newer is not None else "its replacement")
+
+
+def _from_template(issued):
+    template = one(issued, "ciamTemplateName")
+    return f" from `{template}`" if template else ""
 
 
 def _state_finding(d, r):
@@ -327,8 +360,8 @@ def _state_finding(d, r):
             f"Certificate {cn}'s revocation by {rdn_value(r.inventory)} takes effect "
             f"{date_of(r.found, 'ciamRevokedAt')} ({one(r.found, 'ciamRevocationReason')}); {uses}. Replace it with "
             f"{_replacement(r)} before then." if r.state == SCHEDULED else
-            f"Certificate {cn} was superseded: {rdn_value(r.inventory)} issued its subject a newer certificate from "
-            f"`{one(r.newer, 'ciamTemplateName')}` (request {rdn_value(r.newer)}, valid until "
+            f"Certificate {cn} was superseded: {rdn_value(r.inventory)} issued its subject a newer certificate"
+            f"{_from_template(r.newer)} ({issue_label(r.newer)}, valid until "
             f"{date_of(r.newer, 'ciamNotAfter')}) the record doesn't hold; {uses}. Record the new one and move its "
             "users to it." if r.state == SUPERSEDED else
             f"Certificate {cn} names {rdn_value(r.authority)} as its issuer, but {_inventoried(r)} is complete and "
@@ -344,7 +377,7 @@ def _state_finding(d, r):
 
 def _untracked_finding(d, authority, template, rows):
     owner = renewal_owner(d, None, rows[0])
-    listed = ", ".join(f"request {rdn_value(r)} {one(r, 'ciamSubject') or '(no subject)'} (until "
+    listed = ", ".join(f"{issue_label(r)} {one(r, 'ciamSubject') or '(no subject)'} (until "
                        f"{date_of(r, 'ciamNotAfter')})" for r in rows)
     who = (f"{owner} renews them." if owner else
            "Nobody is recorded to renew them: record the template's renewal owner (ciamRenewalOwner).")
@@ -430,7 +463,7 @@ def _detail(r):
     return "; ".join(x for x in (
         f"{one(found, 'ciamRevocationReason')}, effective {date_of(found, 'ciamRevokedAt') or 'unrecorded'}"
         if found is not None and is_revoked(found) else "",
-        f"renewed as request {rdn_value(r.newer)} (until {date_of(r.newer, 'ciamNotAfter')})" if r.newer else "",
+        f"renewed as {issue_label(r.newer)} (until {date_of(r.newer, 'ciamNotAfter')})" if r.newer else "",
         problems) if x)
 
 

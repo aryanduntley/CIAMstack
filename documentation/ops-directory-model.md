@@ -81,7 +81,8 @@ dc=ciam-ops
 │                                           read: evidence compared with the record, never an approval
 ├── ou=certificate-authorities              ciamCertAuthority (its ciamRevocationEndpoint children: CRL, delta CRL, OCSP,
 │                                           CA issuers): the CAs the certificates come from
-├── ou=certificate-templates                ciamCertTemplate: what CAs issue, and who renews it
+├── ou=certificate-templates                ciamCertTemplate: what CAs issue, and who renews it (a directory's shared
+│                                           templates, or one CA's own: ciamTemplateAuthority)
 ├── ou=issued-certificates                  ciamCertInventory, ciamIssuedCertificate: what each CA's database says it
 │                                           issued, metadata only (never a key), reconciled with the record's certificates
 ├── ou=revocation-observations              ciamRevocationObservation, ciamEndpointObservation: what each CA's CRL, delta

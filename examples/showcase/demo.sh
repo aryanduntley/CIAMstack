@@ -331,6 +331,11 @@ echo "   and their approval signatures are read as evidence (CHG-2106: as the AR
 od modify --change CHG-2105 changes/CHG-2105-bmc-helix-ticket-links.ldif
 od import --change CHG-2106 --at 20260923090000Z bmc-helix/change-requests exports/bmc-helix
 od report tickets
+echo "-- the lab's internal CA is a Vault PKI mount, read as the Vault add-on's collector saves it (CHG-2120): the CA,"
+echo "   its endpoints, its roles (ciam-client: any name, client authentication, requested through the default policy)"
+echo "   and the certificates Vault keeps; the lab's SSO certificate was renewed there, and the record names the old one"
+od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
+od report issued-certificates
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

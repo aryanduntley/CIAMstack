@@ -1,0 +1,6 @@
+{
+ "data": {
+  "name": "lab-tls-issuers",
+  "policy": "path \"pki-internal/issue/lab-tls\" {\n  capabilities = [\"update\"]\n}\n"
+ }
+}

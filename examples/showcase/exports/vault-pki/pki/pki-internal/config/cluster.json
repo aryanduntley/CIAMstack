@@ -1,0 +1,6 @@
+{
+ "data": {
+  "aia_path": "http://pki.lab.example-aero.test/v1/pki-internal",
+  "path": "https://vault.lab.example-aero.test:8200/v1/pki-internal"
+ }
+}

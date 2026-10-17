@@ -186,6 +186,8 @@ cap 08-apply-chg-2099 od import --change CHG-2099 --at 20260923090000Z jira-sm/c
 cap 08-apply-chg-2105 od modify --change CHG-2105 changes/CHG-2105-bmc-helix-ticket-links.ldif
 cap 08-apply-chg-2106 od import --change CHG-2106 --at 20260923090000Z bmc-helix/change-requests exports/bmc-helix
 cap 08-report-tickets-jira-sm od report tickets
+cap 08-apply-chg-2120 od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
+cap 08-report-issued-certificates-vault od report issued-certificates
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency

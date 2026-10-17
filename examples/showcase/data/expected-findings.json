@@ -1575,6 +1575,22 @@
       "raised_by": "CHG-2106"
     },
     {
+      "id": "A280",
+      "area": "Certificate",
+      "match": "Certificate `sso-tls-lab` was superseded: Example Aero CIAM Internal CA issued its subject a newer certificate",
+      "planted": "the lab's SSO certificate was renewed on 2026-09-15 in Vault; the record still names the old one",
+      "cleared_by": null,
+      "raised_by": "CHG-2120"
+    },
+    {
+      "id": "A281",
+      "area": "Certificate",
+      "match": "Certificate template `Example Aero CIAM Internal CA/ciam-client` lets the requester name the subject",
+      "planted": "the lab's ciam-client role issues client certificates in any name, and Vault's default policy lets every token request them",
+      "cleared_by": null,
+      "raised_by": "CHG-2120"
+    },
+    {
       "id": "A150",
       "area": "Logs",
       "match": "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 days in all but searchable only 90",

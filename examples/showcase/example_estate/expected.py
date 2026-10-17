@@ -579,6 +579,15 @@ EXPECTED = MappingProxyType({
         ("A250", "Change tickets", "ITSM says the work on its ticket bmc-helix:CRQ000000001203 (read 2026-09-23) ran",
          "CHG-2092's expedited change request is being implemented: its rollout started 2026-09-22, before the "
          "planned window opens on 2026-09-24", None, "CHG-2106"),
+        # the lab's internal CA read from its Vault PKI mount (CHG-2120): a renewed certificate the record doesn't hold
+        # and a role anyone with a token may request client certificates from in any name
+        ("A280", "Certificate", "Certificate `sso-tls-lab` was superseded: Example Aero CIAM Internal CA issued its "
+         "subject a newer certificate",
+         "the lab's SSO certificate was renewed on 2026-09-15 in Vault; the record still names the old one", None,
+         "CHG-2120"),
+        ("A281", "Certificate", "Certificate template `Example Aero CIAM Internal CA/ciam-client` lets the requester "
+         "name the subject", "the lab's ciam-client role issues client certificates in any name, and Vault's default "
+         "policy lets every token request them", None, "CHG-2120"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "

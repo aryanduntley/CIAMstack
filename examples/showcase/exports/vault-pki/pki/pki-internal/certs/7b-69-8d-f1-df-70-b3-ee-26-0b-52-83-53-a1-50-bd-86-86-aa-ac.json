@@ -1,0 +1,8 @@
+{
+ "data": {
+  "certificate": "-----BEGIN CERTIFICATE-----\nMIIBczCCARqgAwIBAgIUe2mN8d9ws+4mC1KDU6FQvYaGqqwwCgYIKoZIzj0EAwIw\nKDEmMCQGA1UEAwwdRXhhbXBsZSBBZXJvIENJQU0gSW50ZXJuYWwgQ0EwHhcNMjYw\nOTAxMDAwMDAwWhcNMjcwOTAxMDAwMDAwWjAlMSMwIQYDVQQDDBpsZGFwLmxhYi5l\neGFtcGxlLWFlcm8udGVzdDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABF2q5mdo\nvfClz4ldPPp/a1XdWAo90L+11yCvYwzMBH0Q2toU3vaBWr4qskWQGUejp05sqnKv\nbCqgzcLdiKMAgRujJTAjMAwGA1UdEwEB/wQCMAAwEwYDVR0lBAwwCgYIKwYBBQUH\nAwEwCgYIKoZIzj0EAwIDRwAwRAIgNp+gcXIhlpvzvRFaNaNO2Dumtm26G79NxSMl\njrV27rgCIG9r/1MCRyT9kJC6k0KAAm/XBCObGXcqW8DYYG1bdT4S\n-----END CERTIFICATE-----\n",
+  "revocation_reason": 0,
+  "revocation_time": 0,
+  "revocation_time_rfc3339": ""
+ }
+}
