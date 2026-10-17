@@ -29,8 +29,15 @@ to offer what the record asks for), and a plan or feature one of Microsoft's ava
 there carries a comment naming the page, to confirm with the account team. Findings go where ciamFindingsRole says
 through continuous export (azurerm_security_center_automation: alerts for threat detection, sub-assessments for
 vulnerability scanning, assessments and regulatory compliance for posture) to a Log Analytics workspace (a log
-destination's ciamProviderRef) or an Event Hub (a stream binding of kind event-hub, milestone 5.7b: its connection
-string read from the Key Vault secret its ciamSendSecretRole names when applied; Terraform state keeps it, sensitive).
+destination's ciamProviderRef) or an Event Hub (a stream binding of kind event-hub, milestone 5.7b, its connection
+string the Key Vault secret its ciamSendSecretRole names). A connection string never enters Terraform state (U.5,
+task 581): azurerm's action has no write-only argument for it, so an Event Hub's export is rendered through Microsoft's
+azapi provider when the cloud allows that add-on (ciamProviderAddOn azapi): an azapi_resource of
+Microsoft.Security/automations whose body holds everything but the string, and whose write-only sensitive_body (merged
+into the request, never stored) holds the action with the string read from Key Vault by an ephemeral
+azurerm_key_vault_secret; without a sensitive_body_version azapi resends it on every update. Without the add-on it is
+an action for the service's owner (hub_note): create the export by hand. Bicep/ARM take the merged body, the string a
+secure parameter filled from the vault (no state).
 An email alert channel (its address the ciamProviderRef) the findings or incidents go to is the subscription's one
 Defender security contact (alert notifications, the subscription's owners too; the minimum severity only the preview
 securityContacts API sets is named in a comment); another binding is a blocker. An
@@ -60,10 +67,11 @@ Standard) -> threat detection over the areas its plans watch, vulnerability scan
 (azurerm_security_center_server_vulnerability_assessments_setting, a Containers plan's registry vulnerability
 assessment), posture (CloudPosture, azurerm_subscription_policy_assignment of
 a known initiative by its display name) -> security services (kind security), each covering every region, with the
-workspace or Event Hub a continuous export of its findings goes to as their destination, and the incident route: the
-workspace an export filtering them on severity goes to, or the action group a log alert on the table of their kind
-notifies, with the least severity it lets through.
+workspace or Event Hub a continuous export of its findings goes to as their destination (an azapi export's body read
+as the CLI's automation is), and the incident route: the workspace or Event Hub an export filtering them on severity
+goes to, or the action group a log alert on the table of their kind notifies, with the least severity it lets through.
 """
+import json
 import re
 
 from opsdir.core.directory import get, is_kind, one, rdn_value, values
@@ -74,16 +82,21 @@ from opsdir.domains.estate.naming import ALL_USERS, SEVERITIES
 from opsdir.domains.estate.security import findings_destination, security_services
 from opsdir_format_terraform.hcl import Block, comment, from_entry, mentions, ref, tf_block, tf_name
 from opsdir.domains.governance.keepers import organization_line, organization_origin
-from .account import management_group, management_group_variable
+from .account import azapi_allowed, management_group, management_group_variable
 from .change_history import history_note, render_change_history
+from .cli_security import AUTOMATIONS, security_items
 from .cmk import role_uri, vault_object
-from .identities import LOC, RG
+from .identities import GROUP, LOC, RG
 from .identity_protection import identity_notes, identity_read, render_identity_protection
 
 PRICING = "azurerm_security_center_subscription_pricing"
 VA_SETTING = "azurerm_security_center_server_vulnerability_assessments_setting"
 ASSIGNMENT = "azurerm_subscription_policy_assignment"
 AUTOMATION = "azurerm_security_center_automation"
+AZAPI = "azapi_resource"
+# An Event Hub's continuous export through azapi: Microsoft.Security/automations' newest API version (Microsoft's
+# template reference lists 2019-01-01-preview and 2023-12-01-preview; research 581)
+AZAPI_AUTOMATION = "Microsoft.Security/automations@2023-12-01-preview"
 SUBSCRIPTION = "data.azurerm_subscription.current"
 CSPM = "CloudPosture"
 # area -> Defender plans (resource type, subplan, extensions) watching it
@@ -277,30 +290,112 @@ def _event_hub(m, binding):
         and one(binding, "ciamStreamKind") == "event-hub" else None
 
 
-def export_action(m, binding, n):
-    """(the action block a continuous export to binding takes, the items it needs, why it can't be rendered or None):
-    a Log Analytics workspace by its ID, or an Event Hub by its ID with the connection string its send secret holds
-    (ciamSendSecretRole: a Key Vault reference, read when applied; azurerm has no write-only argument for it, so the
-    value lands in Terraform state, marked sensitive)."""
-    workspace = _workspace_of(m, binding)
-    if workspace:
-        return Block((("type", "Workspace"), ("resource_id", workspace))), (), None
+def hub_secret(m, binding):
+    """(the Event Hub's ID, (vault, name) of the Key Vault secret holding its connection string (ciamSendSecretRole)
+    or None, why it can't be sent to or None) of an Event Hub binding; (None, None, None) for another binding."""
     hub = _event_hub(m, binding)
     if hub is None:
-        return None, (), (f"{rdn_value(binding)} is no Log Analytics workspace or Event Hub (ciamProviderRef)"
-                          if binding is not None else "nothing is bound to it")
-    uri, note = role_uri(m, one(binding, "ciamSendSecretRole"), "send secret")
+        return None, None, None
+    uri, unbound = role_uri(m, one(binding, "ciamSendSecretRole"), "send secret")
     if uri is None:
-        return None, (), (note[1] if note else f"Event Hub {rdn_value(binding)} names no secret holding its connection "
-                                               "string (ciamSendSecretRole)")
-    vault, name = vault_object(uri)
-    return (Block((("type", "EventHub"), ("resource_id", hub),
-                   ("connection_string", ref(f"data.azurerm_key_vault_secret.{n}.value")))),
-            (comment(f"{n}: the Event Hub's connection string is read from Key Vault when applied; Terraform state "
-                     "keeps it (sensitive): protect the state"),
-             tf_block("data", ["azurerm_key_vault", n], [("name", vault), ("resource_group_name", RG)]),
-             tf_block("data", ["azurerm_key_vault_secret", n], [
-                 ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}.id"))])), None)
+        return hub, None, (unbound[1] if unbound else f"Event Hub {rdn_value(binding)} names no secret holding its "
+                                                      "connection string (ciamSendSecretRole)")
+    return hub, vault_object(uri), None
+
+
+def export_action(m, binding):
+    """(the azurerm action block a continuous export to binding takes or None, why it can't be rendered or None): a
+    Log Analytics workspace by its ID; an Event Hub with its send secret has none and no why (hub_export renders it:
+    azurerm's connection_string would keep the secret in Terraform state, U.5)."""
+    workspace = _workspace_of(m, binding)
+    if workspace:
+        return Block((("type", "Workspace"), ("resource_id", workspace))), None
+    hub, _, why = hub_secret(m, binding)
+    if hub is None:
+        return None, (f"{rdn_value(binding)} is no Log Analytics workspace or Event Hub (ciamProviderRef)"
+                      if binding is not None else "nothing is bound to it")
+    return None, why
+
+
+def _hub_sources(kind, severity=None):
+    """A continuous export's sources as Microsoft.Security/automations takes them: each of a kind's (with severity:
+    those with one, a rule set per Defender severity at or above it, as severity_rule_sets)."""
+    def rule_sets(src):
+        path, spell = SEVERITY_PATHS[src]
+        return [{"rules": [{"propertyJPath": path, "propertyType": "String", "expectedValue": spell(level),
+                            "operator": "Equals"}]} for level in reversed(_levels(severity))]
+    return [{"eventSource": src, **({"ruleSets": rule_sets(src)} if severity else {})}
+            for src in EXPORTS[kind] if severity is None or src in SEVERITY_PATHS]
+
+
+def hub_export(m, s, binding, kind, severity=None):
+    """The continuous export of a service's findings (with severity: those at or above it, to the incident process) to
+    an Event Hub binding with its send secret, through azapi (ciamProviderAddOn azapi): the vault, the secret read
+    ephemerally and the automation, whose write-only sensitive_body alone holds the connection string (in no Terraform
+    state or plan, U.5; resent on every update: no sensitive_body_version); without the add-on, its note's comment
+    (hub_note)."""
+    if not azapi_allowed(m):
+        return (comment(note_comment(hub_note(m, s, binding, kind, severity))),)
+    cn, what = rdn_value(s), "incidents" if severity else "export"
+    n = tf_name(f"{cn}_{what}")
+    hub, (vault, name), _ = hub_secret(m, binding)
+    action = {"actionType": "EventHub", "eventHubResourceId": hub}
+    about = ({"description": f"{cn}'s {severity} and worse findings to {one(s, 'ciamIncidentRole')} (incident "
+                             "process)"} if severity else {})
+    return (tf_block("data", ["azurerm_key_vault", n], [("name", vault), ("resource_group_name", RG)]),
+            tf_block("ephemeral", ["azurerm_key_vault_secret", n], [
+                ("name", name), ("key_vault_id", ref(f"data.azurerm_key_vault.{n}.id"))]),
+            tf_block("resource", [AZAPI, n], [
+                ("#", "the Event Hub's connection string is write-only (azapi's sensitive_body; a secure parameter in "
+                      "Bicep/ARM): in no Terraform state (U.5)"),
+                ("type", AZAPI_AUTOMATION), ("name", f"{cn}-{what}"), ("parent_id", GROUP), ("location", LOC),
+                ("body", {"properties": {**about, "isEnabled": True,
+                                         "scopes": [{"scopePath": ref(f"{SUBSCRIPTION}.id")}],
+                                         "sources": _hub_sources(kind, severity), "actions": [action]}}),
+                ("sensitive_body", {"properties": {"actions": [{
+                    **action, "connectionString": ref(f"ephemeral.azurerm_key_vault_secret.{n}.value")}]}})]))
+
+
+def _source_text(source):
+    """An export source as a person sets it: its event source and, if any, the severities its rule sets keep."""
+    levels = " or ".join(r["rules"][0]["expectedValue"] for r in source.get("ruleSets", ()))
+    return source["eventSource"] + (f" where {SEVERITY_PATHS[source['eventSource']][0]} is {levels}" if levels else "")
+
+
+def hub_note(m, s, binding, kind, severity=None):
+    """The render note of a continuous export to an Event Hub left to a person when the cloud doesn't allow the azapi
+    add-on (an action for the service's owner): azurerm's automation would keep the hub's connection string in
+    Terraform state (U.5), so the export to create by hand (its name, the hub, the secret holding the string, the
+    sources and their severity rules); None otherwise (the add-on allowed, no Event Hub, no secret: findings_note)."""
+    hub, secret, why = hub_secret(m, binding)
+    if azapi_allowed(m) or hub is None or why is not None or kind not in EXPORTS:
+        return None
+    cn, role = rdn_value(s), one(s, "ciamIncidentRole" if severity else "ciamFindingsRole")
+    name, what = (f"{cn}-incidents", "incidents") if severity else (f"{cn}-export", "findings")
+    sources = "; ".join(_source_text(x) for x in _hub_sources(kind, severity))
+    return note(AREA, "action", f"{cn}'s {what} to Event Hub {rdn_value(binding)}",
+                "not rendered: azurerm's continuous export keeps the Event Hub's connection string in Terraform state "
+                "(U.5: no secret in state), and the cloud doesn't allow the azapi add-on, whose write-only body keeps "
+                "it out",
+                (f"In Defender for Cloud (continuous export, or the Microsoft.Security/automations API), create "
+                 f"automation {name} in the environment's resource group on the subscription, exporting {sources} to "
+                 f"Event Hub {hub} ({role}), its connection string the one Key Vault {secret[0]} secret {secret[1]} "
+                 "holds (pasted there, never written down elsewhere)",
+                 f"Or allow the azapi add-on on {rdn_value(m.cloud)} (ciamProviderAddOn azapi), {RECORD}: the export "
+                 "is then rendered, its connection string write-only"), s.dn, m.label)
+
+
+def _route(m, s):
+    """A service's incident route (incidents.incident_routes), or None."""
+    return next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+
+
+def renders_azapi(m):
+    """Whether environment m's security render writes an azapi resource: an Event Hub export (hub_export) with the
+    add-on allowed."""
+    return azapi_allowed(m) and any(
+        hub_secret(m, b)[1] is not None for s in security_services(m) if one(s, "ciamSecurityKind") in EXPORTS
+        for b in (findings_destination(m, s), *((_route(m, s).binding,) if _route(m, s) else ())))
 
 
 def _route_how(role):
@@ -314,8 +409,8 @@ def findings_note(m, s, kind):
     dest = findings_destination(m, s)
     if dest is None or kind not in EXPORTS:
         return None
-    action, _, why = export_action(m, dest, "")
-    if action is not None or _email(m, dest):
+    _, why = export_action(m, dest)
+    if why is None or _email(m, dest):
         return None
     role = one(s, "ciamFindingsRole")
     return note(AREA, "blocker", f"{rdn_value(s)}'s findings to {role}", f"not rendered: {why}", _route_how(role),
@@ -323,19 +418,21 @@ def findings_note(m, s, kind):
 
 
 def _export(m, s, kind):
-    """The continuous export of a service's findings to the workspace or Event Hub its ciamFindingsRole names, the
-    security contact's comment for an email channel, or its note's comment (findings_note)."""
+    """The continuous export of a service's findings to the workspace or Event Hub (hub_export) its ciamFindingsRole
+    names, the security contact's comment for an email channel, or its note's comment (findings_note)."""
     cn, dest = rdn_value(s), findings_destination(m, s)
     if dest is None or kind not in EXPORTS:
         return ()
     n = tf_name(f"{cn}_export")
-    action, needed, _ = export_action(m, dest, n)
-    if action is None:
+    action, why = export_action(m, dest)
+    if why is not None:
         return (*_contact(m, s, dest, "findings"),) or (comment(note_comment(findings_note(m, s, kind))),)
-    return (*needed, tf_block("resource", [AUTOMATION, n], [
+    if action is None:
+        return hub_export(m, s, dest, kind)
+    return (tf_block("resource", [AUTOMATION, n], [
         ("name", f"{cn}-export"), ("location", LOC), ("resource_group_name", RG),
         ("scopes", [ref(f"{SUBSCRIPTION}.id")]), ("action", action),
-        *(("source", Block((("event_source", src),))) for src in EXPORTS[kind])]))
+        *(("source", Block((("event_source", src),))) for src in EXPORTS[kind])]),)
 
 
 def _email(m, binding):
@@ -409,12 +506,12 @@ def incident_note(m, s, kind):
     """The render note of a service's incident route this render can't make (a blocker), or None: its binding is no
     workspace, Event Hub, email channel or action group, or a log alert to its action group has no workspace the
     service's findings are exported to."""
-    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    route = _route(m, s)
     if route is None or route.binding is None or kind not in EXPORTS:
         return None
     group = _action_group_of(route.binding)
     findings_ws = _workspace_of(m, findings_destination(m, s))
-    if export_action(m, route.binding, "")[0] is not None or _email(m, route.binding) or \
+    if export_action(m, route.binding)[1] is None or _email(m, route.binding) or \
             (group and kind in INCIDENT_TABLES and findings_ws):
         return None
     alert = group and kind in INCIDENT_TABLES
@@ -433,16 +530,18 @@ def incident_note(m, s, kind):
 def _incident_routing(m, s, kind):
     """The continuous export (or log alert) sending a service's findings at or above its incident severity to the
     incident process (its ciamIncidentRole), or its note's comment (incident_note)."""
-    route = next((r for r in incident_routes(m) if r.service.dn == s.dn), None)
+    route = _route(m, s)
     if route is None or route.binding is None or kind not in EXPORTS:
         return ()
     cn, n = rdn_value(s), tf_name(f"{rdn_value(s)}_incidents")
     critical = ((comment(f"{cn}: Defender has no critical severity: its high findings go to {route.role}"),)
                 if route.severity == "critical" else ())
     group = _action_group_of(route.binding)
-    action, needed, _ = export_action(m, route.binding, n)
+    action, why = export_action(m, route.binding)
+    if why is None and action is None:
+        return (*critical, *hub_export(m, s, route.binding, kind, route.severity))
     if action is not None:
-        return (*critical, *needed, tf_block("resource", [AUTOMATION, n], [
+        return (*critical, tf_block("resource", [AUTOMATION, n], [
             ("name", f"{cn}-incidents"), ("location", LOC), ("resource_group_name", RG),
             ("description", f"{cn}'s {route.severity} and worse findings to {route.role} (incident process)"),
             ("scopes", [ref(f"{SUBSCRIPTION}.id")]), ("action", action),
@@ -581,13 +680,18 @@ def _government_notes(m, extra):
 
 def security_notes(m, extra=()):
     """The render notes of environment m's security services (render_security writes their comments, with the same
-    extra plans): each service's findings and incident routes', its organization part's, a kept service's change
-    history and identity protection notes; then the Azure Government confirmations; each once."""
+    extra plans): each service's findings and incident routes' (an Event Hub export left to a person: hub_note), its
+    organization part's, a kept service's change history and identity protection notes; then the Azure Government
+    confirmations; each once."""
     def of(s):
         kind, org = one(s, "ciamSecurityKind"), _organization_wide(s)
         body = () if org or kind == "vulnerability-scanning" else posture_notes(m, s) if kind == "posture" else \
             (history_note(m, s),) if kind == "config-recording" else identity_notes(m, s)
-        return (findings_note(m, s, kind), incident_note(m, s, kind), organization_note(m, s) if org else None, *body)
+        route = _route(m, s)
+        return (findings_note(m, s, kind), hub_note(m, s, findings_destination(m, s), kind),
+                incident_note(m, s, kind),
+                hub_note(m, s, route.binding, kind, route.severity) if route is not None else None,
+                organization_note(m, s) if org else None, *body)
     found = (*(n for s in security_services(m) for n in of(s)), *_government_notes(m, extra))
     return tuple(dict.fromkeys(n for n in found if n is not None))
 
@@ -683,8 +787,27 @@ def security_notices(pairs):
     return (*ident.notices, *((orphan,) if ident.watched and not defended else ()))
 
 
+def _body(a):
+    """An azapi resource's body: an object, or JSON text (as an older state holds it); {} otherwise."""
+    b = a.get("body")
+    try:
+        b = json.loads(b) if isinstance(b, str) else b
+    except ValueError:
+        return {}
+    return b if isinstance(b, dict) else {}
+
+
+def azapi_automations(pairs):
+    """(azurerm_security_center_automation, attributes) of the continuous exports among (type, attributes) pairs made
+    through azapi (hub_export), their body read as the CLI's automations are (cli_security)."""
+    return tuple(security_items([(AUTOMATIONS, {"id": a.get("id"), "name": a.get("name"), **_body(a)})
+                                 for a in of_types(pairs, AZAPI)
+                                 if (a.get("type") or "").lower().startswith(AUTOMATIONS + "@")]))
+
+
 def security_resources(pairs):
-    """Security services of (azurerm type, attributes) pairs."""
+    """Security services of (azurerm type, attributes) pairs (an azapi continuous export as the automation it is)."""
+    pairs = (*pairs, *azapi_automations(pairs))
     pricings = [a for a in of_types(pairs, PRICING) if (a.get("tier") or "").lower() == "standard"]
     plans = {a.get("resource_type"): a for a in pricings}
     routes, incidents = _routes(pairs), _incidents(pairs)

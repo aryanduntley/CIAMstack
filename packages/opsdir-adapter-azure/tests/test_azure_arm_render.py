@@ -147,6 +147,49 @@ def test_an_ephemeral_secret_is_a_secure_parameter():
     assert "fills it from the vault" in secret.description
 
 
+def test_an_azapi_sensitive_body_merges_into_its_body_its_secret_a_secure_parameter():
+    # an Event Hub's continuous export (task 581): its connection string only in azapi's write-only sensitive_body
+    from opsdir_adapter_azure.arm_types import azapi_merged
+    assert azapi_merged({"a": [{"x": 1}], "b": 2}, {"a": [{"y": 3}]}) == {"a": [{"x": 1, "y": 3}], "b": 2}
+    assert azapi_merged({"a": [{"x": 1}]}, {"a": [{"y": 3}, {"z": 4}]}) == {"a": [{"y": 3}, {"z": 4}]}
+    hub = "/subscriptions/0/resourceGroups/rg/providers/Microsoft.EventHub/namespaces/ns/eventhubs/sec"
+    action = {"actionType": "EventHub", "eventHubResourceId": hub}
+    export = TfFile("", (
+        tf_block("data", ["azurerm_resource_group", "main"], RG),
+        tf_block("data", ["azurerm_key_vault", "kv"], [("name", "kv-a"), ("resource_group_name", MAIN_RG)]),
+        tf_block("ephemeral", ["azurerm_key_vault_secret", "send"], [
+            ("name", "sec-hub-send"), ("key_vault_id", ref("data.azurerm_key_vault.kv.id"))]),
+        tf_block("resource", ["azapi_resource", "export"], [
+            ("type", "Microsoft.Security/automations@2023-12-01-preview"), ("name", "defender-export"),
+            ("parent_id", ref("data.azurerm_resource_group.main.id")),
+            ("location", ref("data.azurerm_resource_group.main.location")),
+            ("body", {"properties": {"isEnabled": True, "sources": [{"eventSource": "Alerts"}], "actions": [action]}}),
+            ("sensitive_body", {"properties": {"actions": [
+                {**action, "connectionString": ref("ephemeral.azurerm_key_vault_secret.send.value")}]}})])))
+    template = next(iter(arm_translation(M, {"terraform/main.tf": export}, WHAT).templates.values()))
+    secret = next(p for p in template.parameters if p.secure)
+    automation = next(r for r in template.resources if r.type == "Microsoft.Security/automations")
+    assert automation.properties["actions"] == [{**action, "connectionString": Param(secret.name)}]
+    assert automation.properties["sources"] == [{"eventSource": "Alerts"}]
+
+
+def test_an_incident_export_s_rule_sets_translate():
+    rule = Block((("property_path", "Severity"), ("operator", "Equals"), ("expected_value", "high"),
+                  ("property_type", "String")))
+    export = TfFile("", (
+        tf_block("data", ["azurerm_resource_group", "main"], RG),
+        tf_block("data", ["azurerm_subscription", "current"], []),
+        tf_block("resource", ["azurerm_security_center_automation", "incidents"], [
+            ("name", "defender-incidents"), ("location", "eastus2"), ("resource_group_name", MAIN_RG),
+            ("scopes", [ref("data.azurerm_subscription.current.id")]),
+            ("action", Block((("type", "Workspace"), ("resource_id", "/subscriptions/0/w")))),
+            ("source", Block((("event_source", "Alerts"), ("rule_set", Block((("rule", rule),))))))])))
+    template = next(iter(arm_translation(M, {"terraform/main.tf": export}, WHAT).templates.values()))
+    (automation,) = template.resources
+    assert automation.properties["sources"] == [{"eventSource": "Alerts", "ruleSets": [{"rules": [{
+        "propertyJPath": "Severity", "operator": "Equals", "expectedValue": "high", "propertyType": "String"}]}]}]
+
+
 # ------------------------------------------------------------------ 5.6 (e3b): access, subscription and tenant scope
 
 SCOPES = TfFile("", (

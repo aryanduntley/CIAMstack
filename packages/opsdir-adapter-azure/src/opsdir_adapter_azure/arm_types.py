@@ -928,12 +928,18 @@ def _disk_instance(f, cx):
                                          "dataStoreType": "OperationalStore", "resourceGroupId": group}]}}}
 
 
+# A continuous export's source: its event source and rule sets (an incident export's severity filter), as ARM names
+# them (Microsoft.Security/automations' AutomationSource, AutomationRuleSet, AutomationTriggeringRule)
+AUTOMATION_SOURCE = {"event_source": "eventSource", "rule_set": Nest("ruleSets", {"rule": Nest("rules", {
+    "property_path": "propertyJPath", "property_type": "propertyType", "expected_value": "expectedValue",
+    "operator": "operator"}, True)}, True)}
+
+
 def _automation(f, cx):
     return obj(own(f), cx, {
         **BASE, "description": "description", "enabled": "isEnabled",
         "scopes": Custom(lambda v, c: {"scopes": [{"scopePath": x} for x in c.value(v)]}),
-        "source": Custom(lambda v, c: {"sources": [obj(x, c, {"event_source": "eventSource"}, f"{c.where}.source")
-                                                   for x in v]}),
+        "source": Custom(lambda v, c: {"sources": [obj(x, c, AUTOMATION_SOURCE, f"{c.where}.source") for x in v]}),
         "action": Custom(lambda v, c: {"actions": [{"actionType": c.value(x["type"]), **(
             {"workspaceResourceId": c.value(x["resource_id"])} if c.value(x["type"]) == "Workspace" else
             {"logicAppResourceId": c.value(x["resource_id"])} if c.value(x["type"]) == "LogicApp" else
@@ -1052,13 +1058,24 @@ def _custom_action(props, f, cx):
         **props["definition"]["actions"], cx.value(found["name"]): cx.value(found["body"])}}}
 
 
+def azapi_merged(body, extra):
+    """A body with an azapi sensitive_body merged into it as azapi merges them (v2.13 utils/json.go, research 581):
+    objects key by key, lists of the same length item by item, anything else extra's."""
+    if isinstance(body, dict) and isinstance(extra, dict):
+        return {**body, **{k: azapi_merged(body[k], v) if k in body else v for k, v in extra.items()}}
+    if isinstance(body, list) and isinstance(extra, list) and body and len(body) == len(extra):
+        return [azapi_merged(b, x) for b, x in zip(body, extra)]
+    return extra
+
+
 def _azapi(f, cx):
-    """An azapi resource: its body, whose properties are the resource's (the rest top-level fields), and its location
-    and managed identity as the resource's (a Logic App's system-assigned identity, 5.7b)."""
+    """An azapi resource: its body (with its write-only sensitive_body merged in: a secret there is a secure
+    parameter), whose properties are the resource's (the rest top-level fields), and its location and managed identity
+    as the resource's (a Logic App's system-assigned identity, 5.7b)."""
     found = own(f)
-    body = cx.value(found.get("body", {}))
-    rest = sorted(set(found) - {"type", "name", "parent_id", "body", "schema_validation_enabled", "location",
-                                "identity"})
+    body = cx.value(azapi_merged(found.get("body", {}), found.get("sensitive_body", {})))
+    rest = sorted(set(found) - {"type", "name", "parent_id", "body", "sensitive_body", "schema_validation_enabled",
+                                "location", "identity"})
     if rest:
         raise SystemExit(f"{cx.where}: no ARM form for {', '.join(rest)}")
     identity = (found.get("identity") or [{}])[0]
