@@ -30,6 +30,7 @@ from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_bloc
 AREA = "Trust"
 CA_QUOTA = 25            # CA certificates per ALB trust store (Elastic Load Balancing quotas, adjustable)
 LEAF_HEADER = "X-Amzn-Mtls-Clientcert-Leaf"     # verify mode: the client's certificate, URL-encoded PEM
+POLICY_TAG = "TrustPolicy"                      # the trust store's tag naming the policy it realizes
 
 
 def _store(m, p):
@@ -88,6 +89,11 @@ def cert_forwarding(m, svc):
     return CertForwarding(LEAF_HEADER, "url-pem", "leaf", tuple(c for s in subnets for c in values(s, "ciamCidr")))
 
 
+def trust_store_name(m, p):
+    """The name of the ALB trust store environment m's render gives edge trust policy p (what the read-back expects)."""
+    return f"ciam-{rdn_value(m.env)}-{rdn_value(p)}"[:32]
+
+
 def _trust_store(m, p):
     n, (bucket, prefix) = tf_name(rdn_value(p)), _store(m, p)
     key = f"{prefix}trust/{rdn_value(p)}.pem"
@@ -95,10 +101,10 @@ def _trust_store(m, p):
                 ("bucket", bucket), ("key", key), ("content", policy_bundle(m.d, p)),
                 ("content_type", "application/x-pem-file")]),
             tf_block("resource", ["aws_lb_trust_store", n], [
-                ("name", f"ciam-{rdn_value(m.env)}-{rdn_value(p)}"[:32]),
+                ("name", trust_store_name(m, p)),
                 ("ca_certificates_bundle_s3_bucket", bucket),
                 ("ca_certificates_bundle_s3_key", ref(f"aws_s3_object.{n}_trust_bundle.key")),
-                ("tags", {"TrustPolicy": rdn_value(p), "ManagedBy": "opsdir"})]))
+                ("tags", {POLICY_TAG: rdn_value(p), "ManagedBy": "opsdir"})]))
 
 
 def render_trust_stores(m):

@@ -7,7 +7,8 @@ must print the account the cloud records (ciamAccountRef); else nothing is read.
 rounds as the README's script does it by hand: the listings first (network resources filtered to the environment's
 VPC, the network binding's provider ref), then each listed item's details (listeners, tags, health, records, key
 policies, schedules, ...), then theirs (a backup plan's selections). Per-bucket settings and policies are read for the
-buckets the environment records only, resource policies for the secrets it references only. Lists only the
+buckets the environment records only, resource policies for the secrets it references only, the ALB trust stores
+(elbv2 describe-trust-stores) only where the record has a trust policy checked at the edge. Lists only the
 collector reads are kept out of the export (_work/).
 
 Outputs that can carry secret material are projected to the fields the reader uses (--query), so the values are never
@@ -66,6 +67,7 @@ from opsdir.core.environment import of_class, one_role
 from opsdir.core.sources import env_relative, json_document
 from opsdir.domains.estate.residency import fips_endpoints
 from opsdir.domains.governance.collection import collection_sources
+from opsdir.domains.pki.trust import edge_policies
 from opsdir_format_terraform.state import TERRAFORM_DIR, state_steps as terraform_state_steps
 from .account import account_id, govcloud, partition, standard_account
 from .cli_budgets import budget_folder
@@ -187,6 +189,8 @@ def _listings(m, vpc):
         ("nat-gateways.json", _aws(m, "ec2", "describe-nat-gateways", "--filter", f"Name=vpc-id,Values={vpc}")),
         ("load-balancers.json", _aws(m, "elbv2", "describe-load-balancers")),
         ("target-groups.json", _aws(m, "elbv2", "describe-target-groups")),
+        # the ALB trust stores the record's edge trust policies are checked against (mtls_inventory)
+        *((("trust-stores.json", _aws(m, "elbv2", "describe-trust-stores")),) if edge_policies(m) else ()),
         ("secrets.json", _aws(m, "secretsmanager", "list-secrets")),
         (f"{WORK}kms-keys.json", _aws(m, "kms", "list-keys")),
         ("buckets.json", _aws(m, "s3api", "list-buckets")),

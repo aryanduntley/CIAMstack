@@ -14,7 +14,10 @@ matching Terraform resource, so the same mapping reads them as reads Terraform s
   ec2 describe-nat-gateways             NatGateways               -> aws_nat_gateway
   elbv2 describe-load-balancers         LoadBalancers             -> aws_lb (+ aws_eip for its Elastic IPs)
   elbv2 describe-tags                   TagDescriptions           -> the load balancers' tags
-  elbv2 describe-listeners              Listeners                 -> aws_lb_listener
+  elbv2 describe-listeners              Listeners                 -> aws_lb_listener (with its mutual TLS)
+  elbv2 describe-trust-stores           TrustStores               -> aws_lb_trust_store: the record's edge trust
+                                                                     policies are checked against them (see
+                                                                     mtls_inventory.py)
   elbv2 describe-target-groups          TargetGroups              -> aws_lb_target_group
   elbv2 describe-target-health          TargetHealthDescriptions  -> aws_lb_target_group_attachment; the output doesn't
                                                                      name its target group: save it as
@@ -90,6 +93,7 @@ from .cli_database import KEYS as DATABASE_KEYS, database_pairs
 from .cli_volume import DLM, KEYS as VOLUME_KEYS, is_dlm_output, root_devices, volume_pairs
 from .cli_storage import storage_folder, storage_pairs
 from .cli_edge import KEYS as EDGE_KEYS, attributes, edge_pairs, record_attributes
+from .mtls_inventory import cli_trust_pairs, mutual_authentication, with_mtls_notices
 from .cli_iam import KEYS as IAM_KEYS, iam_pairs
 from .cli_network import KEYS as NETWORK_KEYS, network_pairs
 from .cli_outputs import items, stem, tags_of
@@ -101,7 +105,7 @@ KEYS = ("Vpcs", "Subnets", "Reservations", "SecurityGroups", "SecurityGroupRules
         "pipeline", "projects", *IAM_KEYS, *EDGE_KEYS, *NETWORK_KEYS, *DATABASE_KEYS, *COGNITO_KEYS, *DIRECTORY_KEYS,
         *VOLUME_KEYS, *BACKUP_KEYS,
         *AUDIT_KEYS, *COMPUTE_KEYS, *MONITOR_KEYS, *SECURITY_KEYS, *MESSAGING_KEYS,
-        "Tags", *MONITOR_TAG_KEYS)   # tags last: others carry tags too
+        "TrustStores", "Tags", *MONITOR_TAG_KEYS)   # tags last: others carry tags too
 IN_VPC = ("aws_subnet", "aws_instance", "aws_security_group", "aws_lb", "aws_nat_gateway", "aws_route_table",
           "aws_network_acl", "aws_vpc_endpoint", "aws_ec2_transit_gateway_vpc_attachment", "aws_db_instance",
           "aws_rds_cluster", "aws_rds_cluster_instance", "aws_db_subnet_group", "aws_autoscaling_group",
@@ -248,8 +252,10 @@ def _forwarding(outs):
     return ([*(("aws_lb_listener", {"load_balancer_arn": ls.get("LoadBalancerArn"), "port": ls.get("Port"),
                                     "protocol": ls.get("Protocol"), "ssl_policy": ls.get("SslPolicy"),
                                     "default_action": [{"type": a.get("Type"), "target_group_arn": forwards(a)}
-                                                       for a in ls.get("DefaultActions") or ()]})
+                                                       for a in ls.get("DefaultActions") or ()],
+                                    "mutual_authentication": mutual_authentication(ls.get("MutualAuthentication"))})
                for ls in items(outs, "Listeners")),
+             *cli_trust_pairs(outs),
              *(("aws_lb_target_group", {
                  "arn": g.get("TargetGroupArn"), "name": g.get("TargetGroupName"), "port": g.get("Port"),
                  "protocol": g.get("Protocol"),
@@ -365,9 +371,9 @@ def _scoped(pairs):
                 f"not read",) if rules else ())))
 
 
-def cli_resources(texts, at=None):
-    """(resources, notices) of an environment's AWS CLI outputs ({path within the folder: text}); at dates the cloud
-    evaluator's verdicts among them (the import's time)."""
+def cli_pairs(texts, at=None):
+    """((Terraform resource type, attributes) pairs, notices) of an environment's AWS CLI outputs ({path within the
+    folder: text}), scoped to its VPCs; at dates the cloud evaluator's verdicts among them (the import's time)."""
     outs, unknown = _outputs(texts)
     iam, iam_notices = iam_pairs(outs, at)
     forwarding, target_notices = _forwarding(outs)
@@ -385,16 +391,23 @@ def cli_resources(texts, at=None):
                                     *storage_pairs(outs), *volume_pairs(outs), *backup_pairs(outs),
                                     *audit_pairs(outs), *compute, *monitoring, *security, *budget_pairs(outs),
                                     *messaging, *cognito_pairs(outs), *directory_pairs(outs)])
+    return pairs, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
+                   *compute_notices, *monitor_notices, *security_notices, *messaging_notices, *scope_notices)
+
+
+def cli_resources(texts, at=None):
+    """(resources, notices) of an environment's AWS CLI outputs (cli_pairs), read by the state reader's mapping."""
+    pairs, notices = cli_pairs(texts, at)
     resources, rule_notices = pairs_resources(pairs)
-    return resources, (*unknown, *target_notices, *key_notices, *job_notices, *iam_notices, *database_notices,
-                       *compute_notices, *monitor_notices, *security_notices, *messaging_notices, *scope_notices,
-                       *rule_notices)
+    return resources, (*notices, *rule_notices)
 
 
 def read_cli_inventory(files, d, patterns, at=None):
-    """Imported: each environment's servers and bindings from the AWS CLI outputs under <cloud>/<env>/."""
-    return layout_import(files, d, PROVIDER, "AWS", lambda texts: cli_resources(texts, at), ".json", "AWS CLI output",
-                         "vpcs.json", summarize=ACCOUNT_WIDE)
+    """Imported: each environment's servers and bindings from the AWS CLI outputs under <cloud>/<env>/, with what its
+    edge runs of the record's edge trust policies checked against them (mtls_inventory)."""
+    return with_mtls_notices(layout_import(files, d, PROVIDER, "AWS", lambda texts: cli_resources(texts, at), ".json",
+                                           "AWS CLI output", "vpcs.json", summarize=ACCOUNT_WIDE),
+                             files, d, (".json",), lambda texts: cli_pairs(texts, at)[0])
 
 
 CLI_INVENTORY = Importer("cli-inventory", "AWS CLI outputs (aws … --output json) under <cloud>/<env>/, as the "

@@ -44,6 +44,7 @@ from opsdir.core.inventory import layout_import
 from opsdir.core.sources import json_document
 from .cli import items_pairs, kind_of
 from .inventory import PROVIDER, pairs_resources, state_pairs
+from .mtls_inventory import with_mtls_notices
 from .cli_backup import READ as BACKUP_TYPES
 from .cli_database import READ as DATABASE_TYPES
 from .cli_compute import READ as COMPUTE_TYPES
@@ -81,7 +82,7 @@ SUB_RESOURCES = ("subnets", "ipConfigurations", "frontendIPConfigurations", "bac
                  "loadBalancingRules", "probes", "securityRules", "routes", "privateLinkServiceConnections",
                  "manualPrivateLinkServiceConnections", "privateDnsZoneConfigs", "frontendPorts",
                  "backendHttpSettingsCollection", "httpListeners", "requestRoutingRules", "sslCertificates",
-                 "gatewayIPConfigurations")
+                 "gatewayIPConfigurations", "trustedClientCertificates", "sslProfiles", "rewriteRuleSets")
 _UNKNOWN = ("<unknown>",)          # what an expression is when it depends on something the deployment doesn't know
 _TOKEN = re.compile(r"\s*(?:(\d+)|'((?:[^']|'')*)'|([A-Za-z_][A-Za-z0-9_]*)|(\S))")
 _CALL = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)\s*\(")
@@ -294,9 +295,11 @@ def _without_secret_values(r, parent_type=""):
 
 
 def _flatten(item, rid):
-    """A resource or sub-resource in the Azure CLI's shape: properties merged in, sub-resources given IDs."""
+    """A resource or sub-resource in the Azure CLI's shape: properties merged in, sub-resources given IDs; a reference
+    to one (only its id: an SSL profile's trusted client certificates) kept as it is."""
     merged = {**{k: v for k, v in item.items() if k != "properties"}, **(item.get("properties") or {}), "id": rid}
-    return {k: ([_flatten(s, f"{rid}/{k}/{s.get('name')}") if isinstance(s, dict) else s for s in v]
+    return {k: ([_flatten(s, f"{rid}/{k}/{s.get('name')}") if isinstance(s, dict) and set(s) != {"id"} else s
+                 for s in v]
                 if k in SUB_RESOURCES and isinstance(v, list) else v) for k, v in merged.items()}
 
 
@@ -438,28 +441,37 @@ def deployment_items(folder, label):
           if types else ()))
 
 
-def arm_resources(texts):
-    """(resources, notices) of an environment's deployment folders ({path within the folder: text}), with the
-    Terraform state of a root kept beside them (*.tfstate: what a Bicep/ARM render keeps in Terraform), read together
-    as one environment."""
+def arm_pairs(texts):
+    """((Terraform resource type, attributes) pairs, notices) of an environment's deployment folders ({path within the
+    folder: text}), with the Terraform state of a root kept beside them (*.tfstate: what a Bicep/ARM render keeps in
+    Terraform), read together as one environment."""
     folders, unknown = _documents({p: t for p, t in texts.items() if not p.endswith(".tfstate")})
     states = tuple(state_pairs(t) for p, t in sorted(texts.items()) if p.endswith(".tfstate"))
     read = [deployment_items(docs, f or ".") for f, docs in folders.items() if docs.get("template")]
     item_pairs, scope_notices = items_pairs([i for items, _ in read for i in items])
     roles = [("azurerm_role_definition", {"id": f"/providers/Microsoft.Authorization/roleDefinitions/{g}",
                                           "role_definition_id": g, "name": n}) for n, g in ROLES.items()]
-    resources, notices = pairs_resources([*item_pairs, *roles, *(p for pairs, _ in states for p in pairs)])
-    return resources, (*unknown, *(f"{f or '.'}: no template (the template file, `az bicep build` output, or "
-                                   f"`az deployment group export`); not read"
-                                   for f, docs in folders.items() if not docs.get("template")),
-                       *(n for _, ns in read for n in ns), *(n for _, ns in states for n in ns), *scope_notices,
-                       *notices)
+    return ([*item_pairs, *roles, *(p for pairs, _ in states for p in pairs)],
+            (*unknown, *(f"{f or '.'}: no template (the template file, `az bicep build` output, or "
+                         f"`az deployment group export`); not read"
+                         for f, docs in folders.items() if not docs.get("template")),
+             *(n for _, ns in read for n in ns), *(n for _, ns in states for n in ns), *scope_notices))
+
+
+def arm_resources(texts):
+    """(resources, notices) of an environment's deployment folders and the Terraform state kept beside them
+    (arm_pairs), read by the state reader's mapping."""
+    pairs, notices = arm_pairs(texts)
+    resources, read_notices = pairs_resources(pairs)
+    return resources, (*notices, *read_notices)
 
 
 def read_arm(files, d, patterns, at=None):
-    """Imported: each environment's servers and bindings from its ARM/Bicep deployments under <cloud>/<env>/<name>/."""
-    return layout_import(files, d, PROVIDER, "Azure", arm_resources, (".json", ".tfstate"), "ARM deployment",
-                         "network/azuredeploy.json", summarize=ACCOUNT_WIDE)
+    """Imported: each environment's servers and bindings from its ARM/Bicep deployments under <cloud>/<env>/<name>/,
+    with what its edge runs of the record's edge trust policies checked against them (mtls_inventory)."""
+    return with_mtls_notices(layout_import(files, d, PROVIDER, "Azure", arm_resources, (".json", ".tfstate"),
+                                           "ARM deployment", "network/azuredeploy.json", summarize=ACCOUNT_WIDE),
+                             files, d, (".json", ".tfstate"), lambda texts: arm_pairs(texts)[0])
 
 
 ARM = Importer("arm", "ARM templates and Bicep (compiled to ARM JSON) with their deployments, one folder per "
