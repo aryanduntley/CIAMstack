@@ -1,6 +1,7 @@
 """Observability domain vocabulary: where alert rules, log routes and synthetic checks live; what a control-plane audit
 trail covers."""
 from ...core.naming import branch
+from .attack_table import RETIRED_TACTICS, TACTICS
 
 ALERT_RULES = branch("alert-rules")
 LOG_ROUTES = branch("log-routes")
@@ -10,10 +11,9 @@ LOG_KINDS = ("access", "audit", "error", "admin", "debug", "replication", "trans
 CANARY_FLOWS = ("login-page", "oidc-token", "saml-sso", "ldap-bind", "health", "other")
 CHANNEL_KINDS = ("topic", "action-group", "paging-service", "email", "webhook", "ticket", "other")
 DESTINATION_KINDS = ("log-group", "workspace", "siem-index", "bucket", "other")
-# MITRE ATT&CK Enterprise tactics by their short names (ATT&CK v18), in the matrix's order
-ATTACK_TACTICS = ("reconnaissance", "resource-development", "initial-access", "execution", "persistence",
-                  "privilege-escalation", "defense-evasion", "credential-access", "discovery", "lateral-movement",
-                  "collection", "command-and-control", "exfiltration", "impact")
+# MITRE ATT&CK Enterprise tactics by their short names: the current version's (attack_table, ATT&CK v20), in the
+# matrix's order, then those it retired, which records and imports may still hold (attack.check_attack flags them)
+ATTACK_TACTICS = (*TACTICS, *RETIRED_TACTICS)
 # What a rows detection's results name: entity type -> the identifiers it may be named by (ciamEntityMapping)
 ENTITY_IDENTIFIERS = {"account": ("name", "upn-suffix", "nt-domain", "sid", "object-id"), "ip": ("address",),
                       "host": ("hostname", "dns-domain"), "url": ("url",), "application": ("app-id", "name")}

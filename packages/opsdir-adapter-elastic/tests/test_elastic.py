@@ -184,13 +184,30 @@ def test_a_rows_detection_runs_as_written_with_its_attack_mapping_and_entity_col
     texts = [(n.severity, note_comment(n)) for n in render_notes(m, SERVICES)]
     assert ("note", "NOTE: alert rule password-spray: its ATT&CK techniques T1595 aren't in its Elastic rule's threat "
             "mapping: a technique is mapped under a tactic it serves, and these serve none of the rule's tactics "
-            "(ciamAttackTactic) or aren't in ATT&CK v18.0") in texts
+            "(ciamAttackTactic) or aren't in ATT&CK v20") in texts
     assert ("note", "NOTE: alert rule password-spray: its entity mappings name host hostname by column hostname, not "
             "host.name: Elastic's entity risk scoring groups alerts by user.name and host.name, so its alerts add to "
             "no entity's risk score (the columns are only its investigation fields)") in texts
     main = render_env(m, SERVICES, ("terraform",))["elastic/terraform/main.tf"]
     assert 'investigation_fields = ["source.ip", "user.name", "hostname"]' in main
     assert '      tactic = {\n        id        = "TA0006"' in main and 'framework = "MITRE ATT&CK"' in main
+
+
+def test_the_threat_mapping_follows_attack_v20_and_leaves_a_retired_tactic_to_a_note():
+    tree = (*TREE, _rule("password-spray", ciamSignal="spray", ciamComparison="gt", ciamThreshold="10",
+                         ciamEvaluationPeriod="15m", ciamAlertRole="alerts-page",
+                         ciamAttackTactic="stealth\nciamAttackTactic: defense-evasion",
+                         ciamAttackTechnique="T1078\nciamAttackTechnique: T1562.001"))
+    m = _alpha(*BINDINGS, SPRAYING, tree=tree)
+    assert rule_body(m, _spec(m, "password-spray"))["threat"] == [
+        {"framework": "MITRE ATT&CK", "tactic": {"id": "TA0005", "name": "Stealth",
+                                                 "reference": "https://attack.mitre.org/tactics/TA0005/"},
+         "technique": [{"id": "T1078", "name": "Valid Accounts",
+                        "reference": "https://attack.mitre.org/techniques/T1078/"}]}]
+    texts = [note_comment(n) for n in render_notes(m, SERVICES)]
+    assert ("NOTE: alert rule password-spray: its ATT&CK tactics defense-evasion aren't in its Elastic rule's threat "
+            "mapping: ATT&CK v20 retired them") in texts
+    assert any("its ATT&CK techniques T1562.001 aren't in its Elastic rule's threat mapping" in t for t in texts)
 
 
 def test_a_rows_detection_reads_back_through_the_round_trip_without_drift():

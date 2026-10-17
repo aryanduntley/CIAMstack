@@ -20,7 +20,13 @@ other tables (Sentinel's own), which are set by hand, and in Azure Government wh
 state is available there (the Tables API's total retention, Sentinel's data lake tiers).
 
 The rule's MITRE ATT&CK tactics become Sentinel's (credential-access: CredentialAccess) and its techniques the parent
-techniques (a sub-technique, T1078.004, is rendered as T1078 with a note: azurerm has no sub-technique field). A rows
+techniques (a sub-technique, T1078.004, is rendered as T1078 with a note: azurerm has no sub-technique field).
+Sentinel follows ATT&CK v18 ("Microsoft Sentinel is currently aligned to The MITRE ATT&CK framework, version 18"):
+the alertRules API (2025-09-01) documents its tactics as v18's, and azurerm 5.10.0 refuses any other (terraform
+validate rejects Stealth and DefenseImpairment), while the record follows ATT&CK v20 (observability.attack), where
+v19 split Defense Evasion into Stealth (TA0005, its ID) and Defense Impairment (TA0112). Both are rendered as
+DefenseEvasion, the tactic they were in v18, with a note (research on task 588); a record still holding
+defense-evasion renders as it always did. A rows
 detection (ciamDetectionMode rows, milestone 109, decision 3299) runs its search as written, one alert per result row
 (event_grouping AlertPerResult), as often as the rule's evaluation period (5 minutes at least), with its entity
 mappings (core ciamEntityMapping: account, ip, host, url, application as Sentinel's Account, IP, Host, URL,
@@ -49,6 +55,8 @@ MIN_PERIOD = 300                        # Sentinel runs a scheduled rule every 5
 SEARCH_LANGUAGE = "kusto"               # ciamSearchLanguage of a detection's KQL (its native language)
 SEVERITIES = {"sev0": "High", "sev1": "High", "sev2": "Medium", "sev3": "Low", "sev4": "Informational"}
 OPERATORS = {"gt": ">", "ge": ">="}
+# ATT&CK v20 tactics (short names) Sentinel has no name for, as the v18 tactic they were split from (task 588)
+V18_TACTICS = {"stealth": "DefenseEvasion", "defense-impairment": "DefenseEvasion"}
 # the core's entity types and identifiers (ciamEntityMapping) as Sentinel names them (entity reference, research m109c)
 ENTITY_TYPES = {"account": "Account", "ip": "IP", "host": "Host", "url": "URL", "application": "CloudApplication"}
 IDENTIFIERS = {("account", "name"): "Name", ("account", "upn-suffix"): "UPNSuffix",
@@ -94,8 +102,9 @@ def base_query(query):
 
 
 def sentinel_tactic(tactic):
-    """Sentinel's name of an ATT&CK tactic short name: credential-access -> CredentialAccess."""
-    return "".join(part.capitalize() for part in tactic.split("-"))
+    """Sentinel's name of an ATT&CK tactic short name: credential-access -> CredentialAccess; a v20 tactic Sentinel
+    has no name for as the v18 tactic it was split from (stealth, defense-impairment -> DefenseEvasion)."""
+    return V18_TACTICS.get(tactic) or "".join(part.capitalize() for part in tactic.split("-"))
 
 
 def parent_techniques(rule):
@@ -152,7 +161,7 @@ def _entity_blocks(alarm):
 
 
 def _attack(rule):
-    tactics = [sentinel_tactic(t) for t in values(rule, "ciamAttackTactic")]
+    tactics = list(dict.fromkeys(sentinel_tactic(t) for t in values(rule, "ciamAttackTactic")))
     techniques = list(parent_techniques(rule))
     return (*((("tactics", tactics),) if tactics else ()), *((("techniques", techniques),) if techniques else ()))
 
@@ -191,19 +200,27 @@ def render_sentinel(m):
 
 def sentinel_notes(m):
     """The render notes of environment m's Sentinel: detections not rendered (a note when no search is recorded, else
-    a blocker), the total retention of tables opsdir doesn't render (a note), and in Azure Government what Microsoft
-    doesn't state is available there (an action)."""
+    a blocker), sub-techniques and ATT&CK v20 tactics rendered as what Sentinel names (notes), the total retention of
+    tables opsdir doesn't render (a note), and in Azure Government what Microsoft doesn't state is available there (an
+    action)."""
     kept = tuple(b for b in siem_destinations(m) if is_sentinel(b) and keeper_of(m, b) is None)
     gov = unstated_note(m, "the Log Analytics Tables API's total retention and Microsoft Sentinel's data lake tiers",
                         "are") if kept else None
     subs = [(s, [t for t in values(s.rule, "ciamAttackTechnique") if "." in t]) for s in sentinel_detections(m)
             if _why(s) is None]
+    v18 = [(s, [t for t in values(s.rule, "ciamAttackTactic") if t in V18_TACTICS]) for s in sentinel_detections(m)
+           if _why(s) is None]
     return (*(alarm_note(m, s) if s.why else alarm_note(m, s, _why(s))
               for s in sentinel_detections(m) if _why(s) is not None),
             *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
                    f"its sub-techniques {', '.join(ts)} are rendered as their parent techniques: azurerm has no "
                    "sub-technique field", ("Add the sub-techniques to the analytics rule in Sentinel if needed",),
                    s.alarm.dn, m.label) for s, ts in subs if ts),
+            *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
+                   f"its ATT&CK tactics {', '.join(ts)} are rendered as DefenseEvasion: Sentinel follows ATT&CK v18, "
+                   "where they were Defense Evasion, and its alertRules API names no Stealth or Defense Impairment "
+                   "tactic", ("Map the rule to Stealth or Defense Impairment in Sentinel once it offers them",),
+                   s.alarm.dn, m.label) for s, ts in v18 if ts),
             *(note("Logs", "note", f"log destination {rdn_value(b)}", f"keeps logs {one(b, 'ciamTotalRetentionDays')} "
                    "days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and "
                    "ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's "

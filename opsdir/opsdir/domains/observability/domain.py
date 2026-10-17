@@ -6,6 +6,7 @@ them, trails, read in by cloud importers; a SIEM's detections among them). Vendo
 read what their monitoring runs into it, and render it (path 6; audit trails now)."""
 from ...core.contract import Domain, ImportKind, directory_report
 from .alerts import ALERT_HEADERS, CANARY_HEADERS, alert_rows, canary_rows, check_alerts
+from .attack import check_attack
 from .canaries import canary_roles
 from .audit import AUDIT_HEADERS, audit_role, audit_rows, check_audit
 from .logs import LOG_HEADERS, check_logs, log_rows
@@ -19,7 +20,8 @@ DOMAIN = Domain(name="observability", schema=FRAGMENT, required_roles=(), sql=()
                          "canaries": directory_report(CANARY_HEADERS, canary_rows),
                          "monitors": directory_report(MONITOR_HEADERS, monitor_rows),
                          "audit-trails": directory_report(AUDIT_HEADERS, audit_rows)},
-                checks=(check_alerts, check_logs, check_realized, check_audit, check_siem), order=60, vocabulary={},
+                checks=(check_alerts, check_attack, check_logs, check_realized, check_audit, check_siem),
+                order=60, vocabulary={},
                 roles_used=canary_roles,
                 import_kinds=(ImportKind("channel", "ciamAlertChannel", ("ciamChannelKind",)),
                               ImportKind("logs", "ciamLogDestination", ("ciamDestinationKind",)),

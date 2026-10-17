@@ -6,7 +6,9 @@ A correlation search is a saved search in savedsearches.conf marked action.corre
 (the alert rule), ES's documented settings (research on milestone 109, section 1; task 587):
 - its MITRE ATT&CK techniques (the alert rule's ciamAttackTechnique, sub-techniques as recorded) as the annotations
   ES stores in action.correlationsearch.annotations, JSON {"mitre_attack": ["T1110.003", ...]}: ES enriches the
-  tactics from the technique IDs, so the rule's tactics alone (ciamAttackTactic) aren't rendered (a note);
+  tactics from the technique IDs, so the rule's tactics alone (ciamAttackTactic) aren't rendered (a note); a
+  technique the core's ATT&CK version (observability.attack, v20) doesn't hold, retired or never in ATT&CK, is left
+  out (a note; the planner asks for its replacement);
 - a notable (ES 8: a finding) per result: action.notable = 1, its rule_title the alert rule and its rule_description
   the rule's description (siem.described);
 - for a rows detection (core ciamDetectionMode rows) mapping entities (ciamEntityMapping), the risk action:
@@ -29,6 +31,7 @@ import json
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.notes import note
+from opsdir.domains.observability.attack import VERSION, technique_name, unknown_techniques
 from opsdir.domains.observability.siem import described, detection_mode, entity_mappings
 
 RISK_SCORES = {"sev0": 99, "sev1": 73, "sev2": 47, "sev3": 21, "sev4": 21}
@@ -42,8 +45,9 @@ CORE_THREAT = {v: k for k, v in THREAT_OBJECTS.items()}
 
 
 def annotations(rule):
-    """The annotations (JSON text) of an alert rule's ATT&CK techniques, or None when it records none."""
-    found = values(rule, "ciamAttackTechnique")
+    """The annotations (JSON text) of an alert rule's ATT&CK techniques the core's ATT&CK version holds, or None when
+    it records none of them."""
+    found = tuple(t for t in values(rule, "ciamAttackTechnique") if technique_name(t) is not None)
     return json.dumps({"mitre_attack": list(found)}, separators=(",", ":")) if found else None
 
 
@@ -88,13 +92,15 @@ def risk_mappings(text):
 
 def es_notes(m, specs):
     """Notes of the ES correlation searches of environment m's rendered detection specs: entity mappings ES has no
-    type for, tactics recorded without techniques (notes), and what ES keeps to the Splunk team (an action)."""
+    type for, tactics recorded without techniques, techniques the core's ATT&CK version doesn't hold (notes), and what
+    ES keeps to the Splunk team (an action)."""
     def of(s):
         rule = rdn_value(s.rule)
         left = tuple(f"{e} {i}" for e, i, _ in entity_mappings(s.alarm)
                      if (e, i) not in RISK_OBJECTS and (e, i) not in THREAT_OBJECTS) \
             if detection_mode(s.alarm) == "rows" else ()
         bare = values(s.rule, "ciamAttackTactic") if not values(s.rule, "ciamAttackTechnique") else ()
+        gone = unknown_techniques(values(s.rule, "ciamAttackTechnique"))
         return (*((note("Monitoring", "note", f"alert rule {rule}", f"its entity mappings {', '.join(left)} aren't "
                         "risk or threat objects of its correlation search: opsdir renders an account's name and a "
                         "host's name as risk objects and an IP address as a threat object, the types ES documents",
@@ -104,7 +110,11 @@ def es_notes(m, specs):
                         "annotated: ES annotates a correlation search by technique (mitre_attack) and derives the "
                         "tactics, and the rule records no technique (ciamAttackTechnique)",
                         ("Record the techniques it detects (ciamAttackTechnique)",), s.rule.dn, m.label),)
-                  if bare else ()))
+                  if bare else ()),
+                *((note("Monitoring", "note", f"alert rule {rule}", f"its ATT&CK techniques {', '.join(gone)} aren't "
+                        f"annotated: they aren't in {VERSION} (retired, or never in ATT&CK)",
+                        ("Apply the plan's fix replacing them (ciamAttackTechnique)",), s.rule.dn, m.label),)
+                  if gone else ()))
     return (*(n for s in specs for n in of(s)),
             *((note("Monitoring", "action", "Splunk Enterprise Security", "the detections are rendered as correlation "
                     "searches with the notable (action.notable) and risk (action.risk) settings ES documents; their "

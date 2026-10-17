@@ -35,7 +35,7 @@ A **rows** detection (`ciamDetectionMode: rows`, milestone 109, task 587) runs i
 
 **Splunk Enterprise Security** (`ciamOffering: enterprise-security`, task 587). Each detection's saved search is a correlation search, with the settings ES documents for `savedsearches.conf` (research on milestone 109, section 1):
 - `action.correlationsearch.enabled = 1` and `action.correlationsearch.label = <alert rule>`.
-- `action.correlationsearch.annotations = {"mitre_attack":["T1110.003",...]}`: the alert rule's ATT&CK techniques as recorded (sub-techniques included). ES enriches the tactics from the techniques, so tactics recorded without a technique aren't annotated (a note).
+- `action.correlationsearch.annotations = {"mitre_attack":["T1110.003",...]}`: the alert rule's ATT&CK techniques as recorded (sub-techniques included), those the core's ATT&CK version (ATT&CK v20, `opsdir.domains.observability.attack`) holds: a technique it retired or never held is left out (a note; the planner asks for its replacement). ES enriches the tactics from the techniques, so tactics recorded without a technique aren't annotated (a note).
 - The notable (ES 8: a finding): `action.notable = 1`, `action.notable.param.rule_title = <alert rule>`, `action.notable.param.rule_description = opsdir: realizes alert rule <rule>`.
 - For a rows detection with entity mappings, the risk action: `action.risk = 1` and `action.risk.param._risk`, a JSON list with a risk object per account name (`{"risk_object_field": <column>, "risk_object_type": "user", "risk_score": <n>}`) and host name (`"system"`), and a threat object per IP address (`{"threat_object_field": <column>, "threat_object_type": "ip_address"}`). The risk score comes from the rule's `ciamSeverity` on Elastic's scale (`sev0` 99, `sev1` 73, `sev2` 47, `sev3`/`sev4` 21, 47 when none), so both SIEMs score a rule alike.
 
@@ -52,7 +52,7 @@ On the plain platform, a saved search has no place for ATT&CK or entities: a det
 | A detection whose condition a saved search can't count (a threshold that isn't a rate or a count; a comparison other than `gt`/`ge`; a period cron can't run evenly) | blocker |
 | A detection that records no search | note |
 | Splunk ES: each finding's severity and security domain (`action.notable.param.severity`, `.security_domain`) are set in ES (the values ES stores aren't established); compare one detection saved in ES 8 with the rendered settings before installing (ES 8's own serialization of findings and intermediate findings isn't established) | action |
-| Splunk ES: entity mappings with no documented risk or threat object type (an account's other identifiers, a host's DNS domain, a URL, an application); ATT&CK tactics recorded without techniques | note |
+| Splunk ES: entity mappings with no documented risk or threat object type (an account's other identifiers, a host's DNS domain, a URL, an application); ATT&CK tactics recorded without techniques; ATT&CK techniques not in ATT&CK v20 | note |
 | Plain platform: a detection's ATT&CK and entity mappings, which a saved search can't hold | note |
 | A log file the route takes only some lines of: shipped whole (the forwarder doesn't filter by field) | note |
 | Records spanning lines: joined where Splunk parses the data (`props.conf`), the Splunk team's | note |
