@@ -80,9 +80,9 @@ def test_what_stays_terraform_says_why(sample):
     copy = next(p for a, p in places.items() if a.startswith("azurerm_storage_object_replication."))
     assert copy.kind == "terraform" and "destination" in copy.detail
     assert places["azurerm_firewall_policy_rule_collection_group.fw_sites"].detail == UNPLACED
+    # the VPN connection itself renders only through azapi (task 586, U.5: its pre-shared key stays out of state)
     for a in ("azurerm_virtual_network_peering.peer", "azurerm_local_network_gateway.vpn_b",
-              "azurerm_virtual_network_gateway_connection.vpn_b", "azurerm_mysql_flexible_server.db_sess",
-              "azurerm_application_insights_standard_web_test.sso_alive"):
+              "azurerm_mysql_flexible_server.db_sess", "azurerm_application_insights_standard_web_test.sso_alive"):
         assert places[a].kind == "template", a
     assert places["azurerm_cdn_frontdoor_custom_domain_association.svc_login"].kind == "merged"
     assert places["azurerm_nat_gateway_public_ip_prefix_association.egress_0"].detail == "azurerm_nat_gateway.egress"
