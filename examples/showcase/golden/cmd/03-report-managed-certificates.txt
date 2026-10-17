@@ -1,0 +1,4 @@
+certificate  manager  managed as  management  contacts  installed at  not after  state  renewal owner  detail
+-----------  -------  ----------  ----------  --------  ------------  ---------  -----  -------------  ------
+(0 rows)
+exit 0

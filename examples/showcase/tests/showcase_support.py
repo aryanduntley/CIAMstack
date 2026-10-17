@@ -111,7 +111,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2116", ImportStep("servicenow/change-requests", SHOWCASE / "exports" / "servicenow",
                                     "20260923090000Z")),
             ("CHG-2110", SHOWCASE / "changes" / "CHG-2110-target-corporate-managed-domain.ldif"),
-            ("CHG-2120", ImportStep("hashicorp-vault/pki", SHOWCASE / "exports" / "vault-pki", "20260923090000Z")))
+            ("CHG-2120", ImportStep("hashicorp-vault/pki", SHOWCASE / "exports" / "vault-pki", "20260923090000Z")),
+            ("CHG-2125", ImportStep("venafi/certificates", SHOWCASE / "exports" / "venafi", "20260923090000Z")))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

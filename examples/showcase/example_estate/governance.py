@@ -189,6 +189,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2120", "Read the lab's internal CA from its Vault PKI mount (its endpoints, roles and the certificates it "
      "keeps, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2125", "Read the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate "
+     "Manager; metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

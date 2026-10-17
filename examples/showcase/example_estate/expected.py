@@ -602,6 +602,18 @@ EXPECTED = MappingProxyType({
         ("A281", "Certificate", "Certificate template `Example Aero CIAM Internal CA/ciam-client` lets the requester "
          "name the subject", "the lab's ciam-client role issues client certificates in any name, and Vault's default "
          "policy lets every token request them", None, "CHG-2120"),
+        # the certificate manager's inventory of the Example Aero folder (CHG-2125): never a CA's issuance record, so
+        # the record's certificates it lacks are only not managed; what it renewed, what is in error and what it holds
+        # for the record's names that the record lacks
+        ("A292", "Certificate", "Certificate `sso-tls-2026` was renewed by venafi-prod",
+         "the certificate manager renewed (and installed) the SSO certificate on 2026-09-10; the record still names "
+         "the old one", None, "CHG-2125"),
+        ("A293", "Certificate", "Certificate `ds-ldaps-2026`: venafi-prod reports a problem with it",
+         "the certificate manager's renewal of the LDAPS certificate is in error: the CA refused it (the template "
+         "needs a CA manager's approval)", None, "CHG-2125"),
+        ("A294", "Certificate", "venafi-prod holds 1 certificate(s) in service for names the record holds",
+         "network discovery found a certificate for login.example-aero.test that the record has none of", None,
+         "CHG-2125"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "

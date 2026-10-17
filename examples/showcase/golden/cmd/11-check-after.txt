@@ -47,7 +47,7 @@ Expected findings check (after changes)
            B82  raised by CHG-2082: the roster admins group must reach PingAccess as a claim → reported
            B110 raised by CHG-2110: the corporate identity team asks for an external trust with the engineering lab's domain, and a managed domain keeps forest trusts only → reported
            B111 raised by CHG-2110: the corporate managed domain's service isn't in the target's recorded authorization boundary → reported
-  actions  planted 188   expected now 155   detected 155   missed 0   unexpected 0
+  actions  planted 191   expected now 158   detected 158   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone
@@ -103,6 +103,9 @@ Expected findings check (after changes)
            A270 raised by CHG-2116: CHG-2117's ticket says its patch restarts began an hour after the export it was read from was taken: evidence from after the read (the read time given is wrong, or the export was taken later) → reported
            A280 raised by CHG-2120: the lab's SSO certificate was renewed on 2026-09-15 in Vault; the record still names the old one → reported
            A281 raised by CHG-2120: the lab's ciam-client role issues client certificates in any name, and Vault's default policy lets every token request them → reported
+           A292 raised by CHG-2125: the certificate manager renewed (and installed) the SSO certificate on 2026-09-10; the record still names the old one → reported
+           A293 raised by CHG-2125: the certificate manager's renewal of the LDAPS certificate is in error: the CA refused it (the template needs a CA manager's approval) → reported
+           A294 raised by CHG-2125: network discovery found a certificate for login.example-aero.test that the record has none of → reported
            A152 raised by CHG-2049: Splunk keeps production's security events 180 days, short of the 365 the route needs → reported
            A181 raised by CHG-2062: nobody has confirmed PingAccess removes a client's own X-TechPubs-User, which Tech Pubs trusts for who the user is → reported
            A182 raised by CHG-2061: the media application's CDN is reached at the same host from every environment → reported

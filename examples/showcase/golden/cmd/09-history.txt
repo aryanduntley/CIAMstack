@@ -722,4 +722,11 @@ at                   change    op      dn
 <TIMESTAMP>          CHG-2120  insert  cn=crl-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2120  insert  cn=ocsp-1,cn=Example Aero CIAM Internal CA,ou=certificate-authorities,dc=ciam-ops
 <TIMESTAMP>          CHG-2120  insert  cn=hashicorp-vault.pki.shared.s1-411f1c33e8ce1881,ou=imports,dc=ciam-ops
-(722 rows)
+<TIMESTAMP>          CHG-2125  insert  ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2125  insert  cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a22,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2125  insert  cn=6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24,cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
+<TIMESTAMP>          CHG-2125  insert  cn=venafi.certificates.shared.s1-c0e7a3215724e802,ou=imports,dc=ciam-ops
+(729 rows)

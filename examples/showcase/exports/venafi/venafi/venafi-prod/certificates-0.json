@@ -1,0 +1,95 @@
+{
+ "Address": "https://tpp.corp.example-aero.internal/vedsdk",
+ "Certificates": [
+  {
+   "CreatedOn": "2026-09-10T00:00:00.0000000Z",
+   "DN": "\\VED\\Policy\\Example Aero\\sso.example-aero.test",
+   "Guid": "{6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21}",
+   "Name": "sso.example-aero.test",
+   "ParentDn": "\\VED\\Policy\\Example Aero",
+   "SchemaClass": "X509 Server Certificate",
+   "X509": {
+    "CN": "sso.example-aero.test",
+    "Issuer": "CN=Public CA R11",
+    "SANS": {
+     "DNS": [
+      "sso.example-aero.test"
+     ]
+    },
+    "Serial": "04B7E19A2C55D0F3",
+    "Subject": "CN=sso.example-aero.test",
+    "Thumbprint": "9F2A6C1D4E8B3A7F0C5D2E9B1A4F6C8D3E7B2A91",
+    "ValidFrom": "2026-09-10T00:00:00.0000000Z",
+    "ValidTo": "2027-10-10T00:00:00.0000000Z"
+   }
+  },
+  {
+   "CreatedOn": "2025-12-20T00:00:00.0000000Z",
+   "DN": "\\VED\\Policy\\Example Aero\\ldap.id.example-aero.test",
+   "Guid": "{6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a22}",
+   "Name": "ldap.id.example-aero.test",
+   "ParentDn": "\\VED\\Policy\\Example Aero",
+   "SchemaClass": "X509 Server Certificate",
+   "X509": {
+    "CN": "ldap.id.example-aero.test",
+    "Issuer": "CN=Example Aero Issuing CA 2",
+    "SANS": {
+     "DNS": [
+      "ldap.id.example-aero.test"
+     ]
+    },
+    "Serial": "5D00000017A4C2B9E0F1",
+    "Subject": "CN=ldap.id.example-aero.test",
+    "Thumbprint": "3C7E1B9A2D4F6E8C0A1B3D5F7E9C2A4B6D8F0E13",
+    "ValidFrom": "2025-12-20T00:00:00.0000000Z",
+    "ValidTo": "2026-12-20T00:00:00.0000000Z"
+   }
+  },
+  {
+   "CreatedOn": "2026-08-01T00:00:00.0000000Z",
+   "DN": "\\VED\\Policy\\Example Aero\\login.example-aero.test",
+   "Guid": "{6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23}",
+   "Name": "login.example-aero.test",
+   "ParentDn": "\\VED\\Policy\\Example Aero",
+   "SchemaClass": "X509 Server Certificate",
+   "X509": {
+    "CN": "login.example-aero.test",
+    "Issuer": "CN=Public CA R10",
+    "SANS": {
+     "DNS": [
+      "login.example-aero.test"
+     ]
+    },
+    "Serial": "03A9F2C7E1B4D6",
+    "Subject": "CN=login.example-aero.test",
+    "Thumbprint": "71B3D5F7092A4C6E8F1A3B5D7C9E0F2A4B6C8D17",
+    "ValidFrom": "2026-08-01T00:00:00.0000000Z",
+    "ValidTo": "2027-02-01T00:00:00.0000000Z"
+   }
+  },
+  {
+   "CreatedOn": "2026-03-01T00:00:00.0000000Z",
+   "DN": "\\VED\\Policy\\Example Aero\\kiosk.hangar.example-aero.test",
+   "Guid": "{6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24}",
+   "Name": "kiosk.hangar.example-aero.test",
+   "ParentDn": "\\VED\\Policy\\Example Aero",
+   "SchemaClass": "X509 Server Certificate",
+   "X509": {
+    "CN": "kiosk.hangar.example-aero.test",
+    "Issuer": "CN=kiosk.hangar.example-aero.test",
+    "SANS": {
+     "DNS": [
+      "kiosk.hangar.example-aero.test"
+     ]
+    },
+    "Serial": "01",
+    "Subject": "CN=kiosk.hangar.example-aero.test",
+    "Thumbprint": "A0B1C2D3E4F5061728394A5B6C7D8E9F00112233",
+    "ValidFrom": "2026-03-01T00:00:00.0000000Z",
+    "ValidTo": "2028-03-01T00:00:00.0000000Z"
+   }
+  }
+ ],
+ "Folder": "\\VED\\Policy\\Example Aero",
+ "TotalCount": 4
+}

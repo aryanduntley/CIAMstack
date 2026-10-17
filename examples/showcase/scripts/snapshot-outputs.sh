@@ -56,7 +56,7 @@ cap 02-data-profile od data-profile --env source/prod --at 20260920030000Z --ter
 cap 02-import-data-profile od import --change CHG-2014 --at 20260920030000Z ldap/data-profile "$OUT/data-profile"
 cap 02-census od census --change CHG-2009 exports/census
 cap 02-check od check
-for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams data-profile data-profile-attributes alerts log-routes canaries monitors audit-trails security-services quotas budgets incident-reporting reportable-incidents poam exceptions assessments authorizations responsibilities evidence imports import-scopes unknowns user-schema databases object-stores volumes backups restore-tests settings recovery standbys failover-drills tags routes private-endpoints endpoint-services egress-sites dns edge-policies edge-services header-contracts identities principals guardrails access-paths workloads; do cap "03-report-$r" od report "$r"; done
+for r in portability expiring credentials pii drift stale unowned custom capture bundles consumers census jobs baselines compute external-services mail-senders event-streams data-profile data-profile-attributes alerts log-routes canaries monitors audit-trails security-services quotas budgets incident-reporting reportable-incidents poam exceptions assessments authorizations responsibilities evidence imports import-scopes unknowns user-schema databases object-stores volumes backups restore-tests settings recovery standbys failover-drills tags routes private-endpoints endpoint-services egress-sites dns edge-policies edge-services header-contracts identities principals guardrails access-paths workloads managed-certificates; do cap "03-report-$r" od report "$r"; done
 # the stale report dates a dependency's change from history: a change this run imports is dated the day it runs
 sed -i -e "s/$(date +%F)/<RUN-DATE>/g" -e "s/$(date -u +%F)/<RUN-DATE>/g" "$OUT/cmd/03-report-stale.txt"
 cap 03-cloud-drift-source od import --dry-run aws/terraform-state exports/cloud
@@ -197,6 +197,8 @@ cap 08-apply-chg-2110 od modify --change CHG-2110 changes/CHG-2110-target-corpor
 cap 08-report-managed-directory od report managed-directory
 cap 08-apply-chg-2120 od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
 cap 08-report-issued-certificates-vault od report issued-certificates
+cap 08-apply-chg-2125 od import --change CHG-2125 --at 20260923090000Z venafi/certificates exports/venafi
+cap 08-report-managed-certificates od report managed-certificates
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency

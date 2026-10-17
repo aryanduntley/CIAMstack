@@ -24,6 +24,10 @@ the record's certificates are reconciled with it (issued.py), and nothing it obs
 What each CA's revocation endpoints answered when last observed (ou=revocation-observations, per CA and endpoint) is
 kept apart from the endpoints themselves: whether they answered, how current what they served was, and whether the CA
 the record holds signed it (revocation.py judges it).
+A certificate manager's inventory (ou=managed-certificates, per collection source) is what a manager said it holds:
+the certificates it discovered on the network, was given, or enrolls and renews itself, metadata only, with how it
+manages each, who it notifies, where it says each is installed and what it reports wrong. It is never a CA's issuance
+record: a certificate it doesn't hold isn't missing anywhere (managed.py reconciles the record's certificates with it).
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -236,6 +240,35 @@ ATTRIBUTES = (
                  "The certification authority (ou=certificate-authorities) a CA-scoped certificate template is its "
                  "own (a Vault PKI role): only that CA issues from it and only its importer replaces it; absent on "
                  "templates a directory shares with every CA (AD CS's forest templates)"),
+    # ------------------------------------------------------------------ certificate managers' inventories (observed)
+    AttributeDef(920, 'ciamThumbprint', 'string', 'observed', True,
+                 "A certificate's SHA-1 thumbprint, as colon-separated hex: what a certificate manager gives when it "
+                 "gives no SHA-256 fingerprint"),
+    AttributeDef(921, 'ciamCertificateName', 'string', 'observed', False,
+                 'The DNS names and IP addresses a certificate names (its subject common name and alternative '
+                 'names), as its manager reports them, wildcards kept'),
+    AttributeDef(922, 'ciamManagerPath', 'string', 'observed', True,
+                 "Where a certificate manager files a certificate (a policy folder's object, a vault's certificate "
+                 "name)"),
+    AttributeDef(923, 'ciamManagement', 'enum:unassigned|monitored|enrolled|provisioned', 'observed', True,
+                 "What a certificate manager does for a certificate: unassigned (nothing), monitored (watches its "
+                 "expiry; someone else renews it), enrolled (requests and renews it; someone installs it) or "
+                 "provisioned (renews it and installs it where it is used)"),
+    AttributeDef(924, 'ciamManagedOrigin', 'enum:discovered|added', 'observed', True,
+                 'How a certificate came to its manager: discovered (found by a network or agent scan) or added '
+                 '(enrolled through it, imported, or created by someone)'),
+    AttributeDef(925, 'ciamManagerContact', 'string', 'observed', False,
+                 "Who a certificate manager notifies about a certificate, as the manager names them (its own "
+                 "identities); metadata only"),
+    AttributeDef(926, 'ciamInstalledAt', 'string', 'observed', False,
+                 "Where a certificate manager says a certificate is installed or was found (an application, a "
+                 "device, host:port), as the manager names it"),
+    AttributeDef(927, 'ciamManagerProblem', 'string', 'observed', False,
+                 "What a certificate manager reports wrong with a certificate now (a failed renewal or "
+                 "installation, a revocation requested or failed), in its words"),
+    AttributeDef(928, 'ciamManagedAuthority', 'string', 'observed', True,
+                 "The certification authority (or its template) a certificate manager renews a certificate through, "
+                 "as the manager names it"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -314,6 +347,21 @@ CLASSES = (
              "What one of a CA's revocation endpoints answered when observed (cn: the endpoint's, crl-1; the URL "
              "observed): whether it answered, how current what it served was, whether the CA signed it, and for an "
              "OCSP responder what it said of the certificate it was asked about (ciamSerialNumber)"),
+    ClassDef(199, 'ciamManagedInventory', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamInventoryAt', 'ciamInventoryState'),
+             ('ciamInventoryProblem', 'ciamInventoryPrefix', 'ciamProviderRef'),
+             "The last inventory of one certificate manager's source (cn: the collection source's name; under "
+             "ou=managed-certificates), metadata only: when it was taken, whether the folders it lists "
+             "(ciamInventoryPrefix) were listed completely, the manager's address (ciamProviderRef), and the "
+             "certificates found as its children. Never a CA's issuance record: what it doesn't hold isn't missing"),
+    ClassDef(200, 'ciamManagedCertificate', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamSerialNumber', 'ciamFingerprint', 'ciamThumbprint', 'ciamSubject', 'ciamIssuer', 'ciamNotBefore',
+              'ciamNotAfter', 'ciamCertificateName', 'ciamManagerPath', 'ciamManagement', 'ciamManagedOrigin',
+              'ciamManagerContact', 'ciamInstalledAt', 'ciamManagerProblem', 'ciamManagedAuthority', 'ciamRevokedAt',
+              'ciamRevocationReason', 'ciamObjectState'),
+             "A certificate a certificate manager's inventory holds (cn: the manager's id for it), metadata only, "
+             "never a key: serial, fingerprint or thumbprint, subject, issuer, validity and names; how the manager "
+             "manages it, who it notifies, where it says it is installed, what it reports wrong, and once revoked "
+             "(as the manager says), when and why"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

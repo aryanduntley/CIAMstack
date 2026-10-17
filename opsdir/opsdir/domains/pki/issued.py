@@ -35,10 +35,10 @@ import re
 from typing import NamedTuple
 
 from ...core.directory import (children, date_of, fingerprint, follow, follow_all, get, make_entry, merged_attrs,
-                               norm_dn, one, ou_entry, rdn_of, rdn_value, referrers, values)
+                               norm_dn, one, ou_entry, rdn_of, rdn_value, values)
 from ...core.findings import findings, merge_findings, owner_label
 from ...core.settings import setting_text
-from .checks import CERTIFICATE_USE
+from .checks import certificate_users
 from .inventory import INACCESSIBLE, INCOMPLETE, MISSING, NOT_INVENTORIED, PRESENT
 from .naming import (AUTHORITIES, CERTIFICATES, ISSUED, TEMPLATES, authority_dn, issued_inventory_dn,
                      template_dn)
@@ -314,7 +314,7 @@ def renewal_owner(d, cert, issued):
 
 # ------------------------------------------------------------------ the planner's findings
 def _used_by(d, cert):
-    return tuple(dict.fromkeys(rdn_value(u) for attr in CERTIFICATE_USE for _, u in referrers(d, cert, attr)))
+    return tuple(dict.fromkeys(rdn_value(u) for u in certificate_users(d, cert)))
 
 
 def _inventoried(r):
