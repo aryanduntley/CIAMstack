@@ -289,6 +289,12 @@ ATTRIBUTES = (
     AttributeDef(928, 'ciamManagedAuthority', 'string', 'observed', True,
                  "The certification authority (or its template) a certificate manager renews a certificate through, "
                  "as the manager names it"),
+    AttributeDef(900, 'ciamManagerAction', 'string', 'observed', False,
+                 "What a certificate manager is set to do for a certificate on its own, as the manager says it (a "
+                 "renewal or notification trigger: AutoRenew at 80% of lifetime, EmailContacts 30 days before expiry)"),
+    AttributeDef(905, 'ciamRenewedAs', 'string', 'observed', True,
+                 "An earlier version of a certificate a certificate manager holds: the manager's id (cn) of the "
+                 "certificate that replaced it in the same inventory, as the manager links its versions"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -379,11 +385,11 @@ CLASSES = (
              ('ciamSerialNumber', 'ciamFingerprint', 'ciamThumbprint', 'ciamSubject', 'ciamIssuer', 'ciamNotBefore',
               'ciamNotAfter', 'ciamCertificateName', 'ciamManagerPath', 'ciamManagement', 'ciamManagedOrigin',
               'ciamManagerContact', 'ciamInstalledAt', 'ciamManagerProblem', 'ciamManagedAuthority', 'ciamRevokedAt',
-              'ciamRevocationReason', 'ciamObjectState'),
+              'ciamRevocationReason', 'ciamObjectState', 'ciamManagerAction', 'ciamRenewedAs'),
              "A certificate a certificate manager's inventory holds (cn: the manager's id for it), metadata only, "
              "never a key: serial, fingerprint or thumbprint, subject, issuer, validity and names; how the manager "
-             "manages it, who it notifies, where it says it is installed, what it reports wrong, and once revoked "
-             "(as the manager says), when and why"),
+             "manages it and what it is set to do, who it notifies, where it says it is installed, what it reports "
+             "wrong, once revoked (as the manager says) when and why, and for an earlier version what replaced it"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

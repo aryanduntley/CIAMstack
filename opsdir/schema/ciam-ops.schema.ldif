@@ -3675,6 +3675,18 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.890 NAME 'ciamTemplateAuthority' DES
   with every CA (AD CS\27s forest templates)' EQUALITY distinguishedNameMatc
  h SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILITY 'observed
  ' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.900 NAME 'ciamManagerAction' DESC 'W
+ hat a certificate manager is set to do for a certificate on its own, as the
+  manager says it (a renewal or notification trigger: AutoRenew at 80% of li
+ fetime, EmailContacts 30 days before expiry)' EQUALITY caseIgnoreMatch SYNT
+ AX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'str
+ ing' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.905 NAME 'ciamRenewedAs' DESC 'An ea
+ rlier version of a certificate a certificate manager holds: the manager\27s
+  id (cn) of the certificate that replaced it in the same inventory, as the 
+ manager links its versions' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' 
+ X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.910 NAME 'ciamCaType' DESC 'Whether 
  a certification authority is a root (its own certificate self-signed) or su
  bordinate to another CA, as its product says' EQUALITY caseIgnoreMatch SYNT
@@ -4733,11 +4745,13 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.199 NAME 'ciamManagedInventory' DESC
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.200 NAME 'ciamManagedCertificate' DES
  C 'A certificate a certificate manager\27s inventory holds (cn: the manager
  \27s id for it), metadata only, never a key: serial, fingerprint or thumbpr
- int, subject, issuer, validity and names; how the manager manages it, who i
- t notifies, where it says it is installed, what it reports wrong, and once 
- revoked (as the manager says), when and why' SUP ciamObject STRUCTURAL MUST
-  cn MAY ( ciamSerialNumber $ ciamFingerprint $ ciamThumbprint $ ciamSubject
-  $ ciamIssuer $ ciamNotBefore $ ciamNotAfter $ ciamCertificateName $ ciamMa
- nagerPath $ ciamManagement $ ciamManagedOrigin $ ciamManagerContact $ ciamI
- nstalledAt $ ciamManagerProblem $ ciamManagedAuthority $ ciamRevokedAt $ ci
- amRevocationReason $ ciamObjectState ) X-ORIGIN 'opsdir' )
+ int, subject, issuer, validity and names; how the manager manages it and wh
+ at it is set to do, who it notifies, where it says it is installed, what it
+  reports wrong, once revoked (as the manager says) when and why, and for an
+  earlier version what replaced it' SUP ciamObject STRUCTURAL MUST cn MAY ( 
+ ciamSerialNumber $ ciamFingerprint $ ciamThumbprint $ ciamSubject $ ciamIss
+ uer $ ciamNotBefore $ ciamNotAfter $ ciamCertificateName $ ciamManagerPath 
+ $ ciamManagement $ ciamManagedOrigin $ ciamManagerContact $ ciamInstalledAt
+  $ ciamManagerProblem $ ciamManagedAuthority $ ciamRevokedAt $ ciamRevocati
+ onReason $ ciamObjectState $ ciamManagerAction $ ciamRenewedAs ) X-ORIGIN '
+ opsdir' )

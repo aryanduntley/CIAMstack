@@ -1,0 +1,34 @@
+{
+ "PreviousVersions": [
+  {
+   "CertificateDetails": {
+    "CN": "sso.example-aero.test",
+    "Issuer": "CN=Public CA R11",
+    "Serial": "04B7E19A2C55D0F3",
+    "Subject": "CN=sso.example-aero.test",
+    "SubjectAltNameDNS": [
+     "sso.example-aero.test"
+    ],
+    "Thumbprint": "9F2A6C1D4E8B3A7F0C5D2E9B1A4F6C8D3E7B2A91",
+    "ValidFrom": "2026-09-10T00:00:00.0000000Z",
+    "ValidTo": "2027-10-10T00:00:00.0000000Z"
+   },
+   "VaultId": 4417
+  },
+  {
+   "CertificateDetails": {
+    "CN": "sso.example-aero.test",
+    "Issuer": "CN=Public CA R11",
+    "Serial": "03A9C4E2B17D6F80",
+    "Subject": "CN=sso.example-aero.test",
+    "SubjectAltNameDNS": [
+     "sso.example-aero.test"
+    ],
+    "Thumbprint": "5B8E2D7A1C4F9E3B6A0D8C2F5E1B7A4D9C3F6E28",
+    "ValidFrom": "2026-02-10T00:00:00.0000000Z",
+    "ValidTo": "2027-02-10T00:00:00.0000000Z"
+   },
+   "VaultId": 3982
+  }
+ ]
+}

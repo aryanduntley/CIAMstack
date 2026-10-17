@@ -1,0 +1,96 @@
+{
+ "Address": "https://api.venafi.cloud",
+ "PageSize": 50,
+ "certificates": [
+  {
+   "certificateSource": "USER_PROVIDED",
+   "certificateStatus": "ACTIVE",
+   "fingerprint": "A1C3E5F7092B4D6F8A0C2E4F6B8D0A2C4E6F8B13",
+   "id": "3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f11",
+   "instances": [],
+   "issuerDN": "CN=suppliers.example-aero.test SP",
+   "managedCertificateId": "6b2e9f40-1c3d-4a5b-8e7f-90a1b2c3d4e5",
+   "serialNumber": "6E41A0C9D3B2F785",
+   "subjectAlternativeNamesByType": {
+    "dNSName": []
+   },
+   "subjectCN": [
+    "suppliers.example-aero.test SP"
+   ],
+   "subjectDN": "CN=suppliers.example-aero.test SP",
+   "validityEnd": "2029-09-15T00:00:00.000+0000",
+   "validityStart": "2026-09-15T00:00:00.000+0000",
+   "versionType": "CURRENT"
+  },
+  {
+   "certificateSource": "USER_PROVIDED",
+   "certificateStatus": "ACTIVE",
+   "fingerprint": "7D2B9E4A1F6C3D8B0E5A2C7F4D1B8E6A3C9F0D25",
+   "id": "3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f10",
+   "instances": [],
+   "issuerDN": "CN=suppliers.example-aero.test SP",
+   "managedCertificateId": "6b2e9f40-1c3d-4a5b-8e7f-90a1b2c3d4e5",
+   "serialNumber": "2F9B04C7A1E3D658",
+   "subjectAlternativeNamesByType": {
+    "dNSName": []
+   },
+   "subjectCN": [
+    "suppliers.example-aero.test SP"
+   ],
+   "subjectDN": "CN=suppliers.example-aero.test SP",
+   "validityEnd": "2026-11-30T00:00:00.000+0000",
+   "validityStart": "2023-11-30T00:00:00.000+0000",
+   "versionType": "OLD"
+  },
+  {
+   "certificateSource": "USER_PROVIDED",
+   "certificateStatus": "RETIRED",
+   "fingerprint": "C4E6A8B0D2F4163857A9CBEDF0214365879AB5D7",
+   "id": "3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f12",
+   "instances": [],
+   "issuerDN": "CN=Example Aero SSO Signing 2025",
+   "managedCertificateId": "8d4f1a62-3e5b-4c7d-9f80-a1b2c3d4e5f7",
+   "serialNumber": "1A7C3E9B5D2F4086",
+   "subjectAlternativeNamesByType": {
+    "dNSName": []
+   },
+   "subjectCN": [
+    "Example Aero SSO Signing 2025"
+   ],
+   "subjectDN": "CN=Example Aero SSO Signing 2025",
+   "validityEnd": "2027-06-30T00:00:00.000+0000",
+   "validityStart": "2025-07-01T00:00:00.000+0000",
+   "versionType": "CURRENT"
+  },
+  {
+   "certificateSource": "USER_SCAN",
+   "certificateStatus": "ACTIVE",
+   "fingerprint": "E8F0A2C4B6D8E0F2A4C6E8B0D2F4A6C8E0B2D46A",
+   "id": "3c1d7e52-8a4b-4f6e-9d21-5e7a0b9c4f13",
+   "instances": [
+    {
+     "deploymentStatus": "INSTALLED",
+     "hostname": "sso.example-aero.test",
+     "ipAddress": "198.51.100.40",
+     "port": 443
+    }
+   ],
+   "issuerDN": "CN=Edge Public CA E1",
+   "managedCertificateId": "a7c9e1f3-5b2d-4e6f-8091-b2c3d4e5f6a8",
+   "serialNumber": "0B5D8F2A6C4E1937",
+   "subjectAlternativeNamesByType": {
+    "dNSName": [
+     "sso.example-aero.test"
+    ]
+   },
+   "subjectCN": [
+    "sso.example-aero.test"
+   ],
+   "subjectDN": "CN=sso.example-aero.test",
+   "validityEnd": "2027-01-01T00:00:00.000+0000",
+   "validityStart": "2026-07-01T00:00:00.000+0000",
+   "versionType": "CURRENT"
+  }
+ ],
+ "count": 4
+}

@@ -14,8 +14,9 @@ from opsdir.domains.pki.domain import DOMAIN
 from opsdir.domains.pki.inventory import inventory_group
 from opsdir.domains.pki.issued import REVOKED, cert_inventory_entry, issued_entry, authority_entry
 from opsdir.domains.pki.managed import (AREA, DISABLED, IN_ERROR, MANAGED_HEADERS, MANAGED_STATE, NOT_MANAGED,
-                                        RENEWED, UNRECORDED, check_managed_certificates, covers, managed_entry,
-                                        managed_inventory_entry, managed_rows, reconcile_managed, record_names)
+                                        RENEWED, UNRECORDED, check_managed_certificates, covers, in_service,
+                                        managed_entry, managed_inventory_entry, managed_rows, reconcile_managed,
+                                        record_names, renewed_as, unrecorded)
 from opsdir.domains.pki.naming import AUTHORITIES, ISSUED, MANAGED, managed_inventory_dn
 from opsdir.domains.pki.pem import pem_fingerprint, pem_thumbprint
 import mini_estate
@@ -106,6 +107,26 @@ def test_each_state_is_kept_apart_and_absence_is_never_missing():
                           "failing": IN_ERROR, "elsewhere": NOT_MANAGED}
     # a complete inventory still says nothing of a certificate it doesn't hold
     assert _states(_imported(_base(_cert("only")), state="complete")) == {"only": NOT_MANAGED}
+
+
+def test_a_linked_earlier_version_is_renewed_exactly():
+    # the record's web certificate matches an earlier version (serial 0A), linked to what replaced it: a renewal for
+    # another subject (inference would never find it), never unrecorded itself, and actions it says it takes kept
+    old = _row("v1", "CN=web.example.test", serial="0A")
+    old[1].update(ciamRenewedAs="v2")
+    new = _row("v2", "CN=web-2027.example.test", serial="0B", nb="2026-09-01", na="2027-09-01")
+    new[1].update(ciamManagerAction=("AutoRenew at 80% of lifetime", "EmailContacts 30 days before expiry"))
+    d = _imported(_base(_cert("web", extra="ciamSerialNumber: 0A\n")), (old, new))
+    done = reconcile_managed(d, AS_OF)
+    assert [(r.state, r.found.attrs["cn"][0], r.newer.attrs["cn"][0]) for r in done] == [(RENEWED, "v1", "v2")]
+    rows = [get(d, f"cn={k},{managed_inventory_dn(SOURCE)}") for k in ("v1", "v2")]
+    assert not in_service(rows[0], AS_OF) and in_service(rows[1], AS_OF) and unrecorded(d, done, AS_OF) == ()
+    assert renewed_as(rows[0], rows) == rows[1] and renewed_as(rows[1], rows) is None and renewed_as(None, rows) is None
+    assert rows[1].attrs["ciamManagerAction"] == ("AutoRenew at 80% of lifetime", "EmailContacts 30 days before expiry")
+    # what it names isn't in service: no renewal, and none inferred either
+    disabled = _row("v2", "CN=web.example.test", serial="0B", nb="2026-09-01", na="2027-09-01", state="disabled")
+    d = _imported(_base(_cert("web", extra="ciamSerialNumber: 0A\n")), (old, disabled))
+    assert _states(d) == {"web": MANAGED_STATE}
 
 
 def test_a_serial_matches_only_with_the_same_issuer():

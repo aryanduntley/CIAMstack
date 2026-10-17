@@ -638,6 +638,18 @@ EXPECTED = MappingProxyType({
         ("A294", "Certificate", "venafi-prod holds 1 certificate(s) in service for names the record holds",
          "network discovery found a certificate for login.example-aero.test that the record has none of", None,
          "CHG-2125"),
+        # the Example Aero SaaS tenant's inventory (CHG-2127, CyberArk Certificate Manager - SaaS): a renewal linked
+        # exactly through the certificate's earlier version, a retired certificate the record still uses, and a scan
+        # finding a second certificate for a name the record holds
+        ("A299", "Certificate", "Certificate `supplier-portal-sp-signing` was renewed by Example Aero SaaS",
+         "the tenant renewed the supplier portal's SP signing certificate on 2026-09-15 (its earlier version is the "
+         "one the record names); the record still names the old one", None, "CHG-2127"),
+        ("A300", "Certificate", "Example Aero SaaS holds 1 certificate(s) in service for names the record holds",
+         "a scan of the CDN edge found a second certificate for sso.example-aero.test, from another CA, that the "
+         "record has none of", None, "CHG-2127"),
+        ("A301", "Certificate", "Certificate `pf-signing-2025`'s management is disabled in Example Aero SaaS",
+         "PingFederate's signing certificate is retired in the tenant, but the record uses it: nothing renews or "
+         "watches it there", None, "CHG-2127"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "
