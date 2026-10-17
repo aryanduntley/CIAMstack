@@ -154,10 +154,16 @@ read; a linked ticket the export lacks is never removed. `opsdir report tickets`
 drift: **in-step**, **not-imported** (while tickets of the same system were read), **rejected** or **cancelled** (ITSM
 says so while the record approves the change), **unapproved** (approval still requested, or never), **closed-pending**
 (ITSM closed it while the record has it proposed or approved), **live-but-rejected**, **window-differs** (the record's
-planned UTC day is outside the ticket's planned window) and **outside-window** (ITSM's own work times outside its
-planned window, exact). `opsdir plan` (area `Change tickets`; nothing while the record holds no ticket) blocks on
-rejected and cancelled and gives the rest as actions for the change's owner (else the operator); no fix is offered: a
-change's status is a person's.
+planned UTC day is outside the ticket's planned window), **outside-window** (ITSM's own work times outside its
+planned window, exact), **applied-outside-window** (the record's own writes under the change, as its history holds
+them, landed before the ticket's planned start or after its planned end, exact; the bootstrap load and the change's own
+change record don't count) and **after-read** (the ticket says work started or ended, an approval step was created or
+completed, or an approver record was updated later than its export was read: evidence from after the read; planned
+times never count). The report's `applied` column shows the first and last of those writes. Writes count up to the
+end of the day the report or plan is run as of (`--as-of`): a plan as of a day sees the writes landed by then.
+`opsdir plan` (area `Change tickets`; nothing while the record holds no ticket) blocks on rejected and cancelled and
+gives the rest as actions for the change's owner (else the operator), naming only the ticket's window for
+applied-outside-window, never the write times; no fix is offered: a change's status is a person's.
 
 ### Cloud-managed identity services
 
@@ -383,8 +389,11 @@ adapters' options as its own flags (`--terraform-dir`, `--amster-key`, `--ldapse
   call's error output is shown with resolved values masked. The source's `ciamCredentialScheme` says how the GET sends
   it: `basic` (with `ciamLoginName`; the default), `bearer` (`Authorization: Bearer`), `token` (a session token a
   product's own logon issued, sent as the whole `Authorization` value: opsdir never logs on itself, a logon being a
-  POST) or `api-key` (the secret alone in the header the collector names, no login); each collector says which its
-  API takes. Calls carrying provider debug switches are never run.
+  POST), `api-key` (the secret alone in the header the collector names, no login) or `client-certificate` (mutual
+  TLS: the reference resolves to a PEM holding the client certificate, its chain and private key, loaded into the
+  connection through an anonymous in-memory file, Linux memfd, never a file on disk, and presented in the TLS handshake
+  with no `Authorization` header; without memfd the call fails and says why); each collector says which its API takes.
+  Calls carrying provider debug switches are never run.
 - A collection is complete or not imported: an import makes the record's subtrees exactly what the export holds, so a
   failed call (or a collector asking for more than 8 rounds or 2000 calls, or saying why it must stop) leaves the record as it is and says why.
 - An applied collection records how it was collected on its import run (its `ciamImportRun` entry): the identity the
@@ -627,7 +636,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    | Who keeps an entry the stack doesn't (the party `ciamManagedBy` names) | `opsdir.domains.governance.keepers`: `managed_by(d, e)` (the party entry or `None`), `managed_by_name(d, e, default)` (its name as reports show it); `keeper(m, e)` for where its keeper's root is |
    | How long a destination keeps what it is sent, and a report's yes/no | `opsdir.domains.observability.retention`: `retention_days(b)` (searchable), `total_days(b)` (in all: `ciamTotalRetentionDays`, else `retention_days`), `days_text(days)` (a report's cell: `forever` for `INDEFINITE`), `longest_retention(days)`, `INDEFINITE` (forever), `yes_no(e, attr)` |
    | A secret store's inventory (what a safe or mount holds, metadata only) and where a reference points in it | the adapter declares `inventory_locator={"scheme": locate}` (`locate(rest) -> (container, object)` or `None`); its importer builds entries with `opsdir.domains.pki.inventory`: `inventory_entry(d, scheme, container, at, state, problems, prefixes, endpoint)`, `object_entry(d, scheme, container, name, facts)`, `inventory_group(inventory, objects)`; its collector lists `wanted_containers(d, scheme, locate, options.get("inventory_container"))` and declares the shared `CONTAINER_OPTION` (`--inventory-container`) |
-   | Send a collection source's credential the way its API takes it | `Request(url, headers, credential, ca)` with `credential` `(s.scheme, s.credential, s.login)` for `basic`, `bearer` and `token` (the whole `Authorization` value: a session token obtained outside opsdir), `("headers", ref, login, (login header, secret header))`, or `("api-key", ref, None, "X-PAN-KEY")` (the secret alone in the header named) |
+   | Send a collection source's credential the way its API takes it | `Request(url, headers, credential, ca)` with `credential` `(s.scheme, s.credential, s.login)` for `basic`, `bearer` and `token` (the whole `Authorization` value: a session token obtained outside opsdir), `("headers", ref, login, (login header, secret header))`, or `("api-key", ref, None, "X-PAN-KEY")` (the secret alone in the header named), or `("client-certificate", ref, None)` (mutual TLS: the PEM loaded in memory, no header) |
    | What a source product holds with no standard equivalent, carried for the plan; planner checks for a product only a migration's source runs | `opsdir.domains.governance.source_objects`: `source_objects(d)`, `check_source_objects(ctx)`, `source_object_rows(d)`; the vocabulary `opsdir.domains.governance.schema.HANDLINGS`, the branch `opsdir.domains.governance.naming.SOURCE_OBJECTS` (an importer's own below it); the adapter declares `source_checks=` (`opsdir.core.contract.Adapter`: run when it applies to the source) |
    | A cloud-managed identity service: what its vendor documents, whether a binding is a target or a neighbour, whom it issues to and relies on | the cloud adapter declares `managed_identity=(ManagedService(...),)` (`opsdir.core.contract`: `name` (its `ciamManagedService` value, also in the adapter's vocabulary), `title`, `partition(m)`, `available` / `absent` by partition, `supported` / `unsupported` / `partition_unsupported` capabilities each with its source, `conditions`, `notes`, `users`); `opsdir.domains.federation.managed`: `managed_identities(m)`, `is_target(b)`, `realized_service(d, b)`, `realizing(m, service)`, `partners(d, b)`, `roles(d, b)` (issuer to, relying party of), `integration_needs(i, as_partner)`, `service_needs(service)`, `status(spec, partition, capability)`, `availability(spec, partition)`, `words(capability)`; the planner's check is `opsdir.connectors.managed_identity` (`question_name(m, b, capability)`: the unknowns-register question that confirms a capability no documentation establishes) |
    | SIEM indexes and the detections searching them; which adapter keeps a SIEM index | `opsdir.domains.observability.siem`: `SIEM_INDEX`, `is_siem(b)`, `siem_destinations(m)`, `detections(m)`, `detection_index(m, b)`, `detection_for(m, rule)`; a SIEM adapter declares `siem_indexes=` `(EnvModel, destination) -> bool` (`opsdir.core.contract.Adapter`), and a provider adapter leaves a destination another adapter keeps to it: `Services.siem_keeper(m, destination)` (the keeper's name, or `None`) |

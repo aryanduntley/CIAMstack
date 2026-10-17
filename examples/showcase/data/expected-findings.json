@@ -1546,7 +1546,7 @@
       "id": "A174",
       "area": "Change tickets",
       "match": "ITSM says the work on its ticket servicenow:CHG0029931 (read 2026-09-23) ran",
-      "planted": "CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state is kept native)",
+      "planted": "CHG-0931's mail index work started before and ended after its ticket's planned window (ITSM's own times; its legacy change model's state reads as closed once CHG-2115 names the model)",
       "cleared_by": null,
       "raised_by": "CHG-2056"
     },
@@ -1573,6 +1573,14 @@
       "planted": "CHG-2092's expedited change request is being implemented: its rollout started 2026-09-22, before the planned window opens on 2026-09-24",
       "cleared_by": null,
       "raised_by": "CHG-2106"
+    },
+    {
+      "id": "A270",
+      "area": "Change tickets",
+      "match": "its ticket servicenow:CHG0030117 was read as of 2026-09-23 09:00Z, but ITSM says of it: work started 2026-09-23 10:15Z",
+      "planted": "CHG-2117's ticket says its patch restarts began an hour after the export it was read from was taken: evidence from after the read (the read time given is wrong, or the export was taken later)",
+      "cleared_by": null,
+      "raised_by": "CHG-2116"
     },
     {
       "id": "A150",

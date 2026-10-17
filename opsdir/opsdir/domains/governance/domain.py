@@ -26,7 +26,7 @@ DOMAIN = Domain(name="governance", schema=FRAGMENT, required_roles=(),
                          "import-scopes": directory_report(IMPORT_SCOPE_HEADERS, import_scope_rows),
                          "collections": directory_report(ATTEMPT_HEADERS, attempt_rows),
                          "unknowns": directory_report(UNKNOWN_HEADERS, unknown_rows, dated=True),
-                         "tickets": directory_report(TICKET_HEADERS, ticket_rows),
+                         "tickets": directory_report(TICKET_HEADERS, ticket_rows, writes=True),
                          "source-objects": directory_report(SOURCE_OBJECT_HEADERS, source_object_rows)},
                 checks=(check_unknowns, check_tickets, check_source_objects, check_import_runs), order=50,
                 vocabulary={}, settings=SETTINGS, roles_used=collection_roles)

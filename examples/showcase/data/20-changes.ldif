@@ -752,6 +752,36 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the linked BMC Helix ITSM change requests as evidence (status,
   approval signatures, windows)
 
+dn: cn=CHG-2115,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2115
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Name the ServiceNow instance's legacy change model (its pre-Geneva 
+ state codes); link CHG-2117 to its ticket
+
+dn: cn=CHG-2116,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2116
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the linked ServiceNow tickets again as evidence (the legacy mo
+ del's states in neutral terms)
+
+dn: cn=CHG-2117,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2117
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Restart the target directory servers for the September kernel patch
+ es
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

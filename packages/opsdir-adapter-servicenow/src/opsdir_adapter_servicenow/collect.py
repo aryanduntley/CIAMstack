@@ -5,8 +5,10 @@ Pure: the core makes the requests.
 Where to read is an environment's collection source for servicenow/change-requests (ciamCollectionSource: the
 instance's base URL, https://<instance host>; the first usable source), with the credential its ciamCredentialRole
 binding references (resolved when collecting, never stored) and the CA certificate its ciamCaRole binding references
-as the trust anchor. The credential is sent as basic (a user's password, with ciamLoginName) or bearer (an OAuth access
-token minted outside opsdir, client credentials: opsdir never asks for one).
+as the trust anchor. The credential is sent as basic (a user's password, with ciamLoginName), bearer (an OAuth access
+token minted outside opsdir, client credentials: opsdir never asks for one) or presented as a client certificate
+(client-certificate: a PEM with the certificate, its chain and private key, loaded in memory only; the instance maps it
+to the reading user: certificate-based authentication, README).
 
 The tickets read are those the record's change records name (servicenow:<number>, in every environment), CHUNK
 numbers per query: GET /api/now/table/change_request?sysparm_query=numberIN<numbers>^ORDERBYsys_id with the fields the
@@ -24,8 +26,10 @@ from opsdir.domains.governance.tickets import linked_numbers
 from .changes import APPROVER_FIELDS, APPROVER_TABLE, CHANGE_FIELDS, CHANGE_TABLE, SYSTEM, answer_rows
 
 IMPORTER = "servicenow/change-requests"
-SCHEMES = ("basic", "bearer")      # a user's password; an OAuth client-credentials access token minted outside opsdir
-TAKES = "the instance is read with a user's password (basic) or an OAuth access token (bearer)"
+SCHEMES = ("basic", "bearer", "client-certificate")   # a user's password; an OAuth client-credentials access token
+# minted outside opsdir; a client certificate the instance maps to a user (certificate-based authentication: mutual TLS)
+TAKES = ("the instance is read with a user's password (basic), an OAuth access token (bearer) or a client certificate "
+         "it maps to a user (client-certificate)")
 CHUNK = 50                         # tickets per query (the URL stays short)
 PAGE = 100                         # records per page: more than a chunk's tickets, so a chunk's second page is empty
 

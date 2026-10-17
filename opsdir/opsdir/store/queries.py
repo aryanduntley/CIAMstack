@@ -1,4 +1,5 @@
 """Read queries over the store's SQL views and functions (effects: they run SQL)."""
+import datetime as dt
 
 
 def fetch_rows(conn, sql, params=()):
@@ -22,3 +23,15 @@ def fetch_history(conn, dn=None):
     where = " and lower(dn) = lower(%s)" if dn else ""
     return fetch_rows(conn, "select at::timestamp(0), change_id, op, dn from entry_history"
                             f" where change_id <> 'BOOTSTRAP'{where} order by id", (dn,) if dn else ())
+
+
+def fetch_change_writes(conn, until, branch):
+    """Effect (reads history): {change id: (first, last, count)} of when each governed change's writes landed before
+    until (a UTC datetime), as UTC datetimes (the session's time zone is the server's), the bootstrap load and each
+    change's own change record (cn=<id>,<branch>) left out."""
+    rows = fetch_rows(conn, "select change_id, min(at), max(at), count(*) from entry_history"
+                            " where change_id <> 'BOOTSTRAP' and at < %s"
+                            " and norm_dn(dn) <> norm_dn('cn=' || change_id || ',' || %s) group by change_id",
+                      (until, branch))
+    utc = dt.timezone.utc
+    return {change: (first.astimezone(utc), last.astimezone(utc), n) for change, first, last, n in rows}

@@ -1,8 +1,9 @@
 """Effects: running a collector's calls against the live system, read-only (connectors.collecting stays pure and gets
 run_call). A Command runs as a subprocess without a shell: its argv as declared, any credential it needs only on its
 standard input, extra environment only switches. A Request is an HTTP GET made here (urllib; no other method), its
-credential put in the Authorization header in memory, its endpoint trusted by the certificate its reference names
-(ssl cadata) or the system's store. Credential references resolve through the secret-store adapters' commands (the
+credential put in the Authorization header in memory (or, a client certificate, loaded into the TLS context through an
+anonymous in-memory file: never a file on disk), its endpoint trusted by the certificate its reference names (ssl
+cadata) or the system's store. Credential references resolve through the secret-store adapters' commands (the
 operator's own access to the store), once per run, held in memory only; a failing call's error output is shown with
 every resolved value masked. Nothing is written anywhere but the caller's memory."""
 import base64
@@ -22,6 +23,7 @@ from .core.contract import Request
 from .core.observation import observation
 
 COMMAND_SECONDS, REQUEST_SECONDS, SECRET_SECONDS = 300, 120, 60
+CLIENT_CERTIFICATE = "client-certificate"     # the credential scheme presenting a client certificate (mutual TLS)
 OBSERVED_BYTES = 64 * 1024 * 1024       # the most an observed endpoint's answer may be (a large CA's CRL is megabytes)
 
 
@@ -138,7 +140,7 @@ def _authorization(credential, secret):
     """The headers carrying a resolved credential: Authorization (basic, bearer, or token: the value as it is, a
     session token a product's own logon issued), a login and a secret header (headers), or the secret in the header
     the request names (api-key: an API key, no login), after the prefix the request gives when it gives one
-    (Elasticsearch's 'ApiKey ')."""
+    (Elasticsearch's 'ApiKey '); none for a client certificate (presented in the TLS handshake: _context)."""
     scheme, _, login, *names = credential
     if scheme == "basic":
         return {"Authorization": "Basic " + base64.b64encode(f"{login}:{secret}".encode()).decode()}
@@ -149,7 +151,38 @@ def _authorization(credential, secret):
         return {names[0]: (names[1] if len(names) > 1 else "") + secret}
     if scheme == "token":
         return {"Authorization": secret}
+    if scheme == CLIENT_CERTIFICATE:
+        return {}
     return {"Authorization": f"Bearer {secret}"}
+
+
+def load_client_certificate(context, pem):
+    """Effect: load a client certificate, its chain and private key (PEM text) into an SSL context through an
+    anonymous in-memory file (memfd, read back as /proc/self/fd/N: the ssl module reads certificates from paths only),
+    never a file on disk; None when loaded, else why not (no memfd here)."""
+    if not hasattr(os, "memfd_create") or not pathlib.Path("/proc/self/fd").is_dir():
+        return ("a client certificate is loaded only through an in-memory file (memfd), which this system lacks: it is "
+                "never written to disk")
+    fd = os.memfd_create("opsdir-client-certificate", os.MFD_CLOEXEC)
+    try:
+        data = pem.encode("utf-8")
+        while data:
+            data = data[os.write(fd, data):]
+        context.load_cert_chain(f"/proc/self/fd/{fd}")
+    finally:
+        os.close(fd)
+    return None
+
+
+def _context(call, secrets):
+    """(the TLS context of a Request: its trust anchor, and its client certificate when its credential is one, or
+    None, problem)."""
+    context = ssl.create_default_context(cadata=secrets[call.ca]) if call.ca else ssl.create_default_context()
+    if call.credential and call.credential[0] == CLIENT_CERTIFICATE:
+        problem = load_client_certificate(context, secrets[call.credential[1]])
+        if problem:
+            return None, problem
+    return context, None
 
 
 def _request(call, resolve):
@@ -160,7 +193,9 @@ def _request(call, resolve):
     headers = {**dict(call.headers),
                **(_authorization(call.credential, secrets[call.credential[1]]) if call.credential else {})}
     try:
-        context = ssl.create_default_context(cadata=secrets[call.ca]) if call.ca else ssl.create_default_context()
+        context, problem = _context(call, secrets)
+        if problem:
+            return None, problem
         req = urllib.request.Request(call.url, headers=headers, method="GET")
         with urllib.request.urlopen(req, timeout=REQUEST_SECONDS, context=context) as answer:
             return answer.read().decode("utf-8"), None
@@ -180,7 +215,9 @@ def _answer(call, resolve):
     headers = {**dict(call.headers),
                **(_authorization(call.credential, secrets[call.credential[1]]) if call.credential else {})}
     try:
-        context = ssl.create_default_context(cadata=secrets[call.ca]) if call.ca else ssl.create_default_context()
+        context, problem = _context(call, secrets)
+        if problem:
+            return None, None, None, problem
         req = urllib.request.Request(call.url, headers=headers, method="GET")
         with urllib.request.urlopen(req, timeout=REQUEST_SECONDS, context=context) as answer:
             body = answer.read(OBSERVED_BYTES + 1)

@@ -10,11 +10,14 @@ from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.governance.domain import DOMAIN
 from opsdir.domains.governance.naming import CHANGES, TICKETS
-from opsdir.domains.governance.tickets import (AREA, BLOCKING, CANCELLED, CLOSED_PENDING, IN_STEP, LIVE_REJECTED,
-                                               NOT_IMPORTED, OUTSIDE_WINDOW, REJECTED, TICKET_HEADERS, UNAPPROVED,
-                                               WINDOW_DIFFERS, check_tickets, drift_states, finding_text, linked,
-                                               linked_numbers, ticket_dn, ticket_entry, ticket_group, ticket_ref,
-                                               ticket_rows)
+from opsdir.core.contract import Setting
+from opsdir.domains.governance.schema import TICKET_APPROVALS
+from opsdir.domains.governance.tickets import (AFTER_READ, APPLIED_OUTSIDE, AREA, BLOCKING, CANCELLED, CLOSED_PENDING,
+                                               IN_STEP, LIVE_REJECTED, NOT_IMPORTED, OUTSIDE_WINDOW, REJECTED,
+                                               TICKET_HEADERS, UNAPPROVED, WINDOW_DIFFERS, after_read,
+                                               applied_outside_window, check_tickets, drift_states, finding_text,
+                                               linked, linked_numbers, ticket_dn, ticket_entry, ticket_group,
+                                               ticket_map, ticket_ref, ticket_rows, ticket_state_map)
 import mini_estate
 from support import REGISTRY, build_directory
 
@@ -29,9 +32,9 @@ def _change(cn, status, ref=None, planned=None, **attrs):
             + "".join(f"{k}: {v}\n" for k, v in attrs.items()))
 
 
-def _ticket(number, adapter="snow", **attrs):
+def _ticket(number, adapter="snow", read="20260923090000Z", **attrs):
     return (f"dn: {ticket_dn(adapter, number)}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamTicket\n"
-            f"cn: {number}\nciamImportedAt: 20260923090000Z\n"
+            f"cn: {number}\nciamImportedAt: {read}\n"
             + "".join(f"{k}: {v}\n" for k, vs in attrs.items() for v in (vs if isinstance(vs, tuple) else (vs,))))
 
 
@@ -67,7 +70,8 @@ TICKETS_READ = (
     _ticket("C5", ciamTicketState="closed", ciamTicketApproval="approved", **WINDOW),
     _ticket("C6", ciamTicketState="scheduled", ciamTicketApproval="approved"),
     _ticket("C7", ciamTicketState="scheduled", ciamTicketApproval="approved", **WINDOW),
-    _ticket("C8", ciamTicketState="closed", ciamTicketApproval="approved", ciamTicketWorkStart="20260924013000Z",
+    _ticket("C8", read="20260925000000Z", ciamTicketState="closed", ciamTicketApproval="approved",
+            ciamTicketWorkStart="20260924013000Z",
             ciamTicketWorkEnd="20260924050000Z", **WINDOW),
 )
 
@@ -76,9 +80,9 @@ def _d(*records):
     return build_directory(REGISTRY, tuple(parse("\n".join((mini_estate.LDIF, *BASE, *records)))))
 
 
-def _check(d):
+def _check(d, writes=None):
     return check_tickets(PlanContext(d, env_model(d, "alpha/prod"), env_model(d, "beta/prod"), None, AS_OF, {}, {},
-                                     ()))
+                                     (), writes))
 
 
 def _states(d):
@@ -87,6 +91,7 @@ def _states(d):
 
 def test_the_governance_domain_checks_and_reports_tickets():
     assert check_tickets in DOMAIN.checks and "tickets" in DOMAIN.reports
+    assert DOMAIN.reports["tickets"].writes            # the runner gives it the record's writes from history
 
 
 def test_a_change_names_its_ticket_as_adapter_and_number():
@@ -173,7 +178,93 @@ def test_the_report_lists_every_linked_change():
     rows = ticket_rows(d)
     assert len(rows[0]) == len(TICKET_HEADERS)
     assert rows[0] == ("CHG-1", "approved", "2026-09-24", "snow:C1", "scheduled", "approved",
-                      "2026-09-24 02:00Z to 2026-09-24 06:00Z", "", "2026-09-23", IN_STEP)
+                      "2026-09-24 02:00Z to 2026-09-24 06:00Z", "", "", "2026-09-23", IN_STEP)
     assert rows[1][3:6] == ("jira:IAM-1", "", "")
     assert rows[1][-1] == NOT_IMPORTED
     assert rows[2][4:6] == ("authorize (-3 Authorize)", "rejected") and rows[2][-1] == REJECTED
+
+
+def _utc(*parts):
+    return dt.datetime(*parts, tzinfo=dt.timezone.utc)
+
+
+def test_the_records_own_writes_are_compared_with_the_planned_window():
+    d = _d(*CHANGES_LINKED[:1], *CONTAINERS, TICKETS_READ[0])
+    t = linked(d)[0].ticket
+    inside = (_utc(2026, 9, 24, 2), _utc(2026, 9, 24, 6), 3)
+    assert applied_outside_window(t, inside) is None and applied_outside_window(t, None) is None
+    assert applied_outside_window(t, (_utc(2026, 9, 24, 1, 59), _utc(2026, 9, 24, 3), 2)) == "before"
+    assert applied_outside_window(t, (_utc(2026, 9, 24, 3), _utc(2026, 9, 24, 6, 1), 2)) == "after"
+    assert applied_outside_window(t, (_utc(2026, 9, 23), _utc(2026, 9, 25), 2)) == "before and after"
+    assert _states(d) == {"CHG-1": (IN_STEP,)}                                  # writes not read: nothing said
+    writes = {"CHG-1": (_utc(2026, 10, 17, 9), _utc(2026, 10, 17, 9, 5), 4)}
+    assert linked(d, writes)[0].states == (APPLIED_OUTSIDE,)
+    assert linked(d, {"CHG-1": inside})[0].states == (IN_STEP,)
+
+
+def test_an_open_window_end_is_never_crossed():
+    d = _d(*CHANGES_LINKED[:1], *CONTAINERS, _ticket("C1", ciamTicketState="scheduled", ciamTicketApproval="approved",
+                                                     ciamTicketPlannedStart="20260924020000Z"))
+    assert applied_outside_window(linked(d)[0].ticket, (_utc(2026, 9, 24, 3), _utc(2099, 1, 1), 1)) is None
+
+
+def test_writes_outside_the_window_are_an_action_naming_only_the_window():
+    d = _d(*CHANGES_LINKED[:1], *CONTAINERS, TICKETS_READ[0])
+    writes = {"CHG-1": (_utc(2026, 10, 17, 9, 7), _utc(2026, 10, 17, 9, 8), 2)}
+    found = _check(d, writes)
+    assert not found.blockers and not found.ok and len(found.actions) == 1
+    text = found.actions[0][1]
+    assert text == ("Change `CHG-1` (Work CHG-1): the record's writes under it landed after the planned window ITSM "
+                    "gives its ticket snow:C1 (read 2026-09-23) (2026-09-24 02:00Z to 2026-09-24 06:00Z, as the "
+                    "record's history says): review what was written outside the window, or have the ticket's "
+                    "window corrected.")
+    assert "2026-10-17" not in text                                     # never the write times: they're wall-clock
+    row = ticket_rows(d, None, writes)[0]
+    assert row[TICKET_HEADERS.index("applied")] == "2026-10-17 09:07Z to 2026-10-17 09:08Z"
+    assert row[-1] == APPLIED_OUTSIDE
+
+
+def test_times_after_the_read_are_evidence_from_the_future():
+    t = _ticket("C1", ciamTicketState="closed", ciamTicketApproval="approved", **WINDOW,
+                ciamTicketWorkStart="20260924021000Z", ciamTicketWorkEnd="20260923080000Z",
+                ciamTicketApprovalStep=("approved 41 created 20260918090000Z completed 20260923100000Z",
+                                        "pending 42 created ?"),
+                ciamTicketApprover=("approved a1b2 updated 20260923091500Z",
+                                    "approved jdoe step 7 updated 20260922000000Z phase Review board",
+                                    "approved JIRAUSER1 step 9"))
+    d = _d(_change("CHG-1", "approved", "snow:C1", "20260924000000Z"), *CONTAINERS, t)
+    ticket = linked(d)[0].ticket
+    assert after_read(ticket) == (("approver record a1b2 updated", "20260923091500Z"),
+                                  ("approval step 41 completed", "20260923100000Z"),
+                                  ("work started", "20260924021000Z"))
+    assert linked(d)[0].states == (CLOSED_PENDING, AFTER_READ)
+    text = finding_text(linked(d)[0], AFTER_READ)
+    assert text.startswith("Change `CHG-1` (Work CHG-1): its ticket snow:C1 was read as of 2026-09-23 09:00Z, but "
+                           "ITSM says of it: approver record a1b2 updated 2026-09-23 09:15Z; approval step 41 "
+                           "completed 2026-09-23 10:00Z; work started 2026-09-24 02:10Z.")
+    assert AFTER_READ in [s for link in linked(d) for s in link.states]
+    assert any("Evidence from after the read" in a[1] for a in _check(d).actions)
+
+
+def test_planned_times_after_the_read_are_fine():
+    d = _d(_change("CHG-1", "approved", "snow:C1", "20260924000000Z"), *CONTAINERS,
+           _ticket("C1", ciamTicketState="scheduled", ciamTicketApproval="approved", **WINDOW))
+    assert after_read(linked(d)[0].ticket) == () and _states(d) == {"CHG-1": (IN_STEP,)}
+
+
+SETTING = Setting("snow-approvals", "string", "not requested=not-requested, approved=approved", "test")
+
+
+def test_a_mapping_setting_maps_to_the_values_it_allows():
+    d = _d()
+    assert ticket_map(d, SETTING, TICKET_APPROVALS, "a ticket approval") == (
+        {"not requested": "not-requested", "approved": "approved"}, ())
+    bad = SETTING._replace(default="approved=approved, approved=rejected, skipped=done, odd")
+    mapping, problems = ticket_map(d, bad, TICKET_APPROVALS, "a ticket approval")
+    assert mapping == {"approved": "approved"}
+    assert problems == ("snow-approvals: `odd` isn't <name>=<value>",
+                        "snow-approvals: `approved` is mapped more than once (the first is used)",
+                        "snow-approvals: `skipped=done`: done isn't a ticket approval (not-requested, requested, "
+                        "approved, rejected)")
+    states = SETTING._replace(default="Open=assess, Done=finished")
+    assert ticket_state_map(d, states)[0] == {"Open": "assess"}

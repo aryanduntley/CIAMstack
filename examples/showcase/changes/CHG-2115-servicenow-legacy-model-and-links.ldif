@@ -1,0 +1,18 @@
+# CHG-2115 (approved): the ServiceNow instance's old "Legacy change" model still holds the legacy (pre-Geneva) state
+# codes (-5 Pending, 1 Open, 2 Work in Progress, 3 Closed Complete, 4 Closed Incomplete, 7 Closed Skipped), so the
+# estate setting names it (its sys_id, as GET /api/sn_chg_rest/change/model lists it): its tickets' states are read in
+# neutral terms through the add-on's default legacy map (servicenow-legacy-states). The approval field's values are the
+# documented four, so servicenow-approval-values keeps its default. CHG-2117 names its ServiceNow ticket. Nothing here
+# is ticket evidence: CHG-2116 reads the tickets again, and no ticket ever changes a change record's status.
+dn: cn=servicenow-legacy-state-models,ou=settings,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamEstateSetting
+cn: servicenow-legacy-state-models
+ciamEstateValue: 0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f
+
+dn: cn=CHG-2117,ou=changes,dc=ciam-ops
+changetype: modify
+add: ciamTicketRef
+ciamTicketRef: servicenow:CHG0030117

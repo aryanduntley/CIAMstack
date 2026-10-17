@@ -12,15 +12,20 @@ display ones are in the reading user's time zone), so a record whose state or ti
 with a notice. An answer that is ServiceNow's error ({"error": ...}) is named in a notice.
 
 What a ticket says:
-  ciamTicketState         its state in neutral terms, only when its change model is one the operator names in the
-                          estate setting servicenow-standard-state-models (the models using ServiceNow's documented
-                          standard state model, STATE_MODELS): codes differ between models (legacy ones use 1 Open,
-                          2 Work in Progress, 7 Closed Skipped), so any other model's state is kept native only, never
-                          taken as closed or cancelled
+  ciamTicketState         its state in neutral terms, only when its change model is one the operator names in an
+                          estate setting: servicenow-standard-state-models (the models using ServiceNow's documented
+                          standard state model, STATE_MODELS) or servicenow-legacy-state-models (the models still on the
+                          pre-Geneva codes -5 Pending, 1 Open, 2 Work in Progress, 3 Closed Complete, 4 Closed
+                          Incomplete, 7 Closed Skipped, mapped by servicenow-legacy-states, the operator's or the
+                          default); '(none)' names the changes without a model. Codes differ between models (4 is
+                          Canceled on the standard model, Closed Incomplete on the legacy one), so a model named in
+                          neither (or in both) keeps its state native only, never taken as closed or cancelled
   ciamTicketNativeState   the raw state code and its label when the export has one
   ciamTicketApproval      change_request.approval, the change's overall approval: THE approval evidence; never inferred
                           from the approval records (one approved approver doesn't approve a change, and none doesn't
-                          mean none was needed)
+                          mean none was needed). Its raw values are mapped by servicenow-approval-values (default: the
+                          documented not requested, requested, approved, rejected); any other value (an instance's
+                          own) leaves the approval unknown, kept as the fact `approval <raw>`, with a notice
   ciamTicketApprover      each sysapproval_approver record of it, detail only: "<state> <approver sys_id> updated
                           <sys_updated_on>" (identifiers, never names; the update time is not when it was approved)
   ciamTicketChangeType    type (normal, standard, emergency), also kept as a fact
@@ -28,6 +33,9 @@ What a ticket says:
   ciamTicketFact          type, chg_model, close_code, assignment_group, cmdb_ci, requested_by, correlation_id,
                           correlation_display and sys_updated_on, raw (reference fields keep their sys_ids)
   ciamProviderRef         its sys_id; ciamTitle its short description
+
+One instance per record: an export from another instance than the one the record's tickets were read from (their
+addresses) is refused (ticket numbers are only an instance's own, and not even unique there by default).
 
 Only tickets the record links are read; other tickets in the export are named in a notice. A linked ticket missing
 from the export is never removed (the record keeps what it last read, and the planner says it wasn't read: a Table
@@ -38,13 +46,17 @@ import datetime as dt
 import json
 import re
 
+from typing import NamedTuple
+from urllib.parse import urlsplit
+
 from opsdir.core.contract import Imported, Importer, Setting
-from opsdir.core.directory import gtime, ou_entry
+from opsdir.core.directory import children, gtime, one, ou_entry
 from opsdir.core.naming import rdn_safe
 from opsdir.core.settings import setting_value
 from opsdir.domains.governance.naming import TICKETS
-from opsdir.domains.governance.schema import TICKET_CHANGE_TYPES
-from opsdir.domains.governance.tickets import adapter_dn, linked_numbers, ticket_entry, ticket_group
+from opsdir.domains.governance.schema import TICKET_APPROVALS, TICKET_CHANGE_TYPES
+from opsdir.domains.governance.tickets import (TICKET_CLASS, adapter_dn, linked_numbers, ticket_entry, ticket_group,
+                                               ticket_map, ticket_state_map)
 
 SYSTEM = "servicenow"
 CHANGE_TABLE, APPROVER_TABLE = "change_request", "sysapproval_approver"
@@ -57,17 +69,33 @@ FACT_FIELDS = ("type", "chg_model", "close_code", "assignment_group", "cmdb_ci",
 WINDOW = (("start_date", "ciamTicketPlannedStart"), ("end_date", "ciamTicketPlannedEnd"),
           ("work_start", "ciamTicketWorkStart"), ("work_end", "ciamTicketWorkEnd"))
 # The documented standard state model's codes (ServiceNow change management state model; a model uses it only when
-# the operator says so: STANDARD_MODELS). Data: another model's map would be another entry here.
+# the operator says so: STANDARD_MODELS). The legacy (pre-Geneva) codes' map is the operator's setting LEGACY_STATES.
 STATE_MODELS = {"standard": {"-5": "new", "-4": "assess", "-3": "authorize", "-2": "scheduled", "-1": "implement",
                              "0": "review", "3": "closed", "4": "cancelled"}}
-# change_request.approval's raw values (README: confirm on the instance); any other value is kept as a fact only
-APPROVALS = {"not requested": "not-requested", "requested": "requested", "approved": "approved",
-             "rejected": "rejected"}
+NO_MODEL = "(none)"                # names, in the model settings, the changes without a change model
 STANDARD_MODELS = Setting("servicenow-standard-state-models", "string", None,
                           "The ServiceNow change models (their sys_ids or names, comma-separated, as GET "
-                          "/api/sn_chg_rest/change/model lists them) that use the standard state model: only their "
-                          "tickets' states are read in neutral terms; any other model's are kept as ServiceNow gives "
-                          "them")
+                          "/api/sn_chg_rest/change/model lists them; (none) for changes without a model) that use the "
+                          "standard state model: their tickets' states are read in neutral terms; a model named in "
+                          "neither this nor servicenow-legacy-state-models keeps its states as ServiceNow gives them")
+LEGACY_MODELS = Setting("servicenow-legacy-state-models", "string", None,
+                        "The ServiceNow change models (sys_ids or names, comma-separated; (none) for changes without "
+                        "a model) whose changes still hold the legacy (pre-Geneva) state codes, read in neutral terms "
+                        "through servicenow-legacy-states")
+LEGACY_STATES = Setting("servicenow-legacy-states", "string", "-5=new, 1=assess, 2=implement, 3=closed, 4=closed, "
+                        "7=cancelled",
+                        "The legacy (pre-Geneva) change state codes in neutral terms ('<code>=<state>, ...': -5 "
+                        "Pending, 1 Open, 2 Work in Progress, 3 Closed Complete, 4 Closed Incomplete, 7 Closed "
+                        "Skipped by default); a code not mapped keeps its state as ServiceNow gives it")
+APPROVAL_VALUES = Setting("servicenow-approval-values", "string", "not requested=not-requested, requested=requested, "
+                          "approved=approved, rejected=rejected",
+                          "change_request.approval's raw values in neutral terms ('<raw value>=<approval>, ...'); "
+                          "an instance's other values leave the approval unknown, kept as a fact")
+SETTINGS = (STANDARD_MODELS, LEGACY_MODELS, LEGACY_STATES, APPROVAL_VALUES)
+# What the operator's estate settings say of the instance: the models on each state model (sys_ids or names, NO_MODEL),
+# the legacy codes' neutral states and the approval field's raw values' neutral approvals.
+InstanceMaps = NamedTuple("InstanceMaps", [("standard", frozenset), ("legacy", frozenset), ("legacy_states", dict),
+                                           ("approvals", dict)])
 RAW_TIME = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
 RAW_STATE = re.compile(r"-?\d+")
 
@@ -149,14 +177,23 @@ def display_only(r):
     return f"{', '.join(bad)} given as display text, not raw values" if bad else None
 
 
-def neutral_state(r, models):
-    """(neutral state or None, the model when it isn't one the operator named as standard, else None)."""
+def model_kind(r, maps):
+    """(the state model a record's change model is named on: 'standard', 'legacy', 'both' (named in both settings:
+    refused) or None, the model's description)."""
     model_raw, model_label = _raw(r.get("chg_model")), _label(r.get("chg_model"))
-    standard = bool(models) and (model_raw in models or (model_label and model_label in models))
-    if not standard:
-        return None, (f"{model_label} ({model_raw})" if model_label and model_raw else model_label or model_raw
-                      or "(none)")
-    return STATE_MODELS["standard"].get(_raw(r.get("state"))), None
+    text = f"{model_label} ({model_raw})" if model_label and model_raw else model_label or model_raw or NO_MODEL
+
+    def named(models):
+        return (model_raw in models if model_raw else NO_MODEL in models) or bool(model_label and model_label in models)
+    on = tuple(k for k, models in (("standard", maps.standard), ("legacy", maps.legacy)) if named(models))
+    return ("both" if len(on) == 2 else on[0] if on else None), text
+
+
+def neutral_state(r, maps):
+    """(neutral state or None, the model's kind (model_kind), the model's description)."""
+    kind, text = model_kind(r, maps)
+    codes = {"standard": STATE_MODELS["standard"], "legacy": maps.legacy_states}.get(kind, {})
+    return codes.get(_raw(r.get("state"))), kind, text
 
 
 def approver_rows(rows, change_sys_id):
@@ -166,21 +203,22 @@ def approver_rows(rows, change_sys_id):
                         for a in rows if _raw(a.get("sysapproval")) == change_sys_id))
 
 
-def ticket_facts(r, approvers, host, models):
+def ticket_facts(r, approvers, host, maps):
     """The ticket attributes of one change_request record (domains.governance.tickets TICKET_ATTRS)."""
-    state, _ = neutral_state(r, models)
+    state, _, _ = neutral_state(r, maps)
     code, label = _raw(r.get("state")), _label(r.get("state"))
-    sys_id = _raw(r.get("sys_id"))
+    sys_id, approval = _raw(r.get("sys_id")), _raw(r.get("approval"))
+    unmapped = (f"approval {approval}",) if approval and approval not in maps.approvals else ()
     return {"ciamTitle": _raw(r.get("short_description")) or None,
             "ciamProviderRef": sys_id,
             "ciamDocUrl": f"https://{host}/api/now/table/{CHANGE_TABLE}/{sys_id}" if host else None,
             "ciamTicketState": state,
-            "ciamTicketApproval": APPROVALS.get(_raw(r.get("approval"))),
+            "ciamTicketApproval": maps.approvals.get(approval),
             "ciamTicketNativeState": f"{code} {label}".strip() or None,
             "ciamTicketChangeType": _raw(r.get("type")) if _raw(r.get("type")) in TICKET_CHANGE_TYPES else None,
             **{attr: _time(_raw(r.get(f))) for f, attr in WINDOW},
             "ciamTicketApprover": approvers,
-            "ciamTicketFact": tuple(f"{f} {_raw(r.get(f))}" for f in FACT_FIELDS if _raw(r.get(f))) or None}
+            "ciamTicketFact": (*unmapped, *(f"{f} {_raw(r.get(f))}" for f in FACT_FIELDS if _raw(r.get(f)))) or None}
 
 
 def _missing_fields(rows, fields, table):
@@ -189,9 +227,32 @@ def _missing_fields(rows, fields, table):
             "reader can't see it)",) if absent else ()
 
 
-def _models(d):
-    text = setting_value(d, STANDARD_MODELS) or ""
+def _models(d, setting):
+    text = setting_value(d, setting) or ""
     return frozenset(m.strip() for m in text.split(",") if m.strip())
+
+
+def instance_maps(d):
+    """(InstanceMaps of the operator's estate settings, the settings' problems)."""
+    legacy_states, state_problems = ticket_state_map(d, LEGACY_STATES)
+    approvals, approval_problems = ticket_map(d, APPROVAL_VALUES, TICKET_APPROVALS, "a ticket approval")
+    return (InstanceMaps(_models(d, STANDARD_MODELS), _models(d, LEGACY_MODELS), legacy_states, approvals),
+            (*state_problems, *approval_problems))
+
+
+def instance_hosts(d):
+    """The instance hosts the record's tickets were read from (their addresses, ciamDocUrl), sorted."""
+    return tuple(sorted({urlsplit(one(t, "ciamDocUrl")).hostname for t in children(d, adapter_dn(SYSTEM), TICKET_CLASS)
+                         if one(t, "ciamDocUrl")} - {None}))
+
+
+def _model_notices(by_kind):
+    """Notices of the change models whose states stay native ({(kind, model): numbers}: kind None or 'both')."""
+    named = f"{STANDARD_MODELS.name} or {LEGACY_MODELS.name}"
+    return tuple(f"change model {m} " + ("isn't named in " + named if kind is None else
+                                         f"is named in both {STANDARD_MODELS.name} and {LEGACY_MODELS.name}")
+                 + f": the state of {', '.join(n)} is kept as ServiceNow gives it (neutral state unknown)"
+                 for (kind, m), n in sorted(by_kind.items(), key=lambda kv: kv[0][1]))
 
 
 def read_changes(files, d, patterns, at=None):
@@ -201,10 +262,16 @@ def read_changes(files, d, patterns, at=None):
     tables, hosts, notices = _tables(files)
     if len(hosts) > 1:
         return Imported((), (), (f"the export holds several instances ({', '.join(hosts)}): import one at a time",))
-    host, wanted, models = (hosts[0] if hosts else None), linked_numbers(d, SYSTEM), _models(d)
+    host, wanted, (maps, problems) = (hosts[0] if hosts else None), linked_numbers(d, SYSTEM), instance_maps(d)
+    others = tuple(h for h in instance_hosts(d) if h != host)
+    if host and others:
+        return Imported((), (), (f"the record's ServiceNow tickets were read from {', '.join(others)}; this export "
+                                 f"is from {host}: one instance per record (ticket numbers are only an instance's "
+                                 "own)",))
+    notices.extend(problems)
     changes = {_raw(r.get("sys_id")) or _raw(r.get("number")): r for r in tables[CHANGE_TABLE]}.values()
     unlinked = sorted({_raw(r.get("number")) for r in changes} - set(wanted) - {""})
-    groups, unknown_models = [], {}
+    groups, unknown_models, unmapped = [], {}, {}
     for r in sorted(changes, key=lambda r: _raw(r.get("number"))):
         number, why = _raw(r.get("number")), display_only(r)
         if number not in wanted:
@@ -216,22 +283,26 @@ def read_changes(files, d, patterns, at=None):
             notices.append(f"{number}: {why} (their time zone is unknown): left out; export raw values "
                            "(sysparm_display_value=false or all)")
             continue
-        _, model = neutral_state(r, models)
-        if model is not None:
-            unknown_models.setdefault(model, []).append(number)
+        _, kind, model = neutral_state(r, maps)
+        if kind in (None, "both"):
+            unknown_models.setdefault((kind, model), []).append(number)
+        if _raw(r.get("approval")) and _raw(r.get("approval")) not in maps.approvals:
+            unmapped.setdefault(_raw(r.get("approval")), []).append(number)
         approvers = approver_rows(tables[APPROVER_TABLE], _raw(r.get("sys_id")))
         groups.append(ticket_group(ticket_entry(d, SYSTEM, number, gtime(at),
-                                                ticket_facts(r, approvers, host, models))))
+                                                ticket_facts(r, approvers, host, maps))))
     read = {g[1][0].attrs["cn"][0] for g in groups}
     notices.extend((
         *_missing_fields(tables[CHANGE_TABLE], CHANGE_FIELDS, CHANGE_TABLE),
         *_missing_fields(tables[APPROVER_TABLE], APPROVER_FIELDS, APPROVER_TABLE),
-        *(f"change model {m} isn't named in {STANDARD_MODELS.name}: the state of {', '.join(n)} is kept as "
-          "ServiceNow gives it (neutral state unknown)" for m, n in sorted(unknown_models.items())),
+        *_model_notices(unknown_models),
+        *(f"approval `{v}` of {', '.join(n)} isn't mapped in {APPROVAL_VALUES.name}: approval unknown (kept as a "
+          "fact)" for v, n in sorted(unmapped.items())),
         *((f"not linked to a change record: {', '.join(unlinked)} (left out)",) if unlinked else ()),
         *((f"linked but not in the export: {', '.join(n for n in wanted if n not in read)} (the record keeps what it "
            "last read; nothing is removed)",) if any(n not in read for n in wanted) else ()),
-        *(("no instance folder (<host>/change_request/...): the tickets' addresses aren't recorded",)
+        *(("no instance folder (<host>/change_request/...): the tickets' addresses aren't recorded"
+           + (f", nor is it checked that they are {', '.join(instance_hosts(d))}'s" if instance_hosts(d) else ""),)
           if groups and host is None else ()),
         f"{len(groups)} ticket(s) read" + (f" from {host}" if host else "")))
     return Imported(containers=(ou_entry(TICKETS), ou_entry(adapter_dn(SYSTEM))), groups=tuple(groups),

@@ -139,7 +139,8 @@ def summary(conn, as_of, src=None, dst=None):
     """Effect (reads the record): the estate in counts, each with its evidence (connectors.summary.Count), and the
     blockers, actions and ok lines of the plan from src to dst when both are given. No percentages."""
     d = db.load_directory(conn)
-    return (*estate_counts(d, as_of), *(plan_counts(planmod.plan(d, src, dst, as_of)) if src and dst else ()))
+    planned = planmod.plan(d, src, dst, as_of, writes=reports.change_writes(conn, as_of)) if src and dst else None
+    return (*estate_counts(d, as_of), *(plan_counts(planned) if planned else ()))
 
 
 def export(conn, base):
@@ -186,8 +187,9 @@ def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None, policy=a
 
 
 def plan(conn, src, dst, as_of):
-    """Effect (reads the record): the plan for moving src to dst, as markdown and external-party request drafts."""
-    p = planmod.plan(db.load_directory(conn), src, dst, as_of)
+    """Effect (reads the record and its history): the plan for moving src to dst, as markdown and external-party
+    request drafts."""
+    p = planmod.plan(db.load_directory(conn), src, dst, as_of, writes=reports.change_writes(conn, as_of))
     return Planned(p, planmod.to_markdown(p), planmod.request_drafts(p))
 
 
@@ -196,7 +198,8 @@ def migrate(conn, src, dst, as_of, requester=None, policy=allow_all):
     database login), authorized by policy (default: everyone) and recorded in the target's MANIFEST."""
     who = requester or db.session_user(conn)
     authorize(policy, who, "migrate", Area(dst, ENVIRONMENT, src))
-    r = migration.run(db.load_directory(conn), src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS, who)
+    r = migration.run(db.load_directory(conn), src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS, who,
+                      reports.change_writes(conn, as_of))
     return Migrated(r, migration.output_files(r))
 
 
@@ -205,7 +208,7 @@ def fixes(conn, src, dst, as_of):
     """Effect (reads the record): the record changes the plan's findings offer (core.findings.Fix), each with its
     change records, the steps outside the record and what it could hide. Against the workspace connection they are the
     workspace's (reaching the live record at cutover)."""
-    return planmod.plan(db.load_directory(conn), src, dst, as_of).fixes
+    return planmod.plan(db.load_directory(conn), src, dst, as_of, writes=reports.change_writes(conn, as_of)).fixes
 
 
 def _ready(conn, fix):

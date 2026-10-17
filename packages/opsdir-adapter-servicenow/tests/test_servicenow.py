@@ -11,8 +11,10 @@ from opsdir.core.directory import get, one, subtree, values, within
 from opsdir.domains.governance.naming import CHANGES
 from opsdir.domains.governance.tickets import IN_STEP, REJECTED, linked, ticket_dn
 from opsdir_adapter_servicenow.adapter import ADAPTER
-from opsdir_adapter_servicenow.changes import (APPROVER_FIELDS, CHANGE_FIELDS, CHANGES_IMPORTER, STANDARD_MODELS,
-                                               STATE_MODELS, answer_rows, display_only, read_changes)
+from opsdir_adapter_servicenow.changes import (APPROVAL_VALUES, APPROVER_FIELDS, CHANGE_FIELDS, CHANGES_IMPORTER,
+                                               LEGACY_MODELS, LEGACY_STATES, SETTINGS, STANDARD_MODELS, STATE_MODELS,
+                                               answer_rows, display_only, instance_hosts, instance_maps, model_kind,
+                                               read_changes)
 from opsdir_adapter_servicenow.collect import CHUNK, COLLECTORS, PAGE, answer_fields, change_steps, source_problems
 from network_fixtures import ALPHA, entry, model
 from support import after_import
@@ -71,8 +73,9 @@ def _read(*records, tree=TREE, **kw):
 
 def test_registered_as_an_itsm_add_on_with_its_importer_collector_and_setting():
     assert (ADAPTER.kind, ADAPTER.applies, ADAPTER.importers, ADAPTER.collectors, ADAPTER.settings) == (
-        "itsm", None, (CHANGES_IMPORTER,), COLLECTORS, (STANDARD_MODELS,))
-    assert STANDARD_MODELS.default is None                  # which models are standard is the operator's to say
+        "itsm", None, (CHANGES_IMPORTER,), COLLECTORS, SETTINGS)
+    assert SETTINGS == (STANDARD_MODELS, LEGACY_MODELS, LEGACY_STATES, APPROVAL_VALUES)
+    assert STANDARD_MODELS.default is None and LEGACY_MODELS.default is None   # which models: the operator's to say
 
 
 def test_a_linked_ticket_is_read_as_evidence_under_ou_tickets():
@@ -117,10 +120,11 @@ def test_a_model_the_operator_hasnt_named_keeps_its_state_native_only():
         assert one(get(after, ticket_dn("servicenow", number)), "ciamTicketState") is None   # never closed/cancelled
     assert one(get(after, ticket_dn("servicenow", "CHG0001")), "ciamTicketNativeState") == "3 label 3"
     assert [n for n in imported.notices if n.startswith("change model")] == [
-        "change model (none) isn't named in servicenow-standard-state-models: the state of CHG0002 is kept as "
-        "ServiceNow gives it (neutral state unknown)",
-        "change model Normal (legacy1) isn't named in servicenow-standard-state-models: the state of CHG0001 is kept "
-        "as ServiceNow gives it (neutral state unknown)"]
+        "change model (none) isn't named in servicenow-standard-state-models or servicenow-legacy-state-models: the "
+        "state of CHG0002 is kept as ServiceNow gives it (neutral state unknown)",
+        "change model Normal (legacy1) isn't named in servicenow-standard-state-models or "
+        "servicenow-legacy-state-models: the state of CHG0001 is kept as ServiceNow gives it (neutral state "
+        "unknown)"]
 
 
 def test_a_model_named_by_its_name_maps_too_and_the_standard_codes_are_data():
@@ -229,6 +233,86 @@ def test_a_short_page_doesnt_end_the_reading_only_an_empty_one_does():
 def test_a_scheme_the_table_api_isnt_read_with_here_is_refused_with_why():
     _, alpha, _ = model(alpha=_source(ciamCredentialScheme="token"), tree=TREE)
     assert source_problems(alpha.d, alpha, {}) == (
-        "collection source `itsm`: credential scheme `token`: the instance is read with a user's password (basic) "
-        "or an OAuth access token (bearer)",)
+        "collection source `itsm`: credential scheme `token`: the instance is read with a user's password (basic), "
+        "an OAuth access token (bearer) or a client certificate it maps to a user (client-certificate)",)
     assert change_steps(alpha.d, alpha, {}, {}) == ()
+
+
+def _setting(name, value):
+    return (f"dn: cn={name},ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamObject\n"
+            f"objectClass: ciamEstateSetting\ncn: {name}\nciamEstateValue: {value}\n")
+
+
+LEGACY_TREE = (*TREE, _setting(LEGACY_MODELS.name, "legacy1, (none)"))
+
+
+def test_legacy_models_read_the_pre_geneva_codes_through_their_own_map():
+    _, imported, after = _read(_change_record("CHG0001", "s1", "4", "approved", model="legacy1"),
+                               _change_record("CHG0002", "s2", "7", "approved", chg_model=_v("")),
+                               _change_record("CHG0003", "s3", "4", "approved"), tree=LEGACY_TREE)
+    states = {n: one(get(after, ticket_dn("servicenow", n)), "ciamTicketState") for n in ("CHG0001", "CHG0002",
+                                                                                          "CHG0003")}
+    assert states == {"CHG0001": "closed",           # 4 Closed Incomplete on the legacy codes
+                      "CHG0002": "cancelled",        # 7 Closed Skipped: the work wasn't done
+                      "CHG0003": "cancelled"}        # 4 Canceled on the standard model
+    assert not [n for n in imported.notices if n.startswith("change model")]
+    maps, problems = instance_maps(model(tree=LEGACY_TREE)[0])
+    assert problems == () and maps.legacy_states == {"-5": "new", "1": "assess", "2": "implement", "3": "closed",
+                                                     "4": "closed", "7": "cancelled"}
+
+
+def test_the_legacy_map_is_the_operators_and_its_problems_are_named():
+    tree = (*LEGACY_TREE, _setting(LEGACY_STATES.name, "1=new, 2=implement, 9=done"))
+    _, imported, after = _read(_change_record("CHG0001", "s1", "1", "approved", model="legacy1"),
+                               _change_record("CHG0002", "s2", "3", "approved", model="legacy1"), tree=tree)
+    assert one(get(after, ticket_dn("servicenow", "CHG0001")), "ciamTicketState") == "new"
+    assert one(get(after, ticket_dn("servicenow", "CHG0002")), "ciamTicketState") is None   # 3 isn't mapped now
+    assert ("servicenow-legacy-states: `9=done`: done isn't a ticket state (new, assess, authorize, scheduled, "
+            "implement, review, closed, cancelled)") in imported.notices
+
+
+def test_a_model_named_on_both_state_models_is_refused():
+    tree = (*TREE, _setting(LEGACY_MODELS.name, NORMAL))
+    d = model(tree=tree)[0]
+    assert model_kind(_change_record("CHG0001", "s1", "3", "approved"), instance_maps(d)[0]) == (
+        "both", f"Normal ({NORMAL})")
+    _, imported, after = _read(_change_record("CHG0001", "s1", "3", "approved"), tree=tree)
+    assert one(get(after, ticket_dn("servicenow", "CHG0001")), "ciamTicketState") is None
+    assert (f"change model Normal ({NORMAL}) is named in both servicenow-standard-state-models and "
+            "servicenow-legacy-state-models: the state of CHG0001 is kept as ServiceNow gives it (neutral state "
+            "unknown)") in imported.notices
+
+
+def test_an_approval_value_the_mapping_doesnt_know_is_kept_as_a_fact():
+    _, imported, after = _read(_change_record("CHG0001", "s1", "-2", "not_required"),
+                               _change_record("CHG0002", "s2", "-2", "approved"))
+    t = get(after, ticket_dn("servicenow", "CHG0001"))
+    assert one(t, "ciamTicketApproval") is None and values(t, "ciamTicketFact")[0] == "approval not_required"
+    assert ("approval `not_required` of CHG0001 isn't mapped in servicenow-approval-values: approval unknown (kept as "
+            "a fact)") in imported.notices
+    tree = (*TREE, _setting(APPROVAL_VALUES.name, "approved=approved, not_required=not-requested"))
+    _, _, after = _read(_change_record("CHG0001", "s1", "-2", "not_required"), tree=tree)
+    t = get(after, ticket_dn("servicenow", "CHG0001"))
+    assert one(t, "ciamTicketApproval") == "not-requested"
+    assert "approval not_required" not in values(t, "ciamTicketFact")
+
+
+def test_one_instance_per_record():
+    d, _, after = _read(_change_record("CHG0001", "s1", "-2", "approved"))
+    assert instance_hosts(after) == (HOST,) and instance_hosts(d) == ()
+    other = read_changes(_export(_change_record("CHG0001", "s1", "-2", "approved"), host="gov.servicenowservices.test"),
+                         after, (), AT)
+    assert (other.groups, other.notices) == ((), (
+        f"the record's ServiceNow tickets were read from {HOST}; this export is from gov.servicenowservices.test: one "
+        "instance per record (ticket numbers are only an instance's own)",))
+    assert read_changes(_export(_change_record("CHG0001", "s1", "-1", "approved")), after, (), AT).groups
+    hostless = read_changes(_export(_change_record("CHG0001", "s1", "-1", "approved"), host=None), after, (), AT)
+    assert (f"no instance folder (<host>/change_request/...): the tickets' addresses aren't recorded, nor is it "
+            f"checked that they are {HOST}'s") in hostless.notices
+
+
+def test_a_client_certificate_reads_the_instance_with_no_login():
+    _, alpha, _ = model(alpha=_source(ciamCredentialScheme="client-certificate"), tree=TREE)
+    assert source_problems(alpha.d, alpha, {}) == ()
+    assert change_steps(alpha.d, alpha, {}, {})[0][1].credential == ("client-certificate", "fake://kv/itsm-reader",
+                                                                     "opsdir.reader")

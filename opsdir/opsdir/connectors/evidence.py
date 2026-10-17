@@ -48,12 +48,12 @@ def query_output(conn, d, q, as_of, reports=None):
 
 def directory_output(d, q, as_of, reports):
     """(headers, rows) of an evidence query the directory alone answers (a directory report of the catalogue, or a
-    search), or None (the change history, a report the store runs)."""
+    search), or None (the change history, a report the store runs, one given the record's writes from history)."""
     report = reports.get(one(q, "ciamEvidenceSource"))
     if one(q, "ciamEvidenceSource") == EVIDENCE_SEARCH:
         return search_table(d, q)
     return (report.headers, tuple(tuple(r) for r in _directory_rows(report, d, q, as_of))) \
-        if report is not None and report.from_directory is not None else None
+        if report is not None and report.from_directory is not None and not report.writes else None
 
 
 def assemble_package(d, boundary, wanted, as_of, output, point, reports):
@@ -98,8 +98,8 @@ def _without_environment(headers, rows, label):
 
 def _comparable(q, reports):
     report = reports.get(one(q, "ciamEvidenceSource"))
-    return report is not None and report.from_directory is not None and ENVIRONMENT_COLUMN in report.headers \
-        and not (report.needs_dn and not one(q, "ciamEvidenceDn"))
+    return report is not None and report.from_directory is not None and not report.writes \
+        and ENVIRONMENT_COLUMN in report.headers and not (report.needs_dn and not one(q, "ciamEvidenceDn"))
 
 
 def _changed(ctx, q, report):

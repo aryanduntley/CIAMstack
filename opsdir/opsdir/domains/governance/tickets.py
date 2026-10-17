@@ -24,13 +24,24 @@ Each linked change is in one or more of these drift states, kept apart because e
                     days
   outside-window    ITSM says the work ran outside the ticket's own planned window (actual start before its planned
                     start, or actual end after its planned end; exact UTC times, no tolerance)
+  applied-outside-window
+                    the record's own writes under the change (its history: the first write before the ticket's planned
+                    start, or the last after its planned end; exact UTC times) landed outside the ticket's planned
+                    window; the bootstrap load and the change's own change record don't count
+  after-read        the ticket says something happened (work started or ended, an approval step was created or
+                    completed, an approver record was updated) later than the export was read (ciamImportedAt):
+                    evidence from after the read, so the read time given is wrong or the export was taken later;
+                    planned times never count (a plan may lie ahead)
 
 The planner's check is silent while the record holds no ticket at all (nothing read yet: a plan is as before);
 rejected and cancelled are blockers (the record holds an approval its change management refused or withdrew), the
-others actions for the change's owner (else the operator). A ticket's approval is never judged from its approval
+others actions for the change's owner (else the operator). When the record's writes landed comes from its history,
+read at the edge (a {change id: (first, last, count)} mapping, PlanContext.writes; counted up to the end of the day a
+plan or report is evaluated as of), so everything here stays pure. A ticket's approval is never judged from its approval
 records (one approved approver doesn't approve a change; no records doesn't mean none was needed): only from the
 overall approval the system reports. No fix is offered: a change's status is a person's.
 """
+import re
 from typing import NamedTuple
 
 from ...core.directory import (children, get, gtime_at, gtime_date, make_entry, merged_attrs, one, rdn_of, rdn_value,
@@ -48,15 +59,18 @@ TICKET_ATTRS = ("cn", "ciamImportedAt", "ciamTitle", "ciamProviderRef", "ciamDoc
                 "ciamTicketWorkStart", "ciamTicketWorkEnd", "ciamTicketApprover", "ciamTicketFact",
                 "ciamTicketApprovalStep", "ciamTicketChangeType")
 TICKET_HEADERS = ("change", "status", "planned", "ticket", "state", "approval", "planned window", "work window",
-                  "read at", "drift")
+                  "applied", "read at", "drift")
 IN_STEP, NOT_IMPORTED, REJECTED, CANCELLED, UNAPPROVED, CLOSED_PENDING, LIVE_REJECTED, WINDOW_DIFFERS, \
-    OUTSIDE_WINDOW = ("in-step", "not-imported", "rejected", "cancelled", "unapproved", "closed-pending",
-                      "live-but-rejected", "window-differs", "outside-window")
+    OUTSIDE_WINDOW, APPLIED_OUTSIDE, AFTER_READ = ("in-step", "not-imported", "rejected", "cancelled", "unapproved",
+                                                   "closed-pending", "live-but-rejected", "window-differs",
+                                                   "outside-window", "applied-outside-window", "after-read")
 BLOCKING = (REJECTED, CANCELLED)
 APPROVING = ("approved", "applied")          # record statuses that let the change's writes in
 PENDING = ("proposed", "approved")           # record statuses that don't say what happened yet
 LIVE = ("scheduled", "implement")            # ticket states of work still to happen or happening
 PAST_AUTHORIZE = ("scheduled", "implement", "review", "closed")   # ticket states past authorization
+# a time an approval step or approver value says something happened at ('created', 'completed', 'updated' <time>)
+EVENT_TIME = re.compile(r"\b(created|completed|updated) (\d{14}Z)")
 
 # A linked change compared with its ticket: the change, the adapter and number it names, the ticket as last read (None:
 # not read) and its drift states (none: nothing to compare yet, the system's tickets were never read).
@@ -96,14 +110,20 @@ def tickets(d):
     return tuple(subtree(d, TICKETS, TICKET_CLASS))
 
 
+def ticket_map(d, setting, allowed, what="a ticket value"):
+    """({the system's value: neutral value}, problems) of an ITSM add-on's mapping setting ('<value>=<neutral>, ...',
+    in effect: the record's or the add-on's default): the first mapping of a value is used; neutral values outside
+    allowed are named (as not `what`) and left out."""
+    pairs, problems = setting_mapping(d, setting)
+    bad = tuple(f"{setting.name}: `{k}={v}`: {v} isn't {what} ({', '.join(allowed)})" for k, v in pairs
+                if v not in allowed)
+    return {k: v for k, v in reversed(pairs) if v in allowed}, (*problems, *bad)
+
+
 def ticket_state_map(d, setting):
     """({the system's status: neutral state}, problems) of an ITSM add-on's status-mapping setting ('<status>=<state>,
-    ...', in effect: the record's or the add-on's default): the first mapping of a status is used; states outside
-    TICKET_STATES are named and left out."""
-    pairs, problems = setting_mapping(d, setting)
-    bad = tuple(f"{setting.name}: `{k}={v}`: {v} isn't a ticket state ({', '.join(TICKET_STATES)})"
-                for k, v in pairs if v not in TICKET_STATES)
-    return {k: v for k, v in reversed(pairs) if v in TICKET_STATES}, (*problems, *bad)
+    ...'): ticket_map over TICKET_STATES."""
+    return ticket_map(d, setting, TICKET_STATES, "a ticket state")
 
 
 def derived_approval(decisions, state):
@@ -171,8 +191,35 @@ def outside_window(ticket):
         (end is not None and ended is not None and ended > end)
 
 
-def drift_states(change, ticket):
-    """The drift states of a change against its ticket as read (IN_STEP alone when they agree)."""
+def applied_outside_window(ticket, writes):
+    """Where the record's own writes under a change landed against its ticket's planned window: 'before' (the first
+    write before the planned start), 'after' (the last after the planned end), 'before and after', or None (inside,
+    or nothing to compare). writes: (first, last, count) of the change's writes (UTC datetimes), or None."""
+    if not writes:
+        return None
+    start, end = _at(ticket, "ciamTicketPlannedStart"), _at(ticket, "ciamTicketPlannedEnd")
+    early, late = start is not None and writes[0] < start, end is not None and writes[1] > end
+    return " and ".join(w for w, x in (("before", early), ("after", late)) if x) or None
+
+
+def after_read(ticket):
+    """((what, GeneralizedTime), ...) a ticket says happened later than it was read (ciamImportedAt), by time: work
+    started or ended, an approval step created or completed, an approver record updated; never a planned time."""
+    read = _at(ticket, "ciamImportedAt")
+    if read is None:
+        return ()
+    events = (*((what, one(ticket, a)) for what, a in (("work started", "ciamTicketWorkStart"),
+                                                      ("work ended", "ciamTicketWorkEnd")) if one(ticket, a)),
+              *((f"approval step {v.split(' ')[1] if len(v.split(' ')) > 1 else '?'} {verb}", at)
+                for v in values(ticket, "ciamTicketApprovalStep") for verb, at in EVENT_TIME.findall(v)),
+              *((f"approver record {v.split(' ')[1] if len(v.split(' ')) > 1 else '?'} {verb}", at)
+                for v in values(ticket, "ciamTicketApprover") for verb, at in EVENT_TIME.findall(v)))
+    return tuple(sorted(((w, at) for w, at in events if gtime_at(at) > read), key=lambda e: (e[1], e[0])))
+
+
+def drift_states(change, ticket, writes=None):
+    """The drift states of a change against its ticket as read (IN_STEP alone when they agree); writes: (first, last,
+    count) of the record's writes under the change, or None (not read, or none)."""
     status, state, approval = (one(change, "ciamChangeStatus"), one(ticket, "ciamTicketState"),
                                one(ticket, "ciamTicketApproval"))
     found = (*((REJECTED,) if status in APPROVING and approval == "rejected" else ()),
@@ -182,18 +229,22 @@ def drift_states(change, ticket):
                (state == "cancelled" and status == "proposed") else ()),
              *((LIVE_REJECTED,) if status == "rejected" and (approval == "approved" or state in LIVE) else ()),
              *((WINDOW_DIFFERS,) if window_differs(change, ticket) else ()),
-             *((OUTSIDE_WINDOW,) if outside_window(ticket) else ()))
+             *((OUTSIDE_WINDOW,) if outside_window(ticket) else ()),
+             *((APPLIED_OUTSIDE,) if applied_outside_window(ticket, writes) else ()),
+             *((AFTER_READ,) if after_read(ticket) else ()))
     return found or (IN_STEP,)
 
 
-def linked(d):
-    """Every linked change compared with its ticket (Linked), by change name."""
+def linked(d, writes=None):
+    """Every linked change compared with its ticket (Linked), by change name; writes: {change id: (first, last,
+    count)} of the record's writes (none: not read)."""
     read = {rdn_of(t.dn.split(",", 1)[1]) for t in tickets(d)}       # the systems whose tickets were read
 
     def compare(c):
         adapter, number = ticket_ref(c)
         t = get(d, ticket_dn(adapter, number))
-        states = drift_states(c, t) if t is not None else ((NOT_IMPORTED,) if adapter in read else ())
+        states = drift_states(c, t, (writes or {}).get(rdn_value(c))) if t is not None else \
+            ((NOT_IMPORTED,) if adapter in read else ())
         return Linked(c, adapter, number, t, states)
     return tuple(compare(c) for c in linked_changes(d))
 
@@ -201,6 +252,11 @@ def linked(d):
 # ------------------------------------------------------------------ words
 def _when(gt):
     return f"{gt[:4]}-{gt[4:6]}-{gt[6:8]} {gt[8:10]}:{gt[10:12]}Z" if gt else "?"
+
+
+def _applied(writes):
+    """'<first> to <last>' of the record's writes under a change (minutes, UTC), or ''."""
+    return f"{writes[0]:%Y-%m-%d %H:%MZ} to {writes[1]:%Y-%m-%d %H:%MZ}" if writes else ""
 
 
 def _window(t, start, end):
@@ -235,8 +291,10 @@ def _steps(t):
     return f" (steps: {counts})" if decided else ""
 
 
-def finding_text(link, state):
-    """What one drift state of a linked change says, in words ('ITSM says': evidence, never the record's approval)."""
+def finding_text(link, state, writes=None):
+    """What one drift state of a linked change says, in words ('ITSM says': evidence, never the record's approval);
+    writes: the record's writes under the change (applied-outside-window names only the ticket's window and which side
+    of it they fell, never their times)."""
     if state == NOT_IMPORTED:
         return (f"{_change(link)} names ticket {link.adapter}:{link.number}, but no import has read it (it wasn't in "
                 "the export, or the reader can't see it: an ITSM answer can be cut short by its access rules): "
@@ -264,6 +322,18 @@ def finding_text(link, state):
                         f"{_window(t, 'ciamTicketPlannedStart', 'ciamTicketPlannedEnd')}: review the work done "
                         "outside the window.",
     }
+    if state == APPLIED_OUTSIDE:
+        return (f"{_change(link)}: the record's writes under it landed {applied_outside_window(t, writes)} the planned "
+                f"window ITSM gives {_ticket(link)} ({_window(t, 'ciamTicketPlannedStart', 'ciamTicketPlannedEnd')}, "
+                "as the record's history says): review what was written outside the window, or have the ticket's "
+                "window corrected.")
+    if state == AFTER_READ:
+        late = after_read(t)
+        said = "; ".join(f"{what} {_when(at)}" for what, at in late)
+        return (f"{_change(link)}: its ticket {link.adapter}:{link.number} was read as of "
+                f"{_when(one(t, 'ciamImportedAt'))}, but ITSM says of it: {said}. Evidence from after the read: the "
+                "read time given (--at) is wrong, or the export was taken later; import it again with the time it "
+                "was taken.")
     return texts[state]
 
 
@@ -272,21 +342,28 @@ def check_tickets(ctx):
     actions for the other drift, the changes in step as fine; nothing while the record holds no ticket."""
     if not tickets(ctx.d):
         return findings()
-    links = linked(ctx.d)
+    writes = ctx.writes or {}
+    links = linked(ctx.d, writes)
     raised = [(s, link) for link in links for s in link.states if s != IN_STEP]
+
+    def text(link, s):
+        return finding_text(link, s, writes.get(rdn_value(link.change)))
     return findings(
-        blockers=[(AREA, finding_text(link, s), _owner(ctx.d, link.change)) for s, link in raised if s in BLOCKING],
-        actions=[(AREA, finding_text(link, s), _owner(ctx.d, link.change), None) for s, link in raised
+        blockers=[(AREA, text(link, s), _owner(ctx.d, link.change)) for s, link in raised if s in BLOCKING],
+        actions=[(AREA, text(link, s), _owner(ctx.d, link.change), None) for s, link in raised
                  if s not in BLOCKING],
         ok=[f"{_change(link)} agrees with {_ticket(link)}: {one(link.change, 'ciamChangeStatus')}; ITSM says "
             f"{one(link.ticket, 'ciamTicketState') or 'state unknown'}, approval {_approval(link.ticket)}"
             for link in links if link.states == (IN_STEP,)])
 
 
-def ticket_rows(d, dn=None):
+def ticket_rows(d, dn=None, writes=None):
     """One row per linked change: its status and planned day in the record, the ticket, what ITSM said of it (state,
     with the system's own; overall approval, with its steps' decisions when the system approves by steps; planned and
-    work windows; when it was read) and its drift."""
+    work windows), when the record's writes under the change landed (writes: {change id: (first, last, count)}, read
+    at the edge), when the ticket was read and its drift."""
+    writes = writes or {}
+
     def row(link):
         t = link.ticket
         native = f" ({one(t, 'ciamTicketNativeState')})" if t is not None and one(t, "ciamTicketNativeState") else ""
@@ -296,6 +373,7 @@ def ticket_rows(d, dn=None):
                 f"{link.adapter}:{link.number}", state, f"{_approval(t)}{_steps(t)}" if t is not None else "",
                 _window(t, "ciamTicketPlannedStart", "ciamTicketPlannedEnd") if t is not None else "",
                 _window(t, "ciamTicketWorkStart", "ciamTicketWorkEnd") if t is not None else "",
+                _applied(writes.get(rdn_value(link.change))),
                 _when(one(t, "ciamImportedAt"))[:10] if t is not None else "",
                 ", ".join(link.states or (NOT_IMPORTED,)))
-    return [row(link) for link in linked(d)]
+    return [row(link) for link in linked(d, writes)]
