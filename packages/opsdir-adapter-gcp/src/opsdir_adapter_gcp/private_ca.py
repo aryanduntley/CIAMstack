@@ -119,7 +119,8 @@ def ca_endpoints(ca, pool):
 
 
 def ca_facts(ca, names, by_subject, facts, d):
-    """What Google says of a CA (AUTHORITY_FACTS): type, state, key algorithm, storage, key reference and parent."""
+    """What Google says of a CA (AUTHORITY_FACTS): type, state, key algorithm, storage, key reference and parent,
+    and a deleted CA's expireTime (when Google purges it: until then it can be undeleted)."""
     spec = ca.get("keySpec") or {}
     parent_ref = (ca.get("subordinateConfig") or {}).get("certificateAuthority")
     issuer_cn = common_name(facts["issuer"]) if facts else None
@@ -132,7 +133,8 @@ def ca_facts(ca, names, by_subject, facts, d):
             "ciamCaKeyAlgorithm": spec.get("algorithm"),
             "ciamCaKeyStorage": "Google-managed HSM" if spec.get("algorithm") else
             "Cloud KMS key" if spec.get("cloudKmsKeyVersion") else None,
-            "ciamCaKeyRef": spec.get("cloudKmsKeyVersion"), "ciamParentAuthority": parent}
+            "ciamCaKeyRef": spec.get("cloudKmsKeyVersion"), "ciamParentAuthority": parent,
+            "ciamCaRestorableUntil": gtime_of_iso(ca.get("expireTime")) if ca.get("state") == "DELETED" else None}
 
 
 def ca_name(ca, facts):

@@ -376,7 +376,8 @@ only: never a key. **Collect** with `opsdir collect --adapter gcp/private-ca --e
 What each CA becomes:
 - **The CA** (cn its certificate's subject CN, else its id; `ciamProviderRef` its resource name
   `projects/<p>/locations/<l>/caPools/<pool>/certificateAuthorities/<ca>`): `ciamCaType` root (SELF_SIGNED) or
-  subordinate, `ciamCaState` (ENABLED active; STAGED and AWAITING_USER_ACTIVATION pending; DISABLED; DELETED), its
+  subordinate, `ciamCaState` (ENABLED active; STAGED and AWAITING_USER_ACTIVATION pending; DISABLED; DELETED, with
+  `ciamCaRestorableUntil` its `expireTime`, when Google purges it: until then it can be undeleted), its
   key: `ciamCaKeyAlgorithm` and `ciamCaKeyStorage` `Google-managed HSM` for a `keySpec.algorithm`, or
   `ciamCaKeyStorage` `Cloud KMS key` with `ciamCaKeyRef` the key version it signs with (a reference), and for a
   subordinate `ciamParentAuthority` (its `subordinateConfig` CA, else the CA whose certificate's subject is its

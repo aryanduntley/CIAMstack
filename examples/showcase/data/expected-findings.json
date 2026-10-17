@@ -486,6 +486,14 @@
       "planted": "the corporate managed domain's service isn't in the target's recorded authorization boundary",
       "cleared_by": null,
       "raised_by": "CHG-2110"
+    },
+    {
+      "id": "B116",
+      "area": "Certificate",
+      "match": "Certificate `example-aero-retired-artifact-tls` comes from Example Aero Retired Issuing CA, which was deleted (restorable until 2026-10-22)",
+      "planted": "the SAML artifact resolution certificate Harbor MRO's federation uses comes from a CA deleted in AWS: it publishes no CRL any more and renews nothing",
+      "cleared_by": null,
+      "raised_by": "CHG-2128"
     }
   ],
   "actions": [
@@ -1725,6 +1733,22 @@
       "planted": "PingFederate's signing certificate is retired in the tenant, but the record uses it: nothing renews or watches it there",
       "cleared_by": null,
       "raised_by": "CHG-2127"
+    },
+    {
+      "id": "A302",
+      "area": "Certificate",
+      "match": "Certificate `example-aero-retired-smoke-test` comes from Example Aero Retired Issuing CA, which was deleted",
+      "planted": "a smoke-test certificate from the deleted CA nothing uses: reissue it or restore the CA before 2026-10-22",
+      "cleared_by": null,
+      "raised_by": "CHG-2128"
+    },
+    {
+      "id": "A303",
+      "area": "Certificate",
+      "match": "Example Aero Retired Issuing CA issued 1 active certificate(s) from template `Example Aero Retired Issuing CA/EndEntityServerAuthCertificate/V1` the record holds none of",
+      "planted": "the disaster-recovery artifact certificate is active at the deleted CA but not in the record, and nobody renews the template",
+      "cleared_by": null,
+      "raised_by": "CHG-2128"
     },
     {
       "id": "A150",

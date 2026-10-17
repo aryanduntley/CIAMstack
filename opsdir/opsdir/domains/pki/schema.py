@@ -260,6 +260,9 @@ ATTRIBUTES = (
     AttributeDef(915, 'ciamParentAuthority', 'dn', 'observed', True,
                  "The certification authority (ou=certificate-authorities) that issued a subordinate CA's "
                  "certificate, as the CA's product says"),
+    AttributeDef(916, 'ciamCaRestorableUntil', 'time', 'observed', True,
+                 "Until when a deleted certification authority can still be restored in its product (AWS Private "
+                 "CA's RestorableUntil; Google CAS's purge time): after it, the CA and what it would renew are gone"),
     # ------------------------------------------------------------------ certificate managers' inventories (observed)
     AttributeDef(920, 'ciamThumbprint', 'string', 'observed', True,
                  "A certificate's SHA-1 thumbprint, as colon-separated hex: what a certificate manager gives when it "
@@ -337,7 +340,7 @@ CLASSES = (
              "timestamp that means rotation)"),
     ClassDef(151, 'ciamCertAuthority', 'ciamObject', 'STRUCTURAL', ('cn',),
              ('ciamProviderRef', 'ciamCaCertificate', 'ciamTemplateName', 'ciamCaType', 'ciamCaState',
-              'ciamCaKeyAlgorithm', 'ciamCaKeyStorage', 'ciamCaKeyRef', 'ciamParentAuthority'),
+              'ciamCaKeyAlgorithm', 'ciamCaKeyStorage', 'ciamCaKeyRef', 'ciamParentAuthority', 'ciamCaRestorableUntil'),
              "A certification authority (cn: its name; ciamProviderRef: how its product names it, an AD CS CA's "
              "HOST\\CA): its own certificates in the record, the templates it issues from, and its revocation "
              "endpoints as children; what its product says of it (root or subordinate, state, signing key, the CA "

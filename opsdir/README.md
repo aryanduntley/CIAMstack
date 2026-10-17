@@ -284,8 +284,9 @@ revocation endpoints as children (`ciamRevocationEndpoint`: `ciamRevocationKind`
 certificate by certificate: `ciamIssuedBy` names the certificate of the CA that issued one. What a CA's product says of
 the CA itself, when its importer reads it (cloud private CAs), is observed on the CA: `ciamCaType` (root or
 subordinate), `ciamCaState` (active, disabled, pending, expired, deleted, failed), `ciamCaKeyAlgorithm`,
-`ciamCaKeyStorage`, `ciamCaKeyRef` (a customer-managed signing key's name, a reference) and `ciamParentAuthority`
-(the CA above it); the `certificate-authorities` report shows them (state, key; issued by falls back to the parent). Templates are
+`ciamCaKeyStorage`, `ciamCaKeyRef` (a customer-managed signing key's name, a reference), `ciamParentAuthority`
+(the CA above it) and, for a deleted CA, `ciamCaRestorableUntil` (until when its product can still restore it); the
+`certificate-authorities` report shows them (state, key; issued by falls back to the parent). Templates are
 `ciamCertTemplate` under `ou=certificate-templates` (display name in `description`, `ciamTemplateOid`,
 `ciamMaxValidityDays`, `ciamExtendedKeyUsage`: what it issues; what it lets requesters do and who may request from
 it, as its importer reads them: `ciamSubjectFromRequest`, `ciamApprovalRequired`, `ciamRequiredSignatures`,
@@ -317,7 +318,13 @@ blocker; one revoked but unused, revoked from a later date (an action due that d
 not confirmable is an action; so is each (CA, template) whose active certificates the record holds none of, for the
 templates the record cares about (a renewal owner or a purpose recorded, or a record certificate issued from it),
 owned by the renewal owner and due when the first expires; and each inventoried CA that publishes no CRL or OCSP
-endpoint.
+endpoint. A certificate (not revoked or expired) whose CA, or a CA above it (`ciamParentAuthority`), its product says
+isn't active (disabled, pending, expired, deleted or failed) can't be renewed there, and once a deleted or expired CA's
+last CRL lapses whatever checks revocation refuses it: a blocker when the target relies on it (a binding of the target
+or of a base it inherits from, or a shared entry that applies there uses it), else an action owned by who renews it
+and due by the earlier of the CA's `ciamCaRestorableUntil` and the certificate's expiry; the finding names the CA's
+CRL and its owner (who can restore, re-enable or activate it). An untracked set from such a CA says so too. CAs whose
+product reports no state (AD CS, Vault, EJBCA) are never judged.
 
 Template risk (`domains/pki/templates.py`, ESC1-style after the published research on certificate template abuse): a
 template that takes the subject from the request, issues certificates that authenticate their holder (no extended key

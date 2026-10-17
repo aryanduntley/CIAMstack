@@ -1,0 +1,478 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_entry",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"name\", \"type\": \"str\"}, {\"name\": \"provider_ref\", \"type\": \"str|None\"}, {\"name\": \"templates\", \"type\": \"tuple\"}, {\"name\": \"facts\", \"type\": \"dict|None\", \"required\": false, \"description\": \"{attribute of AUTHORITY_FACTS: value or None}; ciamParentAuthority given as the parent CA's name; None: not read (those attributes not owned)\"}]",
+        "purpose": "Importer builder: a ciamCertAuthority entry (provider ref, published templates and, when given, what the CA's product says of it: AUTHORITY_FACTS type/state/key algorithm/storage/key ref/parent CA/restorable-until of a deleted CA), operator attributes kept",
+        "returns": "{\"type\": \"Entry\"}",
+        "source_hash": "c1962607b8a6f720"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-authority-entry-12bf930a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "check_issued_certificates",
+        "parameters": "[{\"name\": \"ctx\", \"type\": \"PlanContext\"}]",
+        "purpose": "Planner check (estate-wide, silent without an inventory): revoked certificate in use = blocker; revoked unused, scheduled, superseded, missing, unconfirmable, untracked per (CA, cared template), inventoried CA without CRL/OCSP = actions; a certificate (not revoked or expired) whose CA or a CA above it isn't active (ciamCaState, via _ca_state_finding) = blocker when ctx.dst relies on it (users_in), else an action owned by its renewal owner, due by the earlier of the CA's ciamCaRestorableUntil and its expiry; an untracked set under such a CA says so too",
+        "returns": "{\"type\": \"Findings\"}",
+        "source_hash": "0400735aa7233c20"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"dn\", \"type\": \"str|None\"}]",
+        "purpose": "certificate-authorities report rows: config, state (CA type and state; a deleted CA's restorable-until), key (algorithm, storage, key ref), issued by (hierarchy; else the product's parent CA), CA certificates, templates, endpoints, inventory, owner",
+        "returns": "{\"type\": \"list of tuple\"}",
+        "source_hash": "582fe531c79c71a3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-authority-rows-7335ac1e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py",
+        "id_in_name": 0,
+        "name": "read_ca",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"get\", \"type\": \"callable\", \"required\": true}, {\"name\": \"iam\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"by_subject\", \"type\": \"dict\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime\", \"required\": true}]",
+        "purpose": "(Imported groups, notices) of one Private CA: its entry with AWS's facts (type, state, key algorithm/storage, parent; a DELETED CA's RestorableUntil as ciamCaRestorableUntil) and endpoints, its inventory from the newest audit report, the templates that report shows as its own with who may request.",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "8d52f9334649e4d4"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py",
+        "id_in_name": 0,
+        "name": "ca_facts",
+        "parameters": "[{\"name\": \"ca\", \"type\": \"dict\", \"required\": true}, {\"name\": \"names\", \"type\": \"dict\", \"required\": true}, {\"name\": \"by_subject\", \"type\": \"dict\", \"required\": true}, {\"name\": \"facts\", \"type\": \"dict|None\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "What Google says of a CA (AUTHORITY_FACTS): type, state, key algorithm, storage (Google-managed HSM / Cloud KMS key), key reference, parent (subordinateConfig, else by issuer subject, else the record's CA by issuer CN), and a DELETED CA's expireTime (purge time) as ciamCaRestorableUntil.",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "b1e81a11d871ee3b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ca-facts-8050abea"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "authority_chain",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record snapshot\"}, {\"name\": \"authority\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamCertAuthority entry\"}]",
+        "purpose": "A certification authority, then the CAs above it as their products name them (ciamParentAuthority), each once (a loop stops at the first CA seen again)",
+        "returns": "{\"type\": \"tuple[Entry, ...]\", \"description\": \"the CA and its parents, nearest first; a parent the record doesn't hold ends the chain\"}",
+        "source_hash": "80167a23316b6157"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-authority-chain-ae545c8c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "inactive_authority",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record snapshot\"}, {\"name\": \"authority\", \"type\": \"Entry | None\", \"required\": true, \"description\": \"a ciamCertAuthority entry, or None\"}]",
+        "purpose": "The first CA in a CA's chain (itself, then its parents) whose product reports a state other than active (disabled, pending, expired, deleted, failed); CAs reporting no state (AD CS, Vault, EJBCA) are passed over",
+        "returns": "{\"type\": \"Entry | None\", \"description\": \"the non-active CA, or None (all active or unreported, or no authority)\"}",
+        "source_hash": "8d96fdf05bb3da4b"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-inactive-authority-4184b2e2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/issued.py",
+        "id_in_name": 0,
+        "name": "users_in",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record snapshot\"}, {\"name\": \"cert\", \"type\": \"Entry\", \"required\": true, \"description\": \"a ciamCertificate entry\"}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true, \"description\": \"the environment model (a plan's ctx.dst)\"}]",
+        "purpose": "The entries using a certificate (certificate_users) that environment m relies on: its own or an inherited base's bindings, and shared entries that apply in it (applies_in)",
+        "returns": "{\"type\": \"tuple[Entry, ...]\", \"description\": \"the users in m, in certificate_users order\"}",
+        "source_hash": "b91c5778ba100227"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-users-in-c7c319e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "From deferred note 3249 (issued.py, file 990; decision 3241 D6). The record holds ciamCaState (active|disabled|pending|expired|deleted|failed) and ciamParentAuthority from aws/private-ca and gcp/private-ca, but check_issued_certificates doesn't judge them. Build: an action per record certificate (or untracked active certificate of a cared template) whose CA isn't active (disabled, expired, deleted, failed, pending), owned by the certificate's owner / renewal owner, due by the CA's restorable-until (AWS RestorableUntil; CAS deletion) or the certificate's expiry, whichever is first; a blocker when a target environment relies on it; a deleted/expired CA's CRL stops being published (relate to revocation observation if the record has it). Consider a parent authority that isn't active (an intermediate under a disabled root). Keep silent for CAs no importer reports a state for (AD CS, Vault, EJBCA). Where: opsdir/opsdir/domains/pki/issued.py (+ checks registration). Acceptance: unit tests, showcase change + golden diff reviewed by the master, docs (ops-directory-model / pki docs).",
+        "flows": [
+          "PKI Authorities & Issued-Certificate Reconciliation"
+        ],
+        "name": "Planner judging of CA state (ciamCaState) for issued certificates",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Action/blocker per certificate whose CA (or parent) isn't active; owner, due date; silent without a reported state",
+        "name": "CA state judging in check_issued_certificates",
+        "parent": {
+          "key": {
+            "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-ca-state-judging-in-check-issued-certifi-7d6cc353"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase CHG, golden diff for master review, docs",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-c29a0138"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "0aceb93",
+    "branch": "aimfp-u128-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "authority_chain follows ciamParentAuthority",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-authority-chain-ae545c8c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-follow-5622d123"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inactive-authority-4184b2e2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-chain-ae545c8c"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-users-in-c7c319e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-users-728912fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-users-in-c7c319e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-environment-of-3ca01c81"
+      }
+    },
+    {
+      "attributes": {
+        "description": null,
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-users-in-c7c319e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-applies-in-e6f1f71d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _ca_state_finding and _untracked_finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inactive-authority-4184b2e2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "via _ca_state_finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-users-in-c7c319e7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls get (directory.py) via _untracked_finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-get-b3224a5e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "check_issued_certificates calls authority_dn (naming.py) via _untracked_finding",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-check-issued-certificates-d69f69f4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-authority-dn-95a68838"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_ca calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-ca-1bb5a577"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ca_facts calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ca-facts-8050abea"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "inactive_authority calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-inactive-authority-4184b2e2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "users_in calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-users-in-c7c319e7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/issued.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-aws/src/opsdir_adapter_aws/private_ca.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-gcp/src/opsdir_adapter_gcp/private_ca.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/pki.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/federation.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/governance.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    },
+    {
+      "file": {
+        "path": "examples/showcase/example_estate/expected.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-planner-judging-of-ca-state-ciamcastate-9da1266b"
+      }
+    }
+  ],
+  "warnings": []
+}

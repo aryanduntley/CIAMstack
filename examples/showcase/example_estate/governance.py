@@ -201,6 +201,8 @@ CHANGES = (
      "version, its policies; metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2127", "Read the Example Aero SaaS tenant's certificate inventory (CyberArk Certificate Manager - SaaS; "
      "metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2128", "Read production's former issuing CA in us-west-2 (AWS Private CA, deleted: its last audit report, "
+     "metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

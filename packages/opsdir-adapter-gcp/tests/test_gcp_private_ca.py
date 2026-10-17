@@ -285,3 +285,12 @@ def test_the_collector_lists_trims_and_skips_devops_certificates():
     saved = json.loads(c.files[f"private-ca/{L}/ciam-enterprise/certificates.json"])
     assert "pemCsr" not in saved[0] and "certificateDescription" not in saved[0] and saved[0]["pemCertificate"]
     assert private_ca_steps(m.d, m._replace(cloud=make_entry(m.cloud.dn, m.cloud.classes, {})), {}, {}) == ()
+
+
+def test_a_deleted_ca_says_when_google_purges_it():
+    sub = {**_ca(SUB_NAME, "SUBORDINATE", SUB_PEM, {"algorithm": "EC_P256_SHA256"}, ROOT_NAME, state="DELETED"),
+           "deleteTime": "2026-09-20T10:00:00Z", "expireTime": "2026-10-20T10:00:00Z"}
+    files = {**export(), f"private-ca/{L}/ciam-enterprise/subordinates.json": json.dumps([sub])}
+    ca = get(_imported(files=files), authority_dn(SUB_CA))
+    assert (one(ca, "ciamCaState"), one(ca, "ciamCaRestorableUntil")) == ("deleted", "20261020100000Z")
+    assert one(get(_imported(), authority_dn(SUB_CA)), "ciamCaRestorableUntil") is None

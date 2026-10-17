@@ -1,7 +1,8 @@
 """Certification authorities' issued-certificate inventories reconciled with the record's certificates
 (domains/pki/issued): how a record certificate's CA is found, each state kept apart (present, revoked, revocation
 scheduled, superseded, confirmed missing, inventory incomplete, refused, not inventoried), untracked active
-certificates judged only for the templates the record cares about, the planner's findings and the two reports."""
+certificates judged only for the templates the record cares about, what a CA that isn't active means for what
+it issued, the planner's findings and the two reports."""
 import datetime as dt
 
 from opsdir.core.contract import Imported, PlanContext
@@ -55,8 +56,8 @@ def _row(request, subject, template="WebServer", fp=None, serial=None, nb="2026-
                      "ciamRevokedAt": _t(revoked) if revoked else None}
 
 
-def _imported(d, rows=(), state="complete", kinds=("crl", "ocsp"), templates=()):
-    ca = inventory_group(authority_entry(d, CA, f"PKI1\\{CA}", ("WebServer",)),
+def _imported(d, rows=(), state="complete", kinds=("crl", "ocsp"), templates=(), facts=None):
+    ca = inventory_group(authority_entry(d, CA, f"PKI1\\{CA}", ("WebServer",), facts),
                          tuple(endpoint_entry(d, CA, k, 1, f"http://pki.example.test/{k}") for k in kinds))
     inv = inventory_group(cert_inventory_entry(d, CA, AT, state, ("RPC denied",) if state == "denied" else ()),
                           tuple(issued_entry(d, CA, r, facts) for r, facts in rows))
@@ -185,3 +186,86 @@ def test_a_directorys_templates_keep_each_cas_own_and_a_ca_replaces_only_its_own
     assert get(d, template_dn(f"{CA}/web")) is not None and get(d, template_dn("UserAuth")) is not None
     other = after_import(d, Imported((), ca_templates_groups(d, "Other CA", ()), ()))
     assert get(other, template_dn(f"{CA}/web")) is not None
+
+
+# ------------------------------------------------------------------ a CA that isn't active
+ROOT = "Example Root CA"
+ALPHA_SVC, BETA_SVC = (f"cn=svc-sso,ou=bindings,env=prod,cloud={c},ou=environments,dc=ciam-ops" for c in ("alpha",
+                                                                                                           "beta"))
+DELETED = {"ciamCaType": "subordinate", "ciamCaState": "deleted", "ciamCaRestorableUntil": _t("2026-10-20")}
+
+
+def _uses(svc, cert="tls"):
+    return (f"dn: {svc}\nchangetype: modify\nadd: ciamTlsCertificate\n"
+            f"ciamTlsCertificate: cn={cert},ou=certificates,dc=ciam-ops\n-\n")
+
+
+def _with_root(d, state):
+    root = inventory_group(authority_entry(d, ROOT, None, (), {"ciamCaType": "root", "ciamCaState": state}), ())
+    return after_import(d, Imported((ou_entry(AUTHORITIES),), (root,), ()))
+
+
+def test_a_certificate_of_a_deleted_ca_the_target_relies_on_blocks():
+    d = _base(_cert("tls"), _uses(BETA_SVC))
+    f = _plan(_imported(d, (_row(1, "CN=tls", fp=FP),), facts=DELETED))
+    assert [(a, o) for a, _, o in f.blockers] == [(AREA, "platform")]
+    text = f.blockers[0][1]
+    assert text.startswith(f"Certificate `tls` comes from {CA}, which was deleted (restorable until 2026-10-20): it "
+                           "issues nothing and no longer publishes its CRL (http://pki.example.test/crl)")
+    assert "beta/prod relies on it (svc-sso)" in text
+    assert text.endswith(f"Reissue it from an active CA and record it, or have {CA}'s owner (none recorded: record "
+                         "the CA's ciamOwner) restore the CA before 2026-10-20.")
+    assert list(f.ok) == ["1 certificate(s) of the record found current at their CA."]
+
+
+def test_one_only_the_source_uses_is_an_action_due_when_the_ca_can_no_longer_be_restored():
+    d = _base(_cert("tls"), _uses(ALPHA_SVC))
+    f = _plan(_imported(d, (_row(1, "CN=tls", fp=FP),), facts=DELETED))
+    assert not f.blockers
+    [(area, text, owner, due)] = f.actions
+    assert (area, owner, due) == (AREA, "platform", dt.date(2026, 10, 20))
+    assert "; used by svc-sso. Reissue it" in text
+    # without a restorable-until, it is due when the certificate expires
+    f = _plan(_imported(d, (_row(1, "CN=tls", fp=FP),), facts={"ciamCaState": "deleted"}))
+    assert f.actions[0][3] == dt.date(2027, 6, 30) and "until when it can be restored is unrecorded" in f.actions[0][1]
+
+
+def test_a_ca_above_it_that_isnt_active_is_named():
+    d = _imported(_base(_cert("tls")), (_row(1, "CN=tls", fp=FP),),
+                  facts={"ciamCaType": "subordinate", "ciamCaState": "active", "ciamParentAuthority": ROOT})
+    [(_, text, _, due)] = _plan(_with_root(d, "disabled")).actions
+    assert text.startswith(f"Certificate `tls` comes from {CA}, below {ROOT}, which is disabled: it issues nothing; "
+                           "nothing recorded uses it.")
+    assert text.endswith(f"or have {ROOT}'s owner (none recorded: record the CA's ciamOwner) re-enable the CA.")
+    assert due == dt.date(2027, 6, 30)
+    assert not _plan(_with_root(d, "active")).actions
+
+
+def test_silent_for_a_ca_reporting_no_state_and_for_revoked_or_expired_certificates():
+    d = _base(_cert("tls"), _cert("gone", fp="55:66"),
+              _cert("old", fp="77:88").replace(_t("2027-06-30"), _t("2026-09-01")), _uses(BETA_SVC))
+    rows = (_row(1, "CN=tls", fp=FP), _row(2, "CN=gone", fp="55:66", reason="keyCompromise", revoked="2026-09-01"),
+            _row(3, "CN=old", fp="77:88", na="2026-09-01"))
+    assert not _plan(_imported(d, rows)).blockers
+    f = _plan(_imported(d, rows, facts={"ciamCaState": "expired"}))
+    assert [t.split(" comes from ")[0] for _, t, _ in f.blockers] == ["Certificate `tls`"]
+    assert "has expired: it issues nothing, and what chains to it no longer validates" in f.blockers[0][1]
+    assert not any("comes from" in t for _, t, _, _ in f.actions)
+
+
+def test_untracked_certificates_of_a_ca_that_isnt_active_say_so():
+    d = _base(_cert("tls"))
+    rows = (_row(1, "CN=tls", fp=FP), _row(2, "CN=hand.example.test", na="2026-12-01"))
+    acts = [a for a in _plan(_imported(d, rows, facts=DELETED)).actions if "active certificate(s)" in a[1]]
+    [(_, text, owner, due)] = acts
+    assert text.endswith(f"They come from {CA}, which was deleted (restorable until 2026-10-20): it issues nothing "
+                         "and no longer publishes its CRL (http://pki.example.test/crl), so whatever checks "
+                         "revocation refuses what chains to it once its last CRL lapses. Reissue the ones in use from "
+                         f"an active CA and record them, or have {CA}'s owner (none recorded: record the CA's "
+                         "ciamOwner) restore the CA before 2026-10-20.")
+    assert (owner, due) == ("**NO OWNER**", dt.date(2026, 10, 20))
+
+
+def test_the_authorities_report_says_until_when_a_deleted_ca_is_restorable():
+    d = _imported(_base(), facts=DELETED)
+    assert authority_rows(d)[0][2] == "subordinate deleted (restorable until 2026-10-20)"

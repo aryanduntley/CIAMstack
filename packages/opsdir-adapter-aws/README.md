@@ -509,7 +509,8 @@ only: never a key. **Collect** with `opsdir collect --adapter aws/private-ca --e
 What each CA becomes:
 - **The CA** (`ou=certificate-authorities`, cn its certificate's subject CN, else its configured subject's, else its
   id; `ciamProviderRef` its ARN): `ciamCaType` root or subordinate, `ciamCaState` (ACTIVE active; CREATING and
-  PENDING_CERTIFICATE pending; DISABLED, EXPIRED, FAILED; DELETED deleted, restorable until `RestorableUntil`),
+  PENDING_CERTIFICATE pending; DISABLED, EXPIRED, FAILED; DELETED deleted, restorable until `RestorableUntil`:
+  `ciamCaRestorableUntil`),
   `ciamCaKeyAlgorithm` (`EC_secp384r1`, `RSA_4096`, ...), `ciamCaKeyStorage` (`KeyStorageSecurityStandard`, such as
   `FIPS_140_2_LEVEL_3_OR_HIGHER`; AWS-managed HSM keys, so no `ciamCaKeyRef`) and, for a subordinate,
   `ciamParentAuthority`: the CA in the export (else the record) whose certificate's subject is its issuer.

@@ -15,13 +15,13 @@ The export holds the AWS CLI's answers as `opsdir collect` saves them (collect.p
   private-ca/<CA id>/audit-report.json      the newest of them (s3 cp)
 A CA is named after its certificate's subject common name (else its configured subject's, else its id);
 ciamProviderRef is its ARN. What AWS says of it: root or subordinate, its state (CREATING and PENDING_CERTIFICATE are
-pending; DELETED is restorable until RestorableUntil), its key algorithm and storage standard (AWS-managed HSM
-keys: no key reference), and for a subordinate the CA in the export (else the record) whose certificate's subject is
-its certificate's issuer. Its endpoints are what it writes into what it issues: the CRL distribution point
-(http://<CustomCname, else bucket.s3.<region>.amazonaws.com>/<CustomPath, else crl>/<CA id>.crl, unless the extension
-is omitted; a partitioned CRL's file name is a GUID per partition, kept as a template) and the OCSP responder
-(http://<OcspCustomCname, else ocsp.acm-pca.<region>.amazonaws.com>). In GovCloud (US) those hostnames follow the
-general patterns AWS documents; nothing documents them separately (named).
+pending; DELETED is restorable until RestorableUntil, ciamCaRestorableUntil), its key algorithm and storage
+standard (AWS-managed HSM keys: no key reference), and for a subordinate the CA in the export (else the record) whose
+certificate's subject is its certificate's issuer. Its endpoints are what it writes into what it issues: the CRL
+distribution point (http://<CustomCname, else bucket.s3.<region>.amazonaws.com>/<CustomPath, else crl>/<CA id>.crl,
+unless the extension is omitted; a partitioned CRL's file name is a GUID per partition, kept as a template) and the
+OCSP responder (http://<OcspCustomCname, else ocsp.acm-pca.<region>.amazonaws.com>). In GovCloud (US) those
+hostnames follow the general patterns AWS documents; nothing documents them separately (named).
 
 The inventory is the newest audit report: AWS has no call listing a CA's certificates, and creating a report is a
 write (acm-pca:CreateCertificateAuthorityAuditReport, at most one per 30 minutes): the CA's owner creates them,
@@ -209,7 +209,8 @@ def read_ca(d, ca, get, iam, by_subject, at):
     status = STATES.get(ca.get("Status"), (ca.get("Status") or "").lower() or None)
     told = {"ciamCaType": TYPES.get(ca.get("Type")), "ciamCaState": status,
             "ciamCaKeyAlgorithm": config.get("KeyAlgorithm"), "ciamCaKeyStorage": ca.get("KeyStorageSecurityStandard"),
-            "ciamCaKeyRef": None, "ciamParentAuthority": _parent(ca, facts, by_subject, d)}
+            "ciamCaKeyRef": None, "ciamParentAuthority": _parent(ca, facts, by_subject, d),
+            "ciamCaRestorableUntil": gtime_of_iso(ca.get("RestorableUntil")) if status == "deleted" else None}
     authority = inventory_group(authority_entry(d, name, arn, tuple(rdn_value(t) for t in templates), told),
                                 tuple(endpoint_entry(d, name, kind, n, url, t) for kind, n, url, t in found))
     inventory = inventory_group(cert_inventory_entry(d, name, when, state, problems, arn),

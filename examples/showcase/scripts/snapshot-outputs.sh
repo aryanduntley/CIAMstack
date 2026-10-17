@@ -210,6 +210,8 @@ cap 08-apply-chg-2126 od import --change CHG-2126 --at 20260923090000Z azure/key
 cap 08-report-managed-certificates-keyvault od report managed-certificates
 cap 08-apply-chg-2127 od import --change CHG-2127 --at 20260923090000Z venafi/saas exports/venafi-saas
 cap 08-report-managed-certificates-saas od report managed-certificates
+cap 08-apply-chg-2128 od import --change CHG-2128 --at 20260923090000Z aws/private-ca exports/aws-private-ca-retired
+cap 08-report-certificate-authorities-retired od report certificate-authorities
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency

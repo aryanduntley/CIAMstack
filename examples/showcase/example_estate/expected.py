@@ -206,6 +206,12 @@ EXPECTED = MappingProxyType({
         ("B111", "Authorization", "target/prod uses Microsoft Entra Domain Services (corp-managed-domain), which "
          "`F1209051525` doesn't list", "the corporate managed domain's service isn't in the target's recorded "
          "authorization boundary", None, "CHG-2110"),
+        # production's former issuing CA, deleted in AWS Private CA (CHG-2128): the target relies on a certificate it
+        # issued, which nothing can renew or check the revocation of once the CA can't be restored
+        ("B116", "Certificate", "Certificate `example-aero-retired-artifact-tls` comes from Example Aero Retired "
+         "Issuing CA, which was deleted (restorable until 2026-10-22)",
+         "the SAML artifact resolution certificate Harbor MRO's federation uses comes from a CA deleted in AWS: it "
+         "publishes no CRL any more and renews nothing", None, "CHG-2128"),
     ],
     "actions": [
         ("A1", "Certificate", "`skyline-air-idp-signing`", "partner cert expires 2026-11-02", None),
@@ -659,6 +665,15 @@ EXPECTED = MappingProxyType({
         ("A301", "Certificate", "Certificate `pf-signing-2025`'s management is disabled in Example Aero SaaS",
          "PingFederate's signing certificate is retired in the tenant, but the record uses it: nothing renews or "
          "watches it there", None, "CHG-2127"),
+        # production's former issuing CA, deleted in AWS Private CA (CHG-2128): a certificate of the record nothing
+        # uses, and one the record doesn't hold, both due before the CA can no longer be restored
+        ("A302", "Certificate", "Certificate `example-aero-retired-smoke-test` comes from Example Aero Retired Issuing "
+         "CA, which was deleted", "a smoke-test certificate from the deleted CA nothing uses: reissue it or restore "
+         "the CA before 2026-10-22", None, "CHG-2128"),
+        ("A303", "Certificate", "Example Aero Retired Issuing CA issued 1 active certificate(s) from template "
+         "`Example Aero Retired Issuing CA/EndEntityServerAuthCertificate/V1` the record holds none of",
+         "the disaster-recovery artifact certificate is active at the deleted CA but not in the record, and nobody "
+         "renews the template", None, "CHG-2128"),
         # the SIEM (6.2e): Sentinel keeps the target's security events searchable 90 days, archived to 365; production
         # runs no admin-login detection until CHG-2049 reads in Splunk's, whose index keeps them 180 days only
         ("A150", "Logs", "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 "

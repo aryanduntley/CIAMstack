@@ -45,7 +45,8 @@ INTEGRATIONS = (
     ("harbor-mro-federation", "saml2-idp", dict(
         ciamEntityId="https://sso.harbor-mro.example/idp", ciamSsoUrl="https://sso.harbor-mro.example/idp/SSO.saml2",
         ciamPopulation="partners", ciamCriticality="medium",
-        ciamJitBaseDn=f"ou=partners,{PEOPLE}", ciamUsesCertificate=cert("harbor-mro-idp-signing", "sso-tls-2026"),
+        ciamJitBaseDn=f"ou=partners,{PEOPLE}", ciamUsesCertificate=cert("harbor-mro-idp-signing", "sso-tls-2026",
+                                                                 "example-aero-retired-artifact-tls"),
         ciamOwner=owner("ciam-platform", "harbor-mro")), []),
 )
 

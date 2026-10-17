@@ -337,3 +337,13 @@ def test_collector_problems():
         "aws/private-ca collection source https://example.test: not a bucket (s3://<the audit-report bucket>)",
         "more than one aws/private-ca collection source: name the one audit-report bucket")
     assert private_ca_steps(m.d, _model(), {}, {})[0][0] == "private-ca/cas.json"
+
+
+def test_a_deleted_ca_says_until_when_it_can_be_restored():
+    files = export()
+    cas = json.loads(files["private-ca/cas.json"])
+    cas["CertificateAuthorities"][1] |= {"Status": "DELETED", "RestorableUntil": "2026-10-20T18:00:00+00:00"}
+    d = _imported(files={**files, "private-ca/cas.json": json.dumps(cas)})
+    sub = get(d, authority_dn(SUB_CA))
+    assert (one(sub, "ciamCaState"), one(sub, "ciamCaRestorableUntil")) == ("deleted", "20261020180000Z")
+    assert one(get(_imported(), authority_dn(SUB_CA)), "ciamCaRestorableUntil") is None

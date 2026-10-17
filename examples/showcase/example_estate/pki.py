@@ -56,6 +56,12 @@ CERTIFICATES = (
     ("ds-ldaps-cloud", "tls-server", "CN=ldap.id.cloud.example-aero.test", "CN=Example Aero Cloud Issuing CA G1",
      "2026-08-03", "2027-08-03", ["ldap.id.cloud.example-aero.test"], None, "ciam-platform", None, "WI-CIAM-002",
      None),
+    # from production's former issuing CA in us-west-2, deleted in AWS Private CA (read in by CHG-2128): the SAML
+    # artifact resolution service Harbor MRO calls back, and a smoke-test certificate nothing uses
+    ("example-aero-retired-artifact-tls", "tls-server", "CN=artifact.sso.example-aero.test",
+     "CN=Example Aero Retired Issuing CA", "2026-03-02", "2027-03-02", None, None, "ciam-platform", None, None, None),
+    ("example-aero-retired-smoke-test", "tls-server", "CN=pki-smoke.example-aero.test",
+     "CN=Example Aero Retired Issuing CA", "2026-03-02", "2027-06-30", None, None, "ciam-platform", None, None, None),
 )
 
 
