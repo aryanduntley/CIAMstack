@@ -31,7 +31,8 @@ record: a certificate it doesn't hold isn't missing anywhere (managed.py reconci
 Trust bundles (ou=trust-bundles) are outside PKIs' published sets of CA certificates (DISA's DoD and ECA bundles) as
 last imported, with how their integrity was established; trust policies (ou=trust-policies) are what the platform
 accepts certificates under: anchors a person approved (record CA certificates, never a bundle's members by being
-there), the bundles they follow, restrictions, identity mapping and revocation, and who accepts them (trust.py).
+there), the bundles they follow, restrictions, identity mapping and revocation, and who accepts them: server roles
+and, by name, the identity services signing certificates in (trust.py).
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -365,6 +366,10 @@ ATTRIBUTES = (
     AttributeDef(965, 'ciamTrustStoreRole', 'string', 'intent', True,
                  "The binding role of the object store a consumer reads a trust policy's bundle from where it takes "
                  "it from storage (an AWS load balancer's trust store reads it from S3)"),
+    AttributeDef(966, 'ciamAcceptedByService', 'dn', 'intent', False,
+                 "An identity service (under ou=identity-services) that accepts certificates under a trust policy: "
+                 "where its product signs them in (a realm's certificate journey); its server role "
+                 "(ciamTargetRole) is one of the policy's ciamAcceptedByRole"),
     AttributeDef(947, 'ciamDeclinedAnchor', 'string', 'intent', False,
                  "SHA-256 fingerprint of a root in a bundle a trust policy follows that a person decided the policy "
                  "doesn't accept (a decommissioned root, a test hierarchy): no longer proposed as an anchor"),
@@ -477,11 +482,12 @@ CLASSES = (
     ClassDef(203, 'ciamTrustPolicy', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTrustPurpose'),
              ('ciamTrustAnchor', 'ciamTrustBundleRef', 'ciamAllowedPolicyOid', 'ciamRequiredEku',
               'ciamIdentityMapping', 'ciamRevocationMode', 'ciamRevocationFailure', 'ciamRevocationCacheHours',
-              'ciamAcceptedByRole', 'ciamDeclinedAnchor', 'ciamTrustEnforcedAt', 'ciamTrustStoreRole'),
+              'ciamAcceptedByRole', 'ciamDeclinedAnchor', 'ciamTrustEnforcedAt', 'ciamTrustStoreRole',
+              'ciamAcceptedByService'),
              "Which certificates the platform accepts for one purpose (under ou=trust-policies): the approved "
              "anchors, the bundles it follows, the certificate policies and key usages it requires, how an accepted "
              "certificate maps to an account, how revocation is checked and what happens when it can't be, and the "
-             "server roles that accept them"),
+             "server roles and identity services that accept them"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

@@ -1,6 +1,6 @@
 """Partner trust (domains/pki/trust): trust bundles as imported, trust policies' anchors reviewed against the bundles
-they follow (approve or decline, anchors a bundle dropped), bundle integrity and age, anchor expiry, policy gaps, and
-the two reports."""
+they follow (approve or decline, anchors a bundle dropped), bundle integrity and age, anchor expiry, policy gaps, the
+identity services a policy names (task 584), and the two reports."""
 import datetime as dt
 
 from opsdir.core.contract import Imported, PlanContext
@@ -160,7 +160,7 @@ def test_reports_list_bundles_and_policies():
     assert bundle_rows(d) == [("dod", "5.14", "2026-10-01", VERIFIED, FP["Root A"], "2", "Root A (2041-06-14)", "")]
     row = policy_rows(d)[0]
     assert row[:4] == ("cac-users", "client-auth", "Root A (2041-06-14)", "dod")
-    assert row[7:] == ("ocsp on failure cached (24 h)", "gateway", "pki-team")
+    assert row[7:] == ("ocsp on failure cached (24 h)", "gateway", "", "pki-team")
 
 
 # ------------------------------------------------------------------ consumers (milestone 122, task 576)
@@ -201,3 +201,40 @@ def test_an_edge_policy_needs_a_service_name_in_front_of_its_roles():
     assert [one(s, "cn") for s in accepting_services(alpha, get(d, POLICY))] == ["ldaps"]
     texts = [a[1] for a in check_trust(PlanContext(d, alpha, beta, None, AS_OF, {}, {}, ())).actions]
     assert not any("alpha/prod has no service name" in t for t in texts)
+
+
+# ------------------------------------------------------------------ named identity services (milestone 122, task 584)
+SERVICES = "ou=identity-services,dc=ciam-ops"
+
+
+def _with_services(extra):
+    records = (f"dn: {SERVICES}\nchangetype: add\nobjectClass: top\nobjectClass: organizationalUnit\n"
+               "ou: identity-services\n",
+               *(f"dn: cn={n},{SERVICES}\nchangetype: add\nobjectClass: top\nobjectClass: ciamIdentityService\n"
+                 f"cn: {n}\nciamBaseUrl: https://{n}.example.test\n{f'ciamTargetRole: {r}' if r else ''}\n"
+                 for n, r in (("customers", "am"), ("staff", "pf"), ("partners", None))))
+    d = _base(_policy(extra))
+    return applied(d, tuple(parse("\n".join(records))))
+
+
+def test_a_policy_names_the_identity_services_accepting_it():
+    from opsdir.domains.pki.trust import policy_services
+    d = _with_services(f"ciamAcceptedByRole: am\nciamAcceptedByService: cn=customers,{SERVICES}\n"
+                       f"ciamAcceptedByService: cn=pki-team,{OWNERS}\n")
+    assert [one(s, "cn") for s in policy_services(d, get(d, POLICY))] == ["customers"]
+    texts = [a[1] for a in _check(d).actions]
+    assert any(f"names `cn=pki-team,{OWNERS}` as accepting its certificates (ciamAcceptedByService), which isn't an "
+               "identity service" in t for t in texts)
+    assert not any("served by" in t for t in texts)
+    assert policy_rows(d)[0][9] == "customers"
+
+
+def test_a_named_service_its_accepting_roles_dont_serve_is_an_action():
+    d = _with_services(f"ciamAcceptedByRole: am\nciamAcceptedByService: cn=staff,{SERVICES}\n"
+                       f"ciamAcceptedByService: cn=partners,{SERVICES}\n")
+    actions = [a for a in _check(d).actions if "(ciamAcceptedByService), served by" in a[1]]
+    assert [a[2] for a in actions] == ["pki-team", "pki-team"]
+    assert "`staff` (ciamAcceptedByService), served by `pf`, which isn't among the roles accepting the policy " \
+           "(ciamAcceptedByRole: `am`)" in actions[0][1]
+    assert "`partners` (ciamAcceptedByService), served by no server role (ciamTargetRole)" in actions[1][1]
+    assert "Add the service's role to ciamAcceptedByRole, or stop naming the service." in actions[0][1]

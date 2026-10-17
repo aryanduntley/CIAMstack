@@ -7,20 +7,21 @@ CA trusted. A trust policy (ou=trust-policies) is what the platform accepts cert
 anchors are record CA certificates (purpose ca, under ou=certificates) a person approved, the bundles it follows supply
 the subordinate CAs that complete their chains and propose new roots, and it says which certificate policies and key
 usages it requires, how an accepted certificate maps to an account, how revocation is checked and what happens when it
-can't be, and which server roles accept certificates under it.
+can't be, which server roles accept certificates under it and, by name, the identity services that sign them in (a
+product renders a certificate sign-in only where a policy names its identity service; it never infers one).
 
 The planner (check_trust) watches the policies against the bundles they follow, matched by SHA-256 fingerprint: a root
 a followed bundle holds that is neither an anchor nor declined is proposed for review (approve: the certificate
 recorded and made an anchor; decline: its fingerprint recorded); an anchor no followed bundle holds any more is flagged
 with its removal; a followed bundle whose integrity failed blocks, one not verified or not imported for too long is an
 action; anchors expiring within the horizon, and policies that accept anything their anchors issue (no policy OIDs,
-key usages or identity mapping for client authentication) or don't check revocation, are actions. Nothing is said
-while the record holds no trust policy."""
+key usages or identity mapping for client authentication), don't check revocation or name an identity service none
+of their accepting roles serves, are actions. Nothing is said while the record holds no trust policy."""
 import datetime as dt
 
 from ...core.changeset import add_values, delete_values, new_entry
-from ...core.directory import (children, date_of, fingerprint, follow_all, get, make_entry, merged_attrs, norm_dn,
-                               one, rdn_of, rdn_value, values)
+from ...core.directory import (children, date_of, fingerprint, follow_all, get, is_a, make_entry, merged_attrs,
+                               norm_dn, one, rdn_of, rdn_value, values)
 from ...core.environment import of_class, servers_with_role
 from ...core.findings import Fix, Option, findings, merge_findings, owner_label
 from ...core.settings import setting_value
@@ -29,6 +30,7 @@ from .naming import CERTIFICATES, TRUST_BUNDLES, TRUST_POLICIES, trust_bundle_dn
 from .settings import ANCHOR_HORIZON_DAYS, BUNDLE_MAX_AGE_DAYS
 
 BUNDLE_CLASS, MEMBER_CLASS, POLICY_CLASS = "ciamTrustBundle", "ciamBundleCertificate", "ciamTrustPolicy"
+SERVICE_CLASS = "ciamIdentityService"
 BUNDLE_ATTRS = ("cn", "ciamInventoryAt", "ciamBundleVerification", "ciamTrustBundleRelease", "ciamBundleSource",
                 "ciamBundleDigest", "ciamBundleSigner", "ciamSignerAnchor", "ciamInventoryProblem", "ciamProviderRef")
 MEMBER_ATTRS = ("cn", "ciamFingerprint", "ciamNotAfter", "ciamSubject", "ciamIssuer", "ciamNotBefore",
@@ -95,6 +97,11 @@ def policy_anchors(d, policy):
 
 def followed_bundles(d, policy):
     return tuple(b for b in follow_all(d, policy, "ciamTrustBundleRef") if b is not None)
+
+
+def policy_services(d, policy):
+    """The identity services a policy names as accepting its certificates (ciamAcceptedByService), in its order."""
+    return tuple(s for s in follow_all(d, policy, "ciamAcceptedByService") if s is not None and is_a(s, SERVICE_CLASS))
 
 
 # ------------------------------------------------------------------ consumers
@@ -293,6 +300,27 @@ def _expiring(d, policies, as_of, horizon):
                               date_of(a, "ciamNotAfter")) for a, ps in due])
 
 
+def _services(d, policy):
+    """Actions about the identity services a policy names: one that isn't an identity service, one whose server role
+    isn't among the roles accepting the policy (nothing there accepts its certificates)."""
+    name, roles = rdn_value(policy), values(policy, "ciamAcceptedByRole")
+    named = {norm_dn(v): v for v in values(policy, "ciamAcceptedByService")}
+    services = policy_services(d, policy)
+    strays = [v for k, v in named.items() if k not in {s.norm for s in services}]
+    unserved = [s for s in services if one(s, "ciamTargetRole") not in roles]
+    accepted = ", ".join(f"`{r}`" for r in roles) or "none"
+    return findings(actions=[
+        *((AREA, f"Trust policy `{name}` names `{v}` as accepting its certificates (ciamAcceptedByService), which "
+           "isn't an identity service: nothing signs its certificates in there. Name the identity service "
+           "(ou=identity-services), or remove the value.", owner_label(d, policy), None) for v in strays),
+        *((AREA, f"Trust policy `{name}` names identity service `{rdn_value(s)}` (ciamAcceptedByService), served by "
+           + (f"`{one(s, 'ciamTargetRole')}`" if one(s, "ciamTargetRole") else "no server role (ciamTargetRole)")
+           + f", which isn't among the roles accepting the policy (ciamAcceptedByRole: {accepted}): its certificates "
+           "aren't accepted there. Add the service's role to ciamAcceptedByRole, or stop naming the service.",
+           owner_label(d, policy), None)
+          for s in unserved)])
+
+
 def _listed(items):
     return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} or {items[-1]}"
 
@@ -322,7 +350,7 @@ def check_trust(ctx):
     """The trust policies against the bundles they follow (nothing while the record holds no trust policy): roots to
     review (approve or decline), anchors no followed bundle holds any more, followed bundles that failed their
     integrity check (blockers), weren't verified or are stale, anchors expiring within trust-anchor-horizon-days, and
-    the gaps each policy leaves open."""
+    the gaps each policy leaves open, identity services included that its accepting roles don't serve."""
     d = ctx.d
     policies = trust_policies(d)
     if not policies:
@@ -335,7 +363,8 @@ def check_trust(ctx):
             followers.setdefault(b.norm, (b, []))[1].append(p)
     return merge_findings([*(f for p in policies for f in (_review(d, p, followed_bundles(d, p)),
                                                            _dropped(d, p, followed_bundles(d, p)),
-                                                           _policy_gaps(d, p), _consumers(ctx, p))),
+                                                           _policy_gaps(d, p), _services(d, p),
+                                                           _consumers(ctx, p))),
                            *(_integrity(d, b, ps, ctx.as_of, max_age) for b, ps in followers.values()),
                            _expiring(d, policies, ctx.as_of, horizon)])
 
@@ -343,7 +372,7 @@ def check_trust(ctx):
 # ------------------------------------------------------------------ reports
 BUNDLE_HEADERS = ("bundle", "version", "imported", "verification", "signer_root", "cas", "roots", "problems")
 POLICY_HEADERS = ("policy", "purpose", "anchors", "bundles", "policy_oids", "ekus", "identity", "revocation",
-                  "accepted_by", "owners")
+                  "accepted_by", "services", "owners")
 
 
 def bundle_rows(d, dn=None):
@@ -360,7 +389,7 @@ def bundle_rows(d, dn=None):
 
 def policy_rows(d, dn=None):
     """One row per trust policy: its purpose, anchors (with expiry), followed bundles, restrictions, identity mapping,
-    revocation checking, the roles accepting it and its owners."""
+    revocation checking, the roles and identity services accepting it and its owners."""
     def row(p):
         failure, hours = one(p, "ciamRevocationFailure"), one(p, "ciamRevocationCacheHours")
         return (rdn_value(p), one(p, "ciamTrustPurpose") or "",
@@ -371,5 +400,6 @@ def policy_rows(d, dn=None):
                 " ".join(v for v in (one(p, "ciamRevocationMode"), failure and f"on failure {failure}",
                                      hours and f"({hours} h)") if v),
                 ", ".join(values(p, "ciamAcceptedByRole")),
+                ", ".join(rdn_value(s) for s in policy_services(d, p)),
                 ", ".join(rdn_value(get(d, o)) for o in values(p, "ciamOwner") if get(d, o) is not None))
     return [row(p) for p in trust_policies(d)]
