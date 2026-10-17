@@ -23,8 +23,9 @@ by user.name and host.name, so an account or a host named by another column is a
 risk_score_mapping is rendered: the record holds no per-finding severity.
 
 Named instead (detection_notes): a detection recording no search (a note), and as blockers one the condition, its
-language or its search's source keeps from rendering; as notes, techniques the threat array leaves out (not in ATT&CK
-v18.0, or serving none of the rule's tactics) and entity columns Elastic's entity risk scoring doesn't read.
+language or its search's source keeps from rendering; as notes, techniques the threat array leaves out (not in the
+core's ATT&CK version, v20, or serving none of the rule's tactics), tactics that version retired (defense-evasion) and
+entity columns Elastic's entity risk scoring doesn't read.
 """
 import re
 
@@ -32,9 +33,10 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.inventory import duration_seconds, duration_text
 from opsdir.core.notes import note
 from opsdir.domains.observability.alarms import alarm_note, detection_condition, detection_specs
+from opsdir.domains.observability.attack import VERSION, retired_tactics, unplaced
 from opsdir.domains.observability.siem import (described, detection_index, detection_mode, entity_mappings,
                                                search_language)
-from .attack import threat, unplaced
+from .attack import threat
 from .naming import NATIVE, stream_name
 
 SEVERITIES = {"sev0": ("critical", 99), "sev1": ("high", 73), "sev2": ("medium", 47), "sev3": ("low", 21),
@@ -120,18 +122,23 @@ def rendered_rules(m):
 
 
 def _mapping_notes(m, s):
-    """Notes of a rendered rule's ATT&CK techniques its threat array leaves out and of its entity columns Elastic's
-    entity risk scoring doesn't read."""
+    """Notes of a rendered rule's ATT&CK techniques and retired tactics its threat array leaves out and of its entity
+    columns Elastic's entity risk scoring doesn't read."""
     left = unplaced(values(s.rule, "ciamAttackTactic"), values(s.rule, "ciamAttackTechnique"))
+    old = retired_tactics(values(s.rule, "ciamAttackTactic"))
     unread = tuple(f"{e} {i} by column {col}, not {ENTITY_FIELDS[(e, i)]}" for e, i, col in entity_mappings(s.alarm)
                    if (e, i) in ENTITY_FIELDS and col != ENTITY_FIELDS[(e, i)]) \
         if detection_mode(s.alarm) == "rows" else ()
     rule = rdn_value(s.rule)
     return (*((note("Monitoring", "note", f"alert rule {rule}", f"its ATT&CK techniques {', '.join(left)} aren't in "
                     "its Elastic rule's threat mapping: a technique is mapped under a tactic it serves, and these "
-                    "serve none of the rule's tactics (ciamAttackTactic) or aren't in ATT&CK v18.0",
+                    f"serve none of the rule's tactics (ciamAttackTactic) or aren't in {VERSION}",
                     ("Record the tactics they serve (ciamAttackTactic), or map them in Kibana (the rule's MITRE "
                      "ATT&CK settings)",), s.alarm.dn, m.label),) if left else ()),
+            *((note("Monitoring", "note", f"alert rule {rule}", f"its ATT&CK tactics {', '.join(old)} aren't in its "
+                    f"Elastic rule's threat mapping: {VERSION} retired them",
+                    ("Apply the plan's fix choosing their successor (ciamAttackTactic)",), s.rule.dn, m.label),)
+              if old else ()),
             *((note("Monitoring", "note", f"alert rule {rule}", f"its entity mappings name {'; '.join(unread)}: "
                     "Elastic's entity risk scoring groups alerts by user.name and host.name, so its alerts add to no "
                     "entity's risk score (the columns are only its investigation fields)",

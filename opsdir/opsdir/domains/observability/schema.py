@@ -68,7 +68,8 @@ ATTRIBUTES = (
     # adapter renders them its own way
     AttributeDef(958, 'ciamAttackTactic', 'enum:' + '|'.join(ATTACK_TACTICS), 'intent', False,
                  "A MITRE ATT&CK (Enterprise) tactic an alert rule detects, by ATT&CK's short name "
-                 "(credential-access)"),
+                 "(credential-access), as the current ATT&CK (v20) names it; a short name it retired "
+                 "(defense-evasion) is still accepted, and the planner asks for its successor"),
     AttributeDef(959, 'ciamAttackTechnique', 'string', 'intent', False,
                  'A MITRE ATT&CK technique or sub-technique an alert rule detects, by ID (T1110, T1078.004)',
                  (("X-PATTERN", r"^T[0-9]{4}(\.[0-9]{3})?$"),)),

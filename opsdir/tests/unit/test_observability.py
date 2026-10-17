@@ -312,3 +312,114 @@ def test_entity_mappings_need_a_rows_detection_and_an_identifier_their_entity_ha
     spray = next(b for b in detections(env_model(d, "beta/prod")) if b.dn.startswith("cn=det-spray,"))
     assert detection_mode(spray) == "rows"
     assert entity_mappings(spray) == (("account", "name", "user"), ("ip", "hostname", "src"))
+
+
+# ---------------------------------------------------------- MITRE ATT&CK v20 (milestone 109, task 588)
+def _attack_rule(**attrs):
+    return _entry(f"cn=spray,{ALERT_RULES}", "ciamAlertRule",
+                  {"cn": "spray", "ciamSignal": "login-failures", "ciamAlertRole": "alerts-page", "ciamOwner": OPS,
+                   **attrs})
+
+
+def test_the_core_attack_table_is_v20_and_answers_what_the_siem_adapters_ask():
+    from opsdir.domains.observability import attack
+    from opsdir.domains.observability.attack_table import ATTACK_VERSION, TACTICS
+    from opsdir.domains.observability.naming import ATTACK_TACTICS
+    assert ATTACK_VERSION == "20.0" and attack.VERSION == "ATT&CK v20"
+    assert (TACTICS["stealth"], TACTICS["defense-impairment"]) == (("TA0005", "Stealth"),
+                                                                   ("TA0112", "Defense Impairment"))
+    assert ATTACK_TACTICS == (*TACTICS, "defense-evasion") and len(TACTICS) == 15
+    assert attack.tactic_entry("credential-access") == {"id": "TA0006", "name": "Credential Access",
+                                                        "reference": "https://attack.mitre.org/tactics/TA0006/"}
+    assert attack.reference("T1110.003") == "https://attack.mitre.org/techniques/T1110/003/"
+    assert (attack.technique_name("T1110.003"), attack.parent("T1110.003"), attack.parent("T1110")) == (
+        "Password Spraying", "T1110", "T1110")
+    assert attack.technique_tactics("T1556") == ("defense-impairment", "persistence", "credential-access")
+    assert attack.technique_name("T1562") is None and attack.technique_tactics("T9999") == ()
+    assert attack.placed("stealth", ("T1078", "T1110", "T1078.004")) == ("T1078", "T1078.004")
+    assert attack.unplaced(("credential-access", "defense-evasion"), ("T1110", "T1078", "T1562")) == (
+        "T1078", "T1562")
+    assert attack.unknown_techniques(("T1110", "T1562.001", "T9999")) == ("T1562.001", "T9999")
+    assert attack.retired_tactics(("stealth", "defense-evasion")) == ("defense-evasion",)
+
+
+def test_retired_attack_values_are_actions_of_the_rules_owner_with_fixes_for_a_person_to_choose():
+    from opsdir.connectors.fixes import chosen
+    from opsdir.domains.observability.attack import check_attack
+    rule = _attack_rule(ciamAttackTactic=("defense-evasion", "credential-access"),
+                        ciamAttackTechnique=("T1110", "T1562.001", "T1026", "T9999"))
+    f = _plan(_record(rule), check_attack)
+    assert [(a, o) for a, _, o, _ in f.actions] == [("Alert", "ops")] * 4
+    assert [t for _, t, _, _ in f.actions] == [
+        "Alert rule `spray` records ATT&CK tactic `defense-evasion` (TA0005 Defense Evasion), which ATT&CK v20 "
+        "replaced with stealth (TA0005 Stealth) and defense-impairment (TA0112 Defense Impairment): a SIEM following "
+        "ATT&CK v20 maps it wrong or not at all. Choose the tactic it detects (ciamAttackTactic).",
+        "Alert rule `spray` records ATT&CK technique `T1562.001` (Disable or Modify Tools), which ATT&CK v20 revoked: "
+        "T1685 (Disable or Modify Tools) replaced it. A SIEM following ATT&CK v20 doesn't map it; record its "
+        "replacement (ciamAttackTechnique).",
+        "Alert rule `spray` records ATT&CK technique `T1026` (Multiband Communication), which ATT&CK v20 deprecated "
+        "with nothing replacing it: no SIEM following ATT&CK v20 maps it. Remove it, or record the technique that "
+        "covers what the rule detects.",
+        "Alert rule `spray` records ATT&CK technique `T9999`, which isn't in ATT&CK v20: no SIEM maps it. Record the "
+        "technique's ID as ATT&CK has it (ciamAttackTechnique), or remove it."]
+    tactic, revoked, deprecated = f.fixes
+    assert tactic.key == "attack-tactic:spray:defense-evasion" and tactic.records == ()
+    assert [(o.key, o.label) for o in tactic.options] == [
+        ("stealth", "`stealth` (Stealth)"), ("defense-impairment", "`defense-impairment` (Defense Impairment)"),
+        ("stealth+defense-impairment", "`stealth` (Stealth) and `defense-impairment` (Defense Impairment)")]
+    both = chosen(tactic, "stealth+defense-impairment")
+    assert both.records[0].mods == (("delete", "ciamAttackTactic", ("defense-evasion",)),
+                                    ("add", "ciamAttackTactic", ("stealth", "defense-impairment")))
+    assert (revoked.key, revoked.options) == ("attack-technique:spray:T1562.001", ())
+    assert revoked.records[0].mods == (("delete", "ciamAttackTechnique", ("T1562.001",)),
+                                       ("add", "ciamAttackTechnique", ("T1685",)))
+    assert deprecated.records[0].mods == (("delete", "ciamAttackTechnique", ("T1026",)),)
+    fixed = build_directory(REGISTRY, tuple(parse(mini_estate.LDIF + "\n" + "\n".join((*BASE, rule)))),
+                            (*both.records, *revoked.records, *deprecated.records))
+    assert [t for _, t, _, _ in _plan(fixed, check_attack).actions] == [
+        "Alert rule `spray` records ATT&CK technique `T9999`, which isn't in ATT&CK v20: no SIEM maps it. Record the "
+        "technique's ID as ATT&CK has it (ciamAttackTechnique), or remove it."]
+
+
+def _stix(kind, sid, eid, **extra):
+    return {"type": kind, "id": sid, "external_references": [{"source_name": "mitre-attack", "external_id": eid}],
+            **extra}
+
+
+def test_the_generator_writes_the_table_following_revocations_to_a_live_technique():
+    import importlib.util
+    import pathlib
+    path = pathlib.Path(__file__).resolve().parents[2] / "scripts" / "gen-attack.py"
+    spec = importlib.util.spec_from_file_location("gen_attack", path)
+    gen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gen)
+    phase = [{"kill_chain_name": "mitre-attack", "phase_name": "stealth"}]
+    objects = [
+        {"type": "x-mitre-matrix", "id": "m", "tactic_refs": ["t-s", "t-d"]},
+        _stix("x-mitre-tactic", "t-s", "TA0005", name="Stealth", x_mitre_shortname="stealth"),
+        _stix("x-mitre-tactic", "t-d", "TA0112", name="Defense Impairment", x_mitre_shortname="defense-impairment"),
+        _stix("attack-pattern", "a-new", "T1685", name="Disable or Modify Tools", kill_chain_phases=phase),
+        _stix("attack-pattern", "a-mid", "T1562", name="Impair Defenses", revoked=True),
+        _stix("attack-pattern", "a-old", "T1089", name="Disabling Security Tools", revoked=True),
+        _stix("attack-pattern", "a-gone", "T1026", name="Multiband Communication", x_mitre_deprecated=True),
+        {"type": "relationship", "id": "r1", "relationship_type": "revoked-by", "source_ref": "a-old",
+         "target_ref": "a-mid"},
+        {"type": "relationship", "id": "r2", "relationship_type": "revoked-by", "source_ref": "a-mid",
+         "target_ref": "a-new"}]
+    table = {}
+    exec(gen.module_text("20.0", objects), table)
+    assert table["ATTACK_VERSION"] == "20.0" and list(table["TACTICS"]) == ["stealth", "defense-impairment"]
+    assert table["TECHNIQUES"] == {"T1685": ("Disable or Modify Tools", ("stealth",))}
+    assert table["RETIRED"] == {"T1026": ("Multiband Communication", "deprecated", ()),
+                                "T1089": ("Disabling Security Tools", "revoked", ("T1685",)),
+                                "T1562": ("Impair Defenses", "revoked", ("T1685",))}
+    assert table["RETIRED_TACTICS"]["defense-evasion"] == ("TA0005", "Defense Evasion",
+                                                          ("stealth", "defense-impairment"))
+
+
+def test_current_attack_values_say_so_and_rules_recording_none_find_nothing():
+    from opsdir.domains.observability.attack import check_attack
+    assert _plan(_record(), check_attack) == findings()
+    current = _record(_attack_rule(ciamAttackTactic="stealth", ciamAttackTechnique=("T1078", "T1685")))
+    assert _plan(current, check_attack) == findings(
+        ok=["Alert rules' ATT&CK tactics and techniques (1 rule(s)) are ATT&CK v20's."])

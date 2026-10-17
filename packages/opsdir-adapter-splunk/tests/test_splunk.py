@@ -186,6 +186,18 @@ def test_what_enterprise_security_leaves_to_the_splunk_team_is_named():
                                                      "domain in ES")
 
 
+def test_annotations_leave_out_techniques_attack_v20_doesnt_hold_with_a_note():
+    retired = ES_TREE[:-3] + (ATTACK_RULES[0].replace("ciamAttackTechnique: T1078.004",
+                                                       "ciamAttackTechnique: T1562.001\nciamAttackTechnique: T9999"),
+                              *ES_TREE[-2:])
+    m = _attack(retired)
+    spray = dict(dict(read_conf(render(m, SERVICES)[SAVED_SEARCHES]))["ciam-password-spray"])
+    assert spray["action.correlationsearch.annotations"] == '{"mitre_attack":["T1110.003"]}'
+    texts = [(n.severity, note_comment(n)) for n in render_notes(m, SERVICES)]
+    assert ("note", "NOTE: alert rule password-spray: its ATT&CK techniques T1562.001, T9999 aren't annotated: they "
+            "aren't in ATT&CK v20 (retired, or never in ATT&CK)") in texts
+
+
 def test_on_the_plain_platform_a_rows_detection_alerts_per_row_and_its_mappings_are_named():
     m = _attack(PLATFORM_TREE)
     searches = dict(read_conf(render(m, SERVICES)[SAVED_SEARCHES]))

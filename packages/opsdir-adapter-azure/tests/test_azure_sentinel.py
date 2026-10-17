@@ -270,6 +270,19 @@ def test_a_rows_detection_runs_as_written_one_alert_per_row_with_its_entities_an
     assert "# NOTE: alert rule password-spray: its sub-techniques T1110.003, T1078.004" in text
 
 
+def test_attack_v20_tactics_render_as_the_v18_tactic_sentinel_names_with_a_note():
+    from opsdir_adapter_azure.sentinel import sentinel_tactic
+    assert [sentinel_tactic(t) for t in ("stealth", "defense-impairment", "defense-evasion", "credential-access")] == [
+        "DefenseEvasion", "DefenseEvasion", "DefenseEvasion", "CredentialAccess"]
+    spray = SPRAY.replace("ciamAttackTactic: credential-access\n",
+                          "ciamAttackTactic: stealth\nciamAttackTactic: defense-impairment\n")
+    _, _, m = model(beta=(*BINDINGS, ROWS), tree=(*TREE, spray))
+    text = "\n\n".join(as_text(render_sentinel(m)))
+    assert 'tactics                    = ["DefenseEvasion"]' in text
+    assert ("# NOTE: alert rule password-spray: its ATT&CK tactics stealth, defense-impairment are rendered as "
+            "DefenseEvasion: Sentinel follows ATT&CK v18") in text
+
+
 def test_state_reads_a_rows_detection_back_with_its_mode_and_entities():
     state = _state(("azurerm_sentinel_alert_rule_scheduled", "det", {
         "id": "/rules/spray", "name": "ciam-password-spray", "log_analytics_workspace_id": WS,
