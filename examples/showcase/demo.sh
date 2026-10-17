@@ -369,6 +369,11 @@ echo "   SSO certificate the record still names, its LDAPS renewal is in error, 
 echo "   the record has none of"
 od import --change CHG-2125 --at 20260923090000Z venafi/certificates exports/venafi
 od report managed-certificates
+echo "-- production's former issuing CA in us-west-2, deleted in AWS Private CA (CHG-2128), read from its last audit"
+echo "   report: restorable until 2026-10-22, it renews nothing and publishes no CRL any more, so the certificate"
+echo "   Harbor MRO's federation uses from it blocks the move, and the other two it issued are actions"
+od import --change CHG-2128 --at 20260923090000Z aws/private-ca exports/aws-private-ca-retired
+od report certificate-authorities
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

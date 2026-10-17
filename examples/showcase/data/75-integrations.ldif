@@ -250,3 +250,5 @@ ciamServedBy: cn=sso,ou=identity-services,dc=ciam-ops
 ciamSsoUrl: https://sso.harbor-mro.example/idp/SSO.saml2
 ciamUsesCertificate: cn=harbor-mro-idp-signing,ou=certificates,dc=ciam-ops
 ciamUsesCertificate: cn=sso-tls-2026,ou=certificates,dc=ciam-ops
+ciamUsesCertificate: cn=example-aero-retired-artifact-tls,ou=certificates,dc=c
+ iam-ops

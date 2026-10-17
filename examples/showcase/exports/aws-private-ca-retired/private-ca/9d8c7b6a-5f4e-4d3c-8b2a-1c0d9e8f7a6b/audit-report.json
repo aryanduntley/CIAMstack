@@ -1,0 +1,32 @@
+[
+  {
+    "awsAccountId": "111122223333",
+    "certificateArn": "arn:aws:acm-pca:us-west-2:111122223333:certificate-authority/9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b/certificate/7d010e",
+    "serial": "7d:01",
+    "subject": "CN=artifact.sso.example-aero.test",
+    "notBefore": "2026-03-02T00:00:00+0000",
+    "notAfter": "2027-03-02T00:00:00+0000",
+    "issuedAt": "2026-03-02T09:14:21+0000",
+    "templateArn": "arn:aws:acm-pca:::template/EndEntityServerAuthCertificate/V1"
+  },
+  {
+    "awsAccountId": "111122223333",
+    "certificateArn": "arn:aws:acm-pca:us-west-2:111122223333:certificate-authority/9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b/certificate/7d020e",
+    "serial": "7d:02",
+    "subject": "CN=pki-smoke.example-aero.test",
+    "notBefore": "2026-03-02T00:00:00+0000",
+    "notAfter": "2027-06-30T00:00:00+0000",
+    "issuedAt": "2026-03-02T09:20:02+0000",
+    "templateArn": "arn:aws:acm-pca:::template/EndEntityServerAuthCertificate/V1"
+  },
+  {
+    "awsAccountId": "111122223333",
+    "certificateArn": "arn:aws:acm-pca:us-west-2:111122223333:certificate-authority/9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b/certificate/7d030e",
+    "serial": "7d:03",
+    "subject": "CN=artifact-dr.sso.example-aero.test",
+    "notBefore": "2026-04-15T00:00:00+0000",
+    "notAfter": "2027-04-15T00:00:00+0000",
+    "issuedAt": "2026-04-15T13:02:47+0000",
+    "templateArn": "arn:aws:acm-pca:::template/EndEntityServerAuthCertificate/V1"
+  }
+]

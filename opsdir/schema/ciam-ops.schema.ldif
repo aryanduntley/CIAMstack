@@ -3708,6 +3708,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.915 NAME 'ciamParentAuthority' DESC
  ordinate CA\27s certificate, as the CA\27s product says' EQUALITY distingui
  shedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 SINGLE-VALUE X-PORTABILI
  TY 'observed' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.916 NAME 'ciamCaRestorableUntil' DES
+ C 'Until when a deleted certification authority can still be restored in it
+ s product (AWS Private CA\27s RestorableUntil; Google CAS\27s purge time): 
+ after it, the CA and what it would renew are gone' EQUALITY generalizedTime
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'obse
+ rved' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.920 NAME 'ciamThumbprint' DESC 'A ce
  rtificate\27s SHA-1 thumbprint, as colon-separated hex: what a certificate 
  manager gives when it gives no SHA-256 fingerprint' EQUALITY caseIgnoreMatc
@@ -4585,7 +4591,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.151 NAME 'ciamCertAuthority' DESC 'A
   it) when the product tells' SUP ciamObject STRUCTURAL MUST cn MAY ( ciamPr
  oviderRef $ ciamCaCertificate $ ciamTemplateName $ ciamCaType $ ciamCaState
   $ ciamCaKeyAlgorithm $ ciamCaKeyStorage $ ciamCaKeyRef $ ciamParentAuthori
- ty ) X-ORIGIN 'opsdir' )
+ ty $ ciamCaRestorableUntil ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.152 NAME 'ciamCertTemplate' DESC 'A c
  ertificate template CAs issue from (cn: its name; description: its display 
  name): what it issues, who renews what it issues that the record holds no c

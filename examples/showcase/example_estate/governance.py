@@ -197,6 +197,8 @@ CHANGES = (
      "the certificates they keep, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2125", "Read the certificate manager's inventory of the Example Aero folder (Venafi / CyberArk Certificate "
      "Manager; metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2128", "Read production's former issuing CA in us-west-2 (AWS Private CA, deleted: its last audit report, "
+     "metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

@@ -30,12 +30,18 @@ not revoked) an inventory holds that no record certificate matches is untracked;
 templates the record cares about (a template recording a renewal owner or a purpose, or one a record certificate was
 issued from), the report lists them all. Observations are never written onto the record's certificates: the
 reconciliation is computed here, each time.
+
+A CA's product may say what state the CA is in (ciamCaState, a cloud private CA's importer; AD CS, Vault and EJBCA
+say none) and which CA is above it (ciamParentAuthority). A certificate whose CA, or a CA above it, isn't active
+(disabled, pending, expired, deleted, failed) can't be renewed there, and a deleted or expired CA's certificates stop
+validating or passing revocation checks: the planner judges each one it finds, a CA that reports no state never.
 """
 import re
 from typing import NamedTuple
 
 from ...core.directory import (children, date_of, fingerprint, follow, follow_all, get, make_entry, merged_attrs,
                                norm_dn, one, ou_entry, rdn_of, rdn_value, values)
+from ...core.environment import applies_in, environment_of
 from ...core.findings import findings, merge_findings, owner_label
 from ...core.settings import setting_text
 from .checks import certificate_users
@@ -51,7 +57,9 @@ CERT_INVENTORY_CLASS, ISSUED_CLASS = "ciamCertInventory", "ciamIssuedCertificate
 AUTHORITY_ATTRS = ("cn", "ciamProviderRef", "ciamTemplateName")
 # what a CA's product says of the CA itself, written only by an importer that reads them (a cloud private CA's)
 AUTHORITY_FACTS = ("ciamCaType", "ciamCaState", "ciamCaKeyAlgorithm", "ciamCaKeyStorage", "ciamCaKeyRef",
-                   "ciamParentAuthority")
+                   "ciamParentAuthority", "ciamCaRestorableUntil")
+# the states (ciamCaState) of a CA that issues nothing
+INACTIVE_CA = ("disabled", "pending", "expired", "deleted", "failed")
 # what a template lets requesters do and who may request from it (templates.py judges the risk)
 TEMPLATE_RIGHTS = ("ciamSubjectFromRequest", "ciamApprovalRequired", "ciamRequiredSignatures", "ciamTemplateVersion",
                    "ciamEnrollee", "ciamEnrollmentScope")
@@ -90,7 +98,8 @@ def revocation_reason(code):
 def authority_entry(d, name, provider_ref=None, templates=(), facts=None):
     """A certification authority's entry (what the record adds to it, its own certificates and owners, kept): how its
     product names it and the templates it issues from; facts {attribute of AUTHORITY_FACTS: value or None} what the
-    product says of the CA itself (ciamParentAuthority: the parent CA's name), owned only when given."""
+    product says of the CA itself (ciamParentAuthority: the parent CA's name; ciamCaRestorableUntil: when a deleted
+    CA can no longer be restored, GeneralizedTime), owned only when given."""
     told = {k: v for k, v in (facts or {}).items() if k in AUTHORITY_FACTS}
     owned = {"cn": (name,), "ciamProviderRef": (provider_ref,), "ciamTemplateName": tuple(dict.fromkeys(templates)),
              **{k: (authority_dn(v) if k == "ciamParentAuthority" and v else v,) for k, v in told.items()}}
@@ -319,6 +328,31 @@ def renewal_owner(d, cert, issued):
     return rdn_of(owner) if owner else None
 
 
+def authority_chain(d, authority):
+    """A CA, then the CAs above it as their products name them (ciamParentAuthority), nearest first, each once: a
+    parent the record doesn't hold, or one seen already, ends it."""
+    def walk(a, seen):
+        parent = follow(d, a, "ciamParentAuthority")
+        return (a, *(walk(parent, seen | {a.norm}) if parent is not None and parent.norm not in seen | {a.norm}
+                     else ()))
+    return walk(authority, frozenset())
+
+
+def inactive_authority(d, authority):
+    """The first CA of a CA's chain (itself, then those above it) whose product says it isn't active (INACTIVE_CA),
+    or None: a CA whose product says nothing of its state (AD CS, Vault, EJBCA) is never one."""
+    return next((a for a in authority_chain(d, authority) if one(a, "ciamCaState") in INACTIVE_CA),
+                None) if authority is not None else None
+
+
+def users_in(d, cert, m):
+    """The entries using a certificate (certificate_users) that environment m relies on: bindings of m or of a base
+    it inherits from, and shared entries that apply in m (applies_in)."""
+    lineage = {e.norm for e in m.lineage}
+    return tuple(u for u in certificate_users(d, cert)
+                 if (norm_dn(environment_of(u)) in lineage if ",ou=bindings," in u.norm else applies_in(u, m)))
+
+
 # ------------------------------------------------------------------ the planner's findings
 def _used_by(d, cert):
     return tuple(dict.fromkeys(rdn_value(u) for u in certificate_users(d, cert)))
@@ -382,15 +416,76 @@ def _state_finding(d, r):
     return ("action", (AREA, text, owner, due)) if text else None
 
 
+def _restorable(ca):
+    return date_of(ca, "ciamCaRestorableUntil") if one(ca, "ciamCaState") == "deleted" else None
+
+
+def _crls(d, ca):
+    urls = tuple(one(e, "ciamEndpointUrl") for e in endpoints(d, ca) if one(e, "ciamRevocationKind") == "crl")
+    return f" ({', '.join(urls)})" if urls else ""
+
+
+def _inactive_said(d, ca, issuer):
+    """How a finding says what a CA that isn't active (ca) means for what issuer, it or a CA below it, issued."""
+    until = _restorable(ca)
+    restore = f"restorable until {until}" if until else "until when it can be restored is unrecorded"
+    what = {"disabled": "is disabled: it issues nothing",
+            "pending": "isn't activated (pending: awaiting its certificate or its activation): it issues nothing",
+            "expired": "has expired: it issues nothing, and what chains to it no longer validates",
+            "deleted": f"was deleted ({restore}): it issues nothing and no longer publishes its CRL{_crls(d, ca)}, so "
+                       "whatever checks revocation refuses what chains to it once its last CRL lapses",
+            "failed": "failed (its creation failed): it never issued anything"}[one(ca, "ciamCaState")]
+    return (f"{rdn_value(ca)}, which {what}" if issuer.norm == ca.norm else
+            f"{rdn_value(issuer)}, below {rdn_value(ca)}, which {what}")
+
+
+def _inactive_how(d, ca, these="it"):
+    """What to do about certificates (these: it, or the ones in use) whose chain holds a CA that isn't active."""
+    state, until = one(ca, "ciamCaState"), _restorable(ca)
+    who = owner_label(d, ca) if values(ca, "ciamOwner") else "none recorded: record the CA's ciamOwner"
+    fix = {"disabled": "re-enable the CA", "pending": "activate the CA",
+           "deleted": f"restore the CA{f' before {until}' if until else ''}"}.get(state)
+    record = "it" if these == "it" else "them"
+    return ((f"Correct its issuer in the record, or reissue {these} from an active CA and record {record}"
+             if state == "failed" else f"Reissue {these} from an active CA and record {record}")
+            + (f", or have {rdn_value(ca)}'s owner ({who}) {fix}" if fix else "") + ".")
+
+
+def _ca_state_finding(ctx, r):
+    """(kind, finding) of a reconciled record certificate (not revoked, not expired) whose CA, or a CA above it,
+    isn't active, or None: a blocker when the target relies on it, else an action due by the earlier of the CA's
+    restorable-until and the certificate's expiry."""
+    d, expires = ctx.d, date_of(r.cert, "ciamNotAfter")
+    ca = inactive_authority(d, r.authority)
+    if ca is None or r.state in (REVOKED, SCHEDULED) or (expires is not None and expires < ctx.as_of):
+        return None
+    said, owner = f"Certificate `{rdn_value(r.cert)}` comes from {_inactive_said(d, ca, r.authority)}", \
+        renewal_owner(d, r.cert, r.found) or "**NO OWNER**"
+    relied = tuple(dict.fromkeys(rdn_value(u) for u in users_in(d, r.cert, ctx.dst)))
+    if relied:
+        return "blocker", (AREA, f"{said}; {ctx.dst.label} relies on it ({', '.join(relied)}). {_inactive_how(d, ca)}",
+                           owner)
+    used = _used_by(d, r.cert)
+    uses = f"used by {', '.join(used)}" if used else "nothing recorded uses it"
+    return "action", (AREA, f"{said}; {uses}. {_inactive_how(d, ca)}", owner,
+                      min((x for x in (_restorable(ca), expires) if x), default=None))
+
+
 def _untracked_finding(d, authority, template, rows):
     owner = renewal_owner(d, None, rows[0])
     listed = ", ".join(f"{issue_label(r)} {one(r, 'ciamSubject') or '(no subject)'} (until "
                        f"{date_of(r, 'ciamNotAfter')})" for r in rows)
     who = (f"{owner} renews them." if owner else
            "Nobody is recorded to renew them: record the template's renewal owner (ciamRenewalOwner).")
+    issuer = get(d, authority_dn(authority))
+    ca = inactive_authority(d, issuer)
+    stopped = (f" They come from {_inactive_said(d, ca, issuer)}. {_inactive_how(d, ca, 'the ones in use')}"
+               if ca is not None else "")
+    first = min((x for x in (date_of(r, "ciamNotAfter") for r in rows) if x), default=None)
     return (AREA, f"{authority} issued {len(rows)} active certificate(s) from template `{template}` the record holds "
-                  f"none of: {listed}. Record the ones in use, or have them revoked. {who}",
-            owner or "**NO OWNER**", min((x for x in (date_of(r, "ciamNotAfter") for r in rows) if x), default=None))
+                  f"none of: {listed}. Record the ones in use, or have them revoked. {who}{stopped}",
+            owner or "**NO OWNER**",
+            min((x for x in (_restorable(ca) if ca is not None else None, first) if x), default=None))
 
 
 def _untracked_findings(d, done, as_of):
@@ -417,11 +512,14 @@ def check_issued_certificates(ctx):
     date, superseded by a newer issue, confirmed missing, or not confirmable (inventory incomplete or refused) an
     action; so is each (CA, template the record cares about) whose active certificates the record holds none of,
     owned by the template's renewal owner and due when the first expires, and each inventoried CA that publishes no
-    CRL or OCSP endpoint. Present certificates are counted."""
+    CRL or OCSP endpoint. A certificate (not revoked or expired) whose CA, or a CA above it, its product says isn't
+    active is a blocker when the target relies on it, else an action owned by who renews it and due by the earlier of
+    the CA's restorable-until and its expiry (an untracked set's action says so too). Present certificates are
+    counted."""
     if not cert_inventories(ctx.d):
         return findings()
     done = reconciled(ctx.d, ctx.as_of)
-    states = tuple(f for r in done for f in (_state_finding(ctx.d, r),) if f)
+    states = tuple(f for r in done for f in (_state_finding(ctx.d, r), _ca_state_finding(ctx, r)) if f)
     present = sum(1 for r in done if r.state == PRESENT)
     return merge_findings([findings(blockers=[f for k, f in states if k == "blocker"],
                                     actions=[f for k, f in states if k == "action"]),
@@ -449,16 +547,18 @@ def _issuer_of(d, ca_cert, cas):
 
 def authority_rows(d, dn=None):
     """One row per certification authority: how its product names it, what its product says of it (root or
-    subordinate and its state; its signing key's algorithm, storage and key reference), who issued its own
-    certificates (the CA above it, or self-signed; else the CA its product names above it), those certificates, the
-    templates it issues from, its revocation endpoints, its inventory (when, and whether complete) and its owners."""
+    subordinate and its state, a deleted one's restorable-until; its signing key's algorithm, storage and key
+    reference), who issued its own certificates (the CA above it, or self-signed; else the CA its product names above
+    it), those certificates, the templates it issues from, its revocation endpoints, its inventory (when, and whether
+    complete) and its owners."""
     cas, held = authorities(d), cert_inventories(d)
     def row(a):
         own = tuple(c for c in follow_all(d, a, "ciamCaCertificate") if c is not None)
         inv = held.get(rdn_value(a).lower())
         parent = one(a, "ciamParentAuthority")
         return (rdn_value(a), one(a, "ciamProviderRef") or "",
-                " ".join(v for v in (one(a, "ciamCaType"), one(a, "ciamCaState")) if v),
+                " ".join(v for v in (one(a, "ciamCaType"), one(a, "ciamCaState"),
+                                     f"(restorable until {_restorable(a)})" if _restorable(a) else None) if v),
                 ", ".join(v for v in (one(a, "ciamCaKeyAlgorithm"), one(a, "ciamCaKeyStorage"), one(a, "ciamCaKeyRef"))
                           if v),
                 ", ".join(dict.fromkeys(_issuer_of(d, c, cas) for c in own)) or (rdn_of(parent) if parent else ""),

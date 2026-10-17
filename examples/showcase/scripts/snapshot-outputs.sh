@@ -206,6 +206,8 @@ cap 08-report-certificate-authorities-cloud od report certificate-authorities
 cap 08-report-issued-certificates-cloud od report issued-certificates
 cap 08-apply-chg-2125 od import --change CHG-2125 --at 20260923090000Z venafi/certificates exports/venafi
 cap 08-report-managed-certificates od report managed-certificates
+cap 08-apply-chg-2128 od import --change CHG-2128 --at 20260923090000Z aws/private-ca exports/aws-private-ca-retired
+cap 08-report-certificate-authorities-retired od report certificate-authorities
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency

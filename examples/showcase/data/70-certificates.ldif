@@ -185,3 +185,29 @@ ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
 ciamRotationRunbook: cn=WI-CIAM-002,ou=runbooks,dc=ciam-ops
 ciamSubject: CN=ldap.id.cloud.example-aero.test
 ciamSubjectAltName: ldap.id.cloud.example-aero.test
+
+dn: cn=example-aero-retired-artifact-tls,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-retired-artifact-tls
+ciamCertPurpose: tls-server
+ciamFingerprint: E4:FF:60:B3:BC:53:E7:60:8C:5C:88:EF:30:CA:96:63:9C:47:10:49:F
+ 9:EA:D8:E8:6A:BC:61:2F:EE:A6:3D:C1
+ciamIssuer: CN=Example Aero Retired Issuing CA
+ciamNotAfter: 20270302000000Z
+ciamNotBefore: 20260302000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=artifact.sso.example-aero.test
+
+dn: cn=example-aero-retired-smoke-test,ou=certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamCertificate
+cn: example-aero-retired-smoke-test
+ciamCertPurpose: tls-server
+ciamFingerprint: C4:59:3D:C9:68:39:8E:A1:0A:B4:A8:05:A4:0C:9B:A9:F4:28:80:69:5
+ A:EF:B8:3C:51:B3:E1:8B:2D:EB:04:59
+ciamIssuer: CN=Example Aero Retired Issuing CA
+ciamNotAfter: 20270630000000Z
+ciamNotBefore: 20260302000000Z
+ciamOwner: cn=ciam-platform,ou=owners,dc=ciam-ops
+ciamSubject: CN=pki-smoke.example-aero.test
