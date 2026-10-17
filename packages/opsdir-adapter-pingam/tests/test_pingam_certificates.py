@@ -1,32 +1,40 @@
-"""Certificate sign-in at PingAM (milestone 122, task 580): a client-auth trust policy an AM role accepts as a disabled
-certificate journey in the realms on its service names (the edge's header and single-address sources on the collector,
-revocation on the validation node), what AM's reference doesn't establish as actions, a blocker and no journey when the
-edge forwards no certificate, and the read-back leaving the journeys out."""
+"""Certificate sign-in at PingAM (milestone 122, tasks 580 and 584): a client-auth trust policy an AM role accepts as a
+disabled certificate journey in the realms it names (ciamAcceptedByService; none named: no journey and an action), the
+edge's header and single-address sources on the collector, revocation on the validation node, what AM's reference
+doesn't establish as actions, a blocker and no journey when the edge forwards no certificate, and the read-back leaving
+the journeys out."""
 import json
 from types import SimpleNamespace
 
 from opsdir.core.contract import CertForwarding
+from opsdir.core.directory import get
 from opsdir_adapter_pingam.certificates import (COLLECTOR, EXTRACTOR, VALIDATION, amster_read_back,
-                                                certificate_notes, node_id, render_certificate_journeys,
-                                                trusted_hosts)
+                                                certificate_notes, node_id, policy_realms,
+                                                render_certificate_journeys, trusted_hosts)
 from network_fixtures import ALPHA, entry, model
 from pki_samples import edge_trust_records
 
 PEM = "-----BEGIN CERTIFICATE-----\nMIIBroot\n-----END CERTIFICATE-----\n"
-REALM = ("dn: cn=customers,ou=identity-services,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamIdentityService\n"
+REALM_DN = "cn=customers,ou=identity-services,dc=ciam-ops"
+REALM = (f"dn: {REALM_DN}\nobjectClass: top\nobjectClass: ciamIdentityService\n"
          "cn: customers\nciamBaseUrl: https://am.example.test\nciamEntityId: urn:example:am\n"
          "ciamOidcIssuer: https://am.example.test/am/oauth2\nciamTargetRole: am\n")
+STAFF = ("dn: cn=staff,ou=identity-services,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamIdentityService\n"
+         "objectClass: pingamRealm\ncn: staff\nciamBaseUrl: https://am.example.test\nciamTargetRole: am\n"
+         "pingamRealmPath: /staff\n")
+NAMED = f"ciamAcceptedByService: {REALM_DN}\n"
+POLICY_DN = "cn=cac-users,ou=trust-policies,dc=ciam-ops"
 SVC = entry(ALPHA, "svc-am", "ciamServiceName", ciamBindingRole="am-service", ciamFqdn="am.example.test",
             ciamPort="443", ciamTargetRole="am")
 ALB = CertForwarding("X-Amzn-Mtls-Clientcert-Leaf", "url-pem", "leaf", ("10.1.2.0/24", "10.1.3.7/32"))
 TREE = "am/realms/root/AuthTree/certificate-cac-users.json"
 
 
-def _alpha(edge=True, svc=True, **kw):
-    records = edge_trust_records(PEM, store=None, role="am", **kw)
+def _alpha(edge=True, svc=True, named=NAMED, extra=""):
+    records = edge_trust_records(PEM, store=None, role="am", extra=named + extra)
     if not edge:
         records = (*records[:-1], records[-1].replace("ciamTrustEnforcedAt: edge", "ciamTrustEnforcedAt: product"))
-    _, alpha, _ = model(alpha=(SVC,) if svc else (), tree=(*records, REALM))
+    _, alpha, _ = model(alpha=(SVC,) if svc else (), tree=(*records, REALM, STAFF))
     return alpha
 
 
@@ -89,3 +97,27 @@ def test_a_product_policy_collects_from_the_request_and_names_the_container():
 def test_only_single_addresses_are_trusted_hosts():
     assert trusted_hosts(("10.0.0.5/32", "10.0.0.0/24", "2001:db8::1/128")) == (("10.0.0.5", "2001:db8::1"),
                                                                                 ("10.0.0.0/24",))
+
+
+def test_journeys_go_only_to_the_realms_the_policy_names():
+    m = _alpha()
+    assert [r.dn for r in policy_realms(m.d, get(m.d, POLICY_DN))] == [REALM_DN]
+    assert {p.split("/")[2] for p in render_certificate_journeys(m, _services())} == {"root"}   # not root-staff
+    both = _alpha(named=NAMED + "ciamAcceptedByService: cn=staff,ou=identity-services,dc=ciam-ops\n")
+    assert {p.split("/")[2] for p in render_certificate_journeys(both, _services())} == {"root", "root-staff"}
+
+
+def test_a_policy_naming_no_realm_gets_no_journey_and_an_action():
+    for named in ("", "ciamAcceptedByService: cn=pki,ou=owners,dc=ciam-ops\n"):
+        m = _alpha(named=named)
+        assert policy_realms(m.d, get(m.d, POLICY_DN)) == ()
+        assert render_certificate_journeys(m, _services()) == {}
+        (action,) = certificate_notes(m, _services())
+        assert action.severity == "action" and "no certificate journey is rendered" in action.text
+        assert "Record which realm(s) accept the policy (ciamAcceptedByService" in action.how[0]
+        assert "customers (/)" in action.how[0] and "staff (/staff)" in action.how[0]
+
+
+def test_an_edge_blocker_and_a_missing_realm_are_both_said():
+    m = _alpha(named="")
+    assert [n.severity for n in certificate_notes(m, _services(None))] == ["blocker", "action"]

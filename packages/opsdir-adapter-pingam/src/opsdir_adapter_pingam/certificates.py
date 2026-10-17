@@ -2,8 +2,8 @@
 certificates and m120 section 5). Pure.
 
 A client-auth trust policy an AM role accepts (ciamAcceptedByRole am) gets, per environment, a certificate journey in
-each realm AM serves on a service name accepting it (the realm's ciamBaseUrl host is its ciamFqdn; with no such service
-name, AM is reached directly: every realm AM serves):
+each realm it names (ciamAcceptedByService) that AM serves; naming none, it gets no journey and an action asking which
+realms accept it (a realm is never inferred from hosts):
   am/realms/<realm>/AuthTree/certificate-<policy>.json         the journey, disabled: its outcomes are a person's to
                                                                 wire (AM's outcome IDs aren't established)
   am/realms/<realm>/CertificateCollectorNode/<id>.json          an edge-enforced policy: the header the edge forwards
@@ -23,13 +23,12 @@ whose edge forwards no certificate is a blocker and gets no journey. The read-ba
 """
 import ipaddress
 import uuid
-from urllib.parse import urlsplit
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.jsondata import indented
 from opsdir.core.notes import note
 from opsdir.domains.pki.trust import (CLIENT_AUTH, accepting_services, bundle_certificates, enforced_at, fp,
-                                      trust_policies)
+                                      policy_services, trust_policies)
 from .realms import SERVER_ROLES, export_dir, realm_path, realms
 from .render import entity
 
@@ -61,15 +60,11 @@ def _am_services(m, policy):
     return tuple(s for s in accepting_services(m, policy) if one(s, "ciamTargetRole") in SERVER_ROLES)
 
 
-def _host(realm):
-    return urlsplit(one(realm, "ciamBaseUrl") or "").hostname
-
-
-def policy_realms(m, policy):
-    """The realms AM serves that a policy's certificates reach in environment m: those on the hosts of the service
-    names accepting it, or every one when no service name fronts AM (it is reached directly)."""
-    names = {(one(s, "ciamFqdn") or "").lower() for s in _am_services(m, policy)}
-    return tuple(r for r in realms(m.d) if not names or (_host(r) or "").lower() in names)
+def policy_realms(d, policy):
+    """The realms a policy accepts certificates in: the identity services it names (ciamAcceptedByService) that AM
+    serves, in the policy's order."""
+    served = {r.norm for r in realms(d)}
+    return tuple(s for s in policy_services(d, policy) if s.norm in served)
 
 
 def node_id(path, policy, kind):
@@ -131,7 +126,7 @@ def _blocked(m, services, policy):
 def render_certificate_journeys(m, services):
     """{path: text}: the certificate journeys of environment m (render_env)."""
     return {path: text for p in certificate_policies(m.d) if not _blocked(m, services, p)
-            for r in policy_realms(m, p) for path, text in _journey(m, services, p, r).items()}
+            for r in policy_realms(m.d, p) for path, text in _journey(m, services, p, r).items()}
 
 
 def certificate_paths(d):
@@ -230,16 +225,25 @@ def _edge(m, services, policy, where):
                                                          "relying on the journey",), policy.dn, m.label))
 
 
+def _unnamed(m, policy, where):
+    """The action for a policy naming no realm AM serves (no journey): which realms to choose from."""
+    named = [rdn_value(s) for s in policy_services(m.d, policy)]
+    offered = ", ".join(f"{rdn_value(r)} ({realm_path(r)})" for r in realms(m.d)) or "none recorded"
+    return note(AREA, "action", where,
+                (f"it names {', '.join(named)} (ciamAcceptedByService), none of them a realm AM serves" if named else
+                 "it names no realm that accepts its certificates (ciamAcceptedByService)")
+                + ": no certificate journey is rendered",
+                (f"Record which realm(s) accept the policy (ciamAcceptedByService: the realm's identity service; AM "
+                 f"serves {offered})",), policy.dn, m.label)
+
+
 def _policy_notes(m, services, policy):
     where = f"trust policy {rdn_value(policy)}"
-    if _blocked(m, services, policy):
-        return _edge(m, services, policy, where)
-    names = [one(s, "ciamFqdn") for s in _am_services(m, policy) if one(s, "ciamFqdn")]
+    unnamed = () if policy_realms(m.d, policy) else (_unnamed(m, policy, where),)
+    if _blocked(m, services, policy) or unnamed:
+        return (*(_edge(m, services, policy, where) if _blocked(m, services, policy) else ()), *unnamed)
     unchecked = [*values(policy, "ciamAllowedPolicyOid"), *values(policy, "ciamRequiredEku")]
-    return (*((note(AREA, "action", where, f"no realm AM serves answers on {', '.join(names)}: no certificate "
-                    "journey is rendered", ("Record the realm's ciamBaseUrl on the service name's host",),
-                    policy.dn, m.label),) if not policy_realms(m, policy) else ()),
-            _finish(m, policy, where), _truststore(m, policy, where), *_revocation(m, policy, where),
+    return (_finish(m, policy, where), _truststore(m, policy, where), *_revocation(m, policy, where),
             *(_edge(m, services, policy, where) if enforced_at(policy) == "edge" else
               (note(AREA, "action", where, "AM collects the certificate from the request: TLS must reach AM with "
                     "client authentication", ("Have AM's web container request client certificates on its HTTPS "

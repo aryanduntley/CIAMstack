@@ -3976,6 +3976,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.965 NAME 'ciamTrustStoreRole' DESC '
  ore reads it from S3)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
  .121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGI
  N 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.966 NAME 'ciamAcceptedByService' DES
+ C 'An identity service (under ou=identity-services) that accepts certificat
+ es under a trust policy: where its product signs them in (a realm\27s certi
+ ficate journey); its server role (ciamTargetRole) is one of the policy\27s 
+ ciamAcceptedByRole' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4990,11 +4996,12 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.203 NAME 'ciamTrustPolicy' DESC 'Whic
  s): the approved anchors, the bundles it follows, the certificate policies 
  and key usages it requires, how an accepted certificate maps to an account,
   how revocation is checked and what happens when it can\27t be, and the ser
- ver roles that accept them' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTrust
- Purpose ) MAY ( ciamTrustAnchor $ ciamTrustBundleRef $ ciamAllowedPolicyOid
-  $ ciamRequiredEku $ ciamIdentityMapping $ ciamRevocationMode $ ciamRevocat
- ionFailure $ ciamRevocationCacheHours $ ciamAcceptedByRole $ ciamDeclinedAn
- chor $ ciamTrustEnforcedAt $ ciamTrustStoreRole ) X-ORIGIN 'opsdir' )
+ ver roles and identity services that accept them' SUP ciamObject STRUCTURAL
+  MUST ( cn $ ciamTrustPurpose ) MAY ( ciamTrustAnchor $ ciamTrustBundleRef 
+ $ ciamAllowedPolicyOid $ ciamRequiredEku $ ciamIdentityMapping $ ciamRevoca
+ tionMode $ ciamRevocationFailure $ ciamRevocationCacheHours $ ciamAcceptedB
+ yRole $ ciamDeclinedAnchor $ ciamTrustEnforcedAt $ ciamTrustStoreRole $ cia
+ mAcceptedByService ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.204 NAME 'ciamManagedFirewall' DESC '
  A firewall a manager appliance pushes the environment\27s rules to (cn: its
   serial number; a child of the manager\27s ciamAppliance), observed: its na
