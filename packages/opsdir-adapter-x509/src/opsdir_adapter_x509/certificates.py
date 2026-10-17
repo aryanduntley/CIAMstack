@@ -69,17 +69,22 @@ def der_pem(text):
             if raw[:1] == b"\x30" else None)
 
 
+def _policies(cert):
+    """The certificate policy OIDs a certificate asserts (its certificatePolicies extension), in its order."""
+    return tuple(p.policy_identifier.dotted_string for p in _extension(cert, x509.CertificatePolicies))
+
+
 def certificate_facts(pem):
-    """{serial, sha256, subject, issuer, not_before, not_after, usages, endpoints, names} of a PEM's first
+    """{serial, sha256, subject, issuer, not_before, not_after, usages, endpoints, names, policies} of a PEM's first
     certificate: the serial as lowercase hex of even length, the SHA-256 as ciamFingerprint writes it, subject and
     issuer as RFC 4514 strings, validity as GeneralizedTime, its extended key usages as OIDs (None when it has no such
     extension), the revocation endpoints it names ((kind, url), ...: crl, delta-crl, ocsp, ca-issuers) and the DNS
-    names and IP addresses it names (subject common names, then alternative names: ciamCertificateName's); None when
-    the text holds no certificate."""
+    names and IP addresses it names (subject common names, then alternative names: ciamCertificateName's) and the
+    certificate policy OIDs it asserts; None when the text holds no certificate."""
     cert = load_certificate(pem) if isinstance(pem, str) else None
     if cert is None:
         return None
     return {"serial": serial_hex(cert.serial_number), "sha256": pem_fingerprint(pem),
             "subject": cert.subject.rfc4514_string(), "issuer": cert.issuer.rfc4514_string(),
             "not_before": gtime(cert.not_valid_before_utc), "not_after": gtime(cert.not_valid_after_utc),
-            "usages": _usages(cert), "endpoints": _endpoints(cert), "names": _names(cert)}
+            "usages": _usages(cert), "endpoints": _endpoints(cert), "names": _names(cert), "policies": _policies(cert)}

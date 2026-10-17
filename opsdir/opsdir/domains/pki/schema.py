@@ -28,6 +28,10 @@ A certificate manager's inventory (ou=managed-certificates, per collection sourc
 the certificates it discovered on the network, was given, or enrolls and renews itself, metadata only, with how it
 manages each, who it notifies, where it says each is installed and what it reports wrong. It is never a CA's issuance
 record: a certificate it doesn't hold isn't missing anywhere (managed.py reconciles the record's certificates with it).
+Trust bundles (ou=trust-bundles) are outside PKIs' published sets of CA certificates (DISA's DoD and ECA bundles) as
+last imported, with how their integrity was established; trust policies (ou=trust-policies) are what the platform
+accepts certificates under: anchors a person approved (record CA certificates, never a bundle's members by being
+there), the bundles they follow, restrictions, identity mapping and revocation, and who accepts them (trust.py).
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -298,6 +302,65 @@ ATTRIBUTES = (
     AttributeDef(905, 'ciamRenewedAs', 'string', 'observed', True,
                  "An earlier version of a certificate a certificate manager holds: the manager's id (cn) of the "
                  "certificate that replaced it in the same inventory, as the manager links its versions"),
+    # trust bundles and trust policies (trust.py): which outside PKIs the platform accepts certificates from
+    AttributeDef(929, 'ciamTrustBundleRelease', 'string', 'observed', True,
+                 "A trust bundle's release as its publisher labels it (DISA's 5.14)"),
+    AttributeDef(930, 'ciamBundleSource', 'string', 'observed', True,
+                 'Where a trust bundle was taken from: the archive or URL the publisher distributes it as'),
+    AttributeDef(931, 'ciamBundleDigest', 'string', 'observed', True,
+                 'SHA-256 of the archive a trust bundle was imported from (hex)'),
+    AttributeDef(932, 'ciamBundleVerification', 'enum:verified|signed-unanchored|digests-only|failed', 'observed',
+                 True,
+                 "How a trust bundle's integrity was established when imported: verified (its signed manifest's "
+                 "signature checks, its signer chains to a CA certificate the record holds, every file matches its "
+                 "digest); signed-unanchored (as verified, but the signer's root isn't in the record yet: compare its "
+                 "fingerprint with the publisher's); digests-only (files match a manifest whose signature wasn't "
+                 "checked); failed (a bad signature, a digest mismatch or a listed file missing)"),
+    AttributeDef(933, 'ciamBundleSigner', 'string', 'observed', True,
+                 "SHA-256 fingerprint of the certificate that signed a trust bundle's manifest"),
+    AttributeDef(934, 'ciamSignerAnchor', 'string', 'observed', True,
+                 "SHA-256 fingerprint of the root CA certificate a trust bundle's signer chains to"),
+    AttributeDef(935, 'ciamBundleGroup', 'string', 'observed', True,
+                 'The part of a trust bundle a member certificate came in, as the publisher groups them (the root '
+                 'CA it sits under: DoD Root CA 6)'),
+    AttributeDef(936, 'ciamCertPolicyOid', 'string', 'observed', False,
+                 'A certificate policy OID the certificate asserts (its certificatePolicies extension; anyPolicy '
+                 'is 2.5.29.32.0)'),
+    AttributeDef(937, 'ciamTrustAnchor', 'dn', 'intent', False,
+                 "A CA certificate (purpose ca, under ou=certificates) a trust policy accepts certificates under: "
+                 "an approved anchor; with its public PEM, what the policy's consumers are given to trust"),
+    AttributeDef(938, 'ciamTrustBundleRef', 'dn', 'intent', False,
+                 'A trust bundle (under ou=trust-bundles) a trust policy follows: its new roots are proposed as '
+                 "anchors for review and anchors it drops are flagged; its subordinate CAs complete the anchors' "
+                 'chains'),
+    AttributeDef(939, 'ciamAllowedPolicyOid', 'string', 'intent', False,
+                 "A certificate policy OID a trust policy accepts (one is enough); none recorded: any policy the "
+                 "anchors' CAs issue under"),
+    AttributeDef(940, 'ciamRequiredEku', 'string', 'intent', False,
+                 'An extended key usage OID a certificate must carry to be accepted under a trust policy (TLS client '
+                 'authentication is 1.3.6.1.5.5.7.3.2)'),
+    AttributeDef(941, 'ciamIdentityMapping', 'enum:san-upn|san-email|subject-dn|subject-cn|none', 'intent', True,
+                 "How a trust policy's consumers map an accepted certificate to an account: the subject alternative "
+                 "name's UPN (a DoD CAC's EDIPI@mil) or email, the subject DN or common name, or none (the "
+                 'certificate authenticates a partner, not a user)'),
+    AttributeDef(942, 'ciamRevocationMode', 'enum:ocsp|crl|ocsp-then-crl|crl-then-ocsp|none', 'intent', True,
+                 "How a trust policy's consumers check an accepted certificate's revocation: OCSP, CRLs, one then "
+                 'the other when the first gives no answer, or none'),
+    AttributeDef(943, 'ciamRevocationFailure', 'enum:reject|cached|allow', 'intent', True,
+                 "What a trust policy's consumers do when revocation can't be checked: reject the certificate, "
+                 'accept on a cached answer no older than ciamRevocationCacheHours, or allow it (fail open)'),
+    AttributeDef(944, 'ciamRevocationCacheHours', 'int', 'intent', True,
+                 "How old a cached revocation answer a trust policy's consumers may rely on when checking fails, in "
+                 'hours'),
+    AttributeDef(945, 'ciamAcceptedByRole', 'string', 'intent', False,
+                 'A server role that accepts certificates under a trust policy (its gateway, load balancer or '
+                 'identity provider checks them)'),
+    AttributeDef(946, 'ciamTrustPurpose', 'enum:client-auth|partner-signing|server-tls', 'intent', True,
+                 "What a trust policy accepts certificates for: authenticating users or partners (CAC/PIV, ECA), "
+                 'verifying partners\' signatures, or trusting the servers the platform calls'),
+    AttributeDef(947, 'ciamDeclinedAnchor', 'string', 'intent', False,
+                 "SHA-256 fingerprint of a root in a bundle a trust policy follows that a person decided the policy "
+                 "doesn't accept (a decommissioned root, a test hierarchy): no longer proposed as an anchor"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -315,7 +378,7 @@ CLASSES = (
     ClassDef(28, 'ciamCertificate', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamFingerprint', 'ciamNotAfter', 'ciamCertPurpose'),
              ('ciamSubject', 'ciamIssuer', 'ciamNotBefore', 'ciamSubjectAltName', 'ciamKeyRole', 'ciamPartnerContact',
-              'ciamRotationRunbook', 'ciamCertificatePem', 'ciamIssuedBy', 'ciamSerialNumber'),
+              'ciamRotationRunbook', 'ciamCertificatePem', 'ciamIssuedBy', 'ciamSerialNumber', 'ciamCertPolicyOid'),
              'Certificate (public facts only)'),
     ClassDef(42, 'ciamCredential', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamBindingRole', 'ciamCredentialType', 'ciamContinuity'),
@@ -393,6 +456,25 @@ CLASSES = (
              "never a key: serial, fingerprint or thumbprint, subject, issuer, validity and names; how the manager "
              "manages it and what it is set to do, who it notifies, where it says it is installed, what it reports "
              "wrong, once revoked (as the manager says) when and why, and for an earlier version what replaced it"),
+    ClassDef(201, 'ciamTrustBundle', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamInventoryAt', 'ciamBundleVerification'),
+             ('ciamTrustBundleRelease', 'ciamBundleSource', 'ciamBundleDigest', 'ciamBundleSigner', 'ciamSignerAnchor',
+              'ciamInventoryProblem', 'ciamProviderRef'),
+             "A published trust bundle as last imported (cn: its name, the publisher's group: dod, eca; under "
+             "ou=trust-bundles), observed: its release, where it came from, how its integrity was established "
+             "(signer, the root the signer chains to, what failed) and its CA certificates as children"),
+    ClassDef(202, 'ciamBundleCertificate', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamFingerprint', 'ciamNotAfter'),
+             ('ciamSubject', 'ciamIssuer', 'ciamNotBefore', 'ciamSerialNumber', 'ciamCaType', 'ciamCertificatePem',
+              'ciamCertPolicyOid', 'ciamBundleGroup'),
+             "A CA certificate a trust bundle holds (cn: its subject's common name), public facts only: never "
+             "trusted by being here; a trust policy's anchors are record certificates a person approved"),
+    ClassDef(203, 'ciamTrustPolicy', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTrustPurpose'),
+             ('ciamTrustAnchor', 'ciamTrustBundleRef', 'ciamAllowedPolicyOid', 'ciamRequiredEku',
+              'ciamIdentityMapping', 'ciamRevocationMode', 'ciamRevocationFailure', 'ciamRevocationCacheHours',
+              'ciamAcceptedByRole', 'ciamDeclinedAnchor'),
+             "Which certificates the platform accepts for one purpose (under ou=trust-policies): the approved "
+             "anchors, the bundles it follows, the certificate policies and key usages it requires, how an accepted "
+             "certificate maps to an account, how revocation is checked and what happens when it can't be, and the "
+             "server roles that accept them"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

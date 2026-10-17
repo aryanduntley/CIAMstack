@@ -385,6 +385,49 @@ certificate the record uses, unrecorded certificates for host names the record h
 alternative name, a service name; owned by whoever owns the name), and an inventory incomplete or refused (what to
 grant) are actions. What a CA's inventory already says of a certificate (revoked, superseded) isn't said again.
 
+### Partner trust: bundles and trust policies
+
+Which outside PKIs the platform accepts certificates from: CAC/PIV and ECA client certificates, partners' signing
+certificates, servers it calls. A **trust bundle** (`ciamTrustBundle` under `ou=trust-bundles`, observed) is a
+publisher's set of CA certificates as last imported: release, source, archive SHA-256, how its integrity was
+established (`ciamBundleVerification`: verified, signed-unanchored, digests-only, failed), the signer's and the
+signer root's fingerprints, problems, and its CA certificates as children (`ciamBundleCertificate`: fingerprint,
+subject, issuer, validity, root or subordinate, PEM, `ciamCertPolicyOid`, `ciamBundleGroup`). Bundle importers write
+them; `opsdir-adapter-dod-pki` reads DISA's DoD, ECA, JITC and WCF bundles with their signed manifests checked.
+
+Being in a bundle never makes a CA trusted. A **trust policy** (`ciamTrustPolicy` under `ou=trust-policies`, intent,
+governed like any entry) says what is accepted for one purpose (`ciamTrustPurpose`: client-auth, partner-signing,
+server-tls):
+- `ciamTrustAnchor`: approved anchors, record CA certificates (`purpose ca`, under `ou=certificates`, with PEM);
+- `ciamTrustBundleRef`: the bundles it follows (their subordinate CAs complete the anchors' chains);
+- `ciamAllowedPolicyOid`, `ciamRequiredEku`: the certificate policies (one is enough) and key usages it requires;
+- `ciamIdentityMapping`: how an accepted certificate maps to an account (san-upn for a CAC's EDIPI@mil, san-email,
+  subject-dn, subject-cn, none);
+- `ciamRevocationMode` (ocsp, crl, ocsp-then-crl, crl-then-ocsp, none), `ciamRevocationFailure` (reject, cached,
+  allow) and `ciamRevocationCacheHours`;
+- `ciamAcceptedByRole`: the server roles that accept certificates under it;
+- `ciamDeclinedAnchor`: SHA-256 fingerprints of bundle roots a person decided it doesn't accept.
+
+`opsdir plan` (check_trust; silent while the record holds no trust policy):
+- **review:** each root a followed bundle holds that is neither an anchor nor declined is an action, with a fix whose
+  options are *approve* (the certificate recorded under `ou=certificates` with the policy's owners, unless the record
+  already holds it, and added as an anchor) or *decline* (its fingerprint recorded). Compare the root's fingerprint
+  with the publisher's before approving;
+- **dropped:** an anchor none of the followed bundles holds any more is an action with a fix removing it (not said
+  while a followed bundle failed: it can't say what it holds);
+- **integrity:** a followed bundle that failed its integrity check blocks; one signed under a root the record doesn't
+  hold, matched only by digests, or not imported for `trust-bundle-max-age-days` (90) is an action;
+- **expiry:** an anchor expiring within `trust-anchor-horizon-days` (1825: DoD Root CA 3 and ECA Root CA 4 end
+  2029-12-30) is an action dated by its expiry;
+- **gaps:** a policy without anchors; a client-auth policy without certificate policies, key usages or identity
+  mapping (it would accept software, email and device certificates); no revocation checking, failing open, or a
+  cached answer of unbounded age.
+
+`opsdir report trust-bundles` (release, imported, verification, signer root, CA count, roots with expiry, problems)
+and `opsdir report trust-policies` (purpose, anchors with expiry, bundles, restrictions, identity, revocation,
+accepting roles, owners). Rendering a policy into its consumers (PingFederate, PingAM, PingGateway, load balancers'
+and gateways' client-certificate trust) is a later milestone.
+
 ### Who keeps what, and where it renders
 
 Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what

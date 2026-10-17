@@ -9,6 +9,8 @@ TEMPLATES = branch("certificate-templates")      # the certificate templates CAs
 ISSUED = branch("issued-certificates")           # each CA's issued-certificate inventory, metadata only
 OBSERVATIONS = branch("revocation-observations")  # what each CA's revocation endpoints answered when observed
 MANAGED = branch("managed-certificates")         # certificate managers' inventories, metadata only
+TRUST_BUNDLES = branch("trust-bundles")          # outside PKIs' published CA sets as last imported
+TRUST_POLICIES = branch("trust-policies")        # which certificates the platform accepts, and from whom
 
 
 def credential_dn(name):
@@ -48,3 +50,8 @@ def observation_dn(authority):
 def managed_inventory_dn(name):
     """The certificate manager inventory of the collection source of that name."""
     return f"cn={name},{MANAGED}"
+
+
+def trust_bundle_dn(name):
+    """A trust bundle, by its name (the publisher's group: dod, eca)."""
+    return f"cn={name},{TRUST_BUNDLES}"

@@ -52,7 +52,7 @@ def test_the_facts_of_a_certificate():
                                       "issuer": "CN=web.example.test,O=Example", "not_before": "20260901000000Z",
                                       "not_after": "20261130000000Z",
                                       "usages": ("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2"), "endpoints": (),
-                                      "names": ("web.example.test",)}
+                                      "names": ("web.example.test",), "policies": ()}
     assert certificate_facts(_pem(7, ()))["usages"] is None
 
 

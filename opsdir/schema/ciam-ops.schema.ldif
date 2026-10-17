@@ -3774,6 +3774,110 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.928 NAME 'ciamManagedAuthority' DESC
  s a certificate through, as the manager names it' EQUALITY caseIgnoreMatch 
  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' 
  X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.929 NAME 'ciamTrustBundleRelease' DE
+ SC 'A trust bundle\27s release as its publisher labels it (DISA\27s 5.14)' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE 
+ X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.930 NAME 'ciamBundleSource' DESC 'Wh
+ ere a trust bundle was taken from: the archive or URL the publisher distrib
+ utes it as' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir
+ ' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.931 NAME 'ciamBundleDigest' DESC 'SH
+ A-256 of the archive a trust bundle was imported from (hex)' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.932 NAME 'ciamBundleVerification' DE
+ SC 'How a trust bundle\27s integrity was established when imported: verifie
+ d (its signed manifest\27s signature checks, its signer chains to a CA cert
+ ificate the record holds, every file matches its digest); signed-unanchored
+  (as verified, but the signer\27s root isn\27t in the record yet: compare i
+ ts fingerprint with the publisher\27s); digests-only (files match a manifes
+ t whose signature wasn\27t checked); failed (a bad signature, a digest mism
+ atch or a listed file missing)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1
+ .1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'enum
+ :verified|signed-unanchored|digests-only|failed' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.933 NAME 'ciamBundleSigner' DESC 'SH
+ A-256 fingerprint of the certificate that signed a trust bundle\27s manifes
+ t' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VAL
+ UE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.934 NAME 'ciamSignerAnchor' DESC 'SH
+ A-256 fingerprint of the root CA certificate a trust bundle\27s signer chai
+ ns to' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE
+ -VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.935 NAME 'ciamBundleGroup' DESC 'The
+  part of a trust bundle a member certificate came in, as the publisher grou
+ ps them (the root CA it sits under: DoD Root CA 6)' EQUALITY caseIgnoreMatc
+ h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed
+ ' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.936 NAME 'ciamCertPolicyOid' DESC 'A
+  certificate policy OID the certificate asserts (its certificatePolicies ex
+ tension; anyPolicy is 2.5.29.32.0)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1
+ .4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.937 NAME 'ciamTrustAnchor' DESC 'A C
+ A certificate (purpose ca, under ou=certificates) a trust policy accepts ce
+ rtificates under: an approved anchor; with its public PEM, what the policy\
+ 27s consumers are given to trust' EQUALITY distinguishedNameMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-TYPE 'dn' X-ORIG
+ IN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.938 NAME 'ciamTrustBundleRef' DESC '
+ A trust bundle (under ou=trust-bundles) a trust policy follows: its new roo
+ ts are proposed as anchors for review and anchors it drops are flagged; its
+  subordinate CAs complete the anchors\27 chains' EQUALITY distinguishedName
+ Match SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'intent' X-VALUE-T
+ YPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.939 NAME 'ciamAllowedPolicyOid' DESC
+  'A certificate policy OID a trust policy accepts (one is enough); none rec
+ orded: any policy the anchors\27 CAs issue under' EQUALITY caseIgnoreMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 's
+ tring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.940 NAME 'ciamRequiredEku' DESC 'An 
+ extended key usage OID a certificate must carry to be accepted under a trus
+ t policy (TLS client authentication is 1.3.6.1.5.5.7.3.2)' EQUALITY caseIgn
+ oreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALU
+ E-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.941 NAME 'ciamIdentityMapping' DESC 
+ 'How a trust policy\27s consumers map an accepted certificate to an account
+ : the subject alternative name\27s UPN (a DoD CAC\27s EDIPI@mil) or email, 
+ the subject DN or common name, or none (the certificate authenticates a par
+ tner, not a user)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:san-upn|san-em
+ ail|subject-dn|subject-cn|none' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.942 NAME 'ciamRevocationMode' DESC '
+ How a trust policy\27s consumers check an accepted certificate\27s revocati
+ on: OCSP, CRLs, one then the other when the first gives no answer, or none'
+  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
+  X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:ocsp|crl|ocsp-then-crl|crl-then-
+ ocsp|none' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.943 NAME 'ciamRevocationFailure' DES
+ C 'What a trust policy\27s consumers do when revocation can\27t be checked:
+  reject the certificate, accept on a cached answer no older than ciamRevoca
+ tionCacheHours, or allow it (fail open)' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYP
+ E 'enum:reject|cached|allow' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.944 NAME 'ciamRevocationCacheHours' 
+ DESC 'How old a cached revocation answer a trust policy\27s consumers may r
+ ely on when checking fails, in hours' EQUALITY integerMatch SYNTAX 1.3.6.1.
+ 4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'int
+ ' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.945 NAME 'ciamAcceptedByRole' DESC '
+ A server role that accepts certificates under a trust policy (its gateway, 
+ load balancer or identity provider checks them)' EQUALITY caseIgnoreMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'st
+ ring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.946 NAME 'ciamTrustPurpose' DESC 'Wh
+ at a trust policy accepts certificates for: authenticating users or partner
+ s (CAC/PIV, ECA), verifying partners\27 signatures, or trusting the servers
+  the platform calls' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.1
+ 21.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:client-auth|
+ partner-signing|server-tls' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.947 NAME 'ciamDeclinedAnchor' DESC '
+ SHA-256 fingerprint of a root in a bundle a trust policy follows that a per
+ son decided the policy doesn\27t accept (a decommissioned root, a test hier
+ archy): no longer proposed as an anchor' EQUALITY caseIgnoreMatch SYNTAX 1.
+ 3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-
+ ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -3896,8 +4000,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certi
  ficate (public facts only)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamFinge
  rprint $ ciamNotAfter $ ciamCertPurpose ) MAY ( ciamSubject $ ciamIssuer $ 
  ciamNotBefore $ ciamSubjectAltName $ ciamKeyRole $ ciamPartnerContact $ cia
- mRotationRunbook $ ciamCertificatePem $ ciamIssuedBy $ ciamSerialNumber ) X
- -ORIGIN 'opsdir' )
+ mRotationRunbook $ ciamCertificatePem $ ciamIssuedBy $ ciamSerialNumber $ c
+ iamCertPolicyOid ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.29 NAME 'ciamRunbook' DESC 'Work inst
  ruction' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamLastValidate
  d ) MAY ( ciamVersion $ ciamAppliesTo $ ciamDocUrl ) X-ORIGIN 'opsdir' )
@@ -4761,3 +4865,29 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.200 NAME 'ciamManagedCertificate' DES
   $ ciamManagerProblem $ ciamManagedAuthority $ ciamRevokedAt $ ciamRevocati
  onReason $ ciamObjectState $ ciamManagerAction $ ciamRenewedAs ) X-ORIGIN '
  opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.201 NAME 'ciamTrustBundle' DESC 'A pu
+ blished trust bundle as last imported (cn: its name, the publisher\27s grou
+ p: dod, eca; under ou=trust-bundles), observed: its release, where it came 
+ from, how its integrity was established (signer, the root the signer chains
+  to, what failed) and its CA certificates as children' SUP ciamObject STRUC
+ TURAL MUST ( cn $ ciamInventoryAt $ ciamBundleVerification ) MAY ( ciamTrus
+ tBundleRelease $ ciamBundleSource $ ciamBundleDigest $ ciamBundleSigner $ c
+ iamSignerAnchor $ ciamInventoryProblem $ ciamProviderRef ) X-ORIGIN 'opsdir
+ ' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.202 NAME 'ciamBundleCertificate' DESC
+  'A CA certificate a trust bundle holds (cn: its subject\27s common name), 
+ public facts only: never trusted by being here; a trust policy\27s anchors 
+ are record certificates a person approved' SUP ciamObject STRUCTURAL MUST (
+  cn $ ciamFingerprint $ ciamNotAfter ) MAY ( ciamSubject $ ciamIssuer $ cia
+ mNotBefore $ ciamSerialNumber $ ciamCaType $ ciamCertificatePem $ ciamCertP
+ olicyOid $ ciamBundleGroup ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.203 NAME 'ciamTrustPolicy' DESC 'Whic
+ h certificates the platform accepts for one purpose (under ou=trust-policie
+ s): the approved anchors, the bundles it follows, the certificate policies 
+ and key usages it requires, how an accepted certificate maps to an account,
+  how revocation is checked and what happens when it can\27t be, and the ser
+ ver roles that accept them' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTrust
+ Purpose ) MAY ( ciamTrustAnchor $ ciamTrustBundleRef $ ciamAllowedPolicyOid
+  $ ciamRequiredEku $ ciamIdentityMapping $ ciamRevocationMode $ ciamRevocat
+ ionFailure $ ciamRevocationCacheHours $ ciamAcceptedByRole $ ciamDeclinedAn
+ chor ) X-ORIGIN 'opsdir' )

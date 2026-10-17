@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-adapter-dod-pki"
+version = "0.1.0"
+description = "opsdir PKI adapter for DISA's DoD PKE trust bundles (DoD, ECA, JITC, WCF): each PKCS#7 bundle's CA certificates read into the record's trust bundles, its signed manifest verified."
+readme = "README.md"
+requires-python = ">=3.11"
+# certificates are read with opsdir-adapter-x509 (the cryptography library); the exporter runs openssl
+dependencies = ["opsdir>=0.1", "opsdir-adapter-x509>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+dod-pki = "opsdir_adapter_dod_pki.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]
