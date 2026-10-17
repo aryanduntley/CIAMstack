@@ -406,6 +406,9 @@ server-tls):
 - `ciamRevocationMode` (ocsp, crl, ocsp-then-crl, crl-then-ocsp, none), `ciamRevocationFailure` (reject, cached,
   allow) and `ciamRevocationCacheHours`;
 - `ciamAcceptedByRole`: the server roles that accept certificates under it;
+- `ciamAcceptedByService`: the identity services (`ciamIdentityService`) that accept certificates under it: a product
+  renders certificate sign-in only in those (PingAM's certificate journeys); one not served by an accepting role is an
+  action;
 - `ciamDeclinedAnchor`: SHA-256 fingerprints of bundle roots a person decided it doesn't accept.
 
 `opsdir plan` (check_trust; silent while the record holds no trust policy):
