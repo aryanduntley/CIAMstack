@@ -17,8 +17,11 @@ unless the role map names their role. An index the record holds that also freeze
 A saved search is a detection (an alarm binding, ciamProviderRef its name) realizing the alert rule its description
 names (`opsdir: realizes alert rule <rule>`, as the render writes it; binding role alarm-<rule>, as every cloud's
 alarm for the rule binds), searching the index its search names first (index=<name>), its search (ciamMetric) the one
-the render wrapped with the rule's condition when it is one, else the search as written. Saved searches naming no
-rule and not in the record are counted.
+the render wrapped with the rule's condition when it is one, else the search as written. A search as written whose
+alert actions apply to each result (alert.digest_mode off) or whose risk action names objects is a rows detection
+(ciamDetectionMode rows), its risk and threat objects the entity mappings they were rendered from (es.risk_mappings);
+an ES correlation search's annotations are its alert rule's, not read. Saved searches naming no rule and not in the
+record are counted.
 
 What a source says about the environment's other log destinations and alarms (a cloud's) is not this importer's: the
 placement's notices about them are left out.
@@ -31,6 +34,7 @@ from opsdir.core.environment import env_dn, env_model, of_class
 from opsdir.core.inventory import layout_import, realization_roles, resource
 from opsdir.domains.observability.siem import own_notices, realized_in
 from .conf import read_conf
+from .es import risk_mappings
 from .naming import index_name, keeps
 
 DAY = 86400
@@ -64,13 +68,22 @@ def index_resource(name, settings):
             if seconds is not None and seconds % DAY else ())
 
 
+def _off(value):
+    return str(value).strip().lower() in ("0", "false", "no", "off")
+
+
 def search_resource(name, settings):
     """The Resource of kind alarm of one saved search's settings ({setting: value})."""
     rule = realized_in(settings.get("description"))
     role, realizes = realization_roles({"Realizes": rule} if rule else {}, "alarm")
     search = base_search(settings.get("search"))
     index = _INDEX.search(search)
-    return resource("alarm", name, {"ciamRealizes": realizes, "ciamMetric": search or None},
+    mapped = risk_mappings(settings.get("action.risk.param._risk")) if _on(settings.get("action.risk", "")) else ()
+    rows = bool(search) and not _WRAPPED.match(settings.get("search") or "") and (
+        _off(settings.get("alert.digest_mode", "")) or bool(mapped))
+    return resource("alarm", name, {"ciamRealizes": realizes, "ciamMetric": search or None,
+                                    "ciamDetectionMode": "rows" if rows else None,
+                                    "ciamEntityMapping": mapped or None},
                     {"ciamLogDestinationRole": index.group(1)} if index else None, name=name, role=role)
 
 

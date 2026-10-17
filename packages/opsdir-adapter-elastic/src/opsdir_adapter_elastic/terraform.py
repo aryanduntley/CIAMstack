@@ -18,7 +18,8 @@ target terraform), from the same documents the api target writes, so both say th
                                   (elasticstack_fleet_integration_policy, inputs as the provider's map since 0.14)
 
 A rule Terraform creates runs as the API key that applied it (Kibana keeps the key with the rule): apply with the
-Elastic team's rule-managing key, never the collector's read-only one.
+Elastic team's rule-managing key, never the collector's read-only one. A rule's threat array is the provider's threat
+attribute as the API takes it; its investigation fields ({field_names: [...]} in the API) are the provider's list.
 """
 from opsdir.core.directory import rdn_value
 from opsdir.core.manifest import header
@@ -135,7 +136,8 @@ def rule_block(name, body, space):
     """The elasticstack_kibana_security_detection_rule block of a detection rule (the binding's name, the rule as the
     API takes it), in Kibana space space (None: the default space)."""
     return data_block("resource", ["elasticstack_kibana_security_detection_rule", tf_name(name)], [
-        *((("space_id", space),) if space else ()), *body.items()])
+        *((("space_id", space),) if space else ()),
+        *((k, v["field_names"] if k == "investigation_fields" else v) for k, v in body.items())])
 
 
 def terraform_files(m, notes, services):

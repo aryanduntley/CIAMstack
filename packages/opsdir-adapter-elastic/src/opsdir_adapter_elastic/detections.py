@@ -13,15 +13,28 @@ reference, its name the alert rule, its description names the rule (siem.describ
 its severity and risk score from the rule's ciamSeverity (sev0 critical 99, sev1 high 73, sev2 medium 47, sev3 and
 sev4 low 21; medium 47 when none), tagged opsdir.
 
+A rows detection (core ciamDetectionMode rows, decision 3299) runs its search as written: each row it returns is an
+alert, run every evaluation period of its rule (5 minutes when none) over it. The rule's MITRE ATT&CK tactics and
+techniques (ciamAttackTactic, ciamAttackTechnique) are its threat array (attack.threat: an entry per tactic with the
+techniques serving it). A rows detection's entity mappings (ciamEntityMapping) name the result columns an alert is
+about: they are its investigation fields (investigation_fields.field_names, the alert's highlighted fields; an ES|QL
+rule's alert holds the row's columns). Elastic has no entity mapping of its own: its entity risk scoring groups alerts
+by user.name and host.name, so an account or a host named by another column is a note. Neither severity_mapping nor
+risk_score_mapping is rendered: the record holds no per-finding severity.
+
 Named instead (detection_notes): a detection recording no search (a note), and as blockers one the condition, its
-language or its search's source keeps from rendering.
+language or its search's source keeps from rendering; as notes, techniques the threat array leaves out (not in ATT&CK
+v18.0, or serving none of the rule's tactics) and entity columns Elastic's entity risk scoring doesn't read.
 """
 import re
 
-from opsdir.core.directory import one, rdn_value
-from opsdir.core.inventory import duration_text
+from opsdir.core.directory import one, rdn_value, values
+from opsdir.core.inventory import duration_seconds, duration_text
+from opsdir.core.notes import note
 from opsdir.domains.observability.alarms import alarm_note, detection_condition, detection_specs
-from opsdir.domains.observability.siem import described, detection_index, search_language
+from opsdir.domains.observability.siem import (described, detection_index, detection_mode, entity_mappings,
+                                               search_language)
+from .attack import threat, unplaced
 from .naming import NATIVE, stream_name
 
 SEVERITIES = {"sev0": ("critical", 99), "sev1": ("high", 73), "sev2": ("medium", 47), "sev3": ("low", 21),
@@ -29,6 +42,9 @@ SEVERITIES = {"sev0": ("critical", 99), "sev1": ("high", 73), "sev2": ("medium",
 UNRATED = ("medium", 47)
 OPERATORS = {"gt": ">", "ge": ">="}
 TAG = "opsdir"
+ROWS_PERIOD = 300                   # a rows detection's period when its rule records none (Elastic's default interval)
+# the fields Elastic's entity risk scoring groups alerts by, per core entity and identifier (ciamEntityMapping)
+ENTITY_FIELDS = {("account", "name"): "user.name", ("host", "hostname"): "host.name"}
 _FROM = re.compile(r"^\s*FROM\s+\"?([^\s,|\"]+)", re.IGNORECASE)
 _WRAPPED = re.compile(r"^(?P<base>.*) \| STATS events = COUNT\(\*\) BY slot = BUCKET\(@timestamp, \d+ seconds\) "
                       r"\| WHERE events >=? \S+ \| STATS breaching = COUNT\(\*\) \| WHERE breaching >= \d+$", re.DOTALL)
@@ -60,9 +76,14 @@ def elastic_detections(m):
                  if s.keeper is None and stream_name(detection_index(m, s.alarm)) is not None)
 
 
+def rows_period(s):
+    """A rows detection spec's period in seconds: its rule's ciamEvaluationPeriod, else ROWS_PERIOD."""
+    return duration_seconds(one(s.rule, "ciamEvaluationPeriod")) or ROWS_PERIOD
+
+
 def _why(m, s):
     """Why detection spec s isn't rendered as an ES|QL rule, about what the record holds, or None."""
-    _, why = detection_condition(s.rule)
+    _, why = (None, None) if detection_mode(s.alarm) == "rows" else detection_condition(s.rule)
     language, stream = search_language(s.alarm, NATIVE), stream_name(detection_index(m, s.alarm))
     if why:
         return why
@@ -79,13 +100,18 @@ def rule_body(m, s):
     rendered (detection_notes)."""
     if s.why or _why(m, s):
         return None
-    c, _ = detection_condition(s.rule)
-    every, rule = duration_text(c.window * c.windows), rdn_value(s.rule)
+    rows, rule = detection_mode(s.alarm) == "rows", rdn_value(s.rule)
+    c = None if rows else detection_condition(s.rule)[0]
+    every = duration_text(rows_period(s) if rows else c.window * c.windows)
+    query = one(s.alarm, "ciamMetric") if rows else esql_query(one(s.alarm, "ciamMetric"), s.rule, c)
     severity, risk = SEVERITIES.get(one(s.rule, "ciamSeverity") or "", UNRATED)
+    mapped = threat(values(s.rule, "ciamAttackTactic"), values(s.rule, "ciamAttackTechnique"))
+    fields = list(dict.fromkeys(column for _, _, column in entity_mappings(s.alarm))) if rows else []
     return {"rule_id": one(s.alarm, "ciamProviderRef"), "name": rule, "description": described(rule),
-            "type": NATIVE, "language": NATIVE, "query": esql_query(one(s.alarm, "ciamMetric"), s.rule, c),
+            "type": NATIVE, "language": NATIVE, "query": query,
             "interval": every, "from": f"now-{every}", "to": "now", "severity": severity, "risk_score": risk,
-            "enabled": True, "tags": [TAG]}
+            "enabled": True, "tags": [TAG], **({"threat": mapped} if mapped else {}),
+            **({"investigation_fields": {"field_names": fields}} if fields else {})}
 
 
 def rendered_rules(m):
@@ -93,10 +119,31 @@ def rendered_rules(m):
     return tuple((s, body) for s in elastic_detections(m) for body in (rule_body(m, s),) if body is not None)
 
 
+def _mapping_notes(m, s):
+    """Notes of a rendered rule's ATT&CK techniques its threat array leaves out and of its entity columns Elastic's
+    entity risk scoring doesn't read."""
+    left = unplaced(values(s.rule, "ciamAttackTactic"), values(s.rule, "ciamAttackTechnique"))
+    unread = tuple(f"{e} {i} by column {col}, not {ENTITY_FIELDS[(e, i)]}" for e, i, col in entity_mappings(s.alarm)
+                   if (e, i) in ENTITY_FIELDS and col != ENTITY_FIELDS[(e, i)]) \
+        if detection_mode(s.alarm) == "rows" else ()
+    rule = rdn_value(s.rule)
+    return (*((note("Monitoring", "note", f"alert rule {rule}", f"its ATT&CK techniques {', '.join(left)} aren't in "
+                    "its Elastic rule's threat mapping: a technique is mapped under a tactic it serves, and these "
+                    "serve none of the rule's tactics (ciamAttackTactic) or aren't in ATT&CK v18.0",
+                    ("Record the tactics they serve (ciamAttackTactic), or map them in Kibana (the rule's MITRE "
+                     "ATT&CK settings)",), s.alarm.dn, m.label),) if left else ()),
+            *((note("Monitoring", "note", f"alert rule {rule}", f"its entity mappings name {'; '.join(unread)}: "
+                    "Elastic's entity risk scoring groups alerts by user.name and host.name, so its alerts add to no "
+                    "entity's risk score (the columns are only its investigation fields)",
+                    ("Return the column under that field's name in the search (ES|QL: RENAME <column> AS "
+                     "user.name) and record the mapping so",), s.alarm.dn, m.label),) if unread else ()))
+
+
 def detection_notes(m):
-    """The render notes of environment m's Elastic detections not rendered: no search recorded (a note), a condition,
-    language or source the render can't write (a blocker)."""
+    """The render notes of environment m's Elastic detections: of one not rendered, no search recorded (a note) or a
+    condition, language or source the render can't write (a blocker); of one rendered, the ATT&CK techniques and
+    entity columns it can't map (notes)."""
     def of(s):
         why = None if s.why else _why(m, s)
-        return alarm_note(m, s) if s.why else alarm_note(m, s, why) if why else None
-    return tuple(n for n in map(of, elastic_detections(m)) if n is not None)
+        return (alarm_note(m, s),) if s.why else (alarm_note(m, s, why),) if why else _mapping_notes(m, s)
+    return tuple(n for s in elastic_detections(m) for n in of(s))
