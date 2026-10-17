@@ -106,6 +106,6 @@ def test_every_type_the_renderers_write_passes_cfn_lint_in_the_region(tmp_path, 
     """The CloudFormation sample (every resource and data source type beyond the showcase), each template checked
     against its own region's schemas: in GovCloud, what GovCloud's CloudFormation lacks stays Terraform."""
     rendered = _sample(region, tmp_path)
-    assert {name for name, *_ in rendered} == {"plumbing", "gateway", "dns", "services", "logs"}
+    assert {name for name, *_ in rendered} == {"plumbing", "gateway", "dns", "services", "logs", "siem"}
     unexpected, _, stderr = _linted(rendered)
     assert unexpected == [], stderr
