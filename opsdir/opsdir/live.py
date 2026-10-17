@@ -1,8 +1,10 @@
 """Effects: running a collector's calls against the live system, read-only (connectors.collecting stays pure and gets
 run_call). A Command runs as a subprocess without a shell: its argv as declared, any credential it needs only on its
-standard input, extra environment only switches. A Request is an HTTP GET made here (urllib; no other method), its
-credential put in the Authorization header in memory (or, a client certificate, loaded into the TLS context through an
-anonymous in-memory file: never a file on disk), its endpoint trusted by the certificate its reference names (ssl
+standard input, extra environment only switches. A Request is an HTTP GET made here (urllib), or the POST of a
+read-only query's body (a search the endpoint answers without changing anything; connectors.collecting refuses any POST
+its collector doesn't declare a query, so none reaches here), its credential put in the Authorization header in memory
+(or, a client certificate, loaded into the TLS context through an anonymous in-memory file: never a file on disk), its
+endpoint trusted by the certificate its reference names (ssl
 cadata) or the system's store. Credential references resolve through the secret-store adapters' commands (the
 operator's own access to the store), once per run, held in memory only; a failing call's error output is shown with
 every resolved value masked. Nothing is written anywhere but the caller's memory."""
@@ -185,6 +187,14 @@ def _context(call, secrets):
     return context, None
 
 
+def _http(call, headers):
+    """The urllib request of a Request: a GET, or the POST of its query's body as JSON."""
+    if call.body is None:
+        return urllib.request.Request(call.url, headers=headers, method="GET")
+    return urllib.request.Request(call.url, data=call.body.encode("utf-8"), method="POST",
+                                  headers={"Content-Type": "application/json", **headers})
+
+
 def _request(call, resolve):
     refs = tuple(r for r in ((call.credential[1] if call.credential else None), call.ca) if r)
     secrets, problems = _secrets(refs, resolve)
@@ -196,7 +206,7 @@ def _request(call, resolve):
         context, problem = _context(call, secrets)
         if problem:
             return None, problem
-        req = urllib.request.Request(call.url, headers=headers, method="GET")
+        req = _http(call, headers)
         with urllib.request.urlopen(req, timeout=REQUEST_SECONDS, context=context) as answer:
             return answer.read().decode("utf-8"), None
     except urllib.error.HTTPError as e:
@@ -239,8 +249,9 @@ def _observe(call, resolve):
 
 
 def run_call(call, resolve):
-    """(output, problem) of one call: a Command run as a subprocess, a Request made as an HTTP GET (an observing one's
-    answer, whatever it is, as its output); (None, None) when it says there is nothing to read (its absent markers)."""
+    """(output, problem) of one call: a Command run as a subprocess, a Request made as an HTTP GET or a query's POST
+    (an observing one's answer, whatever it is, as its output); (None, None) when it says there is nothing to read
+    (its absent markers)."""
     if isinstance(call, Request):
         return _observe(call, resolve) if call.observe else _request(call, resolve)
     return _command(call, resolve)

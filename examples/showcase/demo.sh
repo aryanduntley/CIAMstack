@@ -349,6 +349,12 @@ echo "   its endpoints, its roles (ciam-client: any name, client authentication,
 echo "   and the certificates Vault keeps; the lab's SSO certificate was renewed there, and the record names the old one"
 od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
 od report issued-certificates
+echo "-- the target directory's LDAPS certificate comes from the corporate EJBCA, read as the EJBCA add-on's collector"
+echo "   saves it (CHG-2121): its root and cloud issuing CA, their certificate profiles and what they issued; the"
+echo "   record's certificate was revoked as superseded by a renewal it doesn't hold, and the root's sub-CA certificate"
+echo "   names no CRL or OCSP"
+od import --change CHG-2121 --at 20260923090000Z ejbca/inventory exports/ejbca-pki
+od report certificate-authorities
 rm -rf out/standby-prod-landing-zone
 od render standby/prod --keeper cloud-landing-zone -o out/standby-prod-landing-zone
 od report baselines

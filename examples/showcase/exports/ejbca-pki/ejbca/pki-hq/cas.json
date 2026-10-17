@@ -1,0 +1,18 @@
+{
+ "certificate_authorities": [
+  {
+   "external": false,
+   "id": -1874511906,
+   "issuer_dn": "CN=Example Aero Root CA G2,O=Example Aero",
+   "name": "RootCA-G2",
+   "subject_dn": "CN=Example Aero Root CA G2,O=Example Aero"
+  },
+  {
+   "external": false,
+   "id": 482019373,
+   "issuer_dn": "CN=Example Aero Root CA G2,O=Example Aero",
+   "name": "CloudIssuingCA-G1",
+   "subject_dn": "CN=Example Aero Cloud Issuing CA,O=Example Aero"
+  }
+ ]
+}

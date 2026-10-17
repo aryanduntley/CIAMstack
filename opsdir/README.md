@@ -295,8 +295,8 @@ metadata, never a key, under `ou=issued-certificates`: per CA a `ciamCertInvento
 `ciamInventoryState`, `ciamInventoryProblem`) and a `ciamIssuedCertificate` per issued or revoked certificate (cn: the
 request id, or the serial for a CA that keeps none; `ciamSerialNumber`, `ciamFingerprint`, `ciamSubject`, validity,
 `ciamTemplateName`, `ciamRequester`; once revoked `ciamRevokedAt`, the effective time, and `ciamRevocationReason`, the
-RFC 5280 name or the CA's value). The PKI adapters' importers write them (`adcs/inventory`, `hashicorp-vault/pki`);
-nothing is written onto the record's certificates.
+RFC 5280 name or the CA's value). The PKI adapters' importers write them (`adcs/inventory`, `hashicorp-vault/pki`,
+`ejbca/inventory`); nothing is written onto the record's certificates.
 
 A record certificate's CA is the one listing its `ciamIssuedBy` certificate as its own, else the one whose own
 certificate's subject is its `ciamIssuer`, else the one its issuer's CN names; it is found in the inventories by
@@ -427,10 +427,14 @@ adapters' options as its own flags (`--terraform-dir`, `--amster-key`, `--ldapse
   connection through an anonymous in-memory file, Linux memfd, never a file on disk, and presented in the TLS handshake
   with no `Authorization` header; without memfd the call fails and says why); each collector says which its API takes.
   Calls carrying provider debug switches are never run.
+- A collector reads with GETs, and posts only a read-only query: a search whose criteria don't fit a URL (EJBCA's
+  certificate search). It declares the URL paths it may post to (`Collector.queries`, regular expressions), and a POST
+  to any other URL is refused and never made, which leaves the collection incomplete. The query's body (JSON, never a
+  credential) is in the evidence beside its URL.
 - A collection is complete or not imported: an import makes the record's subtrees exactly what the export holds, so a
   failed call (or a collector asking for more than 8 rounds or 2000 calls, or saying why it must stop) leaves the record as it is and says why.
 - An applied collection records how it was collected on its import run (its `ciamImportRun` entry): the identity the
-  provider saw, each call (command or URL, never a credential) with the SHA-256 of what it returned, and the
+  provider saw, each call (command, or URL and a query's body, never a credential) with the SHA-256 of what it returned, and the
   credential references resolved. `--save DIR` also keeps the raw export and its manifest: it may hold sensitive
   configuration, keep it on encrypted storage.
 - Every collection run under a change records its **attempt**, whatever the outcome (its `ciamCollectionAttempt`
@@ -615,7 +619,8 @@ opsdir/                      the package (names no platform, product, vendor or 
                              stack (declared stacks vs installed adapters), render, plan (migration planner),
                              migration (runner), workspace (copy, diff, cutover), reports, collecting (live
                              read-only collection: rounds, completeness, evidence), sql (cross-domain views)
-  live.py                    the effects of collecting: provider commands and HTTP GETs, credentials resolved in memory
+  live.py                    the effects of collecting: provider commands, HTTP GETs and read-only query POSTs,
+                             credentials resolved in memory
   cli.py                     thin orchestrator
 schema/ciam-ops.schema.ldif  the published RFC 4512 schema of the core and its domains (scripts/gen-schema.py)
 scripts/                     dev-install.sh, dev-env.sh (local defaults), gen-schema.py, test.sh, fetch-tools.sh,

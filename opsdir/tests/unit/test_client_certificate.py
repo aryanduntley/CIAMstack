@@ -1,8 +1,9 @@
 """A collection source's credential as a client certificate (ciamCredentialScheme client-certificate: mutual TLS):
 the reference resolves to a PEM holding the certificate, its chain and private key, loaded into the request's TLS
 context through an anonymous in-memory file (never a file on disk) and presented in the handshake, with no
-Authorization header. Proved against a local TLS server that requires a client certificate, with throwaway
-certificates openssl makes in a temporary directory."""
+Authorization header; a read-only query's body (EJBCA's certificate search) is posted the same way. Proved against a
+local TLS server that requires a client certificate, with throwaway certificates openssl makes in a temporary
+directory."""
 import http.server
 import os
 import shutil
@@ -62,6 +63,16 @@ def _serving(pki):
             self.end_headers()
             self.wfile.write(body)
 
+        def do_POST(self):
+            subject = dict(x[0] for x in self.connection.getpeercert()["subject"])
+            body = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
+            seen.append((self.path, subject.get("commonName"), self.headers.get("Content-Type"), body))
+            answer = b'{"certificates": []}'
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(answer)))
+            self.end_headers()
+            self.wfile.write(answer)
+
         def log_message(self, *args):
             pass
     tls = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -89,6 +100,17 @@ def test_a_client_certificate_is_presented_in_the_handshake_with_no_authorizatio
     server.server_close()
     assert (out, problem) == ('{"result": []}', None)
     assert seen == [("/api/now/table/change_request", "opsdir-reader", None)]
+
+
+def test_a_query_body_is_posted_as_json_over_mutual_tls(pki):
+    server, seen = _serving(pki)
+    url = f"https://127.0.0.1:{server.server_port}/ejbca/ejbca-rest-api/v2/certificate/search"
+    body = '{"criteria": [{"property": "CA", "value": "Issuing CA", "operation": "EQUAL"}]}'
+    out, problem = live.run_call(Request(url, (), ("client-certificate", "fake://client", None), "fake://ca",
+                                         body=body), _resolver(pki))
+    server.server_close()
+    assert (out, problem) == ('{"certificates": []}', None)
+    assert seen == [("/ejbca/ejbca-rest-api/v2/certificate/search", "opsdir-reader", "application/json", body)]
 
 
 def test_without_one_the_server_refuses_the_handshake(pki):

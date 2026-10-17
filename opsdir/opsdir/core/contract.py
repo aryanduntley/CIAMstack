@@ -327,23 +327,26 @@ Prerequisite = namedtuple("Prerequisite", ("name", "description", "importer", "m
 # tool prints is never held whole nor written anywhere (a directory's user data profiled into counts).
 Command = namedtuple("Command", ("argv", "secrets", "stdin", "env", "absent", "keep", "workdir", "inputs", "digest"),
                      defaults=((), None, (), (), None, False, (), None))
-# An HTTP GET opsdir makes itself (no other method exists): url, headers ((name, value), ...: never a credential),
-# credential (scheme 'basic', 'bearer', 'token' (sent as the Authorization header's whole value: a session token a
-# product's own logon issued), 'headers', 'api-key' or 'client-certificate' (the reference resolves to a PEM holding a
-# client certificate, its chain and private key, presented in the TLS handshake: mutual TLS, no header; held in memory
-# only), the reference to resolve, the login name (None for token, api-key and client-certificate), and for
-# 'headers' the names of the header carrying the login and of the one carrying the secret
-# (PingIDM's X-OpenIDM-Username and X-OpenIDM-Password), for 'api-key' the name of the header carrying the secret
-# (PAN-OS's X-PAN-KEY: ('api-key', reference, None, 'X-PAN-KEY')) and, when the value carries a prefix before the
-# secret, that prefix (Elasticsearch's ('api-key', reference, None, 'Authorization', 'ApiKey '))) or None, ca the
-# reference to the certificate (PEM) the endpoint is trusted by, or None for the system's trust store; absent the HTTP
-# statuses that mean nothing to read (404); keep as a Command's. observe: the call observes an endpoint (a CRL
-# distribution point, an OCSP responder): whatever it answers, or why it answered nothing, is the output, never a failed
-# call, as JSON text {"observedAt": the runner's UTC clock (ISO 8601, Z), "status": the HTTP status or null,
-# "contentType", "body": the body as base64 (binary kept) or null, "error": why there was no answer (unreachable,
-# refused) or null}.
-Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent", "keep", "observe"),
-                     defaults=((), None, None, (), None, False))
+# An HTTP GET opsdir makes itself, or a read-only query's POST (body: below): url, headers ((name, value), ...: never a
+# credential), credential (scheme 'basic', 'bearer', 'token' (sent as the Authorization header's whole value: a session
+# token a product's own logon issued), 'headers', 'api-key' or 'client-certificate' (the reference resolves to a PEM
+# holding a client certificate, its chain and private key, presented in the TLS handshake: mutual TLS, no header; held
+# in memory only), the reference to resolve, the login name (None for token, api-key and client-certificate), and for
+# 'headers' the names of the header carrying the login and of the one carrying the secret (PingIDM's X-OpenIDM-Username
+# and X-OpenIDM-Password), for 'api-key' the name of the header carrying the secret (PAN-OS's X-PAN-KEY: ('api-key',
+# reference, None, 'X-PAN-KEY')) and, when the value carries a prefix before the secret, that prefix (Elasticsearch's
+# ('api-key', reference, None, 'Authorization', 'ApiKey '))) or None, ca the reference to the certificate (PEM) the
+# endpoint is trusted by, or None for the system's trust store; absent the HTTP statuses that mean nothing to read
+# (404); keep as a Command's. observe: the call observes an endpoint (a CRL distribution point, an OCSP responder):
+# whatever it answers, or why it answered nothing, is the output, never a failed call, as JSON text {"observedAt": the
+# runner's UTC clock (ISO 8601, Z), "status": the HTTP status or null, "contentType", "body": the body as base64 (binary
+# kept) or null, "error": why there was no answer (unreachable, refused) or null}. body: None (a GET), or the JSON text
+# of a read-only query the endpoint answers without changing anything (EJBCA's certificate search, a POST because its
+# criteria don't fit a URL): the Request is then a POST of it (Content-Type application/json), made only when its
+# collector declares the URL a query (Collector queries), never a credential (it is shown in the evidence), never
+# observing.
+Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent", "keep", "observe", "body"),
+                     defaults=((), None, None, (), None, False, None))
 # A collector: the importer (by name) whose export it produces; scope "environment" (one environment's, `--env`) or
 # "estate" (provider-wide data: regions, quota limits); steps(d, m, done, options) -> ((relative path, Command |
 # Request | problem text), ...): the calls still to make given what was collected so far (done: {path: output}), a
@@ -356,9 +359,11 @@ Request = namedtuple("Request", ("url", "headers", "credential", "ca", "absent",
 # collection source's credential role unbound, an option missing), shown instead of collecting. verify(d, m) ->
 # (call, check) or None: the identity check run first, check(output) -> a problem (the provider
 # login isn't the account, subscription or project the record names) or None. options: the CollectOptions it takes
-# (what `opsdir collect` offers as flags; the operator's values reach steps and problems in options).
-Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "problems", "options"),
-                       defaults=("environment", None, None, None, ()))
+# (what `opsdir collect` offers as flags; the operator's values reach steps and problems in options). queries: regular
+# expressions (searched in a URL's path) of the read-only query endpoints it may POST a body to (EJBCA's
+# /v2/certificate/search$); a POST to any other URL is refused, never made (connectors.collecting.refused).
+Collector = namedtuple("Collector", ("importer", "scope", "steps", "verify", "problems", "options", "queries"),
+                       defaults=("environment", None, None, None, (), ()))
 # A run-time option a collector takes: flag (--terraform-dir), metavar (DIR), help, and order (its place among the
 # collect flags, lowest first). Data only, never a secret value; the collector reads the operator's value under the
 # flag without dashes, dashes as underscores (terraform_dir). An option several adapters share is declared once by the

@@ -1615,6 +1615,30 @@
       "raised_by": "CHG-2120"
     },
     {
+      "id": "A282",
+      "area": "Certificate",
+      "match": "Certificate `ds-ldaps-cloud` was revoked by Example Aero Cloud Issuing CA",
+      "planted": "EJBCA revoked the target directory's LDAPS certificate on 2026-09-18 (superseded) when it was renewed; the record still names the old one",
+      "cleared_by": null,
+      "raised_by": "CHG-2121"
+    },
+    {
+      "id": "A283",
+      "area": "Certificate",
+      "match": "Example Aero Cloud Issuing CA issued 1 active certificate(s) from template `Example Aero Cloud Issuing CA/ciam-ldaps` the record holds none of",
+      "planted": "the renewal of ds-ldaps-cloud is active at the CA but not in the record, and nobody renews the template",
+      "cleared_by": null,
+      "raised_by": "CHG-2121"
+    },
+    {
+      "id": "A284",
+      "area": "Certificate",
+      "match": "Certification authority `Example Aero Root CA G2` publishes no CRL distribution point or OCSP responder",
+      "planted": "the root's sub-CA certificate (the cloud issuing CA's) names no CRL or OCSP: nothing can check whether the issuing CA was revoked",
+      "cleared_by": null,
+      "raised_by": "CHG-2121"
+    },
+    {
       "id": "A150",
       "area": "Logs",
       "match": "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 days in all but searchable only 90",

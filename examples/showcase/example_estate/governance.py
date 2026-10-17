@@ -189,6 +189,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2120", "Read the lab's internal CA from its Vault PKI mount (its endpoints, roles and the certificates it "
      "keeps, metadata only)", "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2121", "Read the corporate EJBCA's CAs (its certificate profiles and the certificates they issued, metadata "
+     "only)", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

@@ -802,6 +802,16 @@ ciamPlannedAt: 20260924000000Z
 ciamTitle: Read the lab's internal CA from its Vault PKI mount (its endpoints,
   roles and the certificates it keeps, metadata only)
 
+dn: cn=CHG-2121,ou=changes,dc=ciam-ops
+objectClass: top
+objectClass: ciamChange
+cn: CHG-2121
+ciamApprovedBy: CAB 2026-09-18
+ciamChangeStatus: approved
+ciamPlannedAt: 20260924000000Z
+ciamTitle: Read the corporate EJBCA's CAs (its certificate profiles and the ce
+ rtificates they issued, metadata only)
+
 dn: cn=CHG-2002,ou=changes,dc=ciam-ops
 objectClass: top
 objectClass: ciamChange

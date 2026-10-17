@@ -1,0 +1,8 @@
+{
+ "available_cas": [
+  "ANY_CA"
+ ],
+ "certificate_profile_id": 2,
+ "extended_key_usages": [],
+ "validity": "25y"
+}

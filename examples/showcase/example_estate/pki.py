@@ -52,6 +52,10 @@ CERTIFICATES = (
     ("dibnet-eca", "client-auth", "CN=Example Aero Security Operations, OU=ECA, O=Example Aero",
      "CN=ECA Medium Assurance Issuing CA (synthetic)", "2025-06-30", "2027-06-30", None, None,
      "security-operations", None, None, None),
+    # the target directory's LDAPS name, issued by the corporate EJBCA's cloud issuing CA (read in by CHG-2121)
+    ("ds-ldaps-cloud", "tls-server", "CN=ldap.id.cloud.example-aero.test", "CN=Example Aero Cloud Issuing CA",
+     "2026-08-03", "2027-08-03", ["ldap.id.cloud.example-aero.test"], None, "ciam-platform", None, "WI-CIAM-002",
+     None),
 )
 
 

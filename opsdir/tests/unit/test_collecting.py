@@ -89,6 +89,29 @@ def test_provenance_never_holds_a_credential():
         f"bad password {MASK} for {MASK}"
 
 
+def test_only_a_declared_read_only_query_is_posted_and_its_body_is_the_evidence():
+    body = '{"criteria":[{"property":"CA","value":"Issuing CA","operation":"EQUAL"}]}'
+    search = Request("https://ca.example.test/ejbca/ejbca-rest-api/v2/certificate/search", body=body)
+    seen = []
+    run = lambda call: (seen.append(call), ('{"certificates": []}', None))[1]       # noqa: E731
+    steps = lambda calls: lambda d, m, done, o: calls                               # noqa: E731
+    declared = Collector("inventory", "environment", steps((("search.json", search),)),
+                         queries=(r"/v2/certificate/search$",))
+    c = collect("ejbca/inventory", declared, None, None, run)
+    assert c.files == {"search.json": '{"certificates": []}'} and seen == [search]
+    assert evidence(c)["ciamCollectedCall"][0].endswith(
+        f" search.json <- POST https://ca.example.test/ejbca/ejbca-rest-api/v2/certificate/search {body}")
+    revoke = search._replace(url="https://ca.example.test/ejbca/ejbca-rest-api/v1/certificate/x/revoke")
+    for collector in (declared._replace(steps=steps((("r.json", revoke),))),          # a URL it doesn't declare
+                      declared._replace(queries=()),                                  # no queries declared at all
+                      declared._replace(steps=steps((("o.json", search._replace(observe=True)),)))):
+        seen.clear()
+        c = collect("ejbca/inventory", collector, None, None, run)
+        assert c.files is None and not seen
+        assert c.problems[0].endswith(": only a read-only query its collector declares is posted")
+    assert provenance(Request("https://x/a")) == "GET https://x/a"
+
+
 def test_estate_collectors_come_from_importers_provider_commands():
     imp = Importer("regions", "region list", None, (("regions.json", ("tool", "regions")),))
     adapter = type("A", (), {"name": "cloud", "collectors": (TWO_STAGE,),

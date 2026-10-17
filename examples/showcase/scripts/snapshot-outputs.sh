@@ -197,6 +197,9 @@ cap 08-apply-chg-2110 od modify --change CHG-2110 changes/CHG-2110-target-corpor
 cap 08-report-managed-directory od report managed-directory
 cap 08-apply-chg-2120 od import --change CHG-2120 --at 20260923090000Z hashicorp-vault/pki exports/vault-pki
 cap 08-report-issued-certificates-vault od report issued-certificates
+cap 08-apply-chg-2121 od import --change CHG-2121 --at 20260923090000Z ejbca/inventory exports/ejbca-pki
+cap 08-report-certificate-authorities-ejbca od report certificate-authorities
+cap 08-report-issued-certificates-ejbca od report issued-certificates
 cap 08-prerequisites od prerequisites
 cap 08-report-regions od report regions
 cap 08-report-residency od report residency
