@@ -66,7 +66,7 @@ def render_env(m, services, targets=tuple(t[0] for t in TARGETS if len(t) < 3)):
     PingFederate's objects when asked, and its cluster's discovery."""
     if "terraform-imports" in targets and "terraform" not in targets:
         raise SystemExit("pingfederate=terraform-imports adopts what the terraform target renders: choose both")
-    return {**(admin_api_files(m) if "admin-api" in targets else {}),
-            **(terraform_files(m) if "terraform" in targets else {}),
-            **(terraform_import_files(m) if "terraform-imports" in targets else {}),
-            **(bulk_files(m) if "bulk-config" in targets else {}), **discovery_file(m)}
+    return {**(admin_api_files(m, services) if "admin-api" in targets else {}),
+            **(terraform_files(m, services) if "terraform" in targets else {}),
+            **(terraform_import_files(m, services) if "terraform-imports" in targets else {}),
+            **(bulk_files(m, services) if "bulk-config" in targets else {}), **discovery_file(m)}

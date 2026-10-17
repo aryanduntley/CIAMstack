@@ -4,6 +4,7 @@ from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
+from .client_certificates import trust_notes
 from .checks import (check_client_auth, check_cluster, check_data_stores, check_jdbc_drivers, check_kit_discovery,
                      check_references, check_service_roles, check_smtp_auth, credential_roles)
 from .discovery import CHOICES
@@ -52,7 +53,7 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   access=None, endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS,
                   logs=LOGS, version_changes=VERSION_CHANGES,
-                  profile=PROFILE,
+                  profile=PROFILE, notes=trust_notes,
                   # its bulk importer reads back the Admin API requests (bulk-config/data.json holds the same)
                   reads_back=(ReadBack("bulk", "pingfederate/admin-api/*.json"),
                               ReadBack("cluster", "pingfederate/cluster/jgroups.properties", "pingfederate/cluster/",

@@ -10,6 +10,9 @@ before those that name it), as pingfederate/admin-api/requests.json:
   key pairs                          /keyPairs/signing/import,         imported from where the environment keeps their
                                      /keyPairs/sslServer/import        key material
                                                                        (opsdir_adapter_pingfederate.keypairs)
+  client-certificate trust           /certificates/ca/import,          the trust policies a PingFederate role accepts
+                                     /incomingProxySettings,           (client_certificates): their CAs, revocation
+                                     /certificates/revocation/settings checking, the edge's certificate header
   data stores                        /dataStores                       hosts and secrets of this environment
   plugin instances                   /passwordCredentialValidators, /notificationPublishers, /captchaProviders,
                                      /idp/adapters, /authenticationSelectors, /oauth/accessTokenManagers (a parent
@@ -34,6 +37,7 @@ import json
 from typing import NamedTuple
 
 from opsdir.core.directory import children, one, rdn_value
+from .client_certificates import CA_IMPORT, ca_import_body, merged, trust_settings, trusted_cas
 from .connections import integration_body, served_integrations
 from .datastores import data_store_view
 from .diagnostics import problems
@@ -83,13 +87,27 @@ def _plugin(m, kind, e):
     return smtp_view(m, body) if kind == "notification-publisher" else body
 
 
-def requests(m):
-    """Environment m's PingFederate configuration as Admin API Requests, in the order PingFederate needs them."""
+def _trust_requests(m, settings, held):
+    """The Requests of environment m's client-certificate trust policies (client_certificates): its trusted CAs'
+    imports, then the settings they decide (trust_settings), each with what a held settings object (held: {path:
+    entry}) says besides."""
+    return (*(Request("POST", CA_IMPORT, None, ca_import_body(c)) for c in trusted_cas(m)),
+            *(settings_request(path, merged(resource_body(m, held[path]) if path in held else None, body, decided))
+              for path, body, decided in settings))
+
+
+def requests(m, services=None):
+    """Environment m's PingFederate configuration as Admin API Requests, in the order PingFederate needs them (with
+    the Services, the incoming proxy settings an edge checking client certificates needs)."""
     d = m.d
     plugins = {kind: _parents_first(children(d, KINDS[kind].base, "pingfedPlugin")) for kind in PLUGIN_ORDER}
     policy = default_policy_body(d)
     server = auth_server_body(m)
+    trust = trust_settings(m, services)
+    held = {one(r, "pingfedResourceType"): r for r in held_resources(d) if rdn_value(r) == "settings"
+            and one(r, "pingfedResourceType") in {path for path, _, _ in trust}}
     return (*(Request("POST", path, None, body) for path, body in key_pair_imports(m)[0]),
+            *_trust_requests(m, trust, held),
             *(object_request("/dataStores", rdn_value(s), data_store_view(m, s))
               for s in children(d, DATA_STORES, "pingfedDataStore")),
             *(object_request(KINDS[kind].resource, rdn_value(e), _plugin(m, kind, e))
@@ -103,7 +121,7 @@ def requests(m):
               for p in children(d, OIDC_POLICIES, "pingfedOidcPolicy")),
             *((settings_request("/oauth/authServerSettings", server),) if server is not None else ()),
             *(object_request(*integration_body(m, i)) for i in served_integrations(d)),
-            *(_held_request(m, r) for r in held_resources(d)))
+            *(_held_request(m, r) for r in held_resources(d) if r not in held.values()))
 
 
 def _held_request(m, r):
@@ -125,10 +143,10 @@ def rendered_bodies(text):
     return {t: [r.get("body") for r in reqs if request_type(r) == t] for t in dict.fromkeys(map(request_type, reqs))}
 
 
-def admin_api_files(m):
+def admin_api_files(m, services=None):
     """{pingfederate/admin-api/requests.json: text}: environment m's requests, checked against its version's spec
     (nothing when the record holds nothing for PingFederate)."""
-    reqs = requests(m)
+    reqs = requests(m, services)
     if not reqs:
         return {}
     version, spec, found = problems(m, reqs)
