@@ -3,7 +3,7 @@ tag a server role's instances carry (what firewall rules target), labels as Goog
 names taken apart. Pure."""
 import re
 
-from opsdir.core.directory import rdn_value
+from opsdir.core.directory import one, rdn_value
 from opsdir_format_terraform.hcl import ref
 
 NETWORK = ref("data.google_compute_network.main.self_link")
@@ -27,6 +27,17 @@ def network_tag(m, role):
 def label(v):
     """A label value as Google Cloud allows it (lowercase letters, digits, - and _; 63 characters)."""
     return re.sub(r"[^a-z0-9_-]", "-", (v or "").lower())[:63]
+
+
+def label_tags(labels):
+    """A resource's labels as the core's tag names (Role, BindingRole, Realizes): what readers read its role by."""
+    return {k: labels[low] for k, low in (("Role", "role"), ("BindingRole", "bindingrole"), ("Realizes", "realizes"))
+            if labels.get(low)}
+
+
+def binding_labels(b, **more):
+    """The labels a rendered binding carries: its role (what the readers read it back by), opsdir's mark, then more."""
+    return {"role": label(one(b, "ciamBindingRole")), "managed_by": "opsdir", **more}
 
 
 def resource_id(v):

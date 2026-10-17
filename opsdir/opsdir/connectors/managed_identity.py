@@ -16,18 +16,18 @@ know, and how users move are actions.
 """
 from urllib.parse import urlsplit
 
-from ..core.changeset import new_entry
-from ..core.directory import get, one, rdn_value, values
-from ..core.findings import Fix, Input, findings, merge_findings, responsible
-from ..domains.federation.managed import (HOST_CAPABILITY, SUPPORTED, UNSUPPORTED, availability,
-                                          integration_needs, is_target, managed_identities, mfa_split, partners,
-                                          realized_service, roles, served, service_needs, slug, status, transforms,
-                                          words)
-from ..domains.governance.naming import UNKNOWNS
-from ..domains.governance.unknowns import answered, blocking
+from ..core.directory import get, one, rdn_value
+from ..core.findings import findings, merge_findings, responsible
+from ..domains.federation.managed import (HOST_CAPABILITY, SUPPORTED, integration_needs, is_target,
+                                          managed_identities, mfa_split, partners, realized_service, roles, served,
+                                          service_needs, slug, status, transforms, words)
+from . import managed_service
 
 AREA = "Managed identity"
 URL_WORDS = {"ciamBaseUrl": "base URL", "ciamEntityId": "entity ID", "ciamOidcIssuer": "issuer"}
+VOICE = managed_service.Voice(AREA, words, "the integration, or where the identity service runs",
+                              "Run the identity service elsewhere (keep it on its current product, or choose a "
+                              "service the partition has)")
 
 
 def _listed(names):
@@ -36,87 +36,18 @@ def _listed(names):
 
 def question_name(m, b, capability):
     """The name of the register's question confirming a capability of a binding in environment m."""
-    env, cloud = rdn_value(m.env), m.env.dn.split(",")[1].split("=", 1)[1]
-    return f"confirm-{cloud}-{env}-{rdn_value(b)}-{slug(capability)}"
-
-
-def _owners(*entries):
-    """The owner DNs of the first of these entries that has any."""
-    return next((values(e, "ciamOwner") for e in entries if e is not None and values(e, "ciamOwner")), ())
-
-
-def confirm_fix(name, question, owners, concerns):
-    """The Fix adding the blocking question that confirms a capability (its owner given when none is recorded)."""
-    record = new_entry(f"cn={name},{UNKNOWNS}", ("top", "ciamUnknown"), {
-        "cn": (name,), "ciamQuestion": (question,), "ciamBlocking": ("TRUE",), "ciamConcerns": concerns,
-        "ciamOwner": owners or (Input("ciamOwner", "the party who must answer it (an owner's DN)"),)})
-    return Fix(f"unknown:{name}", AREA, f"Ask the question `{name}` in the unknowns register", (record,),
-               ("Ask the vendor; record the answer (ciamAnswer, ciamAnsweredAt) under an approved change once it "
-                "confirms the capability. If the vendor says it can't, change the record instead (the integration, "
-                "or where the identity service runs): an answer confirms.",),
-               ("Answering the question clears the blocker: answer only with the vendor's confirmation.",))
-
-
-def _confirmed(ctx, m, b, capability, needs, concerns, owner_entries):
-    """The finding for a capability no vendor documentation establishes: confirmed (an answered question), waiting on an
-    open question (the register counts a blocking one), or a blocker offering the question as its fix."""
-    name = question_name(m, b, capability)
-    asked = get(ctx.d, f"cn={name},{UNKNOWNS}")
-    owner = responsible(ctx.d, *owner_entries)
-    if asked is not None and answered(asked):
-        return findings(ok=[f"{needs} {words(capability)}: confirmed in question `{name}`: {one(asked, 'ciamAnswer')}"])
-    if asked is not None and blocking(asked):
-        return findings()
-    text = (f"{needs} {words(capability)}, and no vendor documentation establishes that it can: confirm it with the "
-            f"vendor before relying on it")
-    if asked is not None:
-        return findings(blockers=[(AREA, f"{text}. Question `{name}` asks it and is still open: answer it (ciamAnswer, "
-                                   "ciamAnsweredAt) once the vendor confirms.", owner)])
-    question = f"{needs} {words(capability)}: does the vendor confirm it can?"
-    return findings(blockers=[(AREA, f"{text}, and record the confirmation as the answer to question `{name}` "
-                               "(unknowns register; the fix proposes it).", owner)],
-                    fixes=[confirm_fix(name, question, _owners(*owner_entries), concerns)])
+    return managed_service.question_name(m, b, slug(capability))
 
 
 def _gap(ctx, m, b, spec, partition, capability, needs, concerns, owner_entries, change):
-    """The finding for one capability: nothing when supported (an action when on a condition), a blocker when
-    documented unsupported (change: what to do instead), else the confirmation path."""
-    found, source = status(spec, partition, capability)
-    if found == SUPPORTED:
-        condition = spec.conditions.get(capability)
-        return findings(actions=[(AREA, f"{needs} {words(capability)}, which {spec.title} does on a condition: "
-                                  f"{condition}. Confirm it is in place before the move.",
-                                  responsible(ctx.d, *owner_entries), None)]) if condition else findings()
-    if found == UNSUPPORTED:
-        return findings(blockers=[(AREA, f"{needs} {words(capability)}, which {spec.title} can't ({source}). "
-                                   f"{change}", responsible(ctx.d, *owner_entries))])
-    return _confirmed(ctx, m, b, capability, needs, concerns, owner_entries)
+    """The finding for one capability (connectors.managed_service.gap, in this check's voice)."""
+    return managed_service.gap(ctx, VOICE, m, b, spec, partition, capability, slug(capability), needs, concerns,
+                               owner_entries, change)
 
 
 def _available(ctx, m, b, spec, partition):
     """The finding for a managed service existing in the environment's partition."""
-    found, source = availability(spec, partition)
-    where = f"{m.label} ({partition})"
-    if found == SUPPORTED:
-        return findings()
-    if found == UNSUPPORTED:
-        return findings(blockers=[(AREA, f"`{rdn_value(b)}` in {where} is {spec.title}, which doesn't exist there "
-                                   f"({source}). Run the identity service elsewhere (keep it on its current product, "
-                                   "or choose a service the partition has), or record the environment's cloud "
-                                   "correctly.", responsible(ctx.d, b, m.env))])
-    name = question_name(m, b, "available")
-    asked = get(ctx.d, f"cn={name},{UNKNOWNS}")
-    if asked is not None and answered(asked):
-        return findings(ok=[f"{spec.title} exists in {where}: confirmed in question `{name}`: "
-                            f"{one(asked, 'ciamAnswer')}"])
-    if asked is not None and blocking(asked):
-        return findings()
-    question = f"Does {spec.title} exist in {where} for `{rdn_value(b)}`?"
-    return findings(blockers=[(AREA, f"`{rdn_value(b)}` in {where} is {spec.title}, and no vendor documentation "
-                               f"establishes that it exists there: confirm it with the vendor and record the answer "
-                               f"to question `{name}` (unknowns register; the fix proposes it).",
-                               responsible(ctx.d, b, m.env))],
-                    fixes=() if asked is not None else [confirm_fix(name, question, _owners(b, m.env), (b.dn,))])
+    return managed_service.available(ctx, VOICE, m, b, spec, partition)
 
 
 def _hosts(service):
@@ -207,12 +138,6 @@ def _neighbour(ctx, m, b, spec):
     return merge_findings([_available(ctx, m, b, spec, partition), *gaps, ok])
 
 
-def _undeclared(ctx, m, b):
-    return findings(blockers=[(AREA, f"`{rdn_value(b)}` in {m.label} is `{one(b, 'ciamManagedService')}`, which no "
-                               f"adapter rendering {m.label} declares: install the adapter that declares it (its "
-                               "cloud's), or correct ciamManagedService.", responsible(ctx.d, b, m.env))])
-
-
 def managed_identity_check(dst_adapters):
     """The planner check of the target's managed identity services, given the adapters rendering it."""
     specs = {s.name: s for a in dst_adapters for s in a.managed_identity}
@@ -220,7 +145,7 @@ def managed_identity_check(dst_adapters):
     def check_managed_identity(ctx):
         m = ctx.dst
         return merge_findings([
-            _undeclared(ctx, m, b) if one(b, "ciamManagedService") not in specs else
+            managed_service.undeclared(ctx, AREA, m, b) if one(b, "ciamManagedService") not in specs else
             (_target if is_target(b) else _neighbour)(ctx, m, b, specs[one(b, "ciamManagedService")])
             for b in managed_identities(m)])
     return check_managed_identity

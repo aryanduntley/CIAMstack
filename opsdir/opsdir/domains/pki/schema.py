@@ -94,7 +94,8 @@ ATTRIBUTES = (
     AttributeDef(200, 'ciamRotationFunction', 'string', 'binding', True,
                  'Provider id of the function or job that rotates the material'),
     AttributeDef(201, 'ciamReplicaRegion', 'string', 'binding', False,
-                 'Regions the key or secret is replicated to (multi-region keys, replicated secrets)'),
+                 'Regions the key, secret or managed directory is replicated to (multi-region keys, replicated '
+                 "secrets, a managed directory's further regions)"),
     AttributeDef(202, 'ciamKeyUser', 'string', 'binding', False,
                  'Principal the store lets use the material (provider id of a role, identity or service account)'),
     AttributeDef(203, 'ciamKeyAdmin', 'string', 'binding', False,

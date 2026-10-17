@@ -106,7 +106,8 @@ APPROVED = (("CHG-2001", SHOWCASE / "changes" / "CHG-2001-mro-firewall-target.ld
             ("CHG-2099", ImportStep("jira-sm/change-requests", SHOWCASE / "exports" / "jira-sm", "20260923090000Z")),
             ("CHG-2105", SHOWCASE / "changes" / "CHG-2105-bmc-helix-ticket-links.ldif"),
             ("CHG-2106", ImportStep("bmc-helix/change-requests", SHOWCASE / "exports" / "bmc-helix",
-                                    "20260923090000Z")))
+                                    "20260923090000Z")),
+            ("CHG-2110", SHOWCASE / "changes" / "CHG-2110-target-corporate-managed-domain.ldif"))
 # the product exports the demo imports right after loading: (change id, importer, export directory, when taken: the
 # night before, all of them)
 IMPORTS = (("CHG-2004", "pingam", SHOWCASE / "exports" / "amster", "20260920030000Z"),

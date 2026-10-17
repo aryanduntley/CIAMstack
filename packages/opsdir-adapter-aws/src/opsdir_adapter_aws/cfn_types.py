@@ -16,7 +16,11 @@ NO_NATIVE = frozenset({"aws_inspector2_enabler", "aws_config_retention_configura
                        # organization-wide security services (5.7b): no CloudFormation type in cfn-lint's schemas
                        "aws_guardduty_organization_admin_account", "aws_guardduty_organization_configuration",
                        "aws_guardduty_organization_configuration_feature", "aws_inspector2_delegated_admin_account",
-                       "aws_inspector2_organization_configuration", "aws_organizations_delegated_administrator"})
+                       "aws_inspector2_organization_configuration", "aws_organizations_delegated_administrator",
+                       # a managed directory (flow 76): its CloudFormation stack (already a template, its password a
+                       # dynamic reference), and the region and forwarders on it, which have no CloudFormation type
+                       "aws_cloudformation_stack", "aws_directory_service_region",
+                       "aws_directory_service_conditional_forwarder"})
 # Types whose CloudFormation type AWS's GovCloud resource specification doesn't have (cfn-lint's us-gov-west-1
 # schemas): in a GovCloud template they stay Terraform too.
 NOT_IN_GOVCLOUD = frozenset({"aws_macie2_account", "aws_macie2_custom_data_identifier", "aws_shield_protection",

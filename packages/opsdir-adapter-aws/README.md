@@ -77,6 +77,7 @@ What a render leaves out or to a person is a render note (core `notes`, flow 43)
 - `check_boundary`: the AWS services the target uses, named as AWS's FedRAMP Certification Package Overviews name them (servers: Amazon Elastic Compute Cloud (EC2); databases by engine: Amazon RDS for Postgres, ...; object stores: Amazon Simple Storage Service (S3); service names: Elastic Load Balancing (ELB); and so on), checked against the in-scope list of the authorization the target relies on (core `estate`: blockers where the target must rely on one). Neither of AWS's lists (2026-08) nor its services-in-scope page (2026-10-08) names Elastic Load Balancing, EC2 Auto Scaling, Data Lifecycle Manager, Site-to-Site VPN, Transit Gateway or CloudWatch Synthetics. Two are covered by a listed service on AWS's own word, shown as in place with the basis: Data Lifecycle Manager (the EBS user guide: assessed as a capability of Amazon EBS; any program listing EBS applies to it) and Site-to-Site VPN (a feature of Amazon VPC in the EC2 API; the scope page counts generally available features of a listed service in scope unless specifically excluded). The others have APIs of their own and no row: a target using them is told so, to check AWS's SSP (the FedRAMP Partner Package in AWS Artifact), use a service in scope, or record an exception.
 - `check_regulated_placement`: where AWS says the target's regulated data (core `estate`: `ciamRegulatedData`) may be held: ITAR and EAR export-controlled data only in AWS GovCloud (US) (a blocker elsewhere; in GovCloud an action naming what its guide says may not hold export-controlled data: S3 bucket names and object metadata, Direct Connect metadata, CloudFront outside its ITAR boundary), CJIS and IRS 1075 in GovCloud and the US regions (a blocker outside them), PHI on HIPAA-eligible services under the account's Business Associate Addendum (an action). The core check carries the source's regulated data to the target and asks for US data location and US-person support for export-controlled data (milestone 5.7b).
 - `check_discovery_availability`: how each kept data discovery's interval is honoured (an OK line: Macie's own schedule, or the scheduler); a GovCloud target that records data discovery the platform keeps gets an action (a blocker where its data is classified `restricted`): AWS's General Reference lists no GovCloud endpoint for Macie and its FedRAMP services-in-scope page marks it for US East/West only (nothing rendered).
+- The managed identity and managed directory checks (core connectors, flows 66 and 76) read `Adapter.managed_identity` (Cognito) and `Adapter.managed_directory` (AWS Managed Microsoft AD): see their sections below.
 - `check_server_inputs` (core `infrastructure.checks`, listed by the provider adapters that render servers): the target's servers it has no image or size for, and compute groups missing an image, a size or a subnet role (`ciamSubnetRole`), or naming one the target doesn't bind.
 
 ## Edge: traffic and protection policies
@@ -164,6 +165,27 @@ A `ciamManagedIdentity` binding of `ciamManagedService` `cognito-user-pool` (cor
 | A `saml2-sp` (or `ldap`) integration it serves | a comment: Cognito provides no downstream SAML identity provider (the planner blocks it) |
 
 What the planner knows of Cognito is `cognito.COGNITO` (`Adapter.managed_identity`), from AWS's documentation read 2026-10-15 (research note 3078): an OIDC issuer to applications, a SAML service provider and OIDC relying party of upstream providers; the `authorization_code`, `client_credentials` and `refresh_token` grants; client authentication `none` (PKCE on the code flow), `client_secret_basic`, `client_secret_post`; RS256 ID tokens; custom domains. Documented as unsupported: a downstream SAML identity provider, the token-exchange grant, a custom issuer (the issuer is the pool's, distinct from its sign-in domain), per-client MFA and claim transformations without a pre-token-generation trigger. Neither documented (blocked until confirmed, connectors.managed_identity): DPoP, PAR, CIBA, dynamic registration, mTLS and private-key client authentication, PKCE required per client, the other grants. In GovCloud (both regions; FedRAMP scope `Amazon Cognito`): FIPS endpoints required, no custom domains, no Pinpoint, managed login since 2025-03, password-hash import eligibility undocumented; each a planner action or blocker for a target there.
+
+### AWS Managed Microsoft AD (managed directory services)
+
+A `ciamManagedDirectory` binding of `ciamManagedService` `aws-managed-ad` (core directory domain, flow 76) that holds the platform's user directory (`ciamRealizes ds`) renders into `main.tf`, stamped with its entry:
+
+| Record | Renders as |
+|---|---|
+| The binding | `aws_cloudformation_stack` `ciam-<env>-<binding>-directory` whose template body (`jsonencode`) is one `AWS::DirectoryService::MicrosoftAD` (`DeletionPolicy` and `UpdateReplacePolicy` `Retain`): `Name` from `ciamFqdn`, `ShortName` from `ciamNetbiosName` (else the domain's first label in capitals), `Edition` from `ciamDirectoryEdition` (`standard`, `enterprise`; AWS's default, Enterprise, when unrecorded), `VpcSettings` from the environment's VPC and the two subnets its `ciamSubnetRole` names. Outputs: the directory ID and its DNS addresses only. Tags `Name`, `Role`, `Realizes`; create and update time out after 90 minutes |
+| The Admin password | `Password: {{resolve:secretsmanager:<id>}}`, the credential role's (`ciamCredentialRole`) `aws-sm://` secret: CloudFormation resolves the dynamic reference when it creates the directory, so no password is in the template, the Terraform state or the record (decision 3197). Terraform's `aws_directory_service_directory` keeps its required `password` in state, so it isn't used |
+| Each `ciamReplicaRegion` | `aws_directory_service_region` on `var.<binding>_<region>_vpc_id` and `var.<binding>_<region>_subnet_ids` (another region's network, which the environment doesn't bind: an action names the variables), `desired_number_of_domain_controllers` from `ciamReplicaCount` |
+| Each trust recording its domain's DNS servers (`ciamForwardTarget`) | `aws_directory_service_conditional_forwarder` for its domain |
+| No domain, no `aws-sm` secret, or not two subnets | Nothing but an UNBOUND comment naming what is missing (and an action) |
+| A neighbour (`ciamPartnerOf`) | a note: not the platform's to render |
+
+The dynamic reference is supported in every resource property but custom resources (AWS's dynamic-references guide), and the type's own schema (cfn-lint's) has `Password` write-only and not part of its primary identifier (`DirectoryId`); Directory Service never returns it, drift detection can't compare it, and drift-aware change sets compare it against the previous deployment's value: the reference text. The render puts the reference in `Password` only (no Outputs, Metadata or Parameters). `Password` is create-only: rotating the secret doesn't change the Admin password (reset it with `aws ds reset-user-password`), and changing the reference replaces the directory (a render note says so). Checked with `terraform validate` against hashicorp/aws 6.69.1 and cfn-lint 1.57.2 (us-east-1, us-gov-west-1, us-gov-east-1); not deployed.
+
+Actions, each a render note: every trust (its password is shared with the other domain: `aws ds create-trust` on both sides), server-side LDAPS (`ciamLdapsMode` `private` or `internet`: a certificate enrolled from AWS Private CA's Connector for AD or an Enterprise CA, then `aws ds enable-ldaps --type Server`), the record's own attribute types and object classes (an LDIF of attributeSchema and classSchema entries through `aws ds start-schema-extension`), the password policies (set on the predefined CustomerPSO-01..05 with AD tools), domain controllers beyond two (`aws ds update-number-of-domain-controllers`). A CloudFormation render keeps the stack, the regions and the forwarders in the Terraform root beside the template (`cfn_types.NO_NATIVE`: the stack already is CloudFormation; the other two have no CloudFormation type).
+
+What the planner knows of it is `directory.AWS_MANAGED_AD` (`Adapter.managed_directory`), from AWS's documentation read 2026-10-16 (research note 3196): LDAP and server-side LDAPS (on a condition: the certificate), LDIF schema extensions (new classes and attributes under their OIDs, additions to existing classes; nothing deleted), five predefined fine-grained password policies (the limit), multi-Region replication (Enterprise only; five Regions, its own included), forest and external trusts in every direction. Internet-facing LDAPS isn't documented either way (blocked until confirmed). In GovCloud (both regions; FedRAMP scope `AWS Directory Service`): no directory sharing, Hybrid Edition or Directory Service Data API, automatic DNS forwarding off, metadata kept free of export-controlled data (actions); multi-Region replication is neither listed as missing nor confirmed there, so a GovCloud target replicating to another region is blocked until AWS confirms it. Users and passwords move only from another Active Directory (ADMT with the Password Export Service): an action for every target.
+
+Known limits: not deployed against a live account (7.2); Hybrid Edition and AD Connector aren't modelled; trusts aren't read back (the CLI's `describe-trusts` isn't collected yet); a directory's live settings (`describe-settings`: TLS, RC4, NTLMv1) aren't rendered or read.
 
 ### Disks and snapshot policies
 
@@ -322,6 +344,10 @@ What the network carries beyond VPCs, subnets and security groups comes back in 
 ### Cognito user pools, read back
 
 `opsdir_adapter_aws.cognito` (the CLI normalizes to the same names: `cli_cognito.py`; a CloudFormation stack's `AWS::Cognito::UserPool` and `UserPoolDomain`: `cloudformation_data.py`). `aws_cognito_user_pool` -> managed identity (kind `managed-identity`, `ciamManagedIdentity`): `cognito-user-pool`, its ARN (else its id) as the provider ref, its custom domain (`custom_domain`, else the `aws_cognito_user_pool_domain` with a certificate) as `ciamFqdn`, the identity service its tag `Realizes` names; a new one needs its tag `Role`. Nothing of its app clients or identity providers is read, so neither a client secret nor an upstream credential is.
+
+### Managed directories, read back
+
+`opsdir_adapter_aws.directory` (the CLI normalizes to the same names: `cli_directory.py`; a CloudFormation stack's `AWS::DirectoryService::MicrosoftAD`: `cloudformation_data.py`). An `aws_directory_service_directory` of type `MicrosoftAD`, or an opsdir directory stack in state (`aws_cloudformation_stack`: its template's MicrosoftAD and the directory ID from its outputs) -> managed directory (kind `managed-directory`, `ciamManagedDirectory`): `aws-managed-ad`, its directory ID as the provider ref, `ciamFqdn`, `ciamNetbiosName`, `ciamDirectoryEdition`, its further regions (`aws_directory_service_region` entries, or the CLI's `RegionsInfo`) and the role its tag `Realizes` names (`ds`). Its `Password` is never read; trusts beneath the binding are kept as recorded.
 
 ### Disks and snapshot policies, read back
 
@@ -586,6 +612,14 @@ for i in $(aws cognito-idp list-user-pools --max-results 60 --query 'UserPools[]
   aws cognito-idp describe-user-pool --user-pool-id "$i" \
     --query '{UserPool: UserPool.{Id: Id, Name: Name, Arn: Arn, UserPoolTags: UserPoolTags, CustomDomain: CustomDomain}}' \
                                                                                  > "$out/user-pools/$i.json"
+done
+
+# managed Microsoft AD directories: projected to ID, type, domain, NetBIOS name, edition, VPC and regions (a
+# directory's RADIUS settings carry a shared secret), then each Microsoft AD directory's tags
+aws ds describe-directories --query '{DirectoryDescriptions: DirectoryDescriptions[].{DirectoryId: DirectoryId, Type: Type, Name: Name, ShortName: ShortName, Edition: Edition, VpcSettings: {VpcId: VpcSettings.VpcId}, RegionsInfo: {AdditionalRegions: RegionsInfo.AdditionalRegions}}}' > $out/directories.json
+mkdir -p $out/directory-tags
+for d in $(aws ds describe-directories --query "DirectoryDescriptions[?Type=='MicrosoftAD'].DirectoryId" --output text); do
+  aws ds list-tags-for-resource --resource-id "$d"                              > "$out/directory-tags/$d.json"
 done
 
 # disks and snapshot policies: the volumes (root volumes included: describe-instances says which they are) and each
@@ -889,7 +923,7 @@ A granted pattern (`secretsmanager:*`, `arn:…:secret:ciam/*`) counts as granti
 
 Configuration management (`opsdir-adapter-ansible`) reads `aws-sm://` references at run time with the `amazon.aws.secretsmanager_secret` lookup (`ansible_lookup`; region and credentials from the controller's AWS configuration, as the CLI).
 
-Values of `ciamCloudProvider` (`aws`), `ciamCloudEnvironment` (`public`) and `ciamManagedService` (`cognito-user-pool`) are validated against this adapter. The store refuses AWS credential forms anywhere in the record: access key IDs (`AKIA…`, `ASIA…`) and secret access keys (`aws_secret_access_key = …`).
+Values of `ciamCloudProvider` (`aws`), `ciamCloudEnvironment` (`public`), `ciamManagedService` (`cognito-user-pool`, `aws-managed-ad`) and `ciamDirectoryEdition` (`standard`, `enterprise`) are validated against this adapter. The store refuses AWS credential forms anywhere in the record: access key IDs (`AKIA…`, `ASIA…`) and secret access keys (`aws_secret_access_key = …`).
 
 It adds no required roles or schema of its own (its planner checks are listed above); the environment's product adapters say which roles it must bind.
 

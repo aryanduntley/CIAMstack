@@ -179,6 +179,8 @@ CHANGES = (
      "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2106", "Read the linked BMC Helix ITSM change requests as evidence (status, approval signatures, windows)",
      "approved", "CAB 2026-09-18", "2026-09-24"),
+    ("CHG-2110", "Record the corporate identity team's managed domain in the target (Entra Domain Services) and its "
+     "trusts", "approved", "CAB 2026-09-18", "2026-09-24"),
     ("CHG-2002", "Grant legacy report account write access", "proposed", None, None),
 )
 RUNBOOKS = (

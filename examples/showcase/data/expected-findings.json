@@ -470,6 +470,22 @@
       "planted": "the roster admins group must reach PingAccess as a claim",
       "cleared_by": null,
       "raised_by": "CHG-2082"
+    },
+    {
+      "id": "B110",
+      "area": "Managed directory",
+      "match": "`corp-managed-domain` keeps a trust with lab.example-aero.internal, so `corp-managed-domain` (Microsoft Entra Domain Services) in target/prod must keep a one-way outgoing external trust",
+      "planted": "the corporate identity team asks for an external trust with the engineering lab's domain, and a managed domain keeps forest trusts only",
+      "cleared_by": null,
+      "raised_by": "CHG-2110"
+    },
+    {
+      "id": "B111",
+      "area": "Authorization",
+      "match": "target/prod uses Microsoft Entra Domain Services (corp-managed-domain), which `F1209051525` doesn't list",
+      "planted": "the corporate managed domain's service isn't in the target's recorded authorization boundary",
+      "cleared_by": null,
+      "raised_by": "CHG-2110"
     }
   ],
   "actions": [

@@ -133,6 +133,16 @@ The core `data` domain's databases (`ciamDatabase`) render into `main.tf`, or in
 | `ciamDbCredentialRole` (a global `gcp-sm://` secret) | The password read when applied by an `ephemeral google_secret_manager_secret_version` and written write-only: a `google_sql_user` with `password_wo` (PostgreSQL, MySQL; the login an input, `<database>_admin_login`), SQL Server's `root_password_wo`. No Terraform state holds it. A regional secret has no ephemeral read: a comment |
 | `ciamProviderRef` recorded | An `import` block (`projects/<project>/instances/<name>`) |
 
+### Managed Service for Microsoft Active Directory (managed directory service)
+
+A `ciamManagedDirectory` binding of `ciamManagedService` `google-managed-ad` (core directory domain, flow 76) that holds the platform's user directory (`ciamRealizes ds`) renders into `main.tf`, stamped with its entry: `google_active_directory_domain` with `domain_name` from `ciamFqdn`, `locations` from `ciamRegion` and `ciamReplicaRegion` (else `var.region`), `reserved_ip_range` from `ciamCidr` (a /24 or larger, a /26 per region), the environment's network as its authorized network, deletion protection on, labels `role`, `managed_by`, `realizes` (`names.binding_labels`, which the databases' labels share). The provider takes no administrator password for it (Google sets the delegated administrator's through its API). A neighbour (`ciamPartnerOf`) is a note.
+
+Actions, each a render note: every trust (`google_active_directory_domain_trust`'s handshake secret is a required argument Terraform keeps in state, so the trust is created by hand with `gcloud active-directory domains trusts create`), secure LDAP's certificate (`gcloud active-directory domains update-ldaps-settings`), the record's own attribute types and object classes (`gcloud active-directory domains extend-schema`), the password policies (set on the predefined PSO-10..PSO-100 with AD tools). Checked with `terraform validate` against hashicorp/google 8.7.0.
+
+What the planner knows of it is `managed_ad.GOOGLE_MANAGED_AD` (`Adapter.managed_directory`), from Google's documentation read 2026-10-16 (research note 3196): LDAP, LDAPS and StartTLS (on a condition: the uploaded certificate), LDIF schema extensions (add, modify, rename), ten predefined fine-grained password policies (the limit), up to four regions, one-way and two-way forest trusts; the customer writes in `OU=Cloud`. External trusts: Google's guide excludes them while its API, gcloud and the provider accept them, so they stay not established (blocked until confirmed). Its partition is `assured:<regime>` where the environment's required authorization level asks for an Assured Workloads package (IL5, IL4, FEDRAMP_HIGH, FEDRAMP_MODERATE, IL2), else `public`: Assured Workloads' supported products list it in no package ("If a service is not listed for a given control package, that service is unsupported"), so such a target is blocked. Users and passwords move only from another Active Directory (a trust with ADMT and the Password Export Server, in Preview): an action for every target. In the FedRAMP boundary it is `Managed Service for Microsoft Active Directory`, which the boundary check reports as not in scope for an authorization listing it nowhere.
+
+Known limits: not deployed against a live project (7.2); no Cloud Asset Inventory or gcloud collector for it yet (read back from Terraform state only); trusts and LDAPS settings aren't read back; `google_active_directory_peering` (google-beta only) isn't rendered.
+
 ### Disks and snapshot schedules
 
 The core `data` domain's volumes (`ciamVolume`, each server role's disks) and snapshot policies (`ciamSnapshotPolicy`) render into `main.tf` (`opsdir_adapter_gcp.volumes`). Classes to types: `standard` pd-standard, `ssd` pd-ssd, `provisioned` hyperdisk-balanced (it needs a machine series that takes Hyperdisk: a comment).
@@ -275,6 +285,10 @@ A tag key the platform's own Terraform made (its description says `Managed by op
 | Google Cloud resource | Record entry |
 |---|---|
 | `google_sql_database_instance` | database: engine, major version and edition from `database_version`, service `cloud-sql`, endpoint (`dns_name`) and the engine's port, tier, disk, zone, `zone-redundant` when `REGIONAL`, TLS from `ssl_mode` (`ENCRYPTED_ONLY`, `TRUSTED_CLIENT_CERTIFICATE_REQUIRED`, else `require_ssl`), retained backups (7 when enabled without a count) and point-in-time restore (PITR or binary log), a backup `location` other than its region as `ciamCopyRegion`, deletion protection, its flags; its CMEK key as a role |
+
+### Managed directories, read back
+
+`opsdir_adapter_gcp.managed_ad`. `google_active_directory_domain` -> managed directory (kind `managed-directory`, `ciamManagedDirectory`): `google-managed-ad`, its resource name as the provider ref, `ciamFqdn`, `ciamRegion` (its first location), `ciamReplicaRegion` (the others), `ciamCidr` (its reserved range) and the roles its labels name (`role`, `realizes`; `names.label_tags`, which the state reader shares).
 
 ### Disks and snapshot schedules, read back
 
@@ -550,7 +564,7 @@ A role bound on a parent (a key ring, the project) covers what is under it; a bu
 
 Configuration management (`opsdir-adapter-ansible`) reads `gcp-sm://` references at run time through the `gcloud` command above (`ansible.builtin.pipe`), not the `google.cloud.gcp_secret_manager` lookup. That lookup (checked in `google.cloud` 1.14.0 and 1.15.0) reads regional secrets and can use the controller's Application Default Credentials, but it logs the access response, which holds the secret's base64 value, at `-vvv` (`no_log` doesn't stop it), and for `latest` it first lists the secret's versions, which needs `secretmanager.versions.list`, a permission the Secret Accessor role doesn't grant. For FedRAMP High and IL4/IL5 workloads, Google's compliance scope covers regional secrets, not global ones: reference them as `projects/<project>/locations/<location>/secrets/<name>`.
 
-Values of `ciamCloudProvider` (`gcp`) and `ciamCloudEnvironment` (`public`) are validated against this adapter. The store refuses Google Cloud credential forms anywhere in the record: service account key files (`"private_key_id": "<40 hex>"`; the private key itself is refused by the core's private-key pattern), API keys (`AIza…`) and OAuth client secrets (`GOCSPX-…`). Cloud Storage HMAC secrets have no recognizable form; the core's secret-assignment pattern catches them in configuration syntax.
+Values of `ciamCloudProvider` (`gcp`), `ciamCloudEnvironment` (`public`) and `ciamManagedService` (`google-managed-ad`) are validated against this adapter. The store refuses Google Cloud credential forms anywhere in the record: service account key files (`"private_key_id": "<40 hex>"`; the private key itself is refused by the core's private-key pattern), API keys (`AIza…`) and OAuth client secrets (`GOCSPX-…`). Cloud Storage HMAC secrets have no recognizable form; the core's secret-assignment pattern catches them in configuration syntax.
 
 It adds no required roles or schema of its own (its planner checks are listed above); the environment's product adapters say which roles it must bind.
 

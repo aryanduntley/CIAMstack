@@ -5,7 +5,7 @@ cluster's gateway behind Front Door with address rules (the gateway sample), DNS
 a private zone with weighted and failover names (Traffic Manager) and forwarders (the edge fixtures' DNS estate), a
 MySQL server, a blob container copied to another account, a suppression, an availability test, a NAT gateway
 for egress, a private endpoint to blob storage and a compute group with its role's disks (a scale set and its autoscale
-setting): every resource and
+setting), an Entra Domain Services managed domain with a replica set (flow 76): every resource and
 data source type the Azure renderers write that the showcase doesn't."""
 import pathlib
 
@@ -187,6 +187,15 @@ APPS = (OU.format(INTEGRATIONS, "integrations"),
         entry(INTEGRATIONS, "crm", "ciamIntegration", ciamProtocolType="saml2-sp",
               ciamEntityId="https://crm.example.test", ciamAcsUrl="https://crm.example.test/acs"))
 
+# an Entra Domain Services managed domain holding the user directory (flow 76), a replica set in another region and a
+# forest trust (an action: its password is shared)
+DIRECTORY = (entry(ALPHA, "user-dir", "ciamManagedDirectory", ciamBindingRole="user-dir",
+                   ciamManagedService="entra-domain-services", ciamRealizes="ds", ciamFqdn="corp.example.test",
+                   ciamDirectoryEdition="enterprise", ciamSubnetRole="subnet-ds", ciamReplicaRegion="westus3",
+                   ciamLdapsMode="private"),
+             entry(f"cn=user-dir,ou=bindings,{ALPHA}", "hq", "ciamDirectoryTrust", ciamFqdn="hq.example.test",
+                   ciamTrustType="forest", ciamTrustDirection="one-way-outgoing"))
+
 
 def environments(region):
     """((name, environment model, services), ...): the sample's environments in region, each rendered with
@@ -198,7 +207,7 @@ def environments(region):
             ("gateway", _gateway(region), found),
             ("dns", _dns(region), found),
             ("services", model(alpha=(KEY_DB, SECRET_DB, _db(region), STORE, SUPPRESSION, SSO, EGRESS, BLOB_ENDPOINT,
-                                      *GROUP, *SECURITY, *EXTERNAL_ID),
+                                      *GROUP, *SECURITY, *EXTERNAL_ID, *DIRECTORY),
                                tree=(*EXCEPTIONS, *CANARY, *APPS), changes=(*placed(region), *bound()))[1],
              found._replace(endpoints=(*found.endpoints, *ENDPOINTS))))
 

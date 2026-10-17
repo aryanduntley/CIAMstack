@@ -1,0 +1,51 @@
+# CHG-2110 (approved): in the target's Azure subscription, the corporate identity team keeps a Microsoft Entra Domain
+# Services managed domain (Enterprise SKU) for the workloads that join a domain. It trusts the corporate forest (a
+# one-way outgoing forest trust: the forest's users reach the managed domain's resources), and the team asks for an
+# external trust with the engineering lab's domain too. The managed domain is theirs: a neighbour directory, recorded so
+# the move accounts for it. Entra Domain Services keeps forest trusts only.
+dn: cn=corporate-identity,ou=owners,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamParty
+cn: corporate-identity
+ciamOwnerKind: team
+description: The corporate identity team: the corporate forest and the managed domains joined to it
+
+dn: cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamManagedDirectory
+cn: corp-managed-domain
+ciamBindingRole: corp-managed-domain
+ciamManagedService: entra-domain-services
+ciamFqdn: cloud.example-aero.internal
+ciamNetbiosName: AEROCLOUD
+ciamDirectoryEdition: enterprise
+ciamRegion: eastus2
+ciamManagedBy: cn=corporate-identity,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2110,ou=changes,dc=ciam-ops
+description: The corporate identity team's managed domain for domain-joined workloads (Entra Domain Services)
+
+dn: cn=corp-forest,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamDirectoryTrust
+cn: corp-forest
+ciamFqdn: corp.example-aero.internal
+ciamTrustType: forest
+ciamTrustDirection: one-way-outgoing
+ciamForwardTarget: 10.10.0.10
+ciamForwardTarget: 10.10.0.11
+ciamManagedBy: cn=corporate-identity,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2110,ou=changes,dc=ciam-ops
+
+dn: cn=eng-lab,cn=corp-managed-domain,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops
+changetype: add
+objectClass: top
+objectClass: ciamDirectoryTrust
+cn: eng-lab
+ciamFqdn: lab.example-aero.internal
+ciamTrustType: external
+ciamTrustDirection: one-way-outgoing
+ciamManagedBy: cn=corporate-identity,ou=owners,dc=ciam-ops
+ciamChangeRef: cn=CHG-2110,ou=changes,dc=ciam-ops

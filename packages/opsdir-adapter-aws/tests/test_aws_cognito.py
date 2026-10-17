@@ -58,7 +58,7 @@ def _render(*records, changes=()):
 
 # ------------------------------------------------------------------ the descriptor
 def test_the_adapter_declares_cognito_with_aws_s_documented_capabilities():
-    assert ADAPTER.managed_identity == (COGNITO,) and ADAPTER.vocabulary["ciamManagedService"] == (SERVICE,)
+    assert ADAPTER.managed_identity == (COGNITO,) and SERVICE in ADAPTER.vocabulary["ciamManagedService"]
     assert {"issue:saml", f"grant:{EXCHANGE}", "custom-issuer"} <= set(COGNITO.unsupported)
     # its token endpoint takes three grants only: the device, JWT and SAML assertion grants are documented out
     assert {f"grant:urn:ietf:params:oauth:grant-type:{g}" for g in ("device_code", "jwt-bearer", "saml2-bearer")} \

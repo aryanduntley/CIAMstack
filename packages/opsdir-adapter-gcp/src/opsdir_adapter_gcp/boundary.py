@@ -18,6 +18,9 @@ VPC, MONITORING, STORAGE = "Virtual Private Cloud (VPC)", "Cloud Monitoring", "C
 EDGE = {"waf": "Google Cloud Armor", "ddos": "Google Cloud Armor", "cdn": "Cloud CDN", "api-gateway": "API Gateway"}
 NAMES = {
     "ciamDatabase": "Cloud SQL", "ciamObjectStore": STORAGE, "ciamVolume": "Persistent Disk",
+    # Google's product name: the Assured Workloads page lists it in no control package
+    "ciamManagedDirectory": lambda b: "Managed Service for Microsoft Active Directory"
+    if one(b, "ciamManagedService") == "google-managed-ad" else None,
     "ciamSnapshotPolicy": "Compute Engine", "ciamBackupVault": "Backup and DR Service",
     "ciamBackupPlan": "Backup and DR Service",
     "ciamKeyRef": "Cloud Key Management Service (Cloud KMS)", "ciamSecretRef": "Secret Manager",

@@ -58,6 +58,10 @@ state_names.reader_names), managed resources and data sources:
     azurerm_mysql_flexible_server (+ their       SKU, storage, zone, availability, TLS, backups, parameters, deletion
     _configuration, azurerm_management_lock)     protection (a lock), its subnet and key as roles; never its password:
                                                  see databases.py
+  azurerm_active_directory_domain_service    -> managed directory (kind managed-directory, ciamManagedDirectory):
+    (+ its _replica_set)                         entra-domain-services, its ID, domain, SKU, region, its replica sets'
+                                                 regions, the role and Realizes its tags name; never secure LDAP's
+                                                 certificate or password: see domain_services.py
   azurerm_monitor_diagnostic_setting on a   -> audit trail (kind audit, ciamAuditTrail): the subscription's Activity
     subscription                                 Log export: control-plane when Administrative is exported, every
                                                  region, where its records go (its storage account's
@@ -90,6 +94,7 @@ from .edge_inventory import (dns_resources, edge_services, fqdn, frontdoor_endpo
                              gateway_facts, lb_facts, traffic_routing)
 from .iam import iam_resources
 from .databases import database_resources, database_security_groups, geo_backup_notices
+from .domain_services import domain_service_resources
 from .nsg_rules import allows_in, group_rules, rule_ports, rule_sources, source_cidr
 from .backups import backup_resources
 from .volumes import SCALE_SETS, volume_resources
@@ -600,7 +605,7 @@ def pairs_resources(pairs):
              *_clusters(pairs),
              *_sending(pairs), *_streams(pairs), *_channels(pairs), *_log_destinations(pairs), *_alarms(pairs),
              *_canaries(pairs), *sentinel_resources(pairs), *iam, *edge, *network, *database_resources(pairs),
-             *volumes, *backups,
+             *domain_service_resources(pairs), *volumes, *backups,
              *trail_resources(pairs), *security_resources(pairs), *discovery_resources(pairs),
              *suppression_resources(pairs),
              *budget_resources(pairs)),

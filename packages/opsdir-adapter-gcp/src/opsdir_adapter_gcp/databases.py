@@ -33,7 +33,7 @@ from opsdir.domains.data.databases import major_version
 from opsdir.domains.network.plumbing import adopted
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
 from opsdir_format_terraform.state import first_block
-from .names import NETWORK, REGION, label, name_parts, resource_id
+from .names import NETWORK, REGION, binding_labels, label, name_parts, resource_id
 
 PORTS = {e: DEFAULT_PORTS[e] for e in ("postgresql", "mysql", "sqlserver")}    # the engines Cloud SQL runs
 SQLSERVER_YEARS = {"14": "2017", "15": "2019", "16": "2022"}
@@ -73,10 +73,6 @@ def neutral_version(version):
 # ------------------------------------------------------------------ render
 def _given(*pairs):
     return tuple((k, v) for k, v in pairs if v is not None)
-
-
-def _labels(b):
-    return {"role": label(one(b, "ciamBindingRole")), "managed_by": "opsdir"}
 
 
 def _uri(m, role, what):
@@ -206,7 +202,7 @@ def _database(m, b):
         *_given(("tier", one(b, "ciamInstanceSize"))),
         ("availability_type", "REGIONAL" if one(b, "ciamDbHighAvailability") == "zone-redundant" else "ZONAL"),
         *_given(("disk_size", int(one(b, "ciamDbStorageGb")) if one(b, "ciamDbStorageGb") else None)),
-        ("deletion_protection_enabled", protected), ("user_labels", _labels(b)),
+        ("deletion_protection_enabled", protected), ("user_labels", binding_labels(b)),
         *((("location_preference", Block((("zone", one(b, "ciamZone")),))),) if one(b, "ciamZone") else ()),
         *_backups(b, engine),
         ("ip_configuration", Block((

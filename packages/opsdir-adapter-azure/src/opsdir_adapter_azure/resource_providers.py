@@ -9,6 +9,7 @@ from opsdir.core.notes import note
 from opsdir_format_terraform.hcl import blocks_of
 
 NAMESPACES = (
+    ("azurerm_active_directory_domain_service", "Microsoft.AAD"),
     ("azurerm_application_gateway", "Microsoft.Network"),
     ("azurerm_application_insights", "Microsoft.Insights"),
     ("azurerm_bastion_host", "Microsoft.Network"),

@@ -17,6 +17,8 @@ import re
 
 from ...core.directory import children, get, one, rdn_value, subtree, values
 from ...core.environment import environment_of, of_class
+# re-exported: what a managed identity service's descriptor says (core.managed_services, shared with directories)
+from ...core.managed_services import SUPPORTED, UNESTABLISHED, UNSUPPORTED, availability, status  # noqa: F401
 from ...core.naming import branch, env_label
 from .naming import IDENTITY_SERVICES
 from .services import integrations_served
@@ -38,7 +40,6 @@ WORDS = {"issue:oidc": "issue tokens to OIDC clients", "issue:saml": "act as a S
          "pkce-required": "require PKCE of a client", "custom-domain": "serve sign-in at a custom domain",
          "custom-issuer": "issue tokens under a custom issuer", "mfa-per-client": "require MFA for some applications "
          "only", "claim-transform": "transform claim values per application"}
-SUPPORTED, UNSUPPORTED, UNESTABLISHED = "supported", "unsupported", "not established"
 GRANT_URN = "urn:ietf:params:oauth:grant-type:"         # an extension grant's URN prefix (its name follows)
 
 
@@ -101,28 +102,6 @@ def integration_needs(i, as_partner=False):
 def service_needs(service):
     """The capabilities an identity service's own settings need: its signing algorithms."""
     return tuple(f"signing-alg:{a}" for a in values(service, "ciamSigningAlg"))
-
-
-def status(spec, partition, capability):
-    """(status, source) of a capability on a managed service in a partition: unsupported where the partition or the
-    service is documented to lack it, supported where documented, else not established (None)."""
-    lacking = spec.partition_unsupported.get(partition, {})
-    if capability in lacking:
-        return UNSUPPORTED, lacking[capability]
-    if capability in spec.unsupported:
-        return UNSUPPORTED, spec.unsupported[capability]
-    if capability in spec.supported:
-        return SUPPORTED, spec.supported[capability]
-    return UNESTABLISHED, None
-
-
-def availability(spec, partition):
-    """(status, source) of a managed service existing in a partition."""
-    if partition in spec.absent:
-        return UNSUPPORTED, spec.absent[partition]
-    if partition in spec.available:
-        return SUPPORTED, spec.available[partition]
-    return UNESTABLISHED, None
 
 
 def served(d, service):

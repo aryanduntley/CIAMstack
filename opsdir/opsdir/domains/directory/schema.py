@@ -139,6 +139,22 @@ ATTRIBUTES = (
     AttributeDef(308, 'ciamProfiledBranch', 'string', 'observed', True,
                  'The container a branch profile counts the entries of: its DN with every RDN that is not a '
                  "container's masked (uid=*,ou=people,...); a pattern, not a reference to an entry"),
+    # ------------------------------------------------------------------ cloud-managed directories (flow 76)
+    AttributeDef(870, 'ciamNetbiosName', 'string', 'binding', True,
+                 'NetBIOS name of a managed Active Directory domain'),
+    AttributeDef(871, 'ciamDirectoryEdition', 'vocab', 'binding', True,
+                 'Edition (SKU) of a managed directory service, as the adapter declaring the service names it'),
+    AttributeDef(873, 'ciamWritableBase', 'extdn', 'binding', True,
+                 "The OU of a managed directory the platform writes in: where the record's directory entries land"),
+    AttributeDef(874, 'ciamLdapsMode', 'enum:off|private|internet', 'binding', True,
+                 'Secure LDAP of a managed directory: off, on private networks only, or reachable from the internet'),
+    AttributeDef(875, 'ciamTrustDirection', 'enum:one-way-incoming|one-way-outgoing|two-way', 'binding', True,
+                 "Direction of a directory trust, from the managed domain's side (outgoing: it trusts the other "
+                 "domain, whose users reach its resources)"),
+    AttributeDef(876, 'ciamTrustType', 'enum:forest|external', 'binding', True,
+                 'Kind of a directory trust: a forest trust, or an external trust with one domain'),
+    AttributeDef(877, 'ciamSelectiveAuth', 'bool', 'binding', True,
+                 "A directory trust uses selective authentication (only the users granted reach the trusting side)"),
 )
 CLASSES = (
     ClassDef(16, 'ciamBackend', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamBackendType', 'ciamBaseDn'),
@@ -190,6 +206,23 @@ CLASSES = (
     ClassDef(61, 'ciamAttributeProfile', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamLdapName', 'ciamHolderCount'),
              ('ciamMostValues', 'ciamLargestValueBytes', 'ciamProfiledAttribute'),
              'How one attribute is used in the user data: holders, most values, largest value'),
+    ClassDef(189, 'ciamManagedDirectory', 'ciamBinding', 'STRUCTURAL', ('ciamManagedService',),
+             ('ciamRealizes', 'ciamPartnerOf', 'ciamFqdn', 'ciamNetbiosName', 'ciamDirectoryEdition', 'ciamRegion',
+              'ciamReplicaRegion', 'ciamReplicaCount', 'ciamWritableBase', 'ciamLdapsMode', 'ciamTlsCertificate',
+              'ciamSubnetRole', 'ciamCidr', 'ciamCredentialRole', 'ciamManagedBy'),
+             "A cloud-managed directory service an environment uses (managed Active Directory): the platform's user "
+             "directory held on it there (ciamRealizes ds: a target), or a directory the platform binds to or syncs "
+             "from (ciamPartnerOf: the ldap integrations it is the partner side of; a neighbour). Its domain "
+             "(ciamFqdn, ciamNetbiosName), edition, regions and domain controllers per region (ciamReplicaCount), "
+             "the OU the platform writes in (ciamWritableBase), secure LDAP (ciamLdapsMode, presenting "
+             "ciamTlsCertificate), where it is placed (subnet roles; a reserved range, ciamCidr), the secret role of "
+             "its administrator's password (ciamCredentialRole) and who keeps it when it isn't the platform team "
+             "(ciamManagedBy); its trusts are entries beneath it"),
+    ClassDef(190, 'ciamDirectoryTrust', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamFqdn', 'ciamTrustType', 'ciamTrustDirection'),
+             ('ciamForwardTarget', 'ciamSelectiveAuth', 'ciamManagedBy'),
+             'A trust of a managed directory (beneath its binding) with another domain (ciamFqdn), its DNS servers '
+             '(ciamForwardTarget) and who keeps the other side (ciamManagedBy)'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)
