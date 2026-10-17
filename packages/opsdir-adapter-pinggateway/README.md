@@ -15,7 +15,7 @@ Per environment (`render.py`); nothing environment-neutral.
 | Each route (`pinggwRoute` under `ou=routes,ou=pinggateway`): its name, condition (`pinggwCondition`), handler chain and other settings (`pinggwConfig`, secrets withheld) | `pinggateway/routes/<name>.json` |
 | The route's backend role (`pinggwBackendRole`) and scheme (`pinggwBackendScheme`, default `https`) | its `baseURI`: `<scheme>://<the role's binding's ciamFqdn>[:<its ciamPort>]` (a port left out when it is the scheme's default), `UNBOUND:<role>` where the environment binds none (or the binding has no `ciamFqdn`) |
 
-A route with no backend role keeps the `baseURI` it was imported with: a fixed backend. Withheld values are rendered as opsdir's in-place placeholders. The gateway's own settings (`config/config.json`, `admin.json`) are captured config files, rendered with the environment's other captured files. The product profile (`render.PROFILE`) places `pinggateway/routes/` under a deployment kit's `config/routes/` and captured `files/pinggateway/` at the instance root. The routes follow the gateway's JSON but are not validated against a live gateway.
+A route with no backend role keeps the `baseURI` it was imported with: a fixed backend. Withheld values are rendered as opsdir's in-place placeholders. The gateway's own settings (`config/config.json`, `admin.json`) are captured config files, rendered with the environment's other captured files. The product profile (`render.PROFILE`) places `pinggateway/routes/` under a deployment kit's `config/routes/`, `pinggateway/secrets/` under `secrets/`, and captured `files/pinggateway/` at the instance root. The routes follow the gateway's JSON but are not validated against a live gateway.
 
 ### Applications the gateways take over (`takeover.py`)
 
@@ -46,6 +46,17 @@ PingGateway can't express is a render note for the application's owners:
 The routes' listeners include the taken-over applications' backends. The read-back of a render leaves taken-over routes
 out (`takeover.own_routes`): read, they would become the gateway's own routes, which is what a cutover does. The plan's
 `protect:pinggateway/<application>` fix writes the target's override for an application nothing there would protect.
+
+### Client certificates (`client_certificates.py`, milestone 122)
+
+A client-auth trust policy (core pki, `ou=trust-policies`) whose `ciamAcceptedByRole` includes `ig`:
+
+| Where it is checked | Rendered as |
+|---|---|
+| `product` (TLS reaches the gateway) | `pinggateway/secrets/client-ca/<policy>/<policy>.client-ca.pem`: the policy's bundle (approved anchors and the followed bundles' subordinate CAs; public certificates), which the product profile places under the instance's `secrets/`; `pinggateway/admin-tls/<policy>.json`: admin.json's pieces, a heap `SecretsProvider` with a `FileSystemSecretStore` (`directory` `&{ig.instance.dir}/secrets/client-ca/<policy>`, `suffix` `.pem`, `format` `PLAIN`, a mapping of `<policy>.client-ca` with `PemPropertyFormat`) and the HTTPS connector (8443) with inline `ServerTlsOptions` (`clientAuth` `REQUIRED`, a `SecretsTrustManager` with `certificateVerificationSecretId`, `secretsProvider` and `checkRevocation` unless the policy checks none) |
+| `edge` (the load balancer verifies and forwards the certificate: `Services.cert_forwarding`) | every route's handler wrapped in a `Chain` named `client-certificate-guard` whose `ConditionEnforcementFilter` refuses (403) a request carrying the forwarded header unless it comes from the edge's sources: `${empty request.headers['<header>'] or ipMatch(contexts.client.remoteAddress, '<CIDR>') ...}` (one clause per header; none recorded refuses the header from everyone) |
+
+admin.json is a captured file this render doesn't rewrite: an **action** says to merge the pieces into it (keeping the connector's `keyManager`). Other notes: a bundle of several CAs in one PEM file, whose loading isn't established (action); `checkRevocation`'s mechanism and failure behaviour, not established (action); several product-enforced policies sharing the one HTTPS connector (action); how to read the forwarded certificate: `pemCertificate(urlDecodePathElement(...))` for AWS's URL-encoded PEM (RFC 3986 decoding keeps the literal `+` that `urlDecode`, a form decoder, turns into a space; the reference doesn't state it, so it is an action to test), `pemCertificate(...)` for PEM (line-break serialization not established), no function established for the other encodings (actions); certificate policies and key usages nobody checks (note); an anchor without a PEM, or an edge policy whose edge forwards no certificate (**blockers**). The read-back of a render unwraps the guard and leaves the client certificate files out (`render.routes_read_back`).
 
 ## What it reads back
 
@@ -135,7 +146,7 @@ A migration may upgrade the product within the supported range. The planner name
 
 ## Tests
 
-`tests/test_pinggateway.py`: registration and applies from the servers' products; a route naming its backend role, client and provider; a route to an unknown host keeping it and saying so; routes rendered per environment and read back unchanged; the planner's findings; what an upgrade touches in the routes. `tests/test_pinggateway_listeners.py` (HTTPS, the admin connector from 2025.3, what the routes reach, the health endpoint by version), `tests/test_pinggateway_proxy.py`. `tests/gateway-config/` is a made-up configuration. The collection from Git is tested end to end in the showcase (`examples/showcase/tests/unit/test_collected_sources.py`).
+`tests/test_pinggateway.py`: registration and applies from the servers' products; a route naming its backend role, client and provider; a route to an unknown host keeping it and saying so; routes rendered per environment and read back unchanged; the planner's findings; what an upgrade touches in the routes. `tests/test_pinggateway_listeners.py` (HTTPS, the admin connector from 2025.3, what the routes reach, the health endpoint by version), `tests/test_pinggateway_proxy.py`, `tests/test_pinggateway_client_certificates.py` (an edge policy guarding every route and reading back unchanged, a blocker when the edge forwards nothing, a product policy as admin.json TLS against its bundle, several headers, the guard unwrapped). `tests/gateway-config/` is a made-up configuration. The collection from Git is tested end to end in the showcase (`examples/showcase/tests/unit/test_collected_sources.py`).
 
 `tests/test_pinggateway_store.py` (marker `integration`, Postgres via `OPSDIR_TEST_DSN`): a configuration imported under an approved change, a re-import changing nothing.
 

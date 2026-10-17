@@ -14,7 +14,7 @@ opsdir adapter for PingAM (ForgeRock AM): every realm AM serves rendered as Amst
 
 ## What it renders
 
-Environment-neutral only (`render.py`; no per-environment render): for every realm AM serves (`realms`: the identity services of servers of role `am`).
+Environment-neutral (`render.py`): for every realm AM serves (`realms`: the identity services of servers of role `am`). Per environment: only the certificate journeys of trust policies AM accepts (below).
 
 | From the record | Rendered as |
 |---|---|
@@ -28,7 +28,20 @@ Environment-neutral only (`render.py`; no per-environment render): for every rea
 
 `<realm>` is the realm's directory in an Amster export: `root`, `root-customers`, ... (`realms.export_dir`). Every entity is `{"metadata": {realm, entityType, entityId, pathParams}, "data": {"_id", ...}}`. The JSON follows the shape of Amster exports but is not validated against a live AM. Client secrets and withheld node settings are never rendered: each environment supplies them. The product profile (`render.PROFILE`) places `am/` and captured `files/am/` under a deployment kit's `config/` (Amster's `import-config --path`); `opsdir-adapter-forgeops` puts them in its amster config profile.
 
-**Not rendered:** entities the record captures as files (below) are written back by the core's captured-file render, not here; nothing per environment (realm settings that differ per environment live in those captured files and their bindings).
+**Not rendered:** entities the record captures as files (below) are written back by the core's captured-file render, not here; nothing else per environment (realm settings that differ per environment live in those captured files and their bindings).
+
+### Certificate sign-in (`certificates.py`, milestone 122)
+
+A client-auth trust policy (core pki, `ou=trust-policies`) whose `ciamAcceptedByRole` includes `am` is rendered per environment as a certificate journey in each realm AM serves on a service name accepting it (the realm's `ciamBaseUrl` host is the service name's `ciamFqdn`; with no service name in front of AM, every realm AM serves). Node IDs are UUIDs derived from the realm, the policy and the node, so a render is stable.
+
+| From the record | Rendered as |
+|---|---|
+| The journey | `am/realms/<realm>/AuthTree/certificate-<policy>.json`: the three nodes, **disabled** with no outcomes wired (AM 8.1's reference gives the outcome labels, not the IDs a tree's `connections` hold) |
+| An edge-enforced policy (`ciamTrustEnforcedAt edge`), with the edge's `CertForwarding` (`Services.cert_forwarding` of the service names fronting AM) | `CertificateCollectorNode`: `clientCertificateHttpHeaderName` = the forwarded header; `trustedRemoteHosts` = the edge's sources that are single addresses (`/32`, `/128`; AM documents an IP-address list, CIDR not documented; never `any`, an empty list refuses the header from everyone) |
+| `ciamRevocationMode` | `CertificateValidationNode`: `checkCertificateExpiry` true, `matchCertificateToCRL` for a mode with CRLs, `ocspValidationEnabled` for one with OCSP |
+| The identity mapping | `CertificateUserExtractorNode` with no settings: its choices are a render note |
+
+Render notes (`certificate_notes`): an **action** with the values AM's reference doesn't establish as JSON (Certificate Collection Method `Header` at the edge, else `Request`; the user extractor's field `Subject DN`/`Subject CN`, or its SubjectAltNameExt type `UPN`/`RFC822Name`; the outcome wiring; then enable the journey); an **action** naming the policy's CAs (subjects, SHA-256 fingerprints) for AM's truststore, whose provisioning surface isn't established (an unconfigured Validation node returns True); OCSP's server defaults and CRL matching's directory settings (actions); the order of OCSP and CRLs and the failure policy, which the node doesn't take (note); the edge's sources AM can't list, or none recorded (actions); the header's encoding, whose decoding by AM isn't established (action); a product-enforced policy needing AM's web container to request client certificates (action); certificate policies and key usages AM's nodes don't check (note); no realm on the accepting service names' hosts (action). An edge policy whose edge forwards no certificate is a **blocker**, with no journey. The read-back of a render leaves these journeys out (`amster_read_back`, the `amster` ReadBack's prepare).
 
 ## What it reads back
 
@@ -92,12 +105,12 @@ A migration may upgrade the product within the supported range. The planner name
 - **Not validated against a live AM.** The rendered entities follow the shape of Amster exports; importing them with Amster, and collecting from a real AM, are part of the testing plan (milestone 7.2). The `x-opsdir` block on clients and nodes is opsdir's annotation, not an AM field.
 - **Clients**: only the standard registration is rendered (type, name, redirect URIs, scopes, grants, auth method, post-logout URIs); AM's other client settings aren't held, and a client's secret comes from its environment.
 - **SAML**: hosted and remote entity providers are rendered as standard metadata only, not as Amster entities.
-- **Nothing per environment** is rendered; the listener port is AM's default, not recorded.
+- **Per environment** only the certificate journeys are rendered, disabled until a person sets what AM's reference doesn't establish; the listener port is AM's default, not recorded.
 - **Least privilege**: Amster signs in as an administrative user; whether a less-privileged Amster account suffices is open for live validation (7.2).
 
 ## Tests
 
-`tests/test_pingam.py`: registration and applies from the servers' products; clients as standard integrations registered with their realm; journeys holding every node with its outcomes and secrets withheld; policy sets without bookkeeping; other entities captured and unknown realms named; importing again changing nothing; the render as Amster entities and standard documents at AM's paths, reading back unchanged; a journey leading to a node it doesn't have blocked; an 8.1 node version held and rendered back; what an upgrade to AM 8 touches. `tests/test_pingam_collect.py` (Amster's export in a private directory with the operator's key; without the key nothing runs), `tests/test_pingam_listeners.py`, `tests/test_pingam_proxy.py`. `tests/amster-export/` is a made-up export (fictional `example.test` names).
+`tests/test_pingam.py`: registration and applies from the servers' products; clients as standard integrations registered with their realm; journeys holding every node with its outcomes and secrets withheld; policy sets without bookkeeping; other entities captured and unknown realms named; importing again changing nothing; the render as Amster entities and standard documents at AM's paths, reading back unchanged; a journey leading to a node it doesn't have blocked; an 8.1 node version held and rendered back; what an upgrade to AM 8 touches. `tests/test_pingam_collect.py` (Amster's export in a private directory with the operator's key; without the key nothing runs), `tests/test_pingam_listeners.py`, `tests/test_pingam_proxy.py`, `tests/test_pingam_certificates.py` (a trust policy's certificate journey: the edge's header and single-address sources, revocation, the actions, stable node IDs, the read-back leaving it out, a blocker when the edge forwards nothing, a product policy collecting from the request). `tests/amster-export/` is a made-up export (fictional `example.test` names).
 
 `tests/test_pingam_store.py` (marker `integration`, Postgres via `OPSDIR_TEST_DSN`): an export imported under an approved change, the store accepting every entry, nothing secret stored, a re-import changing nothing.
 

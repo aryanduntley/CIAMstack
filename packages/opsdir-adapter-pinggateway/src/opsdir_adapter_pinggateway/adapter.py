@@ -7,9 +7,8 @@ from .listeners import listeners
 from .logs import LOGS
 from .proxy import proxy_settings
 from .naming import ENDPOINTS, SERVER_ROLES
-from .render import FORMATS, PROFILE, render_env
+from .render import FORMATS, PROFILE, gateway_notes, render_env, routes_read_back
 from .schema import FRAGMENT
-from .takeover import own_routes, takeover_notes
 from .versions import VERSION_CHANGES
 
 PRODUCTS = ("PingGateway", "ForgeRock Identity Gateway")
@@ -29,6 +28,6 @@ ADAPTER = Adapter(name="pinggateway", kind="product", applies=applies, required_
                   roles=(("server", SERVER_ROLES),),
                   secret_patterns=(), importers=(GATEWAY_CONFIG,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
-                  proxy_settings=proxy_settings, logs=LOGS, version_changes=VERSION_CHANGES, notes=takeover_notes,
+                  proxy_settings=proxy_settings, logs=LOGS, version_changes=VERSION_CHANGES, notes=gateway_notes,
                   profile=PROFILE,
-                  reads_back=(ReadBack("config", "pinggateway/*", "pinggateway/", prepare=own_routes),))
+                  reads_back=(ReadBack("config", "pinggateway/*", "pinggateway/", prepare=routes_read_back),))
