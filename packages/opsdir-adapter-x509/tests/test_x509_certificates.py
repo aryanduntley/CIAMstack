@@ -2,7 +2,9 @@
 SHA-256 as ciamFingerprint writes it, RFC 4514 subject and issuer, validity as GeneralizedTime, extended key usages
 as OIDs (None without the extension), the revocation endpoints it names (CRL distribution points, freshest CRL, OCSP
 and CA issuers, URIs only); None for text that holds no certificate."""
+import base64
 import datetime as dt
+import ipaddress
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -10,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import AuthorityInformationAccessOID, ExtendedKeyUsageOID, NameOID
 
 from opsdir.domains.pki.pem import pem_fingerprint
-from opsdir_adapter_x509.certificates import certificate_facts
+from opsdir_adapter_x509.certificates import certificate_facts, der_pem
 
 KEY = ec.generate_private_key(ec.SECP256R1())
 
@@ -49,7 +51,8 @@ def test_the_facts_of_a_certificate():
                                       "subject": "CN=web.example.test,O=Example",
                                       "issuer": "CN=web.example.test,O=Example", "not_before": "20260901000000Z",
                                       "not_after": "20261130000000Z",
-                                      "usages": ("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2"), "endpoints": ()}
+                                      "usages": ("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2"), "endpoints": (),
+                                      "names": ("web.example.test",)}
     assert certificate_facts(_pem(7, ()))["usages"] is None
 
 
@@ -62,3 +65,17 @@ def test_the_revocation_endpoints_a_certificate_names_in_the_records_order():
 
 def test_text_without_a_certificate_has_no_facts():
     assert certificate_facts("not a certificate") is None and certificate_facts(None) is None
+
+
+def test_the_names_a_certificate_names_common_name_first():
+    alt = x509.SubjectAlternativeName([x509.DNSName("web.example.test"), x509.DNSName("*.web.example.test"),
+                                       x509.IPAddress(ipaddress.ip_address("192.0.2.10"))])
+    assert certificate_facts(_pem(9, (), (alt,)))["names"] == ("web.example.test", "*.web.example.test",
+                                                               "192.0.2.10")
+
+
+def test_a_der_certificate_in_base64_as_pem():
+    pem = _pem(10, ())
+    der = x509.load_pem_x509_certificate(pem.encode()).public_bytes(serialization.Encoding.DER)
+    assert der_pem(base64.b64encode(der).decode()) == pem
+    assert der_pem("bm90IGRlcg==") is None and der_pem("not base64!") is None and der_pem(None) is None

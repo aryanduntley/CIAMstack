@@ -157,7 +157,7 @@ def _outputs(**over):
 
 def test_the_importer_is_registered_on_the_adapter():
     assert [i.name for i in ADAPTER.importers] == ["terraform-state", "cli-inventory", "arm", "regions",
-                                                   "quotas", "external-id"]
+                                                   "quotas", "external-id", "keyvault-certificates"]
 
 
 def test_outputs_that_match_the_record_change_nothing():
