@@ -105,6 +105,7 @@ from .discovery import discovery_resources
 from .security import is_incident_alert, security_notices, security_resources
 from .sentinel import onboarded, sentinel_resources
 from .suppressions import suppression_resources
+from .mtls_inventory import with_mtls_notices
 from .check_jobs import cron_seconds
 
 PROVIDER = "azure"
@@ -620,12 +621,19 @@ state_resources = partial(terraform_state_resources, skipped=SKIPPED, read_pairs
                           names=reader_names, skipped_first=True)
 
 
+def _states_pairs(texts):
+    """The (Terraform resource type, attributes) pairs of an environment's states ({path: text}), read together."""
+    return [p for _, t in sorted(texts.items()) for p in state_pairs(t)[0]]
+
+
 def read_terraform_state(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the Azure Terraform states under <cloud>/<env>/,
-    read together (one root's resources link to another's)."""
-    return layout_import(files, d, PROVIDER, "Azure", read_together(state_pairs, pairs_resources), ".tfstate",
-                         "Terraform state", "terraform.tfstate",
-                         summarize=("identity",))   # groups, users, service agents: counted
+    read together (one root's resources link to another's), with what its edge runs of the record's edge trust
+    policies checked against them (mtls_inventory)."""
+    return with_mtls_notices(layout_import(files, d, PROVIDER, "Azure", read_together(state_pairs, pairs_resources),
+                                           ".tfstate", "Terraform state", "terraform.tfstate",
+                                           summarize=("identity",)),   # groups, users, service agents: counted
+                             files, d, (".tfstate",), _states_pairs)
 
 
 TERRAFORM_STATE = Importer("terraform-state", "Azure Terraform state (terraform.tfstate) under <cloud>/<env>/, as "

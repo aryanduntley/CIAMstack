@@ -1,7 +1,10 @@
 """What the Azure CLI reports about an environment's edge, item by item from the ARM type, normalized to the
 hashicorp/azurerm attribute names the shared mapping reads (opsdir_adapter_azure.edge_inventory). Pure.
 
-  az network application-gateway list            Microsoft.Network/applicationGateways
+  az network application-gateway list            Microsoft.Network/applicationGateways (with its trusted client
+                                                 certificates, SSL profiles, listeners' profiles and rewrite sets,
+                                                 which the record's edge trust policies are checked against:
+                                                 mtls_inventory.py)
   az network application-gateway waf-policy list  Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies
   az afd profile / endpoint / origin-group /     Microsoft.Cdn/profiles, …/afdEndpoints, …/originGroups,
     origin / security-policy list                  …/originGroups/origins, …/securityPolicies
@@ -14,7 +17,7 @@ hashicorp/azurerm attribute names the shared mapping reads (opsdir_adapter_azure
     az network private-dns record-set list
   az dns-resolver forwarding-rule list           Microsoft.Network/dnsForwardingRulesets/forwardingRules
 """
-from .arm_ids import arm_field, arm_segment
+from .arm_ids import arm_field, arm_segment, with_properties
 
 RECORD_TYPES = ("A", "AAAA", "CNAME", "TXT", "MX", "SRV", "CAA", "NS")
 # what an ARM template's reader reads of these (A record sets: the main reader's, cli._records)
@@ -48,6 +51,37 @@ def _parent(arm_id, after):
     return "/".join(parts[:low.index(after.lower()) + 2]) if after.lower() in low else None
 
 
+def _part_name(ref):
+    """The name of a gateway part a reference ({id: ...}) names: the last segment of its ID."""
+    return (_id(ref) or "").rstrip("/").rsplit("/", 1)[-1] or None
+
+
+def _client_authentication(g):
+    """An Application Gateway's client-certificate parts in azurerm's names (mtls_inventory reads them): its trusted
+    client certificates, SSL profiles, HTTPS listeners' profiles, routing rules' rewrite sets, and the rewrite sets'
+    request headers; each part flattened when the CLI or template wraps it in properties."""
+    def parts(key):
+        return [with_properties(x) for x in g.get(key) or () if isinstance(x, dict)]
+    return {
+        "trusted_client_certificate": [{"name": c.get("name"), "data": c.get("data")}
+                                       for c in parts("trustedClientCertificates")],
+        "ssl_profile": [{"name": p.get("name"),
+                         "trusted_client_certificate_names": [_part_name(c) for c in p.get("trustedClientCertificates")
+                                                              or ()],
+                         "client_authentication_mode": (p.get("clientAuthConfiguration") or {})
+                         .get("verifyClientAuthMode")} for p in parts("sslProfiles")],
+        "http_listener": [{"name": ls.get("name"), "protocol": ls.get("protocol"),
+                           "ssl_profile_name": _part_name(ls.get("sslProfile"))} for ls in parts("httpListeners")],
+        "request_routing_rule": [{"name": r.get("name"), "http_listener_name": _part_name(r.get("httpListener")),
+                                  "rewrite_rule_set_name": _part_name(r.get("rewriteRuleSet"))}
+                                 for r in parts("requestRoutingRules")],
+        "rewrite_rule_set": [{"name": s.get("name"), "rewrite_rule": [
+            {"name": r.get("name"), "request_header_configuration": [
+                {"header_name": h.get("headerName"), "header_value": h.get("headerValue")}
+                for h in (r.get("actionSet") or {}).get("requestHeaderConfigurations") or ()]}
+            for r in s.get("rewriteRules") or ()]} for s in parts("rewriteRuleSets")]}
+
+
 def _gateways(items):
     return [("azurerm_application_gateway", {
                 "id": g.get("id"), "name": g.get("name"), "tags": g.get("tags") or {},
@@ -72,7 +106,8 @@ def _gateways(items):
                 "probe": [{"name": p.get("name"), "protocol": p.get("protocol"), "path": p.get("path")}
                           for p in g.get("probes") or ()],
                 "ssl_policy": [{"policy_type": (g.get("sslPolicy") or {}).get("policyType"),
-                                "policy_name": (g.get("sslPolicy") or {}).get("policyName")}]})
+                                "policy_name": (g.get("sslPolicy") or {}).get("policyName")}],
+                **_client_authentication(g)})
             for g in _of(items, "Microsoft.Network/applicationGateways")]
 
 

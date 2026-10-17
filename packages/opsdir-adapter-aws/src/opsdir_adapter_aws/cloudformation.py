@@ -31,7 +31,9 @@ Terraform resource and read by the same mapping (opsdir_adapter_aws.inventory.pa
   patterns (findings routes); compute groups (autoscaling groups and their launch templates) and EKS clusters;
   resource policies and Instance Connect Endpoints; hosted zones; queues, topics, event buses, data streams and SES
   identities: cloudformation_iam.py, _edge.py, _data.py, _security.py, _observability.py, _backups.py, _budgets.py,
-  _compute.py, _messaging.py
+  _compute.py, _messaging.py; a listener's mutual TLS (MutualAuthentication) and ALB trust stores
+  (AWS::ElasticLoadBalancingV2::TrustStore), which the record's edge trust policies are checked against:
+  mtls_inventory.py
 Resources that weren't created (no physical ID, deleted, failed) are skipped; other resource types are counted.
 """
 import json
@@ -58,6 +60,7 @@ from .cloudformation_observability import OBSERVABILITY_TYPES, observability_sta
 from .cloudformation_security import SECURITY_TYPES, security_stack_pairs
 from .cloudformation_values import dns_target, getatt, number, stack_arn, tag_map, truth
 from .inventory import PROVIDER, pairs_resources, state_pairs
+from .mtls_inventory import TRUST_TYPES, mutual_authentication, stack_trust_pairs, with_mtls_notices
 
 READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::SecurityGroup",
         "AWS::EC2::SecurityGroupIngress", "AWS::EC2::NatGateway", "AWS::EC2::EIP",
@@ -67,7 +70,7 @@ READ = ("AWS::EC2::VPC", "AWS::EC2::Subnet", "AWS::EC2::Instance", "AWS::EC2::Se
         "AWS::KMS::ReplicaKey", "AWS::S3::Bucket", "AWS::Lambda::Function", "AWS::Events::Rule",
         "AWS::Scheduler::Schedule", "AWS::CodePipeline::Pipeline", "AWS::CodeBuild::Project", "AWS::CloudTrail::Trail",
         *NETWORK_TYPES, *IAM_TYPES, *EDGE_TYPES, *DATA_TYPES, *SECURITY_TYPES, *OBSERVABILITY_TYPES,
-        *BACKUP_TYPES, *BUDGET_TYPES, *COMPUTE_TYPES, *MESSAGING_TYPES)
+        *BACKUP_TYPES, *BUDGET_TYPES, *COMPUTE_TYPES, *MESSAGING_TYPES, *TRUST_TYPES)
 EVALUATED = ("Ref", "Fn::Sub", "Fn::Join", "Fn::Select", "Fn::GetAtt")
 NOT_CREATED = ("CREATE_FAILED", "DELETE_COMPLETE", "DELETE_IN_PROGRESS", "DELETE_FAILED")
 ACCOUNT_WIDE = ("secret", "key", "storage")
@@ -367,7 +370,8 @@ def _forwarding(declared):
     return [*(("aws_lb_listener", {"load_balancer_arn": p.get("LoadBalancerArn"), "port": p.get("Port"),
                                    "protocol": p.get("Protocol"), "ssl_policy": p.get("SslPolicy"),
                                    "default_action": [{"type": a.get("Type"), "target_group_arn": target_group(a)}
-                                                      for a in p.get("DefaultActions") or ()]})
+                                                      for a in p.get("DefaultActions") or ()],
+                                   "mutual_authentication": mutual_authentication(p.get("MutualAuthentication"))})
               for _, t, p, _, _ in declared if t == "AWS::ElasticLoadBalancingV2::Listener"),
             *(("aws_lb_target_group", {
                 "arn": pid, "name": p.get("Name"), "port": p.get("Port"), "protocol": p.get("Protocol"),
@@ -491,7 +495,8 @@ def stack_pairs(stack, resources, template):
              *data_stack_pairs(declared, names), *security_stack_pairs(declared, names),
              *budget_stack_pairs(declared, names),
              *observability_stack_pairs(declared, names), *backup_stack_pairs(declared, names),
-             *compute_stack_pairs(declared, names), *messaging_stack_pairs(declared, names)],
+             *compute_stack_pairs(declared, names), *messaging_stack_pairs(declared, names),
+             *stack_trust_pairs(declared, tag_map)],
             (*((f"{label}: {', '.join(f'{fn} ({n})' for fn, n in sorted(_unevaluated(template).items()))} not "
                 f"evaluated; the attributes computed with them keep the record's values",)
                if _unevaluated(template) else ()),
@@ -501,25 +506,37 @@ def stack_pairs(stack, resources, template):
                if types else ())))
 
 
-def cloudformation_resources(texts):
-    """(resources, notices) of an environment's CloudFormation stacks ({path within the folder: text}), with the
-    Terraform state of a root kept beside them (*.tfstate: what a CloudFormation render keeps in Terraform), read
-    together as one environment."""
+def cloudformation_pairs(texts):
+    """((Terraform resource type, attributes) pairs, notices) of an environment's CloudFormation stacks ({path within
+    the folder: text}), with the Terraform state of a root kept beside them (*.tfstate: what a CloudFormation render
+    keeps in Terraform), read together as one environment."""
     stacks, unknown = _stacks({p: t for p, t in texts.items() if not p.endswith(".tfstate")})
     states = tuple(state_pairs(t) for p, t in sorted(texts.items()) if p.endswith(".tfstate"))
     missing = [f or "." for f, s in stacks.items() if not s.get("template")]
     read = [stack_pairs(s.get("stack") or {}, s.get("resources") or [], s["template"])
             for s in stacks.values() if isinstance(s.get("template"), dict)]
-    resources, rule_notices = pairs_resources([p for pairs, _ in (*read, *states) for p in pairs])
-    return resources, (*unknown, *(f"{f}: no template (get-template output or the template file); stack not read"
-                                   for f in missing), *(n for _, ns in (*read, *states) for n in ns), *rule_notices)
+    return ([p for pairs, _ in (*read, *states) for p in pairs],
+            (*unknown, *(f"{f}: no template (get-template output or the template file); stack not read"
+                         for f in missing), *(n for _, ns in (*read, *states) for n in ns)))
+
+
+def cloudformation_resources(texts):
+    """(resources, notices) of an environment's CloudFormation stacks and the Terraform state kept beside them
+    (cloudformation_pairs), read by the state reader's mapping."""
+    pairs, notices = cloudformation_pairs(texts)
+    resources, rule_notices = pairs_resources(pairs)
+    return resources, (*notices, *rule_notices)
+
+
+SUFFIXES = (".json", ".yaml", ".yml", ".template", ".tfstate")
 
 
 def read_cloudformation(files, d, patterns, at=None):
-    """Imported: each environment's servers and bindings from its CloudFormation stacks under <cloud>/<env>/<stack>/."""
-    return layout_import(files, d, PROVIDER, "AWS", cloudformation_resources,
-                         (".json", ".yaml", ".yml", ".template", ".tfstate"),
-                         "CloudFormation stack", "network/template.yaml", summarize=ACCOUNT_WIDE)
+    """Imported: each environment's servers and bindings from its CloudFormation stacks under <cloud>/<env>/<stack>/,
+    with what its edge runs of the record's edge trust policies checked against them (mtls_inventory)."""
+    return with_mtls_notices(layout_import(files, d, PROVIDER, "AWS", cloudformation_resources, SUFFIXES,
+                                           "CloudFormation stack", "network/template.yaml", summarize=ACCOUNT_WIDE),
+                             files, d, SUFFIXES, lambda texts: cloudformation_pairs(texts)[0])
 
 
 CLOUDFORMATION = Importer("cloudformation", "CloudFormation stacks (template + describe-stacks + list-stack-resources, "

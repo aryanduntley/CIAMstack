@@ -108,6 +108,8 @@ Known limits: request inspection on a passthrough service isn't rendered (a comm
 
 A trust policy checked at the edge (core `pki.trust`: `ciamTrustEnforcedAt: edge`) whose accepting roles (`ciamAcceptedByRole`) a service name of the environment fronts gets, once per environment: an `aws_s3_object` holding the policy's bundle (core `trust.policy_bundle`: its approved anchors, then the followed bundles' subordinate CAs chaining to them; public certificates, so no secret enters state) at `<prefix>trust/<policy>.pem` in the bucket its `ciamTrustStoreRole` binds (an object store with an `s3://bucket[/prefix]` `ciamStorageRef`), and an `aws_lb_trust_store` reading it. Each HTTPS listener of the ALBs in front of those roles gets `mutual_authentication { mode = "verify" }` with that trust store: the ALB checks the chain and passes the client certificate to the targets in `X-Amzn-Mtls-Clientcert`. Render notes say what ALB mTLS leaves to people or products: revocation only against CRLs uploaded into the trust store (`aws_lb_trust_store_revocation`, no OCSP: an action), the policy's certificate policies, key usages and identity mapping (checked by the product on the forwarded certificate: a note), and a bundle over the default 25 CA certificates per trust store (a quota increase: an action). A policy without anchors recording their PEMs or without a trust store location is a blocker, and its listeners stay plain. Checked with `terraform validate` (aws 6.69.1).
 
+Read back (`mtls_inventory.py`, task 585): every importer (Terraform state, CloudFormation, the CLI) checks what the edge runs against the record, for each service name under an edge trust policy that an ALB fronts (the load balancer found by its tag `Service`, or a Route 53 alias naming the service): each HTTPS listener's `mutual_authentication` mode is `verify` (`off` or `passthrough` is named: nothing checks the certificate the products trust), its trust store is the policy's (tag `TrustPolicy`, else the name the render gives it, `ciam-<env>-<policy>`), and the trust store's CA certificates match the policy's bundle by SHA-256 fingerprint, read from the bundle object at the location the trust store was loaded from (`aws_s3_object` content in Terraform state). Each difference is an import notice saying what to do (render and apply the edge again, or find what changed it); a render read back says nothing and changes nothing. A CloudFormation stack is read the same (`AWS::ElasticLoadBalancingV2::TrustStore`, a listener's `MutualAuthentication`), its bundle object from the Terraform state kept beside it. The CLI gives a trust store's name and number of CA certificates only (`elbv2 describe-trust-stores`; its bundle comes only as a download link, `get-trust-store-ca-certificates-bundle`, which nothing fetches): the count is compared, and a notice asks for the fingerprints to be compared by hand. Known limit: the CloudFormation render has no form for the trust store's bundle object (CloudFormation has no S3 object type, and the Terraform root kept beside a template applies after it, while the trust store needs the object first), so an environment with an edge trust policy renders as Terraform until that ordering is designed.
+
 
 ### DNS
 
@@ -479,7 +481,8 @@ Least privilege: a role with exactly these actions (AWS managed read-only polici
 `ec2:DescribeVpcPeeringConnections`, `ec2:DescribeTransitGatewayVpcAttachments`, `ec2:DescribeVpnConnections`,
 `ec2:DescribeCustomerGateways`, `ec2:DescribeVpnGateways`, `ec2:DescribeFlowLogs`, `ec2:DescribeVolumes`;
 `elasticloadbalancing:DescribeLoadBalancers`, `DescribeTargetGroups`, `DescribeListeners`, `DescribeTags`,
-`DescribeLoadBalancerAttributes`, `DescribeTargetHealth`, `DescribeTargetGroupAttributes`;
+`DescribeLoadBalancerAttributes`, `DescribeTargetHealth`, `DescribeTargetGroupAttributes` (and `DescribeTrustStores`
+where the record has a trust policy checked at the edge);
 `secretsmanager:ListSecrets`, `secretsmanager:GetResourcePolicy`; `kms:ListKeys`, `kms:DescribeKey`,
 `kms:GetKeyRotationStatus`, `kms:GetKeyPolicy`; `s3:ListAllMyBuckets`, `s3:GetBucketVersioning`,
 `s3:GetBucketObjectLockConfiguration`, `s3:GetEncryptionConfiguration`, `s3:GetBucketPublicAccessBlock`,
@@ -614,6 +617,7 @@ aws ec2 describe-security-group-rules                                  > $out/se
 aws ec2 describe-nat-gateways --filter Name=vpc-id,Values=$VPC         > $out/nat-gateways.json
 aws elbv2 describe-load-balancers                                      > $out/load-balancers.json
 aws elbv2 describe-target-groups                                       > $out/target-groups.json
+aws elbv2 describe-trust-stores                                        > $out/trust-stores.json   # where a trust policy is checked at the edge
 for lb in $(aws elbv2 describe-load-balancers --query 'LoadBalancers[].LoadBalancerArn' --output text); do
   aws elbv2 describe-listeners --load-balancer-arn "$lb"               > "$out/listeners-${lb##*/}.json"
   aws elbv2 describe-tags --resource-arns "$lb"                        > "$out/lb-tags-${lb##*/}.json"
