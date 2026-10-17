@@ -21,6 +21,7 @@ from opsdir.core.notes import note, note_comment
 from opsdir.domains.edge.exposure import is_internal
 from opsdir.domains.edge.resolve import inspected, inspection_note, path_regex, tls_policy
 from opsdir_format_terraform.hcl import Block, ref, tf_block, tf_name
+from .mtls import mutual_authentication
 
 # (min version, profile, ELB security policy, exact): the intent's TLS terms as ALB/NLB TLS listener policies
 TLS_POLICIES = (("1.3", "modern", "ELBSecurityPolicy-TLS13-1-3-2021-06", True),
@@ -350,6 +351,7 @@ def alb_service(m, svc, spec, backend, subnets):
             *((("#", f"nearest policy to TLS {spec.tls_min} {spec.tls_profile}"),) if not exact else ()),
             *((("certificate_arn", cert),) if cert else
               (("#", "UNBOUND: no ACM certificate holds this service's certificate in this environment"),)),
+            *mutual_authentication(m, svc),
             ("default_action", Block((("type", "forward"),
                                       ("target_group_arn", ref(f"aws_lb_target_group.{n}_{port}.arn")))))]))
         for port in ports)

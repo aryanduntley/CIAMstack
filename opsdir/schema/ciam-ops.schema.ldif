@@ -3193,11 +3193,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.699 NAME 'ciamManualReason' DESC 'Wh
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.700 NAME 'ciamRunningState' DESC 'Wh
  ere a firewall manager\27s running configuration, read back, holds this rul
  e: committed (a manager\27s, such as Panorama: its delivery to the firewall
- s unconfirmed), deployed (a firewall\27s own), disabled (there, but switche
- d off), missing (the record holds it, the running configuration doesn\27t)'
-  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE
-  X-PORTABILITY 'observed' X-VALUE-TYPE 'enum:committed|deployed|disabled|mi
- ssing' X-ORIGIN 'opsdir' )
+ s unconfirmed), deployed (a firewall\27s own; on a manager whose firewalls 
+ were read, every firewall it pushes to runs it), partial (some of them don\
+ 27t), disabled (there, but switched off), missing (the record holds it, the
+  running configuration doesn\27t); on a rule observation, what one managed 
+ firewall runs' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'enum:committed|deploy
+ ed|partial|disabled|missing' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.701 NAME 'ciamRunningFact' DESC 'Wha
  t a firewall rule, read back running, does that the rule\27s own attributes
   can\27t hold: \27<key> <value>\27; record-owned drift (action deny, log-en
@@ -3878,6 +3880,102 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.947 NAME 'ciamDeclinedAnchor' DESC '
  archy): no longer proposed as an anchor' EQUALITY caseIgnoreMatch SYNTAX 1.
  3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-
  ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.948 NAME 'ciamDeviceName' DESC 'A ma
+ naged firewall\27s host name, as its manager lists it' EQUALITY caseIgnoreM
+ atch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'obser
+ ved' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.949 NAME 'ciamDeviceContext' DESC 'A
+  virtual firewall context of a managed firewall its manager pushes policy t
+ o, in the vendor\27s naming (a PAN-OS virtual system vsys1, a FortiGate VDO
+ M)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABI
+ LITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.950 NAME 'ciamDeviceConnected' DESC 
+ 'Whether a managed firewall is connected to its manager, as the manager say
+ s' EQUALITY booleanMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X
+ -PORTABILITY 'observed' X-VALUE-TYPE 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.951 NAME 'ciamSoftwareVersion' DESC 
+ 'The software version a managed firewall runs, as its manager lists it' EQU
+ ALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-P
+ ORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.952 NAME 'ciamHaState' DESC 'A manag
+ ed firewall\27s high-availability state as its manager lists it, with its p
+ eer: \27active, peer <serial>\27' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4
+ .1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'st
+ ring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.953 NAME 'ciamPolicySync' DESC 'Whet
+ her the policy a manager pushed is what a managed firewall runs, in the man
+ ager\27s words (in sync, out of sync)' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYP
+ E 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.954 NAME 'ciamHitCount' DESC 'How ma
+ ny sessions a rule has matched on a firewall since counting began (ciamCoun
+ tedSince)' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGL
+ E-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'int' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.955 NAME 'ciamFirstHit' DESC 'When a
+  rule first matched a session on a firewall' EQUALITY generalizedTimeMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'observed' 
+ X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.956 NAME 'ciamLastHit' DESC 'When a 
+ rule last matched a session on a firewall' EQUALITY generalizedTimeMatch SY
+ NTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'observed' X-
+ VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.957 NAME 'ciamCountedSince' DESC 'Wh
+ en a firewall began counting a rule\27s hits: the later of its counters\27 
+ last reset and the rule\27s creation' EQUALITY generalizedTimeMatch SYNTAX 
+ 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE
+ -TYPE 'time' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.958 NAME 'ciamAttackTactic' DESC 'A 
+ MITRE ATT&CK (Enterprise) tactic an alert rule detects, by ATT&CK\27s short
+  name (credential-access)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466
+ .115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:reconnaissance|reso
+ urce-development|initial-access|execution|persistence|privilege-escalation|
+ defense-evasion|credential-access|discovery|lateral-movement|collection|com
+ mand-and-control|exfiltration|impact' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.959 NAME 'ciamAttackTechnique' DESC 
+ 'A MITRE ATT&CK technique or sub-technique an alert rule detects, by ID (T1
+ 110, T1078.004)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-PATTERN '^T[0-9]{4}(\5C.
+ [0-9]{3})?$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.960 NAME 'ciamDetectionMode' DESC 'H
+ ow a SIEM detection\27s search (ciamMetric) is used: count (the default: it
+ s matching events counted per window against the alert rule\27s threshold) 
+ or rows (the search itself returns one row per finding, its own threshold i
+ ncluded, so each row can name what it is about)' EQUALITY caseIgnoreMatch S
+ YNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-
+ VALUE-TYPE 'enum:count|rows' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.961 NAME 'ciamEntityMapping' DESC 'W
+ hat a rows detection\27s results are about: \27<entity> <identifier>=<resul
+ t column>\27, entity account, ip, host, url or application; identifier name
+ , upn-suffix, nt-domain, sid, object-id (account), address (ip), hostname, 
+ dns-domain (host), url (url), app-id, name (application)' EQUALITY caseIgno
+ reMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'binding' X-VALU
+ E-TYPE 'string' X-PATTERN '^(account|ip|host|url|application) [a-z-]+=[A-Za
+ -z_][A-Za-z0-9_]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.962 NAME 'ciamForwardsToRole' DESC '
+ The binding role of the SIEM index (a log destination of kind siem-index) a
+  cloud log destination\27s logs are forwarded on to (a CloudWatch log group
+  through a delivery stream, a Log Analytics workspace through an event stre
+ am)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-V
+ ALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.963 NAME 'ciamIntakeUrl' DESC 'Where
+  a SIEM index takes logs pushed to it (a Splunk HTTP Event Collector, an El
+ astic intake endpoint): https URL; its credential is the secret reference i
+ ts ciamCredentialRole names' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.14
+ 66.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'binding' X-VALUE-TYPE 'string' 
+ X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.964 NAME 'ciamTrustEnforcedAt' DESC 
+ 'Where a trust policy\27s certificates are checked: edge (the load balancer
+  in front of its accepting roles validates the client certificate and passe
+ s it on in a header only it may set) or product (TLS reaches the product, w
+ hich validates; the default)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1
+ 466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:edg
+ e|product' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.965 NAME 'ciamTrustStoreRole' DESC '
+ The binding role of the object store a consumer reads a trust policy\27s bu
+ ndle from where it takes it from storage (an AWS load balancer\27s trust st
+ ore reads it from S3)' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 SINGLE-VALUE X-PORTABILITY 'intent' X-VALUE-TYPE 'string' X-ORIGI
+ N 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4178,8 +4276,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.62 NAME 'ciamAlertRule' DESC 'What th
  e platform is watched for: a signal on a server role, the condition that fi
  res, how severe, who it goes to, what to do' SUP ciamObject STRUCTURAL MUST
   ( cn $ ciamSignal $ ciamAlertRole ) MAY ( ciamTargetRole $ ciamComparison 
- $ ciamThreshold $ ciamEvaluationPeriod $ ciamSeverity $ ciamRunbookRef ) X-
- ORIGIN 'opsdir' )
+ $ ciamThreshold $ ciamEvaluationPeriod $ ciamSeverity $ ciamRunbookRef $ ci
+ amAttackTactic $ ciamAttackTechnique ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.63 NAME 'ciamLogRoute' DESC 'Where a 
  server role\27s logs go and how long they must be kept (an obligation: audi
  t logs survive a move and the source\27s decommissioning)' SUP ciamObject S
@@ -4198,17 +4296,23 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.65 NAME 'ciamAlertChannel' DESC 'What
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.66 NAME 'ciamLogDestination' DESC 'Wh
  at keeps logs of a role in an environment, and for how many days (0: kept i
  ndefinitely): searchable (ciamRetentionDays), and in all when it archives t
- hem (ciamTotalRetentionDays), the archive kept where ciamArchiveRef says' S
- UP ciamBinding STRUCTURAL MUST ciamDestinationKind MAY ( ciamProviderRef $ 
- ciamRetentionDays $ ciamTotalRetentionDays $ ciamManagedBy $ ciamArchiveRef
-  ) X-ORIGIN 'opsdir' )
+ hem (ciamTotalRetentionDays), the archive kept where ciamArchiveRef says; a
+  cloud log destination may forward its logs on to a SIEM index (ciamForward
+ sToRole: through the event stream ciamStreamRole names, events it can\27t d
+ eliver kept where ciamStorageRef says), and a SIEM index takes pushed logs 
+ at ciamIntakeUrl with the credential ciamCredentialRole references' SUP cia
+ mBinding STRUCTURAL MUST ciamDestinationKind MAY ( ciamProviderRef $ ciamRe
+ tentionDays $ ciamTotalRetentionDays $ ciamManagedBy $ ciamArchiveRef $ cia
+ mForwardsToRole $ ciamIntakeUrl $ ciamCredentialRole $ ciamStreamRole $ cia
+ mStorageRef ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.67 NAME 'ciamAlarmBinding' DESC 'An a
  larm a cloud runs in an environment: the alert rule it realizes, what it ev
  aluates, what it notifies; a SIEM detection names the log destination (a SI
  EM index) its search runs on (ciamLogDestinationRole) and holds the search 
  in ciamMetric, written in ciamSearchLanguage' SUP ciamBinding STRUCTURAL MU
  ST ciamProviderRef MAY ( ciamRealizes $ ciamNotifies $ ciamMetric $ ciamMan
- agedBy $ ciamLogDestinationRole $ ciamSearchLanguage ) X-ORIGIN 'opsdir' )
+ agedBy $ ciamLogDestinationRole $ ciamSearchLanguage $ ciamDetectionMode $ 
+ ciamEntityMapping ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.68 NAME 'ciamCanaryBinding' DESC 'A s
  ynthetic check a cloud runs in an environment: the canary it realizes, how 
  often, where it keeps its results when the cloud asks for a place (ciamStor
@@ -4890,4 +4994,19 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.203 NAME 'ciamTrustPolicy' DESC 'Whic
  Purpose ) MAY ( ciamTrustAnchor $ ciamTrustBundleRef $ ciamAllowedPolicyOid
   $ ciamRequiredEku $ ciamIdentityMapping $ ciamRevocationMode $ ciamRevocat
  ionFailure $ ciamRevocationCacheHours $ ciamAcceptedByRole $ ciamDeclinedAn
- chor ) X-ORIGIN 'opsdir' )
+ chor $ ciamTrustEnforcedAt $ ciamTrustStoreRole ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.204 NAME 'ciamManagedFirewall' DESC '
+ A firewall a manager appliance pushes the environment\27s rules to (cn: its
+  serial number; a child of the manager\27s ciamAppliance), observed: its na
+ me, the virtual contexts and device group it gets, whether it is connected 
+ and in sync, its software version and high-availability peer' SUP ciamObjec
+ t STRUCTURAL MUST cn MAY ( ciamDeviceName $ ciamDeviceContext $ ciamApplian
+ ceScope $ ciamDeviceConnected $ ciamSoftwareVersion $ ciamHaState $ ciamPol
+ icySync ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.205 NAME 'ciamRuleObservation' DESC '
+ What one managed firewall runs of one of the environment\27s firewall rules
+  (cn: \27<rule>/<context>\27; a child of the ciamManagedFirewall), observed
+ : deployed, disabled or missing in the policy pushed to it, and its hit cou
+ nts' SUP ciamObject STRUCTURAL MUST ( cn $ ciamRunningState ) MAY ( ciamDev
+ iceContext $ ciamHitCount $ ciamFirstHit $ ciamLastHit $ ciamCountedSince )
+  X-ORIGIN 'opsdir' )

@@ -10,10 +10,14 @@ block stamped with its entry (hcl.from_entry, so the render places it by its kee
                                     tokens), tagged with its name, role and the identity service it realizes
   aws_cognito_user_pool_domain      its sign-in host (ciamFqdn): a custom domain with the ACM certificate holding its
                                     ciamTlsCertificate, or the prefix of a *.amazoncognito.com host
-  aws_cognito_user_pool_client      one per oidc-client integration the service serves: redirect and logout URIs, the
-                                    code and client credentials flows of its grants, its scopes (the OIDC ones as they
-                                    are, the others as the resource server's), a secret when it authenticates with one,
-                                    the user pool and every upstream provider as its identity providers
+  aws_cognito_user_pool_client      one per public oidc-client integration the service serves: redirect and logout
+                                    URIs, the code and client credentials flows of its grants, its scopes (the OIDC
+                                    ones as they are, the others as the resource server's), the user pool and every
+                                    upstream provider as its identity providers
+  aws_cloudformation_stack          one per confidential client (one authenticating with a secret): the same settings
+                                    as an AWS::Cognito::UserPoolClient with GenerateSecret, outputting only its client
+                                    ID, so the secret Cognito generates never reaches Terraform state (U.5, decision
+                                    3289); storing it where the application's reference points is an action
   aws_cognito_resource_server       one, when a client asks for scopes beyond OIDC's: identifier the service's base URL
   aws_cognito_identity_provider     one SAML provider per saml2-idp integration the service serves, its metadata read
                                     from a URL a variable gives (the record holds the partner's entity ID and SSO URL)
@@ -25,6 +29,7 @@ note. Read back from Terraform state, or from the CLI normalized to it (cli_cogn
 tags' role and Realizes) with its custom domain (ciamFqdn). Client secrets and upstream providers' secrets are never
 read.
 """
+import re
 from itertools import chain
 
 from opsdir.core.contract import ManagedService
@@ -34,7 +39,7 @@ from opsdir.core.inventory import of_types, resource, tagged_role
 from opsdir.core.notes import RECORD, note, note_comment
 from opsdir.domains.edge.resolve import certificate_ref
 from opsdir.domains.federation.managed import is_target, realized_service, served
-from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_import, tf_name
+from opsdir_format_terraform.hcl import Block, comment, from_entry, jsonencoded, ref, tf_block, tf_import, tf_name
 from .account import partition
 from .network import binding_tags
 from .tags import state_tags
@@ -165,25 +170,68 @@ def _scopes(m, b, i):
             *(f"{_identifier(m, b)}/{s}" for s in own if s not in OIDC_SCOPES and s != "offline_access")]
 
 
-def _client(m, b, n, i, providers):
+def confidential(i):
+    """Whether an integration authenticates to Cognito with a client secret (the client is then generated one)."""
+    return any(t in SECRET_METHODS for t in values(i, "ciamTokenAuthMethod"))
+
+
+def _settings(m, b, i, providers):
+    """(Terraform argument, CloudFormation property, value) of an app client's settings, absent ones left out: the
+    same settings whichever form the client takes."""
     grants = values(i, "ciamGrantType")
-    flows = [FLOWS[g] for g in grants if g in FLOWS]
-    dropped = [g for g in grants if g not in FLOWS and g != "refresh_token"]
-    secret = any(t in SECRET_METHODS for t in values(i, "ciamTokenAuthMethod"))
+    return tuple(x for x in (
+        ("allowed_oauth_flows_user_pool_client", "AllowedOAuthFlowsUserPoolClient", True),
+        ("allowed_oauth_flows", "AllowedOAuthFlows", [FLOWS[g] for g in grants if g in FLOWS]),
+        ("allowed_oauth_scopes", "AllowedOAuthScopes", _scopes(m, b, i)),
+        ("callback_urls", "CallbackURLs", list(values(i, "ciamRedirectUri")) or None),
+        ("logout_urls", "LogoutURLs", list(values(i, "ciamPostLogoutRedirectUri")) or None),
+        ("supported_identity_providers", "SupportedIdentityProviders", ["COGNITO", *providers]),
+        ("enable_token_revocation", "EnableTokenRevocation", True),
+        ("prevent_user_existence_errors", "PreventUserExistenceErrors", "ENABLED")) if x[2] is not None)
+
+
+def _client_comments(i):
+    dropped = [g for g in values(i, "ciamGrantType") if g not in FLOWS and g != "refresh_token"]
+    return (*(("#", f"grant {g} isn't rendered: Cognito's token endpoint doesn't take it (the planner's)")
+              for g in dropped),
+            *((("#", "offline_access isn't a Cognito scope: refresh tokens come with the code flow"),)
+              if "offline_access" in values(i, "ciamScope") else ()))
+
+
+def client_template(m, b, n, i, providers):
+    """The CloudFormation template of a confidential app client: Cognito generates its secret; the only output is its
+    client ID, so neither the stack's outputs nor the Terraform state around it ever holds the secret (U.5)."""
+    return {"AWSTemplateFormatVersion": "2010-09-09",
+            "Description": f"Cognito app client {rdn_value(i)} of user pool {rdn_value(b)} ({m.label}), rendered by "
+                           "opsdir: Cognito generates its secret, which no output names",
+            "Resources": {"Client": {"Type": "AWS::Cognito::UserPoolClient", "Properties": {
+                "ClientName": rdn_value(i), "UserPoolId": ref(f"aws_cognito_user_pool.{n}.id"), "GenerateSecret": True,
+                **{prop: v for _, prop, v in _settings(m, b, i, providers)}}}},
+            "Outputs": {"ClientId": {"Value": {"Fn::GetAtt": ["Client", "ClientId"]}}}}
+
+
+def _stack_name(*parts):
+    """A CloudFormation stack name of parts: letters, digits and hyphens, starting with a letter, at most 128."""
+    return re.sub(r"-+", "-", re.sub(r"[^A-Za-z0-9-]", "-", "-".join(parts))).strip("-")[:128]
+
+
+def _client(m, b, n, i, providers):
+    """A public client as aws_cognito_user_pool_client; a confidential one as a CloudFormation stack (client_template),
+    after the resource server and upstream providers its scopes and identity providers name."""
     c = f"{n}_{tf_name(rdn_value(i))}"
-    return tf_block("resource", ["aws_cognito_user_pool_client", c], [
-        ("name", rdn_value(i)), ("user_pool_id", ref(f"aws_cognito_user_pool.{n}.id")),
-        ("generate_secret", secret), ("allowed_oauth_flows_user_pool_client", True),
-        ("allowed_oauth_flows", flows), ("allowed_oauth_scopes", _scopes(m, b, i)),
-        *((("callback_urls", list(values(i, "ciamRedirectUri"))),) if values(i, "ciamRedirectUri") else ()),
-        *((("logout_urls", list(values(i, "ciamPostLogoutRedirectUri"))),)
-          if values(i, "ciamPostLogoutRedirectUri") else ()),
-        ("supported_identity_providers", ["COGNITO", *providers]),
-        ("enable_token_revocation", True), ("prevent_user_existence_errors", "ENABLED"),
-        *(("#", f"grant {g} isn't rendered: Cognito's token endpoint doesn't take it (the planner's)")
-          for g in dropped),
-        *((("#", "offline_access isn't a Cognito scope: refresh tokens come with the code flow"),)
-          if "offline_access" in values(i, "ciamScope") else ())])
+    if not confidential(i):
+        return tf_block("resource", ["aws_cognito_user_pool_client", c], [
+            ("name", rdn_value(i)), ("user_pool_id", ref(f"aws_cognito_user_pool.{n}.id")),
+            ("generate_secret", False), *((arg, v) for arg, _, v in _settings(m, b, i, providers)),
+            *_client_comments(i)])
+    after = [*([ref(f"aws_cognito_resource_server.{n}")] if custom_scopes(m, b) else []),
+             *(ref(f"aws_cognito_identity_provider.{n}_{tf_name(rdn_value(p))}") for p in _of(m, b, "saml2-idp"))]
+    return tf_block("resource", ["aws_cloudformation_stack", c], [
+        ("name", _stack_name("ciam", rdn_value(m.env), rdn_value(b), rdn_value(i), "client")),
+        ("template_body", jsonencoded(client_template(m, b, n, i, providers))),
+        ("tags", binding_tags(b)), *((("depends_on", after),) if after else ()),
+        ("#", "a client secret: Cognito generates it inside this stack, so Terraform state never holds it"),
+        *_client_comments(i)])
 
 
 def _resource_server(m, b, n):
@@ -249,7 +297,14 @@ def _notes(m, b):
                     f"Cognito reads a SAML partner's metadata from a URL the record doesn't hold: give "
                     f"{', '.join(f'var.{_provider_variable(tf_name(label), p)}' for p in idps)}",
                     ("Ask each partner for its SAML metadata URL and pass it as the variable when applying",),
-                    b.dn, m.label),) if idps else ()))
+                    b.dn, m.label),) if idps else ()),
+            *(note(AREA, "action", f"user pool {label} client {rdn_value(i)} secret",
+                   f"Cognito generates client {rdn_value(i)}'s secret inside its CloudFormation stack, so no render "
+                   "or state holds it",
+                   (f"Read it once the stack is applied (aws cognito-idp describe-user-pool-client, the client ID "
+                    "from the stack's ClientId output) and store it where the application's secret reference "
+                    "points; give the application its client ID",), i.dn, m.label)
+              for i in _of(m, b, "oidc-client") if confidential(i)))
 
 
 def _neighbour_note(m, b):

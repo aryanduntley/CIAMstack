@@ -85,14 +85,18 @@ def test_a_target_is_a_user_pool_with_its_domain_clients_scopes_and_partner():
                  'software_token_mfa_configuration {\n    enabled = true\n  }', 'Realizes  = "sso"',
                  'resource "aws_cognito_user_pool_domain" "sso_pool"', 'domain          = "sso.example.test"',
                  f'certificate_arn = "{CERT_ARN}"',
-                 'resource "aws_cognito_user_pool_client" "sso_pool_portal"',
-                 "generate_secret                      = true",
-                 'allowed_oauth_flows                  = ["code"]',
-                 'allowed_oauth_scopes                 = ["openid", "email", "https://sso.example.test/orders.read"]',
-                 'callback_urls                        = ["https://portal.example.test/cb"]',
-                 'logout_urls                          = ["https://portal.example.test/bye"]',
-                 'supported_identity_providers         = ["COGNITO", "skyline"]',
+                 'resource "aws_cloudformation_stack" "sso_pool_portal"',
+                 'name = "ciam-prod-sso-pool-portal-client"',
+                 '"Type" : "AWS::Cognito::UserPoolClient"', '"GenerateSecret" : true',
+                 '"UserPoolId" : "${aws_cognito_user_pool.sso_pool.id}"',
+                 '"AllowedOAuthScopes" : [\n            "openid",\n            "email",\n'
+                 '            "https://sso.example.test/orders.read"\n          ]',
+                 '"CallbackURLs" : [\n            "https://portal.example.test/cb"\n          ]',
+                 '"LogoutURLs" : [\n            "https://portal.example.test/bye"\n          ]',
+                 '"Fn::GetAtt" : [\n            "Client",\n            "ClientId"\n          ]',
+                 'depends_on = [aws_cognito_resource_server.sso_pool, aws_cognito_identity_provider.sso_pool_skyline]',
                  'resource "aws_cognito_user_pool_client" "sso_pool_mobile"',
+                 "generate_secret                      = false",
                  'resource "aws_cognito_resource_server" "sso_pool"', 'identifier   = "https://sso.example.test"',
                  'scope_name        = "orders.read"', 'variable "sso_pool_skyline_metadata_url"',
                  'resource "aws_cognito_identity_provider" "sso_pool_skyline"', 'provider_type = "SAML"',
@@ -102,6 +106,9 @@ def test_a_target_is_a_user_pool_with_its_domain_clients_scopes_and_partner():
     assert "saml2-sp integration crm isn't rendered: Cognito can't serve it" in out
     assert "NOTE: user pool sso-pool scopes" in out and "NOTE: user pool sso-pool partner metadata" in out
     assert "client_secret =" not in out and "import {" not in out
+    assert "ClientSecret" not in out and "generate_secret                      = true" not in out   # U.5
+    assert 'resource "aws_cognito_user_pool_client" "sso_pool_portal"' not in out
+    assert "NOTE: user pool sso-pool client portal secret" in out
 
 
 def test_an_adopted_pool_is_imported_and_a_prefix_domain_is_its_prefix():

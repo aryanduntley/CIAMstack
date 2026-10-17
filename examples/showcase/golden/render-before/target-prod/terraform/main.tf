@@ -1825,7 +1825,7 @@ resource "azurerm_sentinel_log_analytics_workspace_onboarding" "siem" {
 
 resource "azurerm_sentinel_alert_rule_scheduled" "pf_admin_login_failures" {
   name                       = "ciam-admin-login-failures"
-  log_analytics_workspace_id = azurerm_sentinel_log_analytics_workspace_onboarding.siem.workspace_id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.siem.id
   display_name               = "admin-login-failures"
   description                = "opsdir: realizes alert rule admin-login-failures"
   severity                   = "Medium"
@@ -1835,6 +1835,7 @@ resource "azurerm_sentinel_alert_rule_scheduled" "pf_admin_login_failures" {
   trigger_operator           = "GreaterThan"
   trigger_threshold          = 0
   enabled                    = true
+  depends_on                 = [azurerm_sentinel_log_analytics_workspace_onboarding.siem]
 }
 
 # NOTE: log destination siem: keeps logs 365 days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's retention unless set by hand

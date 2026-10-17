@@ -8,6 +8,7 @@ from .imports import IMPORT_KINDS
 from .reports import OVERRIDES_HEADERS, override_rows
 from .running import FIREWALL_RUNNING_HEADERS, check_firewall_running, firewall_running_rows
 from .schema import FRAGMENT
+from .settings import SETTINGS
 
 # Every environment needs a network and encrypted disks, whatever runs in it.
 REQUIRED_ROLES = ("network", "disk-encryption")
@@ -18,4 +19,4 @@ DOMAIN = Domain(name="infrastructure", schema=FRAGMENT, required_roles=REQUIRED_
                 checks=(check_versions, check_allowlists, check_overrides, check_appliance_sources,
                         check_firewall_running), order=10,
                 vocabulary={},
-                import_kinds=IMPORT_KINDS, roles_used=appliance_roles)
+                import_kinds=IMPORT_KINDS, roles_used=appliance_roles, settings=SETTINGS)

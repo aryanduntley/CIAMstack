@@ -19,8 +19,9 @@ while the record holds no trust policy."""
 import datetime as dt
 
 from ...core.changeset import add_values, delete_values, new_entry
-from ...core.directory import (children, date_of, fingerprint, follow_all, get, make_entry, merged_attrs, one,
-                               rdn_of, rdn_value, values)
+from ...core.directory import (children, date_of, fingerprint, follow_all, get, make_entry, merged_attrs, norm_dn,
+                               one, rdn_of, rdn_value, values)
+from ...core.environment import of_class, servers_with_role
 from ...core.findings import Fix, Option, findings, merge_findings, owner_label
 from ...core.settings import setting_value
 from .chain import self_issued
@@ -94,6 +95,87 @@ def policy_anchors(d, policy):
 
 def followed_bundles(d, policy):
     return tuple(b for b in follow_all(d, policy, "ciamTrustBundleRef") if b is not None)
+
+
+# ------------------------------------------------------------------ consumers
+def enforced_at(policy):
+    """Where a policy's certificates are checked: edge or product (the default)."""
+    return one(policy, "ciamTrustEnforcedAt") or "product"
+
+
+def _subject(c):
+    return norm_dn(one(c, "ciamSubject") or "")
+
+
+def _reaching(members, subjects, kept=()):
+    """The members whose issuer chain reaches one of subjects (normalised DNs), in the order found."""
+    more = tuple(m for m in members if m not in kept and norm_dn(one(m, "ciamIssuer") or "") in subjects)
+    return kept if not more else _reaching(members, subjects | {_subject(m) for m in more}, (*kept, *more))
+
+
+def bundle_certificates(d, policy):
+    """The CA certificates a policy's consumers trust, in order: its anchors (record order), then the subordinate CAs of
+    the bundles it follows (failed ones aside) whose issuer chain reaches an anchor, by subject; each once."""
+    anchors = policy_anchors(d, policy)
+    members = [m for b in followed_bundles(d, policy) if one(b, "ciamBundleVerification") != FAILED
+               for m in bundle_members(d, b) if not is_root(m)]
+    subordinates = _reaching(members, {_subject(a) for a in anchors})
+    seen = {}
+    for c in (*anchors, *sorted(subordinates, key=lambda m: (one(m, "ciamSubject") or "", fp(m)))):
+        seen.setdefault(fp(c), c)
+    return tuple(seen.values())
+
+
+def policy_bundle(d, policy):
+    """The PEM text a policy's consumers trust (bundle_certificates' PEMs, public material), or None when none of them
+    records a PEM."""
+    pems = [one(c, "ciamCertificatePem").strip() + "\n" for c in bundle_certificates(d, policy)
+            if one(c, "ciamCertificatePem")]
+    return "".join(pems) or None
+
+
+def accepting_services(m, policy):
+    """The service names of environment m in front of the roles accepting a policy (an edge policy's consumers)."""
+    roles = set(values(policy, "ciamAcceptedByRole"))
+    return tuple(s for s in of_class(m, "ciamServiceName") if one(s, "ciamTargetRole") in roles)
+
+
+def anchor_chains(d, policy):
+    """Per anchor of a policy (bundle_certificates' order): (anchor, the subordinate CAs of bundle_certificates whose
+    issuer chain reaches it, in that order), for a consumer taking one chain per root rather than one bundle."""
+    certs = bundle_certificates(d, policy)
+    keys = {fp(a) for a in policy_anchors(d, policy)}
+    subordinates = tuple(c for c in certs if fp(c) not in keys)
+    return tuple((a, tuple(c for c in subordinates if c in _reaching(subordinates, {_subject(a)})))
+                 for a in certs if fp(a) in keys)
+
+
+def edge_policies(m):
+    """The trust policies checked at the edge that something in environment m fronts (the edge adapters' to render)."""
+    return tuple(p for p in trust_policies(m.d) if enforced_at(p) == "edge" and accepting_services(m, p))
+
+
+def edge_policy_for(m, svc):
+    """The edge trust policy a service name's target role accepts certificates under, or None."""
+    return next((p for p in edge_policies(m) if one(svc, "ciamTargetRole") in values(p, "ciamAcceptedByRole")), None)
+
+
+def _consumers(ctx, policy):
+    """Actions about one policy's consumers in the source and target: an edge policy with nothing in front of an
+    accepting role an environment runs, and anchors without a PEM (nothing can be given them)."""
+    envs = {m.dn.lower(): m for m in (ctx.src, ctx.dst) if m is not None}.values()
+    name = rdn_value(policy)
+    run = [(m, r) for m in envs for r in values(policy, "ciamAcceptedByRole") if servers_with_role(m, r)
+           or any(one(s, "ciamTargetRole") == r for s in of_class(m, "ciamServiceName"))]
+    bare = [(m, r) for m, r in run if enforced_at(policy) == "edge"
+            and not any(one(s, "ciamTargetRole") == r for s in accepting_services(m, policy))]
+    missing = [a for a in policy_anchors(ctx.d, policy) if not one(a, "ciamCertificatePem")]
+    return findings(actions=[
+        *((AREA, f"Trust policy `{name}` is checked at the edge, but {m.label} has no service name in front of `{r}`: "
+           "nothing there checks its certificates. Record the service name (its load balancer), or check them at the "
+           "product (ciamTrustEnforcedAt product).", owner_label(ctx.d, policy), None) for m, r in bare),
+        *((AREA, f"Anchor `{rdn_value(a)}` of trust policy `{name}` records no certificate (ciamCertificatePem): its "
+           "consumers can't be given it. Record its PEM.", owner_label(ctx.d, policy), None) for a in missing)])
 
 
 # ------------------------------------------------------------------ fixes
@@ -253,7 +335,7 @@ def check_trust(ctx):
             followers.setdefault(b.norm, (b, []))[1].append(p)
     return merge_findings([*(f for p in policies for f in (_review(d, p, followed_bundles(d, p)),
                                                            _dropped(d, p, followed_bundles(d, p)),
-                                                           _policy_gaps(d, p))),
+                                                           _policy_gaps(d, p), _consumers(ctx, p))),
                            *(_integrity(d, b, ps, ctx.as_of, max_age) for b, ps in followers.values()),
                            _expiring(d, policies, ctx.as_of, horizon)])
 

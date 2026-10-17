@@ -5,6 +5,7 @@ in its vault (Key Vault's RBAC model), the storage container, the resource a pro
 Azure Monitor Agent from here (log_collection.agent_hosts) also gets a system-assigned identity, the agent's own."""
 from itertools import chain
 
+from opsdir.core.contract import CertForwarding
 from opsdir.core.directory import follow, one, rdn_value, values
 from opsdir.core.environment import by_role, of_class, one_role, recorded, subnet_of
 from opsdir.domains.compute.hosts import run_roles
@@ -20,6 +21,7 @@ from opsdir.domains.edge.kubernetes import kubernetes_notes
 from opsdir.domains.edge.records import forwarders
 from opsdir.domains.governance.keepers import keeper
 from opsdir.domains.edge.resolve import inspection_notes, service_edge
+from opsdir.domains.pki.trust import edge_policy_for, policy_bundle
 from opsdir_format_terraform.hcl import (Block, TfFile, blocks_of, comment, ref, tf_block,
                                         tf_name, unbound_comments, written)
 from .access import ACCESS
@@ -31,6 +33,7 @@ from .storage import render_object_stores
 from .audit import audit_notes, render_trails
 from .container_logs import container_log_notes, render_container_logs
 from .log_collection import agent_hosts, log_collection_notes, render_log_collection
+from .siem_export import render_siem_export, siem_export_notes
 from .observability import alert_notes, render_alerts, render_workspaces, workspace_notes
 from .sentinel import render_sentinel, sentinel_notes
 from .canaries import render_tests, test_notes
@@ -45,6 +48,7 @@ from .backups import backup_notes, render_backups
 from .volumes import boot_tag, os_disk, server_volumes, snapshot_policy_notes, volume_notes
 from .dns import (FORWARDING_RULESET, forwarder_notes, forwarding_rules, records, service_record,
                   unrecorded_answer)
+from .client_certificates import CLIENT_CERT_ENCODING, CLIENT_CERT_HEADER, client_certificate_notes
 from .edge import EDGE_SUBNET, gateway_service, network_lb, servers_backend
 from .compute_groups import group_notes, render_groups
 from .frontdoor import endpoint, front_door, frontdoor_notes
@@ -151,6 +155,28 @@ def _service(m, svc, endpoints=()):
     return (*network_lb(m, svc, spec, targets, subnets), *fronted, *record)
 
 
+def gateway_fronted(m, svc, endpoints=()):
+    """Whether environment m fronts a service name with an Application Gateway (its TLS terminated at the edge, or its
+    role run only on Kubernetes behind its cluster's gateway): what checks client certificates at the edge."""
+    kind, *_ = front_choice(m, svc)
+    if kind != "servers":
+        return kind == "gateway"
+    spec = service_edge(m, svc, endpoints)
+    return spec is not None and spec.layer7
+
+
+def cert_forwarding(m, svc):
+    """Adapter cert_forwarding: the CertForwarding of the Application Gateway verifying a service name's client
+    certificates under its edge trust policy (the leaf in CLIENT_CERT_HEADER, from the gateway subnet's CIDR), or None
+    when none does (client_certificates.client_authentication renders it only with an anchor PEM)."""
+    p = edge_policy_for(m, svc)
+    if p is None or policy_bundle(m.d, p) is None or not gateway_fronted(m, svc):
+        return None
+    subnets = by_role(m, EDGE_SUBNET)
+    return CertForwarding(CLIENT_CERT_HEADER, CLIENT_CERT_ENCODING, "leaf",
+                          tuple(values(subnets[0], "ciamCidr")) if subnets else ())
+
+
 def _pools(m, endpoints):
     """{server role: (load balancer backend pool IDs, Application Gateway backend pool IDs)} (references) of the
     service names that reach a role here: the pools its compute groups' instances join."""
@@ -217,6 +243,7 @@ def terraform_parts(m, services):
            *forwarding_rules(m), *render_trails(m), *render_workspaces(m),
            *(render_log_collection(m, services) if services else ()),
            *(comment(note_comment(n)) for n in (log_collection_notes(m, services) if services else ())),
+           *render_siem_export(m, services),
            *containers, *(comment(note_comment(n)) for n in (container_log_notes(m, services) if services else ())),
            *render_alerts(m), *render_sentinel(m),
            *render_tests(m, endpoints), *jobs,
@@ -296,10 +323,13 @@ def render_notes(m, services):
             *audit_notes(m), *discovery_notes(m), *suppression_notes(m), *guardrail_notes(m), *alert_notes(m),
             *workspace_notes(m), *sentinel_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m),
             *firewall_notes(m),
+            *client_certificate_notes(m, tuple(s for s in of_class(m, "ciamServiceName")
+                                               if gateway_fronted(m, s, endpoints))),
             *budget_notes(m), *((fips_note(m),) if fips_note(m) else ()), *forwarder_notes(m), *backup_notes(m),
             *database_notes(m), *external_id_notes(m), *domain_service_notes(m), *volume_notes(m),
             *group_notes(m),
             *inspection_notes(m, endpoints),
             *frontdoor_notes(m, endpoints), *quota_notes(m), *network_notes(m, endpoints), *plumbing_notes(m),
             *placed_notes(m, *terraform_parts(m, services)[:2]),
-            *((*log_collection_notes(m, services), *container_log_notes(m, services)) if services else ()))
+            *((*log_collection_notes(m, services), *container_log_notes(m, services),
+               *siem_export_notes(m, services)) if services else ()))

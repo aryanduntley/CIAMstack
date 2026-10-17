@@ -59,6 +59,14 @@ An index reads as days searchable from `frozenTimePeriodInSecs` (whole days; a r
 - Retention days are a ceiling, not a guarantee: a bucket freezes only when all its events are older, and a size limit (`maxTotalDataSizeMB`, set on every index by default) can freeze it sooner. The `splunk/rest` importer names the size limit of each index the record holds; the record doesn't model it.
 - Splunk Cloud Platform: `archiver.*` (Dynamic Data Active Archive) is read where the management API exposes it, which isn't verified on every stack; a self-storage archive (DDSS) keeps data in the customer's bucket, whose retention the record holds on that bucket, not here. The Admin Config Service is not used (listing indexes there needs `indexes_edit`).
 - Detections are rendered from the search each environment records; nothing translates one SIEM's search into another's, and the products don't declare detections yet (a follow-up). Enterprise Security correlation searches (`action.correlationsearch.*`, notables, risk) are not rendered.
-- Forwarding from the clouds' log services (CloudWatch subscription to Firehose to HEC, Event Hubs, Pub/Sub) and from Kubernetes isn't rendered: a route whose files live on servers ships through the Universal Forwarder; container output is a blocker note.
+- **Containers on Kubernetes** (milestone 109, task 575, `kubernetes.py`): per cluster running a role whose containers a route ships to a Splunk index, `kubernetes/splunk-otel-collector/<cluster>-values.yaml` for the Splunk OpenTelemetry Collector chart 0.162.1:
+  - the cluster's name and distribution (EKS, AKS or GKE, from the cloud's provider);
+  - the index's HEC (`ciamIntakeUrl` + `/services/collector/event`) and the index;
+  - logs only;
+  - container logs filtered to the routed roles' namespaces (a `filter` operator on `resource["k8s.namespace.name"]`, which the chart's container parser sets from each log file's path);
+  - `secret.create: false` with Secret `splunk-otel-collector-hec`, so the token is never in the values.
+
+  Installing the chart and filling the Secret (key `splunk_platform_hec_token`) from the reference the index's `ciamCredentialRole` names are actions. A cluster whose routes ship to more than one index, or an index without an intake URL or credential, is a blocker. Every container in those namespaces is shipped, sidecars included (a note). Checked with `helm template` against the chart's values schema.
+- Forwarding from the clouds' log services is the provider adapters' (milestone 109): a log destination's `ciamForwardsToRole` naming a Splunk index makes the AWS adapter render CloudWatch -> Firehose -> HEC (`ciamIntakeUrl`, the token from the secret `ciamCredentialRole` references: `{"hec_token": ...}`, never in the render or state). Pub/Sub (Google Cloud) isn't rendered.
 - Normalization (CIM) is the Splunk team's (add-ons, `props.conf`); the record holds no field mapping.
 - Splunk's availability in a government cloud (FedRAMP, IL5) is the operator's authorization package to establish; this add-on says nothing about it.

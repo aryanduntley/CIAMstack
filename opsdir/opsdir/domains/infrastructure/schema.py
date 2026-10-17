@@ -98,14 +98,40 @@ ATTRIBUTES = (
     AttributeDef(700, 'ciamRunningState', enum_type(RUNNING_STATES), 'observed', True,
                  "Where a firewall manager's running configuration, read back, holds this rule: committed (a "
                  "manager's, such as Panorama: its delivery to the firewalls unconfirmed), deployed (a firewall's "
-                 "own), disabled (there, but switched off), missing (the record holds it, the running configuration "
-                 "doesn't)"),
+                 "own; on a manager whose firewalls were read, every firewall it pushes to runs it), partial (some of "
+                 "them don't), disabled (there, but switched off), missing (the record holds it, the running "
+                 "configuration doesn't); on a rule observation, what one managed firewall runs"),
     AttributeDef(701, 'ciamRunningFact', 'string', 'observed', False,
                  "What a firewall rule, read back running, does that the rule's own attributes can't hold: "
                  "'<key> <value>'; record-owned drift (action deny, log-end no, destination 10.0.1.9/32, "
                  "description <text>, source or service it can't resolve) and the network team's settings that "
                  "limit what it admits (negate-source yes, schedule <name>, rulebase <where>)",
                  (("X-PATTERN", RUNNING_FACT),)),
+    # what each firewall a manager pushes to runs (running.py): the firewall, and per rule an observation
+    AttributeDef(948, 'ciamDeviceName', 'string', 'observed', True,
+                 "A managed firewall's host name, as its manager lists it"),
+    AttributeDef(949, 'ciamDeviceContext', 'string', 'observed', False,
+                 "A virtual firewall context of a managed firewall its manager pushes policy to, in the vendor's "
+                 'naming (a PAN-OS virtual system vsys1, a FortiGate VDOM)'),
+    AttributeDef(950, 'ciamDeviceConnected', 'bool', 'observed', True,
+                 'Whether a managed firewall is connected to its manager, as the manager says'),
+    AttributeDef(951, 'ciamSoftwareVersion', 'string', 'observed', True,
+                 "The software version a managed firewall runs, as its manager lists it"),
+    AttributeDef(952, 'ciamHaState', 'string', 'observed', True,
+                 "A managed firewall's high-availability state as its manager lists it, with its peer: "
+                 "'active, peer <serial>'"),
+    AttributeDef(953, 'ciamPolicySync', 'string', 'observed', True,
+                 "Whether the policy a manager pushed is what a managed firewall runs, in the manager's words "
+                 "(in sync, out of sync)"),
+    AttributeDef(954, 'ciamHitCount', 'int', 'observed', True,
+                 'How many sessions a rule has matched on a firewall since counting began (ciamCountedSince)'),
+    AttributeDef(955, 'ciamFirstHit', 'time', 'observed', True,
+                 'When a rule first matched a session on a firewall'),
+    AttributeDef(956, 'ciamLastHit', 'time', 'observed', True,
+                 'When a rule last matched a session on a firewall'),
+    AttributeDef(957, 'ciamCountedSince', 'time', 'observed', True,
+                 "When a firewall began counting a rule's hits: the later of its counters' last reset and the rule's "
+                 'creation'),
     AttributeDef(36, 'ciamInterconnectKind', 'string', 'binding', True,
                  'Cross-environment link, in words (site-to-site VPN run by the landing zone); ciamLinkKind says '
                  'which kind it is'),
@@ -205,6 +231,17 @@ CLASSES = (
              ('ciamProtocol', 'ciamAllowsConsumer', 'ciamRulePriority', 'ciamPolicyRole', 'ciamManagedBy',
               'ciamRunningState', 'ciamRunningFact'),
              'Inbound allow rule'),
+    ClassDef(204, 'ciamManagedFirewall', 'ciamObject', 'STRUCTURAL', ('cn',),
+             ('ciamDeviceName', 'ciamDeviceContext', 'ciamApplianceScope', 'ciamDeviceConnected', 'ciamSoftwareVersion',
+              'ciamHaState', 'ciamPolicySync'),
+             "A firewall a manager appliance pushes the environment's rules to (cn: its serial number; a child of "
+             "the manager's ciamAppliance), observed: its name, the virtual contexts and device group it gets, "
+             "whether it is connected and in sync, its software version and high-availability peer"),
+    ClassDef(205, 'ciamRuleObservation', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamRunningState'),
+             ('ciamDeviceContext', 'ciamHitCount', 'ciamFirstHit', 'ciamLastHit', 'ciamCountedSince'),
+             "What one managed firewall runs of one of the environment's firewall rules (cn: '<rule>/<context>'; a "
+             "child of the ciamManagedFirewall), observed: deployed, disabled or missing in the policy pushed to it, "
+             "and its hit counts"),
     ClassDef(12, 'ciamEgress', 'ciamBinding', 'STRUCTURAL', ('ciamCidr',),
              ('ciamNatAllocation', 'ciamZone', 'ciamManagedBy'),
              'Outbound (NAT) addresses our services send from'),

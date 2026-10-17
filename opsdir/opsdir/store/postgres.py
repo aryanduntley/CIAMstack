@@ -108,7 +108,7 @@ def entry_rows(canon, records):
 
 def _modify_list(cur, op, vals):
     if op == "add":
-        return cur + [v for v in vals if v not in cur]
+        return [*cur, *(v for v in vals if v not in cur)]
     if op == "replace":
         return list(vals)
     if op == "delete":

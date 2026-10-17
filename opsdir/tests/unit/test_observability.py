@@ -293,3 +293,22 @@ def test_total_days_falls_back_to_the_searchable_days_and_reads_as_reports_write
 def one_role_of(d, env):
     from opsdir.core.environment import one_role
     return one_role(env_model(d, env), "audit-logs")
+
+
+def test_entity_mappings_need_a_rows_detection_and_an_identifier_their_entity_has():
+    from opsdir.domains.observability.siem import detection_mode, entity_mappings
+    counted = _detection(BETA, "login-failures") + "ciamEntityMapping: account name=UserPrincipalName\n"
+    rows = (_binding(BETA, "det-spray", "ciamAlarmBinding", "det-spray",
+                     "ciamProviderRef: saved-search:spray\nciamRealizes: login-failures\nciamLogDestinationRole: siem\n"
+                     "ciamMetric: index=ciam_security | stats count by user, src\nciamDetectionMode: rows\n"
+                     "ciamEntityMapping: account name=user\nciamEntityMapping: ip hostname=src\n"))
+    d = _with(BASE, _siem(BETA), counted, rows)
+    texts = [t for _, t, _ in _plan(d, check_siem).blockers]
+    assert texts == [
+        "beta/prod's detection `det-login-failures` maps entities but counts events (ciamDetectionMode count): its "
+        "results hold no rows to name them; make it a rows detection (a search returning one row per finding) or "
+        "drop the mappings.",
+        "beta/prod's detection `det-spray` maps ip by `hostname`, an identifier ip doesn't have (address)."]
+    spray = next(b for b in detections(env_model(d, "beta/prod")) if b.dn.startswith("cn=det-spray,"))
+    assert detection_mode(spray) == "rows"
+    assert entity_mappings(spray) == (("account", "name", "user"), ("ip", "hostname", "src"))

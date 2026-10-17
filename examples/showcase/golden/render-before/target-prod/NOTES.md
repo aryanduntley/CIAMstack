@@ -41,14 +41,14 @@
 ### check jobs (Monitoring)
 
 - **What:** whoever may start one can override its image, command and environment and use its identity and secrets (Microsoft's jobs documentation): keep that right to identities trusted with them; the built-in Container Apps Jobs Operator and Contributor roles can also read the jobs' secrets
-- **Where:** terraform/main.tf:2119; role assignments on target/prod's jobs
+- **Where:** terraform/main.tf:2120; role assignments on target/prod's jobs
 - **Who:** ciam-platform
 - **How:** Give operators a custom role with only Microsoft.App/jobs/read, jobs/start/action, jobs/stop/action, jobs/stop/execution/action, jobs/executions/read, jobs/execution/read and Microsoft.App/managedEnvironments/read (not the Microsoft.App/jobs/*/action wildcard), assigned only to those trusted with the jobs' identities
 
 ### subnet snet-checks (Network)
 
 - **What:** must be delegated to Microsoft.App/environments and hold nothing else before the checks' Container Apps environment is applied
-- **Where:** terraform/main.tf:2094; virtual network of target/prod
+- **Where:** terraform/main.tf:2095; virtual network of target/prod
 - **Who:** ciam-platform
 - **How:** Have the network's keeper delegate subnet snet-checks to Microsoft.App/environments (and move anything else out of it), then apply
 
@@ -64,7 +64,7 @@
 ### log destination siem (Logs)
 
 - **What:** keeps logs 365 days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's retention unless set by hand
-- **Where:** terraform/main.tf:1840; target/prod
+- **Where:** terraform/main.tf:1841; target/prod
 - **Who:** ciam-platform
 - **How:** Set the total retention of the workspace's other tables that must keep logs as long, by hand
 
@@ -77,14 +77,14 @@
 ### check jobs (Monitoring)
 
 - **What:** the first runs may fail to post their results (403) until Azure has propagated each job's identity's Monitoring Metrics Publisher role (minutes)
-- **Where:** terraform/main.tf:2121; Application Insights of target/prod
+- **Where:** terraform/main.tf:2122; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** If the first runs' availability results are missing, wait for the role assignment to propagate; nothing to change
 
 ### check jobs (Monitoring)
 
 - **What:** their results are posted as Microsoft.ApplicationInsights.Availability items with an Entra token, a form not yet confirmed against a live Application Insights
-- **Where:** terraform/main.tf:2123; Application Insights of target/prod
+- **Where:** terraform/main.tf:2124; Application Insights of target/prod
 - **Who:** ciam-platform
 - **How:** After the first runs, confirm their results appear in Application Insights (availabilityResults); if not, report it with the job's log
 

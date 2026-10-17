@@ -14,11 +14,13 @@ topics and Event Hubs per namespace, email domains per Communication Services em
 services themselves only the collector reads, _work/); AKS clusters (az aks list holds every node pool), Event Grid
 topics; then monitoring: metric and log query alerts, action groups, Log Analytics workspaces, Application Insights
 standard web tests, Container Apps jobs (the scripted checks), the subscription's policy exemptions and Defender for
-Cloud alert suppression rules; Defender for Cloud's plans, the machines' vulnerability assessment setting (az rest:
-no az command reads it; none set leaves its file out), continuous exports, and the consumption budgets of the
-subscription and the resource group (az rest: az consumption is in preview). VPN connections, action groups (their
-receivers: webhook and Logic App URLs can carry tokens), web tests (their request headers), Container Apps jobs (their
-environment variables and secrets) and continuous exports (an Event Hub's connection string, a Logic App's URI) are
+Cloud alert suppression rules; per workspace, Microsoft Sentinel's onboarding and analytics rules (az rest, API
+2025-09-01: the sentinel extension is experimental); Defender for Cloud's plans, the machines' vulnerability
+assessment setting (az rest: no az command reads it; none set leaves its file out), continuous exports, and the
+consumption budgets of the subscription and the resource group (az rest: az consumption is in preview). VPN
+connections, action groups (their receivers: webhook and Logic App URLs can carry tokens), web tests (their request
+headers), Container Apps jobs (their environment variables and secrets) and continuous exports (an Event Hub's
+connection string, a Logic App's URI) are
 projected to what the importer reads, so those are never fetched; Key Vault secrets are listed by name only, never
 shown.
 
@@ -50,6 +52,7 @@ AUTOMATION_PROJECTION = ("[].{id: id, name: name, type: type, sources: sources |
                          "workspaceResourceId, eventHubResourceId: eventHubResourceId, logicAppResourceId: "
                          "logicAppResourceId}}")
 VA_API, BUDGETS_API = "2023-05-01", "2026-06-01"
+SENTINEL_API = "2025-09-01"    # Microsoft.SecurityInsights' stable version (GA in Azure Government; research m109c)
 WEB_TEST_PROJECTION = ("[].{id: id, name: name, type: type, tags: tags, kind: kind, frequency: frequency, "
                        "timeout: timeout, enabled: enabled, locations: locations, "
                        "request: request && {requestUrl: request.requestUrl}}")
@@ -211,6 +214,11 @@ def _details(m, rg, done):
         *((f"rule-collection-groups-{name}.json", _az("network", "firewall", "policy", "rule-collection-group",
                                                       "list", "-g", group, "--policy-name", name))
           for group, name in _names(done, "firewall-policies.json", "resourceGroup", "name") if group and name),
+        *((f"sentinel-{kind}-{name}.json", _az("rest", "--method", "get", "--url",
+                                               f"{_arm(m)}{wid}/providers/Microsoft.SecurityInsights/{kind}"
+                                               f"?api-version={SENTINEL_API}"))
+          for wid, name in _names(done, "workspaces.json", "id", "name") if wid and name
+          for kind in ("onboardingStates", "alertRules")),
         *((f"postgres-parameters-{s}.json", _az("postgres", "flexible-server", "parameter", "list", *g,
                                                 "--server-name", s))
           for (s,) in _names(done, "postgres-servers.json", "name")),

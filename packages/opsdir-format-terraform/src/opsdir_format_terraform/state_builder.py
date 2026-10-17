@@ -20,7 +20,7 @@ from functools import reduce
 from typing import NamedTuple
 
 from .hcl import Block, TfBlock, TfFile, hcl
-from .hcl_reader import read_hcl
+from .hcl_reader import read_hcl, unquote
 
 META = frozenset({"count", "for_each", "depends_on", "lifecycle", "provider", "provisioner", "connection"})
 _STRING = re.compile(r'"(?:[^"\\]|\\.)*"', re.S)
@@ -43,7 +43,7 @@ def _raw(v):
 
 
 def _unquote(s):
-    return re.sub(r"\\(.)", r"\1", s[1:-1], flags=re.S) if _STRING.fullmatch(s) else s
+    return unquote(s) if _STRING.fullmatch(s) else s
 
 
 def synthetic(mode, type_, name, index, configured):

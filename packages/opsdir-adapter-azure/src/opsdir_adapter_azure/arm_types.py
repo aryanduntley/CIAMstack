@@ -19,6 +19,9 @@ COMPUTE, DISKS, STORAGE, POSTGRES, BACKUP = "2026-04-01", "2025-01-02", "2025-06
 # (research 2595; 2622: the Bicep type index, the newest)
 CDN, FD_WAF, DNS, PRIVATE_DNS = "2026-07-01", "2026-04-01", "2018-05-01", "2024-06-01"
 MYSQL, TM, WEBTESTS, EXEMPTIONS = "2024-12-30", "2026-09-01", "2022-06-15", "2026-01-01-preview"
+# Microsoft Sentinel's onboardingStates and alertRules: the stable version (2025-09-01; Scheduled and NRT rules GA in
+# Azure Government: research docs/research m109c, decision 3299)
+SENTINEL = "2025-09-01"
 AUTOSCALE = "2022-10-01"        # the newest autoscalesettings version the Bicep type index has (probed 2026-10-12)
 APP = "2026-07-01"              # Microsoft.App: the newest version the Bicep 0.48.1 type index has (probed 2026-10-14)
 # Container registries, Application Insights components: the newest stable versions the Bicep 0.48.1 type index has
@@ -60,14 +63,6 @@ KEPT = {
     # organization-wide Defender (5.7b): the management group's part, in the landing zone keeper's root
     "azurerm_management_group_policy_assignment": _MANAGEMENT_GROUP,
     "azurerm_management_group_policy_remediation": _MANAGEMENT_GROUP,
-    # Microsoft Sentinel (6.2e): extension resources on the workspace (Microsoft.SecurityInsights), kept in Terraform
-    # until their ARM form is translated (a follow-up)
-    "azurerm_sentinel_log_analytics_workspace_onboarding": (
-        "Microsoft Sentinel's onboarding is an extension resource on the workspace (Microsoft.SecurityInsights/"
-        "onboardingStates); its ARM form isn't translated yet"),
-    "azurerm_sentinel_alert_rule_scheduled": (
-        "a Sentinel analytics rule is an extension resource on the workspace (Microsoft.SecurityInsights/alertRules); "
-        "its ARM form isn't translated yet"),
     "azurerm_storage_object_replication": (
         "ARM sets object replication on the destination account first, in that account's resource group, and the "
         "source's policy takes the id it returns; the destination is an input the record holds no group for"),
@@ -670,6 +665,21 @@ def _gateway(f, cx):
     gateway's named parts."""
     def ref(path):
         return Custom(lambda v, c: {_REF_KEYS[path]: _self_child(c, path, c.value(v))})
+    policy = {"policy_type": "policyType", "policy_name": "policyName", "min_protocol_version": "minProtocolVersion",
+              "cipher_suites": "cipherSuites"}
+    def ssl_policy(where):
+        return Custom(lambda v, c: {"sslPolicy": obj(v[0], c, policy, f"{c.where}.{where}")})
+    def client_auth(b):
+        """An SSL profile's clientAuthConfiguration from its Terraform attributes."""
+        return {"clientAuthConfiguration": {
+            "verifyClientAuthMode": cx.value(b.get("client_authentication_mode", "Strict")),
+            "verifyClientCertIssuerDN": cx.value(b.get("verify_client_certificate_issuer_dn", False)),
+            **({"verifyClientRevocation": cx.value(b["verify_client_certificate_revocation"])}
+               if "verify_client_certificate_revocation" in b else {})}}
+    header = {"header_name": "headerName", "header_value": "headerValue"}
+    rule = {"name": "name", "rule_sequence": "ruleSequence",
+            "request_header_configuration": Custom(lambda v, c: {"actionSet": {"requestHeaderConfigurations": [
+                obj(h, c, header, f"{c.where}.rewrite_rule") for h in v]}})}
     parts = {
         "gateway_ip_configuration": ("gatewayIPConfigurations", {"subnet_id": Custom(
             lambda v, c: {"subnet": {"id": c.value(v)}})}),
@@ -686,6 +696,8 @@ def _gateway(f, cx):
             "port": "port", "protocol": "protocol", "cookie_based_affinity": "cookieBasedAffinity",
             "request_timeout": "requestTimeout", "host_name": "hostName", "probe_name": ref("probes"),
             "pick_host_name_from_backend_address": "pickHostNameFromBackendAddress",
+            "connection_draining": Custom(lambda v, c: {"connectionDraining": obj(v[0], c, {
+                "enabled": "enabled", "drain_timeout_sec": "drainTimeoutInSec"}, f"{c.where}.connection_draining")}),
             "trusted_root_certificate_names": Custom(lambda v, c: {"trustedRootCertificates": [
                 _self_child(c, "trustedRootCertificates", x) for x in c.value(v)]})}),
         "probe": ("probes", {"protocol": "protocol", "host": "host", "port": "port", "path": "path",
@@ -695,14 +707,23 @@ def _gateway(f, cx):
         "http_listener": ("httpListeners", {
             "frontend_ip_configuration_name": ref("frontendIPConfigurations"),
             "frontend_port_name": ref("frontendPorts"), "protocol": "protocol", "host_name": "hostName",
-            "ssl_certificate_name": ref("sslCertificates")}),
+            "ssl_certificate_name": ref("sslCertificates"), "ssl_profile_name": ref("sslProfiles")}),
         "request_routing_rule": ("requestRoutingRules", {
             "priority": "priority", "rule_type": "ruleType", "http_listener_name": ref("httpListeners"),
             "backend_address_pool_name": ref("backendAddressPools"),
-            "backend_http_settings_name": ref("backendHttpSettingsCollection")}),
+            "backend_http_settings_name": ref("backendHttpSettingsCollection"),
+            "rewrite_rule_set_name": ref("rewriteRuleSets")}),
         "ssl_certificate": ("sslCertificates", {"key_vault_secret_id": "keyVaultSecretId"}),
-        "trusted_root_certificate": ("trustedRootCertificates", {"key_vault_secret_id": "keyVaultSecretId"})}
-    found = {key: _named(f[tf], cx, spec, tf) for tf, (key, spec) in parts.items() if tf in f}
+        "trusted_root_certificate": ("trustedRootCertificates", {"key_vault_secret_id": "keyVaultSecretId"}),
+        "trusted_client_certificate": ("trustedClientCertificates", {"data": "data"}),
+        "ssl_profile": ("sslProfiles", {
+            "trusted_client_certificate_names": Custom(lambda v, c: {"trustedClientCertificates": [
+                _self_child(c, "trustedClientCertificates", x) for x in c.value(v)]}),
+            "ssl_policy": ssl_policy("ssl_profile.ssl_policy"), "client_authentication_mode": None,
+            "verify_client_certificate_issuer_dn": None, "verify_client_certificate_revocation": None}, client_auth),
+        "rewrite_rule_set": ("rewriteRuleSets", {"rewrite_rule": Custom(lambda v, c: {"rewriteRules": [
+            obj(r, c, rule, f"{c.where}.rewrite_rule_set") for r in v]})})}
+    found = {key: _named(f[tf], cx, spec, tf, *extra) for tf, (key, spec, *extra) in parts.items() if tf in f}
     rest = {k: v for k, v in own(f).items() if k not in parts}
     return {**found, **obj(rest, cx, {
         **BASE, "zones": "zones", "identity": Custom(_identity),
@@ -710,16 +731,15 @@ def _gateway(f, cx):
                                                 f"{c.where}.sku")}),
         "autoscale_configuration": Custom(lambda v, c: {"autoscaleConfiguration": obj(v[0], c, {
             "min_capacity": "minCapacity", "max_capacity": "maxCapacity"}, f"{c.where}.autoscale_configuration")}),
-        "ssl_policy": Custom(lambda v, c: {"sslPolicy": obj(v[0], c, {
-            "policy_type": "policyType", "policy_name": "policyName", "min_protocol_version": "minProtocolVersion",
-            "cipher_suites": "cipherSuites"}, f"{c.where}.ssl_policy")}),
+        "ssl_policy": ssl_policy("ssl_policy"),
         "firewall_policy_id": Custom(lambda v, c: {"firewallPolicy": {"id": c.value(v)}}),
         "enable_http2": "enableHttp2"})}
 
 
 _REF_KEYS = {"probes": "probe", "frontendIPConfigurations": "frontendIPConfiguration",
              "frontendPorts": "frontendPort", "sslCertificates": "sslCertificate", "httpListeners": "httpListener",
-             "backendAddressPools": "backendAddressPool", "backendHttpSettingsCollection": "backendHttpSettings"}
+             "backendAddressPools": "backendAddressPool", "backendHttpSettingsCollection": "backendHttpSettings",
+             "sslProfiles": "sslProfile", "rewriteRuleSets": "rewriteRuleSet"}
 
 
 def _waf_policy(f, cx):
@@ -861,7 +881,7 @@ def _backup_vault(f, cx):
             "datastoreType": cx.value(f["datastore_type"]), "type": cx.value(f["redundancy"])}]}
 
 
-def _vault_key(props, f, cx):
+def _backup_vault_key(props, f, cx):
     """A backup vault's customer-managed key: its encryption settings (the vault's system-assigned identity)."""
     security = props.get("securitySettings", {})
     return {**props, "securitySettings": {**security, "encryptionSettings": {
@@ -968,6 +988,22 @@ def _diagnostic(f, cx):
         "enabled_log": Custom(lambda v, c: {"logs": _logs(v, c)}),
         "metric": Custom(lambda v, c: {"metrics": [{"category": c.value(x.get("category", "AllMetrics")),
                                                     "enabled": c.value(x.get("enabled", True))} for x in v]})})
+
+
+def _scheduled_rule(f, cx):
+    """A Sentinel scheduled analytics rule: kind Scheduled, what azurerm sets, and the suppression ARM requires (off,
+    the provider's PT5H)."""
+    return {"kind": "Scheduled", "suppressionEnabled": False, "suppressionDuration": "PT5H", **obj(own(f), cx, {
+        "name": None, "log_analytics_workspace_id": None, "display_name": "displayName", "description": "description",
+        "severity": "severity", "query": "query", "query_frequency": "queryFrequency", "query_period": "queryPeriod",
+        "trigger_operator": "triggerOperator",
+        "trigger_threshold": "triggerThreshold", "enabled": "enabled", "tactics": "tactics", "techniques": "techniques",
+        "event_grouping": Custom(lambda v, c: {"eventGroupingSettings": {
+            "aggregationKind": c.value(v[0]["aggregation_method"])}}),
+        "entity_mapping": Custom(lambda v, c: {"entityMappings": [
+            {"entityType": c.value(e["entity_type"]),
+             "fieldMappings": [{"identifier": c.value(x["identifier"]), "columnName": c.value(x["column_name"])}
+                               for x in e.get("field_mapping", [])]} for e in v]})})}
 
 
 def _budget(f, cx):
@@ -1363,6 +1399,13 @@ TYPES = {
             lambda v, cx: {"enforcementMode": "Default" if v else "DoNotEnforce"}),
         "not_scopes": "notScopes", "location": "location", "identity": Custom(_identity)}, {"id": "id"}, "name",
         keep=_unknown_initiative),
+    # Microsoft Sentinel: extension resources on the workspace (the rule names the workspace, after its onboarding)
+    "azurerm_sentinel_log_analytics_workspace_onboarding": Native(
+        Arm("Microsoft.SecurityInsights/onboardingStates", SENTINEL, name=Fixed("default"), extends="workspace_id"),
+        lambda f, cx: {}, {"id": "id"}),
+    "azurerm_sentinel_alert_rule_scheduled": Native(
+        Arm("Microsoft.SecurityInsights/alertRules", SENTINEL, extends="log_analytics_workspace_id"), _scheduled_rule,
+        {"id": "id"}, "name"),
     "azurerm_monitor_diagnostic_setting": Native(Arm("Microsoft.Insights/diagnosticSettings", "2021-05-01-preview",
                                                      extends="target_resource_id"), _diagnostic, {"id": "id"},
                                                  "name"),
@@ -1405,7 +1448,7 @@ TYPES = {
                                                                    "identity[0].principal_id": "identity.principalId"},
                                                    "name", "map"),
     "azurerm_data_protection_backup_vault_customer_managed_key": Native(None, merge=Merge(
-        "data_protection_backup_vault_id", _vault_key)),
+        "data_protection_backup_vault_id", _backup_vault_key)),
     "azurerm_data_protection_backup_policy_disk": Native(Arm(
         "Microsoft.DataProtection/backupVaults/backupPolicies", BACKUP,
         Parent("vault_id", "Microsoft.DataProtection/backupVaults")), _disk_policy, {"id": "id"}, "name"),
@@ -1483,6 +1526,13 @@ TYPES = {
             "total_retention_in_days": "totalRetentionInDays",
             "column": Custom(lambda v, c: {"schema": {"name": c.value(f["name"]), "columns": [
                 {"name": c.value(x["name"]), "type": c.value(x["type"])} for x in v]}})}), {"id": "id"}, "name"),
+    # a workspace's logs exported to an existing Event Hub on their way to a SIEM (siem_export.py)
+    "azurerm_log_analytics_data_export_rule": Native(Arm(
+        "Microsoft.OperationalInsights/workspaces/dataExports", OPINSIGHTS,
+        Parent("workspace_resource_id", "Microsoft.OperationalInsights/workspaces"), fields=()), lambda f, cx: {
+            "destination": {"resourceId": cx.value(f["destination_resource_id"])},
+            "tableNames": cx.value(f["table_names"]), "enable": cx.value(f.get("enabled", True))},
+        {"id": "id"}, "name"),
     "azurerm_log_analytics_workspace_table": Native(Arm(
         "Microsoft.OperationalInsights/workspaces/tables", OPINSIGHTS,
         Parent("workspace_id", "Microsoft.OperationalInsights/workspaces"), fields=()), {

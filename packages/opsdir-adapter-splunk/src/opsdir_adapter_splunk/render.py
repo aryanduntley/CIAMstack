@@ -35,6 +35,7 @@ from opsdir.domains.observability.retention import INDEFINITE, retention_days
 from opsdir.domains.observability.siem import described, detection_index
 from opsdir.domains.observability.sources import ALL, shipments
 from .conf import write_conf
+from .kubernetes import collector_notes, render_collectors
 from .naming import APP, FORWARDER_HOME, INDEXES, SAVED_SEARCHES, index_name, kept_indexes
 
 DAY = 86400
@@ -140,12 +141,7 @@ def _route_notes(m, found):
     clashes = tuple(x for x in found if x.on == "servers" and seen[x.path] is not x
                     and index_name(seen[x.path].destination) != index_name(x.destination))
     return (
-        *(note("Logs", "blocker", f"log route {rdn_value(x.route)}", f"role {x.role}'s container output not shipped: "
-               f"its destination {one(x.destination, 'ciamBindingRole')} is a Splunk index, and this add-on renders "
-               "forwarding from servers only",
-               ("Ship the containers' output to the index another way (the Splunk team's Kubernetes collection), "
-                "or route it to a destination the cluster's cloud collects",), x.route.dn, m.label)
-          for x in found if x.on == "kubernetes"),
+        *collector_notes(m, found),
         *(note("Logs", "note", f"log route {rdn_value(x.route)}", f"{x.path} on role {x.role} is shipped whole: the "
                "Universal Forwarder doesn't filter lines by their fields, so lines of the kinds the route doesn't "
                "take reach the index too", (), x.route.dn, m.label)
@@ -199,11 +195,13 @@ def render(m, services):
     indexes, searches = kept_indexes(m), splunk_detections(m)
     if not indexes and not searches:
         return {}
+    collectors = render_collectors(m, splunk_shipments(m, services))
     notes, stanzas = render_notes(m, services), tuple(x for x in map(search_stanza, searches) if x is not None)
     return {INDEXES: write_conf(header(m, f"Splunk indexes (app {APP})", INI) + _comments(notes),
                                 tuple(index_stanza(b) for b in indexes)),
             **({SAVED_SEARCHES: write_conf(header(m, f"Splunk saved searches: the detections (app {APP})", INI),
-                                           stanzas)} if stanzas else {})}
+                                           stanzas)} if stanzas else {}),
+            **collectors}
 
 
 def sourcetype(x):

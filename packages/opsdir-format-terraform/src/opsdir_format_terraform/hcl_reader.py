@@ -44,8 +44,12 @@ def _cut(text, separator):
     return tuple((bounds[k] + 1, text[bounds[k] + 1:bounds[k + 1]]) for k in range(len(bounds) - 1))
 
 
-def _unquote(s):
-    return re.sub(r"\\(.)", r"\1", s[1:-1], flags=re.S)
+_ESCAPES = {"n": "\n", "r": "\r", "t": "\t"}
+
+
+def unquote(s):
+    """A quoted HCL string literal's text: its escapes (\\n, \\r, \\t, \\", \\\\) decoded, as hcl() writes them."""
+    return re.sub(r"\\(.)", lambda e: _ESCAPES.get(e.group(1), e.group(1)), s[1:-1], flags=re.S)
 
 
 def _fail(where, what):
@@ -61,7 +65,7 @@ def value_of(text, line=1):
     s = text.strip()
     start = line + text[:len(text) - len(text.lstrip())].count("\n")
     if _STRING.fullmatch(s) and "${" not in s:
-        return _unquote(s)
+        return unquote(s)
     if s in ("true", "false"):
         return s == "true"
     if _NUMBER.fullmatch(s):
@@ -101,7 +105,7 @@ def _top(piece, line):
     header = _HEADER.fullmatch(s)
     if not header:
         return _fail(line, f"not a block or comment: {s.splitlines()[0][:60]}")
-    labels = tuple(_unquote(lab) for lab in _STRING.findall(header.group(2)))
+    labels = tuple(unquote(lab) for lab in _STRING.findall(header.group(2)))
     return TfBlock(header.group(1), labels, _pairs(header.group(3) or "", line + 1))
 
 

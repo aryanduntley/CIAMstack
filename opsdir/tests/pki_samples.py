@@ -36,3 +36,19 @@ def private_chain(leaf="svc-cert", root="private-root", pem=CA_PEM):
             f"dn: cn={leaf},{CERTIFICATES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamCertificate\n"
             f"cn: {leaf}\nciamFingerprint: AA:BB\nciamNotAfter: 20310115000000Z\nciamCertPurpose: tls-server\n"
             f"ciamIssuer: CN=Private Root CA\n")
+
+
+def edge_trust_records(pem, store="trust-store", anchors=True, role="web", extra=""):
+    """LDIF records (no changetype) of a client-auth trust policy checked at the edge (milestone 122) accepted by role,
+    its trust store role when given, and its anchor (a root CA certificate recording pem) when anchors."""
+    cert = ("dn: cn=DoD Root CA 6,ou=certificates,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamCertificate\n"
+            "cn: DoD Root CA 6\nciamCertPurpose: ca\nciamFingerprint: " + ":".join(["AB"] * 32) + "\n"
+            "ciamNotAfter: 20530124163617Z\nciamSubject: CN=DoD Root CA 6\nciamIssuer: CN=DoD Root CA 6\n"
+            f"ciamCertificatePem:: {base64.b64encode(pem.encode()).decode()}\n")
+    return ("dn: ou=trust-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\n"
+            "ou: trust-policies\n",
+            *((cert,) if anchors else ()),
+            "dn: cn=cac-users,ou=trust-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamObject\n"
+            "objectClass: ciamTrustPolicy\ncn: cac-users\nciamTrustPurpose: client-auth\nciamTrustEnforcedAt: edge\n"
+            f"ciamAcceptedByRole: {role}\n" + (f"ciamTrustStoreRole: {store}\n" if store else "")
+            + ("ciamTrustAnchor: cn=DoD Root CA 6,ou=certificates,dc=ciam-ops\n" if anchors else "") + extra)

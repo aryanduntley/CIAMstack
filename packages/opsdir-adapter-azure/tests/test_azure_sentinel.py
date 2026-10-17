@@ -73,7 +73,8 @@ def test_the_workspace_sentinel_and_each_detection_as_a_scheduled_analytics_rule
     assert 'resource "azurerm_sentinel_alert_rule_scheduled" "det_login" {' in text
     rule = text.split('"det_login" {', 1)[1].split("\n}", 1)[0]
     for line in ('name                       = "ciam-login-failures"',
-                 "log_analytics_workspace_id = azurerm_sentinel_log_analytics_workspace_onboarding.siem.workspace_id",
+                 "log_analytics_workspace_id = azurerm_log_analytics_workspace.siem.id",
+                 "depends_on                 = [azurerm_sentinel_log_analytics_workspace_onboarding.siem]",
                  'display_name               = "login-failures"',
                  'description                = "opsdir: realizes alert rule login-failures"',
                  'severity                   = "High"', 'query_frequency            = "PT5M"',
@@ -135,3 +136,152 @@ def test_state_reads_sentinel_back_as_the_siem_index_and_its_detections():
     assert (det.kind, det.role, det.attrs, dict(det.links)) == (
         "alarm", "alarm-login-failures", {"ciamRealizes": ("login-failures",), "ciamMetric": (QUERY,)},
         {"ciamLogDestinationRole": WS})
+
+
+# ------------------------------------------------------------------ ARM / Bicep (milestone 109, task 571)
+def test_an_arm_render_deploys_sentinel_on_the_workspace_at_the_stable_api():
+    from types import SimpleNamespace
+    from opsdir_format_terraform.hcl import TfFile, ref, tf_block
+    from opsdir_adapter_azure.arm_types import arm_translation
+    rg = ref("data.azurerm_resource_group.main.name")
+    root = TfFile("", (
+        tf_block("data", ["azurerm_resource_group", "main"], [("name", "rg-a")]),
+        tf_block("resource", ["azurerm_log_analytics_workspace", "siem"], [
+            ("name", "law-ciam"), ("location", ref("data.azurerm_resource_group.main.location")),
+            ("resource_group_name", rg), ("sku", "PerGB2018"), ("retention_in_days", 90)]),
+        tf_block("resource", ["azurerm_sentinel_log_analytics_workspace_onboarding", "siem"], [
+            ("workspace_id", ref("azurerm_log_analytics_workspace.siem.id"))]),
+        tf_block("resource", ["azurerm_sentinel_alert_rule_scheduled", "det"], [
+            ("name", "ciam-login-failures"),
+            ("log_analytics_workspace_id", ref("azurerm_log_analytics_workspace.siem.id")),
+            ("depends_on", [ref("azurerm_sentinel_log_analytics_workspace_onboarding.siem")]),
+            ("display_name", "login-failures"), ("description", "opsdir: realizes alert rule login-failures"),
+            ("severity", "High"), ("query", QUERY), ("query_frequency", "PT5M"), ("query_period", "PT5M"),
+            ("trigger_operator", "GreaterThan"), ("trigger_threshold", 0), ("enabled", True)])))
+    m = SimpleNamespace(dn="env=prod,cloud=alpha,ou=environments,dc=ciam-ops", label="alpha/prod")
+    t = arm_translation(m, {"terraform/main.tf": root}, "Azure infrastructure")
+    places = {k: v for k, v in t.placements["terraform"].items() if "sentinel" in k}
+    assert len(places) == 2 and {v.kind for v in places.values()} == {"template"}  # nothing kept in Terraform
+    resources = {r.type: r for (_, k), tpl in t.templates.items() for r in tpl.resources}
+    onboarding = resources["Microsoft.SecurityInsights/onboardingStates"]
+    rule = resources["Microsoft.SecurityInsights/alertRules"]
+    assert onboarding.api_version == rule.api_version == "2025-09-01" and onboarding.name == "default"
+    assert rule.fields["kind"] == "Scheduled" and rule.name == "ciam-login-failures"
+    assert rule.scope == onboarding.scope                     # the workspace, never the onboarding
+    assert {k: rule.properties[k] for k in ("queryFrequency", "suppressionEnabled", "triggerOperator",
+                                             "triggerThreshold")} == {
+        "queryFrequency": "PT5M", "suppressionEnabled": False, "triggerOperator": "GreaterThan",
+        "triggerThreshold": 0}
+
+
+# ------------------------------------------------------------------ the Azure CLI reader (milestone 109, task 571)
+def test_the_cli_reads_sentinel_back_like_state_and_ignores_rules_it_doesnt_render():
+    from opsdir.domains.observability.alarms import condition
+    from opsdir_adapter_azure.cli import cli_resources
+    rule = next(e for e in _beta().d.entries.values() if e.dn.startswith("cn=login-failures,"))
+    si = "/providers/Microsoft.SecurityInsights"
+    texts = {
+        "workspaces.json": json.dumps([
+            {"id": WS, "name": "law-ciam-sentinel", "type": "Microsoft.OperationalInsights/workspaces",
+             "retentionInDays": 90},
+            {"id": "/subscriptions/0/resourceGroups/rg/providers/Microsoft.OperationalInsights/workspaces/plain",
+             "name": "plain", "type": "Microsoft.OperationalInsights/workspaces"}]),
+        "sentinel-onboardingStates-law-ciam-sentinel.json": json.dumps({"value": [
+            {"id": f"{WS}{si}/onboardingStates/default", "name": "default",
+             "type": "Microsoft.SecurityInsights/onboardingStates", "properties": {}}]}),
+        "sentinel-alertRules-law-ciam-sentinel.json": json.dumps({"value": [
+            {"id": RULE_ID, "name": "ciam-login-failures", "type": "Microsoft.SecurityInsights/alertRules",
+             "kind": "Scheduled", "properties": {"displayName": "login-failures",
+                                                 "description": "opsdir: realizes alert rule login-failures",
+                                                 "query": detection_query(QUERY, rule, condition(rule))}},
+            {"id": f"{WS}{si}/alertRules/builtin-fusion", "name": "builtin-fusion",
+             "type": "Microsoft.SecurityInsights/alertRules", "kind": "Fusion", "properties": {}}]}),
+        "sentinel-onboardingStates-plain.json": json.dumps({"value": []})}
+    found = {r.ref: r for r in cli_resources(texts)[0]}
+    assert found[WS].attrs["ciamDestinationKind"] == ("siem-index",)          # not flipped to a plain workspace
+    plain = next(r for ref_, r in found.items() if ref_.endswith("/workspaces/plain"))
+    assert plain.attrs["ciamDestinationKind"] == ("workspace",)
+    det = found[RULE_ID]
+    assert (det.kind, det.role, det.attrs["ciamMetric"], dict(det.links)) == (
+        "alarm", "alarm-login-failures", (QUERY,), {"ciamLogDestinationRole": WS})
+    assert not any("builtin-fusion" in ref_ for ref_ in found)
+
+
+def test_the_collector_asks_each_workspace_for_its_sentinel_parts_at_the_stable_api():
+    from opsdir_adapter_azure.collect import _details
+    done = {"workspaces.json": json.dumps([{"id": WS, "name": "law-ciam-sentinel"}])}
+    steps = dict(_details(_beta(), "rg-ciam", done))
+    for kind in ("onboardingStates", "alertRules"):
+        argv = steps[f"sentinel-{kind}-law-ciam-sentinel.json"].argv
+        assert argv[:4] == ("az", "rest", "--method", "get")
+        assert argv[argv.index("--url") + 1].endswith(
+            f"{WS}/providers/Microsoft.SecurityInsights/{kind}?api-version=2025-09-01")
+
+
+# ---------------------------------------------------------- ATT&CK and entity mappings (milestone 109, task 572)
+ROWS_QUERY = "CiamSecurity_CL | where RawData has 'FAILURE' | summarize n = count() by UserPrincipalName, IPAddress"
+SPRAY = (f"dn: cn=password-spray,{ALERT_RULES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamAlertRule\n"
+         "cn: password-spray\nciamSignal: login-failures\nciamEvaluationPeriod: 15m\nciamSeverity: sev1\n"
+         "ciamAlertRole: alerts-page\nciamAttackTactic: credential-access\nciamAttackTechnique: T1110.003\n"
+         "ciamAttackTechnique: T1078.004\n")
+ROWS = entry(BETA, "det-spray", "ciamAlarmBinding", ciamBindingRole="alarm-password-spray",
+             ciamProviderRef=f"{WS}/providers/Microsoft.SecurityInsights/alertRules/ciam-password-spray",
+             ciamRealizes="password-spray", ciamMetric=ROWS_QUERY, ciamLogDestinationRole="siem",
+             ciamDetectionMode="rows", ciamEntityMapping=("account name=UserPrincipalName", "ip address=IPAddress"))
+
+
+def _rows_model():
+    _, _, beta = model(beta=(*BINDINGS, ROWS), tree=(*TREE, SPRAY))
+    return beta
+
+
+def test_a_rows_detection_runs_as_written_one_alert_per_row_with_its_entities_and_attack_mapping():
+    m = _rows_model()
+    text = "\n\n".join(as_text(render_sentinel(m)))
+    rule = text.split('resource "azurerm_sentinel_alert_rule_scheduled" "det_spray"', 1)[1].split("\n}\n", 1)[0]
+    assert f"query                      = {json.dumps(ROWS_QUERY)}" in rule and "summarize breaching" not in rule
+    for line in ('query_frequency            = "PT15M"', 'tactics                    = ["CredentialAccess"]',
+                 'techniques                 = ["T1110", "T1078"]', 'aggregation_method = "AlertPerResult"',
+                 'entity_type = "Account"', 'identifier  = "Name"', 'column_name = "UserPrincipalName"',
+                 'entity_type = "IP"', 'identifier  = "Address"', 'column_name = "IPAddress"'):
+        assert line in rule, line
+    assert "# NOTE: alert rule password-spray: its sub-techniques T1110.003, T1078.004" in text
+
+
+def test_state_reads_a_rows_detection_back_with_its_mode_and_entities():
+    state = _state(("azurerm_sentinel_alert_rule_scheduled", "det", {
+        "id": "/rules/spray", "name": "ciam-password-spray", "log_analytics_workspace_id": WS,
+        "description": "opsdir: realizes alert rule password-spray", "query": ROWS_QUERY,
+        "entity_mapping": [{"entity_type": "Account", "field_mapping": [
+            {"identifier": "Name", "column_name": "UserPrincipalName"}]},
+            {"entity_type": "IP", "field_mapping": [{"identifier": "Address", "column_name": "IPAddress"}]}]}))
+    det = {r.ref: r for r in state_resources(state)[0]}["/rules/spray"]
+    assert det.attrs["ciamDetectionMode"] == ("rows",)
+    assert det.attrs["ciamEntityMapping"] == ("account name=UserPrincipalName", "ip address=IPAddress")
+
+
+def test_the_arm_form_carries_attack_entities_and_grouping():
+    from types import SimpleNamespace
+    from opsdir_format_terraform.hcl import Block, TfFile, ref, tf_block
+    from opsdir_adapter_azure.arm_types import arm_translation
+    root = TfFile("", (
+        tf_block("data", ["azurerm_resource_group", "main"], [("name", "rg-a")]),
+        tf_block("resource", ["azurerm_log_analytics_workspace", "siem"], [
+            ("name", "law-ciam"), ("location", ref("data.azurerm_resource_group.main.location")),
+            ("resource_group_name", ref("data.azurerm_resource_group.main.name")), ("sku", "PerGB2018")]),
+        tf_block("resource", ["azurerm_sentinel_alert_rule_scheduled", "det"], [
+            ("name", "spray"), ("log_analytics_workspace_id", ref("azurerm_log_analytics_workspace.siem.id")),
+            ("display_name", "password-spray"), ("severity", "High"), ("query", ROWS_QUERY),
+            ("query_frequency", "PT15M"), ("query_period", "PT15M"), ("trigger_operator", "GreaterThan"),
+            ("trigger_threshold", 0), ("enabled", True), ("tactics", ["CredentialAccess"]), ("techniques", ["T1110"]),
+            ("event_grouping", Block((("aggregation_method", "AlertPerResult"),))),
+            ("entity_mapping", Block((("entity_type", "Account"), ("field_mapping", Block((
+                ("identifier", "Name"), ("column_name", "UserPrincipalName")))))))])))
+    m = SimpleNamespace(dn="env=prod,cloud=alpha,ou=environments,dc=ciam-ops", label="alpha/prod")
+    t = arm_translation(m, {"terraform/main.tf": root}, "Azure infrastructure")
+    rule = next(r for (_, k), tpl in t.templates.items() for r in tpl.resources
+                if r.type == "Microsoft.SecurityInsights/alertRules")
+    assert rule.properties["tactics"] == ["CredentialAccess"] and rule.properties["techniques"] == ["T1110"]
+    assert rule.properties["eventGroupingSettings"] == {"aggregationKind": "AlertPerResult"}
+    assert rule.properties["entityMappings"] == [
+        {"entityType": "Account", "fieldMappings": [{"identifier": "Name", "columnName": "UserPrincipalName"}]}]

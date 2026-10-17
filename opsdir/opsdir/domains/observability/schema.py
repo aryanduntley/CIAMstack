@@ -4,8 +4,8 @@ rules, log routes and canaries are intent, the same in every environment; what d
 group, a paging service), what keeps logs (a log group, a workspace, a SIEM index) and the audit trail (CloudTrail, the
 Activity Log's diagnostic setting, Cloud Audit Logs' sinks) are bindings each environment gives a role."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
-from .naming import (AUDIT_EVENTS, AUDIT_SCOPES, CANARY_FLOWS, CHANNEL_KINDS, COMPARISONS, DESTINATION_KINDS, DURATION,
-                     LOG_KINDS)
+from .naming import (ATTACK_TACTICS, AUDIT_EVENTS, AUDIT_SCOPES, CANARY_FLOWS, CHANNEL_KINDS, COMPARISONS,
+                     DESTINATION_KINDS, DURATION, ENTITY_MAPPING, LOG_KINDS)
 
 PERIOD = (("X-PATTERN", DURATION),)
 
@@ -64,6 +64,31 @@ ATTRIBUTES = (
     AttributeDef(325, 'ciamMetric', 'string', 'binding', True,
                  'The metric or query an alarm a cloud runs evaluates, as the provider names it (AWS/EC2 '
                  'CPUUtilization)'),
+    # MITRE ATT&CK and what a detection's results name (milestone 109, decision 3299): vendor-neutral, every SIEM
+    # adapter renders them its own way
+    AttributeDef(958, 'ciamAttackTactic', 'enum:' + '|'.join(ATTACK_TACTICS), 'intent', False,
+                 "A MITRE ATT&CK (Enterprise) tactic an alert rule detects, by ATT&CK's short name "
+                 "(credential-access)"),
+    AttributeDef(959, 'ciamAttackTechnique', 'string', 'intent', False,
+                 'A MITRE ATT&CK technique or sub-technique an alert rule detects, by ID (T1110, T1078.004)',
+                 (("X-PATTERN", r"^T[0-9]{4}(\.[0-9]{3})?$"),)),
+    AttributeDef(960, 'ciamDetectionMode', 'enum:count|rows', 'binding', True,
+                 "How a SIEM detection's search (ciamMetric) is used: count (the default: its matching events counted "
+                 "per window against the alert rule's threshold) or rows (the search itself returns one row per "
+                 "finding, its own threshold included, so each row can name what it is about)"),
+    AttributeDef(961, 'ciamEntityMapping', 'string', 'binding', False,
+                 "What a rows detection's results are about: '<entity> <identifier>=<result column>', entity account, "
+                 "ip, host, url or application; identifier name, upn-suffix, nt-domain, sid, object-id (account), "
+                 "address (ip), hostname, dns-domain (host), url (url), app-id, name (application)",
+                 (("X-PATTERN", ENTITY_MAPPING),)),
+    # forwarding a cloud log service's logs on to a SIEM (milestone 109, decision 3301)
+    AttributeDef(962, 'ciamForwardsToRole', 'string', 'binding', True,
+                 "The binding role of the SIEM index (a log destination of kind siem-index) a cloud log destination's "
+                 "logs are forwarded on to (a CloudWatch log group through a delivery stream, a Log Analytics "
+                 "workspace through an event stream)"),
+    AttributeDef(963, 'ciamIntakeUrl', 'string', 'binding', True,
+                 "Where a SIEM index takes logs pushed to it (a Splunk HTTP Event Collector, an Elastic intake "
+                 "endpoint): https URL; its credential is the secret reference its ciamCredentialRole names"),
     AttributeDef(842, 'ciamSearchLanguage', 'vocab', 'binding', True,
                  "The language a SIEM detection's search (its ciamMetric) is written in, from the vocabulary the SIEM "
                  "adapters declare (spl, kusto, esql, kuery, ...). Not recorded: the native language of the SIEM "
@@ -90,7 +115,7 @@ ATTRIBUTES = (
 CLASSES = (
     ClassDef(62, 'ciamAlertRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamSignal', 'ciamAlertRole'),
              ('ciamTargetRole', 'ciamComparison', 'ciamThreshold', 'ciamEvaluationPeriod', 'ciamSeverity',
-              'ciamRunbookRef'),
+              'ciamRunbookRef', 'ciamAttackTactic', 'ciamAttackTechnique'),
              'What the platform is watched for: a signal on a server role, the condition that fires, how severe, '
              'who it goes to, what to do'),
     ClassDef(63, 'ciamLogRoute', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamLogKind', 'ciamLogDestinationRole'),
@@ -104,13 +129,17 @@ CLASSES = (
     ClassDef(65, 'ciamAlertChannel', 'ciamBinding', 'STRUCTURAL', ('ciamChannelKind',), ('ciamProviderRef',),
              'What delivers alerts of a role in an environment (a topic, an action group, a paging service)'),
     ClassDef(66, 'ciamLogDestination', 'ciamBinding', 'STRUCTURAL', ('ciamDestinationKind',),
-             ('ciamProviderRef', 'ciamRetentionDays', 'ciamTotalRetentionDays', 'ciamManagedBy', 'ciamArchiveRef'),
+             ('ciamProviderRef', 'ciamRetentionDays', 'ciamTotalRetentionDays', 'ciamManagedBy', 'ciamArchiveRef',
+              'ciamForwardsToRole', 'ciamIntakeUrl', 'ciamCredentialRole', 'ciamStreamRole', 'ciamStorageRef'),
              'What keeps logs of a role in an environment, and for how many days (0: kept indefinitely): searchable '
              '(ciamRetentionDays), and in all when it archives them (ciamTotalRetentionDays), the archive kept where '
-             'ciamArchiveRef says'),
+             'ciamArchiveRef says; a cloud log destination may forward its logs on to a SIEM index '
+             '(ciamForwardsToRole: through the event stream ciamStreamRole names, events it can\'t deliver kept '
+             'where ciamStorageRef says), and a SIEM index takes pushed logs at ciamIntakeUrl with the credential '
+             'ciamCredentialRole references'),
     ClassDef(67, 'ciamAlarmBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamRealizes', 'ciamNotifies', 'ciamMetric', 'ciamManagedBy', 'ciamLogDestinationRole',
-              'ciamSearchLanguage'),
+              'ciamSearchLanguage', 'ciamDetectionMode', 'ciamEntityMapping'),
              'An alarm a cloud runs in an environment: the alert rule it realizes, what it evaluates, what it '
              'notifies; a SIEM detection names the log destination (a SIEM index) its search runs on '
              '(ciamLogDestinationRole) and holds the search in ciamMetric, written in ciamSearchLanguage'),

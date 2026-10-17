@@ -13,15 +13,35 @@ raises it), a target detection searching nothing or recording no search, and log
 the target (a retention doesn't prove a hold: a SIEM expires, or an administrator deletes, what it keeps) are
 actions. Whether anything renders a SIEM index is a connector's question (connectors.observability.siem_check).
 """
-from ...core.directory import get, one, rdn_value
+from ...core.directory import get, one, rdn_value, values
 from ...core.environment import env_dn, env_model, of_class, one_role, role_named
 from ...core.findings import findings, responsible
 from .alerts import alert_rules
 from .logs import log_routes
+from .naming import ENTITY_IDENTIFIERS
 
 SIEM_INDEX = "siem-index"           # ciamDestinationKind of a SIEM's index (naming.DESTINATION_KINDS)
 REALIZES = "opsdir: realizes alert rule "       # a rendered detection's description: the rule it realizes
 UNREPORTED = "is in the record but not in what the cloud reports"     # core.inventory's notice for an unread entry
+
+
+def detection_mode(b):
+    """How detection b's search is used: count (the default: matching events counted per window) or rows (one row
+    per finding)."""
+    return one(b, "ciamDetectionMode") or "count"
+
+
+def entity_mappings(b):
+    """((entity, identifier, result column), ...) of detection b's ciamEntityMapping values, in the record's order."""
+    return tuple((head.split(" ", 1)[0], head.split(" ", 1)[1], column)
+                 for v in values(b, "ciamEntityMapping") for head, _, column in (v.partition("="),) if " " in head)
+
+
+def forwardings(m):
+    """((cloud log destination, SIEM index destination or None), ...) of environment m: each log destination that
+    forwards its logs on (ciamForwardsToRole), with the destination that role binds (None: unbound)."""
+    return tuple((b, one_role(m, one(b, "ciamForwardsToRole"))) for b in of_class(m, "ciamLogDestination")
+                 if one(b, "ciamForwardsToRole"))
 
 
 def described(rule):
@@ -123,9 +143,37 @@ def _held(ctx):
             if one(r, "ciamLegalHold") == "TRUE" and is_siem(one_role(ctx.dst, one(r, "ciamLogDestinationRole")))]
 
 
+def _mapped(ctx):
+    """Blockers for entity mappings a SIEM can't honour: on a count detection (its results are counts, not rows naming
+    anything), or naming an identifier its entity type doesn't have."""
+    envs = {m.dn.lower(): m for m in (ctx.src, ctx.dst)}.values()
+    return [("Monitoring", f"{m.label}'s detection `{rdn_value(b)}` {why}.", responsible(ctx.d, b, m.env))
+            for m in envs for b in detections(m) for why in (
+                *(["maps entities but counts events (ciamDetectionMode count): its results hold no rows to name them; "
+                   "make it a rows detection (a search returning one row per finding) or drop the mappings"]
+                  if entity_mappings(b) and detection_mode(b) == "count" else []),
+                *(f"maps {entity} by `{identifier}`, an identifier {entity} doesn't have "
+                  f"({', '.join(ENTITY_IDENTIFIERS[entity])})"
+                  for entity, identifier, _ in entity_mappings(b) if identifier not in ENTITY_IDENTIFIERS[entity]))]
+
+
+def _forwarded(ctx):
+    """Actions for forwarding that reaches no SIEM index: the role unbound, or bound to another kind."""
+    envs = {m.dn.lower(): m for m in (ctx.src, ctx.dst)}.values()
+    return [("Logs", f"{m.label}'s log destination `{rdn_value(b)}` forwards its logs to "
+             f"`{one(b, 'ciamForwardsToRole')}`, which {m.label} " + (
+                 "doesn't bind" if to is None else f"binds to `{rdn_value(to)}`, not a SIEM index") +
+             ": nothing is forwarded. Bind the role to the SIEM's index (a log destination of kind siem-index).",
+             responsible(ctx.d, b, m.env), None)
+            for m in envs for b, to in forwardings(m) if to is None or not is_siem(to)]
+
+
 def check_siem(ctx):
     """Detections the source's SIEM runs that the target records none of, target detections searching nothing or
-    recording no search, and logs under legal hold a SIEM keeps in the target are actions."""
+    recording no search, logs under legal hold a SIEM keeps in the target, and log destinations forwarding to a role
+    that isn't a SIEM index are actions; entity mappings on a count
+    detection, or by an identifier the entity type doesn't have, are blockers."""
     rules = {rdn_value(r): r for r in alert_rules(ctx.d)}
-    actions = [*_lost(ctx, rules), *_broken(ctx, rules), *_held(ctx)]
-    return findings(actions=actions) if actions else findings()
+    actions = [*_lost(ctx, rules), *_broken(ctx, rules), *_held(ctx), *_forwarded(ctx)]
+    blockers = _mapped(ctx)
+    return findings(actions=actions, blockers=blockers) if actions or blockers else findings()

@@ -10,6 +10,7 @@ from .cloudformation import CLOUDFORMATION
 from .inventory import TERRAFORM_STATE
 from .private_ca import PRIVATE_CA_IMPORTER
 from .ingress import gateway_plug
+from .mtls import cert_forwarding
 from .kubernetes import SECRET_DELIVERY, workload_identity
 from .log_agent import host_files
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
@@ -60,4 +61,4 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                               ReadBack("cloudformation", "cloudformation/*", "cloudformation/", "{environment}/", True,
                                        rendered_stacks, intent=True)),
                   notes=render_notes, renders_synthetic_checks=True, managed_identity=MANAGED,
-                  managed_directory=MANAGED_DIRECTORY)
+                  managed_directory=MANAGED_DIRECTORY, cert_forwarding=cert_forwarding)

@@ -161,3 +161,43 @@ def test_reports_list_bundles_and_policies():
     row = policy_rows(d)[0]
     assert row[:4] == ("cac-users", "client-auth", "Root A (2041-06-14)", "dod")
     assert row[7:] == ("ocsp on failure cached (24 h)", "gateway", "pki-team")
+
+
+# ------------------------------------------------------------------ consumers (milestone 122, task 576)
+def test_the_bundle_holds_the_anchors_then_the_subordinates_chaining_to_them():
+    from opsdir.domains.pki.trust import bundle_certificates, policy_bundle
+    issuing = ("Issuing A1", {**_member("Issuing A1", "Root A")[1], "ciamCertificatePem":
+                              "-----BEGIN CERTIFICATE-----\nMIIC\n-----END CERTIFICATE-----\n"})
+    d = _with_bundle(_base(_policy()), [_member("Root A"), _member("Root B"), issuing])
+    d = _approve(d, _check(d), "Root A")
+    policy = get(d, POLICY)
+    assert [one(c, "cn") for c in bundle_certificates(d, policy)] == ["Root A", "Issuing A1"]   # not Root B's
+    assert policy_bundle(d, policy).count("-----BEGIN CERTIFICATE-----") == 2
+
+
+def test_each_anchor_has_its_own_chain_for_consumers_taking_chains():
+    from opsdir.domains.pki.trust import anchor_chains
+    d = _with_bundle(_base(_policy()), [_member("Root A"), _member("Root B"), _member("Issuing A1", "Root A")])
+    d = _approve(d, _check(d), "Root A")
+    d = _approve(d, _check(d), "Root B")
+    chains = [(one(a, "cn"), [one(c, "cn") for c in subs]) for a, subs in anchor_chains(d, get(d, POLICY))]
+    assert chains == [("Root A", ["Issuing A1"]), ("Root B", [])]
+
+
+def test_an_edge_policy_needs_a_service_name_in_front_of_its_roles():
+    from network_fixtures import ALPHA, entry, model
+    from opsdir.domains.pki.trust import accepting_services
+    tree = ("dn: ou=trust-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\n"
+            "ou: trust-policies\n",
+            f"dn: {POLICY}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamTrustPolicy\ncn: cac-users\n"
+            "ciamTrustPurpose: client-auth\nciamTrustEnforcedAt: edge\nciamAcceptedByRole: ds\n"
+            "ciamRevocationMode: ocsp\nciamRevocationFailure: reject\n")
+    d, alpha, beta = model(tree=tree)
+    texts = [a[1] for a in check_trust(PlanContext(d, alpha, beta, None, AS_OF, {}, {}, ())).actions]
+    assert any("checked at the edge, but alpha/prod has no service name in front of `ds`" in t for t in texts)
+    svc = entry(ALPHA, "ldaps", "ciamServiceName", ciamBindingRole="ldaps", ciamFqdn="ldaps.example.test",
+                ciamTargetRole="ds", ciamPort="636")
+    d, alpha, beta = model(alpha=(svc,), tree=tree)
+    assert [one(s, "cn") for s in accepting_services(alpha, get(d, POLICY))] == ["ldaps"]
+    texts = [a[1] for a in check_trust(PlanContext(d, alpha, beta, None, AS_OF, {}, {}, ())).actions]
+    assert not any("alpha/prod has no service name" in t for t in texts)

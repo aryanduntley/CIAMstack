@@ -358,6 +358,13 @@ ATTRIBUTES = (
     AttributeDef(946, 'ciamTrustPurpose', 'enum:client-auth|partner-signing|server-tls', 'intent', True,
                  "What a trust policy accepts certificates for: authenticating users or partners (CAC/PIV, ECA), "
                  'verifying partners\' signatures, or trusting the servers the platform calls'),
+    AttributeDef(964, 'ciamTrustEnforcedAt', 'enum:edge|product', 'intent', True,
+                 "Where a trust policy's certificates are checked: edge (the load balancer in front of its accepting "
+                 "roles validates the client certificate and passes it on in a header only it may set) or product "
+                 "(TLS reaches the product, which validates; the default)"),
+    AttributeDef(965, 'ciamTrustStoreRole', 'string', 'intent', True,
+                 "The binding role of the object store a consumer reads a trust policy's bundle from where it takes "
+                 "it from storage (an AWS load balancer's trust store reads it from S3)"),
     AttributeDef(947, 'ciamDeclinedAnchor', 'string', 'intent', False,
                  "SHA-256 fingerprint of a root in a bundle a trust policy follows that a person decided the policy "
                  "doesn't accept (a decommissioned root, a test hierarchy): no longer proposed as an anchor"),
@@ -470,7 +477,7 @@ CLASSES = (
     ClassDef(203, 'ciamTrustPolicy', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTrustPurpose'),
              ('ciamTrustAnchor', 'ciamTrustBundleRef', 'ciamAllowedPolicyOid', 'ciamRequiredEku',
               'ciamIdentityMapping', 'ciamRevocationMode', 'ciamRevocationFailure', 'ciamRevocationCacheHours',
-              'ciamAcceptedByRole', 'ciamDeclinedAnchor'),
+              'ciamAcceptedByRole', 'ciamDeclinedAnchor', 'ciamTrustEnforcedAt', 'ciamTrustStoreRole'),
              "Which certificates the platform accepts for one purpose (under ou=trust-policies): the approved "
              "anchors, the bundles it follows, the certificate policies and key usages it requires, how an accepted "
              "certificate maps to an account, how revocation is checked and what happens when it can't be, and the "

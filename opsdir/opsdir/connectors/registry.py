@@ -249,6 +249,14 @@ def gateway_plug_of(m, gateway, service, installed=ADAPTERS):
     return hook(m, gateway, service) if hook else None
 
 
+def cert_forwarding_of(m, svc, installed=ADAPTERS):
+    """The CertForwarding of the load balancer fronting service name svc in environment m, from the first installed
+    adapter that applies to m and declares one (its cloud's provider adapter), or None (nothing in front verifies client
+    certificates, or no adapter says how it forwards them)."""
+    hook = next((a.cert_forwarding for a in installed if a.cert_forwarding and a.applies and a.applies(m)), None)
+    return hook(m, svc) if hook else None
+
+
 def secret_delivery_of(scheme, installed=ADAPTERS):
     """The SecretDelivery of the installed adapter owning a ref-uri scheme, or None."""
     return next((a.secret_delivery[scheme] for a in installed if a.secret_delivery and scheme in a.secret_delivery),
@@ -324,7 +332,8 @@ def services(installed=ADAPTERS, targets=None):
                     render_targets=partial(chosen_for, dict(targets or {})),
                     mounts_secrets=partial(mounts_secrets_of, installed=installed),
                     installed_logs=tuple(s for a in installed for s in a.logs),
-                    siem_keeper=partial(siem_keeper_of, installed=installed))
+                    siem_keeper=partial(siem_keeper_of, installed=installed),
+                    cert_forwarding=partial(cert_forwarding_of, installed=installed))
 
 
 def product_of(adapter):

@@ -12,6 +12,9 @@ incident routes). Pure.
   az policy exemption list                      Microsoft.Authorization/policyExemptions
   az security alerts-suppression-rule list      Microsoft.Security/alertsSuppressionRules (as the azapi resource the
                                                 render writes: azurerm has none)
+  az rest .../Microsoft.SecurityInsights/onboardingStates, alertRules (per workspace, API 2025-09-01): Sentinel turned
+                                                on for the workspace, and its scheduled analytics rules (other kinds
+                                                aren't the render's)
 Fields are read in any case: an ARM template says a web test's Frequency, the CLI its frequency.
 """
 import json
@@ -27,7 +30,11 @@ WEB_TESTS = "microsoft.insights/webtests"
 JOBS = "microsoft.app/jobs"
 EXEMPTIONS = "microsoft.authorization/policyexemptions"
 SUPPRESSION_RULES = ALERT_RULES.lower()
-READ = (METRIC_ALERTS, QUERY_ALERTS, ACTION_GROUPS, WORKSPACES, WEB_TESTS, JOBS, EXEMPTIONS, SUPPRESSION_RULES)
+ONBOARDING = "microsoft.securityinsights/onboardingstates"
+ANALYTICS_RULES = "microsoft.securityinsights/alertrules"
+READ = (METRIC_ALERTS, QUERY_ALERTS, ACTION_GROUPS, WORKSPACES, WEB_TESTS, JOBS, EXEMPTIONS, SUPPRESSION_RULES,
+        ONBOARDING, ANALYTICS_RULES)
+_SECURITY_INSIGHTS = "/providers/microsoft.securityinsights/"
 _RULE_FIELDS = ("alertType", "state", "reason", "comment", "expirationDateUtc", "suppressionAlertsScope")
 
 
@@ -107,6 +114,26 @@ def _job(j):
             "registry": [{"server": s} for s in servers if s]}
 
 
+def _workspace_of(item_id):
+    """The workspace ID a Sentinel extension resource's ID is under (its part before the SecurityInsights provider)."""
+    i = (item_id or "").lower().find(_SECURITY_INSIGHTS)
+    return item_id[:i] if i > 0 else None
+
+
+def _analytics_rule(r):
+    """A scheduled analytics rule as az rest returns it (properties nested) or flattened."""
+    props = arm_field(r, "properties") or {}
+    field = lambda name: arm_field(props, name) if arm_field(props, name) is not None else arm_field(r, name)  # noqa: E731
+    return {"id": r.get("id"), "name": r.get("name"), "description": field("description"),
+            "display_name": field("displayName"), "query": field("query"),
+            "log_analytics_workspace_id": _workspace_of(r.get("id")),
+            "entity_mapping": [{"entity_type": arm_field(e, "entityType"),
+                                "field_mapping": [{"identifier": arm_field(f, "identifier"),
+                                                   "column_name": arm_field(f, "columnName")}
+                                                  for f in arm_field(e, "fieldMappings") or []]}
+                               for e in field("entityMappings") or []]}
+
+
 def monitor_items(items):
     """(azurerm/azapi type, attributes) pairs of the monitoring and suppression items among (kind, item) pairs."""
     return [*(("azurerm_monitor_metric_alert", _metric_alert(a)) for a in _of(items, METRIC_ALERTS)),
@@ -121,4 +148,9 @@ def monitor_items(items):
               if str(arm_field(t, "kind") or "standard").lower() == "standard"),
             *(("azurerm_container_app_job", _job(j)) for j in _of(items, JOBS)),
             *(("azurerm_subscription_policy_exemption", _exemption(e)) for e in _of(items, EXEMPTIONS)),
-            *(("azapi_resource", _suppression_rule(r)) for r in _of(items, SUPPRESSION_RULES))]
+            *(("azapi_resource", _suppression_rule(r)) for r in _of(items, SUPPRESSION_RULES)),
+            *(("azurerm_sentinel_log_analytics_workspace_onboarding", {"id": o.get("id"),
+                                                                       "workspace_id": _workspace_of(o.get("id"))})
+              for o in _of(items, ONBOARDING) if _workspace_of(o.get("id"))),
+            *(("azurerm_sentinel_alert_rule_scheduled", _analytics_rule(r)) for r in _of(items, ANALYTICS_RULES)
+              if str(r.get("kind") or "").lower() == "scheduled")]

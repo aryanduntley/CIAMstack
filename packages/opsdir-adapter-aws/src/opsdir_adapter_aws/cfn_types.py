@@ -163,6 +163,47 @@ def _hub_association(f, cx):
 
 # ------------------------------------------------------------------ IAM
 
+def _firehose_s3(b, c):
+    return {"BucketARN": c.value(b["bucket_arn"]), "RoleARN": c.value(b["role_arn"]),
+            **({"Prefix": c.value(b["prefix"])} if "prefix" in b else {})}
+
+
+def _firehose_secret(b, c):
+    return {"Enabled": c.value(b.get("enabled", True)), "SecretARN": c.value(b["secret_arn"]),
+            "RoleARN": c.value(b["role_arn"])}
+
+
+def _firehose_processing(b, c):
+    return {"Enabled": c.value(b.get("enabled", True)), "Processors": [
+        {"Type": c.value(p["type"]), "Parameters": [{"ParameterName": c.value(x["parameter_name"]),
+                                                     "ParameterValue": c.value(x["parameter_value"])}
+                                                    for x in p.get("parameters", [])]}
+        for p in b.get("processors", [])]}
+
+
+def _splunk_destination(v, c):
+    """A Firehose stream's splunk_configuration as SplunkDestinationConfiguration (no HECToken: the secret holds it)."""
+    b = v[0]
+    return {"SplunkDestinationConfiguration": {
+        "HECEndpoint": c.value(b["hec_endpoint"]), "HECEndpointType": c.value(b["hec_endpoint_type"]),
+        "S3BackupMode": c.value(b["s3_backup_mode"]), "S3Configuration": _firehose_s3(b["s3_configuration"][0], c),
+        "SecretsManagerConfiguration": _firehose_secret(b["secrets_manager_configuration"][0], c),
+        **({"ProcessingConfiguration": _firehose_processing(b["processing_configuration"][0], c)}
+           if "processing_configuration" in b else {})}}
+
+
+def _http_destination(v, c):
+    """A Firehose stream's http_endpoint_configuration as HttpEndpointDestinationConfiguration (no AccessKey)."""
+    b = v[0]
+    return {"HttpEndpointDestinationConfiguration": {
+        "EndpointConfiguration": {"Url": c.value(b["url"]), "Name": c.value(b["name"])},
+        "RoleARN": c.value(b["role_arn"]), "S3BackupMode": c.value(b["s3_backup_mode"]),
+        "S3Configuration": _firehose_s3(b["s3_configuration"][0], c),
+        "SecretsManagerConfiguration": _firehose_secret(b["secrets_manager_configuration"][0], c),
+        **({"RequestConfiguration": {"ContentEncoding": c.value(b["request_configuration"][0]["content_encoding"])}}
+           if "request_configuration" in b else {})}}
+
+
 def _role_policy(props, f, cx):
     return {**props, "Policies": [*props.get("Policies", []), obj(own(f), cx, {
         "role": None, "name": "PolicyName", "policy": "PolicyDocument"})]}
@@ -668,6 +709,15 @@ TYPES = {
         {"name": "Ref", "id": "Ref",
          "arn": _arn_sub("arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:{id}")},
         "LogGroupName", "list"),
+    # a log group forwarded on to a SIEM (siem_forwarding.py): the subscription and the Firehose stream
+    "aws_cloudwatch_log_subscription_filter": Native("AWS::Logs::SubscriptionFilter", {
+        "name": "FilterName", "log_group_name": "LogGroupName", "filter_pattern": "FilterPattern",
+        "destination_arn": "DestinationArn", "role_arn": "RoleArn"}, {"id": "Ref"}, "FilterName"),
+    "aws_kinesis_firehose_delivery_stream": Native("AWS::KinesisFirehose::DeliveryStream", {
+        "name": "DeliveryStreamName", "destination": Custom(lambda v, c: {"DeliveryStreamType": "DirectPut"}),
+        "splunk_configuration": Custom(_splunk_destination),
+        "http_endpoint_configuration": Custom(_http_destination)},
+        {"id": "Ref", "name": "Ref", "arn": "Arn"}, "DeliveryStreamName", "list"),
     "aws_cloudwatch_metric_alarm": Native("AWS::CloudWatch::Alarm", {
         "alarm_name": "AlarmName", "alarm_description": "AlarmDescription", "namespace": "Namespace",
         "metric_name": "MetricName", "statistic": "Statistic", "extended_statistic": "ExtendedStatistic",

@@ -171,14 +171,26 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # whether or not it renders the environment: what a kit reads its products' log files from; siem_keeper(m,
 # destination): the name of the adapter rendering m that keeps a log destination of kind siem-index (its retention,
 # its detections and, where it ships logs to it itself, their forwarding: Adapter.siem_indexes), or None; a provider
-# adapter leaves a destination another adapter keeps to it
+# adapter leaves a destination another adapter keeps to it; cert_forwarding(m, service name): the CertForwarding of
+# the load balancer fronting a service name, from the provider adapter that applies to m, or None
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
                                    ("deployable_config", Callable), ("signals", Callable), ("logs", Callable),
                                    ("host_files", Callable), ("render_targets", Callable),
                                    ("mounts_secrets", Callable), ("installed_logs", tuple),
-                                   ("siem_keeper", Callable)])
+                                   ("siem_keeper", Callable), ("cert_forwarding", Callable)])
+
+# How an edge load balancer that verified a client certificate (a trust policy enforced at the edge, core pki trust)
+# passes it to the servers behind it (Adapter.cert_forwarding): the request header holding it, its encoding
+# (CERT_ENCODINGS), what it holds (leaf: the client's certificate only; chain: with its issuers), and the sources
+# (CIDRs) its requests come from in the record, () when the record doesn't say. The product trusts that header only
+# from those sources and only for a service name its edge verifies; anyone else can set it.
+CertForwarding = NamedTuple("CertForwarding", [("header", str), ("encoding", str), ("holds", str),
+                                               ("sources", tuple)])
+# url-pem: PEM, URL-encoded; pem: PEM as is; pem-oneline: PEM with its line breaks removed; der-base64: the DER,
+# base64 without PEM armour
+CERT_ENCODINGS = ("url-pem", "pem", "pem-oneline", "der-base64")
 
 # A cloud-managed identity service an adapter declares (Adapter.managed_identity), as data with its sources, for the
 # planner's managed identity check (connectors.managed_identity). name: the ciamManagedService value; title: it in
@@ -463,9 +475,11 @@ Adapter = namedtuple("Adapter", (
     "source_checks",        # planner checks an adapter runs when it applies to the SOURCE environment of a plan
     "managed_identity",     # ManagedServices: the cloud-managed identity services it declares (their
                             # ciamManagedService values are in its vocabulary)
-    "managed_directory"),   # ManagedDirectories: the cloud-managed directory services it declares (likewise)
+    "managed_directory",    # ManagedDirectories: the cloud-managed directory services it declares (likewise)
+    "cert_forwarding"),     # (EnvModel, ciamServiceName binding) -> CertForwarding: how its cloud's load balancer in
+                            # front of the service name passes on a client certificate it verified, or None
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None, None, (), (), ()))
+              None, False, None, None, (), None, None, None, (), (), (), None))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

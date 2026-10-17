@@ -28,7 +28,8 @@ ANCHOR = "anchor"
 
 
 def hcl(v, indent=0):
-    """Render a Python value as an HCL expression. Strings starting with '${' are raw expressions."""
+    """Render a Python value as an HCL expression. Strings starting with '${' are raw expressions; others are quoted,
+    newlines escaped (a PEM is one literal)."""
     if isinstance(v, bool):
         return "true" if v else "false"
     if isinstance(v, (int, float)):
@@ -36,7 +37,7 @@ def hcl(v, indent=0):
     if isinstance(v, str):
         if v.startswith("${") and v.endswith("}"):
             return v[2:-1]
-        return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+        return '"' + v.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r") + '"'
     if isinstance(v, (list, tuple)):
         if any(isinstance(x, dict) for x in v):                 # objects one element per line, as terraform fmt
             inner = "  " * (indent + 1)

@@ -12,7 +12,7 @@ from opsdir_adapter_panos.importer import read_running_config
 from opsdir_adapter_panos.readback import running_config
 from opsdir_adapter_panos.render import render
 from opsdir_adapter_panos.rules import objects
-from opsdir_adapter_panos.running import read_running, resolve_addresses, resolve_services, xpath
+from opsdir_adapter_panos.running import OP_COMMANDS, read_running, resolve_addresses, resolve_services, xpath
 from edge_samples import appliance
 from network_fixtures import ALPHA, entry, model, rule
 
@@ -243,8 +243,14 @@ def test_the_collector_reads_the_running_configuration_only_with_the_key_in_a_he
     d, m, _ = _model(*_source())
     steps = running_steps(d, m, {}, {})
     paths = [p for p, _ in steps]
-    assert paths[0] == f"{SPEC}/pano/api/device-group/DG/pre-rulebase.xml" and len(paths) == 12      # DG + shared
+    assert paths[:3] == [f"{SPEC}/pano/api/op/devices.xml", f"{SPEC}/pano/api/op/dg-hierarchy.xml",
+                         f"{SPEC}/pano/api/device-group/DG/pre-rulebase.xml"] and len(paths) == 15   # op, DG, shared
+    ops = {p: parse_qs(urlparse(r.url).query) for p, r in steps if "/api/op/" in p}
+    assert {q["cmd"][0] for q in ops.values()} == set(OP_COMMANDS.values())
+    assert all(q["type"] == ["op"] and "target" not in q for q in ops.values())
     for path, req in steps:
+        if "/api/op/" in path:
+            continue
         query = parse_qs(urlparse(req.url).query)
         scope, family = path.split("/api/", 1)[1].removesuffix(".xml").rsplit("/", 1)
         assert (query["type"], query["action"], query["xpath"]) == (["config"], ["show"], [xpath(scope, family)])

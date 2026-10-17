@@ -22,6 +22,7 @@ from opsdir.domains.edge.resolve import inspected, inspection_note, path_regex, 
 from opsdir_format_terraform.hcl import Block, comment, ref, tf_block, tf_name
 from .identities import LOC, RG
 from .account import tagged
+from .client_certificates import client_authentication
 from .dns import public_ip_name, unrecorded_answer
 
 EDGE_SUBNET = "subnet-edge"            # the binding role of the subnet the gateways go in
@@ -207,6 +208,9 @@ def gateway_service(m, svc, spec, backend):
     protocol = "Https" if spec.mode == "reencrypt" else "Http"
     trust_blocks, trust, trust_settings = _trusted_root(n, backend, protocol, bool(access))
     sku = "WAF_v2" if waf else "Standard_v2"
+    ssl_policy = Block((("policy_type", "Predefined"), ("policy_name", policy),
+                        *((("#", f"nearest policy to TLS {spec.tls_min} {spec.tls_profile}"),) if not exact else ())))
+    mtls, mtls_listener, mtls_route = client_authentication(m, svc, ssl_policy)
     body = (
         ("name", f"agw-ciam-{rdn_value(m.env)}-{rdn_value(svc)}"), ("resource_group_name", RG), ("location", LOC),
         ("zones", ["1", "2", "3"]),
@@ -235,16 +239,14 @@ def gateway_service(m, svc, spec, backend):
             ("http_listener", Block((("name", f"listener-{p}"), ("frontend_ip_configuration_name", "frontend"),
                                      ("frontend_port_name", f"port-{p}"), ("protocol", "Https"),
                                      *((("ssl_certificate_name", "tls"),) if certificate and
-                                       certificate[0][0] == "ssl_certificate" else ())))),
+                                       certificate[0][0] == "ssl_certificate" else ()), *mtls_listener))),
             ("request_routing_rule", Block((("name", f"route-{p}"), ("priority", 100 + i), ("rule_type", "Basic"),
                                             ("http_listener_name", f"listener-{p}"),
                                             ("backend_address_pool_name", backend.name),
-                                            ("backend_http_settings_name", f"{backend.name}-{p}")))))
+                                            ("backend_http_settings_name", f"{backend.name}-{p}"), *mtls_route))))
             for i, p in enumerate(ports)),
-        *certificate, *trust,
-        ("ssl_policy", Block((("policy_type", "Predefined"), ("policy_name", policy),
-                              *((("#", f"nearest policy to TLS {spec.tls_min} {spec.tls_profile}"),)
-                                if not exact else ())))),
+        *certificate, *trust, *mtls,
+        ("ssl_policy", ssl_policy),
         *((("firewall_policy_id", ref(f"azurerm_web_application_firewall_policy.{n}.id")),) if waf else ()),
         ("tags", tagged(m, {"Service": one(svc, "ciamFqdn"), "ManagedBy": "opsdir"})),
         *((("depends_on", [ref(f"azurerm_role_assignment.{n}_gateway_certificate")]),) if access else ()))
