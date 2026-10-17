@@ -1687,6 +1687,30 @@
       "raised_by": "CHG-2125"
     },
     {
+      "id": "A299",
+      "area": "Certificate",
+      "match": "Certificate `supplier-portal-sp-signing` was renewed by Example Aero SaaS",
+      "planted": "the tenant renewed the supplier portal's SP signing certificate on 2026-09-15 (its earlier version is the one the record names); the record still names the old one",
+      "cleared_by": null,
+      "raised_by": "CHG-2127"
+    },
+    {
+      "id": "A300",
+      "area": "Certificate",
+      "match": "Example Aero SaaS holds 1 certificate(s) in service for names the record holds",
+      "planted": "a scan of the CDN edge found a second certificate for sso.example-aero.test, from another CA, that the record has none of",
+      "cleared_by": null,
+      "raised_by": "CHG-2127"
+    },
+    {
+      "id": "A301",
+      "area": "Certificate",
+      "match": "Certificate `pf-signing-2025`'s management is disabled in Example Aero SaaS",
+      "planted": "PingFederate's signing certificate is retired in the tenant, but the record uses it: nothing renews or watches it there",
+      "cleared_by": null,
+      "raised_by": "CHG-2127"
+    },
+    {
       "id": "A150",
       "area": "Logs",
       "match": "Log route `security-events` must keep logs 365 days; target/prod's `siem` keeps them 365 days in all but searchable only 90",

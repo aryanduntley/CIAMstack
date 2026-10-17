@@ -5,6 +5,9 @@
 # importer reads (as collect.py trims it) and written where the importer reads it:
 #   OUTDIR/venafi/<source>/certificates-<offset>.json   the listing, 500 per page, with the folder and address
 #   OUTDIR/venafi/<source>/details/<guid>.json          each certificate's details
+#   OUTDIR/venafi/<source>/history/<guid>.json          its previous versions (GET .../PreviousVersions)
+#   OUTDIR/venafi/<source>/validation/<guid>.json       where network validation found it (GET .../ValidationResults;
+#                                                       {"SslTls": [], "Validated": false} for HTTP 204: none ran)
 # A refused listing (HTTP 401 or 403) is written as the first page's Error, so the import records the inventory as
 # denied with what to grant. The public certificates and private keys are never fetched.
 # The OAuth access token (scope `certificate`) is read from VENAFI_TOKEN and sent only as a request header, never on
@@ -25,7 +28,7 @@ out=${4:?$usage}
 address=${address%/}
 limit=${VENAFI_LIMIT:-500}          # certificates per page (as collect.py asks)
 dir="$out/venafi/$source"
-mkdir -p "$dir/details"
+mkdir -p "$dir/details" "$dir/history" "$dir/validation"
 tmp=$(mktemp)
 trap 'rm -f "$tmp"' EXIT
 
@@ -42,10 +45,17 @@ page_filter='{Folder: $folder, Address: $address, TotalCount: .TotalCount,
     | if .X509 then .X509 |= (with_entries(select(.key | IN("CN", "Issuer", "Subject", "Serial", "Thumbprint",
         "ValidFrom", "ValidTo", "SANS")))) else . end]}'
 detail_filter='{Guid, DN, CreatedBy, Disabled, Consumers, ManagementType, CertificateAuthorityDN, Contact,
-  ProcessingDetails: (.ProcessingDetails // null | if . then {InError, InProcess, Stage, Status} | with_entries(select(.value != null)) else . end),
+  ProcessingDetails: (.ProcessingDetails // null | if . then {InError, InProcess, Stage, Status}
+    | with_entries(select(.value != null)) else . end),
   CertificateDetails: (.CertificateDetails // null | if . then {Issuer, Subject, Serial, Thumbprint, ValidFrom,
     ValidTo, SubjectAltNameDNS, SubjectAltNameIPAddress, RevocationStatus, RevocationDate} | with_entries(select(.value != null)) else . end)}
   | with_entries(select(.value != null))'
+history_filter='{PreviousVersions: [(.PreviousVersions // [])[] | select(.CertificateDetails)
+  | {VaultId, CertificateDetails: (.CertificateDetails | {Thumbprint, Serial, ValidFrom, ValidTo, Subject, Issuer, CN,
+    SubjectAltNameDNS, SubjectAltNameIPAddress} | with_entries(select(.value != null)))}
+  | with_entries(select(.value != null))]}'
+validation_filter='{SslTls: [(.SslTls // [])[] | {Host, IpAddress, Port} | with_entries(select(.value != null))],
+  Validated: true}'
 
 offset=0
 total=1
@@ -72,8 +82,21 @@ jq -r '.Certificates[].Guid' "$dir"/certificates-*.json | while read -r guid; do
   status=$(get "$address/certificates/$(jq -rn --arg g "$guid" '$g|@uri')")
   case "$status" in
     200) jq "$detail_filter" "$tmp" > "$dir/details/$key.json" ;;
-    403|404) echo "export-venafi: $guid: HTTP $status: its details are left out" >&2 ;;
+    403|404) echo "export-venafi: $guid: HTTP $status: its details are left out" >&2; continue ;;
     *) echo "export-venafi: GET certificates/$guid: HTTP $status" >&2; exit 1 ;;
+  esac
+  status=$(get "$address/certificates/$(jq -rn --arg g "$guid" '$g|@uri')/PreviousVersions")
+  case "$status" in
+    200) jq "$history_filter" "$tmp" > "$dir/history/$key.json" ;;
+    403|404) echo "export-venafi: $guid: PreviousVersions HTTP $status: left out" >&2 ;;
+    *) echo "export-venafi: GET certificates/$guid/PreviousVersions: HTTP $status" >&2; exit 1 ;;
+  esac
+  status=$(get "$address/certificates/$(jq -rn --arg g "$guid" '$g|@uri')/ValidationResults")
+  case "$status" in
+    200) jq "$validation_filter" "$tmp" > "$dir/validation/$key.json" ;;
+    204) jq -n '{SslTls: [], Validated: false}' > "$dir/validation/$key.json" ;;
+    403|404) echo "export-venafi: $guid: ValidationResults HTTP $status: left out" >&2 ;;
+    *) echo "export-venafi: GET certificates/$guid/ValidationResults: HTTP $status" >&2; exit 1 ;;
   esac
 done
 echo "export-venafi: $(ls "$dir/details" | wc -l) certificate(s) of $folder written to $dir" >&2

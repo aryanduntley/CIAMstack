@@ -1,0 +1,1604 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "saas.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "saas_collect.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Self-Hosted: per collection source (ciamSourceRef https://<host>/<folder path>): GET /vedsdk/certificates/ pages (ParentDnRecursive, Limit 500, OptionalFields Issuer,Subject), then per certificate GET details, PreviousVersions (earlier versions as own entries, ciamRenewedAs) and ValidationResults (SslTls host:port -> ciamInstalledAt; 204 = not validated) within one shared DETAIL_CALLS budget; the importer maps X509/CertificateDetails, ManagementType, Disabled, CreatedBy, Contact, Consumers, CertificateAuthorityDN, ProcessingDetails and RevocationStatus to ciamManagedCertificate facts. SaaS: POST /outagedetection/v1/certificatesearch (paging from 0, pageSize 50, up to the page past the count), api-key (tppl-api-key) or bearer; certificates mapped (SHA-1 fingerprint, serial, DNs, validity, names, status, origin, instances not SUPERSEDED), versionType OLD renewed as the CURRENT one of its managedCertificateId. No public-certificate retrieval.",
+        "external_dependencies": "[\"CyberArk Certificate Manager - Self-Hosted (Venafi TPP) Web SDK: GET /vedsdk/certificates/, /certificates/{guid}, /{guid}/PreviousVersions, /{guid}/ValidationResults (OAuth scope certificate; View + Read)\", \"CyberArk Certificate Manager - SaaS (Venafi TLS Protect Cloud) API: POST /outagedetection/v1/certificatesearch (tppl-api-key or service-account bearer; Guest read-only role)\", \"curl and jq (scripts/export-venafi.sh only)\"]",
+        "path": "packages/opsdir-adapter-venafi/",
+        "purpose": "CyberArk Certificate Manager (Venafi) read into the core pki domain as a certificate manager's inventory (never an issuance record), metadata only: Self-Hosted (TPP) policy folders (importer venafi/certificates, GET-only collector with a pre-issued bearer token, export script) and SaaS tenants (importer venafi/saas, collector whose only POST is the declared read-only certificate search)"
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-venafi"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "in_service",
+        "parameters": "[{\"name\": \"managed\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "Whether a managed certificate is in service on as_of: current, not revoked, management not disabled, and not an earlier version its manager says was replaced (ciamRenewedAs)",
+        "returns": "{\"type\": \"bool\"}",
+        "source_hash": "9a7d649f0ae2186b"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-in-service-410b0095"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "renewal_of",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"Entry\", \"required\": true}, {\"name\": \"found\", \"type\": \"Entry|None\", \"required\": true}, {\"name\": \"rows\", \"type\": \"tuple of Entry\", \"required\": true, \"description\": \"managed certificates no record certificate matches\"}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "What the manager renewed a record certificate as, among rows no record certificate matches, or None: exact when the one found is an earlier version linked by ciamRenewedAs (the named certificate, if in service; never inferred then), else inferred: the latest in service for the same subject issued after it",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "b903e850a6fa0eea"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-renewal-of-aad94390"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "managed_rows",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"dn\", \"type\": \"str|None\", \"required\": true}, {\"name\": \"as_of\", \"type\": \"date\", \"required\": true}]",
+        "purpose": "managed-certificates report rows: each record certificate (its state; the managed certificate found, else (none found, or an earlier version found) the one it was renewed as; management, contacts, installations, renewal owner, detail), then each unrecorded in-service managed certificate",
+        "returns": "{\"type\": \"list of tuple\"}",
+        "source_hash": "76ebff552de16fa3"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-managed-rows-51c4db0a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "certificate_facts",
+        "parameters": "[{\"name\": \"listed\", \"type\": null, \"required\": true}, {\"name\": \"detail\", \"type\": null, \"required\": true}, {\"name\": \"validation\", \"type\": null, \"required\": false, \"default\": \"None\"}]",
+        "purpose": "(managed certificate facts of one listed Self-Hosted certificate, its details (None: not read) and its validation results (None: not read), notices): ciamManagedCertificate attributes, details winning over the listing; ciamInstalledAt = Consumers then validation host:port",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(facts dict, notices tuple)\"}",
+        "source_hash": "7e670e2a37577225"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-certificate-facts-c4516d03"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "read_source",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"source\", \"type\": \"str\", \"required\": true}, {\"name\": \"files\", \"type\": \"dict\", \"required\": true}, {\"name\": \"when\", \"type\": \"str\", \"required\": true, \"description\": \"GeneralizedTime\"}]",
+        "purpose": "(Imported group, notices) of one Self-Hosted collection source: its inventory and the certificates it holds plus their earlier versions (history); incomplete when listing, details, history or validation results fall short; denied when the listing was refused",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "62186b0a8951bbbb"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-source-e3f8328f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "certificate_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps per readable Self-Hosted source folder: first listing page, the pages its total says, then certificate_reads (details, PreviousVersions, ValidationResults within the shared DETAIL_CALLS budget); GETs only",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Request), ...)\"}",
+        "source_hash": "8da0631ebe39752f"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      }
+    },
+    {
+      "attributes": {
+        "file": "opsdir/opsdir/domains/pki/managed.py",
+        "id_in_name": 0,
+        "name": "renewed_as",
+        "parameters": "[{\"name\": \"found\", \"type\": \"Entry|None\"}, {\"name\": \"rows\", \"type\": \"tuple[Entry]\"}]",
+        "purpose": "The managed certificate among rows that an earlier version found names as what replaced it (ciamRenewedAs: its cn in the same inventory), or None; any manager",
+        "returns": "{\"type\": \"Entry|None\"}",
+        "source_hash": "4e30fed40c91d66c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-renewed-as-13240351"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "history_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\"}, {\"name\": \"guid\", \"type\": \"str\"}]",
+        "purpose": "Where a source's certificate history (PreviousVersions) is kept in the export: venafi/<source>/history/<guid>.json",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "e2d2a6773e81c0a8"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-history-path-81d4f6b5"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "validation_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\"}, {\"name\": \"guid\", \"type\": \"str\"}]",
+        "purpose": "Where a source's certificate validation results are kept in the export: venafi/<source>/validation/<guid>.json",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "3d392a109ccc4a9e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-validation-path-09d3c9f9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "installed_at",
+        "parameters": "[{\"name\": \"validation\", \"type\": \"dict|None\"}]",
+        "purpose": "The host:port (IP when no host) Self-Hosted network validation found a certificate at, from its ValidationResults SslTls",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "95456756aacaee9f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-installed-at-f6c563d7"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "version_key",
+        "parameters": "[{\"name\": \"key\", \"type\": \"str\"}, {\"name\": \"version\", \"type\": \"dict\"}]",
+        "purpose": "The cn of an earlier version of a certificate: <guid>-v<VaultId>, else its thumbprint's hex; None when neither",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "af181008f44a1c86"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-version-key-ec27909a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py",
+        "id_in_name": 0,
+        "name": "earlier_versions",
+        "parameters": "[{\"name\": \"key\", \"type\": \"str\"}, {\"name\": \"listed\", \"type\": \"dict\"}, {\"name\": \"history\", \"type\": \"dict|None\"}]",
+        "purpose": "((cn, facts), ...) of a certificate's earlier versions from its PreviousVersions history, each renewed as the certificate (ciamRenewedAs); the version with the listed certificate's own thumbprint left out",
+        "returns": "{\"type\": \"tuple[tuple[str, dict]]\"}",
+        "source_hash": "d0a550d864d85142"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-earlier-versions-8bf7000e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "kept_history",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "Request keep function: PreviousVersions reduced to VaultId and CertificateDetails' VERSION_FIELDS; other text kept",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "387e1c1bb844790c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-history-a850ab6c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "kept_validation",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\"}]",
+        "purpose": "Request keep function: ValidationResults reduced to SslTls Host/IpAddress/Port; empty body (HTTP 204) as {SslTls: [], Validated: false}",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "3690af416c30cd6e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-validation-5e2ccdba"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py",
+        "id_in_name": 0,
+        "name": "certificate_reads",
+        "parameters": "[{\"name\": \"address\", \"type\": \"str\"}, {\"name\": \"source\", \"type\": \"str\"}, {\"name\": \"guids\", \"type\": \"tuple[str]\"}, {\"name\": \"credential\", \"type\": \"tuple\"}, {\"name\": \"ca\", \"type\": \"str|None\"}]",
+        "purpose": "((path, Request), ...): details of each listed certificate (up to DETAIL_CALLS), then PreviousVersions and ValidationResults of as many as the shared budget leaves, in listing order",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "4a63d671b58dea7e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "page_path",
+        "parameters": "[{\"name\": \"source\", \"type\": \"str\"}, {\"name\": \"number\", \"type\": \"int\"}]",
+        "purpose": "Where a SaaS source's certificate search page number (from 0) is kept: venafi-saas/<source>/search-<n>.json",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "fb47d7258cd6dcbf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-page-path-95237d6a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "sources",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}]",
+        "purpose": "The SaaS collection sources an export holds (each with a search page), in order",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "9b134546a5789d90"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-sources-bb858533"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "search_pages",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\"}, {\"name\": \"source\", \"type\": \"str\"}]",
+        "purpose": "((page number, document or None), ...) of a SaaS source's search pages, by number",
+        "returns": "{\"type\": \"tuple[tuple[int, dict|None]]\"}",
+        "source_hash": "ce0ed343a4b8d67c"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-pages-e19177aa"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "cert_key",
+        "parameters": "[{\"name\": \"cert_id\", \"type\": \"str\"}]",
+        "purpose": "A SaaS certificate id as the record names it: lowercase",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "1f40a56e332f7a7e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-cert-key-6cd68ac6"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "installed_at",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"dict\"}]",
+        "purpose": "Where the SaaS search says a certificate is installed: each instance not SUPERSEDED as hostname:port (IP when no host)",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "59f57942baa92acc"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-installed-at-b8773813"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "current_versions",
+        "parameters": "[{\"name\": \"certs\", \"type\": \"tuple[dict]\"}]",
+        "purpose": "{managedCertificateId: id of its CURRENT version} among the SaaS certificates found",
+        "returns": "{\"type\": \"dict[str, str]\"}",
+        "source_hash": "ce94f93422b1b9ed"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-current-versions-652dac07"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "saas_facts",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"dict\"}, {\"name\": \"current\", \"type\": \"dict[str, str]\"}]",
+        "purpose": "The ciamManagedCertificate facts of one SaaS search certificate: SHA-1 fingerprint, serial, subject, issuer, validity, names, status, origin, installations, and for a versionType OLD its CURRENT version (ciamRenewedAs)",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "6561a09b1dd1abaf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-saas-facts-bdcac624"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "search_problems",
+        "parameters": "[{\"name\": \"pages\", \"type\": \"tuple\"}, {\"name\": \"found\", \"type\": \"int\"}, {\"name\": \"count\", \"type\": \"int\"}]",
+        "purpose": "Why a SaaS source's search pages don't hold every certificate: unreadable pages, pages missing up to one past the count, fewer found than the count, or the page past the count not empty",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "3ca2088d448619c6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-problems-cfa26467"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "read_source",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"source\", \"type\": \"str\"}, {\"name\": \"files\", \"type\": \"dict\"}, {\"name\": \"when\", \"type\": \"str\"}]",
+        "purpose": "(Imported group, notices) of one SaaS collection source: its inventory (complete/incomplete/denied) and certificates",
+        "returns": "{\"type\": \"tuple[Group, tuple[str]]\"}",
+        "source_hash": "a88b819ac57b2410"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-source-ddc20b67"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py",
+        "id_in_name": 0,
+        "name": "read_saas",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict\"}, {\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"patterns\", \"type\": \"tuple\"}, {\"name\": \"at\", \"type\": \"datetime|None\"}]",
+        "purpose": "Importer venafi/saas: per collection source in the export, its certificate manager inventory, replacing the record's",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "700729b23d8d6487"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-read-saas-eb849348"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py",
+        "id_in_name": 0,
+        "name": "trimmed",
+        "parameters": "[{\"name\": \"cert\", \"type\": \"dict\"}]",
+        "purpose": "A SaaS search certificate reduced to CERT_FIELDS, its SANs to dNSName/iPAddress and its instances to INSTANCE_FIELDS",
+        "returns": "{\"type\": \"dict\"}",
+        "source_hash": "4dabf0a49a0ea71d"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-trimmed-6d8a1c5c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py",
+        "id_in_name": 0,
+        "name": "kept_page",
+        "parameters": "[{\"name\": \"address\", \"type\": \"str\"}]",
+        "purpose": "Request keep function factory: a SaaS search page reduced to count and trimmed certificates, with Address and PageSize",
+        "returns": "{\"type\": \"Callable[[str], str]\"}",
+        "source_hash": "b556ee6272191de6"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-kept-page-03a54e4d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py",
+        "id_in_name": 0,
+        "name": "address_of",
+        "parameters": "[{\"name\": \"location\", \"type\": \"str\"}]",
+        "purpose": "The SaaS API address a source location names (https://<host>[:port], no path), or None",
+        "returns": "{\"type\": \"str|None\"}",
+        "source_hash": "748de61278439fed"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-address-of-c1be347f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py",
+        "id_in_name": 0,
+        "name": "search_body",
+        "parameters": "[{\"name\": \"number\", \"type\": \"int\"}]",
+        "purpose": "The JSON text of the certificate search for page number (from 0), PAGE_SIZE per page",
+        "returns": "{\"type\": \"str\"}",
+        "source_hash": "669523e297be44f0"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-search-body-83bc8a3a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py",
+        "id_in_name": 0,
+        "name": "credential_of",
+        "parameters": "[{\"name\": \"s\", \"type\": \"Source\"}]",
+        "purpose": "How a SaaS source's credential is sent: ('api-key', ref, None, 'tppl-api-key') or ('bearer', ref, None)",
+        "returns": "{\"type\": \"tuple\"}",
+        "source_hash": "8fbfd69092e5099f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-credential-of-cdb58256"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py",
+        "id_in_name": 0,
+        "name": "saas_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"done\", \"type\": \"dict\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Collector steps: each readable SaaS source's first search page, then every page up to one past the end its count says (read-only POSTs)",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "0ce49f2bcaa50ffb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py",
+        "id_in_name": 0,
+        "name": "saas_source_problems",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\"}, {\"name\": \"m\", \"type\": \"EnvModel\"}, {\"name\": \"options\", \"type\": \"dict\"}]",
+        "purpose": "Why SaaS collection sources can't be read: scheme/credential problems, or a location that isn't an API address",
+        "returns": "{\"type\": \"tuple[str]\"}",
+        "source_hash": "ecd109f021ea7ddf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-saas-source-problems-62c081e3"
+      }
+    },
+    {
+      "attributes": {
+        "description": "From deferred notes 3243 and 3244 (file 1123). (1) CyberArk Certificate Manager - SaaS (formerly Venafi TLS Protect Cloud): read the paged inventory POST /outagedetection/v1/certificatesearch on the core read-only POST collection (task 561, Collector.queries), regions api.venafi.cloud and api.eu|au|uk|sg|ca.venafi.cloud (settle the api.venafi.eu disagreement on official docs), auth tppl-api-key or service-account Bearer (secret by reference only), Guest read-only role; map onto the ou=managed-certificates classes (ciamManagedInventory per tenant/application scope; instances -> ciamInstalledAt host:port; ownership -> ciamManagerContact). Confirm the fingerprint algorithm. (2) Self-Hosted: GET /vedsdk/Certificates/{guid}/ValidationResults (SslTls host:port -> ciamInstalledAt; 204 without prior validation) and GET /vedsdk/Certificates/{guid}/PreviousVersions (exact renewal links instead of the subject+issuer+later-issue inference in domains/pki/managed.py), within the core's DETAIL_CALLS budget or scripts/export-venafi.sh. Acceptance: unit tests, showcase change + golden diff reviewed by the master, README/docs; live validation stays in deferred note 3245.",
+        "flows": [
+          "Managed Certificate Inventory Import"
+        ],
+        "name": "Venafi / CyberArk Certificate Manager SaaS inventory; Self-Hosted ValidationResults and PreviousVersions",
+        "parent": {
+          "slug": "milestone-6-2d-follow-ups-pki-collection-revocatio-5b675357"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "tasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Core read-only POST collection; regions; auth by reference; managed-inventory mapping",
+        "name": "SaaS certificatesearch collector and importer",
+        "parent": {
+          "key": {
+            "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-saas-certificatesearch-collector-and-imp-aa2524fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Installed host:port and exact renewal links within the detail-call budget; managed.py renewal inference uses them when present",
+        "name": "Self-Hosted ValidationResults and PreviousVersions",
+        "parent": {
+          "key": {
+            "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-self-hosted-validationresults-and-previo-83c13d22"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Unit tests, showcase CHG, golden diff for master review, README/docs",
+        "name": "Tests, showcase, docs",
+        "parent": {
+          "key": {
+            "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+          },
+          "reference_table": "tasks"
+        },
+        "status": "completed"
+      },
+      "kind": "items",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "item-tests-showcase-docs-86b6682f"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "0aceb93",
+    "branch": "aimfp-u127-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "certificate_reads calls detail_path (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-detail-path-c60469b8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_reads references kept_detail (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-detail-4a8579fe"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renewal_of calls renewed_as (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewal-of-aad94390"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-renewed-as-13240351"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_facts calls installed_at (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-facts-c4516d03"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-installed-at-f6c563d7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source references history_path (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-history-path-81d4f6b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source references validation_path (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-validation-path-09d3c9f9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls earlier_versions (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-e3f8328f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-earlier-versions-8bf7000e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls certificate_reads (collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renewed_as calls norm_dn (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewed-as-13240351"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-norm-dn-71e9dfd7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "renewed_as calls one (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-renewed-as-13240351"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-one-e4bd1d0d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "history_path calls guid_key (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-history-path-81d4f6b5"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-guid-key-01a6a0c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "validation_path calls guid_key (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-validation-path-09d3c9f9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-guid-key-01a6a0c0"
+      }
+    },
+    {
+      "attributes": {
+        "description": "version_key calls fingerprint (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-version-key-ec27909a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "earlier_versions calls fingerprint (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-earlier-versions-8bf7000e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "earlier_versions calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-earlier-versions-8bf7000e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "earlier_versions calls version_key (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-earlier-versions-8bf7000e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-version-key-ec27909a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_history calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-history-a850ab6c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_validation calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-validation-5e2ccdba"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_reads calls history_path (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-history-path-81d4f6b5"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_reads calls validation_path (certificates.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-validation-path-09d3c9f9"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_reads references kept_history (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-history-a850ab6c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_reads references kept_validation (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-reads-8d8c5703"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-validation-5e2ccdba"
+      }
+    },
+    {
+      "attributes": {
+        "description": "search_pages calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-search-pages-e19177aa"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "current_versions calls cert_key (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-current-versions-652dac07"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-key-6cd68ac6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_facts calls fingerprint (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-facts-bdcac624"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-fingerprint-db57e7cf"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_facts calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-facts-bdcac624"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_facts calls cert_key (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-facts-bdcac624"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-key-6cd68ac6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_facts calls installed_at (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-facts-bdcac624"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-installed-at-b8773813"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls inventory_group (inventory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-inventory-group-d63b5662"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls managed_inventory_entry (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-inventory-entry-24ab168d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls managed_entry (managed.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-managed-entry-55ef5825"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls search_pages (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-pages-e19177aa"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls cert_key (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-cert-key-6cd68ac6"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls current_versions (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-current-versions-652dac07"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls saas_facts (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-saas-facts-bdcac624"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_source calls search_problems (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-source-ddc20b67"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-problems-cfa26467"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_saas calls rdn_safe (naming.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-saas-eb849348"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-dn-safe-6d2bde06"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_saas calls ou_entry (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-saas-eb849348"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ou-entry-0ad1fc47"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_saas calls gtime (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-saas-eb849348"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_saas calls sources (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-saas-eb849348"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-sources-bb858533"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_saas calls read_source (saas.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-saas-eb849348"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-read-source-ddc20b67"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_page calls json_document (sources.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-page-03a54e4d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "kept_page calls trimmed (saas_collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-kept-page-03a54e4d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-trimmed-6d8a1c5c"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_steps calls json_document (sources.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-json-document-b511c023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_steps calls readable_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-readable-sources-120eeecc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_steps calls page_path (saas.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-page-path-95237d6a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_steps calls kept_page (saas_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-kept-page-03a54e4d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_steps calls address_of (saas_collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-address-of-c1be347f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_steps calls search_body (saas_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-search-body-83bc8a3a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_steps calls credential_of (saas_collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-steps-f3b3803a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-credential-of-cdb58256"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_source_problems calls collection_sources (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-source-problems-62c081e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-collection-sources-29326be1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_source_problems calls scheme_problems (collection.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-source-problems-62c081e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-scheme-problems-b4eadd9f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "saas_source_problems calls address_of (saas_collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-saas-source-problems-62c081e3"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-address-of-c1be347f"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py"
+      },
+      "flow": {
+        "name": "Managed Certificate Inventory Import"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-venafi"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/saas_collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/managed.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/certificates.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "file": {
+        "path": "opsdir/opsdir/domains/pki/schema.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/src/opsdir_adapter_venafi/adapter.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-venafi/scripts/export-venafi.sh"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "tasks",
+      "work_item": {
+        "slug": "task-venafi-cyberark-certificate-manager-saas-b9405880"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps calls detail_path (certificates.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-detail-path-c60469b8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "certificate_steps references kept_detail (collect.py) via _source_steps",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-certificate-steps-03903ac0"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-kept-detail-4a8579fe"
+      }
+    }
+  ],
+  "warnings": []
+}

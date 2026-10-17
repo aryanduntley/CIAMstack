@@ -1,0 +1,10 @@
+{
+ "SslTls": [
+  {
+   "Host": "sso.example-aero.test",
+   "IpAddress": "10.20.1.15",
+   "Port": 443
+  }
+ ],
+ "Validated": true
+}

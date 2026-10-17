@@ -13,17 +13,19 @@ the record holds of it (for managers giving no SHA-256), else by serial number w
 side records no issuer), else by subject and validity, and is in one state:
 
   managed      found, and the manager reports nothing wrong with it
-  renewed      the manager holds a newer certificate for the same subject (and issuer) that no record certificate is:
-               it was renewed, and the record still names the old one (found or not)
+  renewed      the manager holds a newer certificate for it that no record certificate is: it was renewed, and the
+               record still names the old one (found or not). Exact when the manager links its versions (the earlier
+               one found names the certificate that replaced it: ciamRenewedAs), else inferred: a newer certificate
+               for the same subject (and issuer)
   revoked      found, and the manager says it was revoked
   disabled     found, but its management is disabled: the manager no longer renews or watches it
   in-error     found, and the manager reports something wrong with it now (a failed renewal or installation)
   not-managed  not found: nothing the manager holds says anything about it
 
-Every certificate in service (current, not revoked, management not disabled) the inventories hold that no record
-certificate was found or renewed as is unrecorded; the planner judges those naming a host name the record holds (a
-record certificate's alternative name, a service name), the report lists them all. Observations are never written
-onto the record's certificates: the reconciliation is computed here, each time.
+Every certificate in service (current, not revoked, management not disabled, not an earlier version) the
+inventories hold that no record certificate was found or renewed as is unrecorded; the planner judges those naming a
+host name the record holds (a record certificate's alternative name, a service name), the report lists them all.
+Observations are never written onto the record's certificates: the reconciliation is computed here, each time.
 """
 from typing import NamedTuple
 
@@ -44,8 +46,10 @@ INVENTORY_ATTRS = ("cn", "ciamInventoryAt", "ciamInventoryState", "ciamInventory
 MANAGED_ATTRS = ("cn", "ciamSerialNumber", "ciamFingerprint", "ciamThumbprint", "ciamSubject", "ciamIssuer",
                  "ciamNotBefore", "ciamNotAfter", "ciamCertificateName", "ciamManagerPath", "ciamManagement",
                  "ciamManagedOrigin", "ciamManagerContact", "ciamInstalledAt", "ciamManagerProblem",
-                 "ciamManagedAuthority", "ciamRevokedAt", "ciamRevocationReason", "ciamObjectState")
-LISTED = ("ciamCertificateName", "ciamManagerContact", "ciamInstalledAt", "ciamManagerProblem")   # multi-valued
+                 "ciamManagedAuthority", "ciamRevokedAt", "ciamRevocationReason", "ciamObjectState",
+                 "ciamManagerAction", "ciamRenewedAs")
+LISTED = ("ciamCertificateName", "ciamManagerContact", "ciamInstalledAt", "ciamManagerProblem",       # multi-valued
+          "ciamManagerAction")
 SELF_SIGNED = "self-signed"          # how the record writes the issuer of a self-signed certificate
 AREA = "Certificate"
 
@@ -88,8 +92,10 @@ def managed_of(d, inventory):
 
 
 def in_service(managed, as_of):
-    """Whether a managed certificate is in service on as_of: current, not revoked, its management not disabled."""
-    return is_active(managed, as_of) and one(managed, "ciamObjectState") != "disabled"
+    """Whether a managed certificate is in service on as_of: current, not revoked, its management not disabled, and
+    not an earlier version the manager says was replaced (ciamRenewedAs)."""
+    return (is_active(managed, as_of) and one(managed, "ciamObjectState") != "disabled"
+            and not one(managed, "ciamRenewedAs"))
 
 
 def covers(pattern, name):
@@ -150,10 +156,21 @@ def _issued_after(r, ref):
     return starts[0] > starts[1] if all(starts) else (one(r, "ciamNotAfter") or "") > (one(ref, "ciamNotAfter") or "")
 
 
+def renewed_as(found, rows):
+    """The managed certificate among rows that an earlier version found names as what replaced it (ciamRenewedAs:
+    its cn in the same inventory), or None (found names none, or it isn't among rows)."""
+    key = one(found, "ciamRenewedAs") if found is not None else None
+    dn = norm_dn(f"cn={key},{found.dn.split(',', 1)[1]}") if key else None
+    return next((r for r in rows if r.norm == dn), None) if dn else None
+
+
 def renewal_of(cert, found, rows, as_of):
-    """The latest managed certificate in service among rows (those no record certificate matches) for the same
-    subject as a record certificate, issued after it (after the one found for it, when found): what the manager
-    renewed it as, or None."""
+    """What the manager renewed a record certificate as, among rows (those no record certificate matches), or None:
+    when the one found for it is an earlier version the manager links, the certificate it names (if in service);
+    else the latest in service for the same subject, issued after it (after the one found for it, when found)."""
+    if found is not None and one(found, "ciamRenewedAs"):
+        newer = renewed_as(found, rows)
+        return newer if newer is not None and in_service(newer, as_of) else None
     ref = found if found is not None else cert
     later = [r for r in rows if (found is None or r.norm != found.norm) and in_service(r, as_of)
              and same_subject(cert, r) and _issued_after(r, ref)]
@@ -328,9 +345,10 @@ def _managed_row(d, cert, inventory, shown, state, owner, detail):
 
 
 def managed_rows(d, dn, as_of):
-    """One row per record certificate (its state; the managed certificate found, else the one it was renewed as; how
-    it is managed, who is notified, where it is installed, its renewal owner and what is wrong), then one per
-    unrecorded certificate in service the inventories hold, with the names it names (those the record holds said)."""
+    """One row per record certificate (its state; the managed certificate found, else (none found, or an earlier
+    version found) the one it was renewed as; how it is managed, who is notified, where it is installed, its renewal
+    owner and what is wrong), then one per unrecorded certificate in service the inventories hold, with the names it
+    names (those the record holds said)."""
     done = reconcile_managed(d, as_of)
     names = record_names(d)
     owner = lambda c: owner_label(d, c) if values(c, "ciamOwner") else ""       # noqa: E731
@@ -339,6 +357,7 @@ def managed_rows(d, dn, as_of):
         held = f"; the record's {', '.join(sorted(n for n, _ in named))}" if named else ""
         return _managed_row(d, None, inv, r, UNRECORDED, _owner(d, named[0][1]) if named else "",
                             ", ".join(values(r, "ciamCertificateName")) + held)
-    return [*(_managed_row(d, r.cert, r.inventory, r.found if r.found is not None else r.newer, r.state,
-                           owner(r.cert), _detail(r)) for r in done),
+    shown = lambda r: (r.newer if r.newer is not None and (r.found is None or one(r.found, "ciamRenewedAs"))   # noqa: E731
+                       else r.found)
+    return [*(_managed_row(d, r.cert, r.inventory, shown(r), r.state, owner(r.cert), _detail(r)) for r in done),
             *(stray(inv, r) for inv, r in unrecorded(d, done, as_of))]
