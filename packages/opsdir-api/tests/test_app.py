@@ -1,0 +1,355 @@
+"""The HTTP API over a faked operations layer and connection: no token or a bad one is a 401 with its Bearer
+challenge; an identity no person records is a 403; every call runs inside requesting(person), asks authorize_command
+with the command line's action and Area first (a refusal is a 403 with its message), closes its connection, and maps
+the operations' results to JSON (rows, LDIF previews, import plans, the verification document) and their refusals to
+400/404/409."""
+import contextlib
+import datetime as dt
+from types import SimpleNamespace
+from typing import NamedTuple
+
+import pytest
+from fastapi.testclient import TestClient
+from joserfc import jwt
+from joserfc.jwk import RSAKey
+
+from opsdir.core.interchange.ldif import LdifRecord
+from opsdir.domains.governance.authorization import Area
+from opsdir.domains.governance.imports import file_evidence
+from opsdir_api import app as api
+from opsdir_api.config import Config
+
+ISSUER, AUDIENCE, NOW = "https://idp.example.com/realms/ops", "opsdir-api", 1_800_000_000
+KEY = RSAKey.generate_key(2048, parameters={"kid": "k1"})
+JWKS = {"keys": [KEY.as_dict(private=False)]}
+CONFIG = Config("postgresql://api@db/opsdir", ISSUER, AUDIENCE, None, ("RS256",), 60)
+PEOPLE = {(ISSUER, "sub-alice"): "alice", (ISSUER, "sub-bob"): "bob"}
+ENV_DN = "cn=idp-tls,ou=certificates,env=prod,cloud=aws,ou=environments,dc=ciam-ops"
+RECORD = LdifRecord("cn=portal,ou=applications,dc=ciam-ops", "modify", {}, (("replace", "description", ("Portal",)),))
+
+Rows = NamedTuple("Rows", [("headers", tuple), ("rows", tuple)])
+Preview = NamedTuple("Preview", [("name", str), ("changes", tuple), ("notices", tuple)])
+Applied = NamedTuple("Applied", [("change_id", str), ("lines", tuple)])
+Conflict = NamedTuple("Conflict", [("key", str), ("dn", str), ("attr", str), ("held", tuple), ("live", tuple)])
+Plan = NamedTuple("Plan", [("importer", str), ("changes", tuple), ("notices", tuple), ("conflicts", tuple),
+                           ("scopes", tuple), ("at", object)])
+
+
+def token(sub="sub-alice", **claims):
+    body = {"iss": ISSUER, "aud": AUDIENCE, "sub": sub, "iat": NOW, "exp": NOW + 300, **claims}
+    return jwt.encode({"alg": "RS256", "kid": "k1"}, body, KEY, algorithms=["RS256"])
+
+
+def bearer(sub="sub-alice", **claims):
+    return {"Authorization": f"Bearer {token(sub, **claims)}"}
+
+
+@pytest.fixture
+def world(monkeypatch):
+    """The fakes: calls recorded as (operation, args, the person in effect); refused: what authorize refuses."""
+    calls, state = [], {"as": None, "refuse": None, "opened": 0, "closed": 0}
+
+    @contextlib.contextmanager
+    def requesting(login):
+        calls.append(("requesting", (login,), None))
+        state["as"] = login
+        try:
+            yield
+        finally:
+            state["as"] = None
+
+    def recorded(name, result=None):
+        def operation(conn, *args):
+            calls.append((name, args, state["as"]))
+            return result(*args) if callable(result) else result
+        return operation
+
+    def authorize_command(conn, action, area, claimed=None):
+        calls.append(("authorize_command", (action, area), state["as"]))
+        if state["refuse"]:
+            raise SystemExit(state["refuse"])
+
+    def browse_entry(conn, dn):
+        calls.append(("browse_entry", (dn,), state["as"]))
+        if dn != RECORD.dn:
+            raise ValueError(f"no entry {dn}")
+        return Rows(("field", "value"), (("description", "Portal"),)), ("seeAlso",)
+
+    def apply_import(conn, plan, change_id, take=(), keep=(), evidence=None):
+        calls.append(("apply_import", (plan, change_id, take, keep, evidence), state["as"]))
+        if plan.conflicts and not (take or keep):
+            raise ValueError("1 conflict(s) undecided: take the live value or keep the record's for each")
+        return Applied(change_id, ("modify cn=x", "add cn=run"))
+
+    def change_status(conn, change_id, status):
+        calls.append(("change_status", (change_id, status), state["as"]))
+        if change_id == "CHG-ACME-9999":
+            raise ValueError(f"no change {change_id}")
+        return Applied(change_id, (f"modify cn={change_id}",))
+
+    conflicts = (Conflict("k1", "cn=x", "mail", ("a@x",), ("b@x",)),)
+    fake_ops = SimpleNamespace(
+        person_for_subject=lambda conn, issuer, subject: PEOPLE.get((issuer, subject)),
+        authorize_command=authorize_command,
+        browse_areas=recorded("browse_areas", Rows(("area", "kinds"), (("pki", 3), ("federation", 5)))),
+        browse_kinds=recorded("browse_kinds", Rows(("kind", "entries"), (("ciamCertificate", 2),))),
+        browse_entries=recorded("browse_entries", Rows(("dn",), ((ENV_DN,),))),
+        browse_entry=browse_entry,
+        search=recorded("search", ()),
+        report=recorded("report", Rows(("name", "expires"), (("idp-tls", dt.date(2027, 1, 1)),))),
+        history=recorded("history", Rows(("when", "change"), ())),
+        preview_edit=recorded("preview_edit", Preview("edit", (RECORD,), ())),
+        propose_edit=recorded("propose_edit", Applied("CHG-ACME-0042", ("add cn=CHG-ACME-0042",))),
+        apply_preview=recorded("apply_preview", lambda preview, change: Applied(change, ("modify cn=portal",))),
+        new_change=recorded("new_change", Applied("CHG-ACME-0042", ())),
+        change_status=change_status,
+        apply_proposed=recorded("apply_proposed", lambda change: Applied(change, ("modify cn=portal",))),
+        preview_import=recorded("preview_import", lambda spec, files, at: Plan(
+            spec, (RECORD,), ("withheld: secret",), conflicts if "conflict.json" in files else (), ("cn=pf",), at)),
+        apply_import=apply_import,
+        onboard_verify=recorded("onboard_verify", lambda sources, at: SimpleNamespace(status="pass", n=len(sources))))
+    fake_db = SimpleNamespace(requesting=requesting, set_as_of=lambda conn, day: calls.append(("set_as_of", (day,),
+                                                                                                None)))
+    monkeypatch.setattr(api, "ops", fake_ops)
+    monkeypatch.setattr(api, "db", fake_db)
+    monkeypatch.setattr(api, "report_document", lambda v: {"status": v.status, "sources": v.n})
+
+    def connect():
+        state["opened"] += 1
+        return SimpleNamespace(close=lambda: state.__setitem__("closed", state["closed"] + 1))
+    client = TestClient(api.create_app(CONFIG, connect=connect, jwks=JWKS, clock=lambda: NOW))
+    return SimpleNamespace(client=client, calls=calls, state=state)
+
+
+def named(calls, name):
+    return [c for c in calls if c[0] == name]
+
+
+# ------------------------------------------------------------------ authentication and identity
+def test_health_needs_no_token(world):
+    assert world.client.get("/health").json() == {"status": "ok"}
+    assert world.state["opened"] == 0
+
+
+def test_no_token_is_401_with_a_bearer_challenge(world):
+    r = world.client.get("/v1/browse")
+    assert r.status_code == 401 and r.headers["www-authenticate"] == "Bearer"
+    assert world.state["opened"] == 0
+
+
+@pytest.mark.parametrize("headers", [{"Authorization": "Bearer not-a-jwt"},
+                                     {"Authorization": "Basic YWxpY2U6cHc="}])
+def test_a_bad_token_is_401(world, headers):
+    r = world.client.get("/v1/browse", headers=headers)
+    assert r.status_code == 401 and r.headers["www-authenticate"].startswith("Bearer")
+
+
+def test_an_expired_or_foreign_token_is_401_naming_why(world):
+    r = world.client.get("/v1/browse", headers=bearer(exp=NOW - 120))
+    assert r.status_code == 401 and 'error="invalid_token"' in r.headers["www-authenticate"]
+    assert "expired" in r.json()["detail"]
+    r = world.client.get("/v1/browse", headers=bearer(iss="https://other.example.com"))
+    assert r.status_code == 401 and "issuer" in r.json()["detail"]
+
+
+def test_an_identity_no_person_records_is_403(world):
+    r = world.client.get("/v1/browse", headers=bearer("sub-service-client"))
+    assert r.status_code == 403 and "no recorded person for this identity" in r.json()["detail"]
+    assert "--idp-subject" in r.json()["detail"]
+    assert not named(world.calls, "requesting") and not named(world.calls, "browse_areas")
+    assert world.state["closed"] == world.state["opened"] == 1
+
+
+def test_an_unknown_kid_refetches_the_keys_once():
+    fetched = []
+    other = RSAKey.generate_key(2048, parameters={"kid": "k2"})
+    app = api.create_app(CONFIG, connect=lambda: None, clock=lambda: NOW,
+                         jwks=lambda refresh=False: fetched.append(refresh) or JWKS)
+    signed = jwt.encode({"alg": "RS256", "kid": "k2"}, {"iss": ISSUER, "aud": AUDIENCE, "sub": "s", "exp": NOW + 60},
+                        other, algorithms=["RS256"])
+    r = TestClient(app).get("/v1/browse", headers={"Authorization": f"Bearer {signed}"})
+    assert r.status_code == 401 and fetched == [False, True]
+
+
+def test_unreachable_keys_are_503():
+    def keys(refresh=False):
+        raise ValueError("the identity provider's keys can't be fetched: timed out")
+    r = TestClient(api.create_app(CONFIG, connect=lambda: None, jwks=keys, clock=lambda: NOW)).get(
+        "/v1/browse", headers=bearer())
+    assert r.status_code == 503 and "can't be fetched" in r.json()["detail"]
+
+
+# ------------------------------------------------------------------ reading
+def test_browse_returns_rows_read_as_the_person(world):
+    r = world.client.get("/v1/browse", headers=bearer())
+    assert r.status_code == 200 and r.json() == {"headers": ["area", "kinds"], "rows": [["pki", 3], ["federation", 5]]}
+    assert named(world.calls, "authorize_command") == [("authorize_command", ("read", Area("")), "alice")]
+    assert named(world.calls, "browse_areas") == [("browse_areas", (), "alice")]
+    assert world.state["opened"] == world.state["closed"] == 1
+
+
+def test_browse_kinds_entries_and_an_entry(world):
+    assert world.client.get("/v1/browse/pki", headers=bearer()).json()["rows"] == [["ciamCertificate", 2]]
+    assert world.client.get("/v1/browse/pki/ciamCertificate", headers=bearer()).json()["rows"] == [[ENV_DN]]
+    assert named(world.calls, "browse_entries")[0][1] == ("pki", "ciamCertificate")
+    r = world.client.get(f"/v1/entries/{RECORD.dn}", headers=bearer())
+    assert r.json() == {"headers": ["field", "value"], "rows": [["description", "Portal"]], "empty": ["seeAlso"]}
+    r = world.client.get("/v1/entries/cn=nothing,dc=ciam-ops", headers=bearer())
+    assert r.status_code == 404 and r.json()["detail"] == "no entry cn=nothing,dc=ciam-ops"
+
+
+def test_search_report_and_history(world):
+    assert world.client.get("/v1/search", params={"base": "dc=ciam-ops", "filter": "(cn=x)"},
+                            headers=bearer()).json() == {"entries": []}
+    assert named(world.calls, "search")[0][1] == ("dc=ciam-ops", "(cn=x)", "sub")
+    assert world.client.get("/v1/search", params={"base": "dc=ciam-ops", "scope": "tree"},
+                            headers=bearer()).status_code == 400
+    r = world.client.get("/v1/reports/expiring", params={"as_of": "2026-10-18"}, headers=bearer())
+    assert r.json() == {"headers": ["name", "expires"], "rows": [["idp-tls", "2027-01-01"]]}
+    assert named(world.calls, "report")[0][1] == ("expiring", None, dt.date(2026, 10, 18))
+    assert ("set_as_of", (dt.date(2026, 10, 18),), None) in world.calls
+    assert world.client.get("/v1/reports/expiring", params={"as_of": "18/10"}, headers=bearer()).status_code == 400
+    assert world.client.get("/v1/history", params={"dn": RECORD.dn}, headers=bearer()).json()["rows"] == []
+    assert named(world.calls, "history")[0][1] == (RECORD.dn,)
+
+
+def test_authorize_refusal_is_403_with_its_message(world):
+    world.state["refuse"] = "alice may not read over the whole record"
+    r = world.client.get("/v1/browse", headers=bearer())
+    assert r.status_code == 403 and r.json()["detail"] == "alice may not read over the whole record"
+    assert not named(world.calls, "browse_areas") and world.state["closed"] == 1
+
+
+# ------------------------------------------------------------------ edits and changes
+def test_an_edit_preview_is_a_read_returning_ldif(world):
+    r = world.client.post("/v1/edits", headers=bearer(), json={"dn": RECORD.dn, "set": {"description": ["Portal"]}})
+    assert r.status_code == 200
+    assert r.json() == {"mode": "preview", "notices": [], "changes": [
+        "dn: cn=portal,ou=applications,dc=ciam-ops\nchangetype: modify\nreplace: description\n"
+        "description: Portal\n-\n"]}
+    assert named(world.calls, "authorize_command")[0][1][0] == "read"
+    assert named(world.calls, "preview_edit")[0][1] == (RECORD.dn, (("description", "Portal"),), (), ())
+
+
+def test_an_edit_proposed_runs_as_the_person_with_action_propose(world):
+    body = {"dn": ENV_DN, "set": {"description": ["TLS"]}, "add": {"seeAlso": ["cn=a", "cn=b"]},
+            "remove": {"mail": [], "cn": ["old"]}, "mode": "propose", "change": "CHG-ACME-0042", "title": "Describe"}
+    r = world.client.post("/v1/edits", headers=bearer(), json=body)
+    assert r.status_code == 200 and r.json()["status"] == "proposed" and r.json()["change"] == "CHG-ACME-0042"
+    assert named(world.calls, "requesting") == [("requesting", ("alice",), None)]
+    assert named(world.calls, "authorize_command") == [("authorize_command", ("propose", Area("aws/prod")), "alice")]
+    edit = named(world.calls, "preview_edit")[0]
+    assert edit[1] == (ENV_DN, (("description", "TLS"),), (("seeAlso", "cn=a"), ("seeAlso", "cn=b")),
+                       (("mail", None), ("cn", "old"))) and edit[2] == "alice"
+    proposed = named(world.calls, "propose_edit")[0]
+    assert proposed[1][1:] == ("CHG-ACME-0042", "Describe") and proposed[2] == "alice"
+
+
+def test_an_edit_applied_is_action_apply(world):
+    r = world.client.post("/v1/edits", headers=bearer(), json={"dn": RECORD.dn, "set": {"description": ["Portal"]},
+                                                               "mode": "apply", "change": "CHG-ACME-0042"})
+    assert r.json()["applied"] == ["modify cn=portal"] and r.json()["change"] == "CHG-ACME-0042"
+    assert named(world.calls, "authorize_command")[0][1] == ("apply", Area(""))
+    assert named(world.calls, "apply_preview")[0][2] == "alice"
+
+
+@pytest.mark.parametrize("body, problem", [
+    ({"set": {"description": ["x"]}}, "dn"),
+    ({"dn": RECORD.dn, "mode": "propose", "change": "CHG-ACME-1"}, "title"),
+    ({"dn": RECORD.dn, "mode": "apply"}, "needs change"),
+    ({"dn": RECORD.dn, "mode": "delete"}, "preview, propose or apply"),
+    ({"dn": RECORD.dn, "set": {"description": "x"}}, "list of non-empty strings"),
+    ({"dn": RECORD.dn, "set": {"description": []}}, "at least one value")])
+def test_malformed_edits_are_400(world, body, problem):
+    r = world.client.post("/v1/edits", headers=bearer(), json=body)
+    assert r.status_code == 400 and problem in r.json()["detail"]
+    assert world.state["opened"] == 0
+
+
+def test_changes_new_approve_reject_apply(world):
+    r = world.client.post("/v1/changes", headers=bearer(), json={"id": "CHG-ACME-0042", "title": "Rotate"})
+    assert r.status_code == 201 and r.json() == {"change": "CHG-ACME-0042", "status": "proposed"}
+    assert named(world.calls, "new_change")[0] == ("new_change", ("CHG-ACME-0042", "Rotate", None), "alice")
+    r = world.client.post("/v1/changes/CHG-ACME-0042/approve", headers=bearer("sub-bob"))
+    assert r.json() == {"change": "CHG-ACME-0042", "status": "approved"}
+    assert named(world.calls, "change_status")[0] == ("change_status", ("CHG-ACME-0042", "approved"), "bob")
+    assert world.client.post("/v1/changes/CHG-ACME-0043/reject", headers=bearer("sub-bob")).json()["status"] == \
+        "rejected"
+    r = world.client.post("/v1/changes/CHG-ACME-0042/apply", headers=bearer())
+    assert r.json() == {"change": "CHG-ACME-0042", "applied": ["modify cn=portal"]}
+    actions = [c[1][0] for c in named(world.calls, "authorize_command")]
+    assert actions == ["propose", "approve", "approve", "apply"]
+    assert [c[1][0] for c in named(world.calls, "requesting")] == ["alice", "bob", "bob", "alice"]
+
+
+def test_change_refusals_map_to_404_and_400(world):
+    r = world.client.post("/v1/changes/CHG-ACME-9999/approve", headers=bearer("sub-bob"))
+    assert r.status_code == 404 and r.json()["detail"] == "no change CHG-ACME-9999"
+    assert world.client.post("/v1/changes", headers=bearer(), json={"id": "CHG-ACME-1"}).status_code == 400
+
+
+# ------------------------------------------------------------------ imports and verification
+def test_an_import_upload_previewed(world):
+    files = [("files", ("export/data.json", b'{"a": 1}')), ("files", ("export/old.bin", b"\xff\xfe"))]
+    r = world.client.post("/v1/imports", headers=bearer(), files=files,
+                          data={"importer": "pingfederate", "at": "20261018120000Z"})
+    assert r.status_code == 200, r.text
+    doc = r.json()
+    assert doc["importer"] == "pingfederate" and doc["skipped"] == ["export/old.bin"]
+    assert doc["notices"] == ["withheld: secret"] and doc["scopes"] == ["cn=pf"] and len(doc["changes"]) == 1
+    previewed = named(world.calls, "preview_import")[0]
+    assert previewed[1] == ("pingfederate", {"export/data.json": '{"a": 1}'},
+                            dt.datetime(2026, 10, 18, 12, tzinfo=dt.timezone.utc)) and previewed[2] == "alice"
+    assert named(world.calls, "authorize_command")[0][1] == ("read", Area(""))
+    assert not named(world.calls, "apply_import")
+
+
+def test_an_import_applied_under_a_change_records_file_evidence(world):
+    files = {"conflict.json": "{}", "data.json": "[]"}
+    r = world.client.post("/v1/imports", headers=bearer(), json={"importer": "pingfederate", "files": files,
+                                                                 "change": "CHG-ACME-0042"})
+    assert r.status_code == 409 and "undecided" in r.json()["detail"]
+    r = world.client.post("/v1/imports", headers=bearer(), json={"importer": "pingfederate", "files": files,
+                                                                 "change": "CHG-ACME-0042", "take": ["k1"]})
+    assert r.status_code == 200 and r.json()["applied"] == ["modify cn=x", "add cn=run"]
+    assert r.json()["conflicts"] == [{"key": "k1", "dn": "cn=x", "attribute": "mail", "record": ["a@x"],
+                                      "live": ["b@x"]}]
+    applied = named(world.calls, "apply_import")[-1]
+    assert applied[1][1:] == ("CHG-ACME-0042", ("k1",), (), file_evidence(files)) and applied[2] == "alice"
+    assert named(world.calls, "authorize_command")[-1][1] == ("apply", Area(""))
+
+
+def test_an_import_multipart_apply_takes_keys(world):
+    r = world.client.post("/v1/imports", headers=bearer(), files=[("files", ("conflict.json", b"{}"))],
+                          data={"importer": "pingfederate", "change": "CHG-ACME-0042", "keep": ["all"]})
+    assert r.status_code == 200 and named(world.calls, "apply_import")[0][1][2:4] == ((), ("all",))
+
+
+@pytest.mark.parametrize("kwargs, problem", [
+    ({"json": {"files": {"a": "b"}}}, "importer"),
+    ({"json": {"importer": "pingfederate", "files": {}}}, "files"),
+    ({"json": {"importer": "pingfederate", "files": {"a": "b"}, "at": "yesterday"}}, "YYYYMMDDhhmmssZ"),
+    ({"content": b"not json", "headers": {"content-type": "application/json"}}, "JSON object"),
+    ({"files": [("files", ("x.bin", b"\xff"))], "data": {"importer": "pingfederate"}}, "not UTF-8 text: x.bin")])
+def test_malformed_imports_are_400(world, kwargs, problem):
+    headers = {**bearer(), **kwargs.pop("headers", {})}
+    r = world.client.post("/v1/imports", headers=headers, **kwargs)
+    assert r.status_code == 400 and problem in r.json()["detail"]
+
+
+def test_verify_returns_the_report_document(world):
+    body = {"sources": [{"importer": "pingfederate", "files": {"data.json": "{}"}},
+                        {"importer": "pingam/config", "files": {"a.json": "{}"}}], "at": "20261018120000Z"}
+    r = world.client.post("/v1/onboard/verify", headers=bearer(), json=body)
+    assert r.status_code == 200 and r.json() == {"status": "pass", "sources": 2}
+    verified = named(world.calls, "onboard_verify")[0]
+    assert verified[1][0] == (("pingfederate", {"data.json": "{}"}), ("pingam/config", {"a.json": "{}"}))
+    assert named(world.calls, "authorize_command")[0][1] == ("read", Area(""))
+    assert world.client.post("/v1/onboard/verify", headers=bearer(), json={"sources": []}).status_code == 400
+
+
+def test_the_openapi_document_lists_the_endpoints(world):
+    paths = world.client.get("/openapi.json").json()["paths"]
+    assert {"/v1/browse", "/v1/entries/{dn}", "/v1/edits", "/v1/changes/{change_id}/approve", "/v1/imports",
+            "/v1/onboard/verify"} <= set(paths)
+    assert "multipart/form-data" in paths["/v1/imports"]["post"]["requestBody"]["content"]
