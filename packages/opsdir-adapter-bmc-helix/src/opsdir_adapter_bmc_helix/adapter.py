@@ -9,12 +9,12 @@ never a write to BMC."""
 from opsdir.core.contract import Adapter
 from .changes import CHANGES_IMPORTER
 from .collect import COLLECTORS
-from .drafts import TICKET_FIELDS, TICKET_GROUPS, ticket_draft
+from .drafts import FIELD_LIMITS, TICKET_FIELDS, TICKET_GROUPS, ticket_draft
 from .states import STATUS_STATES, WORK_ORDER_STATES
 
 ADAPTER = Adapter(name="bmc-helix", kind="itsm", applies=None, required_roles=(), render_neutral=None,
                   render_env=None, checks=(), ref_schemes=(), secret_schemes={}, renders=None, neutral_label=None,
                   vocabulary={}, schema=None, formats=(), products=(), secret_patterns=(),
                   importers=(CHANGES_IMPORTER,), profile_terms=None, access=None, collectors=COLLECTORS,
-                  settings=(STATUS_STATES, WORK_ORDER_STATES, TICKET_GROUPS, TICKET_FIELDS),
+                  settings=(STATUS_STATES, WORK_ORDER_STATES, TICKET_GROUPS, TICKET_FIELDS, FIELD_LIMITS),
                   ticket_draft=ticket_draft)

@@ -18,7 +18,9 @@ of the work-order create mappings (the task 612 research):
 and the other fields bmc-helix-ticket-fields gives, among them the people and companies BMC's create example needs
 (FOUNDATION): who submits and for whom, as the tenant's foundation data names them. Without the team's support group,
 or without a FOUNDATION field, no draft is written (the server would refuse it) and the problem says which setting to
-give. No field length is cut or checked: the form's limits weren't confirmed."""
+give. No field is cut: the form's limits weren't confirmed for every tenant, so bmc-helix-field-limits gives the
+installed form's character limits, and a value longer than its field's limit means no draft is written (the problem
+names the field, its length and the limit); with no limits given nothing is checked."""
 import json
 from urllib.parse import quote
 
@@ -42,6 +44,11 @@ TICKET_FIELDS = Setting("bmc-helix-ticket-fields", "string", None,
                         f"at least {', '.join(FOUNDATION)} (who submits the work order and for whom, as the "
                         "tenant's foundation data names them), and any the tenant's workflow requires (Priority, "
                         "Work Order Type, ...)")
+FIELD_LIMITS = Setting("bmc-helix-field-limits", "string", None,
+                       "The character limit of each BMC Helix work-order create field, as comma-separated "
+                       "<field>=<characters> (the installed form's limits, from the tenant's administrator: Summary, "
+                       "Detailed Description, ...); a draft with a longer value isn't written. None given: nothing "
+                       "is checked")
 HOW = (f"POST https://<ar-rest-host>{CREATE_PATH}",
        f"curl --request POST 'https://<ar-rest-host>{CREATE_PATH}' --header 'Authorization: AR-JWT <jwt>' "
        "--header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary @<team>.json",
@@ -74,6 +81,22 @@ def ticket_fields(d):
             (*problems, *(f"{TICKET_FIELDS.name}: `{k}` is set by opsdir: left out" for k in owned)))
 
 
+def field_limits(d):
+    """({field: characters}, problems) of bmc-helix-field-limits; a limit that isn't a positive whole number is named
+    and left out."""
+    pairs, problems = setting_mapping(d, FIELD_LIMITS)
+    bad = tuple(f"{FIELD_LIMITS.name}: `{k}={v}` isn't <field>=<characters>" for k, v in pairs
+                if not (v.strip().isdigit() and int(v) > 0))
+    return ({k: int(v) for k, v in reversed(pairs) if v.strip().isdigit() and int(v) > 0}, (*problems, *bad))
+
+
+def too_long(values, limits):
+    """The problems of the values longer than their field's limit: field, length and limit."""
+    return tuple(f"{field} is {len(str(values[field])):,} characters and the form takes {limit:,} "
+                 f"({FIELD_LIMITS.name}): no draft is written; shorten the findings or raise the limit"
+                 for field, limit in limits.items() if field in values and len(str(values[field])) > limit)
+
+
 def due_time(day):
     """The end of a do-by day in UTC as an AR System ISO 8601 date-time (2026-11-01T23:59:59.000+0000), or None."""
     return None if day is None else f"{day.isoformat()}T23:59:59.000+0000"
@@ -102,7 +125,8 @@ def work_order_values(request, group, fields):
 
 def ticket_draft(d, request):
     """TicketDraft of one team's findings: the work-order create body, or None with the problems saying which
-    setting to give (no support group for the team, a FOUNDATION field missing)."""
+    setting to give (no support group for the team, a FOUNDATION field missing) or which value is longer than its
+    field's limit (bmc-helix-field-limits)."""
     groups, group_problems = team_groups(d)
     fields, field_problems = ticket_fields(d)
     group = groups.get(request.team.lower())
@@ -115,8 +139,11 @@ def ticket_draft(d, request):
                    "whom, as the foundation data names them): "
                    f"{_setting_hint(TICKET_FIELDS, ', '.join(f'{f}=<value>' for f in FOUNDATION))}",)
                   if missing else ()))
-    problems = (*group_problems, *field_problems, *priority(request, fields)[1], *blocking)
-    if blocking:
+    limits, limit_problems = field_limits(d)
+    values = work_order_values(request, group, fields) if not blocking else {}
+    overlong = too_long(values, limits)
+    problems = (*group_problems, *field_problems, *limit_problems, *priority(request, fields)[1], *blocking, *overlong)
+    if blocking or overlong:
         return TicketDraft(None, "json", HOW, problems)
-    body = json.dumps({"values": work_order_values(request, group, fields)}, indent=2, ensure_ascii=False)
+    body = json.dumps({"values": values}, indent=2, ensure_ascii=False)
     return TicketDraft(body + "\n", "json", HOW, problems)

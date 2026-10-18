@@ -20,7 +20,7 @@ from opsdir_adapter_bmc_helix.adapter import ADAPTER
 from opsdir_adapter_bmc_helix.changes import (CHANGES_IMPORTER, approval_key, ar_error, read_changes, signatures_of,
                                               steps_of)
 from opsdir_adapter_bmc_helix.collect import COLLECTORS, change_steps, entries_view, source_problems
-from opsdir_adapter_bmc_helix.drafts import HOW, TICKET_FIELDS, TICKET_GROUPS, team_groups, ticket_draft
+from opsdir_adapter_bmc_helix.drafts import FIELD_LIMITS, HOW, TICKET_FIELDS, TICKET_GROUPS, team_groups, ticket_draft
 from opsdir_adapter_bmc_helix.states import (STATUS_STATES, WORK_ORDER_STATES, change_type, overall_approval,
                                              step_decision)
 from opsdir_adapter_bmc_helix.workorders import is_work_order
@@ -90,7 +90,7 @@ def _read(*changes, tree=TREE, approvals=None, files=None):
 def test_registered_as_an_itsm_add_on_with_its_importer_collector_and_status_setting():
     assert (ADAPTER.name, ADAPTER.kind, ADAPTER.applies, ADAPTER.importers, ADAPTER.collectors, ADAPTER.settings) == (
         "bmc-helix", "itsm", None, (CHANGES_IMPORTER,), COLLECTORS,
-        (STATUS_STATES, WORK_ORDER_STATES, TICKET_GROUPS, TICKET_FIELDS))
+        (STATUS_STATES, WORK_ORDER_STATES, TICKET_GROUPS, TICKET_FIELDS, FIELD_LIMITS))
     assert ADAPTER.ticket_draft is ticket_draft
     assert (TICKET_GROUPS.default, TICKET_FIELDS.default) == (None, None)           # site-specific: no default
     d, _, _ = model(tree=TREE)
@@ -337,10 +337,21 @@ def _request(team="Platform", items=(("action", "Certificates", "Renew the signi
                          "azure/prod)", items, do_by, "aws/prod", "azure/prod", AS_OF)
 
 
-def _drafting(groups=GROUPS, fields=FIELDS):
+def _drafting(groups=GROUPS, fields=FIELDS, limits=None):
     d, _, _ = model(tree=(*TREE, *((_setting(TICKET_GROUPS.name, groups),) if groups else ()),
-                          *((_setting(TICKET_FIELDS.name, fields),) if fields else ())))
+                          *((_setting(TICKET_FIELDS.name, fields),) if fields else ()),
+                          *((_setting("bmc-helix-field-limits", limits),) if limits else ())))
     return d
+
+
+def test_a_value_longer_than_the_forms_limit_means_no_draft_and_says_which():
+    fits = ticket_draft(_drafting(limits="Summary=100, Detailed Description=4000"), _request())
+    assert fits.body is not None and fits.problems == ()
+    tight = ticket_draft(_drafting(limits="Summary=20, Detailed Description=4000, Status=x"), _request())
+    assert tight.body is None and tight.problems == (
+        "bmc-helix-field-limits: `Status=x` isn't <field>=<characters>",
+        "Summary is 53 characters and the form takes 20 (bmc-helix-field-limits): no draft is written; shorten the "
+        "findings or raise the limit")
 
 
 def test_a_team_s_findings_are_drafted_as_a_work_order_create_body():
