@@ -279,6 +279,11 @@ def signals_of(m, installed=ADAPTERS):
     return tuple(s for a in declared_adapters(m, installed) for s in a.signals)
 
 
+def detections_of(m, installed=ADAPTERS):
+    """((adapter name, ProductDetection), ...) the adapters rendering environment m (its declared stack's) declare."""
+    return tuple((a.name, x) for a in declared_adapters(m, installed) for x in a.detections)
+
+
 def logs_of(m, installed=ADAPTERS):
     """The LogSources the adapters rendering environment m (its declared stack's) declare."""
     return tuple(s for a in declared_adapters(m, installed) for s in a.logs)
@@ -334,7 +339,8 @@ def services(installed=ADAPTERS, targets=None):
                     mounts_secrets=partial(mounts_secrets_of, installed=installed),
                     installed_logs=tuple(s for a in installed for s in a.logs),
                     siem_keeper=partial(siem_keeper_of, installed=installed),
-                    cert_forwarding=partial(cert_forwarding_of, installed=installed))
+                    cert_forwarding=partial(cert_forwarding_of, installed=installed),
+                    detections=partial(detections_of, installed=installed))
 
 
 def product_of(adapter):

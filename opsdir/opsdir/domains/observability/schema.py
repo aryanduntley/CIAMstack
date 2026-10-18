@@ -5,7 +5,8 @@ group, a paging service), what keeps logs (a log group, a workspace, a SIEM inde
 Activity Log's diagnostic setting, Cloud Audit Logs' sinks) are bindings each environment gives a role."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 from .naming import (ATTACK_TACTICS, AUDIT_EVENTS, AUDIT_SCOPES, CANARY_FLOWS, CHANNEL_KINDS, COMPARISONS,
-                     DESTINATION_KINDS, DURATION, ENTITY_MAPPING, LOG_KINDS)
+                     DECLARED_DETECTION, DESTINATION_KINDS, DETECTION_FIELDS, DURATION, ENTITY_MAPPING, LOG_KINDS,
+                     SELECTOR_TERM, WINDOW_KINDS)
 
 PERIOD = (("X-PATTERN", DURATION),)
 
@@ -82,6 +83,32 @@ ATTRIBUTES = (
                  "ip, host, url or application; identifier name, upn-suffix, nt-domain, sid, object-id (account), "
                  "address (ip), hostname, dns-domain (host), url (url), app-id, name (application)",
                  (("X-PATTERN", ENTITY_MAPPING),)),
+    # an alert rule adopting a detection a product adapter declares (core.contract.ProductDetection; milestone 109,
+    # task 594): what it counts, per what, over which window, and the declaration it came from
+    AttributeDef(968, 'ciamDetectionSelector', 'string', 'intent', False,
+                 "The events an alert rule counts, on the canonical fields every product's log is mapped to: "
+                 "'<field>=<value>[|<value>...]' (outcome=failure, action=login|admin-login), every value of the "
+                 "attribute holding. Each SIEM adapter renders it in the product's own field names and values, from "
+                 "the declaration the rule adopts (ciamDeclaredDetection)",
+                 (("X-PATTERN", SELECTOR_TERM),)),
+    AttributeDef(969, 'ciamGroupBy', enum_type(DETECTION_FIELDS), 'intent', False,
+                 "The canonical fields an alert rule counts per (subject, source-ip, realm, ...): a finding is about "
+                 "one value of each"),
+    AttributeDef(970, 'ciamDistinctField', enum_type(DETECTION_FIELDS), 'intent', True,
+                 "A canonical field whose distinct values an alert rule counts instead of its events (the subjects one "
+                 "source address tried: a password spray)"),
+    AttributeDef(971, 'ciamWindowKind', enum_type(WINDOW_KINDS), 'intent', True,
+                 "How an alert rule's window (its ciamEvaluationPeriod) is counted over: sliding (any span of that "
+                 "length) or fixed (clock-aligned buckets, which can miss what straddles two). A SIEM that can't "
+                 "count it so refuses the rule rather than render another"),
+    AttributeDef(972, 'ciamDeclaredDetection', 'string', 'intent', True,
+                 "The product detection an alert rule adopted, as '<adapter>:<id>' (an adapter's brute-force): its "
+                 "product field names and values per version come from that declaration",
+                 (("X-PATTERN", DECLARED_DETECTION),)),
+    AttributeDef(973, 'ciamDeclarationDigest', 'string', 'meta', True,
+                 "A digest of what an alert rule took from the declaration it adopted, when it last did: the planner "
+                 "offers the declaration's changes once it changes, and leaves the values a person tuned since",
+                 (("X-PATTERN", "^[0-9a-f]{16}$"),)),
     # forwarding a cloud log service's logs on to a SIEM (milestone 109, decision 3301)
     AttributeDef(962, 'ciamForwardsToRole', 'string', 'binding', True,
                  "The binding role of the SIEM index (a log destination of kind siem-index) a cloud log destination's "
@@ -116,9 +143,11 @@ ATTRIBUTES = (
 CLASSES = (
     ClassDef(62, 'ciamAlertRule', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamSignal', 'ciamAlertRole'),
              ('ciamTargetRole', 'ciamComparison', 'ciamThreshold', 'ciamEvaluationPeriod', 'ciamSeverity',
-              'ciamRunbookRef', 'ciamAttackTactic', 'ciamAttackTechnique'),
+              'ciamRunbookRef', 'ciamAttackTactic', 'ciamAttackTechnique', 'ciamDetectionSelector', 'ciamGroupBy',
+              'ciamDistinctField', 'ciamWindowKind', 'ciamDeclaredDetection', 'ciamDeclarationDigest'),
              'What the platform is watched for: a signal on a server role, the condition that fires, how severe, '
-             'who it goes to, what to do'),
+             'who it goes to, what to do; one adopting a product\'s declared detection also says which events it '
+             'counts, per what and over which window'),
     ClassDef(63, 'ciamLogRoute', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamLogKind', 'ciamLogDestinationRole'),
              ('ciamPublishedBy', 'ciamRetentionDays', 'ciamLegalHold'),
              "Where a server role's logs go and how long they must be kept (an obligation: audit logs survive a "

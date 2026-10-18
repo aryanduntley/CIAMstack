@@ -172,14 +172,17 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # destination): the name of the adapter rendering m that keeps a log destination of kind siem-index (its retention,
 # its detections and, where it ships logs to it itself, their forwarding: Adapter.siem_indexes), or None; a provider
 # adapter leaves a destination another adapter keeps to it; cert_forwarding(m, service name): the CertForwarding of
-# the load balancer fronting a service name, from the provider adapter that applies to m, or None
+# the load balancer fronting a service name, from the provider adapter that applies to m, or None; detections(m):
+# ((adapter name, ProductDetection), ...) the adapters rendering environment m declare (what an alert rule's
+# ciamDeclaredDetection <adapter>:<id> names: domains/observability.detections.declared)
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
                                    ("deployable_config", Callable), ("signals", Callable), ("logs", Callable),
                                    ("host_files", Callable), ("render_targets", Callable),
                                    ("mounts_secrets", Callable), ("installed_logs", tuple),
-                                   ("siem_keeper", Callable), ("cert_forwarding", Callable)])
+                                   ("siem_keeper", Callable), ("cert_forwarding", Callable),
+                                   ("detections", Callable)])
 
 # How an edge load balancer that verified a client certificate (a trust policy enforced at the edge, core pki trust)
 # passes it to the servers behind it (Adapter.cert_forwarding): the request header holding it, its encoding
@@ -282,6 +285,38 @@ Signal = namedtuple("Signal", ("signal", "server_role", "expr", "unit", "descrip
 # documentation states.
 LogSource = namedtuple("LogSource", ("server_role", "on", "path", "format", "kind", "match", "line_start",
                                      "requires", "container", "versions"), defaults=((), None, None, None, None))
+
+# How a product's log names what a detection selects on, for some of its versions (ProductDetection.mappings):
+# product (as the adapter's products name it), versions the product versions it holds for (a PEP 440 range,
+# versions.holds; None: every version), fields ((canonical field, the product's field path), ...): where each canonical
+# field (domains/observability naming.DETECTION_FIELDS) is in an event (principal, client.ip, response.statusCode),
+# values ((canonical field, canonical value, (product value, ...)), ...): what a canonical value (an outcome, an action)
+# is in the product's own words (outcome failure -> FAILED); a value it doesn't name is matched as it is.
+DetectionMapping = NamedTuple("DetectionMapping", [("product", str), ("versions", Optional[str]), ("fields", tuple),
+                                                   ("values", tuple)])
+
+# A detection a product adapter declares (Adapter.detections): what to watch its audit logs for, in vendor-neutral
+# terms each SIEM renders its own way (domains/observability.detections; Sigma is one export of it, never its source).
+# It becomes an alert rule only through a planner fix a person approves (ciamDeclaredDetection names it <adapter>:<id>).
+# id: stable within the adapter (brute-force); title, description: what it detects; products ((product, PEP 440 range
+# or None), ...): the product versions it holds for; server_role: the role of the servers writing the log;
+# log_source: the log's own name (an audit topic: authentication, access, config); mappings: DetectionMappings, the
+# product's field names and values per version; selector ((canonical field, (canonical value, ...)), ...): the events
+# it counts, every field matching one of its values; group_by (canonical field, ...): what it counts per (a subject, a
+# source address); distinct: a canonical field whose distinct values are counted instead of events (password spray:
+# subjects per source), or None; threshold: how many make a finding (None: every matching event is one), within
+# window_seconds, a window that is sliding (any span of that length) or fixed (clock-aligned buckets) (window_kind;
+# None without a threshold): a SIEM that can't honour it refuses it; tactics, techniques: MITRE ATT&CK (Enterprise,
+# the core's version) short names and IDs; severity: sev1 (most severe) to sev4, as ciamSeverity; prerequisites: what
+# must be configured or logged for it to see anything, in words; evidence: the URLs of the vendor documentation it
+# rests on; validation: documented (the vendor's documentation only), lab-verified (events captured from a lab of the
+# product's version) or live-verified (seen firing on a live system). Adapters declare only what documentation states.
+ProductDetection = NamedTuple("ProductDetection", [
+    ("id", str), ("title", str), ("description", str), ("products", tuple), ("server_role", str),
+    ("log_source", str), ("mappings", tuple), ("selector", tuple), ("group_by", tuple), ("distinct", Optional[str]),
+    ("threshold", Optional[int]), ("window_seconds", Optional[int]), ("window_kind", Optional[str]),
+    ("tactics", tuple), ("techniques", tuple), ("severity", str), ("prerequisites", tuple), ("evidence", tuple),
+    ("validation", str)])
 
 # A port a product's servers listen on: server_role the role of the servers, port and protocol (tcp or udp), purpose in
 # words (LDAPS, replication, cluster), peers who connects: any of clients (consumers, directly or through service
@@ -476,10 +511,12 @@ Adapter = namedtuple("Adapter", (
     "managed_identity",     # ManagedServices: the cloud-managed identity services it declares (their
                             # ciamManagedService values are in its vocabulary)
     "managed_directory",    # ManagedDirectories: the cloud-managed directory services it declares (likewise)
-    "cert_forwarding"),     # (EnvModel, ciamServiceName binding) -> CertForwarding: how its cloud's load balancer in
+    "cert_forwarding",      # (EnvModel, ciamServiceName binding) -> CertForwarding: how its cloud's load balancer in
                             # front of the service name passes on a client certificate it verified, or None
+    "detections"),          # ProductDetections: what its products' audit logs are watched for, offered as alert
+                            # rules (domains/observability.detections)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None, None, (), (), (), None))
+              None, False, None, None, (), None, None, None, (), (), (), None, ()))
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

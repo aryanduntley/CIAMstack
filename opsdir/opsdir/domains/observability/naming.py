@@ -19,6 +19,23 @@ ENTITY_IDENTIFIERS = {"account": ("name", "upn-suffix", "nt-domain", "sid", "obj
                       "host": ("hostname", "dns-domain"), "url": ("url",), "application": ("app-id", "name")}
 ENTITY_MAPPING = (r"^(" + "|".join(ENTITY_IDENTIFIERS) + r") [a-z-]+=[A-Za-z_][A-Za-z0-9_]*$")
 DURATION = "^[0-9]+(s|m|h|d)$"                  # 30s, 5m, 1h, 7d
+# Product-declared detections (core.contract.ProductDetection; milestone 109, task 594): the canonical fields a
+# detection selects, groups and counts on, whatever a product's log calls them (each declaration maps them per product
+# version): subject (the account a credential was tried for), source-ip (the client's address), realm (the realm,
+# tenant or instance), outcome (success | failure), action (what was done), actor (who changed something), object
+# (what was changed)
+DETECTION_FIELDS = ("subject", "source-ip", "realm", "outcome", "action", "actor", "object")
+DETECTION_OUTCOMES = ("success", "failure")
+# login: an end user's sign-in (a credential checked: a journey, an adapter, an LDAP bind); admin-login: an
+# administrator's; config-change: a configuration change; key-change: a change to signing or encryption keys or
+# certificates
+DETECTION_ACTIONS = ("login", "admin-login", "config-change", "key-change")
+WINDOW_KINDS = ("sliding", "fixed")             # any span of the window's length | clock-aligned buckets
+VALIDATIONS = ("documented", "lab-verified", "live-verified")
+# A canonical selector value: <field>=<value>[|<value>...] (every field of a rule's selector matches one of its values)
+SELECTOR_TERM = (r"^(" + "|".join(DETECTION_FIELDS) + r")=[A-Za-z0-9_.:@/-]+(\|[A-Za-z0-9_.:@/-]+)*$")
+DECLARED_DETECTION = r"^[a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9.-]*$"     # <adapter>:<detection id>
+SEVERITIES = ("sev1", "sev2", "sev3", "sev4")   # ciamSeverity's values (governance), most severe first
 AUDIT_SCOPES = ("account", "organization")     # one account (subscription, project), or every account of the
                                                # organization
 AUDIT_EVENTS = ("control-plane", "data-read", "data-write")   # management API calls; reads and writes of data
