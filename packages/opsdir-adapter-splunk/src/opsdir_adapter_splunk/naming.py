@@ -26,7 +26,7 @@ APP_DIR = f"splunk/apps/{APP}/default"              # where the render writes it
 INDEXES = f"{APP_DIR}/indexes.conf"
 SAVED_SEARCHES = f"{APP_DIR}/savedsearches.conf"
 SEARCH_LANGUAGE = "spl"                             # ciamSearchLanguage of a detection's SPL (its native one)
-_INDEX = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+_INDEX = re.compile(r"^[a-z0-9][a-z0-9_-]*$")    # Splunk's rule; and no "kvstore" anywhere (reserved), index_name
 
 FORWARDER_HOME = Setting("splunk-forwarder-home", "string", "/opt/splunkforwarder",
                          "Where the Splunk Universal Forwarder is installed on the servers ($SPLUNK_HOME): the "
@@ -36,9 +36,10 @@ SETTINGS = (FORWARDER_HOME,)
 
 def index_name(b):
     """The Splunk index a log destination names (its ciamProviderRef), or None when it isn't a SIEM index or its
-    reference isn't a Splunk index name."""
+    reference isn't a Splunk index name (lowercase letters, digits, '_' and '-', not starting with '_' or '-', never
+    containing "kvstore", which Splunk reserves)."""
     ref = one(b, "ciamProviderRef") if is_siem(b) else None
-    return ref if ref and _INDEX.match(ref) else None
+    return ref if ref and _INDEX.match(ref) and "kvstore" not in ref else None
 
 
 def enterprise_security(m):

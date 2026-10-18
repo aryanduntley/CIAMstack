@@ -90,6 +90,10 @@ def test_splunk_indexes_are_named_by_their_index_and_kept_by_the_add_on():
     (ws,) = (b for b in other.bindings if b.dn.startswith("cn=ws,"))
     assert index_name(ws) is None and not ADAPTER.siem_indexes(other, ws) and ADAPTER.siem_indexes(other, siem)
     assert services().siem_keeper(m, siem) == "splunk" and services().siem_keeper(other, ws) is None
+    reserved = entry(ALPHA, "kv", "ciamLogDestination", ciamBindingRole="kv", ciamDestinationKind="siem-index",
+                     ciamProviderRef="ciam_kvstore_audit")             # Splunk reserves "kvstore" in index names
+    (kv,) = (b for b in _alpha(*BINDINGS, reserved).bindings if b.dn.startswith("cn=kv,"))
+    assert index_name(kv) is None
 
 
 def test_indexes_conf_keeps_the_searchable_days_and_the_archive_when_longer():

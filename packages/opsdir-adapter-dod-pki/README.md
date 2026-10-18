@@ -48,5 +48,5 @@ What the planner then says about the trust policies that follow a bundle, and th
 - **SHA-1 manifest signatures.** DISA's manifests (DoD 5.14, ECA 5.12) are signed with SHA-1 digests. openssl still verifies them, but a future openssl security level could refuse them.
 - **Signer chain under DoD Root CA 6.** The ECA bundle's manifest is signed by a DoD credential. A policy that follows only `eca` is `verified` only once DoD Root CA 6 is in the record (as any CA certificate, not necessarily an anchor of that policy).
 - **No collector.** `opsdir collect` makes text requests, and the archive is binary. Download it with a browser or `curl`.
-- **Not rendered.** Consumers (PingFederate, PingAM, PingGateway, load balancers, gateways) are given the trust in a later milestone.
+- **Rendered by the consumers' adapters.** This package imports the bundles; the trust policies built on them are rendered into their consumers (PingFederate, PingAM, PingGateway, load balancers and gateways) by those consumers' own adapters.
 - **Live checks** (milestone 7.2 L): confirm each release's archive layout and signer, and an import of JITC and WCF archives, which haven't been tried.
