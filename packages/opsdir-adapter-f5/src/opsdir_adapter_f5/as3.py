@@ -15,6 +15,8 @@ name's traffic and protection policies as every cloud's front is (the core edge 
                               can't insert one: none, and the planner names it), source-ip as source-address, else []
   request inspection          policyWAF: the BIG-IP's WAF policy named after the protection policy
                               (/Common/<protection policy>)
+  edge trust policy           client certificates required on Service_HTTPS against the policy's bundle (a CA_Bundle)
+                              and the verified one forwarded by an iRule (client_certificates.py)
 
 A value the record can't give (a frontend address, a server address) is UNBOUND:<what>: AS3 refuses the
 declaration, naming it. Pure."""
@@ -22,6 +24,7 @@ from opsdir.core.directory import get, one, rdn_value, values
 from opsdir.core.environment import UNBOUND, of_class, servers_with_role
 from opsdir.domains.edge.resolve import inspected, service_edge
 from opsdir_adapter_ansible.names import ansible_name
+from .client_certificates import client_authentication
 
 SCHEMA_VERSION = "3.54.0"
 TLS_VERSIONS = ("1.0", "1.1", "1.2", "1.3")
@@ -79,6 +82,7 @@ def _application(m, svc, endpoints):
     cert = get(m.d, one(svc, "ciamTlsCertificate")) if one(svc, "ciamTlsCertificate") else None
     cert_name = rdn_value(cert) if cert is not None else f"{UNBOUND}{one(svc, 'ciamBindingRole')}-certificate"
     app = {"class": "Application", "template": "generic", "label": one(svc, "ciamFqdn")}
+    client_tls, client_objects, client_vs = client_authentication(m, svc, spec)
     for port in values(svc, "ciamPort"):
         pool = f"pool_{port}"
         common = {"virtualAddresses": [address], "virtualPort": int(port), "pool": pool,
@@ -86,7 +90,7 @@ def _application(m, svc, endpoints):
         if layer7:
             reencrypt = spec.mode == "reencrypt"
             app[f"vs_{port}"] = {"class": "Service_HTTPS", "redirect80": False, "serverTLS": "tls_server", **common,
-                                 **({"clientTLS": "tls_client"} if reencrypt else {}),
+                                 **({"clientTLS": "tls_client"} if reencrypt else {}), **client_vs,
                                  **({"policyWAF": {"bigip": f"/Common/{rdn_value(spec.protection)}"}}
                                     if inspected(spec) and spec.protection is not None else {})}
         else:
@@ -94,7 +98,8 @@ def _application(m, svc, endpoints):
         app[pool] = _pool(m, svc, port, monitor)
     if layer7:
         app["tls_server"] = {"class": "TLS_Server", "certificates": [{"certificate": "certificate"}],
-                             **_tls_off(spec.tls_min)}
+                             **_tls_off(spec.tls_min), **client_tls}
+        app.update(client_objects)
         app["certificate"] = {"class": "Certificate", "certificate": {"bigip": f"/Common/{cert_name}.crt"},
                               "privateKey": {"bigip": f"/Common/{cert_name}.key"}}
         if spec.mode == "reencrypt":

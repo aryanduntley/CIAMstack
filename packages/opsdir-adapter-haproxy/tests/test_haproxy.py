@@ -136,3 +136,90 @@ def test_two_names_on_the_same_address_and_port_the_later_isnt_rendered_and_is_b
     (blocker,) = check_binds(SimpleNamespace(d=alpha.d, src=alpha, dst=declared)).blockers
     assert blocker[1].startswith("alpha/prod: service name `sso.example.test` and `api.example.test` would both "
                                  "listen on every address:443")
+
+
+# ------------------------------------------------------------------ client certificates (edge trust policies)
+def _mtls(*extra, mode="terminate", **kw):
+    """The alpha model whose service name sso (TLS mode as given) is under the edge trust policy cac-users (anchor
+    CA_PEM), with a load-balancer server lb-1 and extra records."""
+    from opsdir.core.interchange.ldif import parse
+    from edge_samples import TERMINATE, TLS
+    from network_fixtures import ALPHA, entry
+    from pki_samples import ca_records, edge_trust_records
+    lb = entry(ALPHA, "lb-1", "ciamServer", ciamServerRole="load-balancer", ciamPrivateIp="10.1.9.5")
+    policy = (TERMINATE[0], TERMINATE[1].replace("ciamTlsMode: terminate", f"ciamTlsMode: {mode}"))
+    _, alpha, _ = model(alpha=(KEY, lb, *extra), tree=(*ca_records(), *policy,
+                                                       *edge_trust_records(CA_PEM, store=None, **kw)),
+                        changes=tuple(r for t in TLS for r in parse(t)))
+    return alpha
+
+
+def _sso(m):
+    return next(b for b in m.bindings if b.dn.startswith("cn=svc-sso,"))
+
+
+def test_an_edge_trust_policy_is_checked_at_the_bind_and_the_verified_certificate_forwarded():
+    files = render(_mtls(), services())
+    cfg = files["ansible/files/haproxy.cfg"]
+    assert ("    bind 10.1.9.10:443 ssl crt /etc/haproxy/certs/svc-sso.pem ssl-min-ver TLSv1.2 "
+            "ca-file /etc/haproxy/trust/cac_users.pem verify required\n") in cfg
+    assert ("    option forwardfor\n    http-request del-header X-SSL-Client-Cert\n"
+            "    http-request set-header X-SSL-Client-Cert %[ssl_c_der,base64]\n") in cfg      # client's copy gone
+    assert files["ansible/files/trust/cac_users.pem"] == CA_PEM.strip() + "\n"                 # public, beside it
+    (play,) = load(files["ansible/haproxy.yml"])
+    assert play["vars"]["ciam_haproxy_trust"] == ["cac_users.pem"]
+    names = [t["name"] for t in play["tasks"]]
+    copy = names.index("Client CA bundles of the trust policies checked here (public certificates)")
+    assert copy < names.index("HAProxy configuration, checked before it replaces the running one")   # haproxy -c
+    assert play["tasks"][copy]["ansible.builtin.copy"]["dest"] == "/etc/haproxy/trust/{{ item }}"
+
+
+def test_without_an_edge_policy_nothing_is_checked_or_copied():
+    files = render(_alpha(KEY), services())
+    assert "ca-file" not in files["ansible/files/haproxy.cfg"] and "X-SSL-Client-Cert" not in files[
+        "ansible/files/haproxy.cfg"]
+    (play,) = load(files["ansible/haproxy.yml"])
+    assert "ciam_haproxy_trust" not in play["vars"] and not [p for p in files if "/trust/" in p]
+
+
+def test_haproxy_declares_how_it_forwards_the_certificate_where_a_stack_declares_it():
+    from opsdir.connectors.registry import cert_forwarding_of
+    from opsdir.core.environment import StackComponent
+    from opsdir_adapter_haproxy.adapter import ADAPTER
+    alpha = _mtls()
+    declared = alpha._replace(stack=(*alpha.stack, StackComponent("load-balancer", "haproxy", None, None)))
+    f = cert_forwarding_of(declared, _sso(alpha), installed=(ADAPTER,))
+    assert (f.header, f.encoding, f.holds, f.sources) == ("X-SSL-Client-Cert", "der-base64", "leaf", ("10.1.9.5/32",))
+    assert not ADAPTER.applies(alpha) and cert_forwarding_of(alpha, _sso(alpha), installed=(ADAPTER,)) is None
+    assert ADAPTER.cert_forwarding(_mtls(mode="passthrough"), _sso(alpha)) is None      # mode tcp: nothing verifies
+
+
+def test_a_load_balancer_without_an_address_forwards_from_its_subnet():
+    from opsdir_adapter_haproxy.client_certificates import sources
+    from network_fixtures import ALPHA, entry
+    lb2 = entry(ALPHA, "lb-2", "ciamServer", ciamServerRole="load-balancer", ciamHostname="lb-2.example.test",
+                ciamSubnet=f"cn=subnet-web,ou=bindings,{ALPHA}")
+    alpha = _mtls(lb2)
+    subnet = next(b for b in alpha.bindings if b.dn.startswith("cn=subnet-web,"))
+    assert sources(alpha, "load-balancer") == ("10.1.9.5/32", *subnet.attrs["ciamCidr"])
+
+
+def test_what_haproxy_leaves_to_people_and_products():
+    from opsdir_adapter_haproxy.adapter import ADAPTER
+    revocation, chain = ADAPTER.notes(_mtls(extra="ciamRevocationMode: ocsp-then-crl\n"), services())
+    assert revocation.severity == "action" and "crl-file, a CRL for every CA in the chain; no OCSP" in revocation.text
+    assert chain.severity == "note" and "X-SSL-Client-Cert, der-base64" in chain.text
+    assert [n.severity for n in ADAPTER.notes(_mtls(), services())] == ["note"]          # no revocation: core's gap
+
+
+def test_a_policy_haproxy_cant_check_is_a_blocker_above_the_frontend():
+    from opsdir_adapter_haproxy.adapter import ADAPTER
+    alpha = _mtls(mode="passthrough")
+    (blocker,) = ADAPTER.notes(alpha, services())
+    assert blocker.severity == "blocker" and "TLS terminated at HAProxy for sso.example.test" in blocker.text
+    cfg = render(alpha, services())["ansible/files/haproxy.cfg"]
+    assert f"# NOTE: trust policy cac-users: {blocker.text}\nfrontend fe_svc_sso_443\n" in cfg
+    assert "ca-file" not in cfg
+    (bare,) = ADAPTER.notes(_mtls(anchors=False), services())
+    assert "an anchor recording its certificate" in bare.text
+    assert "ca-file" not in render(_mtls(anchors=False), services())["ansible/files/haproxy.cfg"]
