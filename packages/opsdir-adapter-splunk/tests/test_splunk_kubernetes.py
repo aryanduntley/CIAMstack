@@ -10,11 +10,14 @@ import pytest
 import yaml
 
 from opsdir.connectors.registry import services
-from opsdir.core.contract import LogSource
+from opsdir.core.contract import K8sIdentity, LogSource
+from opsdir.domains.access.naming import PERMISSION_SETS, PRINCIPALS
+from opsdir.domains.access.workloads import Pod, identity_pods
 from opsdir.domains.compute.naming import WORKLOADS, workload_dn
 from opsdir.domains.observability.naming import LOG_ROUTES
-from opsdir_adapter_splunk.kubernetes import (collector_notes, collector_values, cluster_shipments,
-                                              render_collectors, token_delivery)
+from opsdir_adapter_aws.kubernetes import workload_identity as aws_workload_identity
+from opsdir_adapter_splunk.kubernetes import (collector_notes, collector_values, collector_workload, cluster_shipments,
+                                              reader_identity, render_collectors, token_delivery)
 from opsdir_adapter_splunk.render import splunk_shipments
 from network_fixtures import ALPHA, entry, model
 
@@ -32,7 +35,34 @@ VALUES, SECRETS = "kubernetes/splunk-otel-collector/k8s-values.yaml", \
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def _model(intake="https://hec.example.test:8088", credential="hec", ref=VAULT, store=True):
+COLLECTOR_TREE = (
+    OU.format(PRINCIPALS, "principals"), OU.format(PERMISSION_SETS, "permission-sets"),
+    f"dn: {workload_dn('splunk-otel-collector')}\nobjectClass: top\nobjectClass: ciamWorkload\n"
+    "cn: splunk-otel-collector\nciamWorkloadKind: daemonset\nciamTargetRole: splunk-otel-collector\n"
+    "ciamNamespace: splunk-otel-collector\nciamServiceAccount: splunk-otel-collector-hec-reader\n"
+    "ciamClusterRole: k8s\nciamIdentityRole: identity-collector\n",
+    f"dn: cn=collector,{PERMISSION_SETS}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamPermissionSet\n"
+    "cn: collector\nciamPermits: read-secret hec\n")
+ROLE_ARN = "arn:aws:iam::111122223333:role/ciam-splunk-collector"
+
+
+def _principal(holds=True):
+    return (f"dn: cn=splunk-otel-collector,{PRINCIPALS}\nobjectClass: top\nobjectClass: ciamObject\n"
+            "objectClass: ciamPrincipal\ncn: splunk-otel-collector\nciamPrincipalKind: workload\n"
+            "ciamIdentityRole: identity-collector\nciamTargetRole: splunk-otel-collector\n"
+            + (f"ciamHoldsSet: cn=collector,{PERMISSION_SETS}\n" if holds else ""))
+
+
+def _collector(ref=AWS_SM, identity=True, holds=True, tree=COLLECTOR_TREE, **binding):
+    """The model with the collector's workload (identity role identity-collector bound when identity), its principal
+    and permit, and services giving AWS's workload identity (IRSA)."""
+    extra = (entry(ALPHA, "identity-collector", "ciamIdentityBinding", ciamBindingRole="identity-collector",
+                   **(binding or {"ciamProviderRef": ROLE_ARN})),) if identity else ()
+    m, found = _model(ref=ref, store=False, extra=extra, tree=(*tree, _principal(holds)))
+    return m, found, services()._replace(workload_identity=aws_workload_identity)
+
+
+def _model(intake="https://hec.example.test:8088", credential="hec", ref=VAULT, store=True, extra=(), tree=()):
     bindings = (entry(ALPHA, "siem", "ciamLogDestination", ciamBindingRole="siem", ciamDestinationKind="siem-index",
                       ciamProviderRef="ciam_security", ciamRetentionDays="90",
                       **({"ciamIntakeUrl": intake} if intake else {}),
@@ -43,8 +73,8 @@ def _model(intake="https://hec.example.test:8088", credential="hec", ref=VAULT, 
                 entry(ALPHA, "k8s", "ciamCluster", ciamBindingRole="k8s", ciamProviderRef="cluster-1"),
                 *((entry(ALPHA, "vault", "ciamSecretStore", ciamBindingRole="secret-store-vault", ciamRefScheme="vault",
                          ciamStoreEndpoint="https://vault.example.test:8200", ciamStoreAuthRole="splunk"),)
-                  if store else ()))
-    _, alpha, _ = model(alpha=bindings, tree=TREE)
+                  if store else ()), *extra)
+    _, alpha, _ = model(alpha=bindings, tree=(*TREE, *tree))
     found = splunk_shipments(alpha, services()._replace(
         logs=lambda m: (LogSource("web", "kubernetes", None, "json-lines", "audit"),)))
     return alpha, found
@@ -110,6 +140,69 @@ def test_without_an_intake_or_credential_the_cluster_is_a_blocker():
     assert blocker.severity == "blocker" and "an intake URL" in blocker.text and "a credential" in blocker.text
 
 
+def test_a_recorded_collector_workload_gives_the_reader_the_clouds_workload_identity():
+    m, found, svc = _collector()
+    ((cluster, _),) = cluster_shipments(m, found)
+    assert identity_pods(m, "identity-collector") == (
+        Pod("splunk-otel-collector", "splunk-otel-collector-hec-reader", cluster),)
+    docs = list(yaml.safe_load_all(render_collectors(m, found, svc)[SECRETS]))
+    assert docs[1]["metadata"] == {"name": "splunk-otel-collector-hec-reader", "namespace": "splunk-otel-collector",
+                                   "annotations": {"eks.amazonaws.com/role-arn": ROLE_ARN}}
+    assert docs[2]["spec"]["provider"]["aws"]["auth"] == {
+        "jwt": {"serviceAccountRef": {"name": "splunk-otel-collector-hec-reader"}}}
+    action, _ = collector_notes(m, found, svc)
+    assert "carries identity role identity-collector's cloud workload identity" in action.text
+    assert not any("identity" in s for s in action.how)
+
+
+def test_an_identity_role_without_the_credentials_permit_is_told_to_get_it():
+    m, found, svc = _collector(holds=False)
+    action, _ = collector_notes(m, found, svc)
+    (grant,) = [s for s in action.how if s.startswith("Let identity role identity-collector read")]
+    assert "read-secret hec" in grant
+
+
+def test_without_an_identity_the_reader_has_no_annotations_and_the_action_says_why():
+    for kw, why in (({"identity": False}, "identity role identity-collector, which this environment doesn't bind"),
+                    ({"ciamProviderRef": "ciam-splunk-collector"}, "identity-collector-role-arn")):
+        m, found, svc = _collector(**kw)
+        docs = list(yaml.safe_load_all(render_collectors(m, found, svc)[SECRETS]))
+        assert "annotations" not in docs[1]["metadata"], kw
+        action, _ = collector_notes(m, found, svc)
+        assert why in action.text and any(s.startswith("Give service account") for s in action.how), kw
+        assert not any(s.startswith("Or record the collector") for s in action.how), kw
+    m, found, _ = _collector()
+    ((cluster, _),) = cluster_shipments(m, found)
+    assert reader_identity(m, services()._replace(workload_identity=lambda m, b: None), cluster)[2] == \
+        "no installed adapter gives this environment's cloud workload identity"
+
+
+def test_without_a_collector_workload_the_action_proposes_the_entries_recording_it():
+    m, found, svc = _collector(tree=COLLECTOR_TREE[:2])
+    ((cluster, _),) = cluster_shipments(m, found)
+    assert collector_workload(m, cluster) is None
+    action, _ = collector_notes(m, found, svc)
+    assert "no workload records it (namespace splunk-otel-collector" in action.text
+    record, principal = [s for s in action.how if s.startswith(("Or record", "With it"))]
+    for what in (workload_dn("splunk-otel-collector"), "ciamWorkloadKind daemonset", "ciamClusterRole k8s",
+                 "ciamServiceAccount splunk-otel-collector-hec-reader", "no ciamWorkloadRole"):
+        assert what in record, what
+    assert "read-secret hec" in principal
+
+
+def test_azure_and_google_identities_annotate_the_reader_as_their_providers_read_it():
+    for identity, annotations in (
+            (K8sIdentity((("azure.workload.identity/client-id", "0000-1111"),),
+                         (("azure.workload.identity/use", "true"),)),
+             {"azure.workload.identity/client-id": "0000-1111"}),
+            (K8sIdentity((("iam.gke.io/gcp-service-account", "c@p.iam.gserviceaccount.com"),), ()),
+             {"iam.gke.io/gcp-service-account": "c@p.iam.gserviceaccount.com"})):
+        m, found, svc = _collector()
+        svc = svc._replace(workload_identity=lambda m, b: identity)
+        docs = list(yaml.safe_load_all(render_collectors(m, found, svc)[SECRETS]))
+        assert docs[1]["metadata"]["annotations"] == annotations
+
+
 @pytest.mark.skipif(not (ROOT / "tools" / "bin" / "kubeconform").exists(), reason="no tools (fetch-tools.sh)")
 def test_the_external_secrets_objects_are_valid_kubernetes(tmp_path):
     for ref, store in ((VAULT, True), (AWS_SM, False)):
@@ -117,6 +210,10 @@ def test_the_external_secrets_objects_are_valid_kubernetes(tmp_path):
         path = tmp_path / ref.split(":", 1)[0] / SECRETS
         path.parent.mkdir(parents=True)
         path.write_text(render_collectors(m, found, services())[SECRETS])
+    m, found, svc = _collector()
+    path = tmp_path / "identity" / SECRETS
+    path.parent.mkdir(parents=True)
+    path.write_text(render_collectors(m, found, svc)[SECRETS])
     done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-kubernetes.sh"), str(tmp_path)],
                           capture_output=True, text=True)
     assert done.returncode == 0, done.stdout + done.stderr

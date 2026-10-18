@@ -4029,6 +4029,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.973 NAME 'ciamDeclarationDigest' DES
  es, and leaves the values a person tuned since' EQUALITY caseIgnoreMatch SY
  NTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALU
  E-TYPE 'string' X-PATTERN '^[0-9a-f]{16}$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.974 NAME 'ciamStreamIntakeUrl' DESC 
+ 'Where a SIEM index takes the logs a cloud\27s delivery stream pushes to it
+ , when that differs from its ciamIntakeUrl (a host of its own for the strea
+ m): https URL, used as recorded; the credential is the same' EQUALITY caseI
+ gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
+ 'binding' X-VALUE-TYPE 'string' X-PATTERN '^https://[^\5Cs/?#]+(/[^\5Cs]*)?
+ $' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4357,11 +4364,12 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.66 NAME 'ciamLogDestination' DESC 'Wh
   cloud log destination may forward its logs on to a SIEM index (ciamForward
  sToRole: through the event stream ciamStreamRole names, events it can\27t d
  eliver kept where ciamStorageRef says), and a SIEM index takes pushed logs 
- at ciamIntakeUrl with the credential ciamCredentialRole references' SUP cia
- mBinding STRUCTURAL MUST ciamDestinationKind MAY ( ciamProviderRef $ ciamRe
- tentionDays $ ciamTotalRetentionDays $ ciamManagedBy $ ciamArchiveRef $ cia
- mForwardsToRole $ ciamIntakeUrl $ ciamCredentialRole $ ciamStreamRole $ cia
- mStorageRef ) X-ORIGIN 'opsdir' )
+ at ciamIntakeUrl with the credential ciamCredentialRole references (a cloud
+  delivery stream\27s at ciamStreamIntakeUrl, when it differs)' SUP ciamBind
+ ing STRUCTURAL MUST ciamDestinationKind MAY ( ciamProviderRef $ ciamRetenti
+ onDays $ ciamTotalRetentionDays $ ciamManagedBy $ ciamArchiveRef $ ciamForw
+ ardsToRole $ ciamIntakeUrl $ ciamCredentialRole $ ciamStreamRole $ ciamStor
+ ageRef $ ciamStreamIntakeUrl ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.67 NAME 'ciamAlarmBinding' DESC 'An a
  larm a cloud runs in an environment: the alert rule it realizes, what it ev
  aluates, what it notifies; a SIEM detection names the log destination (a SI
