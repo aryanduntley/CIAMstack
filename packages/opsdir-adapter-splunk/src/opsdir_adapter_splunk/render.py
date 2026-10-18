@@ -15,7 +15,9 @@ as that period, over it. Its description names the rule, which the importers rea
 ciamDetectionMode rows) runs its search as written, every evaluation period of its rule (5 minutes when none) over
 that period, its alert actions applied to each result (alert.digest_mode = 0: one alert per row). Where the stack
 declares Splunk Enterprise Security (offering enterprise-security), each is an ES correlation search, with its ATT&CK
-annotations, notable and risk objects (es.correlation_settings); elsewhere ATT&CK and entity mappings are notes.
+annotations, notable and risk objects (es.correlation_settings); elsewhere ATT&CK and entity mappings are notes. An
+alert rule adopting a product's declared detection that no alarm binding here realizes is a saved search too, its SPL
+written from the rule's canonical selector and the declaration's mapping, its window fixed or sliding (adopted).
 
 inputs.conf: per server role and install root, a [monitor://<file>] per log file a route ships to a Splunk index, with
 the index and a sourcetype (_json for JSON lines, else ciam:<role>:<file>). A file is monitored once.
@@ -42,11 +44,13 @@ from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.retention import INDEFINITE, retention_days
 from opsdir.domains.observability.siem import described, detection_index, detection_mode
 from opsdir.domains.observability.sources import ALL, shipments
+from .adopted import adopted_notes, native_stanzas, rendered_rules
 from .conf import write_conf
 from .es import correlation_settings, es_notes, platform_notes
 from .kubernetes import collector_notes, render_collectors
 from .naming import (APP, FORWARDER_HOME, INDEXES, SAVED_SEARCHES, enterprise_security, index_name,
                      kept_indexes)
+from .schedule import cron_schedule
 
 DAY = 86400
 OPERATORS = {"gt": ">", "ge": ">="}
@@ -68,17 +72,6 @@ def index_stanza(b):
                    *((("frozenTimePeriodInSecs", str(days * DAY)),) if days not in (None, INDEFINITE) else ()),
                    *((("archiver.enableDataArchive", "true"), ("archiver.coldStorageRetentionPeriod", str(total)))
                      if archived else ())))
-
-
-def cron_schedule(seconds):
-    """(cron schedule running every seconds, None) or (None, why it can't be): every N minutes dividing an hour, or
-    every N hours dividing a day."""
-    minutes = seconds // 60
-    if seconds % 60 == 0 and 0 < minutes < 60 and 60 % minutes == 0:
-        return f"*/{minutes} * * * *", None
-    if seconds % 3600 == 0 and 0 < minutes // 60 <= 24 and 24 % (minutes // 60) == 0:
-        return f"0 */{minutes // 60} * * *", None
-    return None, f"its evaluation period ({seconds}s) isn't a schedule cron can run evenly (minutes dividing an hour)"
 
 
 def detection_search(metric, rule, c):
@@ -139,12 +132,13 @@ def detection_notes(m):
     return tuple(n for n in map(of, splunk_detections(m)) if n is not None)
 
 
-def mapping_notes(m):
-    """The render notes of what environment m's rendered Splunk detections record of ATT&CK and entities: an ES
-    correlation search's (es.es_notes) where it runs Splunk Enterprise Security, else what a saved search can't hold
-    (es.platform_notes)."""
+def mapping_notes(m, services):
+    """The render notes of what environment m's rendered Splunk detections, and the adopting rules rendered from a
+    product's declaration (adopted.rendered_rules), record of ATT&CK and entities: an ES correlation search's
+    (es.es_notes) where it runs Splunk Enterprise Security, else what a saved search can't hold (es.platform_notes)."""
     rendered = tuple(s for s in splunk_detections(m) if search_stanza(m, s) is not None)
-    return es_notes(m, rendered) if enterprise_security(m) else platform_notes(m, rendered)
+    adopted = rendered_rules(m, services)
+    return es_notes(m, rendered, adopted) if enterprise_security(m) else platform_notes(m, rendered, adopted)
 
 
 def _retention_notes(m):
@@ -191,7 +185,7 @@ def _route_notes(m, found, services):
           for x in clashes))
 
 
-def _team_notes(m, found, rendered):
+def _team_notes(m, found, rendered, adopted):
     servers = any(x.on == "servers" for x in found)
     return (
         *((note("Logs", "action", f"Splunk app {APP}", "rendered for the Splunk team to install where indexes and "
@@ -208,14 +202,15 @@ def _team_notes(m, found, rendered):
         *((note("Monitoring", "action", "Splunk alert actions", "the detections' saved searches fire, but who they "
                 "notify (their alert actions) is set in Splunk, not rendered",
                 ("Set each detection's alert actions to the channel its alert rule names",), None, m.label),)
-          if any(search_stanza(m, s) for s in splunk_detections(m)) else ()))
+          if adopted or any(search_stanza(m, s) for s in splunk_detections(m)) else ()))
 
 
 def render_notes(m, services):
     """Adapter notes: what environment m's Splunk render leaves out or to a person."""
     found = splunk_shipments(m, services)
     rendered = bool(kept_indexes(m) or splunk_detections(m))
-    return (*_team_notes(m, found, rendered), *_retention_notes(m), *detection_notes(m), *mapping_notes(m),
+    return (*_team_notes(m, found, rendered, rendered_rules(m, services)), *_retention_notes(m),
+            *detection_notes(m), *adopted_notes(m, services), *mapping_notes(m, services),
             *_route_notes(m, found, services))
 
 
@@ -225,13 +220,14 @@ def _comments(notes):
 
 def render(m, services):
     """Adapter render_env: environment m's opsdir_ciam app when it keeps logs in a Splunk index or runs a detection on
-    one: indexes.conf, the render notes as comments at its top, and savedsearches.conf when a detection renders."""
+    one: indexes.conf, the render notes as comments at its top, and savedsearches.conf when a detection (or an
+    adopting rule: adopted) renders."""
     indexes, searches = kept_indexes(m), splunk_detections(m)
     if not indexes and not searches:
         return {}
     collectors = render_collectors(m, splunk_shipments(m, services), services)
     notes = render_notes(m, services)
-    stanzas = tuple(x for x in (search_stanza(m, s) for s in searches) if x is not None)
+    stanzas = (*(x for x in (search_stanza(m, s) for s in searches) if x is not None), *native_stanzas(m, services))
     return {INDEXES: write_conf(header(m, f"Splunk indexes (app {APP})", INI) + _comments(notes),
                                 tuple(index_stanza(b) for b in indexes)),
             **({SAVED_SEARCHES: write_conf(header(m, f"Splunk saved searches: the detections (app {APP})", INI),

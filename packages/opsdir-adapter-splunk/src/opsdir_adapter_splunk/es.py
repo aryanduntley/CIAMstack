@@ -15,7 +15,9 @@ A correlation search is a saved search in savedsearches.conf marked action.corre
   action.risk = 1 and the JSON list action.risk.param._risk, a risk object per account name (risk_object_type user)
   and host name (system), its column the risk_object_field and its risk_score the alert rule's severity (sev0 99, sev1
   73, sev2 47, sev3 and sev4 21; 47 when none: Elastic's scale, so both SIEMs score a rule alike), and a threat object
-  per IP address (threat_object_field, threat_object_type ip_address).
+  per IP address (threat_object_field, threat_object_type ip_address); for an alert rule rendered from a product's
+  declared detection (adopted), the same for the fields it groups by (a subject or actor as a user, a source address
+  as a threat object: search_settings with risk_entries).
 The entity mappings ES has no documented type for (an account's other identifiers, a host's DNS domain, a URL, an
 application) are notes; the notable's severity and security domain aren't rendered (ES's stored values for them
 aren't established) and are set in ES, with the check that ES 8.7 reads these settings as it saves a detection (an
@@ -54,19 +56,29 @@ def annotations(rule):
 def risk_objects(s):
     """The risk action's objects of detection spec s (a rows detection's entity mappings ES has a type for, in the
     record's order): a risk object per account or host, a threat object per IP address; () for a count detection."""
-    if detection_mode(s.alarm) != "rows":
-        return ()
-    score = RISK_SCORES.get(one(s.rule, "ciamSeverity") or "", UNRATED)
+    return risk_entries(s.rule, entity_mappings(s.alarm)) if detection_mode(s.alarm) == "rows" else ()
+
+
+def risk_entries(rule, mapped):
+    """The risk action's objects of an alert rule's search whose results name mapped ((entity, identifier, result
+    column), ...), those ES has a type for, in order: a risk object per account or host (its risk score the rule's
+    severity), a threat object per IP address."""
+    score = RISK_SCORES.get(one(rule, "ciamSeverity") or "", UNRATED)
     return tuple({"risk_object_field": col, "risk_object_type": RISK_OBJECTS[(e, i)], "risk_score": score}
                  if (e, i) in RISK_OBJECTS else
                  {"threat_object_field": col, "threat_object_type": THREAT_OBJECTS[(e, i)]}
-                 for e, i, col in entity_mappings(s.alarm) if (e, i) in RISK_OBJECTS or (e, i) in THREAT_OBJECTS)
+                 for e, i, col in mapped if (e, i) in RISK_OBJECTS or (e, i) in THREAT_OBJECTS)
 
 
 def correlation_settings(s):
-    """The settings detection spec s's saved search adds as an ES correlation search: the marker and label, its
-    ATT&CK annotations, the notable, and the risk action when it names risk or threat objects."""
-    rule, marks, found = rdn_value(s.rule), annotations(s.rule), risk_objects(s)
+    """The settings detection spec s's saved search adds as an ES correlation search (search_settings)."""
+    return search_settings(s.rule, risk_objects(s))
+
+
+def search_settings(alert_rule, found):
+    """The settings an alert rule's saved search adds as an ES correlation search: the marker and label, its ATT&CK
+    annotations, the notable, and the risk action when found (risk_entries) names risk or threat objects."""
+    rule, marks = rdn_value(alert_rule), annotations(alert_rule)
     return (("action.correlationsearch.enabled", "1"), ("action.correlationsearch.label", rule),
             *((("action.correlationsearch.annotations", marks),) if marks else ()),
             ("action.notable", "1"), ("action.notable.param.rule_title", rule),
@@ -90,32 +102,40 @@ def risk_mappings(text):
     return tuple(m for m in (mapped(x) for x in (found if isinstance(found, list) else []) if isinstance(x, dict)) if m)
 
 
-def es_notes(m, specs):
-    """Notes of the ES correlation searches of environment m's rendered detection specs: entity mappings ES has no
-    type for, tactics recorded without techniques, techniques the core's ATT&CK version doesn't hold (notes), and what
-    ES keeps to the Splunk team (an action)."""
+def attack_notes(m, rule):
+    """Notes of what an alert rule's correlation search doesn't annotate of its ATT&CK: tactics recorded without
+    techniques, techniques the core's ATT&CK version doesn't hold."""
+    name = rdn_value(rule)
+    bare = values(rule, "ciamAttackTactic") if not values(rule, "ciamAttackTechnique") else ()
+    gone = unknown_techniques(values(rule, "ciamAttackTechnique"))
+    return (*((note("Monitoring", "note", f"alert rule {name}", f"its ATT&CK tactics {', '.join(bare)} aren't "
+                    "annotated: ES annotates a correlation search by technique (mitre_attack) and derives the "
+                    "tactics, and the rule records no technique (ciamAttackTechnique)",
+                    ("Record the techniques it detects (ciamAttackTechnique)",), rule.dn, m.label),)
+              if bare else ()),
+            *((note("Monitoring", "note", f"alert rule {name}", f"its ATT&CK techniques {', '.join(gone)} aren't "
+                    f"annotated: they aren't in {VERSION} (retired, or never in ATT&CK)",
+                    ("Apply the plan's fix replacing them (ciamAttackTechnique)",), rule.dn, m.label),)
+              if gone else ()))
+
+
+def es_notes(m, specs, rules=()):
+    """Notes of the ES correlation searches of environment m's rendered detection specs and of the alert rules
+    rendered from a product's declaration (rules): entity mappings ES has no type for, tactics recorded without
+    techniques, techniques the core's ATT&CK version doesn't hold (notes), and what ES keeps to the Splunk team (an
+    action)."""
     def of(s):
-        rule = rdn_value(s.rule)
         left = tuple(f"{e} {i}" for e, i, _ in entity_mappings(s.alarm)
                      if (e, i) not in RISK_OBJECTS and (e, i) not in THREAT_OBJECTS) \
             if detection_mode(s.alarm) == "rows" else ()
-        bare = values(s.rule, "ciamAttackTactic") if not values(s.rule, "ciamAttackTechnique") else ()
-        gone = unknown_techniques(values(s.rule, "ciamAttackTechnique"))
-        return (*((note("Monitoring", "note", f"alert rule {rule}", f"its entity mappings {', '.join(left)} aren't "
-                        "risk or threat objects of its correlation search: opsdir renders an account's name and a "
-                        "host's name as risk objects and an IP address as a threat object, the types ES documents",
+        return (*((note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}", f"its entity mappings "
+                        f"{', '.join(left)} aren't risk or threat objects of its correlation search: opsdir renders an "
+                        "account's name and a host's name as risk objects and an IP address as a threat object, the "
+                        "types ES documents",
                         ("Add them to the correlation search's risk modifiers in ES if needed",), s.alarm.dn,
                         m.label),) if left else ()),
-                *((note("Monitoring", "note", f"alert rule {rule}", f"its ATT&CK tactics {', '.join(bare)} aren't "
-                        "annotated: ES annotates a correlation search by technique (mitre_attack) and derives the "
-                        "tactics, and the rule records no technique (ciamAttackTechnique)",
-                        ("Record the techniques it detects (ciamAttackTechnique)",), s.rule.dn, m.label),)
-                  if bare else ()),
-                *((note("Monitoring", "note", f"alert rule {rule}", f"its ATT&CK techniques {', '.join(gone)} aren't "
-                        f"annotated: they aren't in {VERSION} (retired, or never in ATT&CK)",
-                        ("Apply the plan's fix replacing them (ciamAttackTechnique)",), s.rule.dn, m.label),)
-                  if gone else ()))
-    return (*(n for s in specs for n in of(s)),
+                *attack_notes(m, s.rule))
+    return (*(n for s in specs for n in of(s)), *(n for r in rules for n in attack_notes(m, r)),
             *((note("Monitoring", "action", "Splunk Enterprise Security", "the detections are rendered as correlation "
                     "searches with the notable (action.notable) and risk (action.risk) settings ES documents; their "
                     "findings' severity and security domain aren't rendered (the values ES stores for them aren't "
@@ -123,19 +143,26 @@ def es_notes(m, specs):
                     "intermediate findings) isn't established either",
                     ("Set each correlation search's finding severity and security domain in ES",
                      "Before installing the app, compare one detection saved in ES (its savedsearches.conf stanza) "
-                     "with these and report a difference to the opsdir team"), None, m.label),) if specs else ()))
+                     "with these and report a difference to the opsdir team"), None, m.label),)
+              if specs or rules else ()))
 
 
-def platform_notes(m, specs):
-    """Notes of environment m's rendered detection specs recording ATT&CK or entity mappings a plain saved search has
-    no place for."""
+def _platform_note(m, rule, found, dn):
+    return note("Monitoring", "note", f"alert rule {rdn_value(rule)}", f"{' and '.join(found)} aren't rendered: a "
+                "saved search has no place for them (a Splunk Enterprise Security correlation search does)",
+                ("If the environment runs Splunk Enterprise Security, declare its Splunk stack component's offering "
+                 "enterprise-security (ciamOffering)",), dn, m.label)
+
+
+def platform_notes(m, specs, rules=()):
+    """Notes of environment m's rendered detection specs, and alert rules rendered from a product's declaration
+    (rules), recording ATT&CK or entity mappings a plain saved search has no place for."""
+    def attack(rule):
+        return (["its ATT&CK tactics and techniques"]
+                if values(rule, "ciamAttackTactic") or values(rule, "ciamAttackTechnique") else [])
+
     def what(s):
-        return (*(["its ATT&CK tactics and techniques"]
-                  if values(s.rule, "ciamAttackTactic") or values(s.rule, "ciamAttackTechnique") else []),
+        return (*attack(s.rule),
                 *(["its entity mappings"] if detection_mode(s.alarm) == "rows" and entity_mappings(s.alarm) else []))
-    return tuple(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}", f"{' and '.join(found)} aren't "
-                      "rendered: a saved search has no place for them (a Splunk Enterprise Security correlation "
-                      "search does)",
-                      ("If the environment runs Splunk Enterprise Security, declare its Splunk stack component's "
-                       "offering enterprise-security (ciamOffering)",), s.alarm.dn, m.label)
-                 for s in specs for found in (what(s),) if found)
+    return (*(_platform_note(m, s.rule, found, s.alarm.dn) for s in specs for found in (what(s),) if found),
+            *(_platform_note(m, r, attack(r), r.dn) for r in rules if attack(r)))

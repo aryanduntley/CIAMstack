@@ -21,7 +21,9 @@ the render wrapped with the rule's condition when it is one, else the search as 
 alert actions apply to each result (alert.digest_mode off) or whose risk action names objects is a rows detection
 (ciamDetectionMode rows), its risk and threat objects the entity mappings they were rendered from (es.risk_mappings);
 an ES correlation search's annotations are its alert rule's, not read. Saved searches naming no rule and not in the
-record are counted.
+record are counted. One the render wrote for an alert rule adopting a product's declared detection (named
+opsdir-<rule>: detections.is_native) is left out: the record holds no search for it, the rule and its declaration say
+what it is.
 
 What a source says about the environment's other log destinations and alarms (a cloud's) is not this importer's: the
 placement's notices about them are left out.
@@ -32,6 +34,7 @@ import re
 from opsdir.core.directory import get
 from opsdir.core.environment import env_dn, env_model, of_class
 from opsdir.core.inventory import layout_import, realization_roles, resource
+from opsdir.domains.observability.detections import is_native
 from opsdir.domains.observability.siem import own_notices, realized_in
 from .conf import read_conf
 from .es import risk_mappings
@@ -88,9 +91,11 @@ def search_resource(name, settings):
 
 
 def resources_of(indexes, searches):
-    """(resources, notices) of an environment's indexes and saved searches, each ((name, {setting: value}), ...)."""
+    """(resources, notices) of an environment's indexes and saved searches, each ((name, {setting: value}), ...); a
+    saved search the render wrote from an adopted detection's declaration (detections.is_native) left out."""
     read = tuple(index_resource(n, s) for n, s in indexes if not n.startswith("_"))
-    return ((*(r for r, _ in read), *(search_resource(n, s) for n, s in searches)),
+    return ((*(r for r, _ in read),
+             *(search_resource(n, s) for n, s in searches if not is_native(n, s.get("description")))),
             tuple(x for _, ns in read for x in ns))
 
 

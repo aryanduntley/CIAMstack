@@ -41,6 +41,13 @@ A **rows** detection (`ciamDetectionMode: rows`, milestone 109, task 587) runs i
 
 On the plain platform, a saved search has no place for ATT&CK or entities: a detection recording them is a note.
 
+**Alert rules adopting a product's declared detection** (`ciamDeclaredDetection`, milestone 109, task 597). A rule the environment delivers that no alarm binding of its own realizes is a saved search named `opsdir-<rule>`, its SPL written by the add-on (never recorded) from the rule's canonical selector and the declaration's mapping for the product version the environment runs (`opsdir.domains.observability.detections.native_rules`), over every Splunk index the rule's server role's log routes reach:
+- the search: `index=<index>` (`(index=a OR index=b)`), each canonical field as the product's field and each value as the product's (`result="FAILED"`, `eventName IN ("LOGIN-COMPLETED", "LOGIN-FAILED")`), then `| stats count by <group-by fields> | where count >= <threshold>` or, with a distinct field, `| stats dc(<field>) AS value_count by <group-by fields> | where value_count >= <threshold>`; the trigger `counttype = number of events`, `relation = greater than`, `quantity = 0` (the names `savedsearches.conf` documents) and `alert.digest_mode = 0`: one alert per group. A rule without a threshold alerts per matching event every 5 minutes over the 5 clock minutes before.
+- a **fixed** window: `cron_schedule` every window (minutes dividing an hour, hours dividing a day) over the clock-aligned window just ended (`dispatch.earliest_time = -15m@m`, `dispatch.latest_time = @m`).
+- a **sliding** window: `cron_schedule` every step (a fifth of the window, a minute at least) over the whole window (`-<window>s` to `now`), each group suppressed for a window once it fires (`alert.suppress = 1`, `alert.suppress.fields = <group-by fields>`, `alert.suppress.period = <window>s`): every burst within the window less one step is caught. `streamstats time_window` would count every span exactly, but Splunk caps its window at `max_stream_window` events (10,000 by default) even then, so on a busy index it undercounts.
+- on Splunk ES, a correlation search as above, its risk objects the group-by fields: a subject or actor as a user risk object, a source address as an `ip_address` threat object.
+The reader leaves `opsdir-<rule>` searches realizing their rule out: the record holds no search for them, so the round trip changes nothing.
+
 ## What it leaves to a person (render notes)
 
 | Note | Severity |
@@ -51,6 +58,8 @@ On the plain platform, a saved search has no place for ATT&CK or entities: a det
 | An index kept indefinitely (searchable or in all): Splunk freezes by age, so the setting isn't rendered and Splunk's default applies | action |
 | A detection whose condition a saved search can't count (a threshold that isn't a rate or a count; a comparison other than `gt`/`ge`; a period cron can't run evenly) | blocker |
 | A detection that records no search | note |
+| An adopting rule the add-on can't write: its condition isn't a count reached, no mapping holds for the product version run, a field the mapping doesn't name or SPL can't name (letters, digits, `_`, `.`), a fixed window cron can't keep, a sliding window too short to search again within it | blocker |
+| An adopting rule rendered from a declaration documented only; the searches name the product's fields as Splunk extracts them from JSON events (`_json`) | note |
 | Splunk ES: each finding's severity and security domain (`action.notable.param.severity`, `.security_domain`) are set in ES (the values ES stores aren't established); compare one detection saved in ES 8 with the rendered settings before installing (ES 8's own serialization of findings and intermediate findings isn't established) | action |
 | Splunk ES: entity mappings with no documented risk or threat object type (an account's other identifiers, a host's DNS domain, a URL, an application); ATT&CK tactics recorded without techniques; ATT&CK techniques not in ATT&CK v20 | note |
 | Plain platform: a detection's ATT&CK and entity mappings, which a saved search can't hold | note |

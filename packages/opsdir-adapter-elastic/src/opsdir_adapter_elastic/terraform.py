@@ -27,6 +27,7 @@ from opsdir.core.notes import note_comment
 from opsdir.core.settings import setting_value
 from opsdir_format_terraform.format import FORMAT as HCL
 from opsdir_format_terraform.hcl import Block, Expr, NestedBlock, block, data_block, data_value, tf_name
+from .adopted import native_bodies
 from .detections import rendered_rules
 from .lifecycle import (component_template, data_stream_lifecycle, ilm_policy, lifecycle_streams, rendered_streams,
                         slm_policy)
@@ -132,22 +133,32 @@ def _fleet_blocks(m, services):
     return (*map(integration_block, used), *map(agent_policy_block, agents), *map(package_policy_block, packages))
 
 
+def _attribute(key, value):
+    """A rule body's value as the provider's attribute: the investigation fields as their list, an alert suppression's
+    duration ({value, unit} in the API) as its text (5m)."""
+    if key == "investigation_fields":
+        return value["field_names"]
+    if key == "alert_suppression":
+        return {**value, "duration": f"{value['duration']['value']}{value['duration']['unit']}"}
+    return value
+
+
 def rule_block(name, body, space):
     """The elasticstack_kibana_security_detection_rule block of a detection rule (the binding's name, the rule as the
     API takes it), in Kibana space space (None: the default space)."""
     return data_block("resource", ["elasticstack_kibana_security_detection_rule", tf_name(name)], [
-        *((("space_id", space),) if space else ()),
-        *((k, v["field_names"] if k == "investigation_fields" else v) for k, v in body.items())])
+        *((("space_id", space),) if space else ()), *((k, _attribute(k, v)) for k, v in body.items())])
 
 
 def terraform_files(m, notes, services):
-    """{elastic/terraform/<file>: text}: environment m's data streams' retention, its detections' rules and the Fleet
-    policies shipping its logs as Terraform, notes (RenderNotes) as comments at the top of main.tf; nothing when it
-    renders none."""
+    """{elastic/terraform/<file>: text}: environment m's data streams' retention, its detections' rules (those adopted
+    from a product's declaration too: adopted) and the Fleet policies shipping its logs as Terraform, notes
+    (RenderNotes) as comments at the top of main.tf; nothing when it renders none."""
     space = setting_value(m.d, KIBANA_SPACE)
+    named = None if space == KIBANA_SPACE.default else space
     blocks = (*_retention_blocks(m),
-              *(rule_block(rdn_value(spec.alarm), body, None if space == KIBANA_SPACE.default else space)
-                for spec, body in rendered_rules(m)),
+              *(rule_block(rdn_value(spec.alarm), body, named) for spec, body in rendered_rules(m)),
+              *(rule_block(name, body, named) for name, body in native_bodies(m, services)),
               *_fleet_blocks(m, services))
     if not blocks:
         return {}
