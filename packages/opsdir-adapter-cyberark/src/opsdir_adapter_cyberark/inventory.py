@@ -174,4 +174,4 @@ def read_accounts(files, d, patterns, at=None):
 
 
 ACCOUNTS_IMPORTER = Importer("accounts", "CyberArk safes' account inventory, metadata only (PVWA /API/Accounts "
-                                         "listings: accounts/<safe>.json or its pages)", read_accounts)
+                                         "listings: accounts/<safe>.json or its pages)", read_accounts, reference=True)

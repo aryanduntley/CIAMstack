@@ -45,7 +45,7 @@ def read_regions(files, d, patterns, at=None):
 
 
 REGIONS = Importer("regions", "Azure's region list (az account list-locations -o json), as the region catalog's "
-                              "azure regions", read_regions, ((EXPORT, COMMAND),))
+                              "azure regions", read_regions, ((EXPORT, COMMAND),), reference=True)
 PREREQUISITE = Prerequisite("azure-regions", "Azure's region list, for the region catalog (residencies and the "
                                              "planner's region checks)", REGIONS.name,
                             partial(holds_regions, provider=PROVIDER))

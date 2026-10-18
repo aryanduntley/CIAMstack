@@ -8,9 +8,9 @@ import pytest
 from opsdir.connectors.fixes import unmet
 from opsdir.core.changeset import new_entry
 from opsdir.core.directory import get, values
-from opsdir.domains.governance.imports import (check_import_runs, import_rows, import_scope_rows, misnamed_runs,
-                                               renamed_run_records, run_dn, run_records, runs_covering, scope_set,
-                                               scope_set_key)
+from opsdir.domains.governance.imports import (check_import_runs, file_evidence, import_rows, import_scope_rows,
+                                               imported_files, misnamed_runs, renamed_run_records, run_dn, run_records,
+                                               runs_covering, scope_set, scope_set_key)
 from opsdir.domains.governance.naming import IMPORTS
 from opsdir.domains.infrastructure.firewall import priority_check
 from network_fixtures import ALPHA, BETA, context, model, rule
@@ -111,6 +111,25 @@ def test_evidence_is_cleared_only_on_the_run_of_the_same_set():
     assert again.dn == collected[-1].dn and [m for m in again.mods if m[1].startswith("ciamCollect")] == [
         ("replace", "ciamCollectionIdentity", ()), ("replace", "ciamCollectedCall", ())]
     assert get(_d(collected, other, (again,)), other[-1].dn).attrs["ciamCollectionIdentity"] == ("arn:x",)
+
+
+def test_a_run_read_off_disk_records_each_file_and_its_hash_and_replaces_collected_evidence():
+    files = {"b/state.json": "{}\n", "a.json": "[]"}
+    evidence = file_evidence(files)
+    assert evidence == {"ciamImportedFile": (
+        "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945 a.json",
+        "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356 b/state.json")}
+    proof = {"ciamCollectionIdentity": ("arn:x",), "ciamCollectedCall": ("abc f.json <- tool list",
+                                                                         "absent g.json <- tool get")}
+    collected = run_records(_d(), INV, (BINDINGS,), AT, "CHG-1", proof)
+    assert imported_files(get(_d(collected), collected[-1].dn)) == {"f.json": "abc"}
+    (again,) = run_records(_d(collected), INV, (BINDINGS,), LATER, "CHG-2", evidence)
+    run = get(_d(collected, (again,)), collected[-1].dn)
+    assert values(run, "ciamCollectedCall") == () and values(run, "ciamCollectionIdentity") == ()
+    assert imported_files(run) == {"a.json": evidence["ciamImportedFile"][0].split()[0],
+                                   "b/state.json": evidence["ciamImportedFile"][1].split()[0]}
+    (collected_again,) = run_records(_d(collected, (again,)), INV, (BINDINGS,), LATER, "CHG-3", proof)
+    assert ("replace", "ciamImportedFile", ()) in collected_again.mods
 
 
 def test_two_sets_sharing_a_name_are_refused():

@@ -115,7 +115,10 @@ SecretPattern = NamedTuple("SecretPattern", [("name", str), ("pattern", str), ("
 # the provider (the credentials stay the provider tool's; opsdir never sees or stores them); () when the export can't
 # be produced by a command; or a function (d) -> such pairs, the commands derived from the record (one per region its
 # clouds run in), for exports that depend on what the record holds (connectors.importing.import_commands).
-Importer = namedtuple("Importer", ("name", "description", "read", "commands"), defaults=((),))
+# reference: what it imports is reference data or observations the record keeps and no render writes, by design (a
+# provider's region or quota catalogue, access logs, a certificate manager's inventory, ITSM evidence): onboarding
+# verification (connectors.onboarding) reports it as not rendered by design instead of a gap.
+Importer = namedtuple("Importer", ("name", "description", "read", "commands", "reference"), defaults=((), False))
 # What an import yields: containers (branch entries to create when missing, never changed otherwise); groups: ((scope
 # DN, entries that should exist in that subtree), ...), each replacing the record's subtree at its scope; notices.
 Imported = NamedTuple("Imported", [("containers", tuple), ("groups", tuple), ("notices", tuple)])

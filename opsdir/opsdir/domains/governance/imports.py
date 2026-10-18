@@ -9,8 +9,10 @@ set replaces its run (history keeps the earlier one); an import of another set (
 its own run beside it, so what an earlier import proved it read stays. A dry run records nothing. A fix that must not
 act on a stale picture of the live system checks the runs (the newest one covering everything it changes). When opsdir
 collected the export itself (`opsdir collect`), the run also holds how (EVIDENCE: the identity the provider saw, each
-call with the hash of what it returned, the credential references resolved); a run from an export read off disk holds
-none of it, and a re-run of the same set from disk clears what an earlier collection held.
+call with the hash of what it returned, the credential references resolved); a run from an export opsdir didn't
+collect (read off disk, or `opsdir import --run`) holds each file it was read from and the hash of its text instead
+(IMPORTED_FILE, file_evidence), and a re-run of the same set either way clears what the other held. imported_files reads
+the hashes back either way (what `opsdir onboard verify` checks the originals it is given against).
 Runs recorded before runs were named by their scope set (by importer and environment only) are found by
 check_import_runs, whose fix renames them under an approved change.
 """
@@ -28,6 +30,8 @@ from .parties import operator_label
 IMPORT_HEADERS = ("importer", "environment", "set", "scopes", "read at", "change")
 IMPORT_SCOPE_HEADERS = ("importer", "environment", "set", "read at", "scope")
 EVIDENCE = ("ciamCollectionIdentity", "ciamCollectedCall", "ciamCollectionCredential")
+IMPORTED_FILE = "ciamImportedFile"
+RUN_EVIDENCE = (*EVIDENCE, IMPORTED_FILE)    # what an import run's evidence replaces
 SHARED = "shared"            # what an import reads that no environment holds (a product's configuration)
 SCOPE_SET = "s1"             # the version of how a scope set is serialized for its name (scope_set_key)
 RUN_CLASSES = ("top", "ciamObject", "ciamImportRun")
@@ -78,7 +82,8 @@ def _legacy_dn(importer, env):
 
 
 def _replaced(held, scopes, read_at, changes, evidence):
-    proof = tuple(("replace", a, tuple(evidence.get(a, ()))) for a in EVIDENCE if evidence.get(a) or values(held, a))
+    proof = tuple(("replace", a, tuple(evidence.get(a, ()))) for a in RUN_EVIDENCE
+                  if evidence.get(a) or values(held, a))
     return LdifRecord(held.dn, "modify", {}, (("replace", "ciamImportScope", tuple(scopes)),
                                               ("replace", "ciamImportedAt", (read_at,)),
                                               ("replace", "ciamChangeRef", tuple(changes)), *proof))
@@ -111,13 +116,33 @@ def run_records(d, importer, scopes, at, change_id, evidence=None):
     """The records recording an import's runs (its export taken at `at`, a UTC datetime) under change change_id: the
     imports container when missing, then per environment of the scopes it read (and once for shared ones) the run of
     that scope set: a new entry, or the existing run of the same set given its scopes, time and change. evidence
-    ({attribute: values} of EVIDENCE: how opsdir collected the export, connectors.collecting.evidence) replaces what
-    that run held (none: removed). A run of the same set still named the old way (importer and environment only) is
-    deleted; runs of other sets are left as they are. ValueError when another set's run holds the name."""
+    ({attribute: values} of RUN_EVIDENCE: how opsdir collected the export, connectors.collecting.evidence, or the files
+    it was read from, file_evidence) replaces what that run held (none: removed). A run of the same set still named
+    the old way (importer and environment only) is deleted; runs of other sets are left as they are. ValueError when
+    another set's run holds the name."""
     read = _distinct(tuple(scopes))
     groups = tuple(tuple(s for s in read if _env_key(s) == k) for k in dict.fromkeys(_env_key(s) for s in read))
     return (*imports_container(d),
             *(r for found in groups for r in _run(d, importer, found, at, change_id, evidence or {})))
+
+
+def file_evidence(files):
+    """The evidence of an export opsdir didn't collect ({relative path: text}, read off disk or a provider command's
+    output): {IMPORTED_FILE: each file as '<SHA-256 of its UTF-8 text> <path>', by path}; never its content."""
+    return {IMPORTED_FILE: tuple(f"{hashlib.sha256(t.encode()).hexdigest()} {p}" for p, t in sorted(files.items()))}
+
+
+def _hashed(value):
+    digest, _, rest = value.partition(" ")
+    return rest.split(" <- ", 1)[0], digest
+
+
+def imported_files(run):
+    """{path: SHA-256} of the files an import run's export was read from: its IMPORTED_FILE values, or the calls of a
+    collection (ciamCollectedCall) that returned something (absent and failed calls left out)."""
+    called = (_hashed(v) for v in values(run, "ciamCollectedCall"))
+    return {**{p: h for p, h in called if h not in ("absent", "failed")},
+            **dict(_hashed(v) for v in values(run, IMPORTED_FILE))}
 
 
 def imports_container(d):
@@ -195,7 +220,7 @@ def _renamed(d, r):
     if one(held, "ciamImportedAt") >= one(r, "ciamImportedAt"):
         return (delete_entry(r),)
     return (_replaced(held, values(r, "ciamImportScope"), one(r, "ciamImportedAt"), values(r, "ciamChangeRef"),
-                      {a: values(r, a) for a in EVIDENCE}), delete_entry(r))
+                      {a: values(r, a) for a in RUN_EVIDENCE}), delete_entry(r))
 
 
 def renamed_run_records(d):

@@ -92,6 +92,10 @@ ATTRIBUTES = (
     AttributeDef(603, 'ciamCollectionCredential', 'string', 'meta', False,
                  'A credential reference an import run\'s collection, or a collection attempt, resolved (the '
                  'reference, never the value)'),
+    AttributeDef(986, 'ciamImportedFile', 'string', 'meta', False,
+                 'A file an import run\'s export was read from when opsdir didn\'t collect it (an export read off '
+                 'disk, or provider commands\' output): the SHA-256 of its text and its path in the export, never '
+                 'its content; what `opsdir onboard verify` checks the originals it is given against'),
     AttributeDef(604, 'ciamCollectionOutcome', 'enum:complete|incomplete|skipped', 'meta', True,
                  'How a collection attempt ended: complete (its export read in full), incomplete (a call failed or '
                  'was refused: nothing imported) or skipped (nothing collected: the identity check failed or the '
@@ -224,12 +228,12 @@ CLASSES = (
              'link)'),
     ClassDef(91, 'ciamImportRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamImportScope',
                                                                'ciamImportedAt'),
-             ('ciamCollectionIdentity', 'ciamCollectedCall', 'ciamCollectionCredential'),
+             ('ciamCollectionIdentity', 'ciamCollectedCall', 'ciamCollectionCredential', 'ciamImportedFile'),
              'The last import by one importer of one scope set (ciamImportScope) in one environment (or of what '
              'environments share), named by the set: when the live system was read back, what it read and under '
              'which change (ciamChangeRef), and when opsdir collected the export itself, how (the identity the '
-             'provider saw, each call and the hash of what it returned, the credential references used); what a fix '
-             'that needs a fresh read checks'),
+             'provider saw, each call and the hash of what it returned, the credential references used), otherwise '
+             'each file it was read from and its hash (ciamImportedFile); what a fix that needs a fresh read checks'),
     ClassDef(128, 'ciamCollectionSource', 'ciamBinding', 'STRUCTURAL', ('ciamImporter',),
              ('ciamSourceRef', 'ciamTargetRole', 'ciamPort', 'ciamCredentialRole', 'ciamCaRole', 'ciamLoginName',
               'ciamCredentialScheme'),

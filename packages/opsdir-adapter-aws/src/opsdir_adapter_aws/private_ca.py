@@ -263,4 +263,4 @@ def read_private_ca(files, d, patterns, at=None):
 PRIVATE_CA_IMPORTER = Importer("private-ca", "AWS Private CA: each CA's state, key and hierarchy, revocation "
                                              "endpoints, templates used and the certificates its newest audit report "
                                              "lists, metadata only (as `opsdir collect` saves them)",
-                               read_private_ca)
+                               read_private_ca, reference=True)

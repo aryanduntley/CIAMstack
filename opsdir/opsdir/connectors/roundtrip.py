@@ -12,10 +12,10 @@ from .registry import ADAPTERS
 from .render import assemble, render_parts
 
 # One importer's read-back of a render: importer ('adapter/importer'), the paths it read (as given to it), the changes
-# reading them back would make, its notices, and drift: those changes but modifications of meta attributes (() is the
-# guarantee).
+# reading them back would make, its notices, drift: those changes but modifications of meta attributes (() is the
+# guarantee), and the scopes it read (the subtrees those changes make what the render says).
 RoundTrip = NamedTuple("RoundTrip", [("importer", str), ("files", tuple), ("changes", tuple), ("notices", tuple),
-                                     ("drift", tuple)])
+                                     ("drift", tuple), ("scopes", tuple)])
 
 
 def _roles(e_classes, attrs):
@@ -46,13 +46,21 @@ def _path(rb, path, environment):
     return rb.place.replace("{environment}", environment or "") + rest
 
 
+def selected_files(rb, rendered, environment=None):
+    """{path as the importer is given it: text} of the rendered files ({path: text}) a ReadBack reads: those matching
+    its glob, with its strip prefix removed and its place prefix put in front, before any prepare (ValueError when it
+    places them in an environment's folder and none is given)."""
+    return {_path(rb, p, environment): text for p, text in rendered.items() if fnmatchcase(p, rb.paths)}
+
+
 def _one(d, spec, rb, rendered, installed, at, environment):
-    selected = {_path(rb, p, environment): text for p, text in rendered.items() if fnmatchcase(p, rb.paths)}
+    selected = selected_files(rb, rendered, environment)
     if not selected:
-        return None if rb.optional else RoundTrip(spec, (), (), (f"nothing rendered matches {rb.paths}",), ())
+        return None if rb.optional else RoundTrip(spec, (), (), (f"nothing rendered matches {rb.paths}",), (), ())
     files = rb.prepare(selected, d, environment) if rb.prepare else selected
     plan = import_plan(d, spec, files, installed, at)
-    return RoundTrip(spec, tuple(sorted(files)), plan.changes, plan.notices, _drift(d, plan.changes, rb.intent))
+    return RoundTrip(spec, tuple(sorted(files)), plan.changes, plan.notices, _drift(d, plan.changes, rb.intent),
+                     plan.scopes)
 
 
 def read_back(d, adapter, rendered, installed=ADAPTERS, at=None, environment=None):

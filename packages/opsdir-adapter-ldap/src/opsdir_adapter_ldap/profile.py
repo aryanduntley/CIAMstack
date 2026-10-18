@@ -32,4 +32,4 @@ def read_profiles(files, d, patterns, at=None):
 
 
 DATA_PROFILE_IMPORTER = Importer("data-profile", "data profiles written by `opsdir data-profile` (.json, counts only), "
-                                                 "one per environment", read_profiles)
+                                                 "one per environment", read_profiles, reference=True)

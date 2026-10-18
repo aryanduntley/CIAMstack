@@ -293,4 +293,4 @@ def read_inventory(files, d, patterns, at=None):
 
 INVENTORY_IMPORTER = Importer("inventory", "EJBCA's CAs, revocation endpoints, certificate profiles and the "
                                            "certificates they issued, metadata only (the REST API's answers as "
-                                           "`opsdir collect` saves them)", read_inventory)
+                                           "`opsdir collect` saves them)", read_inventory, reference=True)

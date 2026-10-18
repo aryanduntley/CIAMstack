@@ -275,4 +275,4 @@ def read_changes(files, d, patterns, at=None):
 CHANGES_IMPORTER = Importer("change-requests", "Jira Service Management change requests the record's changes name, "
                                                "with their approval steps, as evidence (REST answers: issues, "
                                                "approvals, the field list), through the operator's mapping settings",
-                            read_changes)
+                            read_changes, reference=True)

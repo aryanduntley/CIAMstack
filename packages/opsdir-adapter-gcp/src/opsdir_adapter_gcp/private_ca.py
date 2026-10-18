@@ -254,4 +254,4 @@ def read_private_ca(files, d, patterns, at=None):
 PRIVATE_CA_IMPORTER = Importer("private-ca", "Google Cloud Certificate Authority Service: each CA's state, key and "
                                              "hierarchy, revocation endpoints, its pool's policy and templates, and "
                                              "the certificates the pool keeps, metadata only (as `opsdir collect` "
-                                             "saves them)", read_private_ca)
+                                             "saves them)", read_private_ca, reference=True)

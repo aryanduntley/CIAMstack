@@ -180,4 +180,4 @@ def read_inventory(files, d, patterns, at=None):
 
 INVENTORY_IMPORTER = Importer("inventory", "AD CS CAs' issued certificates, revocation endpoints and templates, "
                                            "metadata only (ca/<name>.json from scripts/Export-AdcsInventory.ps1, "
-                                           "templates.ldif)", read_inventory)
+                                           "templates.ldif)", read_inventory, reference=True)

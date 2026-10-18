@@ -92,7 +92,8 @@ def read_quotas(files, d, patterns, at=None):
 
 
 QUOTAS = Importer("quotas", "the limits Azure grants the subscription in each region the record's Azure environments "
-                            "needing quotas run in (compute and network usages)", read_quotas, quota_commands)
+                            "needing quotas run in (compute and network usages)", read_quotas, quota_commands,
+                            reference=True)
 PREREQUISITE = Prerequisite("azure-quotas", "Azure's usage limits for the subscriptions and regions whose environments "
                                             "record quota needs, for the planner's quota check", QUOTAS.name,
                             partial(limits_fetched, provider=PROVIDER))

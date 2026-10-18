@@ -142,4 +142,4 @@ def read_kv_metadata(files, d, patterns, at=None):
 
 
 KV_METADATA_IMPORTER = Importer("kv-metadata", "Vault key/value mounts' inventory, metadata only (`vault kv list` "
-                                               "and `vault kv metadata get` output)", read_kv_metadata)
+                                               "and `vault kv metadata get` output)", read_kv_metadata, reference=True)

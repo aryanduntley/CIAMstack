@@ -39,6 +39,14 @@
                                        record code, scripts, templates or a package (a file or a directory under the
                                        repo checkout R) by repo path and SHA-256; its content is not stored
   opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
+  opsdir onboard verify (--source ADAPTER/IMPORTER=PATH ... | --saved DIR) [--at YYYYMMDDhhmmssZ] [--all] [--diff]
+                [--json]               onboarding verification: render every environment, read it back, and compare it
+                                       with what the original exports say, entry by entry and attribute by attribute
+                                       (identical, equivalent, gap filled, decided, not rendered by design, loss,
+                                       altered, uncovered); exit 1 on any loss, alteration or uncovered part. --source
+                                       per export as given to `opsdir import` (repeat), --saved: what `collect --save`
+                                       kept; the files are checked against the hashes their import recorded; --diff:
+                                       text diffs of rendered files that differ from their originals (secrets masked)
   opsdir import [--change CHG-…] ADAPTER[/IMPORTER] PATH|--run [--dry-run] [--at YYYYMMDDhhmmssZ] [--take K|all]
                 [--keep K|all]         read a product's export (a directory or a file) into the record with an
                                        adapter's importer; without --change (or with --dry-run) only lists the changes
@@ -101,7 +109,7 @@ from functools import reduce
 from types import MappingProxyType
 
 from . import live, operations as ops
-from .connectors import collecting, fixes as fixmod, importing, migration, registry, workspace
+from .connectors import collecting, fixes as fixmod, importing, migration, onboarding, registry, workspace
 from .connectors.application import HEADERS as VIEW_HEADERS, view_document
 from .connectors.graph import graph_document, graph_dot, graph_lines
 from .connectors.prerequisites import command_line
@@ -119,6 +127,7 @@ from .core.interchange.export import export_text  # noqa: F401  (callers import 
 from .core.naming import SUFFIX
 from .core.notes import summary
 from .domains.governance.collection import declared_adapters
+from .domains.governance.imports import file_evidence
 from .store import postgres as db
 from .store.policy import db_target
 from .store.roles import DEFAULTS as ROLE_DEFAULTS, LOGINS, db_roles, db_roles_sql
@@ -174,6 +183,16 @@ SUBCOMMANDS = (
                                                              "other"]}),
                 (("--version",), {}), (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}))),
     ("verify", ((("--root",), {}),)),
+    ("onboard", ((("action",), {"choices": ["verify"]}),
+                 (("--source",), {"action": "append", "default": [], "metavar": "ADAPTER/IMPORTER=PATH",
+                                  "help": "an original export as given to `opsdir import` (repeat for each)"}),
+                 (("--saved",), {"metavar": "DIR", "help": "the exports `opsdir collect --save DIR` kept"}),
+                 (("--at",), {"help": "when the originals were taken, YYYYMMDDhhmmssZ (UTC; default: now)"}),
+                 (("--all",), {"action": "store_true", "help": "list every difference (default: 10 per importer and "
+                                                              "kind)"}),
+                 (("--diff",), {"action": "store_true", "help": "text diffs of rendered files that differ from "
+                                                               "their originals"}),
+                 (("--json",), {"action": "store_true", "help": "the whole verification as JSON"}))),
     ("census", ((("--change",), {}), (("path",), {}),
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
                 (("--replace",), {"action": "store_true",
@@ -670,7 +689,7 @@ def _cmd_import(conn, a, as_of):
     if a.dry_run or not a.change:
         return _not_applied(notes, plan.changes, a.dry_run)
     try:
-        r = ops.apply_import(conn, plan, a.change, a.take, a.keep)
+        r = ops.apply_import(conn, plan, a.change, a.take, a.keep, file_evidence(files))
     except ValueError as e:
         raise SystemExit("\n".join((*_conflict_lines(plan.conflicts), str(e)))) from None
     return "\n".join((*notes, f"{a.change}: {len(r.lines)} change(s) applied, the import run among them"))
@@ -829,7 +848,7 @@ def _cmd_grant(conn, a, as_of):
 FIXED_ACTIONS = MappingProxyType({
     **dict.fromkeys(("init", "upgrade", "load"), "admin"),
     **dict.fromkeys(("check", "search", "report", "export", "history", "application", "graph", "summary",
-                     "prerequisites", "verify", "file", "posture", "mine"), "read"),
+                     "prerequisites", "verify", "file", "posture", "mine", "onboard"), "read"),
     "render": "render", "plan": "plan", "tickets": "plan", "migrate": "migrate", "modify": "apply",
     "workspace": "workspace"})
 WHEN_CHANGED = MappingProxyType({**dict.fromkeys(("capture", "bundle", "census", "import", "collect", "evidence"),
@@ -896,6 +915,54 @@ def identity_text(identity):
     return "\n".join((f"org code   {identity.org}", f"record id  {identity.record_id}",
                       *((f"group      {identity.parent}",) if identity.parent else ()),
                       *((f"name       {identity.name}",) if identity.name else ())))
+
+
+def onboard_sources(given, saved=None):
+    """Effect (reads the files): ((spec, {relative path: text}), ...) of the original exports: each --source
+    ADAPTER/IMPORTER=PATH (read as `opsdir import` reads it), then each export `opsdir collect --save DIR` kept under
+    DIR/<adapter>/<importer>/ (its MANIFEST.txt left out). Refused when none is given or one is malformed."""
+    def source(text):
+        spec, eq, path = text.partition("=")
+        if not eq or not spec or not path:
+            raise SystemExit(f"--source {text}: give ADAPTER[/IMPORTER]=PATH")
+        return spec, read_texts(path)[0]
+    root = pathlib.Path(saved) if saved else None
+    kept = tuple((f"{a.name}/{i.name}", {p: t for p, t in read_texts(i)[0].items() if p != "MANIFEST.txt"})
+                 for a in sorted(root.iterdir()) if a.is_dir() for i in sorted(a.iterdir()) if i.is_dir()) \
+        if root else ()
+    found = (*(source(s) for s in given), *kept)
+    if not found:
+        raise SystemExit("give the original exports: --source ADAPTER/IMPORTER=PATH (repeat), or --saved DIR")
+    return found
+
+
+def onboard_text(v, every=False, diffs=False):
+    """A verification as text: its status and failing counts, the table of exports checked, the provenance
+    warnings, the differences (connectors.onboarding.difference_rows), the files that differ from their originals
+    (their text diffs with diffs) and the notices."""
+    failing = onboarding.failing_counts(v)
+    head = f"onboarding verification: {v.status.upper()}" + (
+        f" ({', '.join(f'{k} {n}' for k, n in failing.items())})" if failing else "")
+    warnings = tuple(w for c in v.checked for w in c.warnings)
+    rows = onboarding.difference_rows(v, every)
+    return "\n".join((
+        head, "", format_table(onboarding.summary_rows(v), onboarding.SUMMARY_HEADERS),
+        *(("", f"warnings ({len(warnings)}):", *(f"  {w}" for w in warnings)) if warnings else ()),
+        *(("", f"differences ({len(rows)} of {len(v.differences)} listed{'' if every else '; --all lists every one'}):",
+           format_table(rows, onboarding.DIFFERENCE_HEADERS)) if v.differences else ()),
+        *(("", f"rendered files that differ from their originals ({len(v.pairs)}"
+               f"{'' if diffs else '; --diff shows them'}):",
+           *(line for p in v.pairs for line in ((*onboarding.text_diff(p), "") if diffs else
+                                               (f"  {p.importer}  {p.path}  ({p.environment})"
+                                                f"{'  layout only' if p.layout_only else ''}",)))) if v.pairs
+          else ()),
+        *(("", f"notices ({len(v.notices)}):", *(f"  {n}" for n in v.notices)) if v.notices else ())))
+
+
+def _cmd_onboard(conn, a, as_of):
+    v = ops.onboard_verify(conn, onboard_sources(a.source, a.saved), import_time(a.at))
+    text = _json(onboarding.report_document(v)) if a.json else onboard_text(v, a.all, a.diff)
+    return text, (1 if v.status == "fail" else 0)
 
 
 def _cmd_verify(conn, a, as_of):
@@ -1021,7 +1088,8 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "summary": _cmd_summary, "evidence": _cmd_evidence, "capture": _cmd_capture,
                              "import": _cmd_import, "collect": _cmd_collect, "file": _cmd_file,
                              "prerequisites": _cmd_prerequisites,
-                             "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
+                             "bundle": _cmd_bundle, "verify": _cmd_verify, "onboard": _cmd_onboard,
+                             "census": _cmd_census,
                              "setting": _cmd_setting, "identity": _cmd_identity, "db-roles": _cmd_db_roles,
                              "posture": _cmd_posture, "change": _cmd_change, "person": _cmd_person, "grant": _cmd_grant,
                              "mine": _cmd_mine,

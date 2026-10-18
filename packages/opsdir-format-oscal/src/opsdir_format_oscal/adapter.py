@@ -64,12 +64,12 @@ def oscal_notes(m, services):
 
 
 POAM_IMPORTER = Importer("poam", "An OSCAL plan of action and milestones (JSON), as the POA&M items of the system "
-                                 "boundary its system-id names", read_poam)
+                                 "boundary its system-id names", read_poam, reference=True)
 RESULTS_IMPORTER = Importer("assessment-results", "OSCAL assessment results (JSON), as compliance assessments and "
                                                   "their not-satisfied findings as POA&M items",
-                            read_assessment_results)
+                            read_assessment_results, reference=True)
 CATALOG_IMPORTER = Importer("catalog", "An OSCAL catalog (JSON), checked against the controls the record names "
-                                       "(nothing imported)", read_catalog)
+                                       "(nothing imported)", read_catalog, reference=True)
 
 ADAPTER = Adapter(name="oscal", kind="compliance", applies=None, required_roles=(), render_neutral=render_oscal,
                   render_env=None, checks=(), ref_schemes=(), secret_schemes={}, renders=None,

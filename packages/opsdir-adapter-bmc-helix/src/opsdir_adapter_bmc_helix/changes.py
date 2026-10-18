@@ -286,4 +286,5 @@ def read_changes(files, d, patterns, at=None):
 CHANGES_IMPORTER = Importer("change-requests", "BMC Helix ITSM / Remedy change requests the record's changes name, "
                                                "with their approval signatures, and the work orders they name, as "
                                                "evidence (AR System REST answers of CHG:Infrastructure Change, "
-                                               "AP:Detail-Signature and WOI:WorkOrderInterface)", read_changes)
+                                               "AP:Detail-Signature and WOI:WorkOrderInterface)", read_changes,
+                                               reference=True)

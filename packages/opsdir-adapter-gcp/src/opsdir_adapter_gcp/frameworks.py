@@ -78,7 +78,7 @@ def framework_commands(d):
 
 FRAMEWORKS = Importer("frameworks", "Compliance Manager's frameworks and cloud controls of each organization the "
                                     "record's Google Cloud environments with posture services belong to",
-                      read_frameworks, framework_commands)
+                      read_frameworks, framework_commands, reference=True)
 PREREQUISITE = Prerequisite("gcp-frameworks", "Google Cloud's Compliance Manager frameworks for the organizations "
                                               "whose posture services name frameworks, for the framework deployments",
                             FRAMEWORKS.name, partial(frameworks_fetched, provider=PROVIDER,

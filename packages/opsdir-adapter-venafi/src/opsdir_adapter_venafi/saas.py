@@ -163,4 +163,4 @@ def read_saas(files, d, patterns, at=None):
 
 SAAS_IMPORTER = Importer("saas", "Certificate Manager – SaaS (Venafi TLS Protect Cloud) tenant's certificates as a "
                                  "certificate manager's inventory, metadata only (the certificate search's answers as "
-                                 "`opsdir collect` saves them)", read_saas)
+                                 "`opsdir collect` saves them)", read_saas, reference=True)

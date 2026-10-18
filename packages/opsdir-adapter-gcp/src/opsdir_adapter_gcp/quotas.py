@@ -84,7 +84,7 @@ def read_quotas(files, d, patterns, at=None):
 
 QUOTAS = Importer("quotas", "the Compute Engine quotas of the project in each region the record's Google Cloud "
                             "environments needing quotas run in (and its project-wide ones)", read_quotas,
-                  quota_commands)
+                  quota_commands, reference=True)
 PREREQUISITE = Prerequisite("gcp-quotas", "Google Cloud's Compute Engine quotas for the projects and regions whose "
                                           "environments record quota needs, for the planner's quota check",
                             QUOTAS.name, partial(limits_fetched, provider=PROVIDER))

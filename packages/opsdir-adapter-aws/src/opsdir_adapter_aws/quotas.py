@@ -105,7 +105,7 @@ def read_quotas(files, d, patterns, at=None):
 
 QUOTAS = Importer("quotas", "the limits AWS grants the account in each region the record's AWS environments needing "
                             "quotas run in (Service Quotas: applied values over AWS's defaults)",
-                  read_quotas, quota_commands)
+                  read_quotas, quota_commands, reference=True)
 PREREQUISITE = Prerequisite("aws-quotas", "AWS's quota limits for the accounts and regions whose environments record "
                                           "quota needs, for the planner's quota check", QUOTAS.name,
                             partial(limits_fetched, provider=PROVIDER))

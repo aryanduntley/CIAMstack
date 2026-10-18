@@ -90,4 +90,5 @@ def read_revocation(files, d, patterns, at=None):
 
 REVOCATION_IMPORTER = Importer("revocation", "What each recorded CA's CRL, delta CRL and OCSP endpoints answered "
                                              "(<CA name>/<endpoint>.json, as `opsdir collect` writes them), checked "
-                                             "against the CA certificates the record holds", read_revocation)
+                                             "against the CA certificates the record holds", read_revocation,
+                                             reference=True)

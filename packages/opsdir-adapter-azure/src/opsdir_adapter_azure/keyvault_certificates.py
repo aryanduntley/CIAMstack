@@ -304,4 +304,4 @@ def read_keyvault_certificates(files, d, patterns, at=None):
 KEYVAULT_CERTIFICATES = Importer("keyvault-certificates", "Azure Key Vault certificates (every version) as a "
                                                           "certificate manager's inventory, metadata only (Key Vault's "
                                                           "REST answers as `opsdir collect` saves them)",
-                                 read_keyvault_certificates)
+                                 read_keyvault_certificates, reference=True)

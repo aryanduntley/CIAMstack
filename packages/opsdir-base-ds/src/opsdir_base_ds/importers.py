@@ -224,11 +224,12 @@ def access_log_reader(files, d, patterns, at=None):
 def importers(product):
     """The importers every product of the lineage registers."""
     return (Importer("config", f"{product.name} servers' configuration (a copy of each server's config/ directory: "
-                               "config.ldif, archived-configs/) as observed snapshots", snapshot_reader(product)),
+                               "config.ldif, archived-configs/) as observed snapshots", snapshot_reader(product),
+                     reference=True),
             Importer("declared", f"one {product.name} server's config.ldif as the declared configuration",
                      declared_reader(product)),
             Importer("access-log", f"{product.name} servers' JSON access logs (logs/ldap-access.audit.json and its "
-                                   "rotated files) as the directory's consumers", access_log_reader),
+                                   "rotated files) as the directory's consumers", access_log_reader, reference=True),
             Importer("rendered", f"opsdir's own render for {product.name} (ds/dsconfig.batch, ds/acis.ldif) read back "
                                  "as the declared configuration and the ACIs", rendered_reader(product)),
             SCHEMA_IMPORTER)

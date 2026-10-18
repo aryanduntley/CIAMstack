@@ -10,7 +10,8 @@ import datetime as dt
 import uuid
 from typing import NamedTuple
 
-from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
+from .connectors import capture as capturemod, importing, migration, onboarding, plan as planmod, profiling, reports
+from .connectors import workspace
 from .connectors import posture as posturemod
 from .connectors import evidence as evidencemod, fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
@@ -464,6 +465,14 @@ def verify(conn, contents):
     path: {relative path: bytes} ({"": bytes} for one file), or None when the checkout has nothing there}."""
     headers, rows = capturemod.verification(db.load_directory(conn), contents)
     return Rows(tuple(headers), tuple(rows))
+
+
+def onboard_verify(conn, sources, at=None):
+    """Effect (reads the record): onboarding verification (connectors.onboarding.Verification) of the record against
+    the operator's original exports: sources ((spec 'adapter[/importer]', {relative path: text}), ...), taken at `at`
+    (a UTC datetime; default now). Every environment is rendered and read back; nothing is written."""
+    at = at or dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    return onboarding.verify(db.load_directory(conn), tuple(sources), at=at)
 
 
 def rebuild_file(conn, name, spec=None):

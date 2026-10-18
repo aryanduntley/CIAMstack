@@ -34,6 +34,6 @@ def read_regions(files, d, patterns, at=None):
 
 
 REGIONS = Importer("regions", "AWS's region list (aws ec2 describe-regions --all-regions --output json), as the "
-                              "region catalog's aws regions", read_regions, ((EXPORT, COMMAND),))
+                              "region catalog's aws regions", read_regions, ((EXPORT, COMMAND),), reference=True)
 PREREQUISITE = Prerequisite("aws-regions", "AWS's region list, for the region catalog (residencies and the planner's "
                                            "region checks)", REGIONS.name, partial(holds_regions, provider=PROVIDER))

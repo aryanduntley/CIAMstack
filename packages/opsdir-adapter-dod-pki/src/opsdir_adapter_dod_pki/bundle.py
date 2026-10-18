@@ -167,4 +167,4 @@ def read_bundles(files, d, patterns, at=None):
 
 BUNDLE_IMPORTER = Importer("bundle", "DISA's DoD PKE trust bundles (DoD, ECA, JITC, WCF): CA certificates and how the "
                                      "bundle's signed manifest verified (python -m opsdir_adapter_dod_pki.export "
-                                     "turns a downloaded archive into the export)", read_bundles)
+                                     "turns a downloaded archive into the export)", read_bundles, reference=True)

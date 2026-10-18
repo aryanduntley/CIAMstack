@@ -32,7 +32,7 @@ def read_regions(files, d, patterns, at=None):
 
 
 REGIONS = Importer("regions", "Google Cloud's region list (gcloud compute regions list --format=json), as the region "
-                              "catalog's gcp regions", read_regions, ((EXPORT, COMMAND),))
+                              "catalog's gcp regions", read_regions, ((EXPORT, COMMAND),), reference=True)
 PREREQUISITE = Prerequisite("gcp-regions", "Google Cloud's region list, for the region catalog (residencies and the "
                                            "planner's region checks)", REGIONS.name,
                             partial(holds_regions, provider=PROVIDER))

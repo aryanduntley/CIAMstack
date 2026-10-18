@@ -214,4 +214,4 @@ def read_pki(files, d, patterns, at=None):
 
 PKI_IMPORTER = Importer("pki", "Vault PKI mounts' CA, revocation endpoints, roles and the certificates they keep, "
                                "metadata only (Vault's answers as `opsdir collect` or scripts/export-vault-pki.sh "
-                               "save them)", read_pki)
+                               "save them)", read_pki, reference=True)

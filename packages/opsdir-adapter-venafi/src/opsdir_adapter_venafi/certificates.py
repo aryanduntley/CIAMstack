@@ -224,4 +224,5 @@ def read_certificates(files, d, patterns, at=None):
 CERTIFICATES_IMPORTER = Importer("certificates", "Certificate Manager – Self-Hosted (Venafi) policy folders' "
                                                  "certificates as a certificate manager's inventory, metadata only "
                                                  "(the Web SDK's answers as `opsdir collect` or "
-                                                 "scripts/export-venafi.sh save them)", read_certificates)
+                                                 "scripts/export-venafi.sh save them)", read_certificates,
+                                                 reference=True)

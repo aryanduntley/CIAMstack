@@ -46,4 +46,4 @@ def read_cpo(files, d, patterns, at=None):
 
 
 CPO = Importer("cpo", "A cloud offering's FedRAMP Certification Package Overview (FRC-CSO-PKG JSON), as the "
-                      "authorization it grants and the services inside its boundary", read_cpo)
+                      "authorization it grants and the services inside its boundary", read_cpo, reference=True)

@@ -38,7 +38,7 @@ def read_sites(files, d, patterns, at=None):
 
 
 SITES = Importer("sites", "the organization's sites (a JSON list: code, name, geography, status), as the region "
-                          "catalog's onprem regions", read_sites)
+                          "catalog's onprem regions", read_sites, reference=True)
 PREREQUISITE = Prerequisite("onprem-sites", "the organization's own sites, for the region catalog (an on-prem "
                                             "environment's region is its site; residencies and the planner's region "
                                             "checks)", SITES.name, partial(holds_regions, provider=PROVIDER))
