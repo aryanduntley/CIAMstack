@@ -4,6 +4,7 @@
 # docs/ holds personal working notes and is never committed; project documentation
 # lives in documentation/ (root) and opsdir/ (README.md, SPEC.md).
 docs/
+.codex
 
 # ------------------------------------------------------------------ AIMFP / agent tooling
 # project.db and ProjectBlueprint.md ARE tracked; everything else is per-machine state.
