@@ -120,18 +120,38 @@ def _workspace_of(item_id):
     return item_id[:i] if i > 0 else None
 
 
+def _incident(config):
+    """A rule's incidentConfiguration as azurerm's incident block (none when the rule has none)."""
+    grouping = arm_field(config, "groupingConfiguration") or {}
+    return [{"create_incident_enabled": arm_field(config, "createIncident"), "grouping": [{
+        "enabled": arm_field(grouping, "enabled"), "lookback_duration": arm_field(grouping, "lookbackDuration"),
+        "reopen_closed_incidents": arm_field(grouping, "reopenClosedIncident"),
+        "entity_matching_method": arm_field(grouping, "matchingMethod"),
+        "by_entities": list(arm_field(grouping, "groupByEntities") or ()),
+        "by_alert_details": list(arm_field(grouping, "groupByAlertDetails") or ()),
+        "by_custom_details": list(arm_field(grouping, "groupByCustomDetails") or ())}] if grouping else []}] \
+        if config else []
+
+
 def _analytics_rule(r):
-    """A scheduled analytics rule as az rest returns it (properties nested) or flattened."""
+    """A scheduled analytics rule as az rest returns it (properties nested) or flattened: what the render sets (its
+    ATT&CK mapping, event grouping, entity mappings, custom details and incident configuration too: task 592)."""
     props = arm_field(r, "properties") or {}
     field = lambda name: arm_field(props, name) if arm_field(props, name) is not None else arm_field(r, name)  # noqa: E731
+    grouping = field("eventGroupingSettings") or {}
     return {"id": r.get("id"), "name": r.get("name"), "description": field("description"),
             "display_name": field("displayName"), "query": field("query"),
             "log_analytics_workspace_id": _workspace_of(r.get("id")),
+            "tactics": list(field("tactics") or ()), "techniques": list(field("techniques") or ()),
+            "event_grouping": ([{"aggregation_method": arm_field(grouping, "aggregationKind")}]
+                               if arm_field(grouping, "aggregationKind") else []),
             "entity_mapping": [{"entity_type": arm_field(e, "entityType"),
                                 "field_mapping": [{"identifier": arm_field(f, "identifier"),
                                                    "column_name": arm_field(f, "columnName")}
                                                   for f in arm_field(e, "fieldMappings") or []]}
-                               for e in field("entityMappings") or []]}
+                               for e in field("entityMappings") or []],
+            "custom_details": dict(field("customDetails") or {}),
+            "incident": _incident(field("incidentConfiguration") or {})}
 
 
 def monitor_items(items):
