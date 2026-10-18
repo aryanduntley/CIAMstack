@@ -5,7 +5,7 @@ The record is a PostgreSQL database. Each company keeps its own: a parent organi
 ## What it needs
 
 - **PostgreSQL 17 or later.** `opsdir init` and `opsdir upgrade` refuse an older server. RDS, Aurora and Azure Database for PostgreSQL flexible server all offer 17 and 18. Check the region: neither GovCloud nor Azure Government publishes a per-region version list, so ask the region itself (`aws rds describe-db-engine-versions --engine postgres --region <region>`, or the versions the Azure portal offers when creating a server there).
-- **A Linux server for CIAMstack** that reaches the database. The CLI, and later the API and console, run there.
+- **A Linux server for CIAMstack** that reaches the database: one company-wide server. The CLI, and later the API and console, run there. People on any OS reach it through the API, the console or MCP as they arrive; the CLI also runs directly on Linux, on macOS (POSIX; expected to work, not yet tested) and on Windows through WSL2. Every file CIAMstack reads and writes is UTF-8 with LF line endings, whatever the server's locale.
 - **TLS** whenever the database isn't on that server. `opsdir` refuses an off-host connection that doesn't verify the server's certificate and name (`sslmode=verify-full` with `sslrootcert`), unless `OPSDIR_DB_TLS` names a weaker mode on purpose.
 
 ## Setting it up

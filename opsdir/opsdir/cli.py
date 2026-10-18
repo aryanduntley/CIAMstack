@@ -1385,10 +1385,12 @@ def main(argv=None):
 
 
 def utf8_streams():
-    """Effect: standard output and error in UTF-8 whatever the locale, so reports, LDIF and messages piped to files
-    are UTF-8 like every file the CLI writes."""
+    """Effect: the standard streams in UTF-8 whatever the locale: output and error, so reports, LDIF and messages
+    piped to files are UTF-8 like every file the CLI writes; input, so answers typed or piped in (onboard setup) are
+    read as UTF-8, a byte that is not becoming U+FFFD as in read_lines."""
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8")
+    sys.stdin.reconfigure(encoding="utf-8", errors="replace")
 
 
 def run():
