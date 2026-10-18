@@ -245,7 +245,7 @@ def terraform_parts(m, services):
            *(comment(note_comment(n)) for n in (log_collection_notes(m, services) if services else ())),
            *render_siem_export(m, services),
            *containers, *(comment(note_comment(n)) for n in (container_log_notes(m, services) if services else ())),
-           *render_alerts(m), *render_sentinel(m),
+           *render_alerts(m), *render_sentinel(m, services),
            *render_tests(m, endpoints), *jobs,
            *render_security(m, discovery_plans(m)), *render_discovery(m), *render_purview(m),
            *render_suppressions(m), *render_budgets(m), *render_quota_requests(m),
@@ -321,7 +321,7 @@ def render_notes(m, services):
     endpoints = services.endpoints if services else ()
     return (*test_notes(m, endpoints), *job_notes(m, endpoints), *security_notes(m, discovery_plans(m)),
             *audit_notes(m), *discovery_notes(m), *suppression_notes(m), *guardrail_notes(m), *alert_notes(m),
-            *workspace_notes(m), *sentinel_notes(m), *identity_notes(m, ACCESS), *kubernetes_notes(m),
+            *workspace_notes(m), *sentinel_notes(m, services), *identity_notes(m, ACCESS), *kubernetes_notes(m),
             *firewall_notes(m),
             *client_certificate_notes(m, tuple(s for s in of_class(m, "ciamServiceName")
                                                if gateway_fronted(m, s, endpoints))),

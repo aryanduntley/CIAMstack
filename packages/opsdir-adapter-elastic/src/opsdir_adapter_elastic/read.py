@@ -25,6 +25,8 @@ detection-rules.<n>.json) or detection-rules.ndjson (an export, or the render's 
 binding role alarm-<rule>), searching the data stream its query names first (ES|QL FROM, else its index list), its
 search the one the render wrapped with the rule's condition, else the query as written, and its language when it isn't
 ES|QL (ciamSearchLanguage kuery, lucene, eql); a rule of another type than ES|QL is named: its condition isn't read.
+One the render wrote for an alert rule adopting a product's declared detection (its rule_id opsdir-<rule>:
+detections.is_native) is left out: the record holds no search for it, the rule and its declaration say what it is.
 
 elastic/kibana reports each data stream a rule searches as a log destination of kind siem-index alone (what links the
 rule to the record's stream): what the record holds of it is unchanged, and streams no rule searches aren't named.
@@ -37,6 +39,7 @@ from fnmatch import fnmatchcase
 
 from opsdir.core.environment import env_model, environment_at
 from opsdir.core.inventory import layout_import, realization_roles, resource
+from opsdir.domains.observability.detections import is_native
 from opsdir.domains.observability.retention import INDEFINITE
 from opsdir.domains.observability.siem import UNREPORTED, own_notices, realized_in
 from .detections import base_query, source_of
@@ -202,7 +205,7 @@ def parse_kibana(files):
     as a log destination of kind siem-index and nothing else (what links a rule to the stream the record holds; its
     retention is elastic/elasticsearch's)."""
     rules, problems = _rules(files)
-    found = tuple(rule_resource(r) for r in rules)
+    found = tuple(rule_resource(r) for r in rules if not is_native(r.get("rule_id"), r.get("description")))
     streams = dict.fromkeys(r.links["ciamLogDestinationRole"] for r, _ in found if r.links)
     return ((*(r for r, _ in found),
              *(resource("logs", x, {"ciamDestinationKind": "siem-index"}, name=x) for x in streams)),

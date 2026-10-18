@@ -23,6 +23,7 @@ no comments: the render notes are the adapter's notes (render_notes).
 import json
 
 from opsdir.core.jsondata import indented
+from .adopted import native_bodies
 from .detections import rendered_rules
 from .lifecycle import (component_template, data_stream_lifecycle, ilm_policy, lifecycle_streams, rendered_streams,
                         slm_policy)
@@ -58,7 +59,7 @@ def api_files(m, services):
     """{elastic/api/<file>: text}: environment m's data streams' retention (policies and templates; on Serverless
     their data stream lifecycles), its detections' rules and the Fleet policies shipping its logs, each file only
     when it holds something."""
-    rules = tuple(body for _, body in rendered_rules(m))
+    rules = (*(body for _, body in rendered_rules(m)), *(body for _, body in native_bodies(m, services)))
     agents, packages = fleet_policies(m, services)
     return {**_retention_files(m),
             **({f"{OUTPUT}{DETECTION_RULES}": ndjson(rules)} if rules else {}),

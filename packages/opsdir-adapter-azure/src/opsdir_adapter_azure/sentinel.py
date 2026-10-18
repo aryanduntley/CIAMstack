@@ -45,11 +45,26 @@ last stage naming them (project, distinct, summarize: a name, a column, bin(Colu
 it keep them); a search naming them otherwise is a note. Sentinel takes 20 custom details per rule, keys of 20
 characters at most: the rest are a note.
 
+An alert rule adopting a product's declared detection (task 597) that the environment delivers and no alarm binding
+of its own realizes (observability.detections.native_rules) is a scheduled analytics rule named opsdir-<rule> in each
+Sentinel workspace its server role's log routes reach (adopted_rule), its KQL written here from the rule's canonical
+selector and the declaration's mapping (adopted_query): the routes' custom tables holding the role's log files, the
+JSON in RawData parsed (a product field's dots as nested keys), the selector in the product's values, the fields it
+counts by as columns named after the canonical fields, `summarize events = count()` (or `value_count = dcount(...)`)
+by its group-by fields, kept where they reach its threshold; an alert per result, its subject or actor an Account and
+its source address an IP, its incidents grouping a window's alerts by them. A fixed window runs back to back (query
+frequency = period = the window, from when the rule is enabled: a note); a sliding one looks back over the window every
+step (detections.overlap_step, 5 minutes at least: Sentinel's shortest), the incident grouping folding the overlapping
+runs' repeats into one incident (Sentinel's suppression would stop the whole rule, every group with it). What can't be
+written (a window outside 5 minutes to 14 days, a sliding one with no shorter step, the role's log files in no table of
+the workspace: container output isn't searched, a missing mapping or field) is a blocker (detections.native_notes).
+
 Read back (sentinel_resources, with the inventory): a workspace is a SIEM index when the source holds its Sentinel
 onboarding; a scheduled analytics rule is a detection realizing the rule its description names (role alarm-<rule>),
 searching the workspace it runs in, holding its query without the condition the render wrapped around it. Its
 incident configuration and custom details (read by the CLI and ARM readers in azurerm's shape, as state holds them)
-follow from the detection, so they read back as nothing the record holds: a round trip shows no drift.
+follow from the detection, so they read back as nothing the record holds: a round trip shows no drift. A rule named
+opsdir-<rule> realizing its rule (detections.is_native) is left out: the record holds no search for it.
 """
 import re
 from itertools import accumulate
@@ -58,16 +73,22 @@ from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.inventory import duration_seconds, of_types, realization_roles, resource
 from opsdir.core.notes import note, note_comment
 from opsdir.domains.observability.alarms import alarm_note, detection_condition, detection_specs
+from opsdir.domains.observability.detections import (ENTITIES, is_native, native_name, native_notes, native_rules,
+                                                     overlap_step, product_field, product_values, searched)
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.siem import (described, detection_index, detection_mode, entity_mappings, is_siem,
                                                realized_in, siem_destinations)
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
 from .account import unstated_note
+from .kql import literal
+from .log_collection import host_shipments, table_name
 from .observability import iso_duration, workspace_id, workspace_name
 
 ONBOARDING = "azurerm_sentinel_log_analytics_workspace_onboarding"
 RULE = "azurerm_sentinel_alert_rule_scheduled"
 MIN_PERIOD = 300                        # Sentinel runs a scheduled rule every 5 minutes at the most often
+MAX_PERIOD = 14 * 86400                 # ... and looks back 14 days at the most (query frequency and period)
+EVENT = "ciamEvent"                     # the column an adopting rule's query parses a log line's JSON into
 SEARCH_LANGUAGE = "kusto"               # ciamSearchLanguage of a detection's KQL (its native language)
 SEVERITIES = {"sev0": "High", "sev1": "High", "sev2": "Medium", "sev3": "Low", "sev4": "Informational"}
 OPERATORS = {"gt": ">", "ge": ">="}
@@ -188,7 +209,11 @@ def incident_grouping(s):
 
 
 def _incident(s):
-    found = incident_grouping(s)
+    return _grouping(incident_grouping(s))
+
+
+def _grouping(found):
+    """The incident block of an incident grouping ((lookback seconds, matching method, entity types), or None: none)."""
     if found is None:
         return ()
     lookback, method, types = found
@@ -250,7 +275,12 @@ def _after(m, b):
 
 def _entity_blocks(alarm):
     """entity_mapping blocks of a rows detection: one per entity type, its identifiers in the record's order."""
-    found = entity_mappings(alarm)
+    return entity_blocks(entity_mappings(alarm))
+
+
+def entity_blocks(found):
+    """entity_mapping blocks of entity mappings found ((entity, identifier, result column), ...): one per entity type,
+    its identifiers in order."""
     return tuple(("entity_mapping", Block((("entity_type", ENTITY_TYPES[e]), *(
         ("field_mapping", Block((("identifier", IDENTIFIERS[(e, i)]), ("column_name", col))))
         for x, i, col in found if x == e)))) for e in dict.fromkeys(x for x, _, _ in found))
@@ -284,23 +314,27 @@ def _rule(m, s):
         *_incident(s), *_after(m, detection_index(m, s.alarm))])
 
 
-def render_sentinel(m):
+def render_sentinel(m, services=None):
     """HCL (and comments) for environment m's Sentinel: each Sentinel workspace it renders onboarded, each detection
-    on one as a scheduled analytics rule; the notes of the detections not rendered as comments."""
+    on one as a scheduled analytics rule, and with services (contract.Services) each adopting rule as one written from
+    its declaration (adopted_rule); the notes of the detections not rendered as comments."""
     onboard = tuple(from_entry(b.dn, (tf_block("resource", [ONBOARDING, tf_name(rdn_value(b))], [
         ("workspace_id", workspace_id(m, b))]),))
         for b in siem_destinations(m) if is_sentinel(b) and keeper_of(m, b) is None)
     rules = tuple(from_entry(s.alarm.dn, (_rule(m, s),)) for s in sentinel_detections(m) if _why(s) is None)
-    return (*(x for xs in onboard for x in xs), *(x for xs in rules for x in xs),
-            *(comment(note_comment(n)) for n in sentinel_notes(m)))
+    adopted = tuple(from_entry(x.rule.dn, (adopted_rule(m, x, b, tables),))
+                    for x, b, tables in (sentinel_rules(m, services) if services else ())
+                    if not _adopted_why(x, tables))
+    return (*(x for xs in onboard for x in xs), *(x for xs in rules for x in xs), *(x for xs in adopted for x in xs),
+            *(comment(note_comment(n)) for n in sentinel_notes(m, services)))
 
 
-def sentinel_notes(m):
+def sentinel_notes(m, services=None):
     """The render notes of environment m's Sentinel: detections not rendered (a note when no search is recorded, else
     a blocker), sub-techniques and ATT&CK v20 tactics rendered as what Sentinel names (notes), a rows detection's
     custom details not rendered and its incident grouping shorter than its period (notes), the total retention of
-    tables opsdir doesn't render (a note), and in Azure Government what Microsoft doesn't state is available there (an
-    action)."""
+    tables opsdir doesn't render (a note), in Azure Government what Microsoft doesn't state is available there (an
+    action), and with services the adopting rules' (adopted_notes)."""
     kept = tuple(b for b in siem_destinations(m) if is_sentinel(b) and keeper_of(m, b) is None)
     gov = unstated_note(m, "the Log Analytics Tables API's total retention and Microsoft Sentinel's data lake tiers",
                         "are") if kept else None
@@ -311,11 +345,7 @@ def sentinel_notes(m):
     rows = tuple(s for s in sentinel_detections(m) if _why(s) is None and detection_mode(s.alarm) == "rows")
     return (*(alarm_note(m, s) if s.why else alarm_note(m, s, _why(s))
               for s in sentinel_detections(m) if _why(s) is not None),
-            *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
-                   f"its sub-techniques {', '.join(ts)} are rendered as their parent techniques: azurerm has no "
-                   "sub-technique field, nor has the alertRules API's stable version (2025-09-01; only its previews)",
-                   ("Add the sub-techniques to the analytics rule in Sentinel if needed",),
-                   s.alarm.dn, m.label) for s, ts in subs if ts),
+            *(_subtechnique_note(m, s.rule, ts, s.alarm.dn) for s, ts in subs if ts),
             *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
                    "its search's result columns aren't rendered as custom details: it names them in no last project, "
                    "distinct or summarize stage opsdir reads",
@@ -333,11 +363,7 @@ def sentinel_notes(m):
                    ("Keep the rule's evaluation period to 7 days if one incident must hold a whole period's alerts",),
                    s.alarm.dn, m.label)
               for s in rows if _period(s) > MAX_LOOKBACK),
-            *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
-                   f"its ATT&CK tactics {', '.join(ts)} are rendered as DefenseEvasion: Sentinel follows ATT&CK v18, "
-                   "where they were Defense Evasion, and its alertRules API names no Stealth or Defense Impairment "
-                   "tactic", ("Map the rule to Stealth or Defense Impairment in Sentinel once it offers them",),
-                   s.alarm.dn, m.label) for s, ts in v18 if ts),
+            *(_v18_note(m, s.rule, ts, s.alarm.dn) for s, ts in v18 if ts),
             *(note("Logs", "note", f"log destination {rdn_value(b)}", f"keeps logs {one(b, 'ciamTotalRetentionDays')} "
                    "days in all on the tables opsdir renders for its routes (their Ciam<route>_CL tables, and "
                    "ContainerLogV2 for containers' logs); its other tables (Sentinel's own) keep the workspace's "
@@ -345,7 +371,139 @@ def sentinel_notes(m):
                    ("Set the total retention of the workspace's other tables that must keep logs as long, by hand",),
                    b.dn, m.label)
               for b in kept if one(b, "ciamTotalRetentionDays") is not None),
-            *((gov,) if gov is not None else ()))
+            *((gov,) if gov is not None else ()), *(adopted_notes(m, services) if services else ()))
+
+
+def _subtechnique_note(m, rule, found, dn):
+    return note("Monitoring", "note", f"alert rule {rdn_value(rule)}",
+                f"its sub-techniques {', '.join(found)} are rendered as their parent techniques: azurerm has no "
+                "sub-technique field, nor has the alertRules API's stable version (2025-09-01; only its previews)",
+                ("Add the sub-techniques to the analytics rule in Sentinel if needed",), dn, m.label)
+
+
+def _v18_note(m, rule, found, dn):
+    return note("Monitoring", "note", f"alert rule {rdn_value(rule)}",
+                f"its ATT&CK tactics {', '.join(found)} are rendered as DefenseEvasion: Sentinel follows ATT&CK v18, "
+                "where they were Defense Evasion, and its alertRules API names no Stealth or Defense Impairment "
+                "tactic", ("Map the rule to Stealth or Defense Impairment in Sentinel once it offers them",), dn,
+                m.label)
+
+
+def _attack_notes(m, rule):
+    """The notes of an alert rule's ATT&CK as Sentinel names it: sub-techniques as their parents, ATT&CK v20 tactics
+    as the v18 tactic they were split from."""
+    subs = tuple(t for t in values(rule, "ciamAttackTechnique") if "." in t)
+    v18 = tuple(t for t in values(rule, "ciamAttackTactic") if t in V18_TACTICS)
+    return (*((_subtechnique_note(m, rule, subs, rule.dn),) if subs else ()),
+            *((_v18_note(m, rule, v18, rule.dn),) if v18 else ()))
+
+
+def kql_path(path):
+    """A product field's path (dots separating nested keys) as the KQL reading it, as a string, from the event parsed
+    from a log line (parse_json(RawData), as EVENT)."""
+    return f"tostring({EVENT}" + "".join(f"[{literal(k)}]" for k in path.split(".")) + ")"
+
+
+def column(field):
+    """The result column a canonical field is counted by (source-ip -> source_ip)."""
+    return field.replace("-", "_")
+
+
+def _match(mapping, field, canonical):
+    found = tuple(dict.fromkeys(v for c in canonical for v in product_values(mapping, field, c)))
+    path = kql_path(product_field(mapping, field))
+    return f"{path} == {literal(found[0])}" if len(found) == 1 else f"{path} in ({', '.join(map(literal, found))})"
+
+
+def adopted_query(det, mapping, tables):
+    """The KQL of a declaration as an alert rule has it (det) in the product's fields and values (mapping), over the
+    custom tables its routes fill: its matching events, the fields it counts by as columns named after the canonical
+    fields, counted per group (or their distinct values of its distinct field, dcount) and kept where they reach its
+    threshold; the events themselves when it has none."""
+    head = (f"{tables[0] if len(tables) == 1 else 'union ' + ', '.join(tables)} | extend {EVENT} = "
+            f"parse_json(RawData) | where " + " and ".join(_match(mapping, f, vals) for f, vals in det.selector))
+    if det.threshold is None:
+        return head
+    counted = tuple(dict.fromkeys((*det.group_by, *((det.distinct,) if det.distinct else ()))))
+    named = (f" | extend {', '.join(f'{column(f)} = {kql_path(product_field(mapping, f))}' for f in counted)} "
+             f"| where {' and '.join(f'isnotempty({column(f)})' for f in counted)}") if counted else ""
+    by = f" by {', '.join(map(column, det.group_by))}" if det.group_by else ""
+    total, value = (("value_count", f"dcount({column(det.distinct)})") if det.distinct else ("events", "count()"))
+    return f"{head}{named} | summarize {total} = {value}{by} | where {total} >= {det.threshold}"
+
+
+def adopted_timing(det):
+    """((query frequency, query period) in seconds, None) of a declaration's scheduled rule (det: as the rule has it),
+    or (None, why its window can't be kept)."""
+    if det.threshold is None:
+        return (MIN_PERIOD, MIN_PERIOD), None
+    window = det.window_seconds
+    if not MIN_PERIOD <= window <= MAX_PERIOD:
+        return None, (f"its window ({window}s) isn't one a scheduled rule looks back over (5 minutes to 14 days)")
+    if det.window_kind == "fixed":
+        return (window, window), None
+    step = overlap_step(window, MIN_PERIOD)
+    if det.window_kind != "sliding" or step is None:
+        return None, (f"its window kind {det.window_kind!r} isn't sliding or fixed" if det.window_kind != "sliding"
+                      else f"its sliding window ({window}s) is too short to search again within it (a scheduled "
+                           "rule runs every 5 minutes at the most often)")
+    return (step, window), None
+
+
+def _adopted_why(x, tables):
+    return x.why or (None if tables else (
+        f"no table of the workspace holds role {x.det.server_role}'s log files (the Ciam<route>_CL tables of its "
+        "routes); container output (ContainerLogV2) isn't searched")) or adopted_timing(x.det)[1]
+
+
+def sentinel_rules(m, services):
+    """((NativeRule, Sentinel workspace, its tables holding the rule's server role's log files), ...) of environment
+    m's adopting rules whose role's logs reach a Sentinel workspace it renders (the rest are another SIEM's, or
+    none's)."""
+    files = host_shipments(m, services)
+    return tuple((x, b, tuple(dict.fromkeys(table_name(s.route) for s in files
+                                            if s.role == x.det.server_role and s.destination.dn == b.dn)))
+                 for x in native_rules(m, services.detections(m)) for b in searched(m, x.det, keeps))
+
+
+def _entities(det):
+    """The entity mappings of a declaration's results: each group-by field an entity (detections.ENTITIES) by its
+    column, an entity and identifier once."""
+    found = tuple((ENTITIES[f], (*ENTITIES[f], column(f))) for f in det.group_by if f in ENTITIES)
+    return tuple(v for i, (k, v) in enumerate(found) if k not in tuple(p for p, _ in found[:i]))
+
+
+def adopted_rule(m, x, b, tables):
+    """The scheduled analytics rule of adopting rule x (a NativeRule) in Sentinel workspace b over its tables: an
+    alert per result, its group-by fields mapped as entities its incidents group by within its window."""
+    rule = rdn_value(x.rule)
+    (every, period), _ = adopted_timing(x.det)
+    mapped = _entities(x.det)
+    types = tuple(ENTITY_TYPES[e] for e in dict.fromkeys(e for e, _, _ in mapped))
+    return tf_block("resource", [RULE, tf_name(f"{native_name(rule)}_{rdn_value(b)}")], [
+        ("name", native_name(rule)), ("log_analytics_workspace_id", _workspace_of(m, b)), ("display_name", rule),
+        ("description", described(rule)), ("severity", SEVERITIES.get(x.det.severity or "", "Medium")),
+        ("query", adopted_query(x.det, x.mapping, tables)), ("query_frequency", iso_duration(every)),
+        ("query_period", iso_duration(period)), ("trigger_operator", "GreaterThan"), ("trigger_threshold", 0),
+        ("enabled", True), *_attack(x.rule), ("event_grouping", Block((("aggregation_method", "AlertPerResult"),))),
+        *entity_blocks(mapped), *_grouping((min(period, MAX_LOOKBACK), "Selected" if types else "AnyAlert", types)),
+        *_after(m, b)])
+
+
+def adopted_notes(m, services):
+    """The render notes of environment m's adopting rules in Sentinel: those not rendered (blockers), those rendered
+    from a declaration documented only, their ATT&CK as Sentinel names it, and a fixed window searched back to back
+    from when the rule is enabled (notes)."""
+    found = sentinel_rules(m, services)
+    done = tuple({x.rule.dn: x for x, _, tables in found if not _adopted_why(x, tables)}.values())
+    refused = tuple({x.rule.dn: (x, _adopted_why(x, tables)) for x, _, tables in found
+                     if _adopted_why(x, tables)}.values())
+    return (*native_notes(m, done, refused, "Sentinel"), *(n for x in done for n in _attack_notes(m, x.rule)),
+            *(note("Monitoring", "note", f"alert rule {rdn_value(x.rule)}", f"its fixed window "
+                   f"({x.det.window_seconds}s) is searched back to back from when its analytics rule is enabled (and "
+                   "Sentinel runs a scheduled rule five minutes after its time), not from the clock's boundaries", (),
+                   x.rule.dn, m.label)
+              for x in done if x.det.threshold is not None and x.det.window_kind == "fixed"))
 
 
 def onboarded(found):
@@ -371,4 +529,5 @@ def sentinel_resources(found):
                                                "ciamEntityMapping": mapped or None},
                         {"ciamLogDestinationRole": a.get("log_analytics_workspace_id")}, name=a.get("name"),
                         role=role)
-    return tuple(detection(a) for a in of_types(found, RULE) if a.get("id"))
+    return tuple(detection(a) for a in of_types(found, RULE)
+                 if a.get("id") and not is_native(a.get("name"), a.get("description")))

@@ -20,22 +20,37 @@ since named as its risk) or keep the rule's, recording the declaration as seen (
 stayed is left alone); one whose declaration is gone is an action, its fix removing the rule; one naming an adapter
 that isn't installed is an action; a declaration that doesn't hold together (a field no mapping names, an unknown
 ATT&CK ID) is an action for its adapter's maintainers, never offered.
+
+What the SIEM adapters share to render an adopting rule natively (task 597): the rules an environment delivers that no
+alarm binding of its own realizes (native_rules: one recording its search is rendered as any detection), with the
+declaration as the rule has it and the product's mapping for the versions it runs, or why they can't be; the SIEM
+indexes the declaration's server role's log routes reach there (searched); how often a sliding window is searched
+again when the SIEM re-runs a lookback over the whole window (overlap_step); what a group-by field names as an entity
+(ENTITIES); the render notes of the rules a SIEM can't render (a blocker each) and of those it renders from a
+declaration that is documented only (native_notes); and the name the rendered detection carries, which its readers
+leave out of what they read back (native_name, is_native): the search text is the adapter's, never recorded.
 """
 import hashlib
 import json
 import re
+from collections import namedtuple
 
 from ...core.changeset import delete_entry, new_entry
 from ...core.directory import get, one, rdn_value, values
+from ...core.environment import one_role
 from ...core.findings import Fix, Input, Option, findings, merge_findings, responsible
 from ...core.interchange.ldif import LdifRecord
+from ...core.notes import note
 from ...core.versions import holds
 from ..compute.workloads import recorded_versions
 from .alerts import alert_rules
 from .attack_table import TACTICS, TECHNIQUES
+from .logs import log_routes
 from .naming import (ALERT_RULES, DECLARED_DETECTION, DETECTION_ACTIONS, DETECTION_FIELDS, DETECTION_OUTCOMES,
                      SELECTOR_TERM, SEVERITIES, VALIDATIONS, WINDOW_KINDS)
-from .signals import parse_threshold
+from .realized import keeper_of
+from .siem import is_siem, realized_in
+from .signals import alarm_for, parse_threshold
 
 AREA = "Alert"
 # The rule attributes a declaration gives (declared_attrs), in the order a fix lists them; the digest covers these
@@ -44,6 +59,18 @@ DECLARED_ATTRS = ("ciamSignal", "ciamTargetRole", "ciamDetectionSelector", "ciam
                   "ciamAttackTactic", "ciamAttackTechnique")
 _UNITS = (("d", 86400), ("h", 3600), ("m", 60), ("s", 1))
 _ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
+NOTE_AREA = "Monitoring"            # the area of a SIEM adapter's render notes on what it renders natively
+NATIVE_PREFIX = "opsdir-"          # what the name of a natively rendered detection starts with (native_name)
+# the steps a sliding window's search is run again at (overlap_step): minutes dividing an hour, hours dividing a day
+OVERLAP_STEPS = (60, 120, 180, 240, 300, 360, 600, 720, 900, 1200, 1800, 3600, 7200, 10800, 14400, 21600, 28800,
+                 43200, 86400)
+# An alert rule adopting a declaration as a SIEM adapter renders it in an environment (native_rules): rule, det the
+# declaration as the rule has it (recorded; the declaration as declared when it can't be), mapping the product's
+# DetectionMapping for the versions the environment runs (None when none holds), why it can't be rendered (or None)
+NativeRule = namedtuple("NativeRule", ("rule", "det", "mapping", "why"))
+# What a SIEM's alert on a rule grouping by a canonical field is about: the field as an entity and its identifier
+# (naming.ENTITY_IDENTIFIERS): the account a credential was tried for or that changed something, the client's address
+ENTITIES = {"subject": ("account", "name"), "actor": ("account", "name"), "source-ip": ("ip", "address")}
 _SAID = {"documented": "documented only: not yet seen firing in a lab or on a live system",
          "lab-verified": "verified against a lab's events", "live-verified": "seen firing on a live system"}
 
@@ -324,3 +351,75 @@ def check_detections(ctx, declarations, installed):
     return found if found.actions else found._replace(ok=(
         *found.ok, f"Every detection the target's products declare ({len(declarations)}) is adopted, and the alert "
                    f"rules adopting one ({len(rules)}) hold what their declarations say now."))
+
+
+def _native(m, rule, det):
+    taken, why = recorded(rule, det)
+    if why:
+        return NativeRule(rule, det, None, why)
+    mapping = mapping_for(m, taken)
+    if mapping is None:
+        return NativeRule(rule, taken, None, (
+            f"{one(rule, 'ciamDeclaredDetection')} maps no version of its product {m.label} records for role "
+            f"{taken.server_role} ({', '.join(x.versions or 'every version' for x in taken.mappings)})"))
+    missing = tuple(f for f in _used_fields(taken) if product_field(mapping, f) is None)
+    return NativeRule(rule, taken, mapping,
+                      f"the product's mapping names no field for {', '.join(missing)}" if missing else None)
+
+
+def native_rules(m, pairs):
+    """NativeRules of environment m's alert rules adopting a declaration an adapter rendering m declares (pairs:
+    Services.detections(m)) that m delivers (its alert role bound) and no alarm binding of m realizes (one recording
+    its search is rendered as any detection), in record order."""
+    return tuple(_native(m, r, det) for r in adopting(m.d)
+                 if one_role(m, one(r, "ciamAlertRole")) is not None and alarm_for(m, r) is None
+                 for det in (declared(pairs, one(r, "ciamDeclaredDetection")),) if det is not None)
+
+
+def searched(m, det, keeps):
+    """The SIEM indexes of environment m a declaration's events are searched in: the destinations of the log routes
+    publishing its server role (ciamPublishedBy) that keeps(m, b) (a SIEM adapter's siem_indexes) says are the
+    adapter's and m doesn't inherit from a base, each once, in route order."""
+    found = (one_role(m, one(r, "ciamLogDestinationRole")) for r in log_routes(m.d)
+             if det.server_role in values(r, "ciamPublishedBy"))
+    return tuple({b.dn: b for b in found
+                  if b is not None and is_siem(b) and keeps(m, b) and keeper_of(m, b) is None}.values())
+
+
+def overlap_step(window, minimum):
+    """How often a SIEM runs a sliding window's search again, each run looking back over the whole window: a fifth of
+    the window, minimum at least, rounded down to a step a schedule keeps (OVERLAP_STEPS); None when that isn't
+    shorter than the window (the runs wouldn't overlap). Every burst within the window less one step is caught."""
+    want = max(minimum, window // 5)
+    step = max((s for s in OVERLAP_STEPS if minimum <= s <= want), default=None)
+    return step if step is not None and step < window else None
+
+
+def native_notes(m, rendered, refused, siem):
+    """The render notes of the adopting rules a SIEM (its name, siem) renders natively in environment m: per rule it
+    doesn't (refused: ((NativeRule, why), ...)) a blocker (nothing there watches for it), with how to get it rendered;
+    per one it does (rendered: NativeRules) whose declaration is documented only, a note to replay its events."""
+    return (*(note(NOTE_AREA, "blocker", f"alert rule {rdn_value(x.rule)}", f"not rendered in {siem}: {why}",
+                   (f"Correct alert rule {rdn_value(x.rule)} under an approved change: its canonical fields "
+                    "(ciamDetectionSelector, ciamGroupBy, ciamDistinctField), condition or window "
+                    "(ciamEvaluationPeriod, ciamWindowKind)",
+                    f"Or record the product version role {x.det.server_role} runs (ciamProductVersion), or ask "
+                    f"{one(x.rule, 'ciamDeclaredDetection').split(':')[0]}'s maintainers for its mapping"),
+                   x.rule.dn, m.label) for x, why in refused),
+            *(note(NOTE_AREA, "note", f"alert rule {rdn_value(x.rule)}", f"rendered in {siem} from a declaration "
+                   "documented only (not yet seen firing in a lab or on a live system): it may miss or over-count "
+                   "until its events are checked",
+                   ("Replay the product's events against it before relying on it",), x.rule.dn, m.label)
+              for x in rendered if x.det.validation == "documented"))
+
+
+def native_name(rule):
+    """The name a SIEM adapter gives the detection it renders natively for an alert rule (by name): opsdir-<rule>."""
+    return NATIVE_PREFIX + rule
+
+
+def is_native(name, description):
+    """Whether a detection read from a SIEM (its name, its description) is one an adapter rendered natively for the
+    rule its description names (siem.described): its readers leave it out, the record holding no search for it."""
+    rule = realized_in(description)
+    return rule is not None and name == native_name(rule)
