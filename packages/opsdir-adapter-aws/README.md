@@ -255,10 +255,19 @@ A log group this environment renders, whose log destination records `ciamForward
 | Rendered | What it is |
 |---|---|
 | `aws_cloudwatch_log_subscription_filter` | Every event of the group (empty pattern) to the stream, through a role CloudWatch Logs assumes. The role may put records on that stream only, and its trust is limited to this account's log groups when the cloud records its account and region |
-| `aws_kinesis_firehose_delivery_stream` | An index the Splunk adapter keeps gets `splunk_configuration`: HEC `Raw` at the index's `ciamIntakeUrl`, the CloudWatch envelope decompressed and kept whole. An index the Elastic adapter keeps gets `http_endpoint_configuration` (Elastic's Firehose intake). Either way, `secrets_manager_configuration` names the secret the index's `ciamCredentialRole` references (`{"hec_token": ...}` or `{"api_key": ...}`), and events it can't deliver go to the group's `ciamStorageRef` (`s3://bucket[/prefix]`) |
+| `aws_kinesis_firehose_delivery_stream` | An index the Splunk adapter keeps gets `splunk_configuration`: HEC `Raw` at the index's Firehose endpoint (below), the CloudWatch envelope decompressed and kept whole. An index the Elastic adapter keeps gets `http_endpoint_configuration` (Elastic's Firehose intake). Either way, `secrets_manager_configuration` names the secret the index's `ciamCredentialRole` references (`{"hec_token": ...}` or `{"api_key": ...}`), and events it can't deliver go to the group's `ciamStorageRef` (`s3://bucket[/prefix]`) |
 | `aws_iam_role` + policy | What Firehose assumes: `secretsmanager:GetSecretValue` on that secret (and `kms:Decrypt` on its key when the secret binding records `ciamEncryptedByRole`), and the backup bucket |
 
-No credential value is in the render or the Terraform state. A render note asks the SIEM team to put it in the secret (for Splunk, a HEC token with indexer acknowledgment on). A forwarding that lacks an intake URL, a credential, a backup location, or an index kept by Splunk or Elastic is a blocker note naming what is missing. CloudFormation deploys the stream (`AWS::KinesisFirehose::DeliveryStream`, no `HECToken`) and the subscription natively. Checked with `terraform validate` (hashicorp/aws 6.69.1) and cfn-lint 1.57.2 (us-east-1, us-gov-west-1). In GovCloud, AWS documents Firehose with no differences; whether Firehose itself reaches the secret and the intake through FIPS endpoints isn't established, and a note says so.
+A Splunk index's Firehose endpoint is found from its `ciamIntakeUrl` (task 593, from Splunk's Firehose and HEC documentation):
+
+| The intake URL's host | Where Firehose sends |
+|---|---|
+| `http-inputs-<stack>.splunkcloud.com` (Splunk Cloud Platform on AWS, its HEC) | `https://http-inputs-firehose-<stack>.splunkcloud.com:443`, Splunk's documented Firehose endpoint for the stack (a note names it) |
+| A Splunk Cloud host naming `firehose` | The intake URL as it is |
+| Any other Splunk Cloud host (`http-inputs.<stack>` on Google Cloud, Azure, or FedRAMP on AWS GovCloud; a trial stack) | Nothing: Splunk documents no Firehose endpoint for these, and the record holds one intake URL per index. A blocker |
+| Any other host (Splunk Enterprise) | The intake URL without its path. An action lists what Firehose needs in front of the HEC: a Classic or Application Load Balancer, HTTPS with a trusted CA-signed certificate for that host, and duration-based sticky sessions |
+
+No credential value is in the render or the Terraform state. A render note asks the SIEM team to put it in the secret (for Splunk, a HEC token with indexer acknowledgment on). A forwarding that lacks an intake URL, a credential, a backup location, a documented Splunk Cloud Firehose endpoint, or an index kept by Splunk or Elastic is a blocker note naming what is missing. CloudFormation deploys the stream (`AWS::KinesisFirehose::DeliveryStream`, no `HECToken`) and the subscription natively. Checked with `terraform validate` (hashicorp/aws 6.69.1) and cfn-lint 1.57.2 (us-east-1, us-gov-west-1). In GovCloud, AWS documents Firehose with no differences; whether Firehose itself reaches the secret and the intake through FIPS endpoints isn't established, and a note says so.
 ## Reading an environment back from Terraform state
 
 ```bash

@@ -90,3 +90,37 @@ def test_cloudformation_deploys_the_stream_and_subscription_natively_without_a_t
                  "DeliveryStreamType: DirectPut"):
         assert line in template, line
     assert "HECToken" not in template
+
+
+def test_splunk_clouds_firehose_endpoint_is_derived_from_its_hec_host():
+    text, m = _render(intake="https://http-inputs-acme.splunkcloud.com:443/services/collector/event")
+    assert 'hec_endpoint      = "https://http-inputs-firehose-acme.splunkcloud.com:443"' in text
+    action, derived = siem_forwarding_notes(m, _services("splunk"))
+    assert action.severity == "action" and '{"hec_token": ...}' in action.text
+    assert derived.severity == "note" and "https://http-inputs-firehose-acme.splunkcloud.com:443" in derived.text
+
+
+def test_a_recorded_firehose_host_is_used_as_it_is():
+    text, m = _render(intake="https://http-inputs-firehose-acme.splunkcloud.com:443")
+    assert 'hec_endpoint      = "https://http-inputs-firehose-acme.splunkcloud.com:443"' in text
+    assert len(siem_forwarding_notes(m, _services("splunk"))) == 1
+
+
+def test_splunk_enterprise_is_sent_to_the_intake_without_its_path_and_told_what_firehose_needs_in_front():
+    text, m = _render(intake="https://hec.example.test:8088/services/collector/raw")
+    assert 'hec_endpoint      = "https://hec.example.test:8088"' in text
+    _, action = siem_forwarding_notes(m, _services("splunk"))
+    assert action.severity == "action"
+    for what in ("Classic or Application Load Balancer", "self-signed isn't accepted", "sticky sessions"):
+        assert what in action.text, what
+
+
+def test_a_splunk_cloud_stack_with_no_documented_firehose_endpoint_is_a_blocker():
+    for intake in ("https://http-inputs.acme.splunkcloudgc.com:443", "https://http-inputs.acme.splunkcloud.com",
+                   "https://acme.splunkcloud.com:8088"):
+        text, m = _render(intake=intake)
+        assert "aws_kinesis_firehose_delivery_stream" not in text, intake
+        (blocker,) = siem_forwarding_notes(m, _services("splunk"))
+        assert blocker.severity == "blocker" and "a Firehose endpoint" in blocker.text, intake
+    text, _ = _render("elastic", intake="https://http-inputs.acme.splunkcloudgc.com:443")
+    assert "aws_kinesis_firehose_delivery_stream" in text

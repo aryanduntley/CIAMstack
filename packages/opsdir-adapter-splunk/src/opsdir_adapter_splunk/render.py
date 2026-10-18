@@ -23,8 +23,10 @@ the index and a sourcetype (_json for JSON lines, else ciam:<role>:<file>). A fi
 Named instead, each a render note written as its comment: installing the app (an action), the forwarders' outputs
 (the Splunk team's: an action), detections not rendered (alarms.alarm_note), the ATT&CK and entity mappings a
 detection records that aren't rendered and what ES leaves to the Splunk team (es), retention Splunk can't express, files
-shipped whole where the route takes only some of their lines, records spanning lines, container output (not shipped
-by this add-on: a blocker) and a file two routes ship to different indexes (a blocker).
+shipped whole where the route takes only some of their lines, records spanning lines, container output on Kubernetes
+(kubernetes: installing the collector chart after its HEC token Secret is filled, through the External Secrets objects
+rendered with it where they can be; a blocker for what is missing) and a file two routes ship to different indexes (a
+blocker).
 """
 import re
 
@@ -167,12 +169,12 @@ def _first_per_file(found):
             for p in dict.fromkeys(x.path for x in found if x.on == "servers")}
 
 
-def _route_notes(m, found):
+def _route_notes(m, found, services):
     seen = _first_per_file(found)
     clashes = tuple(x for x in found if x.on == "servers" and seen[x.path] is not x
                     and index_name(seen[x.path].destination) != index_name(x.destination))
     return (
-        *collector_notes(m, found),
+        *collector_notes(m, found, services),
         *(note("Logs", "note", f"log route {rdn_value(x.route)}", f"{x.path} on role {x.role} is shipped whole: the "
                "Universal Forwarder doesn't filter lines by their fields, so lines of the kinds the route doesn't "
                "take reach the index too", (), x.route.dn, m.label)
@@ -214,7 +216,7 @@ def render_notes(m, services):
     found = splunk_shipments(m, services)
     rendered = bool(kept_indexes(m) or splunk_detections(m))
     return (*_team_notes(m, found, rendered), *_retention_notes(m), *detection_notes(m), *mapping_notes(m),
-            *_route_notes(m, found))
+            *_route_notes(m, found, services))
 
 
 def _comments(notes):
@@ -227,7 +229,7 @@ def render(m, services):
     indexes, searches = kept_indexes(m), splunk_detections(m)
     if not indexes and not searches:
         return {}
-    collectors = render_collectors(m, splunk_shipments(m, services))
+    collectors = render_collectors(m, splunk_shipments(m, services), services)
     notes = render_notes(m, services)
     stanzas = tuple(x for x in (search_stanza(m, s) for s in searches) if x is not None)
     return {INDEXES: write_conf(header(m, f"Splunk indexes (app {APP})", INI) + _comments(notes),
