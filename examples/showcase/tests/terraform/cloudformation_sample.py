@@ -7,8 +7,9 @@ partner, a suppression, a quota request, Macie's scheduled job, a compute group 
 its role's boot and data disks (a launch template and an autoscaling group), and Fluent Bit's role
 its pods assume through the cluster's OIDC provider (IRSA), and an AWS Managed Microsoft AD directory as its
 CloudFormation stack with a further region and a conditional forwarder (flow 76), and a log group forwarded on to a
-Splunk index through Firehose (the siem sample, milestone 109): every resource and data source type the AWS renderers
-write that the showcase doesn't."""
+Splunk index through Firehose (the siem sample, milestone 109), and an ALB checking client certificates under an
+edge trust policy (its trust store, and the bundle object it loads, task 591): every resource and data source type the
+AWS renderers write that the showcase doesn't."""
 import pathlib
 
 from opsdir.connectors.registry import services
@@ -24,6 +25,7 @@ import gateway_sample
 import mini_estate
 import plumbing_sample
 from network_fixtures import ALPHA, entry, model
+from pki_samples import CA_PEM, edge_trust_records
 from support import REGISTRY, build_directory
 
 # the account (its standard one, where CloudFront runs, holding the certificates), the GovCloud account
@@ -200,6 +202,15 @@ SIEM = (entry(ALPHA, "security-logs", "ciamLogDestination", ciamBindingRole="sec
               ciamRefUri=f"aws-sm://arn:aws:secretsmanager:us-east-1:{ACCOUNT}:secret:ciam/hec-AbCdEf"))
 
 
+# client certificates checked at the ALB under an edge trust policy (task 591): its bundle's bucket, and the edge
+# policy terminating TLS at the load balancer
+TRUST_BUCKET = entry(ALPHA, "trust-bucket", "ciamObjectStore", ciamBindingRole="trust-store",
+                     ciamStorageRef="s3://ciam-trust/pki")
+TERMINATE = (OU.format("ou=edge-policies,dc=ciam-ops", "edge-policies"),
+             entry("ou=edge-policies,dc=ciam-ops", "sso-edge", "ciamTrafficPolicy", ciamServiceRole="sso-service",
+                   ciamTlsMode="terminate"))
+
+
 def environments(region):
     """((name, environment model, services), ...): the sample's environments in region, each rendered with
     services."""
@@ -215,7 +226,9 @@ def environments(region):
              found._replace(logs=lambda m: (AM,))),
             # the index kept by the Splunk adapter, as a stack declaring it would
             ("siem", model(alpha=SIEM, changes=(*placed(region), *bound(region)))[1],
-             found._replace(siem_keeper=lambda m, b: "splunk")))
+             found._replace(siem_keeper=lambda m, b: "splunk")),
+            ("mtls", model(alpha=(TRUST_BUCKET,), tree=(*edge_trust_records(CA_PEM), *TERMINATE),
+                           changes=(*placed(region), *bound(region)))[1], found))
 
 
 def renders(region):
