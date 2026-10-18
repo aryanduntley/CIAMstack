@@ -70,6 +70,45 @@ def _privileges(f, production):
     return ("login privileges", OK, f"{f.user}: rows only, no schema rights")
 
 
+TLS_ORDER = ("TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3")
+LOGIN_FLAGS = {"createrole": "create roles", "createdb": "create databases", "bypassrls": "bypass row security"}
+
+
+def _tls_minimum(f, production):
+    if not f.ssl_min_version:
+        return ("tls minimum", INFO, "the server's ssl_min_protocol_version isn't readable here")
+    if f.ssl_min_version in TLS_ORDER and TLS_ORDER.index(f.ssl_min_version) < TLS_ORDER.index("TLSv1.2"):
+        return ("tls minimum", FAIL if production else WARN,
+                f"the server accepts {f.ssl_min_version}: set ssl_min_protocol_version to TLSv1.2 or later")
+    return ("tls minimum", OK, f.ssl_min_version)
+
+
+def _password_hashing(f, production):
+    if not f.password_encryption:
+        return ("password hashing", INFO, "the server's password_encryption isn't readable here")
+    if f.password_encryption != "scram-sha-256":
+        return ("password hashing", FAIL if production else WARN,
+                f"password_encryption is {f.password_encryption}: set it to scram-sha-256 (and reset the passwords)")
+    return ("password hashing", OK, "scram-sha-256")
+
+
+def _login_flags(f, production):
+    if not f.role_flags:
+        return ("login attributes", OK, f"{f.user}: no createrole, createdb or bypassrls")
+    return ("login attributes", FAIL if production else WARN,
+            f"{f.user} can {', '.join(LOGIN_FLAGS[x] for x in f.role_flags)}: no login CIAMstack runs as needs that "
+            "(opsdir db-roles creates them without)")
+
+
+def _public_rights(f, production):
+    if not f.public_rights:
+        return ("public rights", OK, "PUBLIC can't create objects or temporary tables in the database")
+    return ("public rights", WARN if production else INFO,
+            f"PUBLIC holds {' and '.join(f.public_rights)} on database {f.dbname}: revoke them "
+            f"(revoke {', '.join(r.lower() for r in f.public_rights)} on database {f.dbname} from public); the "
+            "store's functions are pinned against temporary tables, but nothing needs these rights")
+
+
 def _migrations(f, known):
     if not f.schema_owner:
         return ("schema", FAIL, "no opsdir schema in this database: run opsdir init")
@@ -118,7 +157,9 @@ def posture_rows(facts, d, known_migrations, allowed=None, token=None):
     production = deployment == "production"
     identity = record_identity(d)
     return (("deployment", INFO, deployment), _version(facts), _tls(facts, allowed), _sign_in(facts, production, token),
-            _dev_defaults(facts, production), _privileges(facts, production), _migrations(facts, known_migrations),
+            _dev_defaults(facts, production), _privileges(facts, production), _tls_minimum(facts, production),
+            _password_hashing(facts, production), _login_flags(facts, production), _public_rights(facts, production),
+            _migrations(facts, known_migrations),
             _identity(identity, production), _separation(d, production), *_cloud_names(d, identity))
 
 

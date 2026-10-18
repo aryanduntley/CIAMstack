@@ -86,3 +86,21 @@ def test_cloud_names_against_the_org_code():
     assert ("cloud names", OK, "all start with collins-") in posture_rows(
         PROD, directory(org="collins", clouds=("collins-aws",)), KNOWN)
     assert not any(c == "cloud names" for c, _, _ in posture_rows(PROD, directory(), KNOWN))
+
+
+def test_the_servers_tls_minimum_password_hashing_login_attributes_and_public_rights_are_checked():
+    hardened = PROD._replace(ssl_min_version="TLSv1.2", password_encryption="scram-sha-256")
+    rows = posture_rows(hardened, directory(production=True, org="exa"), KNOWN)
+    assert [status(rows, c) for c in ("tls minimum", "password hashing", "login attributes", "public rights")] == \
+        [OK, OK, OK, OK]
+    weak = hardened._replace(ssl_min_version="TLSv1", password_encryption="md5", role_flags=("createdb", "bypassrls"),
+                             public_rights=("TEMPORARY",))
+    prod, dev = (posture_rows(weak, directory(production=p, org="exa"), KNOWN) for p in (True, False))
+    assert [status(prod, c) for c in ("tls minimum", "password hashing", "login attributes", "public rights")] == \
+        [FAIL, FAIL, FAIL, WARN]
+    assert [status(dev, c) for c in ("tls minimum", "password hashing", "login attributes", "public rights")] == \
+        [WARN, WARN, WARN, INFO]
+    detail = dict((c, d) for c, _, d in prod)
+    assert "opsdir_app can create databases, bypass row security" in detail["login attributes"]
+    assert "revoke temporary on database record from public" in detail["public rights"]
+    assert status(posture_rows(PROD, directory(), KNOWN), "tls minimum") == INFO        # unreadable: noted only

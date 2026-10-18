@@ -53,18 +53,29 @@ def effective_options(conn):
 
 # What the posture check reads about the connection and the login (connectors.posture): the server, how the connection
 # was made and signed in, and the login's standing in the opsdir schema. password_given: a password in the DSN or the
-# environment (not a password file); dev_password: it is the local dev one.
+# environment (not a password file); dev_password: it is the local dev one. Then the server's TLS minimum and password
+# hashing settings ("" when unreadable), the login's role attributes it shouldn't need (createrole, createdb,
+# bypassrls) and what PUBLIC may do in the database (TEMPORARY, CREATE).
 PostureFacts = NamedTuple("PostureFacts", [
     ("server_version", int), ("host", str), ("sslmode", str), ("sslrootcert", str), ("ssl_in_use", bool),
     ("used_password", bool), ("used_gssapi", bool), ("client_certificate", bool), ("password_given", bool),
     ("dev_password", bool), ("dbname", str), ("user", str), ("superuser", bool), ("schema_owner", str),
-    ("owns_schema", bool), ("can_create", bool), ("applied", tuple)])
+    ("owns_schema", bool), ("can_create", bool), ("applied", tuple), ("ssl_min_version", str),
+    ("password_encryption", str), ("role_flags", tuple), ("public_rights", tuple)])
+PostureFacts.__new__.__defaults__ = ("", "", (), ())
 DEV_PASSWORD = "testpass"           # scripts/dev-env.sh's local development password
 LOGIN_SQL = ("select current_user, r.rolsuper, n.nspowner::regrole::text,"
              " pg_has_role(current_user, n.nspowner, 'USAGE'), has_schema_privilege(n.oid, 'CREATE')"
              " from pg_roles r, pg_namespace n where r.rolname = current_user and n.nspname = 'opsdir'")
 APPLIED_VERSIONS_SQL = "select version, name from opsdir.schema_migration order by version"
 CLIENT_DN_SQL = "select client_dn from pg_stat_ssl where pid = pg_backend_pid()"   # set when a certificate signed in
+# pg_settings leaves out what the login may not read (ssl_min_protocol_version needs pg_read_all_settings): ''
+SERVER_SETTINGS_SQL = ("select coalesce((select setting from pg_settings where name = 'ssl_min_protocol_version'), ''),"
+                       " coalesce((select setting from pg_settings where name = 'password_encryption'), '')")
+ROLE_FLAGS_SQL = ("select r.rolcreaterole, r.rolcreatedb, r.rolbypassrls from pg_roles r"
+                  " where r.rolname = current_user")
+PUBLIC_RIGHTS_SQL = ("select has_database_privilege('public', current_database(), 'TEMPORARY'),"
+                     " has_database_privilege('public', current_database(), 'CREATE')")
 
 
 def posture_facts(conn):
@@ -75,11 +86,16 @@ def posture_facts(conn):
     user, superuser, owner, owns, create = login or (conn.info.user, False, None, False, False)
     applied = tuple(conn.execute(APPLIED_VERSIONS_SQL).fetchall()) if owner else ()
     client_dn = (conn.execute(CLIENT_DN_SQL).fetchone() or (None,))[0]
+    ssl_min, hashing = conn.execute(SERVER_SETTINGS_SQL).fetchone()
+    flags = conn.execute(ROLE_FLAGS_SQL).fetchone() or (False, False, False)
+    rights = conn.execute(PUBLIC_RIGHTS_SQL).fetchone()
     return PostureFacts(conn.info.server_version, o.get("host") or o.get("hostaddr") or "", o.get("sslmode") or "",
                         o.get("sslrootcert") or "", bool(conn.pgconn.ssl_in_use), bool(conn.pgconn.used_password),
                         bool(conn.pgconn.used_gssapi), client_dn is not None and not conn.pgconn.used_password,
                         given is not None, given == DEV_PASSWORD.encode(), o.get("dbname") or "", user,
-                        bool(superuser), owner or "", bool(owns), bool(create), applied)
+                        bool(superuser), owner or "", bool(owns), bool(create), applied, ssl_min, hashing,
+                        tuple(n for n, held in zip(("createrole", "createdb", "bypassrls"), flags) if held),
+                        tuple(n for n, held in zip(("TEMPORARY", "CREATE"), rights) if held))
 
 
 def connection_problem(conn, allowed=None):
