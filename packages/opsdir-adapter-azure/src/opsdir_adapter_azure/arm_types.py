@@ -997,8 +997,8 @@ def _diagnostic(f, cx):
 
 
 def _scheduled_rule(f, cx):
-    """A Sentinel scheduled analytics rule: kind Scheduled, what azurerm sets, and the suppression ARM requires (off,
-    the provider's PT5H)."""
+    """A Sentinel scheduled analytics rule: kind Scheduled, what azurerm sets (its custom details and incident
+    configuration too: task 592), and the suppression ARM requires (off, the provider's PT5H)."""
     return {"kind": "Scheduled", "suppressionEnabled": False, "suppressionDuration": "PT5H", **obj(own(f), cx, {
         "name": None, "log_analytics_workspace_id": None, "display_name": "displayName", "description": "description",
         "severity": "severity", "query": "query", "query_frequency": "queryFrequency", "query_period": "queryPeriod",
@@ -1009,7 +1009,14 @@ def _scheduled_rule(f, cx):
         "entity_mapping": Custom(lambda v, c: {"entityMappings": [
             {"entityType": c.value(e["entity_type"]),
              "fieldMappings": [{"identifier": c.value(x["identifier"]), "columnName": c.value(x["column_name"])}
-                               for x in e.get("field_mapping", [])]} for e in v]})})}
+                               for x in e.get("field_mapping", [])]} for e in v]}),
+        "custom_details": "customDetails",
+        "incident": Nest("incidentConfiguration", {"create_incident_enabled": "createIncident", "grouping": Nest(
+            "groupingConfiguration", {
+                "enabled": "enabled", "lookback_duration": "lookbackDuration",
+                "reopen_closed_incidents": "reopenClosedIncident", "entity_matching_method": "matchingMethod",
+                "by_entities": "groupByEntities", "by_alert_details": "groupByAlertDetails",
+                "by_custom_details": "groupByCustomDetails"})})})}
 
 
 def _budget(f, cx):

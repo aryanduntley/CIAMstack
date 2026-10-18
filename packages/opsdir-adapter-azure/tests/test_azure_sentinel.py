@@ -320,3 +320,141 @@ def test_the_arm_form_carries_attack_entities_and_grouping():
     assert rule.properties["eventGroupingSettings"] == {"aggregationKind": "AlertPerResult"}
     assert rule.properties["entityMappings"] == [
         {"entityType": "Account", "fieldMappings": [{"identifier": "Name", "columnName": "UserPrincipalName"}]}]
+
+
+# ------------------------------------------- incidents, custom details, sub-techniques (milestone 109, task 592)
+def _block(text, name):
+    return text.split(f'resource "azurerm_sentinel_alert_rule_scheduled" "{name}"', 1)[1].split("\n}\n", 1)[0]
+
+
+def test_a_rows_detection_groups_its_alerts_by_its_entities_and_shows_its_other_columns():
+    text = "\n\n".join(as_text(render_sentinel(_rows_model())))
+    rule = _block(text, "det_spray")
+    assert 'custom_details = {\n    n = "n"\n  }' in rule                 # n: the column no entity mapping uses
+    assert ("  incident {\n    create_incident_enabled = true\n    grouping {\n      enabled                 = true\n"
+            '      lookback_duration       = "PT15M"\n      reopen_closed_incidents = false\n'
+            '      entity_matching_method  = "Selected"\n      by_entities             = ["Account", "IP"]\n'
+            "    }\n  }") in rule
+    count = _block(text, "det_login")                    # a count detection: Sentinel's default, an incident per alert
+    assert "incident" not in count and "custom_details" not in count
+
+
+def test_a_rows_detection_mapping_no_entity_groups_its_alerts_of_the_period_into_one_incident():
+    plain = ROWS.replace("ciamEntityMapping: account name=UserPrincipalName\nciamEntityMapping: ip address=IPAddress\n",
+                         "")
+    assert "ciamEntityMapping" not in plain
+    _, _, m = model(beta=(*BINDINGS, plain), tree=(*TREE, SPRAY))
+    rule = _block("\n\n".join(as_text(render_sentinel(m))), "det_spray")
+    assert 'entity_matching_method  = "AnyAlert"' in rule and "by_entities" not in rule
+    assert 'n                 = "n"' in rule and 'UserPrincipalName = "UserPrincipalName"' in rule
+
+
+def test_the_result_columns_are_read_from_the_searchs_last_stage_naming_them():
+    from opsdir_adapter_azure.sentinel import result_columns
+    assert result_columns(ROWS_QUERY) == ("n", "UserPrincipalName", "IPAddress")
+    assert result_columns("T | project a, b = strcat(x, ',', y), c | where a > 1 | take 5") == ("a", "b", "c")
+    assert result_columns('T | where M has "x | y" | distinct A, B | sort by A desc') == ("A", "B")
+    assert result_columns("T | summarize by bin(TimeGenerated, 1h), User") == ("TimeGenerated", "User")
+    for unread in ("T", "T | extend a = 1", "T | summarize count() by A", "T | project ['a b']",
+                   "T | project-away a"):
+        assert result_columns(unread) is None, unread
+
+
+def test_what_custom_details_and_grouping_leave_to_a_person_is_named():
+    from opsdir_adapter_azure.sentinel import MAX_CUSTOM_DETAILS
+    wide = " | project " + ", ".join(f"c{i} = x" for i in range(MAX_CUSTOM_DETAILS + 1))
+    many = ROWS.replace(f"ciamMetric: {ROWS_QUERY}\n",
+                        f"ciamMetric: T{wide}, UserPrincipalName, IPAddress, AVeryLongColumnNameIndeed\n")
+    long_ = SPRAY.replace("ciamEvaluationPeriod: 15m", "ciamEvaluationPeriod: 8d")
+    _, _, m = model(beta=(*BINDINGS, many), tree=(*TREE, long_))
+    text = "\n\n".join(as_text(render_sentinel(m)))
+    rule = _block(text, "det_spray")
+    assert 'lookback_duration       = "P7D"' in rule and 'query_period               = "P8D"' in rule
+    details = rule.split("custom_details = {", 1)[1].split("}", 1)[0]
+    assert 'c19 = "c19"' in details and "c20" not in details and "AVeryLong" not in details
+    assert ("# NOTE: alert rule password-spray: its result columns c20, AVeryLongColumnNameIndeed aren't custom "
+            "details: Sentinel takes 20 per rule, each key 20 characters at most") in text
+    assert ("# NOTE: alert rule password-spray: its incidents group the alerts of 7 days, not of its whole evaluation "
+            "period (691200s)") in text
+    unread = ROWS.replace(f"ciamMetric: {ROWS_QUERY}\n", "ciamMetric: T | extend n = 1\n")
+    _, _, m = model(beta=(*BINDINGS, unread), tree=(*TREE, SPRAY))
+    text = "\n\n".join(as_text(render_sentinel(m)))
+    assert "custom_details" not in _block(text, "det_spray")
+    assert "# NOTE: alert rule password-spray: its search's result columns aren't rendered as custom details" in text
+    assert "nor has the alertRules API's stable version (2025-09-01; only its previews)" in text
+
+
+def _translated_rule(*extra):
+    from types import SimpleNamespace
+    from opsdir_format_terraform.hcl import TfFile, ref, tf_block
+    from opsdir_adapter_azure.arm_types import arm_translation
+    root = TfFile("", (
+        tf_block("data", ["azurerm_resource_group", "main"], [("name", "rg-a")]),
+        tf_block("resource", ["azurerm_log_analytics_workspace", "siem"], [
+            ("name", "law-ciam"), ("location", ref("data.azurerm_resource_group.main.location")),
+            ("resource_group_name", ref("data.azurerm_resource_group.main.name")), ("sku", "PerGB2018")]),
+        tf_block("resource", ["azurerm_sentinel_alert_rule_scheduled", "det"], [
+            ("name", "spray"), ("log_analytics_workspace_id", ref("azurerm_log_analytics_workspace.siem.id")),
+            ("display_name", "password-spray"), ("severity", "High"), ("query", ROWS_QUERY),
+            ("query_frequency", "PT15M"), ("query_period", "PT15M"), ("trigger_operator", "GreaterThan"),
+            ("trigger_threshold", 0), ("enabled", True), *extra])))
+    m = SimpleNamespace(dn="env=prod,cloud=alpha,ou=environments,dc=ciam-ops", label="alpha/prod")
+    t = arm_translation(m, {"terraform/main.tf": root}, "Azure infrastructure")
+    return next(r for (_, k), tpl in t.templates.items() for r in tpl.resources
+                if r.type == "Microsoft.SecurityInsights/alertRules")
+
+
+def test_the_arm_form_carries_custom_details_and_the_incident_configuration():
+    from opsdir_format_terraform.hcl import Block
+    rule = _translated_rule(("custom_details", {"n": "n"}), ("incident", Block((
+        ("create_incident_enabled", True), ("grouping", Block((
+            ("enabled", True), ("lookback_duration", "PT15M"), ("reopen_closed_incidents", False),
+            ("entity_matching_method", "Selected"), ("by_entities", ["Account", "IP"]))))))))
+    assert rule.properties["customDetails"] == {"n": "n"}
+    assert rule.properties["incidentConfiguration"] == {"createIncident": True, "groupingConfiguration": {
+        "enabled": True, "lookbackDuration": "PT15M", "reopenClosedIncident": False, "matchingMethod": "Selected",
+        "groupByEntities": ["Account", "IP"]}}
+    assert "subTechniques" not in rule.properties                 # not in the stable alertRules API (2025-09-01)
+
+
+ARM_RULE = {"id": "/rules/spray", "name": "ciam-password-spray", "type": "Microsoft.SecurityInsights/alertRules",
+            "kind": "Scheduled", "properties": {
+                "displayName": "password-spray", "description": "opsdir: realizes alert rule password-spray",
+                "query": ROWS_QUERY, "tactics": ["CredentialAccess"], "techniques": ["T1110"],
+                "eventGroupingSettings": {"aggregationKind": "AlertPerResult"},
+                "entityMappings": [{"entityType": "Account", "fieldMappings": [
+                    {"identifier": "Name", "columnName": "UserPrincipalName"}]}],
+                "customDetails": {"n": "n"},
+                "incidentConfiguration": {"createIncident": True, "groupingConfiguration": {
+                    "enabled": True, "lookbackDuration": "PT15M", "reopenClosedIncident": False,
+                    "matchingMethod": "Selected", "groupByEntities": ["Account"]}}}}
+
+
+def test_the_cli_reads_a_rules_new_fields_in_azurerms_shape_as_state_holds_them():
+    from opsdir_adapter_azure.cli_monitor import monitor_items
+    (kind, a), = monitor_items([("microsoft.securityinsights/alertrules", ARM_RULE)])
+    assert kind == "azurerm_sentinel_alert_rule_scheduled"
+    assert (a["tactics"], a["techniques"], a["event_grouping"], a["custom_details"]) == (
+        ["CredentialAccess"], ["T1110"], [{"aggregation_method": "AlertPerResult"}], {"n": "n"})
+    assert a["incident"] == [{"create_incident_enabled": True, "grouping": [{
+        "enabled": True, "lookback_duration": "PT15M", "reopen_closed_incidents": False,
+        "entity_matching_method": "Selected", "by_entities": ["Account"], "by_alert_details": [],
+        "by_custom_details": []}]}]
+    (_, bare), = monitor_items([("microsoft.securityinsights/alertrules", {**ARM_RULE, "properties": {}})])
+    assert (bare["incident"], bare["custom_details"], bare["event_grouping"]) == ([], {}, [])
+
+
+def test_a_rows_rule_with_incidents_and_custom_details_reads_back_alike_from_state_and_the_cli():
+    """The round trip: the new fields follow from the detection, so state and the CLI read back the same detection,
+    adding nothing the record would show as drift."""
+    from opsdir_adapter_azure.cli import cli_resources
+    from opsdir_adapter_azure.cli_monitor import monitor_items
+    texts = {"sentinel-alertRules-law-ciam-sentinel.json": json.dumps({"value": [
+        {**ARM_RULE, "id": f"{WS}/providers/Microsoft.SecurityInsights/alertRules/ciam-password-spray"}]})}
+    from_cli = next(r for r in cli_resources(texts)[0] if r.kind == "alarm")
+    (_, a), = monitor_items([("microsoft.securityinsights/alertrules", ARM_RULE)])
+    from_state = {r.ref: r for r in state_resources(_state(("azurerm_sentinel_alert_rule_scheduled", "det", {
+        **a, "log_analytics_workspace_id": WS})))[0]}["/rules/spray"]
+    expected = {"ciamRealizes": ("password-spray",), "ciamMetric": (ROWS_QUERY,), "ciamDetectionMode": ("rows",),
+                "ciamEntityMapping": ("account name=UserPrincipalName",)}
+    assert from_state.attrs == from_cli.attrs == expected

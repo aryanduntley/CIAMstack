@@ -20,7 +20,9 @@ other tables (Sentinel's own), which are set by hand, and in Azure Government wh
 state is available there (the Tables API's total retention, Sentinel's data lake tiers).
 
 The rule's MITRE ATT&CK tactics become Sentinel's (credential-access: CredentialAccess) and its techniques the parent
-techniques (a sub-technique, T1078.004, is rendered as T1078 with a note: azurerm has no sub-technique field).
+techniques (a sub-technique, T1078.004, is rendered as T1078 with a note: azurerm has no sub-technique field, and
+neither has the alertRules API's stable version, 2025-09-01, whose change log removed the previews' subTechniques:
+the Bicep/ARM render, at that version, keeps the note too).
 Sentinel follows ATT&CK v18 ("Microsoft Sentinel is currently aligned to The MITRE ATT&CK framework, version 18"):
 the alertRules API (2025-09-01) documents its tactics as v18's, and azurerm 5.10.0 refuses any other (terraform
 validate rejects Stealth and DefenseImpairment), while the record follows ATT&CK v20 (observability.attack), where
@@ -32,11 +34,25 @@ detection (ciamDetectionMode rows, milestone 109, decision 3299) runs its search
 mappings (core ciamEntityMapping: account, ip, host, url, application as Sentinel's Account, IP, Host, URL,
 CloudApplication; at most three identifiers each, Sentinel's limit).
 
+Incidents and custom details (task 592; the record holds no choice of them, so they follow from the detection): a count
+detection keeps Sentinel's default, an incident per alert and no grouping (it raises one alert per run). A rows
+detection's alerts (up to 150 a run) are grouped into incidents (incident: created, grouping enabled, closed incidents
+not reopened) within its evaluation period (5 minutes to 7 days, Sentinel's range: a longer period groups 7 days, with
+a note), by the entity types it maps (Selected, the only types Sentinel lets a rule group by), or, mapping none, all
+its alerts of the period into one (AnyAlert). Its result columns its entity mappings don't use become custom details,
+each keyed by its own name (custom_details), so analysts see them on the alert: the columns are read from the search's
+last stage naming them (project, distinct, summarize: a name, a column, bin(Column, ...); where, take, sort, top after
+it keep them); a search naming them otherwise is a note. Sentinel takes 20 custom details per rule, keys of 20
+characters at most: the rest are a note.
+
 Read back (sentinel_resources, with the inventory): a workspace is a SIEM index when the source holds its Sentinel
 onboarding; a scheduled analytics rule is a detection realizing the rule its description names (role alarm-<rule>),
-searching the workspace it runs in, holding its query without the condition the render wrapped around it.
+searching the workspace it runs in, holding its query without the condition the render wrapped around it. Its
+incident configuration and custom details (read by the CLI and ARM readers in azurerm's shape, as state holds them)
+follow from the detection, so they read back as nothing the record holds: a round trip shows no drift.
 """
 import re
+from itertools import accumulate
 
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.inventory import duration_seconds, of_types, realization_roles, resource
@@ -67,6 +83,16 @@ IDENTIFIERS = {("account", "name"): "Name", ("account", "upn-suffix"): "UPNSuffi
 CORE_ENTITY = {v: k for k, v in ENTITY_TYPES.items()}
 CORE_IDENTIFIER = {(k[0], v): k[1] for k, v in IDENTIFIERS.items()}
 MAX_IDENTIFIERS = 3                    # identifiers per entity mapping (Sentinel's entity mapping limit)
+# Sentinel's limits (service limits; custom details, alert grouping: research on task 592): custom details per rule,
+# the characters of a custom detail's key, an incident grouping's lookback at the longest (5 minutes to 7 days)
+MAX_CUSTOM_DETAILS, MAX_KEY, MAX_LOOKBACK = 20, 20, 7 * 86400
+# KQL stages after the one naming a search's result columns that keep them (they filter or order rows)
+_KEEPS_COLUMNS = frozenset({"where", "filter", "take", "limit", "sort", "order", "top"})
+_NAMED = re.compile(r"^(?P<name>[A-Za-z_]\w*)\s*=(?!=)")
+_COLUMN = re.compile(r"^[A-Za-z_]\w*$")
+_BINNED = re.compile(r"^bin\(\s*(?P<name>[A-Za-z_]\w*)\s*,")
+_TOKENS = r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|[()\[\]{}]"   # KQL strings, brackets
+_OPEN, _CLOSE = ("(", "[", "{"), (")", "]", "}")
 _WRAPPED = re.compile(r"^(?P<base>.*) \| summarize events = count\(\) by bin\(TimeGenerated, \d+s\) \| where events "
                       r">=? \S+ \| summarize breaching = count\(\) \| where breaching >= \d+$", re.DOTALL)
 
@@ -99,6 +125,76 @@ def base_query(query):
     """A scheduled rule's own query: the one the render wrapped with a rule's condition, else the query as written."""
     found = _WRAPPED.match(query or "")
     return found.group("base") if found else (query or "")
+
+
+def _top_level(text, sep):
+    """text split at each sep outside its quoted strings and brackets."""
+    found = tuple(re.finditer(_TOKENS + "|" + re.escape(sep), text))
+    depths = tuple(accumulate((1 if t.group() in _OPEN else -1 if t.group() in _CLOSE else 0 for t in found),
+                              initial=0))
+    cuts = tuple(t for t, depth in zip(found, depths) if t.group() == sep and depth == 0)
+    return tuple(text[a:b] for a, b in zip((0, *(t.end() for t in cuts)), (*(t.start() for t in cuts), len(text))))
+
+
+def _column(item, grouping):
+    """The result column a project, distinct or summarize item makes: its name (Name = ...), a column as it is, the
+    column a group binned (bin(Column, ...)); None for one KQL names itself (an unnamed expression)."""
+    item = item.strip()
+    found = _NAMED.match(item) or (_BINNED.match(item) if grouping else None)
+    return found.group("name") if found else item if _COLUMN.match(item) else None
+
+
+def result_columns(query):
+    """The result columns of a KQL search, in order, from its last stage naming them (project, distinct, summarize;
+    stages after it that filter or order rows passed over); None when it names them nowhere opsdir reads (another last
+    stage, an unnamed expression)."""
+    stages = tuple(" ".join(s.split()) for s in _top_level(query or "", "|"))[1:]
+    op, _, rest = next((s for s in reversed(stages) if s.split(" ", 1)[0] not in _KEEPS_COLUMNS), "").partition(" ")
+    if op in ("project", "distinct"):
+        named = tuple(_column(x, False) for x in _top_level(rest, ","))
+    elif op == "summarize" and len(_top_level(f" {rest}", " by ")) <= 2:
+        aggregates, *groups = _top_level(f" {rest}", " by ")
+        named = (*(_column(x, False) for x in _top_level(aggregates, ",") if x.strip()),
+                 *(_column(x, True) for g in groups for x in _top_level(g, ",")))
+    else:
+        return None
+    return named if named and None not in named else None
+
+
+def custom_details(alarm):
+    """Rows detection alarm's custom details: the result columns of its search (result_columns) its entity mappings
+    don't name, in order; () for a count detection or a search whose columns opsdir can't read."""
+    mapped = {column for _, _, column in entity_mappings(alarm)}
+    return (tuple(c for c in result_columns(one(alarm, "ciamMetric")) or () if c not in mapped)
+            if detection_mode(alarm) == "rows" else ())
+
+
+def _details(alarm):
+    """(the custom details rendered (keys of MAX_KEY characters at most, MAX_CUSTOM_DETAILS at most), those
+    left out)."""
+    fits = tuple(c for c in custom_details(alarm) if len(c) <= MAX_KEY)
+    return fits[:MAX_CUSTOM_DETAILS], tuple(c for c in custom_details(alarm) if c not in fits[:MAX_CUSTOM_DETAILS])
+
+
+def incident_grouping(s):
+    """How detection spec s's alerts become incidents: None for a count detection (Sentinel's default: an incident
+    per alert, no grouping), else (lookback seconds, matching method, entity types): a rows detection's alerts
+    grouped within its evaluation period (MAX_LOOKBACK at the longest) by the entities it maps (Selected), or, mapping
+    none, all of them (AnyAlert)."""
+    if detection_mode(s.alarm) != "rows":
+        return None
+    types = tuple(ENTITY_TYPES[e] for e in dict.fromkeys(e for e, _, _ in entity_mappings(s.alarm)))
+    return min(_period(s), MAX_LOOKBACK), "Selected" if types else "AnyAlert", types
+
+
+def _incident(s):
+    found = incident_grouping(s)
+    if found is None:
+        return ()
+    lookback, method, types = found
+    return (("incident", Block((("create_incident_enabled", True), ("grouping", Block((
+        ("enabled", True), ("lookback_duration", iso_duration(lookback)), ("reopen_closed_incidents", False),
+        ("entity_matching_method", method), *((("by_entities", list(types)),) if types else ()))))))),)
 
 
 def sentinel_tactic(tactic):
@@ -184,7 +280,8 @@ def _rule(m, s):
         ("trigger_operator", "GreaterThan"), ("trigger_threshold", 0), ("enabled", True), *_attack(s.rule),
         *((("event_grouping", Block((("aggregation_method", "AlertPerResult"),))), *_entity_blocks(s.alarm))
           if rows else ()),
-        *_after(m, detection_index(m, s.alarm))])
+        *((("custom_details", {c: c for c in _details(s.alarm)[0]}),) if _details(s.alarm)[0] else ()),
+        *_incident(s), *_after(m, detection_index(m, s.alarm))])
 
 
 def render_sentinel(m):
@@ -200,7 +297,8 @@ def render_sentinel(m):
 
 def sentinel_notes(m):
     """The render notes of environment m's Sentinel: detections not rendered (a note when no search is recorded, else
-    a blocker), sub-techniques and ATT&CK v20 tactics rendered as what Sentinel names (notes), the total retention of
+    a blocker), sub-techniques and ATT&CK v20 tactics rendered as what Sentinel names (notes), a rows detection's
+    custom details not rendered and its incident grouping shorter than its period (notes), the total retention of
     tables opsdir doesn't render (a note), and in Azure Government what Microsoft doesn't state is available there (an
     action)."""
     kept = tuple(b for b in siem_destinations(m) if is_sentinel(b) and keeper_of(m, b) is None)
@@ -210,12 +308,31 @@ def sentinel_notes(m):
             if _why(s) is None]
     v18 = [(s, [t for t in values(s.rule, "ciamAttackTactic") if t in V18_TACTICS]) for s in sentinel_detections(m)
            if _why(s) is None]
+    rows = tuple(s for s in sentinel_detections(m) if _why(s) is None and detection_mode(s.alarm) == "rows")
     return (*(alarm_note(m, s) if s.why else alarm_note(m, s, _why(s))
               for s in sentinel_detections(m) if _why(s) is not None),
             *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
                    f"its sub-techniques {', '.join(ts)} are rendered as their parent techniques: azurerm has no "
-                   "sub-technique field", ("Add the sub-techniques to the analytics rule in Sentinel if needed",),
+                   "sub-technique field, nor has the alertRules API's stable version (2025-09-01; only its previews)",
+                   ("Add the sub-techniques to the analytics rule in Sentinel if needed",),
                    s.alarm.dn, m.label) for s, ts in subs if ts),
+            *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
+                   "its search's result columns aren't rendered as custom details: it names them in no last project, "
+                   "distinct or summarize stage opsdir reads",
+                   ("End the search with a project naming its columns, or add the custom details analysts need in "
+                    "Sentinel",), s.alarm.dn, m.label)
+              for s in rows if result_columns(one(s.alarm, "ciamMetric")) is None),
+            *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
+                   f"its result columns {', '.join(_details(s.alarm)[1])} aren't custom details: Sentinel takes "
+                   f"{MAX_CUSTOM_DETAILS} per rule, each key {MAX_KEY} characters at most",
+                   ("Rename a long column in the search (project Short = LongColumnName), or choose the custom details "
+                    "in Sentinel",), s.alarm.dn, m.label) for s in rows if _details(s.alarm)[1]),
+            *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
+                   f"its incidents group the alerts of 7 days, not of its whole evaluation period ({_period(s)}s): "
+                   "Sentinel groups alerts over 7 days at the longest",
+                   ("Keep the rule's evaluation period to 7 days if one incident must hold a whole period's alerts",),
+                   s.alarm.dn, m.label)
+              for s in rows if _period(s) > MAX_LOOKBACK),
             *(note("Monitoring", "note", f"alert rule {rdn_value(s.rule)}",
                    f"its ATT&CK tactics {', '.join(ts)} are rendered as DefenseEvasion: Sentinel follows ATT&CK v18, "
                    "where they were Defense Evasion, and its alertRules API names no Stealth or Defense Impairment "
