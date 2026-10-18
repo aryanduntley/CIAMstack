@@ -54,6 +54,18 @@ def entry_mods(old, new):
                            for n in names if old.attrs.get(n) != new.attrs.get(n))
 
 
+def merge_record(held, desired):
+    """The record making entry held (None: absent) hold what entry desired says, never removing anything: an add when
+    it is absent, else a modify adding the object classes it lacks and replacing each attribute desired gives whose
+    values differ; None when held already says it all."""
+    if held is None:
+        return _add(desired)
+    classes = tuple(dict.fromkeys((*held.classes, *desired.classes)))
+    mods = ((("replace", "objectClass", classes),) if set(classes) != set(held.classes) else ()) + tuple(
+        ("replace", n, tuple(v)) for n, v in desired.attrs.items() if tuple(held.attrs.get(n, ())) != tuple(v))
+    return LdifRecord(held.dn, "modify", {}, mods) if mods else None
+
+
 def diff(base, current):
     """LDIF change records that turn the `base` snapshot into `current`."""
     b, c = base.entries, current.entries

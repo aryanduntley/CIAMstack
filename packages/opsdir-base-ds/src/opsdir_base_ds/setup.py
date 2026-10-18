@@ -17,8 +17,13 @@ SetupInputs = NamedTuple("SetupInputs", [("server", object), ("backend", object)
 
 
 def user_backend(d):
-    """The declared backend that holds the user directory (the first in DN order)."""
-    return subtree(d, f"ou=backends,{DECL}", "ciamBackend")[0]
+    """The declared backend that holds the user directory (the first in DN order); refused, saying how to give it one,
+    when the record declares none (a new record before the directory's configuration is imported)."""
+    found = subtree(d, f"ou=backends,{DECL}", "ciamBackend")
+    if not found:
+        raise SystemExit(f"no declared directory backend (ciamBackend under ou=backends,{DECL}): import the "
+                         "directory's configuration first (`opsdir import <product>/declared config.ldif`)")
+    return found[0]
 
 
 def handler_ports(d):

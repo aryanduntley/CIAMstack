@@ -293,6 +293,7 @@ flowchart LR
     dc_ciam_ops --> ou_header_contracts_dc_ciam_ops["ou=header-contracts"]
     dc_ciam_ops --> ou_identity_services_dc_ciam_ops["ou=identity-services"]
     dc_ciam_ops --> ou_imports_dc_ciam_ops["ou=imports"]
+    dc_ciam_ops --> ou_incidents_dc_ciam_ops["ou=incidents"]
     dc_ciam_ops --> ou_integrations_dc_ciam_ops["ou=integrations"]
     dc_ciam_ops --> ou_issued_certificates_dc_ciam_ops["ou=issued-certificates"]
     dc_ciam_ops --> ou_jobs_dc_ciam_ops["ou=jobs"]
@@ -355,6 +356,7 @@ flowchart LR
 | `ou=changes,dc=ciam-ops` | [Governance](schema/governance.md) |
 | `ou=grants,dc=ciam-ops` | [Governance](schema/governance.md) |
 | `ou=imports,dc=ciam-ops` | [Governance](schema/governance.md) |
+| `ou=incidents,dc=ciam-ops` | [Governance](schema/governance.md) |
 | `ou=owners,dc=ciam-ops` | [Governance](schema/governance.md) |
 | `ou=people,dc=ciam-ops` | [Governance](schema/governance.md) |
 | `ou=runbooks,dc=ciam-ops` | [Governance](schema/governance.md) |

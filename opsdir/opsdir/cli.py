@@ -39,8 +39,21 @@
                                        record code, scripts, templates or a package (a file or a directory under the
                                        repo checkout R) by repo path and SHA-256; its content is not stored
   opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
-  opsdir onboard verify (--source ADAPTER/IMPORTER=PATH ... | --saved DIR) [--at YYYYMMDDhhmmssZ] [--all] [--diff]
-                [--json]               onboarding verification: render every environment, read it back, and compare it
+  opsdir onboard setup [-o FILE]       guided onboarding: asks about the record's identity, teams, settings, each
+                                       environment's cloud and stack, whether you will be migrating (the target's stack
+                                       starts as the source's: change only what moves) and the original exports, then
+                                       writes the answers file (default onboarding.toml) and shows it; nothing else
+  opsdir onboard apply FILE [--change CHG-…] [--dry-run]
+                                       write the answers into the record: the standard branches, identity, teams,
+                                       clouds, environments, declared stacks, the migration target; only adds and sets
+                                       (what the record holds beyond the answers stays, and is named). A new record
+                                       (after `init`) takes it as its initial load, as `load` does (the schema owner
+                                       only); any other needs an approved --change
+  opsdir onboard import FILE [--change CHG-…] [--dry-run] [--take K|all] [--keep K|all]
+                                       import each original export the answers name ([[source]]), as `opsdir import`
+  opsdir onboard verify (--source ADAPTER/IMPORTER=PATH ... | --saved DIR | --answers FILE) [--at YYYYMMDDhhmmssZ]
+                [--all] [--diff] [--json]
+                                       onboarding verification: render every environment, read it back, and compare it
                                        with what the original exports say, entry by entry and attribute by attribute
                                        (identical, equivalent, gap filled, decided, not rendered by design, loss,
                                        altered, uncovered); exit 1 on any loss, alteration or uncovered part. --source
@@ -109,7 +122,8 @@ from functools import reduce
 from types import MappingProxyType
 
 from . import live, operations as ops
-from .connectors import collecting, fixes as fixmod, importing, migration, onboarding, registry, workspace
+from .connectors import answers as answersmod, collecting, fixes as fixmod, importing, migration, onboarding
+from .connectors import registry, workspace
 from .connectors.application import HEADERS as VIEW_HEADERS, view_document
 from .connectors.graph import graph_document, graph_dot, graph_lines
 from .connectors.prerequisites import command_line
@@ -183,7 +197,16 @@ SUBCOMMANDS = (
                                                              "other"]}),
                 (("--version",), {}), (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}))),
     ("verify", ((("--root",), {}),)),
-    ("onboard", ((("action",), {"choices": ["verify"]}),
+    ("onboard", ((("action",), {"choices": ["setup", "apply", "import", "verify"]}),
+                 (("file",), {"nargs": "?", "help": "apply, import: the answers file"}),
+                 (("-o", "--out"), {"default": "onboarding.toml", "help": "setup: the answers file to write"}),
+                 (("--answers",), {"metavar": "FILE", "help": "verify: the original exports the answers name"}),
+                 (("--change",), {}),
+                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}),
+                 (("--take",), {"action": "append", "default": [], "metavar": "KEY",
+                                "help": "import: a conflict where the live value goes in (KEY as listed, or all)"}),
+                 (("--keep",), {"action": "append", "default": [], "metavar": "KEY",
+                                "help": "import: a conflict where the record's value stays (KEY as listed, or all)"}),
                  (("--source",), {"action": "append", "default": [], "metavar": "ADAPTER/IMPORTER=PATH",
                                   "help": "an original export as given to `opsdir import` (repeat for each)"}),
                  (("--saved",), {"metavar": "DIR", "help": "the exports `opsdir collect --save DIR` kept"}),
@@ -848,7 +871,7 @@ def _cmd_grant(conn, a, as_of):
 FIXED_ACTIONS = MappingProxyType({
     **dict.fromkeys(("init", "upgrade", "load"), "admin"),
     **dict.fromkeys(("check", "search", "report", "export", "history", "application", "graph", "summary",
-                     "prerequisites", "verify", "file", "posture", "mine", "onboard"), "read"),
+                     "prerequisites", "verify", "file", "posture", "mine"), "read"),
     "render": "render", "plan": "plan", "tickets": "plan", "migrate": "migrate", "modify": "apply",
     "workspace": "workspace"})
 WHEN_CHANGED = MappingProxyType({**dict.fromkeys(("capture", "bundle", "census", "import", "collect", "evidence"),
@@ -857,6 +880,9 @@ WHEN_CHANGED = MappingProxyType({**dict.fromkeys(("capture", "bundle", "census",
 FIX_ACTIONS = MappingProxyType({"list": "plan", "show": "plan", "propose": "propose", "apply": "apply",
                                 "approved": "apply"})
 CHANGE_ACTIONS = MappingProxyType({"new": "propose", "approve": "approve", "reject": "approve", "show": "read"})
+# what `opsdir onboard ACTION` is when it writes (with --change, not --dry-run); a read otherwise (a new record's
+# initial load is the schema owner's, as `load`, and checked by the store)
+ONBOARD_ACTIONS = MappingProxyType({"setup": "read", "apply": "apply", "import": "apply", "verify": "read"})
 
 
 def command_action(a):
@@ -867,6 +893,8 @@ def command_action(a):
         return FIX_ACTIONS[a.action]
     if a.cmd == "change":
         return CHANGE_ACTIONS[a.action]
+    if a.cmd == "onboard":
+        return ONBOARD_ACTIONS[a.action] if a.change and not a.dry_run else "read"
     return WHEN_CHANGED[a.cmd] if getattr(a, "change", None) and not getattr(a, "dry_run", False) else "read"
 
 
@@ -917,10 +945,11 @@ def identity_text(identity):
                       *((f"name       {identity.name}",) if identity.name else ())))
 
 
-def onboard_sources(given, saved=None):
+def onboard_sources(given, saved=None, answered=()):
     """Effect (reads the files): ((spec, {relative path: text}), ...) of the original exports: each --source
     ADAPTER/IMPORTER=PATH (read as `opsdir import` reads it), then each export `opsdir collect --save DIR` kept under
-    DIR/<adapter>/<importer>/ (its MANIFEST.txt left out). Refused when none is given or one is malformed."""
+    DIR/<adapter>/<importer>/ (its MANIFEST.txt left out), then those an answers file names (answered: (spec, path)
+    pairs, answer_sources). Refused when none is given or one is malformed."""
     def source(text):
         spec, eq, path = text.partition("=")
         if not eq or not spec or not path:
@@ -930,10 +959,204 @@ def onboard_sources(given, saved=None):
     kept = tuple((f"{a.name}/{i.name}", {p: t for p, t in read_texts(i)[0].items() if p != "MANIFEST.txt"})
                  for a in sorted(root.iterdir()) if a.is_dir() for i in sorted(a.iterdir()) if i.is_dir()) \
         if root else ()
-    found = (*(source(s) for s in given), *kept)
+    found = (*(source(s) for s in given), *kept, *((spec, read_texts(path)[0]) for spec, path in answered))
     if not found:
-        raise SystemExit("give the original exports: --source ADAPTER/IMPORTER=PATH (repeat), or --saved DIR")
+        raise SystemExit("give the original exports: --source ADAPTER/IMPORTER=PATH (repeat), --saved DIR or "
+                         "--answers FILE")
     return found
+
+
+def read_answers_file(path):
+    """Effect (reads the file): the Answers in an onboarding answers file (connectors.answers); refused, naming every
+    problem with its shape, when it isn't one."""
+    p = pathlib.Path(path)
+    if not p.is_file():
+        raise SystemExit(f"no answers file at {p}")
+    found, problems = answersmod.parse_answers(p.read_text(encoding="utf-8"))
+    if problems:
+        raise SystemExit("\n".join((f"{p}:", *(f"  {x}" for x in problems))))
+    return found
+
+
+def answer_sources(answers, path):
+    """((importer, path), ...) of the original exports an answers file names, each path taken from the file's own
+    folder unless absolute."""
+    base = pathlib.Path(path).parent
+    return tuple((s.importer, str(base / s.path)) for s in answers.sources)
+
+
+def _onboard_apply(conn, a):
+    answers = read_answers_file(a.file)
+    try:
+        preview = ops.preview_setup(conn, answers)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.dry_run:
+        return _not_applied(preview.notices, preview.changes, True)
+    if ops.new_record(conn):
+        r = ops.apply_preview(conn, preview, "BOOTSTRAP")
+        return "\n".join((*preview.notices, f"initial load: {len(r.lines)} change(s) applied",
+                          f"next: `opsdir change new` a change for the imports, have it approved, then "
+                          f"`opsdir onboard import {a.file} --change <it>` and `opsdir onboard verify --answers "
+                          f"{a.file}`"))
+    if not a.change:
+        return _not_applied(preview.notices, preview.changes, False)
+    r = ops.apply_preview(conn, preview, a.change)
+    return "\n".join((*preview.notices, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else
+                      "the record already says all of it"))
+
+
+def terminal_ask(prompt, default=""):
+    """Effect: one question asked on the terminal, its answer stripped (the default when blank or at end of input)."""
+    try:
+        reply = input(f"{prompt}{f' [{default}]' if default else ''}: ")
+    except EOFError:
+        reply = ""
+    return reply.strip() or default
+
+
+def _repeat(one, so_far=()):
+    """The items one(so_far) gives, asked again until it gives None."""
+    item = one(so_far)
+    return so_far if item is None else _repeat(one, (*so_far, item))
+
+
+def _asked_stack(ask, prompt, default=""):
+    """A stack typed on one line (connectors.answers.stack_text), asked again until it reads."""
+    try:
+        return answersmod.stack_text(ask(prompt, default))
+    except ValueError as e:
+        print(f"  {e}")
+        return _asked_stack(ask, prompt, default)
+
+
+def _asked_where(ask, prompt, default=""):
+    """(cloud, env) typed as cloud/env, asked again until it is one; None when blank."""
+    where = ask(prompt, default)
+    if not where:
+        return None
+    cloud, _, env = where.partition("/")
+    if cloud and env:
+        return cloud, env
+    print("  give it as cloud/env (aws-east/prod)")
+    return _asked_where(ask, prompt, default)
+
+
+def _asked_environment(ask, providers, adapters, so_far):
+    where = _asked_where(ask, "An environment that runs today, as cloud/env (blank when done)")
+    if where is None:
+        return None
+    cloud, env = where
+    known = next((e for e in so_far if e.cloud == cloud), None)
+    provider = known.provider if known else ask(f"{cloud}'s provider ({', '.join(sorted(providers))})")
+    region = known.region if known else ask(f"{cloud}'s region")
+    account = known.account if known else ask(f"{cloud}'s account, subscription or project (blank: not recorded)")
+    stack = _asked_stack(ask, f"{cloud}/{env}'s stack: role=adapter[@adapter versions] separated by ';', such as "
+                              f"directory=pingds; federation=pingfederate (installed: {', '.join(adapters)})")
+    own = stack if any(c.role == "provider" for c in stack) else (
+        answersmod.Component("provider", providers.get(provider, provider), None), *stack)
+    return answersmod.Environment(cloud, env, provider, region, None, account or None,
+                                  ask(f"{cloud}/{env}'s lifecycle (active, building, retiring)", "active"), own)
+
+
+def _asked_migration(ask, environments, providers):
+    if not environments or not ask("Will you be migrating? (y/N)", "n").lower().startswith("y"):
+        return None
+    specs = [answersmod.spec(e) for e in environments]
+    source_spec = ask(f"Which environment moves ({', '.join(specs)})", specs[0])
+    source = next((e for e in environments if answersmod.spec(e) == source_spec), environments[0])
+    cloud, env = _asked_where(ask, "The target, as cloud/env", "") or (source.cloud + "-target", source.env)
+    known = next((e for e in environments if e.cloud == cloud), None)
+    provider = known.provider if known else ask(f"{cloud}'s provider ({', '.join(sorted(providers))})",
+                                                source.provider)
+    region = known.region if known else ask(f"{cloud}'s region", source.region if provider == source.provider else "")
+    clear = ask("Start the target's stack empty instead of a copy of the source's? (y/N)", "n").lower() \
+        .startswith("y")
+    moved = "" if clear or provider == source.provider else f"provider={providers.get(provider, provider)}"
+    changes = _asked_stack(ask, f"What changes (source's stack: {answersmod.stack_line(source.stack)}); "
+                                f"role=adapter[@versions], role= leaves one out", moved)
+    target = answersmod.Environment(cloud, env, None if known else provider, None if known else region, None, None,
+                                    "building", ())
+    return answersmod.Migration(answersmod.spec(source), target, clear, changes)
+
+
+def _asked_source(ask, so_far):
+    text = ask("An original export to import, as adapter/importer=path (blank when done)")
+    if not text:
+        return None
+    importer, eq, path = text.partition("=")
+    if eq and importer and path:
+        return answersmod.Source(importer.strip(), path.strip())
+    print("  give it as adapter/importer=path")
+    return _asked_source(ask, so_far)
+
+
+def prompted_answers(ask, installed=ADAPTERS):
+    """The onboarding Answers from questions asked through ask(prompt, default) -> str: the record's identity, the
+    teams (the one operating the platform first), each environment that runs today with its cloud and stack, whether
+    you will be migrating (the target's stack starts as the source's, and only what moves is asked), the original
+    exports; for a one-person install, approval-separation off. The questions only build the document; nothing is
+    written."""
+    providers = {v: a.name for a in installed if a.kind == "provider"
+                 for v in a.vocabulary.get("ciamCloudProvider", ())}      # provider value -> its adapter
+    adapters = sorted(a.name for a in installed if a.kind != "provider")
+    org = ask("The record's org code (lowercase letters and digits, such as exa; blank: none yet)")
+    identity = answersmod.Identity(org, ask("The organization's name") or None, None) if org else None
+    operator = ask("The team that operates the platform (blank: none yet)")
+    first = (answersmod.Team(operator, None, ask(f"{operator}'s mail") or None, True),) if operator else ()
+
+    def team(so_far):
+        name = ask("Another team (blank when done)")
+        return answersmod.Team(name, None, ask(f"{name}'s mail") or None, False) if name else None
+    teams = _repeat(team, first)
+    alone = ask("Is this a one-person install, where an author may approve their own changes? (y/N)", "n")
+    environments = _repeat(lambda so_far: _asked_environment(ask, providers, adapters, so_far))
+    return answersmod.Answers(answersmod.VERSION, identity, teams, environments,
+                              _asked_migration(ask, environments, providers),
+                              _repeat(lambda so_far: _asked_source(ask, so_far)),
+                              (("approval-separation", "FALSE"),) if alone.lower().startswith("y") else ())
+
+
+def _onboard_setup(a, ask=terminal_ask):
+    out = pathlib.Path(a.out)
+    if out.exists() and not ask(f"{out} exists: replace it? (y/N)", "n").lower().startswith("y"):
+        raise SystemExit(f"{out} kept; give another file with -o")
+    answers = prompted_answers(ask)
+    text = answersmod.answers_toml(answers)
+    out.write_text(text, encoding="utf-8", newline="\n")
+    problems = answersmod.answers_problems(answers)
+    return "\n".join((text, f"written to {out}",
+                      *((("to fix before applying (edit the file):", *(f"  {p}" for p in problems))) if problems else
+                        (f"next: `opsdir onboard apply {out} --dry-run`, then without --dry-run",))))
+
+
+def _decided_keys(keys, conflicts):
+    """The --take/--keep keys that concern one import: those naming its conflicts, and 'all'."""
+    known = {c.key for c in conflicts}
+    return tuple(k for k in keys if k == importing.ALL or k in known)
+
+
+def _onboard_import(conn, a):
+    answers = read_answers_file(a.file)
+    if not answers.sources:
+        raise SystemExit(f"{a.file} names no original exports ([[source]] importer = ..., path = ...)")
+    at = import_time(a.at)
+
+    def one(importer, path):
+        files, skipped = read_texts(path)
+        plan = ops.preview_import(conn, importer, files, at)
+        head = (f"{importer} <- {path}:", *(f"  skipped (not UTF-8 text): {rel}" for rel in skipped),
+                *(f"  {n}" for n in (*plan.notices, *_conflict_lines(plan.conflicts))))
+        if a.dry_run or not a.change:
+            return (*head, f"  {len(plan.changes)} change(s) (not applied)"), 0
+        try:
+            r = ops.apply_import(conn, plan, a.change, _decided_keys(a.take, plan.conflicts),
+                                 _decided_keys(a.keep, plan.conflicts), file_evidence(files))
+        except ValueError as e:
+            return (*head, f"  not applied: {e}"), 1
+        return (*head, f"  {a.change}: {len(r.lines)} change(s) applied, the import run among them"), 0
+    done = tuple(one(importer, path) for importer, path in answer_sources(answers, a.file))
+    return "\n".join(line for lines, _ in done for line in lines), max(status for _, status in done)
 
 
 def onboard_text(v, every=False, diffs=False):
@@ -960,7 +1183,16 @@ def onboard_text(v, every=False, diffs=False):
 
 
 def _cmd_onboard(conn, a, as_of):
-    v = ops.onboard_verify(conn, onboard_sources(a.source, a.saved), import_time(a.at))
+    if a.action in ("apply", "import") and not a.file:
+        raise SystemExit(f"usage: opsdir onboard {a.action} FILE (the answers file `opsdir onboard setup` writes)")
+    if a.action == "setup":
+        return _onboard_setup(a)
+    if a.action == "apply":
+        return _onboard_apply(conn, a)
+    if a.action == "import":
+        return _onboard_import(conn, a)
+    answered = answer_sources(read_answers_file(a.answers), a.answers) if a.answers else ()
+    v = ops.onboard_verify(conn, onboard_sources(a.source, a.saved, answered), import_time(a.at))
     text = _json(onboarding.report_document(v)) if a.json else onboard_text(v, a.all, a.diff)
     return text, (1 if v.status == "fail" else 0)
 
@@ -1094,6 +1326,7 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "posture": _cmd_posture, "change": _cmd_change, "person": _cmd_person, "grant": _cmd_grant,
                              "mine": _cmd_mine,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})
+NO_DATABASE_ACTIONS = frozenset({("onboard", "setup")})   # asks questions and writes a local file
 NO_DATABASE = frozenset({"data-profile",           # commands that run where only the source is reachable
                          "db-roles"})               # or before the record's database is set up
 
@@ -1138,7 +1371,8 @@ def main(argv=None):
     a = parser().parse_args(argv)
     as_of = dt.date.fromisoformat(a.as_of) if a.as_of else dt.date.today()
     dsn = workspace.workspace_dsn() if a.workspace else None
-    conn = None if a.cmd in NO_DATABASE else db.connect(dsn, db_password(dsn))
+    conn = None if a.cmd in NO_DATABASE or (a.cmd, getattr(a, "action", None)) in NO_DATABASE_ACTIONS else \
+        db.connect(dsn, db_password(dsn))
     if conn is not None:
         db.set_as_of(conn, as_of)
         ops.authorize_command(conn, command_action(a), command_area(a), getattr(a, "requester", None))

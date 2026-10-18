@@ -7,6 +7,7 @@ Installing an adapter package is all it takes to add a product, cloud provider o
 to an environment is decided by each adapter from directory data (provider of the cloud, products on the servers),
 never by a default.
 """
+import importlib
 from functools import partial
 from importlib.metadata import entry_points
 from pathlib import Path
@@ -16,7 +17,7 @@ from ..core.directory import get, rdn_value, subtree
 from ..core.environment import (env_model, product_roles, with_cluster_discovery, with_product_roles,
                                 with_required_roles)
 from ..core.inventory import imports
-from ..core.naming import branch
+from ..core.naming import SUFFIX, branch
 from ..core.secrets import CORE_OWNER, CORE_PATTERNS, dialect_problems
 from ..core.standard import CORE
 from ..domains.pki.credentials import secret_store, split_ref
@@ -194,6 +195,34 @@ def import_table(domains=DOMAINS):
 def required_roles(adapters, domains=DOMAINS):
     """Roles an environment must bind: every domain's, then each applicable adapter's (first mention wins)."""
     return tuple(dict.fromkeys(r for part in (*domains, *adapters) for r in part.required_roles))
+
+
+def _dn_order(dn):
+    return tuple(reversed(dn.lower().split(",")))
+
+
+def branches_named(module_name):
+    """The container DNs a naming module names (its upper-case constants holding a DN below the suffix), in tree
+    order; () when the module can't be imported."""
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError:
+        return ()
+    found = (v for k, v in vars(module).items() if k.isupper() and isinstance(v, str))
+    return tuple(sorted({v for v in found if v.endswith("," + SUFFIX) and "=" in v and "{" not in v}, key=_dn_order))
+
+
+def core_branches():
+    """The branches the core names (core.naming, core.settings)."""
+    return tuple(sorted({*branches_named("opsdir.core.naming"), *branches_named("opsdir.core.settings")},
+                        key=_dn_order))
+
+
+def standard_branches(domains=DOMAINS):
+    """Every standard branch: the core's, then each domain's naming module's, once each, in tree order (a parent
+    before its children): what a new record is given."""
+    return tuple(sorted({*core_branches(), *(b for d in domains for b in branches_named(f"opsdir.domains.{d.name}"
+                                                                                         ".naming"))}, key=_dn_order))
 
 
 def environment_specs(d):

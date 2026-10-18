@@ -4,6 +4,7 @@ from ...core.naming import branch
 OWNERS = branch("owners")
 CHANGES = branch("changes")
 RUNBOOKS = branch("runbooks")
+INCIDENTS = branch("incidents")       # incidents (ciamIncident)
 IMPORTS = branch("imports")           # import runs: each importer's last read of each scope set it read, per
                                      # environment (or shared); and collection attempts
 UNKNOWNS = branch("unknowns")         # the unknowns register: open and answered questions (ciamUnknown)

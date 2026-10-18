@@ -771,13 +771,73 @@ The SIEM adapters render an adopting rule natively (task 597: Splunk SPL saved s
 
 Where an add-on also reads what each firewall behind a manager runs, each firewall is a `ciamManagedFirewall` under the manager's appliance (cn: its serial; name, virtual contexts, device group, connected, software version, high-availability peer, policy sync). Each of the environment's rules gets a `ciamRuleObservation` per firewall and context: deployed, disabled or missing in the policy pushed there, and its hit count, first and last hit, and when counting began. The rule's `ciamRunningState` is then the rollup: deployed (every firewall runs it), `partial` (not every one), or disabled or missing when they all agree. The check adds an action for a partial rule (naming where it is missing or disabled), for a firewall that is disconnected or out of sync, and for a rule none of the firewalls running it has hit within `firewall-unused-rule-days` (90): is it still needed, and should a move's target get it? The report lists the firewalls and each observation.
 
-## Onboarding verification
+## Onboarding
+
+Bringing an estate into a new record: answer what it is (guided setup), import its original exports, then check that the record says what they said (verification).
+
+### Guided setup
+
+Everything setup needs is one answers file (TOML). `opsdir onboard setup` asks the questions and writes it; you can also write or edit it by hand, and every other front end submits the same document.
+
+```bash
+opsdir onboard setup [-o onboarding.toml]        # asks, writes the file and shows it; writes nothing else
+opsdir onboard apply onboarding.toml --dry-run   # what it would write
+opsdir onboard apply onboarding.toml             # a new record (after `opsdir init`): the initial load, as `opsdir load` (schema owner only)
+opsdir onboard apply onboarding.toml --change CHG-…   # any other record: under an approved change
+opsdir onboard import onboarding.toml --change CHG-…  # import every original export it names
+opsdir onboard verify --answers onboarding.toml       # then verify against those exports
+```
+
+```toml
+version = 1
+
+[record]                       # the record's identity
+org = "exa"
+name = "Example Aero"
+
+[settings]                     # estate settings (`opsdir report settings` lists them)
+approval-separation = false    # a one-person install: an author may approve their own changes
+
+[[team]]
+name = "ciam-platform"
+mail = "ciam-platform@example-aero.test"
+operator = true                # the team that operates the platform
+
+[[environment]]                # each environment that runs today
+cloud = "source"
+env = "prod"
+provider = "aws"
+region = "us-east-1"
+account = "111122223333"       # optional; also partition (public, usgovernment) and lifecycle
+[environment.stack]            # role = adapter, or { adapter = ..., versions = ... } (the adapter package versions)
+provider = "aws"
+directory = { adapter = "pingds", versions = ">=0.1,<1" }
+federation = "pingfederate"
+
+[migration]                    # will you be migrating? (optional)
+from = "source/prod"
+cloud = "target"
+env = "prod"
+provider = "azure"
+region = "eastus2"
+[migration.stack]              # the target starts with the source's stack: only what moves (role = "" leaves one out;
+provider = "azure"             # clear = true under [migration] starts it empty)
+
+[[source]]                     # the original exports, paths from this file's folder
+importer = "pingfederate/bulk"
+path = "exports/pingfederate"
+```
+
+Applying writes the standard branches the record lacks, the identity, settings, teams, each cloud and environment with its declared stack, and the migration target. It only adds and sets: what the record holds beyond the answers stays, and the stack roles among it are named. A key the file doesn't know is refused, so a typo is never silently ignored; providers, partitions, settings and importers must be ones the installed packages declare, and adapters that aren't installed are named (`opsdir check` says where to get them). Applying the same file again changes nothing.
+
+### Verification
 
 Once an estate is imported, `opsdir onboard verify` checks that the record still says what the original exports said:
 
 ```bash
 opsdir onboard verify --source pingam/amster=exports/amster --source pingfederate/bulk=exports/pf …   # each export as given to `opsdir import`
 opsdir onboard verify --saved collected/                     # what `opsdir collect --save collected/` kept
+opsdir onboard verify --answers onboarding.toml              # the exports an answers file names
 opsdir onboard verify … [--at YYYYMMDDhhmmssZ] [--all] [--diff] [--json]
 ```
 

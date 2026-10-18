@@ -93,6 +93,8 @@ def _env_read_backs(d, spec, installed, at):
         rendered = assemble(m, adapters, neutral, specific, targets, installed=installed)
     except SystemExit as e:
         return f"{spec}: not rendered: {e}"
+    except Exception as e:                  # an adapter's render failing on this record is a finding, not a crash
+        return f"{spec}: not rendered: the render failed ({type(e).__name__}: {e})"
     trips = (*(rt for a in adapters for rt in read_back(m.d, a, rendered, installed, at, spec)),
              *_captured(m, installed))
     plain = {(f"{a.name}/{rb.importer}", p): text for a in adapters for rb in a.reads_back if rb.prepare is None

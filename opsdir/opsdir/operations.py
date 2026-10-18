@@ -11,7 +11,7 @@ import uuid
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, onboarding, plan as planmod, profiling, reports
-from .connectors import workspace
+from .connectors import answers as answersmod, workspace
 from .connectors import posture as posturemod
 from .connectors import evidence as evidencemod, fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
@@ -22,8 +22,9 @@ from .connectors.graph import dependency_graph
 from .connectors.stack import STATUS_HEADERS, note_rows, stack_rows
 from .connectors.summary import estate_counts, plan_counts
 from .core import search as ldap_search
-from .core.directory import make_directory, rdn_value
+from .core.directory import get, make_directory, rdn_value
 from .core.environment import ENVIRONMENT, env_model
+from .core.naming import SUFFIX
 from .core.notes import parsed
 from .core.interchange.export import export_text
 from .domains.estate.evidence import boundary_named, run_records
@@ -465,6 +466,24 @@ def verify(conn, contents):
     path: {relative path: bytes} ({"": bytes} for one file), or None when the checkout has nothing there}."""
     headers, rows = capturemod.verification(db.load_directory(conn), contents)
     return Rows(tuple(headers), tuple(rows))
+
+
+def preview_setup(conn, answers):
+    """Effect (reads the record; a new UUID for a new identity): what applying onboarding answers (connectors.answers)
+    would write, as a Preview applied with apply_preview: under BOOTSTRAP as the initial load of a new record
+    (new_record), else under an approved change. Its notices: what is worth knowing (adapters not installed) and what
+    the record holds beyond the answers (left as it is). ValueError listing what keeps the answers from being
+    applied."""
+    problems = answersmod.answers_problems(answers)
+    if problems:
+        raise ValueError("the answers can't be applied:\n" + "\n".join(f"  {p}" for p in problems))
+    changes, beyond = answersmod.setup_records(db.load_directory(conn), answers, str(uuid.uuid4()))
+    return Preview("onboarding setup", changes, (*answersmod.answers_notices(answers), *beyond))
+
+
+def new_record(conn):
+    """Effect (reads the record): whether it holds nothing yet (not even its suffix): what `opsdir init` leaves."""
+    return get(db.load_directory(conn), SUFFIX) is None
 
 
 def onboard_verify(conn, sources, at=None):

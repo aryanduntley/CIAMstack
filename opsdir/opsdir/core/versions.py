@@ -21,6 +21,15 @@ def in_range(version, versions):
         return False
 
 
+def range_problem(versions):
+    """Why a text isn't a PEP 440 range (">=7.2,<9"), or None."""
+    try:
+        SpecifierSet(versions)
+        return None
+    except InvalidSpecifier:
+        return f"{versions!r} isn't a version range (PEP 440, such as >=7.2,<9)"
+
+
 def parsed(version):
     """The version as a comparable Version, or None when it doesn't parse."""
     try:

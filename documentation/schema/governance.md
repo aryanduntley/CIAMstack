@@ -2,7 +2,7 @@
 
 *Domain · OID arc `1.3.6.1.4.1.32473.1` · 14 object classes · 68 attributes. Generated from the schema fragments by `opsdir/scripts/gen-schema-docs.py`: don't edit by hand. How to read it: [SCHEMA.md](../SCHEMA.md).*
 
-**Branches:** `ou=applications,dc=ciam-ops`, `ou=changes,dc=ciam-ops`, `ou=grants,dc=ciam-ops`, `ou=imports,dc=ciam-ops`, `ou=owners,dc=ciam-ops`, `ou=people,dc=ciam-ops`, `ou=runbooks,dc=ciam-ops`, `ou=source-objects,dc=ciam-ops`, `ou=tickets,dc=ciam-ops`, `ou=unknowns,dc=ciam-ops`
+**Branches:** `ou=applications,dc=ciam-ops`, `ou=changes,dc=ciam-ops`, `ou=grants,dc=ciam-ops`, `ou=imports,dc=ciam-ops`, `ou=incidents,dc=ciam-ops`, `ou=owners,dc=ciam-ops`, `ou=people,dc=ciam-ops`, `ou=runbooks,dc=ciam-ops`, `ou=source-objects,dc=ciam-ops`, `ou=tickets,dc=ciam-ops`, `ou=unknowns,dc=ciam-ops`
 
 ## Object classes
 

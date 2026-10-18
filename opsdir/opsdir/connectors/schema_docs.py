@@ -13,7 +13,7 @@ from typing import NamedTuple
 
 from ..core.naming import SUFFIX
 from ..core.standard import ARC, CORE, CUSTOM_ARC, STANDARD_ATTRIBUTES, STANDARD_CLASSES, attribute_oid, class_oid
-from .registry import ADAPTERS, DOMAINS
+from .registry import ADAPTERS, DOMAINS, branches_named, core_branches
 
 # One part of the schema with a page: its slug (the page's file name), title, kind (core, domain or package), the
 # fragment it defines, what its module says about it, and the branches (container DNs) it names.
@@ -129,26 +129,14 @@ def _about(doc):
     return " ".join((rest if boilerplate else doc).split())
 
 
-def _branches(module_name):
-    """The container DNs a naming module names (its constants holding a DN below the suffix), sorted."""
-    try:
-        module = importlib.import_module(module_name)
-    except ImportError:
-        return ()
-    found = (v for k, v in vars(module).items() if k.isupper() and isinstance(v, str))
-    return tuple(sorted({v for v in found if v.endswith("," + SUFFIX) and "=" in v and "{" not in v},
-                        key=lambda dn: tuple(reversed(dn.lower().split(",")))))
-
-
 def documented_parts(domains=DOMAINS, adapters=ADAPTERS):
     """(Part, ...) of the schema reference: the core (with the branches core.naming and core.settings name), each
     domain (its schema module's docstring, its naming module's branches), then each adapter that defines its own
     attributes or classes (its product's name, its schema module's docstring). Reads the modules' docstrings and
     constants."""
-    core = Part("core", "Core", "core", CORE, "The definitions every entry builds on.",
-                tuple(sorted({*_branches("opsdir.core.naming"), *_branches("opsdir.core.settings")})))
+    core = Part("core", "Core", "core", CORE, "The definitions every entry builds on.", core_branches())
     own = tuple(Part(d.name, TITLES.get(d.name, d.name.capitalize()), "domain", d.schema,
-                     _about(_doc(f"opsdir.domains.{d.name}.schema")), _branches(f"opsdir.domains.{d.name}.naming"))
+                     _about(_doc(f"opsdir.domains.{d.name}.schema")), branches_named(f"opsdir.domains.{d.name}.naming"))
                 for d in domains)
     packages = tuple(Part(a.name, f"{a.products[0][0] if a.products else a.name} (opsdir-adapter-{a.name})", "package",
                           a.schema, _about(_doc(f"opsdir_adapter_{a.name.replace('-', '_')}.schema")), ())
