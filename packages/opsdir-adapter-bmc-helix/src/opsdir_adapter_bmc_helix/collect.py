@@ -14,8 +14,9 @@ Calls, in rounds: each change the record's change records name (bmc-helix:<CRQ>)
 /api/arsys/v1/entry/CHG:Infrastructure Change?q='Infrastructure Change ID'="<CRQ>" with the fields the importer reads
 and a limit of 2, so a duplicate is seen; no entry is a change not read); then, for each change read, its approval
 signatures (GET /api/arsys/v1/entry/AP:Detail-Signature?q=('Request'="<its Request ID>" OR 'Request'="<CRQ>")), PAGE
-at a time, the page after each that links a next one. Each answer is saved with only the requested values and the
-links the importer reads."""
+at a time, the page after each that links a next one. Each work order they name (bmc-helix:<WO>, workorders.py) is
+one qualified read too (GET /api/arsys/v1/entry/WOI:WorkOrderInterface?q='Work Order ID'="<WO>", limit 2), with no
+approval read. Each answer is saved with only the requested values and the links the importer reads."""
 import json
 from urllib.parse import quote, urlsplit
 
@@ -25,6 +26,7 @@ from opsdir.domains.governance.collection import readable_source, scheme_problem
 from opsdir.domains.governance.tickets import linked_numbers
 from .changes import (APPROVAL_FIELDS, APPROVAL_FORM, CHANGE_FIELDS, CHANGE_FORM, NUMBER, NUMBER_TEXT, REQUEST_ID,
                       SYSTEM, answer_entries, ar_error, has_next)
+from .workorders import WO_FIELDS, WO_NUMBER, WORK_ORDER_FORM, is_work_order
 
 IMPORTER = "bmc-helix/change-requests"
 SCHEMES = ("token", "bearer")
@@ -83,24 +85,29 @@ def _offsets(host, number, done):
 
 
 def change_steps(d, m, done, options):
-    """Each linked change's entry; for each change read, its approval signature pages."""
+    """Each linked change's and work order's entry; for each change read, its approval signature pages."""
     s = readable_source(m, IMPORTER, SCHEMES)
     if s is None:
         return ()
     base, cred = s.locations[0].rstrip("/"), credential(s)
     host = urlsplit(base).hostname or "server"
-    numbers = tuple(n for n in linked_numbers(d, SYSTEM) if NUMBER_TEXT.fullmatch(n))
+    linked = tuple(n for n in linked_numbers(d, SYSTEM) if NUMBER_TEXT.fullmatch(n))
+    numbers, orders = tuple(n for n in linked if not is_work_order(n)), tuple(n for n in linked if is_work_order(n))
     changes = tuple((f"{host}/change/{n}.json",
                      Request(entry_url(base, CHANGE_FORM, f"'{NUMBER}' = \"{n}\"", CHANGE_FIELDS, 2), HEADERS, cred,
                              s.ca, keep=entries_view(CHANGE_FIELDS)))
                     for n in numbers)
+    work = tuple((f"{host}/workorder/{n}.json",
+                  Request(entry_url(base, WORK_ORDER_FORM, f"'{WO_NUMBER}' = \"{n}\"", WO_FIELDS, 2), HEADERS, cred,
+                          s.ca, keep=entries_view(WO_FIELDS)))
+                 for n in orders)
     ids = {n: _request_id(done.get(f"{host}/change/{n}.json")) for n in numbers}
     approvals = tuple((f"{host}/approval/{n}/{offset}.json",
                        Request(entry_url(base, APPROVAL_FORM, f"('Request' = \"{ids[n]}\" OR 'Request' = \"{n}\")",
                                          APPROVAL_FIELDS, PAGE, offset), HEADERS, cred, s.ca,
                                keep=entries_view(APPROVAL_FIELDS)))
                       for n in numbers if ids[n] for offset in _offsets(host, n, done))
-    return (*changes, *approvals)
+    return (*changes, *work, *approvals)
 
 
 def source_problems(d, m, options):

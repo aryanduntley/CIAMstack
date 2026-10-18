@@ -1,13 +1,15 @@
 """BMC Helix ITSM / Remedy change requests (the importer `bmc-helix/change-requests`): the change tickets the record's
 change records name (ciamTicketRef bmc-helix:<Infrastructure Change ID>) as the AR System REST API gives them, with
 their approval signatures, read into the record's ticket evidence (domains.governance.tickets): never an approval
-opsdir acts on. Pure.
+opsdir acts on. The work orders they name (bmc-helix:<Work Order ID>, the work tickets findings were handed over by)
+are read alongside, as work tickets (workorders.py). Pure.
 
 The export holds JSON answers of GET /api/arsys/v1/entry/<form>, as `opsdir collect` saves them: <server host>/change/
-<CRQ>.json (CHG:Infrastructure Change, qualified by the ticket's Infrastructure Change ID) and <server host>/approval/
-<CRQ>/<offset>.json (AP:Detail-Signature, page by page). Answers an operator saved are read too, by what they are: a
-list answer ({"entries": [...]}) or a single entry ({"values": {...}}) whose values are a change (they hold an
-Infrastructure Change ID) or approval signatures (an Approval Status); approval pages under approval/<CRQ>/ or named
+<CRQ>.json (CHG:Infrastructure Change, qualified by the ticket's Infrastructure Change ID), <server host>/approval/
+<CRQ>/<offset>.json (AP:Detail-Signature, page by page) and <server host>/workorder/<WO>.json (WOI:WorkOrderInterface,
+qualified by its Work Order ID). Answers an operator saved are read too, by what they are: a list answer ({"entries":
+[...]}) or a single entry ({"values": {...}}) whose values are a change (they hold an Infrastructure Change ID), a work
+order (a Work Order ID) or approval signatures (an Approval Status); approval pages under approval/<CRQ>/ or named
 approval-<CRQ>*.json. AR System's error answers ([{"messageType": "ERROR", ...}]) are named. CSV, ARX and XML report
 exports aren't read (README, Known limits).
 
@@ -35,7 +37,8 @@ A signature belongs to a change when its Request is the change's Request ID or i
 join stores the application's request id; which one ITSM stores is unverified) and its Application is CHG:
 Infrastructure Change (or not given); signatures of another application are named and left out. Only changes the
 record links are read; others in the export are named in a notice. A linked change missing from the export is never
-removed (the record keeps what it last read, and the planner says it wasn't read)."""
+removed (the record keeps what it last read, and the planner says it wasn't read). Work orders are read the same way,
+by their Status through bmc-helix-work-order-states."""
 import re
 from urllib.parse import urlsplit
 
@@ -46,13 +49,12 @@ from opsdir.core.sources import json_document
 from opsdir.domains.governance.naming import TICKETS
 from opsdir.domains.governance.tickets import (adapter_dn, approval_step, linked_numbers, ticket_entry, ticket_group,
                                                ticket_state_map)
-from .states import STATUS_STATES, change_type, overall_approval, step_decision
+from .states import STATUS_STATES, WORK_ORDER_STATES, change_type, overall_approval, step_decision
+from .workorders import WINDOW, WO_NUMBER, WORK_ORDER_FORM, is_work_order, window_times, work_order_facts
 
 SYSTEM = "bmc-helix"
 CHANGE_FORM, APPROVAL_FORM = "CHG:Infrastructure Change", "AP:Detail-Signature"
 NUMBER, REQUEST_ID, STATUS, TIMING = "Infrastructure Change ID", "Request ID", "Change Request Status", "Change Timing"
-WINDOW = (("Scheduled Start Date", "ciamTicketPlannedStart"), ("Scheduled End Date", "ciamTicketPlannedEnd"),
-          ("Actual Start Date", "ciamTicketWorkStart"), ("Actual End Date", "ciamTicketWorkEnd"))
 FACTS = (("Change Type", "change-type"), ("Status Reason", "status-reason"), ("Risk Level", "risk-level"),
          ("Impact", "impact"), ("Urgency", "urgency"), ("Priority", "priority"),
          ("Last Modified Date", "last-modified"))
@@ -101,8 +103,9 @@ def approval_key(path):
 
 
 def _answers(files):
-    """(changes [entry, ...], signatures [values, ...], {CRQ: [page, ...]}, notices) of the export."""
-    changes, signatures, pages, notices = [], [], {}, []
+    """(changes [entry, ...], work orders [entry, ...], signatures [values, ...], {CRQ: [page, ...]}, notices) of the
+    export."""
+    changes, work_orders, signatures, pages, notices = [], [], [], {}, []
     for path in sorted(files):
         if not path.endswith(".json"):
             continue
@@ -114,12 +117,14 @@ def _answers(files):
         if approval_key(path) and isinstance(doc, dict) and "entries" in doc:
             pages.setdefault(approval_key(path), []).append(doc)
         changes.extend(e for e in entries if NUMBER in e["values"])
+        work_orders.extend(e for e in entries if NUMBER not in e["values"] and WO_NUMBER in e["values"])
         signatures.extend(e["values"] for e in entries
-                          if NUMBER not in e["values"] and "Approval Status" in e["values"])
+                          if NUMBER not in e["values"] and WO_NUMBER not in e["values"]
+                          and "Approval Status" in e["values"])
         if not entries and not (approval_key(path) and isinstance(doc, dict) and "entries" in doc):
-            notices.append(f"{path}: isn't an AR System entry answer (a change of {CHANGE_FORM} or signatures of "
-                           f"{APPROVAL_FORM})")
-    return changes, signatures, pages, notices
+            notices.append(f"{path}: isn't an AR System entry answer (a change of {CHANGE_FORM}, a work order of "
+                           f"{WORK_ORDER_FORM} or signatures of {APPROVAL_FORM})")
+    return changes, work_orders, signatures, pages, notices
 
 
 def _text(v):
@@ -169,7 +174,7 @@ def ticket_facts(entry, signatures, states):
     v, number = entry["values"], _text(entry["values"].get(NUMBER))
     status, timing = _text(v.get(STATUS)), _text(v.get(TIMING))
     state, kind = states.get(status), change_type(timing)
-    times = {attr: iso_date_time(v[f]) if v.get(f) not in (None, "") else (None, None) for f, attr in WINDOW}
+    times = window_times(v)
     steps = steps_of(signatures) if signatures is not None else None
     decided = tuple(s for s in steps or () if s[1])
     facts = (*((slug, _text(v.get(f))) for f, slug in FACTS), *((("change-timing", timing),) if not kind else ()))
@@ -197,21 +202,52 @@ def _complete(pages):
     return bool(pages) and any(not has_next(p) for p in pages)
 
 
+def _by_number(entries, field):
+    """{number: {Request ID: entry}} of entry answers, by one number field."""
+    found = {}
+    for e in entries:
+        found.setdefault(_text(e["values"].get(field)), {})[_text(e["values"].get(REQUEST_ID))] = e
+    return found
+
+
+def _ambiguous(number, found):
+    """Whether a number's entries can't be read as one ticket: several, no Request ID, or a number the record can't
+    name."""
+    return len(found) > 1 or not rdn_safe(number) or "" in found
+
+
+def _work_order_groups(d, orders, wanted, at):
+    """(groups, {unmapped Status: [WO, ...]}, notices) of the linked work orders the export holds."""
+    states, problems = ticket_state_map(d, WORK_ORDER_STATES)
+    groups, unmapped, notices = [], {}, list(problems)
+    for number in sorted(n for n in orders if n in wanted and is_work_order(n)):
+        if _ambiguous(number, orders[number]):
+            notices.append(f"{number}: several entries, no Request ID, or a number the record can't name: left out")
+            continue
+        entry = next(iter(orders[number].values()))
+        facts, found = work_order_facts(entry["values"], self_link(entry), states)
+        notices.extend(found)
+        if facts["ciamTicketState"] is None:
+            unmapped.setdefault(facts["ciamTicketNativeState"] or "(none)", []).append(number)
+        groups.append(ticket_group(ticket_entry(d, SYSTEM, number, gtime(at), facts)))
+    return groups, unmapped, notices
+
+
 def read_changes(files, d, patterns, at=None):
-    """Imported: each linked change the export holds, its own group (replacing only it); notices for the rest."""
+    """Imported: each linked change and work order the export holds, its own group (replacing only it); notices for
+    the rest."""
     if at is None:
         return Imported((), (), ("ticket evidence is dated: give --at (when the export was taken)",))
-    changes, signatures, pages, notices = _answers(files)
-    hosts = sorted({urlsplit(self_link(e) or "").hostname or "" for e in changes} - {""})
+    changes, work_orders, signatures, pages, notices = _answers(files)
+    hosts = sorted({urlsplit(self_link(e) or "").hostname or "" for e in (*changes, *work_orders)} - {""})
     if len(hosts) > 1:
         return Imported((), (), (f"the export holds several servers ({', '.join(hosts)}): import one at a time",))
     states, state_problems = ticket_state_map(d, STATUS_STATES)
-    wanted, by_number = linked_numbers(d, SYSTEM), {}
-    for e in changes:
-        by_number.setdefault(_text(e["values"].get(NUMBER)), {})[_text(e["values"].get(REQUEST_ID))] = e
+    wanted = linked_numbers(d, SYSTEM)
+    by_number, orders = _by_number(changes, NUMBER), _by_number(work_orders, WO_NUMBER)
     groups, unmapped, no_steps, foreign = [], {}, [], []
-    for number in sorted(n for n in by_number if n in wanted):
-        if len(by_number[number]) > 1 or not rdn_safe(number) or "" in by_number[number]:
+    for number in sorted(n for n in by_number if n in wanted and not is_work_order(n)):
+        if _ambiguous(number, by_number[number]):
             notices.append(f"{number}: several entries, no Request ID, or a number the record can't name: left out")
             continue
         entry = next(iter(by_number[number].values()))
@@ -225,12 +261,17 @@ def read_changes(files, d, patterns, at=None):
         if read is None:
             no_steps.append(number)
         groups.append(ticket_group(ticket_entry(d, SYSTEM, number, gtime(at), facts)))
+    work_groups, work_unmapped, work_notices = _work_order_groups(d, orders, wanted, at)
+    groups.extend(work_groups)
+    notices.extend(work_notices)
     read_numbers = {g[1][0].attrs["cn"][0] for g in groups}
-    unlinked = sorted(set(by_number) - set(wanted) - {""})
+    unlinked = sorted((set(by_number) | set(orders)) - set(wanted) - {""})
     notices.extend((
         *state_problems,
-        *(f"status {s} isn't mapped in {STATUS_STATES.name}: the state of {', '.join(n)} is kept as BMC gives it "
-          "(neutral state unknown)" for s, n in sorted(unmapped.items())),
+        *(f"status {s} isn't mapped in {setting.name}: the state of {', '.join(n)} is kept as BMC gives it "
+          "(neutral state unknown)"
+          for setting, found in ((STATUS_STATES, unmapped), (WORK_ORDER_STATES, work_unmapped))
+          for s, n in sorted(found.items())),
         *((f"approval signatures not in the export, or not to their last page, for: {', '.join(no_steps)} (overall "
            "approval unknown unless the status is Rejected)",) if no_steps else ()),
         *((f"signatures of another application left out: {', '.join(sorted(set(foreign)))}",) if foreign else ()),
@@ -243,5 +284,6 @@ def read_changes(files, d, patterns, at=None):
 
 
 CHANGES_IMPORTER = Importer("change-requests", "BMC Helix ITSM / Remedy change requests the record's changes name, "
-                                               "with their approval signatures, as evidence (AR System REST answers "
-                                               "of CHG:Infrastructure Change and AP:Detail-Signature)", read_changes)
+                                               "with their approval signatures, and the work orders they name, as "
+                                               "evidence (AR System REST answers of CHG:Infrastructure Change, "
+                                               "AP:Detail-Signature and WOI:WorkOrderInterface)", read_changes)
