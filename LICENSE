@@ -1,0 +1,28 @@
+Copyright (c) 2026 Aryan Duntley. All rights reserved.
+
+CIAMstack, including the opsdir core, every package under packages/, the
+examples, the documentation and the schema, is proprietary software. No
+license is granted.
+
+You may not use, copy, modify, merge, publish, distribute, sublicense, sell,
+deploy or run this software, in whole or in part, or create works based on it,
+without the copyright holder's prior written permission.
+
+Being able to see this repository does not grant any of those rights. Where
+the repository is hosted publicly on GitHub, GitHub's Terms of Service let
+other GitHub users view it and fork it on GitHub; that permission comes from
+those terms, covers only those acts, and grants no other right.
+
+Evaluation, pilot and commercial licenses are available by written agreement.
+Contact: Aryan Duntley <aryanduntley@gmail.com>
+
+Third-party material in this repository, such as vendor API specifications
+and schemas kept for validation (for example
+packages/opsdir-adapter-pingfederate/src/opsdir_adapter_pingfederate/specs/),
+remains under its owners' terms and is not covered by this notice.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
