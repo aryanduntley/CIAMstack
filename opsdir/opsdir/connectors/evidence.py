@@ -18,6 +18,7 @@ from ..domains.estate.evidence import (ENVIRONMENT_COLUMN, boundary_labels, coll
                                        evidence_queries, last_run, manifest, package_files, package_plan,
                                        scoped_rows, search_table)
 from ..domains.estate.naming import EVIDENCE_HISTORY, EVIDENCE_SEARCH
+from ..domains.governance.identity import record_identity
 from ..store.queries import fetch_history
 from .reports import HISTORY_HEADERS, catalogue, run_report
 
@@ -67,7 +68,7 @@ def assemble_package(d, boundary, wanted, as_of, output, point, reports):
     labels = boundary_labels(boundary)
     outputs = {q.dn: _cut(*output(q), labels) for _, qs in plan for q in qs}
     files = package_files(plan, outputs)
-    return Package(plan, files, manifest(boundary, as_of, point, plan, files), point)
+    return Package(plan, files, manifest(boundary, as_of, point, plan, files, record_identity(d)), point)
 
 
 def evidence_package(conn, d, boundary, wanted, as_of):

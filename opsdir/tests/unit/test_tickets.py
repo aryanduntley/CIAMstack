@@ -17,7 +17,7 @@ from opsdir.domains.governance.tickets import (AFTER_READ, APPLIED_OUTSIDE, AREA
                                                TICKET_HEADERS, UNAPPROVED, WINDOW_DIFFERS, after_read,
                                                applied_outside_window, check_tickets, drift_states, finding_text,
                                                linked, linked_numbers, ticket_dn, ticket_entry, ticket_group,
-                                               ticket_map, ticket_ref, ticket_rows, ticket_state_map)
+                                               ticket_map, ticket_refs, ticket_rows, ticket_state_map)
 import mini_estate
 from support import REGISTRY, build_directory
 
@@ -96,7 +96,7 @@ def test_the_governance_domain_checks_and_reports_tickets():
 
 def test_a_change_names_its_ticket_as_adapter_and_number():
     d = _d(*CHANGES_LINKED)
-    assert [ticket_ref(link.change) for link in linked(d)][:2] == [("snow", "C1"), ("jira", "IAM-1")]
+    assert [ticket_refs(link.change)[0] for link in linked(d)][:2] == [("snow", "C1"), ("jira", "IAM-1")]
     assert linked_numbers(d, "snow") == ("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9")
     assert linked_numbers(d, "jira") == ("IAM-1",)
 
@@ -268,3 +268,19 @@ def test_a_mapping_setting_maps_to_the_values_it_allows():
                         "approved, rejected)")
     states = SETTING._replace(default="Open=assess, Done=finished")
     assert ticket_state_map(d, states)[0] == {"Open": "assess"}
+
+
+def test_a_change_names_its_change_ticket_and_the_work_ticket_it_was_handed_over_by():
+    change = _change("CHG-20", "approved", "snow:C1", "20260924000000Z") + "ciamTicketRef: snow:W1\n"
+    work = _ticket("W1", ciamTicketKind="work", ciamTicketState="cancelled", ciamTicketDue="20261101000000Z")
+    d = _d(*CONTAINERS, change, TICKETS_READ[0], work)
+    links = {link.number: link.states for link in linked(d)}
+    assert links == {"C1": (IN_STEP,), "W1": (CANCELLED,)}       # no approval to compare on a work ticket
+    found = _check(d)
+    assert not found.blockers                                       # a cancelled work ticket is an action
+    assert [a[1] for a in found.actions] == [
+        "Change `CHG-20` (Work CHG-20) is approved in the record, but ITSM says its ticket snow:W1 (read 2026-09-23), "
+        "a work ticket, "
+        "was **cancelled**: the work handed over by it was withdrawn. Confirm the change is still wanted, or correct "
+        "the record."]
+    assert linked_numbers(d, "snow") == ("C1", "W1")

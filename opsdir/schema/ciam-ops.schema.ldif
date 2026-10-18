@@ -3295,12 +3295,13 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.732 NAME 'ciamRevocationReason' DESC
  son; present on every revoked certificate' EQUALITY caseIgnoreMatch SYNTAX 
  1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE
  -TYPE 'string' X-ORIGIN 'opsdir' )
-attributeTypes: ( 1.3.6.1.4.1.32473.1.1.740 NAME 'ciamTicketRef' DESC 'The I
- TSM ticket a change record is tracked by, as <adapter>:<number> (servicenow
- :CHG0030101): the operator\27s link; what the ticket says is read into its 
- own entry under ou=tickets, never here' EQUALITY caseIgnoreMatch SYNTAX 1.3
- .6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE '
- string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.740 NAME 'ciamTicketRef' DESC 'An IT
+ SM ticket a change record is tracked by, as <adapter>:<number> (servicenow:
+ CHG0030101): the operator\27s link (its change ticket, and the work ticket 
+ a team was handed its findings by); what the ticket says is read into its o
+ wn entry under ou=tickets, never here' EQUALITY caseIgnoreMatch SYNTAX 1.3.
+ 6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIG
+ IN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.741 NAME 'ciamTicketState' DESC 'A t
  icket\27s lifecycle state in neutral terms, as its add-on maps the system\2
  7s own (absent: the mapping doesn\27t know the ticket\27s state model; ciam
@@ -4036,6 +4037,63 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.974 NAME 'ciamStreamIntakeUrl' DESC
  gnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 
  'binding' X-VALUE-TYPE 'string' X-PATTERN '^https://[^\5Cs/?#]+(/[^\5Cs]*)?
  $' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.975 NAME 'ciamOrgCode' DESC 'The cod
+ e of the organization or company a record belongs to (lowercase letters, di
+ gits, single hyphens): fixed once set, and the prefix of its change records
+ \27 names' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SI
+ NGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '^[a-z][a-z
+ 0-9]*(-[a-z0-9]+)*$' X-MAX-LENGTH '32' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.976 NAME 'ciamRecordId' DESC 'A reco
+ rd\27s own identifier (a UUID made when its identity is first set): fixed o
+ nce set, so the record is told apart from any other, even one using the sam
+ e org code' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 S
+ INGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '^[0-9a-f]
+ {8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.977 NAME 'ciamParentOrgCode' DESC 'T
+ he org code of the group a company\27s record belongs to (a subsidiary\27s 
+ parent); may change, as when a company leaves its group' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'met
+ a' X-VALUE-TYPE 'string' X-PATTERN '^[a-z][a-z0-9]*(-[a-z0-9]+)*$' X-MAX-LE
+ NGTH '32' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.978 NAME 'ciamAuthor' DESC 'Who wrot
+ e a change record: the database login that created it, set by the store (ne
+ ver by the writer) and kept; the approver is someone else unless approval-s
+ eparation is off' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.
+ 1.15 SINGLE-VALUE X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsd
+ ir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.979 NAME 'ciamMemberOf' DESC 'The te
+ ams (ciamParty) a person belongs to' EQUALITY distinguishedNameMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORI
+ GIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.980 NAME 'ciamGrantAction' DESC 'An 
+ action a grant gives (the permission catalog: read, render, plan, migrate, 
+ propose, approve, apply, settings, workspace, admin)' EQUALITY caseIgnoreMa
+ tch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 
+ 'enum:read|render|plan|migrate|propose|approve|apply|settings|workspace|adm
+ in' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.981 NAME 'ciamGrantee' DESC 'Who a g
+ rant is for: a person (ciamPerson) or a team (ciamParty), every member of w
+ hich holds it' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115.
+ 121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.982 NAME 'ciamGrantEnvironment' DESC
+  'An environment (cloud/env) a grant is limited to; none: every environment
+ ' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILI
+ TY 'meta' X-VALUE-TYPE 'string' X-PATTERN '^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Z
+ a-z0-9][A-Za-z0-9._-]*$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.983 NAME 'ciamGrantOwner' DESC 'A te
+ am (ciamParty) whose areas a grant is limited to: what it owns or keeps; no
+ ne: every area' EQUALITY distinguishedNameMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.12 X-PORTABILITY 'meta' X-VALUE-TYPE 'dn' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.984 NAME 'ciamTicketKind' DESC 'What
+  the ticket is: a change ticket (change management approves it; absent mean
+ s change) or a work ticket handing work to a team (a ServiceNow task, a Jir
+ a issue, a work order), which has no approval to compare' EQUALITY caseIgno
+ reMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'me
+ ta' X-VALUE-TYPE 'enum:change|work' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.985 NAME 'ciamTicketDue' DESC 'When 
+ a work ticket wants the work done (its due date or scheduled end)' EQUALITY
+  generalizedTimeMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.24 SINGLE-VALUE X-P
+ ORTABILITY 'meta' X-VALUE-TYPE 'time' X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4168,7 +4226,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.30 NAME 'ciamChange' DESC 'Change rec
  ord (mirrored from ITSM; a proposed one may carry the records it applies, a
  nd names the ticket it is tracked by)' SUP ciamObject STRUCTURAL MUST ( cn 
  $ ciamTitle $ ciamChangeStatus ) MAY ( ciamApprovedBy $ ciamPlannedAt $ cia
- mChangeRecords $ ciamTicketRef ) X-ORIGIN 'opsdir' )
+ mChangeRecords $ ciamTicketRef $ ciamAuthor ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.31 NAME 'ciamIncident' DESC 'Incident
   / postmortem' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamOpened
  At ) MAY ( ciamSeverity $ ciamInvolved $ ciamRootCause ) X-ORIGIN 'opsdir' 
@@ -4916,7 +4974,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.156 NAME 'ciamTicket' DESC 'An ITSM t
  etState $ ciamTicketApproval $ ciamTicketNativeState $ ciamTicketPlannedSta
  rt $ ciamTicketPlannedEnd $ ciamTicketWorkStart $ ciamTicketWorkEnd $ ciamT
  icketApprover $ ciamTicketFact $ ciamTicketApprovalStep $ ciamTicketChangeT
- ype ) X-ORIGIN 'opsdir' )
+ ype $ ciamTicketKind $ ciamTicketDue ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.163 NAME 'ciamSourceObject' DESC 'Wha
  t a product a migration retires holds that the standard model has no equiva
  lent for (under ou=source-objects, below a branch per importer): its own ty
@@ -5076,3 +5134,20 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.205 NAME 'ciamRuleObservation' DESC '
  nts' SUP ciamObject STRUCTURAL MUST ( cn $ ciamRunningState ) MAY ( ciamDev
  iceContext $ ciamHitCount $ ciamFirstHit $ ciamLastHit $ ciamCountedSince )
   X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.206 NAME 'ciamRecordIdentity' DESC 'T
+ he record\27s own identity (cn=record, below the root): the organization or
+  company it belongs to, its identifier and its group; carried in exports an
+ d evidence so two companies\27 records can be combined after a merger' SUP 
+ ciamObject STRUCTURAL MUST ( cn $ ciamOrgCode $ ciamRecordId ) MAY ( ciamPa
+ rentOrgCode $ description ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.207 NAME 'ciamPerson' DESC 'A person 
+ who works on the record (under ou=people), named by their own database logi
+ n (cn), and the teams they belong to; once people are recorded, only a reco
+ rded person approves a change' SUP ciamObject STRUCTURAL MUST cn MAY ( ciam
+ DisplayName $ mail $ ciamMemberOf $ description ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.208 NAME 'ciamGrant' DESC 'A permissi
+ on (under ou=grants): the actions it gives, to which people or teams, limit
+ ed to which environments and to what which teams own or keep; once any gran
+ t is recorded, every action but reading and administration needs one' SUP c
+ iamObject STRUCTURAL MUST ( cn $ ciamGrantAction $ ciamGrantee ) MAY ( ciam
+ GrantEnvironment $ ciamGrantOwner $ description ) X-ORIGIN 'opsdir' )

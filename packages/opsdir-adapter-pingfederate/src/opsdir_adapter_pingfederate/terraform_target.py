@@ -77,7 +77,8 @@ def provider_release(version):
 @functools.lru_cache(maxsize=None)
 def load_provider_schema(release):
     """Effect (reads package data): the trimmed resource schemas of a vendored provider release."""
-    text = package_data.files(__package__).joinpath("specs", f"terraform-provider-{release}.json").read_text()
+    spec = package_data.files(__package__).joinpath("specs", f"terraform-provider-{release}.json")
+    text = spec.read_text(encoding="utf-8")
     return json.loads(text)
 
 

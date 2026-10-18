@@ -18,7 +18,7 @@ from opsdir.core.standard import fragment_counts, schema_ldif  # noqa: E402
 
 def main():
     fragments = core_fragments()
-    SCHEMA_FILE.write_text(schema_ldif(fragments))
+    SCHEMA_FILE.write_text(schema_ldif(fragments), encoding="utf-8", newline="\n")
     print(*fragment_counts(fragments)[:1], "attrs", fragment_counts(fragments)[1], "classes")
 
 

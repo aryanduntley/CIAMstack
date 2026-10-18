@@ -219,7 +219,7 @@ def test_the_target_adapters_declarations_reach_the_check_and_the_renderers():
                   vocabulary={}, schema=None, formats=(), products=(), secret_patterns=(), importers=(),
                   profile_terms=None, access=None, detections=(_detection(),))
     other = idp._replace(name="other", applies=lambda m: False, detections=(_detection(id="spray"),))
-    assert Adapter._fields[-1] == "detections" and Adapter(*idp[:19]).detections == ()
+    assert "detections" in Adapter._fields and Adapter(*idp[:19]).detections == ()     # defaults to none
     d = _record()
     assert [f.key for f in _plan(d, detection_check((idp,), (idp, other))).fixes] == [
         "detection:idp-adapter:brute-force"]

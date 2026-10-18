@@ -57,7 +57,8 @@ TICKET_CLASS = "ciamTicket"
 TICKET_ATTRS = ("cn", "ciamImportedAt", "ciamTitle", "ciamProviderRef", "ciamDocUrl", "ciamTicketState",
                 "ciamTicketApproval", "ciamTicketNativeState", "ciamTicketPlannedStart", "ciamTicketPlannedEnd",
                 "ciamTicketWorkStart", "ciamTicketWorkEnd", "ciamTicketApprover", "ciamTicketFact",
-                "ciamTicketApprovalStep", "ciamTicketChangeType")
+                "ciamTicketApprovalStep", "ciamTicketChangeType", "ciamTicketKind", "ciamTicketDue")
+WORK = "work"                                # ciamTicketKind of a work ticket (absent: a change ticket)
 TICKET_HEADERS = ("change", "status", "planned", "ticket", "state", "approval", "planned window", "work window",
                   "applied", "read at", "drift")
 IN_STEP, NOT_IMPORTED, REJECTED, CANCELLED, UNAPPROVED, CLOSED_PENDING, LIVE_REJECTED, WINDOW_DIFFERS, \
@@ -79,10 +80,15 @@ Linked = NamedTuple("Linked", [("change", object), ("adapter", str), ("number", 
 
 
 # ------------------------------------------------------------------ links and where tickets are kept
-def ticket_ref(change):
-    """(adapter, number) a change's ciamTicketRef names, or None (none, or not <adapter>:<number>)."""
-    adapter, _, number = (one(change, "ciamTicketRef") or "").partition(":")
-    return (adapter, number) if adapter and number else None
+def ticket_refs(change):
+    """The (adapter, number) pairs a change's ciamTicketRef values name, in order (a value not <adapter>:<number> is
+    left out): its change ticket, the work ticket its findings were handed over by."""
+    return tuple((a, n) for a, _, n in (v.partition(":") for v in values(change, "ciamTicketRef")) if a and n)
+
+
+def is_work(ticket):
+    """Whether a ticket as read is a work ticket (no approval to compare), not a change ticket."""
+    return ticket is not None and one(ticket, "ciamTicketKind") == WORK
 
 
 def adapter_dn(adapter):
@@ -97,12 +103,12 @@ def ticket_dn(adapter, number):
 
 def linked_changes(d):
     """Every change record naming a ticket, by name."""
-    return tuple(sorted((c for c in children(d, CHANGES, "ciamChange") if ticket_ref(c)), key=rdn_value))
+    return tuple(sorted((c for c in children(d, CHANGES, "ciamChange") if ticket_refs(c)), key=rdn_value))
 
 
 def linked_numbers(d, adapter):
     """The ticket numbers the record's changes name for one ITSM add-on, each once, in change order."""
-    return tuple(dict.fromkeys(ticket_ref(c)[1] for c in linked_changes(d) if ticket_ref(c)[0] == adapter))
+    return tuple(dict.fromkeys(n for c in linked_changes(d) for a, n in ticket_refs(c) if a == adapter))
 
 
 def tickets(d):
@@ -219,9 +225,10 @@ def after_read(ticket):
 
 def drift_states(change, ticket, writes=None):
     """The drift states of a change against its ticket as read (IN_STEP alone when they agree); writes: (first, last,
-    count) of the record's writes under the change, or None (not read, or none)."""
-    status, state, approval = (one(change, "ciamChangeStatus"), one(ticket, "ciamTicketState"),
-                               one(ticket, "ciamTicketApproval"))
+    count) of the record's writes under the change, or None (not read, or none). A work ticket has no approval to
+    compare: only its state, windows and read time count."""
+    status, state = one(change, "ciamChangeStatus"), one(ticket, "ciamTicketState")
+    approval = None if is_work(ticket) else one(ticket, "ciamTicketApproval")
     found = (*((REJECTED,) if status in APPROVING and approval == "rejected" else ()),
              *((CANCELLED,) if status in APPROVING and state == "cancelled" else ()),
              *((UNAPPROVED,) if status in APPROVING and approval in ("requested", "not-requested") else ()),
@@ -240,13 +247,12 @@ def linked(d, writes=None):
     count)} of the record's writes (none: not read)."""
     read = {rdn_of(t.dn.split(",", 1)[1]) for t in tickets(d)}       # the systems whose tickets were read
 
-    def compare(c):
-        adapter, number = ticket_ref(c)
+    def compare(c, adapter, number):
         t = get(d, ticket_dn(adapter, number))
         states = drift_states(c, t, (writes or {}).get(rdn_value(c))) if t is not None else \
             ((NOT_IMPORTED,) if adapter in read else ())
         return Linked(c, adapter, number, t, states)
-    return tuple(compare(c) for c in linked_changes(d))
+    return tuple(compare(c, a, n) for c in linked_changes(d) for a, n in ticket_refs(c))
 
 
 # ------------------------------------------------------------------ words
@@ -304,9 +310,12 @@ def finding_text(link, state, writes=None):
     texts = {
         REJECTED: f"{head}, but ITSM says {_ticket(link)} was **rejected**: the record holds an approval its change "
                   "management refused. Reconcile them before the move (a ticket never changes the record's status).",
-        CANCELLED: f"{head}, but ITSM says {_ticket(link)} was **cancelled**: the record holds an approval for "
-                   "work its change management withdrew. Reconcile them before the move (a ticket never changes the "
-                   "record's status).",
+        CANCELLED: (f"{head}, but ITSM says {_ticket(link)}, a work ticket, was **cancelled**: the work handed over "
+                    "by it was withdrawn. Confirm the change is still wanted, or correct the record."
+                    if is_work(t) else
+                    f"{head}, but ITSM says {_ticket(link)} was **cancelled**: the record holds an approval for "
+                    "work its change management withdrew. Reconcile them before the move (a ticket never changes the "
+                    "record's status)."),
         UNAPPROVED: f"{head}, but ITSM says the approval of {_ticket(link)} is {_approval(t)}: have it approved in "
                     "ITSM, or correct the record.",
         CLOSED_PENDING: f"{head}, but ITSM says {_ticket(link)} is {one(t, 'ciamTicketState')}: record what "
@@ -338,8 +347,9 @@ def finding_text(link, state, writes=None):
 
 
 def check_tickets(ctx):
-    """Blockers for linked changes whose ticket ITSM says was rejected or cancelled while the record approves them,
-    actions for the other drift, the changes in step as fine; nothing while the record holds no ticket."""
+    """Blockers for linked changes whose change ticket ITSM says was rejected or cancelled while the record approves
+    them, actions for the other drift (a cancelled work ticket's too), the changes in step as fine; nothing while the
+    record holds no ticket."""
     if not tickets(ctx.d):
         return findings()
     writes = ctx.writes or {}
@@ -349,12 +359,17 @@ def check_tickets(ctx):
     def text(link, s):
         return finding_text(link, s, writes.get(rdn_value(link.change)))
     return findings(
-        blockers=[(AREA, text(link, s), _owner(ctx.d, link.change)) for s, link in raised if s in BLOCKING],
+        blockers=[(AREA, text(link, s), _owner(ctx.d, link.change)) for s, link in raised if _blocks(s, link)],
         actions=[(AREA, text(link, s), _owner(ctx.d, link.change), None) for s, link in raised
-                 if s not in BLOCKING],
+                 if not _blocks(s, link)],
         ok=[f"{_change(link)} agrees with {_ticket(link)}: {one(link.change, 'ciamChangeStatus')}; ITSM says "
-            f"{one(link.ticket, 'ciamTicketState') or 'state unknown'}, approval {_approval(link.ticket)}"
+            f"{one(link.ticket, 'ciamTicketState') or 'state unknown'}"
+            + ("" if is_work(link.ticket) else f", approval {_approval(link.ticket)}")
             for link in links if link.states == (IN_STEP,)])
+
+
+def _blocks(state, link):
+    return state in BLOCKING and not is_work(link.ticket)
 
 
 def ticket_rows(d, dn=None, writes=None):

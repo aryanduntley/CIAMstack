@@ -513,10 +513,31 @@ Adapter = namedtuple("Adapter", (
     "managed_directory",    # ManagedDirectories: the cloud-managed directory services it declares (likewise)
     "cert_forwarding",      # (EnvModel, ciamServiceName binding) -> CertForwarding: how its cloud's load balancer in
                             # front of the service name passes on a client certificate it verified, or None
-    "detections"),          # ProductDetections: what its products' audit logs are watched for, offered as alert
+    "detections",           # ProductDetections: what its products' audit logs are watched for, offered as alert
                             # rules (domains/observability.detections)
+    "db_tokens",            # {scheme: (DbTarget) -> argv}: the command printing a token that signs in to the record's
+                            # own database for the target (a cloud's database token, OPSDIR_DB_AUTH=<scheme>), or None
+    "ticket_draft"),        # (Directory, TicketRequest) -> TicketDraft: an ITSM add-on's work-ticket draft handing a
+                            # team its findings, in the system's own create-request form, or None (it drafts none)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None, None, (), (), (), None, ()))
+              None, False, None, None, (), None, None, None, (), (), (), None, (), None, None))
+
+# A team's findings to hand over through ITSM (connectors.handoff): the team (its name and DN), the ticket's title, the
+# findings ((kind 'blocker'|'action', area, text, do_by date or None), ...), the earliest do-by date (None: none has
+# one), the plan's source and target labels and the day it was made as of. Never a credential.
+TicketRequest = NamedTuple("TicketRequest", [("team", str), ("team_dn", str), ("title", str), ("items", tuple),
+                                             ("do_by", Optional[object]), ("source", str), ("target", str),
+                                             ("as_of", object)])
+# An add-on's draft for one TicketRequest: body (the create request's body, as the file a person posts; None: not
+# drafted), the file's extension ('json'), how to file it (the request line and a command with placeholders for the
+# poster's own credentials) and problems (what keeps it from being drafted or complete: a team without a mapped queue,
+# a setting missing), each saying which setting to give and how.
+TicketDraft = NamedTuple("TicketDraft", [("body", Optional[str]), ("extension", str), ("how", tuple),
+                                         ("problems", tuple)])
+
+# The record's own database as a token command signs in to it (Adapter.db_tokens): the host libpq reaches (the first,
+# when several), its port, the login and the database.
+DbTarget = NamedTuple("DbTarget", [("host", str), ("port", int), ("user", str), ("dbname", str)])
 
 # The kinds of role a product adapter declares (Adapter.roles): server (its ciamServerRole / ciamTargetRole values),
 # keystore (the secret role holding a server's keystore), service (the service name's binding role clients reach it

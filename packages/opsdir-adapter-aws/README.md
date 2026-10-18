@@ -409,6 +409,16 @@ A plan with several rules is named (the first is read); a selection choosing res
 
 A render chosen as CloudFormation reads back through `aws/cloudformation` (see "CloudFormation" above); one chosen only as CloudFormation holds no `terraform/*.tf`, and the Terraform read-back says so. The render is the record's intent (its edge policies, the permission table, the guardrails), so the read-back is marked `intent`. It must read back as the bindings it came from, with no copies, and rendering again must give the same files. Where the record still holds what was observed, the changes are what applying would record. In the showcase's source/prod: NLB passthrough becomes the ALB the policies ask for, WAF and Shield come back as edge bindings, and broad grants become least-privilege ones. One gap is known: CloudTrail data events aren't rendered yet (milestone 5.7), so they don't survive.
 
+## The record's own database on RDS or Aurora (`OPSDIR_DB_AUTH=aws-rds-iam`)
+
+When the record runs on Amazon RDS or Aurora PostgreSQL, opsdir signs in with IAM database authentication instead of a password. Set `OPSDIR_DB_AUTH=aws-rds-iam`. For each run, opsdir asks the AWS CLI for a token (`aws rds generate-db-auth-token --hostname <endpoint> --port <port> --username <login> --region <region>`), signed with the identity the CLI runs as: the CIAMstack server's instance role, or the operator's login. The token is the connection's password, valid for 15 minutes for connecting.
+
+- **Use the database's own endpoint** as the host. The token is signed for it, never for a DNS alias. The region is read from an RDS endpoint (`….<region>.rds.amazonaws.com`, GovCloud included), else taken from the CLI's configuration.
+- **The database login:** create it as `opsdir db-roles` prints, then `GRANT rds_iam TO <login>;` instead of giving it a password. A login can't have both `rds_iam` and `rds_ad` (Kerberos).
+- **The IAM policy:** `rds-db:connect` on `arn:aws:rds-db:<region>:<account>:dbuser:<DbiResourceId>/<login>`. Use `arn:aws-us-gov:…` in GovCloud, and the cluster's `DbClusterResourceId` for Aurora. These resource IDs aren't the instance name.
+- **TLS:** use `sslmode=verify-full` with `sslrootcert` set to the region's RDS CA bundle. GovCloud's CA, `rds-ca-rsa4096-g1`, isn't in the system's roots.
+- `opsdir posture` reports the sign-in as a cloud database token.
+
 ## Collecting from AWS (`opsdir collect`)
 
 `opsdir collect --env CLOUD/ENV --adapter aws` reads what the three importers below read, read-only, under your own

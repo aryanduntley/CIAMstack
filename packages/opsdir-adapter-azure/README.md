@@ -453,6 +453,15 @@ The export is Key Vault's REST answers (api-version `2025-07-01`, the current GA
 `keyvault/<source>/certificates-<n>.json` (pages, with the vault's address), `versions/<name>-<n>.json`,
 `certificates/<name>/<version>.json`, `policies/<name>.json`, `pending/<name>.json`, `contacts.json`, `issuers.json`.
 
+## The record's own database on Azure Database for PostgreSQL (`OPSDIR_DB_AUTH=azure-entra`)
+
+When the record runs on Azure Database for PostgreSQL flexible server, opsdir signs in with Microsoft Entra ID instead of a password. Set `OPSDIR_DB_AUTH=azure-entra`. For each run, opsdir asks the Azure CLI for an access token (`az account get-access-token --resource-type oss-rdbms`), with the identity the CLI runs as: the CIAMstack server's managed identity, or the operator's login. The token is the connection's password.
+
+- **The cloud:** the CLI picks the database audience for the cloud it is set to: `https://ossrdbms-aad.database.windows.net`, or `https://ossrdbms-aad.database.usgovcloudapi.net` after `az cloud set --name AzureUSGovernment`.
+- **The database login:** an Entra principal, mapped by the server's Entra administrator with `select * from pgaadauth_create_principal('<principal>', false, false);`. Then give it the runtime rights `opsdir db-roles` describes, instead of creating a password login.
+- **Token lifetime** varies: 5 to 60 minutes, or up to 24 hours for a managed identity. opsdir fetches one for each run.
+- `opsdir posture` reports the sign-in as a cloud database token.
+
 ## Collecting from Azure (`opsdir collect`)
 
 `opsdir collect --env CLOUD/ENV --adapter azure` reads what the two importers below read, read-only, under your own

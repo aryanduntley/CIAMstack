@@ -48,7 +48,7 @@ def indexed(spec):
 @functools.lru_cache(maxsize=None)
 def load_spec(version):
     """Effect (reads package data): the indexed spec of a vendored version (VERSIONS)."""
-    text = resources.files(__package__).joinpath("specs", f"admin-api-{version}.json").read_text()
+    text = resources.files(__package__).joinpath("specs", f"admin-api-{version}.json").read_text(encoding="utf-8")
     return indexed(json.loads(text))
 
 

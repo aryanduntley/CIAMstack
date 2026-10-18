@@ -8,6 +8,14 @@ HANDLINGS = ("rebuild", "re-provision", "re-register", "replace", "retire", "rev
 TICKET_STATES = ("new", "assess", "authorize", "scheduled", "implement", "review", "closed", "cancelled")
 TICKET_APPROVALS = ("not-requested", "requested", "approved", "rejected")
 TICKET_CHANGE_TYPES = ("standard", "normal", "emergency")
+# What a ticket is (ciamTicketKind): a change ticket change management approves, or a work ticket handing work to a
+# team (a draft opsdir wrote for a team's findings, filed by the team: decision 3409)
+TICKET_KINDS = ("change", "work")
+# The permission catalog (governance.grants): every action an operation is one of
+ACTIONS = ("read", "render", "plan", "migrate", "propose", "approve", "apply", "settings", "workspace", "admin")
+# A record identity's org codes (governance.identity) and record ID
+ORG_CODE = "^[a-z][a-z0-9]*(-[a-z0-9]+)*$"
+UUID = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
 
 ATTRIBUTES = (
     AttributeDef(110, 'ciamTitle', 'string', 'meta', True,
@@ -118,9 +126,10 @@ ATTRIBUTES = (
                  'service, a canary, a job): the views and dependency graph of the application start from its parts'),
     # ITSM ticket evidence (milestone 6.2f): the operator's link from a change to its ticket, and what an ITSM add-on's
     # importer read of the ticket (ciamTicket under ou=tickets), evidence only: never an approval opsdir acts on
-    AttributeDef(740, 'ciamTicketRef', 'string', 'meta', True,
-                 'The ITSM ticket a change record is tracked by, as <adapter>:<number> (servicenow:CHG0030101): the '
-                 'operator\'s link; what the ticket says is read into its own entry under ou=tickets, never here'),
+    AttributeDef(740, 'ciamTicketRef', 'string', 'meta', False,
+                 'An ITSM ticket a change record is tracked by, as <adapter>:<number> (servicenow:CHG0030101): the '
+                 'operator\'s link (its change ticket, and the work ticket a team was handed its findings by); what '
+                 'the ticket says is read into its own entry under ou=tickets, never here'),
     AttributeDef(741, 'ciamTicketState', enum_type(TICKET_STATES), 'meta', True,
                  'A ticket\'s lifecycle state in neutral terms, as its add-on maps the system\'s own (absent: the '
                  'mapping doesn\'t know the ticket\'s state model; ciamTicketNativeState holds what the system said)'),
@@ -151,6 +160,12 @@ ATTRIBUTES = (
     AttributeDef(835, 'ciamTicketChangeType', enum_type(TICKET_CHANGE_TYPES), 'meta', True,
                  'The kind of change the ticket is, in neutral terms: standard (pre-approved), normal or emergency, '
                  'as its system classes it'),
+    AttributeDef(984, 'ciamTicketKind', enum_type(TICKET_KINDS), 'meta', True,
+                 'What the ticket is: a change ticket (change management approves it; absent means change) or a work '
+                 'ticket handing work to a team (a ServiceNow task, a Jira issue, a work order), which has no '
+                 'approval to compare'),
+    AttributeDef(985, 'ciamTicketDue', 'time', 'meta', True,
+                 'When a work ticket wants the work done (its due date or scheduled end)'),
     # source objects (milestone 6.1): what a product a migration retires holds that the standard model has no
     # equivalent for, carried as data so the plan says what each needs (ciamSourceObject under ou=source-objects)
     AttributeDef(760, 'ciamSourceClass', 'string', 'observed', True,
@@ -164,13 +179,40 @@ ATTRIBUTES = (
                  '(nothing in the target needs it) or reviewed (what it does isn\'t known yet)'),
     AttributeDef(763, 'ciamHow', 'string', 'meta', True,
                  'How a source object is handled, in words: what the target needs instead and where'),
+    AttributeDef(975, 'ciamOrgCode', 'string', 'meta', True,
+                 'The code of the organization or company a record belongs to (lowercase letters, digits, single '
+                 'hyphens): fixed once set, and the prefix of its change records\' names',
+                 (("X-PATTERN", ORG_CODE), ("X-MAX-LENGTH", "32"))),
+    AttributeDef(976, 'ciamRecordId', 'string', 'meta', True,
+                 'A record\'s own identifier (a UUID made when its identity is first set): fixed once set, so the '
+                 'record is told apart from any other, even one using the same org code',
+                 (("X-PATTERN", UUID),)),
+    AttributeDef(977, 'ciamParentOrgCode', 'string', 'meta', True,
+                 'The org code of the group a company\'s record belongs to (a subsidiary\'s parent); may change, '
+                 'as when a company leaves its group',
+                 (("X-PATTERN", ORG_CODE), ("X-MAX-LENGTH", "32"))),
+    AttributeDef(978, 'ciamAuthor', 'string', 'meta', True,
+                 'Who wrote a change record: the database login that created it, set by the store (never by the '
+                 'writer) and kept; the approver is someone else unless approval-separation is off'),
+    AttributeDef(979, 'ciamMemberOf', 'dn', 'meta', False,
+                 'The teams (ciamParty) a person belongs to'),
+    AttributeDef(980, 'ciamGrantAction', enum_type(ACTIONS), 'meta', False,
+                 'An action a grant gives (the permission catalog: read, render, plan, migrate, propose, approve, '
+                 'apply, settings, workspace, admin)'),
+    AttributeDef(981, 'ciamGrantee', 'dn', 'meta', False,
+                 'Who a grant is for: a person (ciamPerson) or a team (ciamParty), every member of which holds it'),
+    AttributeDef(982, 'ciamGrantEnvironment', 'string', 'meta', False,
+                 'An environment (cloud/env) a grant is limited to; none: every environment',
+                 (("X-PATTERN", "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$"),)),
+    AttributeDef(983, 'ciamGrantOwner', 'dn', 'meta', False,
+                 'A team (ciamParty) whose areas a grant is limited to: what it owns or keeps; none: every area'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
              ('ciamVersion', 'ciamAppliesTo', 'ciamDocUrl'),
              'Work instruction'),
     ClassDef(30, 'ciamChange', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamChangeStatus'),
-             ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords', 'ciamTicketRef'),
+             ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords', 'ciamTicketRef', 'ciamAuthor'),
              'Change record (mirrored from ITSM; a proposed one may carry the records it applies, and names the '
              'ticket it is tracked by)'),
     ClassDef(31, 'ciamIncident', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamOpenedAt'),
@@ -216,7 +258,7 @@ CLASSES = (
              ('ciamTitle', 'ciamProviderRef', 'ciamDocUrl', 'ciamTicketState', 'ciamTicketApproval',
               'ciamTicketNativeState', 'ciamTicketPlannedStart', 'ciamTicketPlannedEnd', 'ciamTicketWorkStart',
               'ciamTicketWorkEnd', 'ciamTicketApprover', 'ciamTicketFact', 'ciamTicketApprovalStep',
-              'ciamTicketChangeType'),
+              'ciamTicketChangeType', 'ciamTicketKind', 'ciamTicketDue'),
              'An ITSM ticket a change record names (ciamTicketRef), as its add-on\'s importer last read it (under '
              'cn=<number>,ou=<adapter>,ou=tickets; ciamImportedAt: when the export was taken): its state, overall '
              'approval, planned and actual windows, approval records and other fields, with the system\'s own '
@@ -229,6 +271,20 @@ CLASSES = (
              'ou=source-objects, below a branch per importer): its own type and facts, the server role that holds it '
              '(ciamTargetRole), how it is handled and whether a move waits for that (ciamBlocking), the entries it '
              'concerns; the planner makes each an action, or a blocker, for a target that doesn\'t run the role'),
+    ClassDef(206, 'ciamRecordIdentity', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamOrgCode', 'ciamRecordId'),
+             ('ciamParentOrgCode', 'description'),
+             'The record\'s own identity (cn=record, below the root): the organization or company it belongs to, '
+             'its identifier and its group; carried in exports and evidence so two companies\' records can be '
+             'combined after a merger'),
+    ClassDef(207, 'ciamPerson', 'ciamObject', 'STRUCTURAL', ('cn',), ('ciamDisplayName', 'mail', 'ciamMemberOf',
+                                                                     'description'),
+             'A person who works on the record (under ou=people), named by their own database login (cn), and the '
+             'teams they belong to; once people are recorded, only a recorded person approves a change'),
+    ClassDef(208, 'ciamGrant', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamGrantAction', 'ciamGrantee'),
+             ('ciamGrantEnvironment', 'ciamGrantOwner', 'description'),
+             'A permission (under ou=grants): the actions it gives, to which people or teams, limited to which '
+             'environments and to what which teams own or keep; once any grant is recorded, every action but '
+             'reading and administration needs one'),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

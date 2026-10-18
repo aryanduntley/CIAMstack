@@ -6,6 +6,7 @@ from .access import ACCESS
 from .boundary import check_boundary, check_regulated_placement
 from .arm import ARM
 from .check_jobs import DELIVERY, IMAGE
+from .dbauth import SCHEME as DB_TOKEN, entra_token_command
 from .cli import CLI_INVENTORY
 from .collect import COLLECTORS
 from .external_id import GEOGRAPHIES, MANAGED, SERVICE as EXTERNAL_ID
@@ -38,7 +39,8 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                           check_identity_protection,
                           check_discovery_cadence),
                   ref_schemes=("azkv", "azkv-key", "azkv-cert", "azblob"),
-                  secret_schemes={"azkv": keyvault_command}, renders="Terraform for the target cloud",
+                  secret_schemes={"azkv": keyvault_command}, db_tokens={DB_TOKEN: entra_token_command},
+                  renders="Terraform for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),
                               "ciamCloudEnvironment": ("public", "usgovernment"),

@@ -48,9 +48,9 @@ def main(pairs):
     OUT.mkdir(parents=True, exist_ok=True)
     for pair in pairs:
         release, path = pair.split("=", 1)
-        schema = trimmed_schema(json.loads(pathlib.Path(path).read_text()), release)
+        schema = trimmed_schema(json.loads(pathlib.Path(path).read_text(encoding="utf-8")), release)
         (OUT / f"terraform-provider-{release}.json").write_text(
-            json.dumps(schema, sort_keys=True, separators=(",", ":")) + "\n")
+            json.dumps(schema, sort_keys=True, separators=(",", ":")) + "\n", encoding="utf-8", newline="\n")
         print(f"{release}: {len(schema['resources'])} resources")
 
 

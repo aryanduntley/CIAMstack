@@ -72,14 +72,15 @@ def _live_text(live):
     return export_text(load_directory(live), SUFFIX)
 
 
-def create(live, ws, parts, source, replace=False, schema_sync=None):
-    """Effect: copy the live record into the workspace database (rebuilt from nothing) and record the base.
-    schema_sync (registry.schema_sync()) composes the record's custom definitions as they load."""
+def create(live, ws, parts, source, replace=False, schema_sync=None, roles=None):
+    """Effect: copy the live record into the workspace database (rebuilt from nothing, as roles' owner with the
+    runtime's grants when given: store.roles) and record the base. schema_sync (registry.schema_sync()) composes the
+    record's custom definitions as they load."""
     if has_schema(ws) and not replace:
         raise SystemExit("the workspace database already holds an opsdir store; `workspace create --replace` rebuilds "
                          "it (its data is dropped)")
     text = _live_text(live)
-    migrations.init(ws, *parts)
+    migrations.init(ws, *parts, roles)
     n = load_records(ws, parse(text), schema_sync=schema_sync)
     record_base(ws, safe_source(source), fingerprint(text), text)
     return n

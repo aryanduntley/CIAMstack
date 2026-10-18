@@ -12,8 +12,10 @@ monitoring, changes and incidents (the change records the entries name, the inci
 """
 from typing import NamedTuple, Optional
 
-from ..core.directory import get, gtime_date, is_kind, one, rdn_value, referrers, value_type, values
+from ..core.directory import get, gtime_date, is_kind, norm_dn, one, rdn_value, referrers, value_type, values
 from ..core.environment import by_role
+from ..domains.governance.focus import kept_by
+from ..domains.governance.people import team_dn
 from .graph import (ROLE, SERVER_ROLE, SERVER_ROLE_REFS, dependency_graph, entry_kind, node_label, owners_of,
                     role_attributes)
 
@@ -145,6 +147,16 @@ def application_view(d, dn, as_of, m=None):
     return ApplicationView(e.dn, rdn_value(e), parts, roles, m.label if m is not None else None,
                            (*(Section(name, rows[name]) for name, _ in SECTIONS),
                             Section(CHANGES, _changes(d, held)), Section(OWNERS, _owners(d, held))))
+
+
+def my_view(d, view, teams):
+    """The view narrowed to what the teams (names) own or keep (governance.focus.kept_by, by each row's entry): the
+    owners section keeps those teams' own rows. Focus only, never a security boundary."""
+    mine = {norm_dn(team_dn(t)) for t in teams}
+    def kept(s, r):                                                              # noqa: E306
+        return norm_dn(r[-1]) in mine if s.name == OWNERS else kept_by(d, r[-1], teams)
+    return view._replace(sections=tuple(s._replace(rows=tuple(r for r in s.rows if kept(s, r)))
+                                        for s in view.sections))
 
 
 def view_document(view):

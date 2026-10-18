@@ -7,22 +7,28 @@ write is previewable: its change records are computed first (preview_*), and app
 accepts (an approved change record). Effects are the store's; everything else is the connectors' and domains'.
 """
 import datetime as dt
+import uuid
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, plan as planmod, profiling, reports, workspace
+from .connectors import posture as posturemod
 from .connectors import evidence as evidencemod, fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
 from .connectors.render import environment_notes, render_env
-from .connectors.application import application_view
+from .connectors.application import application_view, my_view
+from .connectors.handoff import handoff_files
 from .connectors.graph import dependency_graph
 from .connectors.stack import STATUS_HEADERS, note_rows, stack_rows
 from .connectors.summary import estate_counts, plan_counts
 from .core import search as ldap_search
+from .core.directory import make_directory, rdn_value
 from .core.environment import ENVIRONMENT, env_model
 from .core.notes import parsed
 from .core.interchange.export import export_text
 from .domains.estate.evidence import boundary_named, run_records
 from .domains.governance.attempts import attempt_records
+from .domains.governance import changes as changesmod, focus as focusmod, grants as grantsmod, people as peoplemod
+from .domains.governance.identity import change_name_problem, identity_changes, identity_line, record_identity
 from .domains.governance.authorization import Area, allow_all, refusal
 from .domains.governance.naming import APPLICATIONS
 from .store import migrations, postgres as db
@@ -48,15 +54,17 @@ WorkspaceState = NamedTuple("WorkspaceState", [("base", object), ("changes", tup
 
 
 # ------------------------------------------------------------------ the store
-def init(conn):
-    """Effect: DROP the opsdir schema and create it from nothing (all migrations)."""
-    migrations.init(conn, *store_parts())
+def init(conn, roles=None):
+    """Effect: DROP the opsdir schema and create it from nothing (all migrations), as roles' owner with the runtime's
+    grants when given (store.roles)."""
+    migrations.init(conn, *store_parts(), roles)
     return Initialized(*db.registry_counts(conn))
 
 
-def upgrade(conn):
-    """Effect: apply pending migrations, keeping data and history."""
-    applied = migrations.upgrade(conn, *store_parts())
+def upgrade(conn, roles=None):
+    """Effect: apply pending migrations, keeping data and history (as roles' owner with the runtime's grants when
+    given)."""
+    applied = migrations.upgrade(conn, *store_parts(), roles)
     return Upgraded(tuple(migrations.label(m) for m in applied), migrations.current_version(conn),
                     *db.registry_counts(conn))
 
@@ -104,10 +112,33 @@ def search(conn, base, filt, scope="sub"):
     return tuple(ldap_search.search(db.load_directory(conn), base, filt, scope))
 
 
+def my_teams(conn):
+    """Effect (reads the record): the session login's teams ('my area'); SystemExit for a login that isn't a
+    recorded person."""
+    d, who = db.load_directory(conn), db.session_user(conn)
+    if not any(rdn_value(p).lower() == who.lower() for p in peoplemod.people(d)):
+        raise SystemExit(f"--mine: {who} isn't a recorded person (opsdir person {who} --team ... --change ...)")
+    return peoplemod.teams_of(d, who)
+
+
 def report(conn, name, dn=None, as_of=None):
     """Effect (reads the record): a named report's rows, dates evaluated as of as_of (today when not given)."""
     rows, headers = reports.report_rows(conn, name, dn, as_of)
     return Rows(tuple(headers), tuple(rows))
+
+
+def my_report(conn, name, dn=None, as_of=None):
+    """Effect (reads the record): a named report narrowed to the session login's teams (governance.focus), and a note
+    when it has no owner or keeper column to narrow by (every row then)."""
+    r = report(conn, name, dn, as_of)
+    kept, note = focusmod.focus_rows(r.headers, r.rows, my_teams(conn))
+    return r._replace(rows=kept), note
+
+
+def mine(conn):
+    """Effect (reads the record): the session login's open items (governance.focus.open_items)."""
+    teams = my_teams(conn)
+    return focusmod.open_items(db.load_directory(conn), db.session_user(conn), teams)
 
 
 def history(conn, dn=None):
@@ -120,11 +151,13 @@ def _entry_dn(dn):
     return dn if "=" in dn else f"cn={dn},{APPLICATIONS}"
 
 
-def application(conn, dn, as_of, env=None):
+def application(conn, dn, as_of, env=None, mine=False):
     """Effect (reads the record): the application view of an entry (connectors.application.ApplicationView; a bare
-    name an application's), its roles realized in environment env (CLOUD/ENV) when given, else in every one."""
-    d = db.load_directory(conn)
-    return application_view(d, _entry_dn(dn), as_of, env_model(d, env) if env else None)
+    name an application's), its roles realized in environment env (CLOUD/ENV) when given, else in every one; with
+    mine, only what the session login's teams own or keep (connectors.application.my_view)."""
+    teams, d = my_teams(conn) if mine else None, db.load_directory(conn)
+    v = application_view(d, _entry_dn(dn), as_of, env_model(d, env) if env else None)
+    return my_view(d, v, teams) if mine else v
 
 
 def dependencies(conn, dn, direction="both", depth=3, env=None):
@@ -144,8 +177,11 @@ def summary(conn, as_of, src=None, dst=None):
 
 
 def export(conn, base):
-    """Effect (reads the record): entries under base as LDIF, for review."""
-    return export_text(db.load_directory(conn), base)
+    """Effect (reads the record): entries under base as LDIF, for review; headed by a comment naming the record's
+    identity when it has one."""
+    d = db.load_directory(conn)
+    line = identity_line(record_identity(d))
+    return (f"# {line}\n" if line else "") + export_text(d, base)
 
 
 def evidence(conn, boundary, as_of, controls=(), change_id=None, kept_at=None):
@@ -174,6 +210,29 @@ def authorize(policy, requester, action, area):
         raise SystemExit(why)
 
 
+GOVERNED_CLASSES = ("ciamGrant", "ciamPerson")      # what turns the permissive default into the record's policy
+
+
+def authorize_command(conn, action, area, claimed=None):
+    """Effect (refuses): check the session's login against the record's permissions (governance.grants) for an
+    action over an area, before an operation runs; every front end asks it. claimed: a requester named by the caller
+    (render and migrate --as), refused once people are recorded unless it is the login. With no people or grants
+    recorded, everything is allowed and the record isn't loaded."""
+    if not db.rows_of_classes(conn, GOVERNED_CLASSES):
+        return
+    d, who = db.load_directory(conn), db.session_user(conn)
+    if claimed and claimed != who and peoplemod.people(d):
+        raise SystemExit(f"--as {claimed}: once people are recorded, the requester is the login ({who})")
+    authorize(grantsmod.policy_for(d), who, action, area)
+
+
+def preview_grant(conn, name, actions, grantees, environments=(), owners=()):
+    """Effect (reads the record): the change records recording or replacing a grant (applied with apply_preview
+    under an approved change); ValueError for an unknown action, grantee or owner."""
+    return Preview(f"grant {name}", grantsmod.grant_changes(db.load_directory(conn), name, actions, grantees,
+                                                           environments, owners), ())
+
+
 # ------------------------------------------------------------------ rendering and moving
 def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None, policy=allow_all):
     """Effect (reads the record): an environment's rendered files; targets: {adapter: (render target, ...)} chosen
@@ -186,11 +245,24 @@ def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None, policy=a
     return Rendered(m.label, m.dn, m.provider, files, tuple(m.unbound), parsed(files["NOTES.json"]))
 
 
-def plan(conn, src, dst, as_of):
+def plan(conn, src, dst, as_of, mine=False):
     """Effect (reads the record and its history): the plan for moving src to dst, as markdown and external-party
-    request drafts."""
+    request drafts; with mine, only the blockers and actions of the session login's teams (governance.focus)."""
     p = planmod.plan(db.load_directory(conn), src, dst, as_of, writes=reports.change_writes(conn, as_of))
+    if mine:
+        teams = my_teams(conn)
+        p = p._replace(blockers=focusmod.focus_findings(p.blockers, teams),
+                       actions=focusmod.focus_findings(p.actions, teams))
     return Planned(p, planmod.to_markdown(p), planmod.request_drafts(p))
+
+
+def tickets(conn, src, dst, as_of, mine=False):
+    """Effect (reads the record and its history): the work-ticket drafts handing the plan src->dst's findings to their
+    owning teams through the installed ITSM add-ons, with their README ({path under tickets/: text},
+    connectors.handoff); with mine, only the session login's teams' drafts. Nothing is sent to ITSM."""
+    teams, d = my_teams(conn) if mine else None, db.load_directory(conn)
+    p = planmod.plan(d, src, dst, as_of, writes=reports.change_writes(conn, as_of))
+    return handoff_files(d, p, ADAPTERS, teams)
 
 
 def migrate(conn, src, dst, as_of, requester=None, policy=allow_all):
@@ -204,11 +276,14 @@ def migrate(conn, src, dst, as_of, requester=None, policy=allow_all):
 
 
 # ------------------------------------------------------------------ assisted fixes
-def fixes(conn, src, dst, as_of):
+def fixes(conn, src, dst, as_of, mine=False):
     """Effect (reads the record): the record changes the plan's findings offer (core.findings.Fix), each with its
     change records, the steps outside the record and what it could hide. Against the workspace connection they are the
-    workspace's (reaching the live record at cutover)."""
-    return planmod.plan(db.load_directory(conn), src, dst, as_of, writes=reports.change_writes(conn, as_of)).fixes
+    workspace's (reaching the live record at cutover). With mine, only those changing what the session login's teams
+    own or keep (governance.focus.focus_fixes)."""
+    teams, d = my_teams(conn) if mine else None, db.load_directory(conn)
+    found = planmod.plan(d, src, dst, as_of, writes=reports.change_writes(conn, as_of)).fixes
+    return focusmod.focus_fixes(d, found, teams) if mine else found
 
 
 def _ready(conn, fix):
@@ -225,7 +300,10 @@ def propose_fix(conn, src, dst, as_of, key, change_id, title=None, option=None, 
     change_id with status proposed, holding the records it applies, for a person to approve (what an AI may do).
     Nothing else is written; ValueError when what the fix requires hasn't happened (a fresh import first) or the store
     would refuse the records (a value of the wrong type, two values for a SINGLE-VALUE attribute, an attribute the
-    entry's classes don't allow): a proposal applies as held."""
+    entry's classes don't allow), or change_id isn't named with the record's org code: a proposal applies as held."""
+    named = change_name_problem(record_identity(db.load_directory(conn)), change_id)
+    if named:
+        raise ValueError(named)
     fix = _ready(conn, fixmod.chosen(fixmod.find_fix(fixes(conn, src, dst, as_of), key), option, inputs))
     problems = db.record_problems(conn, fix.records)
     if problems:
@@ -250,6 +328,65 @@ def preview_setting(conn, name, value):
     """Effect (reads the record): the change records giving estate setting name a value (applied with apply_preview
     under an approved change); ValueError when no installed domain declares it or the value isn't valid for it."""
     return Preview(name, tuple(settingsmod.changes_for_setting(db.load_directory(conn), name, value)), ())
+
+
+def posture(conn, allowed=None, token=None):
+    """Effect (reads the connection, the server and the record): the record database's posture rows
+    (connectors.posture) and how many fail; allowed: the weaker sslmode OPSDIR_DB_TLS accepts; token: the database
+    token scheme the connection signed in with (OPSDIR_DB_AUTH)."""
+    facts = db.posture_facts(conn)
+    d = db.load_directory(conn) if facts.schema_owner else make_directory((), (), ())
+    rows = posturemod.posture_rows(facts, d, migrations.read_migrations(), allowed, token)
+    return Rows(posturemod.HEADERS, rows), posturemod.failed(rows)
+
+
+def new_change(conn, change_id, title, ticket=None):
+    """Effect: record a proposed change (its author the session's login, set by the store); ValueError when it
+    exists or isn't named with the record's org code."""
+    d = db.load_directory(conn)
+    named = change_name_problem(record_identity(d), change_id)
+    if named:
+        raise ValueError(named)
+    return modify(conn, changesmod.new_change(d, change_id, title, ticket), change_id)
+
+
+def change_status(conn, change_id, status):
+    """Effect: move a change to approved, rejected or applied (its approver the session's login, set and checked by
+    the store: never its author while approval-separation is on, a recorded person once people are recorded);
+    ValueError when it can't move there."""
+    return modify(conn, (changesmod.status_change(db.load_directory(conn), change_id, status),), change_id)
+
+
+def change_lines(conn, change_id):
+    """Effect (reads the record): a change record in lines; ValueError when there is none."""
+    change = changesmod.change_record(db.load_directory(conn), change_id)
+    if change is None:
+        raise ValueError(f"no change {change_id}")
+    return changesmod.change_lines(change)
+
+
+def preview_person(conn, login, name=None, mail=None, teams=None):
+    """Effect (reads the record): the change records recording a person or updating their name, mail and teams
+    (applied with apply_preview under an approved change); ValueError for a bad login or an unknown team."""
+    return Preview(f"person {login}", peoplemod.person_changes(db.load_directory(conn), login, name, mail, teams), ())
+
+
+def person_lines(conn, login):
+    """Effect (reads the record): a recorded person in lines, or None."""
+    return peoplemod.person_lines(db.load_directory(conn), login)
+
+
+def identity(conn):
+    """Effect (reads the record): the record's identity (governance.identity.Identity), or None when it has none."""
+    return record_identity(db.load_directory(conn))
+
+
+def preview_identity(conn, org, parent=None, name=None):
+    """Effect (reads the record; a new UUID): the change records giving the record its identity, or updating its
+    parent and name (applied with apply_preview under an approved change); ValueError for an invalid code or a changed
+    org code."""
+    return Preview("record identity", identity_changes(db.load_directory(conn), org, str(uuid.uuid4()), parent, name),
+                   ())
 
 
 # ------------------------------------------------------------------ config files
@@ -336,9 +473,9 @@ def rebuild_file(conn, name, spec=None):
 
 
 # ------------------------------------------------------------------ the migration workspace
-def workspace_create(live, ws, source, replace=False):
+def workspace_create(live, ws, source, replace=False, roles=None):
     """Effect: copy the live record into the workspace database. Returns the entries copied."""
-    return workspace.create(live, ws, store_parts(), source, replace, schema_sync())
+    return workspace.create(live, ws, store_parts(), source, replace, schema_sync(), roles)
 
 
 def workspace_state(live, ws):

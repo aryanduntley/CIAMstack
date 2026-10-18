@@ -554,6 +554,8 @@ can't pose as options. A file kept that isn't regular UTF-8 text (a link, a bina
 
 ## Database
 
+Running the record in production (setup, sign-in, backups, the tested restore, upgrades) is in [`documentation/RECORD-DATABASE.md`](../documentation/RECORD-DATABASE.md); this section is the reference.
+
 One PostgreSQL server and one role, `opsdir`. For local development and tests there are four databases:
 
 | Database | Used by | Its `opsdir` schema |
@@ -573,11 +575,143 @@ sudo -u postgres createdb -O opsdir -T template0 opsdir_test
 sudo -u postgres createdb -O opsdir -T template0 opsdir_test_workspace
 ```
 
+### Connecting to a production record
+
+- **PostgreSQL 17 or later.** `init` and `upgrade` refuse an older server.
+- **Connection settings come from libpq**: `OPSDIR_DSN`, or a service file (`PGSERVICEFILE`, `service=`), a password file (`PGPASSFILE`), and the usual `PG*` variables.
+- **TLS off the host.** A server reached over a local socket or the loopback address needs nothing more. Any other must be reached with `sslmode=verify-full` and `sslrootcert` (the server's CA file, or `system` for the system's trusted roots; RDS's regional CAs, including GovCloud's, aren't in them). Otherwise `opsdir` refuses the connection right after it opens, naming the fix. A weaker mode is accepted only when it is named: `OPSDIR_DB_TLS=require` (or `verify-ca`, or `disable`) makes the choice explicit.
+- **Cloud database tokens instead of passwords**: `OPSDIR_DB_AUTH=<scheme>` signs in with a token that an installed adapter's command prints for the connection's host, port and login. The token is fetched once for each run and used as the password. The AWS adapter declares `aws-rds-iam` (RDS and Aurora IAM authentication); the Azure adapter declares `azure-entra` (Microsoft Entra ID on Azure Database for PostgreSQL). Each adapter's README has the setup.
+- **Production records** say so with an estate setting, `opsdir setting deployment production --change CHG-…` (approved and kept in history). The posture check holds them to production rules.
+
+### Posture check
+
+`opsdir posture` reports whether the record's database, and the way it is reached, are fit for what the record is. It lists one row per check and exits non-zero when one fails:
+
+| Check | ok | fails a production record |
+|---|---|---|
+| server version | PostgreSQL 17 or later | older (any record) |
+| tls | local, or off-host with verify-full | off-host without verified TLS, unless `OPSDIR_DB_TLS` names the mode (then: warn) |
+| sign-in | Kerberos, a client certificate, a password file, a cloud token | a password in the connection string or the environment |
+| development defaults | none | the development password, or the development database and login on this host |
+| login privileges | rows only | superuser, owns the schema, or can create in it (the right login for `init`/`upgrade`, not for daily use) |
+| schema | every migration applied | pending or unknown migrations (any record) |
+| record identity | set | none |
+| cloud names | all start with the org code | never fails: reported as information |
+
+A development record (the default, and the showcase) only notes what a production one fails on.
+
+### Database roles
+
+In production the record runs under three roles, none of them a tier among operators:
+
+| Role | Signs in | Does |
+|---|---|---|
+| owner (`opsdir_owner`) | never | owns the `opsdir` schema and everything in it |
+| migration login (`opsdir_migrate`) | to run `init` and `upgrade` | becomes the owner for them (`OPSDIR_DB_OWNER=opsdir_owner`), holding none of its rights otherwise |
+| runtime login (`opsdir_app`) | day to day | reads and writes entries under the store's rules; can't create, alter or drop anything, change the secret patterns or the vocabulary, or change the history |
+
+`opsdir db-roles [--owner R] [--migrator R] [--runtime R] [--database D] [--login password|certificate|kerberos]` prints the script an admin reviews and runs once, connected to the record's database. It creates the roles and their database rights, revokes `PUBLIC`'s `CREATE` on schema `public`, and gives the `pg_hba.conf` lines for the login method. CIAMstack itself never needs admin rights.
+
+`init`, `upgrade` and `workspace create` run with `OPSDIR_DB_OWNER` and `OPSDIR_DB_RUNTIME` set. They then build everything as the owner and re-apply the runtime's grants on every object each time, so the grants survive `init` and the views every upgrade re-creates.
+
+The history is append-only for everyone: the store refuses changing or removing a history row, whoever connects. Only `init`, which rebuilds the record, drops it.
+
+Client certificates and Kerberos are plain libpq settings on a self-managed server (`sslcert`/`sslkey`; a Kerberos ticket). RDS supports Kerberos through AWS Managed Microsoft AD. Neither managed service documents client-certificate sign-in.
+
+### The record's identity
+
+Each company keeps its own record: a parent organization and each subsidiary run their own database. A record says which company it belongs to in one governed entry, `cn=record` below the root:
+
+```bash
+opsdir identity                                            # show it
+opsdir identity --org collins --parent rtx --name "Collins Aerospace" --change CHG-12   # set it (--dry-run lists)
+```
+
+- The **org code** (lowercase letters and digits, single hyphens, at most 32 characters) and the **record ID** (a UUID made when the identity is first set) are fixed once set. The store refuses changing them or removing the entry, whoever connects. The group (`--parent`) and the name may change, as when a company leaves its group (`--parent ""` removes it).
+- Once a record has an identity, **every new change record is named with its org code as prefix**: `collins-CHG-13`, in any case. The store refuses other names, and `opsdir fix propose` checks before proposing. Change records made before the identity was set keep their names.
+- Exports start with a `# record <org> <id>` comment line (LDIF readers skip it), and evidence packages' `MANIFEST.json` names the record.
+- Starting cloud names with the org code (`collins-aws`) keeps environment names unique across a group of companies. Environment names appear in rendered files (tags), so this saves renaming when two companies' records are combined after a merger.
+
 ### Schema upgrades
 
 - **Migrations** (`opsdir/store/sql/migrations/NNNN_name.sql`) create and change what holds data: tables, the rule functions and their triggers. Each is applied once, in order, and recorded with its checksum in `opsdir.schema_migration`. **Never edit an applied migration**; add the next number. `upgrade` refuses a database whose applied migrations were edited, that has migrations this code doesn't know, or that was created before versioning (`init` rebuilds those).
 - **Definitions** (`opsdir/store/sql/definitions/`, and every domain's and connector's `sql/`) hold no data: views and report functions. Every `upgrade` drops the views and re-applies all definitions, so they are edited in place.
 - Every `upgrade` also syncs the **schema registry** from the registered schema fragments (the core's, the domains' and each installed adapter's), the **reference schemes** the installed adapters own, and the **vocabulary** (below). A definition no installed part defines any more (an uninstalled adapter's) is removed; the upgrade is refused while entries still use it. Everything runs in one transaction, one upgrade at a time.
+
+## People, change records and approval
+
+Every write to the record names a change record, and the store accepts it only under an approved one. In a team, each person signs in with their own database login, so the store knows from the session itself who wrote and who approved:
+
+- **On the same server as the database:** people reach the CIAMstack server over SSH with their keys. `opsdir db-roles --login peer --person alice --person bob` gives each operating-system account a login of the same name over the local socket.
+- **For a remote or managed database:** each person uses their own client certificate (in `~/.postgresql`, mode 0600), Kerberos, or their own cloud identity for a database token.
+
+Each person's login is a member of the runtime login, so it has the runtime's rights and no more.
+
+```bash
+opsdir person alice --name "Alice" --mail alice@example.com --team platform --change CHG-12   # record a person
+opsdir change new CHG-14 --title "Rotate the LDAPS certificate"   # alice: a proposed change, authored by alice
+opsdir change approve CHG-14                                      # bob: approved by bob
+opsdir modify --change CHG-14 rotate.ldif                         # the writes it covers
+opsdir change show CHG-14                                         # status, title, author, approver, ticket
+```
+
+What the store enforces, whoever connects and however (the CLI, a script, `psql`):
+
+- It records **who wrote a change record** (`ciamAuthor`, the login that created it) and **who approved it** (`ciamApprovedBy`, the login that approved it). Neither can be set or changed by a write.
+- **The approver is never the author** while the `approval-separation` setting is TRUE, the default. Only a one-person install turns it off (`opsdir setting approval-separation FALSE --change …`). `opsdir posture` warns about that on a development record and fails a production one.
+- **Once people are recorded** (`ou=people`), only a recorded person approves. With none recorded (a single-team install, the showcase), any login may approve, but never its own change.
+- **Applied only after approved:** a change goes proposed → approved → applied, or rejected.
+- **The initial load only by the owner:** writes under `BOOTSTRAP` (`opsdir load`) are the schema owner's. Every other login writes under an approved change.
+- **History records the login** that made each write (`opsdir history` shows it as `by`). The history is append-only.
+
+### Permissions
+
+Every command is one action of a catalog: `read`, `render`, `plan`, `migrate`, `propose`, `approve`, `apply`, `settings`, `workspace` and `admin`. Before a command runs, the operations layer checks the action against the record's grants, for the session's own login (the same check every front end asks):
+
+```bash
+opsdir grant platform-render --action render --action plan --to platform --env target/prod --change CHG-15
+opsdir grant network-changes --action apply --to bob --owner network --change CHG-15
+opsdir report grants
+```
+
+- **No grant recorded:** every action is allowed. This is a single-team install's default and the showcase's, and nothing changes.
+- **Once any grant is recorded:**
+  - only recorded people act;
+  - reading is open to every one of them (the record holds no secret values);
+  - administration (`init`, `upgrade`, `load`) is left to the database's own privileges;
+  - every other action needs a grant, the person's own or a team's they belong to (`--team` on `opsdir person`).
+- **Limits on a grant:** `--env` limits it to environments. `--owner` limits it to what given teams own or keep, so it covers a render scoped to that team's infrastructure (`--keeper`), not the whole environment.
+- **Grants are governed records like any other.** A change recording one is approved by someone other than its author.
+- **`render --as` / `migrate --as`** must name the session's own login once people are recorded.
+
+**My area.** The `--mine` flag focuses on a person's teams (`--team` on `opsdir person`). It is focus only, never a boundary: everything stays readable.
+
+- **`opsdir report <name> --mine`** keeps the rows whose owner, owners or keeper column names one of those teams. A report without such a column comes back whole and says so.
+- **`opsdir plan <from> <to> --mine`** keeps the blockers and actions those teams own.
+- **`opsdir fix list <from> <to> --mine`** keeps the fixes that change an entry belonging to those teams. An entry belongs to its own owners and keeper (`ciamOwner`, `ciamManagedBy`), else to its environment's: the same rule the store uses for grants. A fix that adds an entry belongs to the owners it gives, else to where it goes.
+- **`opsdir application <name> --mine`** keeps, in each section, the rows whose entry belongs to those teams by the same rule; the owners section keeps those teams' own rows.
+
+**Handing findings to the owning team: `opsdir tickets <from> <to> [-o DIR] [--mine]`.** For each team the plan's blockers and actions name as owner, every installed ITSM add-on that drafts work tickets writes one draft: `tickets/<adapter>/<team>.json`, the body of that system's own create request (a ServiceNow task, a Jira issue, a BMC Helix work order). `tickets/README.md` says how to file each one, which add-on setting is missing where a draft couldn't be completed, and which findings no team owns.
+
+- opsdir files nothing and holds no ITSM credential. The team, or an admin, posts the draft with their own credentials.
+- They then link the ticket on the opsdir change that does the work: `ciamTicketRef <adapter>:<number>`. A change may name several tickets: its change ticket and the work ticket.
+- The add-on's next import reads the work ticket back (`ciamTicketKind: work`). A work ticket has no approval to compare: its state, windows and due date are evidence, and a cancelled work ticket is an action for the change's owner, not a blocker.
+- `--mine` writes only the session login's teams' drafts.
+- **`opsdir mine`** lists the person's open items:
+  - changes waiting for someone else's approval;
+  - their own changes not yet applied;
+  - their teams' open questions in the unknowns register.
+
+**The store enforces the areas too**, so the rule holds even for writes that bypass the CLI. Once any grant is recorded, every write is checked:
+
+- **An entry's area** is its environment (from its DN) and its teams: `ciamOwner` and `ciamManagedBy`, else its environment's.
+- **The writing login** must hold `apply` covering that area. Writes to what governs the record itself (`ou=grants`, `ou=people`, `ou=settings`) need `settings`.
+- **The change's approver** must hold `approve` covering it. An approver from another team can't approve a change that touches what isn't theirs.
+
+Not checked:
+- the initial load;
+- change records, which follow their own approval rule;
+- the schema owner (the migration login after `SET ROLE`), which is the database's break-glass and is visible in history as the owner.
 
 ## Stacks and vocabulary
 

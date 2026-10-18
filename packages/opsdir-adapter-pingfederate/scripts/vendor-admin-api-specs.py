@@ -78,7 +78,7 @@ def trimmed_spec(spec, tag):
 
 def _show(clone, ref, path):
     return subprocess.run(["git", "-C", str(clone), "show", f"{ref}:{path}"], check=True, capture_output=True,
-                          text=True).stdout
+                          encoding="utf-8").stdout
 
 
 def main(clone):
@@ -86,10 +86,12 @@ def main(clone):
     OUT.mkdir(parents=True, exist_ok=True)
     for version, tag in TAGS:
         spec = trimmed_spec(yaml.safe_load(_show(clone, tag, SPEC)), tag)
-        (OUT / f"admin-api-{version}.json").write_text(json.dumps(spec, sort_keys=True, separators=(",", ":")) + "\n")
+        (OUT / f"admin-api-{version}.json").write_text(json.dumps(spec, sort_keys=True, separators=(",", ":")) + "\n",
+                                                       encoding="utf-8", newline="\n")
         print(f"{version}: {tag} (Admin API {spec['version']}), {len(spec['requests'])} requests, "
               f"{len(spec['schemas'])} schemas")
-    (OUT / "LICENSE-pingfederate-go-client.md").write_text(_show(clone, TAGS[-1][1], "LICENSE.md"))
+    (OUT / "LICENSE-pingfederate-go-client.md").write_text(_show(clone, TAGS[-1][1], "LICENSE.md"),
+                                                         encoding="utf-8", newline="\n")
 
 
 if __name__ == "__main__":

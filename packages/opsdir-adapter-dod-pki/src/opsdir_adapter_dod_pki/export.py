@@ -126,7 +126,7 @@ def _openssl_facts(pem):
     try:
         run = subprocess.run(["openssl", "x509", "-noout", "-nameopt", "RFC2253", "-subject", "-issuer",
                               "-startdate", "-enddate", "-serial", "-fingerprint", "-sha256"],
-                             input=pem, capture_output=True, text=True, check=False)
+                             input=pem, capture_output=True, encoding="utf-8", check=False)
     except FileNotFoundError:
         return None
     return openssl_facts(run.stdout) if run.returncode == 0 else None
@@ -160,11 +160,12 @@ def _verify(files):
             run = subprocess.run(["openssl", "cms", "-verify", "-inform", "DER", "-in", str(t / "m.sha256"),
                                   "-CAfile", str(t / "chain.pem"), "-purpose", "any", "-signer",
                                   str(t / "signer.pem"), "-out", str(t / "content.txt")],
-                                 capture_output=True, text=True, check=False)
+                                 capture_output=True, encoding="utf-8", check=False)
         except FileNotFoundError:
             return {"status": "unchecked", "error": "openssl isn't on the PATH"}
-        content = (t / "content.txt").read_text(errors="replace") if (t / "content.txt").exists() else None
-        signer = (t / "signer.pem").read_text() if (t / "signer.pem").exists() else None
+        content = ((t / "content.txt").read_text(encoding="utf-8", errors="replace")
+                   if (t / "content.txt").exists() else None)
+        signer = (t / "signer.pem").read_text(encoding="utf-8") if (t / "signer.pem").exists() else None
     if run.returncode != 0:
         return {"status": "invalid", "error": (run.stderr.strip().splitlines() or ["openssl failed"])[-1]}
     return {"status": "valid", "error": None, "content": content, "signer_pem": signer}
@@ -189,7 +190,7 @@ def main(argv=None):
             return 1
         out = a.out / ROOT / f"{doc['bundle']}.json"
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
+        out.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
         print(f"{out}: {doc['bundle']} {doc['version']}, {len(doc['certificates'])} CA certificates, signature "
               f"{doc['manifest']['signature']}")
     return 0

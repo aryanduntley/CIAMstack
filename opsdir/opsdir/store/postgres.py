@@ -14,6 +14,7 @@ import psycopg
 
 from ..core.directory import make_directory, norm_dn, within
 from ..core.interchange import ldif, rfc4512
+from .policy import TLS_CHOICE, tls_problem
 
 INSERT_ENTRY = "insert into entry (dn, object_classes, attrs, change_id) values (%s, %s, %s, %s)"
 UPDATE_ENTRY = "update entry set object_classes = %s, attrs = %s where dn_norm = %s"
@@ -27,14 +28,65 @@ ROWS_OF_CLASSES_SQL = "select dn, object_classes, attrs from entry where object_
 SchemaSync = NamedTuple("SchemaSync", [("branch", str), ("sync", Callable)])
 
 
-def connect(dsn=None):
-    """Effect: connection to dsn, else OPSDIR_DSN (autocommit; writes use explicit transactions)."""
+def connect(dsn=None, password=None):
+    """Effect: connection to dsn, else OPSDIR_DSN (autocommit; writes use explicit transactions), signing in with
+    password when given (a cloud database token); refused, and closed, when an off-host server isn't reached with
+    verified TLS (store.policy) and OPSDIR_DB_TLS doesn't accept the weaker mode."""
     dsn = dsn or os.environ.get("OPSDIR_DSN")
     if not dsn:
         raise SystemExit("OPSDIR_DSN is not set (./opsdir.sh sets the local dev database; see README, Database)")
-    conn = psycopg.connect(dsn, autocommit=True)
+    conn = psycopg.connect(dsn, autocommit=True, **({"password": password} if password else {}))
+    problem = connection_problem(conn, os.environ.get(TLS_CHOICE))
+    if problem:
+        conn.close()
+        raise SystemExit(problem)
     conn.execute("set search_path = opsdir")
     return conn
+
+
+def effective_options(conn):
+    """{libpq keyword: value} of a connection as libpq applied them (after the service file, environment and
+    defaults); the password is never included."""
+    return {o.keyword.decode(): o.val.decode() for o in conn.pgconn.info
+            if o.val is not None and o.keyword != b"password"}
+
+
+# What the posture check reads about the connection and the login (connectors.posture): the server, how the connection
+# was made and signed in, and the login's standing in the opsdir schema. password_given: a password in the DSN or the
+# environment (not a password file); dev_password: it is the local dev one.
+PostureFacts = NamedTuple("PostureFacts", [
+    ("server_version", int), ("host", str), ("sslmode", str), ("sslrootcert", str), ("ssl_in_use", bool),
+    ("used_password", bool), ("used_gssapi", bool), ("client_certificate", bool), ("password_given", bool),
+    ("dev_password", bool), ("dbname", str), ("user", str), ("superuser", bool), ("schema_owner", str),
+    ("owns_schema", bool), ("can_create", bool), ("applied", tuple)])
+DEV_PASSWORD = "testpass"           # scripts/dev-env.sh's local development password
+LOGIN_SQL = ("select current_user, r.rolsuper, n.nspowner::regrole::text,"
+             " pg_has_role(current_user, n.nspowner, 'USAGE'), has_schema_privilege(n.oid, 'CREATE')"
+             " from pg_roles r, pg_namespace n where r.rolname = current_user and n.nspname = 'opsdir'")
+APPLIED_VERSIONS_SQL = "select version, name from opsdir.schema_migration order by version"
+CLIENT_DN_SQL = "select client_dn from pg_stat_ssl where pid = pg_backend_pid()"   # set when a certificate signed in
+
+
+def posture_facts(conn):
+    """Effect (reads the connection and the server): the PostureFacts of an open connection to the record."""
+    o = effective_options(conn)
+    given = next((x.val for x in conn.pgconn.info if x.keyword == b"password" and x.val), None)
+    login = conn.execute(LOGIN_SQL).fetchone()
+    user, superuser, owner, owns, create = login or (conn.info.user, False, None, False, False)
+    applied = tuple(conn.execute(APPLIED_VERSIONS_SQL).fetchall()) if owner else ()
+    client_dn = (conn.execute(CLIENT_DN_SQL).fetchone() or (None,))[0]
+    return PostureFacts(conn.info.server_version, o.get("host") or o.get("hostaddr") or "", o.get("sslmode") or "",
+                        o.get("sslrootcert") or "", bool(conn.pgconn.ssl_in_use), bool(conn.pgconn.used_password),
+                        bool(conn.pgconn.used_gssapi), client_dn is not None and not conn.pgconn.used_password,
+                        given is not None, given == DEV_PASSWORD.encode(), o.get("dbname") or "", user,
+                        bool(superuser), owner or "", bool(owns), bool(create), applied)
+
+
+def connection_problem(conn, allowed=None):
+    """Why an open connection to the record's database isn't acceptable (store.policy.tls_problem), or None."""
+    o = effective_options(conn)
+    return tls_problem(o.get("host") or o.get("hostaddr"), o.get("sslmode"), o.get("sslrootcert"),
+                       bool(conn.pgconn.ssl_in_use), allowed)
 
 
 def set_as_of(conn, as_of):
@@ -180,7 +232,7 @@ def _insert(conn, change_id, row):
 
 def read_ldif_files(paths):
     """Effect: parse every LDIF file into records."""
-    return tuple(r for p in paths for r in ldif.parse(pathlib.Path(p).read_text()))
+    return tuple(r for p in paths for r in ldif.parse(pathlib.Path(p).read_text(encoding="utf-8")))
 
 
 def load_ldif(conn, paths, change_id="BOOTSTRAP", schema_sync=None):

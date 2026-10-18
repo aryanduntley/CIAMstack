@@ -120,10 +120,13 @@ def package_files(plan, outputs):
             for c, queries in plan for q in queries for kind, write in (("csv", table_csv), ("json", table_json))}
 
 
-def manifest(boundary, as_of, history_point, plan, files):
-    """MANIFEST.json of a package: the boundary, the day it was evaluated as of, the history point (the last recorded
-    change and how many changes the history holds), and per control its queries and their files' SHA-256."""
-    doc = {"boundary": boundary.dn, "as_of": str(as_of), "history_point": history_point,
+def manifest(boundary, as_of, history_point, plan, files, identity=None):
+    """MANIFEST.json of a package: the record's identity when it has one (governance.identity.Identity: org code,
+    record ID, group), the boundary, the day it was evaluated as of, the history point (the last recorded change and
+    how many changes the history holds), and per control its queries and their files' SHA-256."""
+    record = ({"record": {"org": identity.org, "record_id": identity.record_id,
+                          **({"parent": identity.parent} if identity.parent else {})}} if identity else {})
+    doc = {**record, "boundary": boundary.dn, "as_of": str(as_of), "history_point": history_point,
            "controls": [{"control": c, "queries": [
                {"query": rdn_value(q), "source": one(q, "ciamEvidenceSource"), "dn": one(q, "ciamEvidenceDn"),
                 "files": {p: sha256(files[p]) for p in sorted(files)

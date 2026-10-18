@@ -38,7 +38,7 @@ The command-line tool and Python package are called `opsdir` (operations directo
 
 Onboarding is **read-only first**: nothing in production changes until the record has been checked against reality, and every phase is useful on its own.
 
-1. **Stand up the record.** A PostgreSQL database wherever the organization chooses (on-premises or managed in any cloud); install the core and the adapters for the products in use; define the environments, clouds and accounts, regions, data residency, teams and owners.
+1. **Stand up the record.** A PostgreSQL database wherever the organization chooses (on-premises or managed in any cloud), one per company: a parent organization and each subsidiary keep their own record, so each stays inside its own compliance boundary and is run by its own teams. Install the core and the adapters for the products in use; define the environments, clouds and accounts, regions, data residency, teams and owners.
 2. **Declare the stack.** For each environment, which product or service fills each role (directory, federation, access management, gateway, cloud, secret store, DNS, load balancer, firewall, SIEM, ITSM, PKI) and its version range. `opsdir check` confirms the adapters are installed.
 3. **Read each service in,** in any order: product exports, Terraform state, cloud inventories, logs and config files, or read-only collection. The first inventory, dependency graph and findings list come out of this step.
 4. **Verify the record against reality.** Render each environment and compare it with what was imported; each disagreement is a conflict a person decides. `opsdir plan` on the current environment gives the first findings: expiring certificates, unowned items, drift, weak audit trails, missing backups.
@@ -123,6 +123,7 @@ Moving to another cloud, account, region or product uses everything above:
 
 - **Plan against the live record.** `opsdir plan <from> <to>` compares the target with production and returns a verdict listing every blocker and action with its owner, and a do-by date for each action from its lead time: changed contracts (service names, SAML entity IDs, OIDC issuers), missing firewall rules and backups, certificates expiring before cutover, keys the target would keep wrongly (not in an HSM, regenerated instead of carried over), services the target cloud or its authorization doesn't offer, and **other parties' allowlists that still pin your old addresses**, with a drafted request to each party.
 - **Work in a copy.** `opsdir workspace create` copies the live record; declare the target's stack and bindings there, plan, render and review, while the platform keeps being operated from the live record. `opsdir workspace cutover` applies the result as one approved change (a three-way merge that refuses conflicting edits).
+- **Company mergers (planned).** Each company's record carries its own identity, so when two companies merge, one record can be brought into the other: its entries move under the incoming company's name, things both companies record (a shared vendor, partner application or CA) are proposed as matches for a person to confirm, and the history comes along with its original approvals. Moving the incoming company onto the other's platform is then an ordinary move, planned as above. A company that leaves the group takes its own record with it.
 - **Run it end to end.** `opsdir migrate <from> <to>` checks both stacks, plans and renders the target, and exits non-zero while blockers remain. It works in either direction. Passing means the record and the renders are consistent; operational readiness is then proven in a stage environment.
 
 ## Adapters
@@ -195,7 +196,7 @@ Anything not listed can be added as a package, by your team or anyone else, with
 
 ## Try it
 
-Installing or running CIAMstack needs a written evaluation or commercial license from the author ([License](#license)). With one, the requirements are Python 3.11+ and PostgreSQL. Set up the role and databases once ([Database](opsdir/README.md#database)), then:
+Installing or running CIAMstack needs a written evaluation or commercial license from the author ([License](#license)). With one, the requirements are Python 3.11+ and PostgreSQL. CIAMstack runs on a Linux server (one per company record, or a container); people reach it from their own computers (today a terminal on the server; later the planned web console). Run the CLI directly on Linux, or on macOS (expected to work, not yet tested) or Windows through WSL2. Set up the role and databases once ([Database](opsdir/README.md#database)), then:
 
 ```bash
 opsdir/scripts/dev-install.sh     # venv (opsdir/.venv) + the core + every package, editable
@@ -212,21 +213,32 @@ The [showcase](examples/showcase/README.md) walks through all of the above on a 
 - the governed store, with versioned schema upgrades and full history;
 - every report, search, guardrail and planner check above, with offered fixes;
 - importers and renderers for every adapter listed, and round trips: each render reads back through the adapter's own importer with no drift;
-- migration workspaces, the planner and the migration runner, in both directions.
+- migration workspaces, the planner and the migration runner, in both directions;
+- the production setup of the record's own database:
+  - TLS required off the server's host;
+  - separate owner, upgrade and day-to-day roles, the day-to-day one unable to change the schema or the history;
+  - sign-in by password file, client certificate, Kerberos or an AWS/Azure database token;
+  - a posture check, each company's record identity, and a backup and restore procedure tested against a real PostgreSQL 17 server;
+- people, teams and permissions:
+  - each person signs in as themselves;
+  - the database records who wrote and who approved every change, and refuses an approval by the change's own author;
+  - per-person and per-team grants by action, environment and owning team are checked before every command and again by the database on every write;
+  - 'my area' views.
 
 Rendered AWS and Azure Terraform passes `terraform validate` against the provider schemas, Kubernetes output is checked by kustomize, helm and kubeconform, and PingFederate requests are checked against Ping's Admin API spec.
 
 **Not yet verified:** rendered product configuration against real product instances, `terraform plan` against real cloud accounts, Kubernetes output deployed to a real cluster, the read-only collectors against live systems (their tests replay recorded output), and the Google Cloud Terraform with `terraform validate`. See [what's verified](examples/showcase/README.md#whats-verified-and-what-isnt).
 
-**Not built yet:** an HTTP API with company single sign-on, a web console, per-person permissions (approval by someone other than the author, enforced by the database), the production setup of the record's own database, and guided onboarding. Everything today is driven from the command line.
+**Not built yet:** an HTTP API with company single sign-on, a web console, guided onboarding, and combining two companies' records after a merger. Everything today is driven from the command line.
 
-**Next:** validation against real products and accounts in a sandbox, then the production database setup, permissions, the API and the console. What each part of an identity platform carries and how much of it is modeled today: [`documentation/STACK.md`](documentation/STACK.md).
+**Next:** validation against real products and accounts in a sandbox, then the API and the console. What each part of an identity platform carries and how much of it is modeled today: [`documentation/STACK.md`](documentation/STACK.md).
 
 ## Documentation
 
 - [`opsdir/README.md`](opsdir/README.md): install, CLI, database, workspaces, architecture, writing adapters.
 - [`opsdir/SPEC.md`](opsdir/SPEC.md): the standard: LDAP schema with portability classes, rules R1–R10, the adapter contract.
 - [`documentation/REPORTS.md`](documentation/REPORTS.md): every report and what the planner does with it.
+- [`documentation/RECORD-DATABASE.md`](documentation/RECORD-DATABASE.md): running the record's own database in production: setup, sign-in, backups, restore, upgrades.
 - [`documentation/ops-directory-model.md`](documentation/ops-directory-model.md): design rationale: why a directory-shaped record, what differs between environments, where moves get hard, prior art.
 - [`documentation/STACK.md`](documentation/STACK.md): the full inventory of what an identity platform carries and how much of it is modeled today.
 

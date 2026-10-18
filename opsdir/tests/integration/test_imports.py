@@ -123,7 +123,7 @@ def test_a_failed_collection_is_recorded_then_replaced_by_the_next_attempt_and_h
     held = get(db.load_directory(conn), attempt_dn("gw/config", env))
     assert (one(held, "ciamCollectionOutcome"), values(held, "ciamCollectionProblem"),
             values(held, "ciamCollectedCall")) == ("complete", (), ())
-    assert [op for _, _, op, _ in ops.history(conn, attempt_dn("gw/config", env)).rows] == ["insert", "update"]
+    assert [op for _, _, op, _, _ in ops.history(conn, attempt_dn("gw/config", env)).rows] == ["insert", "update"]
     with pytest.raises(psycopg.Error, match="not an approved change"):
         ops.record_attempts(conn, (failed,), AT, "CHG-9")
 
@@ -165,4 +165,4 @@ def test_a_run_named_the_old_way_is_renamed_under_an_approved_change_once(conn):
     assert get(d, legacy) is None and misnamed_runs(d) == () and renamed_run_records(d) == ()
     assert (one(get(d, RUN), "ciamImportedAt"), values(get(d, RUN), "ciamChangeRef")) == (
         "20260919030000Z", ("cn=CHG-1,ou=changes,dc=ciam-ops",))                # the original time and change
-    assert [op for _, _, op, _ in ops.history(conn, legacy).rows][-1] == "delete"
+    assert [op for _, _, op, _, _ in ops.history(conn, legacy).rows][-1] == "delete"

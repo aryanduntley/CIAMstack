@@ -19,6 +19,7 @@ from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_loo
 from .terraform import TARGETS, render, render_notes
 from .canaries import RUNTIME
 from .cognito import MANAGED, SERVICE as COGNITO
+from .dbauth import SCHEME as DB_TOKEN, rds_token_command
 from .directory import EDITIONS, MANAGED as MANAGED_DIRECTORY, SERVICE as MANAGED_AD
 from .rendered_state import rendered_stacks, rendered_states
 
@@ -34,7 +35,7 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   checks=(check_boundary, check_regulated_placement, check_discovery_availability,
                           check_server_inputs),
                   ref_schemes=("aws-sm", "aws-kms", "aws-acm", "s3"),
-                  secret_schemes={"aws-sm": secretsmanager_command},
+                  secret_schemes={"aws-sm": secretsmanager_command}, db_tokens={DB_TOKEN: rds_token_command},
                   renders="Terraform (or AWS CloudFormation) for the target cloud",
                   neutral_label=None,
                   vocabulary={"ciamCloudProvider": (PROVIDER,), "ciamOnProvider": (PROVIDER,),

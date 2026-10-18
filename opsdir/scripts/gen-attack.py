@@ -139,7 +139,7 @@ def main():
         with urllib.request.urlopen(f"{SOURCE}enterprise-attack-{args.version}.json", timeout=120) as r:
             raw = r.read()
     objects = json.loads(raw)["objects"]
-    OUT.write_text(module_text(args.version, objects))
+    OUT.write_text(module_text(args.version, objects), encoding="utf-8", newline="\n")
     print(len(tactics(objects)), "tactics", len(techniques(objects)), "techniques", "->", OUT)
 
 

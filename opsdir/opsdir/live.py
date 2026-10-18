@@ -36,13 +36,30 @@ def _resolve(ref, installed):
     except SystemExit as e:
         return None, str(e)
     try:
-        done = subprocess.run(["sh", "-c", cmd], capture_output=True, text=True, timeout=SECRET_SECONDS, check=False)
+        done = subprocess.run(["sh", "-c", cmd], capture_output=True, encoding="utf-8", timeout=SECRET_SECONDS,
+                              check=False)
     except (OSError, subprocess.TimeoutExpired) as e:
         return None, f"resolving {ref}: {type(e).__name__}"
     if done.returncode:
         return None, f"resolving {ref} failed (exit {done.returncode}): {done.stderr.strip()[-300:] or 'no output'}"
     value = done.stdout[:-1] if done.stdout.endswith("\n") else done.stdout
     return (value, None) if value else (None, f"resolving {ref}: empty")
+
+
+def db_token(argv):
+    """Effect: the sign-in token a database token command prints (an adapter's Adapter.db_tokens command, run with the
+    operator's or the server's own cloud identity), held in memory only; exits with its error output when it fails."""
+    try:
+        done = subprocess.run(list(argv), capture_output=True, encoding="utf-8", timeout=SECRET_SECONDS, check=False)
+    except FileNotFoundError:
+        raise SystemExit(f"{argv[0]} is not installed here: the database sign-in token needs it") from None
+    except subprocess.TimeoutExpired:
+        raise SystemExit(f"no database sign-in token from {argv[0]} in {SECRET_SECONDS} s") from None
+    token = done.stdout.strip()
+    if done.returncode or not token:
+        raise SystemExit(f"getting the database sign-in token failed (exit {done.returncode}): "
+                         f"{done.stderr.strip()[-300:] or 'no output'}")
+    return token
 
 
 def resolver(installed=ADAPTERS):
@@ -76,7 +93,7 @@ def _in_workdir(call, secrets):
     with tempfile.TemporaryDirectory(prefix="opsdir-collect-") as work:
         os.chmod(work, 0o700)
         for name, text in call.inputs:
-            (pathlib.Path(work) / name).write_text(text.replace("{dir}", work))
+            (pathlib.Path(work) / name).write_text(text.replace("{dir}", work), encoding="utf-8", newline="\n")
         (pathlib.Path(work) / "export").mkdir()
         out, problem = _run(call._replace(argv=tuple(a.replace("{dir}", work) for a in call.argv), workdir=False),
                             secrets)
@@ -98,10 +115,10 @@ def _command(call, resolve):
 def _streamed(call, secrets):
     """(output, problem) of a digest command: its standard output read line by line through the digest as it comes,
     never held whole; its error output kept aside in a temporary file for the failure message."""
-    with tempfile.TemporaryFile(mode="w+") as err:
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as err:
         try:
             proc = subprocess.Popen(list(call.argv), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=err,
-                                    text=True, env={**os.environ, **dict(call.env)})
+                                    encoding="utf-8", env={**os.environ, **dict(call.env)})
         except FileNotFoundError:
             return None, f"{call.argv[0]} is not installed here"
         if call.stdin:
@@ -125,7 +142,8 @@ def _run(call, secrets):
         return _streamed(call, secrets)
     try:
         done = subprocess.run(list(call.argv), input=call.stdin(secrets) if call.stdin else None, capture_output=True,
-                              text=True, env={**os.environ, **dict(call.env)}, timeout=COMMAND_SECONDS, check=False)
+                              encoding="utf-8", env={**os.environ, **dict(call.env)}, timeout=COMMAND_SECONDS,
+                              check=False)
     except FileNotFoundError:
         return None, f"{call.argv[0]} is not installed here"
     except subprocess.TimeoutExpired:

@@ -225,6 +225,16 @@ def secret_command(uri, installed=ADAPTERS):
     return resolvers[scheme](rest)
 
 
+def db_token_command(scheme, target, installed=ADAPTERS):
+    """The command printing a sign-in token for the record's own database (core.contract.DbTarget), from the adapter
+    that declares the scheme (OPSDIR_DB_AUTH)."""
+    commands = {s: build for a in installed for s, build in (a.db_tokens or {}).items()}
+    if scheme not in commands:
+        known = ", ".join(sorted(commands)) or "none installed"
+        raise SystemExit(f"no installed adapter signs in to the database with {scheme!r} (OPSDIR_DB_AUTH): {known}")
+    return tuple(commands[scheme](target))
+
+
 def listeners_of(m, installed=ADAPTERS):
     """The ports the installed adapters' products listen on in environment m."""
     return tuple(lst for a in installed if a.listeners for lst in a.listeners(m))

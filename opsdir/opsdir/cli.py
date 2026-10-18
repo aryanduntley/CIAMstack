@@ -90,6 +90,7 @@
 import argparse
 import datetime as dt
 import gzip
+import io
 import json
 import os
 import pathlib
@@ -110,6 +111,7 @@ from .core.changeset import describe
 from .core import search as ldap_search
 from .core.directory import gtime_at, values
 from .core.environment import ENVIRONMENT, Scope
+from .domains.governance.authorization import Area
 from .domains.governance.naming import OWNERS
 from .core.findings import fix_inputs
 from .core.interchange import ldif
@@ -118,6 +120,8 @@ from .core.naming import SUFFIX
 from .core.notes import summary
 from .domains.governance.collection import declared_adapters
 from .store import postgres as db
+from .store.policy import db_target
+from .store.roles import DEFAULTS as ROLE_DEFAULTS, LOGINS, db_roles, db_roles_sql
 
 # subcommand → ((argument flags, argparse options), …)
 SUBCOMMANDS = (
@@ -129,7 +133,9 @@ SUBCOMMANDS = (
     ("search", ((("-b", "--base"), {"default": SUFFIX}),
                 (("-s", "--scope"), {"default": "sub", "choices": ["base", "one", "sub"]}),
                 (("filter",), {}), (("attrs",), {"nargs": "*"}))),
-    ("report", ((("name",), {}), (("dn",), {"nargs": "?"}))),
+    ("report", ((("name",), {}), (("dn",), {"nargs": "?"}),
+                (("--mine",), {"action": "store_true", "help": "only my teams' rows (by owner or keeper)"}))),
+    ("mine", ()),
     ("render", ((("env",), {}), (("-o", "--out"), {}),
                 (("--target",), {"action": "append", "default": [], "metavar": "ADAPTER=T[,T]",
                                  "help": "the render targets of an adapter (pingfederate=admin-api,terraform); "
@@ -143,7 +149,10 @@ SUBCOMMANDS = (
                 (("--as",), {"dest": "requester", "metavar": "REQUESTER",
                              "help": "who asks for the render (recorded in MANIFEST.json; default the database "
                                      "login)"}))),
-    ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}))),
+    ("plan", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}),
+              (("--mine",), {"action": "store_true", "help": "only my teams' blockers and actions"}))),
+    ("tickets", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}),
+                 (("--mine",), {"action": "store_true", "help": "only my teams' drafts"}))),
     ("migrate", ((("src",), {}), (("dst",), {}), (("-o", "--out"), {}),
                  (("--as",), {"dest": "requester", "metavar": "REQUESTER",
                               "help": "who runs the migration (recorded in the target's MANIFEST.json; default the "
@@ -152,7 +161,8 @@ SUBCOMMANDS = (
              (("dst",), {"nargs": "?"}), (("key",), {"nargs": "?"}), (("--change",), {}), (("--title",), {}),
              (("--option",), {"help": "the choice, for a fix that offers options"}),
              (("--input",), {"action": "append", "default": [], "metavar": "KEY=VALUE",
-                             "help": "a value a fix takes (repeat a key for several values; KEY= for none)"}))),
+                             "help": "a value a fix takes (repeat a key for several values; KEY= for none)"}),
+             (("--mine",), {"action": "store_true", "help": "list: only fixes changing what my teams own or keep"}))),
     ("modify", ((("--change",), {"required": True}), (("file",), {}))),
     ("capture", ((("--change",), {"required": True}), (("file",), {}), (("--name",), {}), (("--repo-path",), {}),
                  (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}),
@@ -191,6 +201,35 @@ SUBCOMMANDS = (
                                 "help": "a conflict where the live value goes in (KEY as listed, or all)"}),
                  (("--keep",), {"action": "append", "default": [], "metavar": "KEY",
                                 "help": "a conflict where the record's value stays (KEY as listed, or all)"}))),
+    ("posture", ()),
+    ("db-roles", ((("--owner",), {"default": ROLE_DEFAULTS["owner"], "help": "the role owning the schema (no login)"}),
+                  (("--migrator",), {"default": ROLE_DEFAULTS["migrator"],
+                                     "help": "the login running init and upgrade"}),
+                  (("--runtime",), {"default": ROLE_DEFAULTS["runtime"], "help": "the login opsdir runs as"}),
+                  (("--database",), {"default": "opsdir"}),
+                  (("--login",), {"default": "password", "choices": list(LOGINS),
+                                  "help": "how the logins sign in"}),
+                  (("--person",), {"action": "append", "default": [],
+                                   "help": "a person's own login, a member of the runtime login; repeat"}))),
+    ("grant", ((("name",), {}), (("--action",), {"action": "append", "default": [], "help": "an action it gives"}),
+               (("--to",), {"action": "append", "default": [], "metavar": "LOGIN|TEAM",
+                            "help": "a person (their login) or a team it is for; repeat"}),
+               (("--env",), {"action": "append", "default": [], "metavar": "CLOUD/ENV",
+                             "help": "limit it to an environment; repeat (none: every environment)"}),
+               (("--owner",), {"action": "append", "default": [], "metavar": "TEAM",
+                               "help": "limit it to what a team owns or keeps; repeat (none: every area)"}),
+               (("--change",), {}),
+               (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
+    ("change", ((("action",), {"choices": ["new", "approve", "reject", "show"]}), (("id",), {}),
+                (("--title",), {}), (("--ticket",), {"help": "the ITSM ticket it is tracked by, <adapter>:<number>"}))),
+    ("person", ((("login",), {"help": "the person's own database login"}), (("--name",), {}), (("--mail",), {}),
+                (("--team",), {"action": "append", "help": "a team (ou=owners) they belong to; repeat for several"}),
+                (("--change",), {}),
+                (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
+    ("identity", ((("--org",), {"help": "the org code of the company this record belongs to (fixed once set)"}),
+                  (("--parent",), {"help": "the org code of its group (\"\" removes it)"}),
+                  (("--name",), {"help": "the company's name (\"\" removes it)"}), (("--change",), {}),
+                  (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
     ("setting", ((("name",), {"help": "an estate setting (opsdir report settings lists them)"}), (("value",), {}),
                  (("--change",), {}),
                  (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
@@ -209,7 +248,8 @@ SUBCOMMANDS = (
     ("export", ((("-b", "--base"), {"default": SUFFIX}),)),
     ("history", ((("dn",), {"nargs": "?"}),)),
     ("application", ((("dn",), {"metavar": "DN|NAME"}), (("--env",), {"metavar": "CLOUD/ENV"}),
-                     (("--format",), {"default": "text", "choices": ["text", "json"]}))),
+                     (("--format",), {"default": "text", "choices": ["text", "json"]}),
+                     (("--mine",), {"action": "store_true", "help": "only what my teams own or keep"}))),
     ("graph", ((("dn",), {"metavar": "DN|NAME"}),
                (("--direction",), {"default": "both", "choices": ["down", "up", "both"]}),
                (("--depth",), {"type": int, "default": 3}), (("--env",), {"metavar": "CLOUD/ENV"}),
@@ -238,7 +278,7 @@ def write_tree(outdir, files):
     for p, content in files.items():
         f = outdir / p
         f.parent.mkdir(parents=True, exist_ok=True)
-        f.write_text(content)
+        f.write_text(content, encoding="utf-8", newline="\n")
         if p.endswith(".sh"):
             f.chmod(0o755)
     return outdir
@@ -282,8 +322,40 @@ def capture_name(path):
 
 
 # ------------------------------------------------------------------ commands: parse, call an operation, present
+def db_password(dsn=None):
+    """Effect (runs the token command): the sign-in token for the record's database when OPSDIR_DB_AUTH names a
+    scheme an installed adapter declares (a cloud database token for dsn, else OPSDIR_DSN), else None."""
+    scheme = os.environ.get("OPSDIR_DB_AUTH")
+    if not scheme:
+        return None
+    target = db_target(dsn or os.environ.get("OPSDIR_DSN"), os.environ)
+    return live.db_token(registry.db_token_command(scheme, target))
+
+
+def env_roles():
+    """Effect (reads the environment): the database roles init, upgrade and workspace create apply
+    (OPSDIR_DB_OWNER, OPSDIR_DB_RUNTIME; store.roles), or None."""
+    try:
+        return db_roles(os.environ)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+
+
+def _cmd_posture(conn, a, as_of):
+    r, failures = ops.posture(conn, os.environ.get("OPSDIR_DB_TLS"), os.environ.get("OPSDIR_DB_AUTH"))
+    table = format_table(r.rows, r.headers)
+    return (f"{table}\n{failures} check(s) failed" if failures else table), (1 if failures else 0)
+
+
+def _cmd_db_roles(conn, a, as_of):
+    try:
+        return db_roles_sql(a.owner, a.migrator, a.runtime, a.database, a.login, tuple(a.person)).rstrip("\n")
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+
+
 def _cmd_init(conn, a, as_of):
-    r = ops.init(conn)
+    r = ops.init(conn, env_roles())
     later = [row[0] for row in ops.prerequisites(conn).rows if row[2] != "met"]    # met: nothing needs it yet
     return "\n".join((f"initialized: {r.attribute_types} attribute types, {r.object_classes} object classes",
                       *((f"provider prerequisites to fetch once an environment uses their adapter: {', '.join(later)} "
@@ -291,7 +363,7 @@ def _cmd_init(conn, a, as_of):
 
 
 def _cmd_upgrade(conn, a, as_of):
-    r = ops.upgrade(conn)
+    r = ops.upgrade(conn, env_roles())
     return "\n".join((*(f"applied migration {label}" for label in r.applied),
                       f"schema at migration {r.version:04d}{'' if r.applied else ' (up to date)'}: "
                       f"{r.attribute_types} attribute types, {r.object_classes} object classes",
@@ -325,8 +397,16 @@ def _cmd_search(conn, a, as_of):
 
 
 def _cmd_report(conn, a, as_of):
-    r = ops.report(conn, a.name, a.dn, as_of)
-    return format_table(r.rows, r.headers)
+    if not a.mine:
+        r = ops.report(conn, a.name, a.dn, as_of)
+        return format_table(r.rows, r.headers)
+    r, note = ops.my_report(conn, a.name, a.dn, as_of)
+    return format_table(r.rows, r.headers) + (f"\n({note})" if note else "")
+
+
+def _cmd_mine(conn, a, as_of):
+    return "\n\n".join(f"{title}:\n" + ("\n".join(f"  {line}" for line in lines) or "  none")
+                         for title, lines in ops.mine(conn))
 
 
 def render_targets(given):
@@ -362,11 +442,20 @@ def _cmd_render(conn, a, as_of):
 
 
 def _cmd_plan(conn, a, as_of):
-    r = ops.plan(conn, a.src, a.dst, as_of)
+    r = ops.plan(conn, a.src, a.dst, as_of, a.mine)
     label = f"plan-{r.plan.src.label.replace('/', '-')}-to-{r.plan.dst.label.replace('/', '-')}"
     out = pathlib.Path(a.out or pathlib.Path("out") / label)
     write_tree(out, {"PLAN.md": r.markdown, **r.drafts})
     return r.markdown + f"\n\n(written to {out}/PLAN.md and {len(r.plan.requests)} request drafts in {out}/requests/)"
+
+
+def _cmd_tickets(conn, a, as_of):
+    files = ops.tickets(conn, a.src, a.dst, as_of, a.mine)
+    out = pathlib.Path(a.out or pathlib.Path("out") / f"tickets-{a.src.replace('/', '-')}-to-{a.dst.replace('/', '-')}")
+    write_tree(out, files)
+    drafts = sorted(p for p in files if not p.endswith("README.md"))
+    return "\n".join((f"{len(drafts)} work-ticket draft(s) written to {out}/ (nothing was sent to ITSM):",
+                      *(f"  {p}" for p in drafts), f"how to file them, and what is missing: {out}/tickets/README.md"))
 
 
 def _cmd_migrate(conn, a, as_of):
@@ -386,8 +475,9 @@ def _cmd_modify(conn, a, as_of):
 
 
 def _cmd_capture(conn, a, as_of):
-    preview = ops.preview_capture(conn, pathlib.Path(a.file).read_text(), a.name or capture_name(a.file),
-                                  a.repo_path or a.file, a.format, a.role, a.deploy_path, a.accept_concerns)
+    preview = ops.preview_capture(conn, pathlib.Path(a.file).read_text(encoding="utf-8"),
+                                  a.name or capture_name(a.file), a.repo_path or a.file, a.format, a.role,
+                                  a.deploy_path, a.accept_concerns)
     r = ops.apply_preview(conn, preview, a.change)
     return "\n".join((*preview.notices, f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "no changes"))
 
@@ -499,6 +589,8 @@ def _fix_size(f):
 
 
 def _cmd_fix(conn, a, as_of):
+    if a.mine and a.action != "list":
+        raise SystemExit("--mine narrows opsdir fix list only")
     needs = {"list": ("src", "dst"), "show": ("src", "dst", "key"), "propose": ("src", "dst", "key", "change"),
              "apply": ("src", "dst", "key", "change"), "approved": ("change",)}[a.action]
     missing = [n for n in needs if not getattr(a, n)]
@@ -507,7 +599,7 @@ def _cmd_fix(conn, a, as_of):
     if a.action == "approved":
         r = ops.apply_proposed(conn, a.change)
         return f"{a.change}: {len(r.lines) - 1} change(s) applied; marked applied"
-    found = ops.fixes(conn, a.src, a.dst, as_of)
+    found = ops.fixes(conn, a.src, a.dst, as_of, a.mine)
     if a.action == "list":
         return format_table([(f.key, f.area, _fix_size(f),
                               len(f.manual), f.title) for f in found],
@@ -559,7 +651,7 @@ def run_export(spec, d=None):
 
 def _run(path, argv):
     try:
-        done = subprocess.run(argv, capture_output=True, text=True, check=False)
+        done = subprocess.run(argv, capture_output=True, encoding="utf-8", check=False)
     except FileNotFoundError:
         raise SystemExit(f"{argv[0]} is not installed here: install it and sign in to the provider, or run "
                          f"`{command_line(path, argv)}` where you can and import that file") from None
@@ -613,8 +705,9 @@ def _save(root, c):
     base = pathlib.Path(root) / c.importer
     for rel, text in c.files.items():
         (base / rel).parent.mkdir(parents=True, exist_ok=True)
-        (base / rel).write_text(text)
-    (base / "MANIFEST.txt").write_text("".join(f"{x.sha256} {x.path} <- {x.provenance}\n" for x in c.calls))
+        (base / rel).write_text(text, encoding="utf-8", newline="\n")
+    (base / "MANIFEST.txt").write_text("".join(f"{x.sha256} {x.path} <- {x.provenance}\n" for x in c.calls),
+                                       encoding="utf-8", newline="\n")
     return f"saved {len(c.files)} file(s) under {base} (raw provider output: keep it on encrypted storage)"
 
 
@@ -704,6 +797,107 @@ def _cmd_setting(conn, a, as_of):
     return f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else f"{a.name} already holds {a.value}"
 
 
+def _cmd_change(conn, a, as_of):
+    try:
+        if a.action == "show":
+            return "\n".join(ops.change_lines(conn, a.id))
+        if a.action == "new":
+            if not a.title:
+                raise SystemExit("--title is required for a new change")
+            ops.new_change(conn, a.id, a.title, a.ticket)
+            return f"{a.id}: proposed; someone other than you approves it (opsdir change approve {a.id})"
+        status = {"approve": "approved", "reject": "rejected"}[a.action]
+        ops.change_status(conn, a.id, status)
+        return f"{a.id}: {status}"
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+
+
+def _cmd_grant(conn, a, as_of):
+    try:
+        preview = ops.preview_grant(conn, a.name, tuple(a.action), tuple(a.to), tuple(a.env), tuple(a.owner))
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.dry_run or not a.change:
+        return _not_applied(preview.notices, preview.changes, a.dry_run)
+    r = ops.apply_preview(conn, preview, a.change)
+    return f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else f"grant {a.name} already holds this"
+
+
+# The permission catalog's action each command is (governance.grants): reads, administration (left to the database's
+# privileges), or what it does; a command that only previews without --change is a read.
+FIXED_ACTIONS = MappingProxyType({
+    **dict.fromkeys(("init", "upgrade", "load"), "admin"),
+    **dict.fromkeys(("check", "search", "report", "export", "history", "application", "graph", "summary",
+                     "prerequisites", "verify", "file", "posture", "mine"), "read"),
+    "render": "render", "plan": "plan", "tickets": "plan", "migrate": "migrate", "modify": "apply",
+    "workspace": "workspace"})
+WHEN_CHANGED = MappingProxyType({**dict.fromkeys(("capture", "bundle", "census", "import", "collect", "evidence"),
+                                                 "apply"),
+                                 **dict.fromkeys(("setting", "identity", "person", "grant"), "settings")})
+FIX_ACTIONS = MappingProxyType({"list": "plan", "show": "plan", "propose": "propose", "apply": "apply",
+                                "approved": "apply"})
+CHANGE_ACTIONS = MappingProxyType({"new": "propose", "approve": "approve", "reject": "approve", "show": "read"})
+
+
+def command_action(a):
+    """The catalog action a parsed command is."""
+    if a.cmd in FIXED_ACTIONS:
+        return FIXED_ACTIONS[a.cmd]
+    if a.cmd == "fix":
+        return FIX_ACTIONS[a.action]
+    if a.cmd == "change":
+        return CHANGE_ACTIONS[a.action]
+    return WHEN_CHANGED[a.cmd] if getattr(a, "change", None) and not getattr(a, "dry_run", False) else "read"
+
+
+def command_area(a):
+    """The Area a parsed command acts on (governance.authorization): render's environment and scope, a plan's or
+    migration's target from its source, or the --env an option names; the whole record otherwise ("")."""
+    if a.cmd == "render":
+        return Area(a.env, render_scope(a.keeper, a.kind, a.binding))
+    if getattr(a, "dst", None):
+        return Area(a.dst, ENVIRONMENT, getattr(a, "src", None))
+    return Area(getattr(a, "env", None) or "")
+
+
+def _cmd_person(conn, a, as_of):
+    if a.name is None and a.mail is None and a.team is None:
+        found = ops.person_lines(conn, a.login)
+        return "\n".join(found) if found else f"no person {a.login} (ou=people)"
+    try:
+        preview = ops.preview_person(conn, a.login, a.name, a.mail, a.team)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.dry_run or not a.change:
+        return _not_applied(preview.notices, preview.changes, a.dry_run)
+    r = ops.apply_preview(conn, preview, a.change)
+    return f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else f"{a.login} already holds this"
+
+
+def _cmd_identity(conn, a, as_of):
+    if not a.org:
+        if a.parent is not None or a.name is not None:
+            raise SystemExit("--org is required to set the identity (the record's own org code)")
+        held = ops.identity(conn)
+        return identity_text(held) if held else "no record identity yet: opsdir identity --org CODE --change CHG"
+    try:
+        preview = ops.preview_identity(conn, a.org, a.parent, a.name)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.dry_run or not a.change:
+        return _not_applied(preview.notices, preview.changes, a.dry_run)
+    r = ops.apply_preview(conn, preview, a.change)
+    return f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else "the record already has this identity"
+
+
+def identity_text(identity):
+    """The record's identity as lines: org code, record ID, group, name."""
+    return "\n".join((f"org code   {identity.org}", f"record id  {identity.record_id}",
+                      *((f"group      {identity.parent}",) if identity.parent else ()),
+                      *((f"name       {identity.name}",) if identity.name else ())))
+
+
 def _cmd_verify(conn, a, as_of):
     root = pathlib.Path(a.root or ".")
     r = ops.verify(conn, {path: read_content(root / path) for path in ops.verify_paths(conn)})
@@ -718,14 +912,15 @@ def _cmd_file(conn, a, as_of):
         return r.text.rstrip("\n") if r.text.endswith("\n") else r.text
     out = pathlib.Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(r.text)
+    out.write_text(r.text, encoding="utf-8", newline="\n")
     return f"rebuilt {a.name} ({r.repo_path}) → {out}"
 
 
 def read_lines(path):
-    """Effect: the lines of a file, or of standard input for -, opened when the first line is read."""
+    """Effect: the lines of a file, or of standard input for -, opened when the first line is read; UTF-8 either
+    way, whatever the locale."""
     if path == "-":
-        yield from sys.stdin
+        yield from io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8", errors="replace")
         return
     with open(path, encoding="utf-8", errors="replace") as lines:
         yield from lines
@@ -741,7 +936,7 @@ def _cmd_data_profile(conn, a, as_of):
     if not a.out:
         return text.rstrip("\n")
     pathlib.Path(a.out).parent.mkdir(parents=True, exist_ok=True)
-    pathlib.Path(a.out).write_text(text)
+    pathlib.Path(a.out).write_text(text, encoding="utf-8", newline="\n")
     return f"wrote {a.out}"
 
 
@@ -771,7 +966,7 @@ def _json(document):
 
 
 def _cmd_application(conn, a, as_of):
-    v = ops.application(conn, a.dn, as_of, a.env)
+    v = ops.application(conn, a.dn, as_of, a.env, a.mine)
     if a.format == "json":
         return _json(view_document(v))
     head = (f"{v.name} ({v.root})" + (f", in {v.environment}" if v.environment else "")
@@ -802,9 +997,10 @@ def _cmd_summary(conn, a, as_of):
 def _cmd_workspace(conn, a, as_of):
     if a.workspace:
         raise SystemExit("workspace commands run against the live record (OPSDIR_DSN); drop --workspace")
-    ws, source = db.connect(workspace.workspace_dsn()), os.environ["OPSDIR_DSN"]
+    ws_dsn = workspace.workspace_dsn()
+    ws, source = db.connect(ws_dsn, db_password(ws_dsn)), os.environ["OPSDIR_DSN"]
     if a.action == "create":
-        n = ops.workspace_create(conn, ws, source, a.replace)
+        n = ops.workspace_create(conn, ws, source, a.replace, env_roles())
         return f"workspace created: {n} entries copied from {workspace.safe_source(source)}"
     if a.action == "status":
         return workspace.status_text(*ops.workspace_state(conn, ws))
@@ -819,15 +1015,19 @@ def _cmd_workspace(conn, a, as_of):
 
 COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load": _cmd_load, "check": _cmd_check,
                              "search": _cmd_search, "report": _cmd_report, "render": _cmd_render, "plan": _cmd_plan,
-                             "migrate": _cmd_migrate, "fix": _cmd_fix, "modify": _cmd_modify, "export": _cmd_export,
+                             "migrate": _cmd_migrate, "tickets": _cmd_tickets, "fix": _cmd_fix, "modify": _cmd_modify,
+                             "export": _cmd_export,
                              "history": _cmd_history, "application": _cmd_application, "graph": _cmd_graph,
                              "summary": _cmd_summary, "evidence": _cmd_evidence, "capture": _cmd_capture,
                              "import": _cmd_import, "collect": _cmd_collect, "file": _cmd_file,
                              "prerequisites": _cmd_prerequisites,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "census": _cmd_census,
-                             "setting": _cmd_setting,
+                             "setting": _cmd_setting, "identity": _cmd_identity, "db-roles": _cmd_db_roles,
+                             "posture": _cmd_posture, "change": _cmd_change, "person": _cmd_person, "grant": _cmd_grant,
+                             "mine": _cmd_mine,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})
-NO_DATABASE = frozenset({"data-profile"})          # commands that run where only the source is reachable
+NO_DATABASE = frozenset({"data-profile",           # commands that run where only the source is reachable
+                         "db-roles"})               # or before the record's database is set up
 
 
 COLLECT_HEAD = ("[--env CLOUD/ENV]", "[--adapter A[/I]]", "[--list]", "[--dry-run]", "[--change CHG-…]", "[--save DIR]")
@@ -869,9 +1069,11 @@ def parser():
 def main(argv=None):
     a = parser().parse_args(argv)
     as_of = dt.date.fromisoformat(a.as_of) if a.as_of else dt.date.today()
-    conn = None if a.cmd in NO_DATABASE else db.connect(workspace.workspace_dsn() if a.workspace else None)
+    dsn = workspace.workspace_dsn() if a.workspace else None
+    conn = None if a.cmd in NO_DATABASE else db.connect(dsn, db_password(dsn))
     if conn is not None:
         db.set_as_of(conn, as_of)
+        ops.authorize_command(conn, command_action(a), command_area(a), getattr(a, "requester", None))
     result = COMMANDS[a.cmd](conn, a, as_of)          # text, or (text, exit status)
     text, status = result if isinstance(result, tuple) else (result, 0)
     if text:
@@ -880,8 +1082,16 @@ def main(argv=None):
         sys.exit(status)
 
 
+def utf8_streams():
+    """Effect: standard output and error in UTF-8 whatever the locale, so reports, LDIF and messages piped to files
+    are UTF-8 like every file the CLI writes."""
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8")
+
+
 def run():
     import psycopg
+    utf8_streams()
     try:
         main()
     except psycopg.Error as e:

@@ -22,6 +22,8 @@ from typing import NamedTuple
 from psycopg.types.json import Jsonb
 
 from ..core.naming import SUFFIX
+from .policy import version_problem
+from .roles import owner_sql, runtime_grants
 from .postgres import revalidate, schema_rows
 
 MIGRATIONS = Path(__file__).resolve().parent / "sql" / "migrations"
@@ -119,13 +121,13 @@ UPSERT_OBJECT_CLASS = _upsert("object_class", _CLASS_COLUMNS)
 # ------------------------------------------------------------------ effects
 def read_migrations(directory=MIGRATIONS):
     """Effect: every migration file, in version order."""
-    return in_sequence(migration(p.name, p.read_text()) for p in directory.glob("*.sql"))
+    return in_sequence(migration(p.name, p.read_text(encoding="utf-8")) for p in directory.glob("*.sql"))
 
 
 def _apply_definitions(conn, definition_files):
     conn.execute(DROP_VIEWS_SQL)
     for f in definition_files:
-        conn.execute(Path(f).read_text())
+        conn.execute(Path(f).read_text(encoding="utf-8"))
 
 
 def _in_use(conn, sql, names):
@@ -177,13 +179,20 @@ def _sync_secret_patterns(conn, patterns):
                      row)
 
 
-def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns):
+def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns, roles=None):
     """Effect: bring the opsdir schema up to date in one transaction (one migrator at a time): pending migrations,
     then definitions, the LDAP schema registry (schema(conn) composes its text), the reference schemes, the
     vocabulary and the secret patterns ((name, pattern, owner, description), ...). Returns the migrations applied.
     Refuses a database created before versioned migrations, one whose entries use values or definitions no longer
-    defined, and one whose entries the new schema doesn't accept (including a value a new secret pattern matches)."""
+    defined, and one whose entries the new schema doesn't accept (including a value a new secret pattern matches),
+    and a server older than the store supports (store.policy). With roles (store.roles.Roles), it runs as their owner
+    and leaves the runtime login its grants on every object."""
+    too_old = version_problem(conn.info.server_version)
+    if too_old:
+        raise SystemExit(too_old)
     with conn.transaction():
+        for statement in owner_sql(roles):
+            conn.execute(statement)
         conn.execute("select pg_advisory_xact_lock(hashtext('opsdir.upgrade'))")
         exists, versioned = conn.execute(STATE_SQL).fetchone()
         if exists and not versioned:
@@ -202,14 +211,19 @@ def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary,
         _sync_vocabulary(conn, schema_text, vocabulary)
         _sync_secret_patterns(conn, secret_patterns)
         revalidate(conn)
+        for statement in runtime_grants(roles):
+            conn.execute(statement)
     return todo
 
 
-def init(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns):
-    """Effect: drop the opsdir schema (all data) and upgrade from nothing, atomically."""
+def init(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns, roles=None):
+    """Effect: drop the opsdir schema (all data) and upgrade from nothing, atomically (as the roles' owner, when
+    given)."""
     with conn.transaction():
+        for statement in owner_sql(roles):
+            conn.execute(statement)
         conn.execute("drop schema if exists opsdir cascade")
-        return upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns)
+        return upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary, secret_patterns, roles)
 
 
 def current_version(conn):

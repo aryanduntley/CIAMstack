@@ -13,9 +13,8 @@ from ..core.directory import get, gtime_at, one, values, within
 from ..core.findings import filled_records, fix_inputs
 from ..domains.governance.imports import runs_covering
 from ..core.interchange.ldif import LdifRecord, parse, write_records
-from ..domains.governance.naming import CHANGES
+from ..domains.governance.changes import APPLIED, APPROVED, PROPOSED, change_dn  # noqa: F401  (re-exported)
 
-PROPOSED, APPROVED, APPLIED = "proposed", "approved", "applied"
 
 
 def find_fix(fixes, key):
@@ -97,11 +96,6 @@ def unmet(fix, d, last_change):
         return (f"{r.why}: import it again first ({one(run, 'ciamImporter')} last read it from an export of "
                 f"{one(run, 'ciamImportedAt')}, before the record changed there on {changed:%Y-%m-%d %H:%M} UTC)")
     return tuple(w for w in map(waiting, fix.requires) if w)
-
-
-def change_dn(change_id):
-    """The DN of a change record."""
-    return f"cn={change_id},{CHANGES}"
 
 
 def proposal(fix, change_id, title=None):
