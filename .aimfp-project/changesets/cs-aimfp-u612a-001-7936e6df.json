@@ -1,0 +1,426 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "drafts.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/drafts.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-servicenow (import opsdir_adapter_servicenow), registered via entry point opsdir.adapters:servicenow; depends on opsdir.",
+        "external_dependencies": "[\"ServiceNow Table API (GET /api/now/table/change_request, /api/now/table/sysapproval_approver, /api/now/table/<work-ticket table>, read-only; drafts for POST /api/now/table/<work-ticket table> are files a person posts)\"]",
+        "path": "packages/opsdir-adapter-servicenow/",
+        "purpose": "ServiceNow as an ITSM add-on (kind itsm): reads the change tickets the record's change records link (servicenow:<number>) as evidence, one instance per record (enforced). Importer servicenow/change-requests reads Table API answers or JSON list exports of change_request + sysapproval_approver (raw UTC values; the state map is keyed by change model through estate settings: servicenow-standard-state-models, servicenow-legacy-state-models + servicenow-legacy-states for pre-Geneva codes; approval raw values through servicenow-approval-values; change type from `type`), and linked work tickets from the site-approved task-derived table servicenow-ticket-table names (ciamTicketKind work, states through servicenow-ticket-states, due_date -> ciamTicketDue). A read-only collector pages GET /api/now/table/... until an empty page, with basic, bearer or client-certificate (mutual TLS) credentials. Work-ticket drafts (Adapter.ticket_draft, drafts.py): the Table API create body for that table per owning team (servicenow-ticket-groups: team -> group sys_id; servicenow-ticket-fields: defaults), a file a person posts; opsdir never writes to the instance."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-servicenow"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "display_only",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"required\": true, \"description\": \"a change_request or work-ticket record\"}, {\"name\": \"times\", \"type\": \"tuple[str]\", \"required\": false, \"description\": \"the record's date/time fields (default CHANGE_TIMES)\"}]",
+        "purpose": "Why a record can't be compared: its state or the time fields `times` are display text (unknown time zone) rather than raw values; None when raw. Change records check their planned/work window fields (CHANGE_TIMES), work tickets due_date, work_start and work_end (WORK_TIMES).",
+        "returns": "{\"type\": \"str | None\"}",
+        "source_hash": "6e3a9002b09f1e48"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-display-only-78761d79"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "read_changes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the export was taken (required)\"}]",
+        "purpose": "Importer servicenow/change-requests: each ticket the record links that the export holds, its own import group under ou=servicenow,ou=tickets: change_request records as change tickets (with their sysapproval_approver rows), and, when servicenow-ticket-table names the work-ticket table, linked numbers found there as work tickets (work_facts; a number in both tables is read as the change ticket); refuses an export from another instance than the record's tickets were read from (one instance per record); notices for the settings' problems, unlinked tickets, linked ones missing (never removed; a hint when the work-ticket table isn't set), display-only records, models named in neither or both state-model settings, unmapped approval values and work-ticket states, fields never carried, error answers, several instances.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "48484e0953149c28"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-changes-aefcd434"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py",
+        "id_in_name": 0,
+        "name": "change_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps: each chunk of linked tickets' change_request pages and, when servicenow-ticket-table names the work-ticket table, the same numbers' pages from that table with WORK_FIELDS (each page after a non-empty one); then, once every change_request chunk ended on an empty page, the approval-record pages of the change sys_ids found; GETs only.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Request), ...)\"}",
+        "source_hash": "6d593b16721a7d70"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "instance_maps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}]",
+        "purpose": "What the operator's estate settings say of the instance (InstanceMaps): the change models on the standard state model (servicenow-standard-state-models), those still on the legacy pre-Geneva codes (servicenow-legacy-state-models), the legacy codes' neutral states (servicenow-legacy-states via ticket_state_map), the approval field's raw values' neutral approvals (servicenow-approval-values via ticket_map), the work-ticket table (work_table) and its state codes' neutral states (servicenow-ticket-states, read only when the table is named), with the settings' problems.",
+        "returns": "{\"type\": \"tuple[InstanceMaps, tuple[str]]\", \"description\": \"(maps, problems)\"}",
+        "source_hash": "fcd1a183d4873d07"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/drafts.py",
+        "id_in_name": 0,
+        "name": "ticket_body",
+        "parameters": "[{\"name\": \"r\", \"type\": \"TicketRequest\", \"description\": \"The team's findings (core.contract)\"}, {\"name\": \"group\", \"type\": \"str\", \"description\": \"The team's assignment group sys_id\"}, {\"name\": \"defaults\", \"type\": \"iterable of (field, value)\", \"description\": \"servicenow-ticket-fields pairs, raw values\"}]",
+        "purpose": "A team's TicketRequest as the ServiceNow Table API create body (JSON text) of a work ticket: the operator's default fields (first of a field used, drafted fields left out), then short_description (title), description (plain text from connectors.handoff.request_lines), assignment_group (the team's group sys_id) and due_date (earliest do-by, end of that UTC day 'YYYY-MM-DD 23:59:59'; none without one).",
+        "returns": "{\"type\": \"str\", \"description\": \"JSON text (indent 1, sorted keys, trailing newline)\"}",
+        "source_hash": "c93cdd877f36a735"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-body-acbc0023"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/drafts.py",
+        "id_in_name": 0,
+        "name": "how_to_file",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"description\": \"The record\"}, {\"name\": \"table\", \"type\": \"str\", \"description\": \"The work-ticket table\"}]",
+        "purpose": "How a person files a ServiceNow work-ticket draft: the request line (POST /api/now/table/<table>?sysparm_input_display_value=false) and a curl with placeholders for their own credential (bearer token or --user), run from the tickets folder; the instance host from the record's tickets when they were read from one instance, else a placeholder; then how to link the answered number (ciamTicketRef servicenow:<number>).",
+        "returns": "{\"type\": \"tuple[str]\", \"description\": \"Lines for the hand-off README\"}",
+        "source_hash": "574982516a6b84e4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-how-to-file-3227b141"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/drafts.py",
+        "id_in_name": 0,
+        "name": "ticket_draft",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"description\": \"The record (its estate settings)\"}, {\"name\": \"r\", \"type\": \"TicketRequest\", \"description\": \"One owning team's findings\"}]",
+        "purpose": "Adapter.ticket_draft of the ServiceNow add-on: TicketDraft of one team's findings: the create body for the work-ticket table (servicenow-ticket-table) assigned to the team's group (servicenow-ticket-groups, matched any case) with the operator's defaults (servicenow-ticket-fields), or body None with problems naming the setting to give and the opsdir setting command (table unset or unusable, team without a group, group not a 32-hex sys_id); the mapping settings' own problems and drafted fields named in defaults as notes; never a credential.",
+        "returns": "{\"type\": \"TicketDraft\", \"description\": \"(body JSON text or None, 'json', how lines, problems)\"}",
+        "source_hash": "b4127cccf3443037"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-draft-1f53dc99"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "work_facts",
+        "parameters": "[{\"name\": \"r\", \"type\": \"dict\", \"description\": \"The record as the Table API gives it (raw or raw+display values)\"}, {\"name\": \"host\", \"type\": \"str or None\", \"description\": \"The instance host (None: no address)\"}, {\"name\": \"table\", \"type\": \"str\", \"description\": \"The work-ticket table\"}, {\"name\": \"maps\", \"type\": \"InstanceMaps\", \"description\": \"The operator's settings (work_states)\"}]",
+        "purpose": "The ciamTicket attributes of one work-ticket record of the operator's task-derived table: ciamTicketKind work (no approval), ciamTitle, ciamProviderRef sys_id, ciamDocUrl Table API record URL, ciamTicketState through servicenow-ticket-states (maps.work_states), ciamTicketNativeState, ciamTicketDue from due_date, ciamTicketWorkStart/End from work_start/work_end, ciamTicketFact WORK_FACT_FIELDS raw.",
+        "returns": "{\"type\": \"dict\", \"description\": \"{TICKET_ATTRS attribute: value or tuple or None} for ticket_entry\"}",
+        "source_hash": "e78e3f0df4738912"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-work-facts-8478ebe1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py",
+        "id_in_name": 0,
+        "name": "work_table",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"description\": \"The record (its estate settings)\"}]",
+        "purpose": "The work-ticket table the operator names in servicenow-ticket-table, or None when not named or not usable (not a lower-case ServiceNow table name, or change_request / sysapproval_approver), with why not usable.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(table or None, problems tuple)\"}",
+        "source_hash": "8e610bae388e8cd4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-work-table-5d545d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Package opsdir-adapter-servicenow only. (1) Adapter.ticket_draft: (Directory, TicketRequest) -> TicketDraft, body = Table API create body for POST /api/now/table/{table}?sysparm_input_display_value=false: short_description, description (plain text, connectors.handoff.request_lines), assignment_group (sys_id), due_date (earliest do-by, 'YYYY-MM-DD 23:59:59' UTC), plus operator defaults; settings without defaults: servicenow-ticket-table (the site-approved task-derived table), servicenow-ticket-groups ('<team>=<group sys_id>, ...'), servicenow-ticket-fields (extra '<field>=<value>' defaults, e.g. impact=3, urgency=3); a missing setting or unmapped team -> TicketDraft(None, ..., problems naming the setting and the opsdir setting command); how = request line + curl with credential placeholders. (2) Read-back: the collector/importer also reads the linked numbers that are work tickets from servicenow-ticket-table (not change_request), writing ciamTicket with ciamTicketKind=work, ciamTicketState via a state mapping setting (servicenow-ticket-states '<state code>=<neutral state>'), ciamTicketDue from due_date, assignment group etc. as ciamTicketFact. Unit tests. README.",
+        "name": "612c ServiceNow: work-ticket draft (task-derived table) + read-back",
+        "parent": {
+          "slug": "task-my-area-rest-mine-on-fix-lists-and-the-a-d398dc8e"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "subtasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "subtask-612c-servicenow-work-ticket-draft-task-d-c2115a7b"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "18f4470",
+    "branch": "aimfp-u612a-001",
+    "worker_id": "worker-1"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "read_changes calls work_facts (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-aefcd434"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-work-facts-8478ebe1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls work_table (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-c5ec2750"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-work-table-5d545d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "instance_maps calls work_table (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-instance-maps-f73e7ea4"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-work-table-5d545d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_body calls request_lines (handoff.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-body-acbc0023"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-request-lines-eaae4244"
+      }
+    },
+    {
+      "attributes": {
+        "description": "how_to_file calls instance_hosts (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-how-to-file-3227b141"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-instance-hosts-eef4daef"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls setting_mapping (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-1f53dc99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls ticket_body (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-1f53dc99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-body-acbc0023"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls how_to_file (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-1f53dc99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-how-to-file-3227b141"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls work_table (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-1f53dc99"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-work-table-5d545d23"
+      }
+    },
+    {
+      "attributes": {
+        "description": "work_facts calls gtime (directory.py) via _time",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-work-facts-8478ebe1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-d0f8e834"
+      }
+    },
+    {
+      "attributes": {
+        "description": "work_table calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-work-table-5d545d23"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/drafts.py"
+      },
+      "flow": {
+        "name": "Work-Ticket Hand-off"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      },
+      "flow": {
+        "name": "Work-Ticket Hand-off"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/drafts.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-servicenow"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/drafts.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-servicenow-work-ticket-draft-task-d-c2115a7b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-servicenow-work-ticket-draft-task-d-c2115a7b"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-servicenow/src/opsdir_adapter_servicenow/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-servicenow-work-ticket-draft-task-d-c2115a7b"
+      }
+    }
+  ],
+  "warnings": []
+}

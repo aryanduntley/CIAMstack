@@ -1,0 +1,784 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "drafts.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-jira-sm (import opsdir_adapter_jira_sm), registered via entry point opsdir.adapters:jira-sm; depends on opsdir.",
+        "external_dependencies": "[\"Jira REST API (GET /rest/api/3|2/issue/{key}, /rest/api/3|2/field, read-only)\", \"Jira Service Management REST API (GET /rest/servicedeskapi/request/{key}/approval, read-only)\", \"Jira REST API create issue body (POST /rest/api/3|2/issue: drafted as files a person posts, never called)\"]",
+        "path": "packages/opsdir-adapter-jira-sm/",
+        "purpose": "Jira Service Management as an ITSM add-on (kind itsm): reads the change tickets the record's change records link (jira-sm:<KEY>) as evidence, and drafts the work tickets handing a team its findings. Importer jira-sm/change-requests reads REST answers (issues, approvals, field list) through the operator's mapping settings jira-sm-status-states and jira-sm-change-fields; an issue of jira-sm-ticket-issue-type is read back as a work ticket (kind work, due day, no approval). A read-only collector makes one GET per linked issue plus its approval pages (Cloud v3 or Data Center v2; none for work tickets). Adapter.ticket_draft (drafts.py) writes a Task issue create body (Cloud v3 ADF / Data Center v2 wiki) per team from jira-sm-ticket-site, -projects, -team-field, -issue-type, -fields; opsdir posts nothing."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-jira-sm"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "ticket_facts",
+        "parameters": "[{\"name\": \"issue\", \"type\": \"dict\", \"required\": true}, {\"name\": \"steps\", \"type\": \"tuple[dict] | None\", \"required\": true, \"description\": \"its approval steps; None when the export holds none or stops before the last page\"}, {\"name\": \"states\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"fields\", \"type\": \"dict[str, str]\", \"required\": true, \"description\": \"{role: field id}\"}, {\"name\": \"work\", \"type\": \"bool\", \"required\": false, \"description\": \"a work ticket (an issue of jira-sm-ticket-issue-type); default False\"}]",
+        "purpose": "The ticket attributes (governance TICKET_ATTRS) of one Jira issue and its approval steps through the operator's mapping: summary, issue id as ciamProviderRef, its self URL, neutral state, overall approval, native status, neutral change type, windows from the mapped fields, step rows, approver rows, facts (issuetype, status category, resolution, created, updated, other mapped fields); for a work ticket (work=True) ciamTicketKind work and ciamTicketDue from duedate, and no approval, steps, approvers or change type; with the problems of window values that aren't date-times, a duedate that isn't a day and change types that aren't neutral.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({attribute: value or tuple or None}, (problem, ...))\"}",
+        "source_hash": "743f8d1656775163"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 1,
+        "name": "read_changes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the export was taken (required)\"}]",
+        "purpose": "Importer jira-sm/change-requests: each linked issue the export holds (REST answers: issues, search answers, approval pages, the field list), its own import group under ou=jira-sm,ou=tickets, through the operator's mapping settings; an issue of the work issue type (jira-sm-ticket-issue-type) is read as a work ticket (kind work, due day, no approval); notices for mapping problems, unmapped statuses and window fields (with the site's candidates, change tickets only), fields never carried, unlinked issues, linked ones missing (never removed), approvals missing or short of their last page (change tickets only), values that aren't times, error answers, files that aren't answers, several sites (refused), and the count read (with work tickets).",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "8bccebdf0d875b50"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py",
+        "id_in_name": 1,
+        "name": "change_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "Collector steps (GETs only): the site's field list; once read, each linked issue (absent on 404) with the system fields (incl. duedate) and the mapped fields; for each issue read that isn't a work ticket (jira-sm-ticket-issue-type), its approval pages until one says it is the last.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"((path, Request), ...)\"}",
+        "source_hash": "4a3a7fada61ae3cb"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 0,
+        "name": "issue_types",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "The work tickets' issue type ids from setting jira-sm-ticket-issue-type: one bare id for every project ('*') or '<project key>=<issue type id>, ...'; malformed parts named",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({project key or '*': issue type id}, problems)\"}",
+        "source_hash": "c2f8c2514accc0cb"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issue-types-fd58550d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 0,
+        "name": "issue_type_for",
+        "parameters": "[{\"name\": \"types\", \"type\": \"dict\", \"required\": true, \"description\": \"issue_types' mapping\"}, {\"name\": \"project\", \"type\": \"str\", \"required\": true, \"description\": \"project key\"}]",
+        "purpose": "The work tickets' issue type id in one project: its own mapping, else the one for every project",
+        "returns": "{\"type\": \"Optional[str]\", \"description\": \"issue type id or None\"}",
+        "source_hash": "717fa54b9c60692e"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issue-type-for-df31fd3e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py",
+        "id_in_name": 0,
+        "name": "is_work_issue",
+        "parameters": "[{\"name\": \"issue\", \"type\": \"dict\", \"required\": true, \"description\": \"issue answer {key, fields}\"}, {\"name\": \"types\", \"type\": \"dict\", \"required\": true, \"description\": \"issue_types' mapping\"}]",
+        "purpose": "Whether a Jira issue answer is a work ticket: its issuetype id is the one mapped for its project (key prefix)",
+        "returns": "{\"type\": \"bool\", \"description\": \"True for a work ticket\"}",
+        "source_hash": "45bb27dc065e8fd4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-work-issue-4e6cb33d"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py",
+        "id_in_name": 0,
+        "name": "due_time",
+        "parameters": "[{\"name\": \"v\", \"type\": \"Optional[str]\", \"required\": true, \"description\": \"the duedate field value\"}]",
+        "purpose": "GeneralizedTime (00:00 UTC) of a work ticket's Jira duedate 'YYYY-MM-DD', or why it isn't a day",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(GeneralizedTime or None, problem or None)\"}",
+        "source_hash": "8c3b50f64c186d01"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-due-time-9972577f"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "field_value",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true, \"description\": \"value text from a setting\"}]",
+        "purpose": "The JSON value of a field's '<shape>:<value>' setting text (id/value/name/key/accountId objects, ids/values/names/keys object lists, list, number, text) or the text as is",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(JSON value, problem or None)\"}",
+        "source_hash": "6b35bd8e56748243"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-field-value-e89ce6cb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "team_routes",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "Each team's project and routing value from jira-sm-ticket-projects ('<team>=<project key>[/<team field value>]'), malformed keys named",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({team lowercase: Route}, problems)\"}",
+        "source_hash": "64fe696d75ad3b21"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-team-routes-53040528"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "default_fields",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "The operator's default fields from jira-sm-ticket-fields ('<field id>=<value>'), with fields the draft sets itself, non-ids and bad values named and left out",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({field id: JSON value}, problems)\"}",
+        "source_hash": "6f60cd9801d84183"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-default-fields-c0c4bc62"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "adf_description",
+        "parameters": "[{\"name\": \"lines\", \"type\": \"tuple\", \"required\": true, \"description\": \"plain-text lines (request_lines)\"}]",
+        "purpose": "An Atlassian Document Format doc (Cloud v3 description) of plain-text lines: each '- ' run a Findings heading and bullet list, other lines paragraphs",
+        "returns": "{\"type\": \"dict\", \"description\": \"ADF document\"}",
+        "source_hash": "4779fbc16e35e24a"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-adf-description-ff30a14a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "wiki_text",
+        "parameters": "[{\"name\": \"text\", \"type\": \"str\", \"required\": true, \"description\": \"plain text\"}]",
+        "purpose": "Text with Jira wiki markup special characters backslash-escaped",
+        "returns": "{\"type\": \"str\", \"description\": \"escaped text\"}",
+        "source_hash": "0ae8117953107f2f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-wiki-text-5467c054"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "wiki_description",
+        "parameters": "[{\"name\": \"lines\", \"type\": \"tuple\", \"required\": true, \"description\": \"plain-text lines (request_lines)\"}]",
+        "purpose": "A wiki-markup string (Data Center v2 description) of plain-text lines: each '- ' run an 'h2. Findings' heading and '*' items, other lines paragraphs",
+        "returns": "{\"type\": \"str\", \"description\": \"wiki markup\"}",
+        "source_hash": "16f75c361049f978"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-wiki-description-107ca0eb"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "issue_fields",
+        "parameters": "[{\"name\": \"r\", \"type\": \"TicketRequest\", \"required\": true, \"description\": \"the team's request\"}, {\"name\": \"cloud\", \"type\": \"bool\", \"required\": true, \"description\": \"Cloud v3 (ADF) or Data Center v2 (wiki)\"}, {\"name\": \"route\", \"type\": \"Route\", \"required\": true, \"description\": \"the team's project and routing value\"}, {\"name\": \"type_id\", \"type\": \"str\", \"required\": true, \"description\": \"issue type id\"}, {\"name\": \"team_field\", \"type\": \"Optional[str]\", \"required\": true, \"description\": \"routing field id\"}, {\"name\": \"defaults\", \"type\": \"dict\", \"required\": true, \"description\": \"default fields\"}]",
+        "purpose": "The create-issue request's fields for a TicketRequest: defaults, team routing value, project, issuetype, summary, description (ADF or wiki), duedate",
+        "returns": "{\"type\": \"dict\", \"description\": \"issue fields\"}",
+        "source_hash": "4ed38234e77efb64"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-issue-fields-10c1962e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "filing",
+        "parameters": "[{\"name\": \"site\", \"type\": \"str\", \"required\": true, \"description\": \"site base URL\"}]",
+        "purpose": "How to file a draft on a site: request line and a curl with credential placeholders (Cloud basic email:api-token, gateway bearer, DC PAT bearer), a Government Cloud note, the link-back line",
+        "returns": "{\"type\": \"tuple\", \"description\": \"lines\"}",
+        "source_hash": "2ed013bd817c66e4"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-filing-e78ce920"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py",
+        "id_in_name": 0,
+        "name": "ticket_draft",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}, {\"name\": \"r\", \"type\": \"TicketRequest\", \"required\": true, \"description\": \"the team's request\"}]",
+        "purpose": "Adapter.ticket_draft: a team's work-ticket draft as a Jira Task issue create body (Cloud v3 ADF / DC v2 wiki), how to file it, and problems naming the setting to give; body None when site, project, issue type or routing field is unmapped",
+        "returns": "{\"type\": \"TicketDraft\", \"description\": \"draft\"}",
+        "source_hash": "b58150fb30879df3"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Package opsdir-adapter-jira-sm only. (1) Adapter.ticket_draft: body = POST /rest/api/3/issue (Cloud, description in ADF: heading, bullet list of findings) or /rest/api/2/issue (Data Center, wiki-markup string), chosen by the same Cloud/DC distinction the collector already makes (or a setting); fields project {key}, issuetype {id}, summary, description, duedate (YYYY-MM-DD earliest do-by), optional priority id, optional mapped team field; settings without defaults: jira-sm-ticket-projects ('<team>=<project key>[:<team field value>]' or similar), jira-sm-ticket-issue-type (issue type id), jira-sm-ticket-fields (extra defaults); missing -> problems naming the setting. how = request line + curl with placeholders (Cloud Basic email:api-token, DC PAT bearer, AGC gateway note). (2) Read-back: a linked key that is a work ticket (issue type not a change type / or per mapping) is read as ciamTicketKind=work with duedate -> ciamTicketDue; states through jira-sm-status-states as today; no approval. Unit tests. README.",
+        "name": "612c Jira SM: work-ticket draft (Task issue, Cloud ADF / DC wiki) + read-back",
+        "parent": {
+          "slug": "task-my-area-rest-mine-on-fix-lists-and-the-a-d398dc8e"
+        },
+        "priority": "high",
+        "status": "in_progress"
+      },
+      "kind": "subtasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "subtask-612c-jira-sm-work-ticket-draft-task-issu-f6d32e79"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "18f4470",
+    "branch": "aimfp-u612b-001",
+    "worker_id": "worker-2"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "ticket_facts calls due_time (changes.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-d5062e41"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-due-time-9972577f"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls issue_types (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-types-fd58550d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls is_work_issue (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-4b1885a2"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-work-issue-4e6cb33d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls issue_types (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-types-fd58550d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls is_work_issue (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-551f2c5e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-work-issue-4e6cb33d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issue_types calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issue-types-fd58550d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issue_types calls setting_mapping (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issue-types-fd58550d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "is_work_issue calls issue_type_for (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-is-work-issue-4e6cb33d"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-type-for-df31fd3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "due_time calls gtime_of_iso (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-due-time-9972577f"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-gtime-of-iso-ed69933b"
+      }
+    },
+    {
+      "attributes": {
+        "description": "team_routes calls setting_mapping (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-team-routes-53040528"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "default_fields calls setting_mapping (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-default-fields-c0c4bc62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "default_fields calls field_value (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-default-fields-c0c4bc62"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-value-e89ce6cb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "wiki_description calls wiki_text (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-wiki-description-107ca0eb"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-wiki-text-5467c054"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issue_fields calls request_lines (handoff.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issue-fields-10c1962e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-request-lines-eaae4244"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issue_fields calls field_value (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issue-fields-10c1962e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-field-value-e89ce6cb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issue_fields calls adf_description (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issue-fields-10c1962e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-adf-description-ff30a14a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "issue_fields calls wiki_description (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-issue-fields-10c1962e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-wiki-description-107ca0eb"
+      }
+    },
+    {
+      "attributes": {
+        "description": "filing calls is_cloud (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-filing-e78ce920"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-cloud-1e964c93"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls setting_value (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-value-86cddbdc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls is_cloud (collect.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-cloud-1e964c93"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls issue_types (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-types-fd58550d"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls issue_type_for (mapping.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-type-for-df31fd3e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls team_routes (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-team-routes-53040528"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls default_fields (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-default-fields-c0c4bc62"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls issue_fields (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-issue-fields-10c1962e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls filing (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-5cb99725"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-filing-e78ce920"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py"
+      },
+      "flow": {
+        "name": "Work-Ticket Hand-off"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py"
+      },
+      "flow": {
+        "name": "Work-Ticket Hand-off"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/adapter.py"
+      },
+      "flow": {
+        "name": "Work-Ticket Hand-off"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-jira-sm"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/drafts.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-jira-sm-work-ticket-draft-task-issu-f6d32e79"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/mapping.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-jira-sm-work-ticket-draft-task-issu-f6d32e79"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-jira-sm-work-ticket-draft-task-issu-f6d32e79"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-jira-sm/src/opsdir_adapter_jira_sm/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-jira-sm-work-ticket-draft-task-issu-f6d32e79"
+      }
+    }
+  ],
+  "warnings": []
+}

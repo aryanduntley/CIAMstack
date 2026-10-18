@@ -1,0 +1,593 @@
+{
+  "entities": [
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "drafts.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py"
+      }
+    },
+    {
+      "attributes": {
+        "id_in_name": 0,
+        "language": "python",
+        "name": "workorders.py",
+        "no_flow_reason": null
+      },
+      "kind": "files",
+      "op": "add",
+      "semantic_key": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/workorders.py"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Distribution opsdir-adapter-bmc-helix (import opsdir_adapter_bmc_helix), registered via entry point opsdir.adapters:bmc-helix; depends on opsdir.",
+        "external_dependencies": "[\"BMC AR System REST API (GET /api/arsys/v1/entry/CHG:Infrastructure Change, /api/arsys/v1/entry/AP:Detail-Signature, /api/arsys/v1/entry/WOI:WorkOrderInterface, read-only; drafts target POST /api/arsys/v1/entry/WOI:WorkOrderInterface_Create, posted by a person, never by opsdir)\"]",
+        "path": "packages/opsdir-adapter-bmc-helix/",
+        "purpose": "BMC Helix ITSM / Remedy as an ITSM add-on (kind itsm). It reads the change tickets the record's change records link (bmc-helix:<Infrastructure Change ID>) as evidence. Importer bmc-helix/change-requests reads AR System REST answers of CHG:Infrastructure Change and AP:Detail-Signature, mapping statuses through the setting bmc-helix-status-states (BMC's documented list by default). The approval is rejected on status Rejected and otherwise derived from the signatures grouped by Approval ID. A read-only collector uses an AR-JWT or bearer token minted outside opsdir. Task 612: drafts the work orders that hand findings to owning teams (drafts.py, Adapter.ticket_draft: WOI:WorkOrderInterface_Create bodies a person posts; settings bmc-helix-ticket-groups, bmc-helix-ticket-fields) and reads linked work orders (WO...) back as work tickets from WOI:WorkOrderInterface (workorders.py; setting bmc-helix-work-order-states)."
+      },
+      "kind": "modules",
+      "op": "modify",
+      "semantic_key": {
+        "name": "adapter-bmc-helix"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "ticket_facts",
+        "parameters": "[{\"name\": \"entry\", \"type\": \"dict\", \"required\": true}, {\"name\": \"signatures\", \"type\": \"tuple[dict] | None\", \"required\": true}, {\"name\": \"states\", \"type\": \"dict[str, str]\", \"required\": true, \"description\": \"{status: neutral state}\"}]",
+        "purpose": "The ticket attributes of one CHG:Infrastructure Change entry and its signatures (None: approvals not read): neutral state by the status map, overall approval, native state, change type from Change Timing, planned/work windows (offset date-times, date-only refused), steps, approver rows, facts, provider ref, doc URL, title; and the problems to name.",
+        "returns": "{\"type\": \"tuple[dict, tuple[str]]\", \"description\": \"({ticket attribute: value}, problems)\"}",
+        "source_hash": "ee5af19c9837fb9e"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py",
+        "id_in_name": 0,
+        "name": "read_changes",
+        "parameters": "[{\"name\": \"files\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"patterns\", \"type\": \"tuple\", \"required\": true}, {\"name\": \"at\", \"type\": \"datetime | None\", \"required\": false, \"description\": \"when the export was taken\"}]",
+        "purpose": "The importer bmc-helix/change-requests reads saved AR System REST answers into the record's ticket evidence: each linked change (CHG:Infrastructure Change with its AP:Detail-Signature pages) and each linked work order (WO..., WOI:WorkOrderInterface, read as a work ticket via workorders.work_order_facts and bmc-helix-work-order-states) becomes its own import group, which replaces only that ticket. Notices name: unmapped statuses (per setting), incomplete approvals, other applications' signatures, unlinked tickets, linked tickets the export lacks, errors and non-answers. An export spanning several servers is refused, and so is an undated one.",
+        "returns": "{\"type\": \"Imported\"}",
+        "source_hash": "5bc71392246284cf"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-read-changes-a176a85c"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py",
+        "id_in_name": 0,
+        "name": "change_steps",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true}, {\"name\": \"m\", \"type\": \"EnvModel\", \"required\": true}, {\"name\": \"done\", \"type\": \"dict[str, str]\", \"required\": true}, {\"name\": \"options\", \"type\": \"dict\", \"required\": true}]",
+        "purpose": "The collector's calls: a qualified read (limit 2) of CHG:Infrastructure Change for each linked change and of WOI:WorkOrderInterface (by Work Order ID) for each linked work order (WO...); then, for each change read, the AP:Detail-Signature pages (the Request ID or the CRQ), each after a page that links a next one. Work orders get no approval read.",
+        "returns": "{\"type\": \"tuple[tuple[str, Request]]\"}",
+        "source_hash": "2346c37302427cc9"
+      },
+      "kind": "functions",
+      "op": "modify",
+      "semantic_key": {
+        "entity_key": "fn-change-steps-02d48286"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py",
+        "id_in_name": 0,
+        "name": "team_groups",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "The support group (Support Company, Support Organization, Support Group Name) each owning team's work orders are assigned to, from the estate setting bmc-helix-ticket-groups ('<team>=<company>/<organization>/<group>, ...'); malformed values named and left out.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({team lower case: (company, organization, group)}, problems)\"}",
+        "source_hash": "fd6ddec710f9e501"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-team-groups-0eb568a1"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py",
+        "id_in_name": 0,
+        "name": "ticket_fields",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}]",
+        "purpose": "The other values of every BMC Helix work-order draft, from bmc-helix-ticket-fields ('<field>=<value>, ...'); fields opsdir sets itself (OWNED) are named and left out.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({field: value}, problems)\"}",
+        "source_hash": "fdee50bc550dfabf"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-fields-ce12712a"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py",
+        "id_in_name": 0,
+        "name": "due_time",
+        "parameters": "[{\"name\": \"day\", \"type\": \"date | None\", \"required\": true, \"description\": \"the earliest do-by date, or None\"}]",
+        "purpose": "The end of a do-by day in UTC as an AR System ISO 8601 date-time (Scheduled End Date of a work-order draft).",
+        "returns": "{\"type\": \"str | None\", \"description\": \"'YYYY-MM-DDT23:59:59.000+0000', or None\"}",
+        "source_hash": "293fd9002e53f895"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-due-time-f69955f2"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py",
+        "id_in_name": 0,
+        "name": "priority",
+        "parameters": "[{\"name\": \"request\", \"type\": \"TicketRequest\", \"required\": true, \"description\": \"the team's findings\"}, {\"name\": \"fields\", \"type\": \"dict\", \"required\": true, \"description\": \"ticket_fields' values\"}]",
+        "purpose": "A work-order draft's Priority: bmc-helix-ticket-fields' Priority when it is Critical, High, Medium or Low, else High when the findings hold a blocker and Medium otherwise; an invalid given one is a problem.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"(Priority, problems)\"}",
+        "source_hash": "5274ff2f8dcb1ac9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-priority-dc7785db"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py",
+        "id_in_name": 0,
+        "name": "work_order_values",
+        "parameters": "[{\"name\": \"request\", \"type\": \"TicketRequest\", \"required\": true, \"description\": \"the team's findings\"}, {\"name\": \"group\", \"type\": \"tuple\", \"required\": true, \"description\": \"(Support Company, Support Organization, Support Group Name)\"}, {\"name\": \"fields\", \"type\": \"dict\", \"required\": true, \"description\": \"ticket_fields' values\"}]",
+        "purpose": "The values of a WOI:WorkOrderInterface_Create request for one team's findings: the given fields, then z1D_Action CREATE, Summary, Detailed Description (request_lines), Status Assigned, the support group, Priority and Scheduled End Date.",
+        "returns": "{\"type\": \"dict\", \"description\": \"{field: value} of the create body's values\"}",
+        "source_hash": "291db5f4ec18e214"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-work-order-values-0544646e"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py",
+        "id_in_name": 0,
+        "name": "ticket_draft",
+        "parameters": "[{\"name\": \"d\", \"type\": \"Directory\", \"required\": true, \"description\": \"the record\"}, {\"name\": \"request\", \"type\": \"TicketRequest\", \"required\": true, \"description\": \"the team's findings\"}]",
+        "purpose": "Adapter.ticket_draft of the BMC Helix add-on: one team's findings as a work-order create body (JSON file a person posts with their own AR-JWT), or None with problems naming the setting to give (no support group for the team in bmc-helix-ticket-groups, a foundation field missing from bmc-helix-ticket-fields); how = request line, curl with credential placeholders, notes.",
+        "returns": "{\"type\": \"TicketDraft\", \"description\": \"TicketDraft(body JSON text or None, 'json', HOW, problems)\"}",
+        "source_hash": "d9e71fdafa26762f"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-ticket-draft-fe1cacaf"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/workorders.py",
+        "id_in_name": 0,
+        "name": "is_work_order",
+        "parameters": "[{\"name\": \"number\", \"type\": \"str\", \"required\": true, \"description\": \"the linked number\"}]",
+        "purpose": "Whether a linked bmc-helix ticket number names a work order (it starts with BMC's Work Order ID prefix WO), not a change.",
+        "returns": "{\"type\": \"bool\", \"description\": \"True for a work order\"}",
+        "source_hash": "5c52c164915e13e9"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-is-work-order-e64743fc"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/workorders.py",
+        "id_in_name": 0,
+        "name": "window_times",
+        "parameters": "[{\"name\": \"values\", \"type\": \"dict\", \"required\": true, \"description\": \"an AR System entry's values\"}]",
+        "purpose": "The schedule fields (Scheduled/Actual Start/End Date) work orders and change tickets share, as GeneralizedTime per ticket window attribute, with why a value isn't a date-time.",
+        "returns": "{\"type\": \"dict\", \"description\": \"{ticket attribute: (GeneralizedTime or None, why not or None)}\"}",
+        "source_hash": "829711b471de8094"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-window-times-1d7f6390"
+      }
+    },
+    {
+      "attributes": {
+        "file": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/workorders.py",
+        "id_in_name": 0,
+        "name": "work_order_facts",
+        "parameters": "[{\"name\": \"values\", \"type\": \"dict\", \"required\": true, \"description\": \"the work order's values\"}, {\"name\": \"url\", \"type\": \"str | None\", \"required\": true, \"description\": \"its REST self link\"}, {\"name\": \"states\", \"type\": \"dict\", \"required\": true, \"description\": \"{Status: neutral state} of bmc-helix-work-order-states\"}]",
+        "purpose": "One BMC Helix work order (WOI:WorkOrderInterface values) as a work ticket's attributes: ciamTicketKind work, state via the status map, native state, planned and work windows, ciamTicketDue from Scheduled End Date, facts (status reason, priority, type, last modified), Request ID, self link, title.",
+        "returns": "{\"type\": \"tuple\", \"description\": \"({ticket attribute: value}, problems)\"}",
+        "source_hash": "9df717ecad991f84"
+      },
+      "kind": "functions",
+      "op": "add",
+      "semantic_key": {
+        "entity_key": "fn-work-order-facts-c7bfdfa7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "Package opsdir-adapter-bmc-helix only. (1) Adapter.ticket_draft: body = {\"values\": {...}} for POST /api/arsys/v1/entry/WOI%3AWorkOrderInterface_Create: z1D_Action CREATE, Summary (title), Detailed Description (correct spelling; request_lines), Status Assigned, Support Company / Support Organization / Support Group Name (mapped per team), Priority (Critical|High|Medium|Low), Scheduled End Date (earliest do-by, ISO 8601; propagation on create unconfirmed: say so in how/README), plus required foundation defaults (First Name, Last Name, Customer First/Last Name, Company, Customer Company, Location Company) from a setting; settings without defaults: bmc-helix-ticket-groups ('<team>=<company>/<organization>/<group>'), bmc-helix-ticket-fields ('<field>=<value>' defaults); missing -> problems naming the setting. how = request line + curl with AR-JWT placeholder. (2) Read-back: linked work-order ids (WO...) are read from the work-order form (not CHG:Infrastructure Change) as ciamTicketKind=work, state via a mapping setting (bmc-helix-work-order-states '<status>=<neutral state>'), Scheduled End -> ciamTicketDue, planned/actual windows when present. Unit tests. README.",
+        "name": "612c BMC Helix: work-order draft (WOI:WorkOrderInterface_Create) + read-back",
+        "parent": {
+          "slug": "task-my-area-rest-mine-on-fix-lists-and-the-a-d398dc8e"
+        },
+        "priority": "high",
+        "status": "completed"
+      },
+      "kind": "subtasks",
+      "op": "modify",
+      "semantic_key": {
+        "slug": "subtask-612c-bmc-helix-work-order-draft-woi-work-28393619"
+      }
+    }
+  ],
+  "provenance": {
+    "base_main_commit": "18f4470",
+    "branch": "aimfp-u612c-001",
+    "worker_id": "worker-3"
+  },
+  "references": [
+    {
+      "attributes": {
+        "description": "ticket_facts calls window_times (workorders.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-window-times-1d7f6390"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls is_work_order (workorders.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-work-order-e64743fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "read_changes calls work_order_facts (workorders.py) via _work_order_groups",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-read-changes-a176a85c"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-work-order-facts-c7bfdfa7"
+      }
+    },
+    {
+      "attributes": {
+        "description": "change_steps calls is_work_order (workorders.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-change-steps-02d48286"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-is-work-order-e64743fc"
+      }
+    },
+    {
+      "attributes": {
+        "description": "team_groups calls setting_mapping (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-team-groups-0eb568a1"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_fields calls setting_mapping (settings.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-fields-ce12712a"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-setting-mapping-4a21d8d8"
+      }
+    },
+    {
+      "attributes": {
+        "description": "work_order_values calls request_lines (handoff.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-work-order-values-0544646e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-request-lines-eaae4244"
+      }
+    },
+    {
+      "attributes": {
+        "description": "work_order_values calls due_time (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-work-order-values-0544646e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-due-time-f69955f2"
+      }
+    },
+    {
+      "attributes": {
+        "description": "work_order_values calls priority (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-work-order-values-0544646e"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-priority-dc7785db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls team_groups (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-fe1cacaf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-team-groups-0eb568a1"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls ticket_fields (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-fe1cacaf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-ticket-fields-ce12712a"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls priority (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-fe1cacaf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-priority-dc7785db"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_draft calls work_order_values (drafts.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-draft-fe1cacaf"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-work-order-values-0544646e"
+      }
+    },
+    {
+      "attributes": {
+        "description": "window_times calls iso_date_time (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-window-times-1d7f6390"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      }
+    },
+    {
+      "attributes": {
+        "description": "work_order_facts calls window_times (workorders.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-work-order-facts-c7bfdfa7"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "add",
+      "to": {
+        "entity_key": "fn-window-times-1d7f6390"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py"
+      },
+      "flow": {
+        "name": "Work-Ticket Hand-off"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/workorders.py"
+      },
+      "flow": {
+        "name": "ITSM Ticket Evidence"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/adapter.py"
+      },
+      "flow": {
+        "name": "Work-Ticket Hand-off"
+      },
+      "kind": "file_flow",
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/workorders.py"
+      },
+      "kind": "module_file",
+      "module": {
+        "name": "adapter-bmc-helix"
+      },
+      "op": "add"
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/drafts.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-bmc-helix-work-order-draft-woi-work-28393619"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/workorders.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-bmc-helix-work-order-draft-woi-work-28393619"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/changes.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-bmc-helix-work-order-draft-woi-work-28393619"
+      }
+    },
+    {
+      "file": {
+        "path": "packages/opsdir-adapter-bmc-helix/src/opsdir_adapter_bmc_helix/collect.py"
+      },
+      "kind": "task_file",
+      "op": "add",
+      "reference_table": "subtasks",
+      "work_item": {
+        "slug": "subtask-612c-bmc-helix-work-order-draft-woi-work-28393619"
+      }
+    },
+    {
+      "attributes": {
+        "description": "ticket_facts calls iso_date_time (directory.py)",
+        "is_indirect": 0
+      },
+      "from": {
+        "entity_key": "fn-ticket-facts-48c5b5a9"
+      },
+      "interaction_type": "call",
+      "kind": "interaction",
+      "op": "remove",
+      "to": {
+        "entity_key": "fn-iso-date-time-d6110b65"
+      }
+    }
+  ],
+  "warnings": []
+}
