@@ -6,9 +6,12 @@ collector reads the server read-only with an AR-JWT or bearer token minted outsi
 under ou=changes."""
 import datetime as dt
 import json
+from types import SimpleNamespace
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from opsdir.connectors.collecting import collect
+from opsdir.connectors.handoff import handoff_files
+from opsdir.core.contract import TicketRequest
 from opsdir.core.directory import get, one, subtree, values, within
 from opsdir.domains.governance.naming import CHANGES
 from opsdir.domains.governance.tickets import (AFTER_READ, IN_STEP, OUTSIDE_WINDOW, REJECTED, UNAPPROVED, linked,
@@ -17,7 +20,10 @@ from opsdir_adapter_bmc_helix.adapter import ADAPTER
 from opsdir_adapter_bmc_helix.changes import (CHANGES_IMPORTER, approval_key, ar_error, read_changes, signatures_of,
                                               steps_of)
 from opsdir_adapter_bmc_helix.collect import COLLECTORS, change_steps, entries_view, source_problems
-from opsdir_adapter_bmc_helix.states import STATUS_STATES, change_type, overall_approval, step_decision
+from opsdir_adapter_bmc_helix.drafts import HOW, TICKET_FIELDS, TICKET_GROUPS, team_groups, ticket_draft
+from opsdir_adapter_bmc_helix.states import (STATUS_STATES, WORK_ORDER_STATES, change_type, overall_approval,
+                                             step_decision)
+from opsdir_adapter_bmc_helix.workorders import is_work_order
 from network_fixtures import ALPHA, entry, model
 from support import after_import
 
@@ -83,11 +89,17 @@ def _read(*changes, tree=TREE, approvals=None, files=None):
 
 def test_registered_as_an_itsm_add_on_with_its_importer_collector_and_status_setting():
     assert (ADAPTER.name, ADAPTER.kind, ADAPTER.applies, ADAPTER.importers, ADAPTER.collectors, ADAPTER.settings) == (
-        "bmc-helix", "itsm", None, (CHANGES_IMPORTER,), COLLECTORS, (STATUS_STATES,))
+        "bmc-helix", "itsm", None, (CHANGES_IMPORTER,), COLLECTORS,
+        (STATUS_STATES, WORK_ORDER_STATES, TICKET_GROUPS, TICKET_FIELDS))
+    assert ADAPTER.ticket_draft is ticket_draft
+    assert (TICKET_GROUPS.default, TICKET_FIELDS.default) == (None, None)           # site-specific: no default
     d, _, _ = model(tree=TREE)
     states, problems = ticket_state_map(d, STATUS_STATES)          # BMC's documented list, by default
     assert problems == () and len(states) == 11
     assert "Pending" not in states and "Rejected" not in states
+    work, problems = ticket_state_map(d, WORK_ORDER_STATES)        # BMC's documented work-order list, by default
+    assert problems == () and len(work) == 7 and work["In Progress"] == "implement"
+    assert "Pending" not in work and "Rejected" not in work
 
 
 def test_a_linked_change_is_read_as_evidence():
@@ -224,8 +236,8 @@ def test_saved_answers_errors_unknown_files_dating_duplicates_and_servers_are_na
                "ciamTicketApproval") == "approved"
     assert ("approval/CRQ000000000002/0.json: AR System answered an error: 302 Entry does not exist in database"
             in imported.notices)
-    assert ("notes.json: isn't an AR System entry answer (a change of CHG:Infrastructure Change or signatures of "
-            "AP:Detail-Signature)") in imported.notices
+    assert ("notes.json: isn't an AR System entry answer (a change of CHG:Infrastructure Change, a work order of "
+            "WOI:WorkOrderInterface or signatures of AP:Detail-Signature)") in imported.notices
     assert read_changes(files, d, (), None).notices == ("ticket evidence is dated: give --at (when the export was "
                                                         "taken)",)
     twice = {**files, "crq-1b.json": json.dumps(_change("CRQ000000000001", "000000000000777", "Draft"))}
@@ -310,3 +322,162 @@ def test_projections_keep_only_what_the_importer_reads():
                     "_links": {"next": [{"href": "n"}]}}
     error = json.dumps([{"messageType": "ERROR", "messageText": "no"}])
     assert entries_view(("x",))(error) == error and entries_view(("x",))("<html>") == "<html>"
+
+
+# ------------------------------------------------------------------ work orders: drafts and read-back
+AS_OF = dt.date(2026, 10, 18)
+GROUPS = "Platform=Example Company/Identity Services/Identity Platform, network=Example Company/Network/Edge"
+FIELDS = ("First Name=Ops, Last Name=Reader, Customer First Name=CIAM, Customer Last Name=Owner, "
+          "Company=Example Company, Customer Company=Example Company, Location Company=Example Company")
+
+
+def _request(team="Platform", items=(("action", "Certificates", "Renew the signing certificate",
+                                      dt.date(2026, 11, 1)),), do_by=dt.date(2026, 11, 1)):
+    return TicketRequest(team, f"cn={team},ou=owners,dc=ciam-ops", f"CIAM: 1 finding for {team} (aws/prod to "
+                         "azure/prod)", items, do_by, "aws/prod", "azure/prod", AS_OF)
+
+
+def _drafting(groups=GROUPS, fields=FIELDS):
+    d, _, _ = model(tree=(*TREE, *((_setting(TICKET_GROUPS.name, groups),) if groups else ()),
+                          *((_setting(TICKET_FIELDS.name, fields),) if fields else ())))
+    return d
+
+
+def test_a_team_s_findings_are_drafted_as_a_work_order_create_body():
+    draft = ticket_draft(_drafting(), _request())
+    assert (draft.extension, draft.problems, draft.how) == ("json", (), HOW)
+    assert json.loads(draft.body) == {"values": {
+        "First Name": "Ops", "Last Name": "Reader", "Customer First Name": "CIAM", "Customer Last Name": "Owner",
+        "Company": "Example Company", "Customer Company": "Example Company", "Location Company": "Example Company",
+        "z1D_Action": "CREATE", "Summary": "CIAM: 1 finding for Platform (aws/prod to azure/prod)",
+        "Detailed Description": (
+            "Findings of the CIAMstack plan from aws/prod to azure/prod (as of 2026-10-18) that Platform owns.\n\n"
+            "- [action] Certificates: Renew the signing certificate (do by 2026-11-01)\n\n"
+            "Link this ticket on the opsdir change that does the work (ciamTicketRef), so its state is read back."),
+        "Status": "Assigned", "Support Company": "Example Company", "Support Organization": "Identity Services",
+        "Support Group Name": "Identity Platform", "Priority": "Medium",
+        "Scheduled End Date": "2026-11-01T23:59:59.000+0000"}}
+    assert HOW[0] == "POST https://<ar-rest-host>/api/arsys/v1/entry/WOI%3AWorkOrderInterface_Create"
+    assert "Authorization: AR-JWT <jwt>" in HOW[1] and "Detailed Decription" not in draft.body
+
+
+def test_a_blocker_raises_the_priority_a_given_one_wins_and_owned_fields_stay_opsdir_s():
+    blocker = _request("PLATFORM", (("blocker", "Network", "Open 636", None),), None)
+    values = json.loads(ticket_draft(_drafting(), blocker).body)["values"]
+    assert (values["Priority"], values["Support Group Name"], "Scheduled End Date" in values) == (
+        "High", "Identity Platform", False)                       # a team by name, any case; no do-by, no date
+    given = ticket_draft(_drafting(fields=f"{FIELDS}, Priority=Low, Status=Closed, Work Order Type=General"),
+                         blocker)
+    values = json.loads(given.body)["values"]
+    assert (values["Priority"], values["Status"], values["Work Order Type"]) == ("Low", "Assigned", "General")
+    assert given.problems == ("bmc-helix-ticket-fields: `Status` is set by opsdir: left out",)
+    wrong = ticket_draft(_drafting(fields=f"{FIELDS}, Priority=Urgent"), blocker)
+    assert json.loads(wrong.body)["values"]["Priority"] == "High"
+    assert wrong.problems == ("bmc-helix-ticket-fields: Priority `Urgent` isn't Critical, High, Medium, Low: High "
+                              "is used",)
+
+
+def test_no_draft_without_the_team_s_group_or_the_foundation_fields_and_the_problem_says_how():
+    unmapped = ticket_draft(_drafting(), _request("security"))
+    assert unmapped.body is None and unmapped.how == HOW
+    assert unmapped.problems == (
+        "bmc-helix-ticket-groups gives no support group for security: add "
+        "`security=<company>/<organization>/<group>` to it, `opsdir setting bmc-helix-ticket-groups "
+        "'<team>=<company>/<organization>/<group>, ...' --change <id>`",)
+    bare = ticket_draft(_drafting(groups=None, fields="First Name=Ops"), _request())
+    assert bare.body is None and len(bare.problems) == 2
+    assert bare.problems[1].startswith("bmc-helix-ticket-fields doesn't give Last Name, Customer First Name, "
+                                       "Customer Last Name, Company, Customer Company, Location Company")
+    assert "`opsdir setting bmc-helix-ticket-fields 'First Name=<value>, " in bare.problems[1]
+    groups, problems = team_groups(_drafting(groups="Platform=Example Company/Identity Services, bad"))
+    assert groups == {} and problems == (
+        "bmc-helix-ticket-groups: `bad` isn't <name>=<value>",
+        "bmc-helix-ticket-groups: `Platform=Example Company/Identity Services` isn't "
+        "<team>=<company>/<organization>/<group>")
+
+
+def test_the_hand_off_writes_the_drafts_and_says_what_is_missing():
+    plan = SimpleNamespace(src=SimpleNamespace(label="aws/prod"), dst=SimpleNamespace(label="azure/prod"),
+                           as_of=AS_OF, blockers=(("Network", "Open 636", "security"),),
+                           actions=(("Certificates", "Renew", "Platform", dt.date(2026, 11, 1)),))
+    files = handoff_files(_drafting(), plan, (ADAPTER,))
+    assert sorted(files) == ["tickets/README.md", "tickets/bmc-helix/Platform.json"]
+    assert "**not complete for security**: bmc-helix-ticket-groups gives no support group" in files[
+        "tickets/README.md"]
+    assert "AR-JWT <jwt>" in files["tickets/README.md"] and "AR-JWT" not in files["tickets/bmc-helix/Platform.json"]
+
+
+WORK_URL = f"https://{HOST}/api/arsys/v1/entry/WOI%3AWorkOrderInterface"
+WORK_TREE = (*BASE, *_changes(("CHG-1", "CRQ000000000001"), ("CHG-4", "WO0000000000401")))
+
+
+def _work_order(n, rid, status, **extra):
+    return {"values": {"Work Order ID": n, "Request ID": rid, "Description": "CIAM: 1 finding for Platform",
+                       "Status": status, "Status Reason": None, "Priority": "Medium", "Work Order Type": "General",
+                       "Scheduled Start Date": "2026-09-23T00:00:00.000+0000",
+                       "Scheduled End Date": "2026-11-01T23:59:59.000+0000", "Actual Start Date": None,
+                       "Actual End Date": None, "Last Modified Date": "2026-09-22T10:00:00.000+0000", **extra},
+            "_links": {"self": [{"href": f"{WORK_URL}/{rid}"}]}}
+
+
+def test_a_linked_work_order_is_read_back_as_a_work_ticket():
+    assert is_work_order("WO0000000000401") and not is_work_order("CRQ000000000001")
+    files = {f"{HOST}/workorder/WO0000000000401.json": json.dumps(
+        {"entries": [_work_order("WO0000000000401", "000000000000401", "In Progress")]}),
+        "wo-9.json": json.dumps(_work_order("WO0000000000409", "000000000000409", "Assigned"))}
+    d, imported, after = _read(tree=WORK_TREE, files=files)
+    t = get(after, ticket_dn("bmc-helix", "WO0000000000401"))
+    assert dict(t.attrs) == {
+        "cn": ("WO0000000000401",), "ciamImportedAt": ("20260923090000Z",),
+        "ciamTitle": ("CIAM: 1 finding for Platform",), "ciamProviderRef": ("000000000000401",),
+        "ciamDocUrl": (f"{WORK_URL}/000000000000401",), "ciamTicketKind": ("work",),
+        "ciamTicketState": ("implement",), "ciamTicketNativeState": ("In Progress",),
+        "ciamTicketPlannedStart": ("20260923000000Z",), "ciamTicketPlannedEnd": ("20261101235959Z",),
+        "ciamTicketDue": ("20261101235959Z",),
+        "ciamTicketFact": ("priority Medium", "work-order-type General",
+                           "last-modified 2026-09-22T10:00:00.000+0000")}
+    assert "not linked to a change record: WO0000000000409 (left out)" in imported.notices
+    assert ("linked but not in the export: CRQ000000000001 (the record keeps what it last read; nothing is removed)"
+            in imported.notices)
+    states = {(x.number, x.states) for x in linked(after)}
+    assert ("WO0000000000401", (IN_STEP,)) in states                   # a work ticket has no approval to compare
+
+
+def test_an_unmapped_work_order_status_is_kept_native_and_named():
+    files = {"wo.json": json.dumps(_work_order("WO0000000000401", "000000000000401", "Pending"))}
+    _, imported, after = _read(tree=WORK_TREE, files=files)
+    t = get(after, ticket_dn("bmc-helix", "WO0000000000401"))
+    assert (one(t, "ciamTicketState"), one(t, "ciamTicketNativeState")) == (None, "Pending")
+    assert ("status Pending isn't mapped in bmc-helix-work-order-states: the state of WO0000000000401 is kept as BMC "
+            "gives it (neutral state unknown)") in imported.notices
+    cancelled = {"wo.json": json.dumps(_work_order("WO0000000000401", "000000000000401", "Cancelled"))}
+    _, _, after = _read(tree=WORK_TREE, files=cancelled)
+    assert [x.states for x in linked(after) if x.number == "WO0000000000401"] == [("cancelled",)]
+
+
+SERVED_WORK = {"WO0000000000401": _work_order("WO0000000000401", "000000000000401", "Completed",
+                                              **{"Detailed Description": "not kept"})}
+
+
+def _serve_work(request):
+    if unquote(urlsplit(request.url).path).endswith("WOI:WorkOrderInterface"):
+        number = parse_qs(urlsplit(request.url).query)["q"][0].split('"')[1]
+        return json.dumps({"entries": [SERVED_WORK[number]] if number in SERVED_WORK else []}), None
+    return _serve(request)
+
+
+def test_the_collector_reads_a_linked_work_order_once_without_approvals():
+    _, alpha, _ = model(alpha=_source(), tree=WORK_TREE)
+    first = dict(change_steps(alpha.d, alpha, {}, {}))
+    assert sorted(first) == [f"{HOST}/change/CRQ000000000001.json", f"{HOST}/workorder/WO0000000000401.json"]
+    call = first[f"{HOST}/workorder/WO0000000000401.json"]
+    assert call.url.startswith(f"{WORK_URL}?q=%27Work%20Order%20ID%27%20%3D%20%22WO0000000000401%22"
+                               "&fields=values(Work%20Order%20ID,Request%20ID,Description,Status,")
+    assert call.url.endswith("&limit=2&offset=0")
+    assert call.credential == ("api-key", "fake://kv/itsm-reader", None, "Authorization", "AR-JWT ")
+    c = collect("bmc-helix/change-requests", COLLECTORS[0], alpha.d, alpha, _serve_work)
+    assert c.problems == () and not any("approval/WO" in p for p in c.files)
+    assert "not kept" not in "".join(c.files.values())
+    after = after_import(alpha.d, read_changes(c.files, alpha.d, (), AT))
+    t = get(after, ticket_dn("bmc-helix", "WO0000000000401"))
+    assert (one(t, "ciamTicketKind"), one(t, "ciamTicketState")) == ("work", "review")

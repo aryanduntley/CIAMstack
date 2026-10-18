@@ -6,7 +6,12 @@ change type; and its approval signatures' statuses as approval steps' decisions.
 BMC Helix ITSM returns an enum as its string value (never its number or a label), so the map is keyed by the status
 text. Pending (on hold, from any phase) and Rejected have no neutral state: Rejected is the change's approval
 (overall_approval). Of Change Timing, Emergency, Normal and Standard are the neutral change types; Expedited, Latent
-and No Impact aren't one (they're kept as facts)."""
+and No Impact aren't one (they're kept as facts).
+
+A work order's Status (the work tickets findings are handed over by, workorders.py) is a state through its own estate
+setting bmc-helix-work-order-states, whose default is BMC's documented work-order list (26.1 status transitions):
+Pending (waiting for information) and Rejected (an approver rejected it, where work-order approval is enabled) have no
+neutral state."""
 from opsdir.core.contract import Setting
 from opsdir.domains.governance.schema import TICKET_CHANGE_TYPES, TICKET_STATES
 from opsdir.domains.governance.tickets import derived_approval
@@ -20,6 +25,13 @@ STATUS_STATES = Setting("bmc-helix-status-states", "string", DEFAULT_STATES,
                         f"comma-separated <status>=<state> ({', '.join(TICKET_STATES)}); the default is BMC's "
                         "documented list (Pending and Rejected have no state): change it only for a tenant whose "
                         "list was customised")
+DEFAULT_WORK_ORDER_STATES = ("Assigned=new, Waiting Approval=authorize, Planning=assess, In Progress=implement, "
+                             "Completed=review, Closed=closed, Cancelled=cancelled")
+WORK_ORDER_STATES = Setting("bmc-helix-work-order-states", "string", DEFAULT_WORK_ORDER_STATES,
+                            "What each Status of the BMC Helix ITSM work orders (the work tickets findings are handed "
+                            f"over by) means, as comma-separated <status>=<state> ({', '.join(TICKET_STATES)}); the "
+                            "default is BMC's documented list (Pending and Rejected have no state): change it only for "
+                            "a tenant whose list was customised")
 REJECTED = "Rejected"                                   # the status a rejected approval puts a change in
 # An approval signature's status (AP:Detail-Signature 'Approval Status') as its step's decision: a step is declined
 # when any signature is, else pending when any waits, else approved when any approved (One Must Sign closes the

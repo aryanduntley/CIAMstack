@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opsdir-adapter-bmc-helix"
 version = "0.1.0"
-description = "opsdir ITSM add-on for BMC Helix ITSM and Remedy: the change tickets the record's changes name, read as evidence."
+description = "opsdir ITSM add-on for BMC Helix ITSM and Remedy: the change tickets and work orders the record's changes name, read as evidence, and work-order drafts handing findings to their owning teams."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = ["opsdir>=0.1"]

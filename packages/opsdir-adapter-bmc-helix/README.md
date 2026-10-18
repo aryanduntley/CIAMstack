@@ -2,6 +2,8 @@
 
 opsdir ITSM add-on (adapter kind `itsm`) for BMC Helix ITSM change management: Helix SaaS and on-premises BMC Helix / Remedy ITSM alike, through the AR System REST API. It is the third ITSM add-on after `opsdir-adapter-servicenow` and `opsdir-adapter-jira-sm`, with the same contract. It reads the change tickets that the record's change records are tracked by and records them as **evidence**, read-only (milestone 6.2f follow-ups, task 556). The governance domain then compares each ticket with the record: `opsdir report tickets` and the planner's `Change tickets` check (`opsdir/README.md`, *ITSM tickets*).
 
+It also drafts the **work orders** that hand the plan's findings to their owning teams, as files a person posts, and reads the linked work orders back as work tickets (task 612, below).
+
 A ticket **never approves anything in opsdir**. The importer writes nothing under `ou=changes`. A ticket's approval never becomes a change's `ciamChangeStatus`, and its approvers never become `ciamApprovedBy`. The store's rule still holds: every write needs an approved change record.
 
 **Applies to** no environment and renders nothing (`applies=None`). Collecting opts in through a collection source (below). Written against BMC Helix ITSM and BMC Helix Innovation Suite 26.3.01, the current release (SaaS 2026-09-22, on-premises 2026-09-23). The forms and fields it reads (`CHG:Infrastructure Change`, `AP:Detail-Signature`) are the long-standing Remedy ones, so earlier supported versions read alike.
@@ -113,6 +115,70 @@ There is one qualified read per linked ticket. Only the requested values, each e
 
 Form, field and row permissions apply to REST as they do on screen: a field the reader can't see is simply not returned.
 
+## Handing findings over: work-order drafts (`opsdir tickets`)
+
+`opsdir tickets <from> <to> -o DIR [--mine]` writes one draft per owning team of the plan's findings (milestone 7.7, decision 3415). This add-on drafts a BMC Helix **work order**: `tickets/bmc-helix/<team>.json` is the body of `POST /api/arsys/v1/entry/WOI%3AWorkOrderInterface_Create`, and `tickets/README.md` says how to file it. opsdir **never posts it** and holds no BMC credential. The team, or an admin, posts the file with their own AR-JWT:
+
+    curl --request POST 'https://<ar-rest-host>/api/arsys/v1/entry/WOI%3AWorkOrderInterface_Create' --header 'Authorization: AR-JWT <jwt>' --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary @<team>.json
+
+A work order is BMC's standalone object for scheduled fulfilment work. An ordinary Work Order User can submit one, within their company and support-group permissions.
+
+The body is `{"values": {...}}`, following BMC's documented REST create example, plus the assignment, priority and deadline fields of the work-order create mappings:
+
+| Field | Value |
+|---|---|
+| `z1D_Action` | `CREATE` |
+| `Summary` | the draft's title (`CIAM: <n> findings for <team> (<from> to <to>)`) |
+| `Detailed Description` | the findings as plain text, earliest do-by first. The spelling is correct here: the incident interface's `Detailed Decription` misspelling isn't used |
+| `Status` | `Assigned` |
+| `Support Company`, `Support Organization`, `Support Group Name` | the team's support group, from `bmc-helix-ticket-groups` |
+| `Priority` | `bmc-helix-ticket-fields`' `Priority` when it gives one (`Critical`, `High`, `Medium` or `Low`); otherwise `High` when the team's findings include a blocker, and `Medium` when they don't |
+| `Scheduled End Date` | the end of the earliest do-by day, UTC (`2026-11-01T23:59:59.000+0000`); left out when no finding has a do-by date |
+| everything else | from `bmc-helix-ticket-fields` |
+
+**Settings** (no defaults: they are the tenant's own names). Set each under an approved change with `opsdir setting <name> '<value>' --change <id>`:
+- **`bmc-helix-ticket-groups`**: `<team>=<Support Company>/<Support Organization>/<Support Group Name>, ...`, with names as the foundation data has them. A team is matched by name, in any case. A team without a group gets no draft: the README names it, with the command to run. A value split by `/` into fewer than three names is refused (a group name may itself hold `/`; a company or organization name can't). No name may hold a comma.
+- **`bmc-helix-ticket-fields`**: `<field>=<value>, ...`, the other values of every draft. It must give `First Name`, `Last Name`, `Customer First Name`, `Customer Last Name`, `Company`, `Customer Company` and `Location Company` (who submits the work order and for whom, as the tenant's foundation data names them, as in BMC's create example). Without them, no draft is written. It can also give `Priority`, `Work Order Type`, a template, categorization or a manager group, when the tenant's workflow requires them. The fields opsdir sets itself (`z1D_Action`, `Summary`, `Detailed Description`, `Status`, the support group, `Scheduled End Date`) are left out, with a problem naming them.
+
+**Linking the work order back.** After posting, the work order's number is the `WorkOrder_ID` field of the interface entry that the answer's `Location` names (`GET <Location>?fields=values(WorkOrder_ID)`). Link it on the opsdir change that does the work, as `ciamTicketRef bmc-helix:<Work Order ID>`, next to the change's own ticket. BMC documents the `WorkOrder_ID` field; that this exact read sequence returns it on 26.x is unconfirmed.
+
+## Work orders read back (work tickets)
+
+A linked `bmc-helix:` number that starts with `WO` (BMC's Work Order ID prefix: `WO0000000000401`) is a work order. Any other number is a change. The same importer and collector read work orders alongside the changes, as **work tickets** (`ciamTicketKind: work`): evidence that the work handed over is happening. They carry no approval, and the comparison asks none of one (`domains/governance/tickets.py`).
+
+Work orders are read from `WOI:WorkOrderInterface`, the query interface BMC documents for integrations, qualified by `Work Order ID`. One qualified read per linked work order, `limit=2`, saved as `<host>/workorder/<WO>.json`, with no approval read:
+
+    GET /api/arsys/v1/entry/WOI%3AWorkOrderInterface?q='Work Order ID' = "<WO>"&fields=values(Work Order ID, Request ID, Description, Status, Scheduled Start Date, Scheduled End Date, Actual Start Date, Actual End Date, Status Reason, Priority, Work Order Type, Last Modified Date)&limit=2&offset=0
+
+An answer you saved is read too: a list answer or single entry whose values hold a `Work Order ID`.
+
+| BMC Helix (`WOI:WorkOrderInterface`) | Record (`ciamTicket`, `cn=<WO>,ou=bmc-helix,ou=tickets`) |
+|---|---|
+| `Work Order ID`, `Request ID`, `Description` (the work order's summary on the interface), the self link | `cn`, `ciamProviderRef`, `ciamTitle`, `ciamDocUrl` |
+| (always) | `ciamTicketKind` `work` |
+| `Status` | `ciamTicketState` by `bmc-helix-work-order-states`; `ciamTicketNativeState` always |
+| `Scheduled Start Date`, `Scheduled End Date` | `ciamTicketPlannedStart`, `ciamTicketPlannedEnd` |
+| `Scheduled End Date` | `ciamTicketDue`: when BMC expects the work done |
+| `Actual Start Date`, `Actual End Date` | `ciamTicketWorkStart`, `ciamTicketWorkEnd` |
+| `Status Reason`, `Priority`, `Work Order Type`, `Last Modified Date` | `ciamTicketFact` `status-reason …`, `priority …`, `work-order-type …`, `last-modified …` |
+
+**`bmc-helix-work-order-states`** maps a work order's Status to a state. Its default is BMC's documented work-order list (26.1 status transitions):
+
+| Status | Neutral state |
+|---|---|
+| Assigned (the initial status) | `new` |
+| Planning (created, work not started) | `assess` |
+| Waiting Approval (only where work-order approval is enabled; it isn't out of the box) | `authorize` |
+| In Progress | `implement` |
+| Completed (reached when the last task closes) | `review` |
+| Closed | `closed` |
+| Cancelled | `cancelled` |
+| Pending (waiting for information), Rejected (an approver rejected it) | none: the native state is kept, with a notice |
+
+It is overridden like `bmc-helix-status-states`. A cancelled work order on a change the record approves is an action for the change's owner: the work handed over was withdrawn.
+
+Least privilege for the reader: `Work Order Viewer` is BMC's view-and-search permission (it can't modify work orders, though it can add work logs), and is enough for a GET-only reader. The AR System license it needs for REST reads is unconfirmed.
+
 ## Known limits
 
 - **Not run against a live server.** The add-on follows BMC's documentation (Innovation Suite 26.3 REST, the TrueSight Orchestration Remedy change mappings, the Mobility approval field catalog). Confirm field names on the tenant: a customised form, an enum customised beyond `bmc-helix-status-states`, or a field name the form doesn't have can make the server refuse the read (the collection then fails with BMC's message).
@@ -125,6 +191,15 @@ Form, field and row permissions apply to REST as they do on screen: a field the 
 - **Government.** BMC Helix is FedRAMP Moderate (marketplace package F1510057481, since 2016-05-05), and Helix ITSM is listed among its regulated-cloud services. REST and authentication parity there, and its host names, are unverified: confirm them with the customer.
 - **Comparisons.** As for the other ITSM add-ons, the record's `ciamPlannedAt` is compared by UTC day with the planned window, and ITSM's own work times with its planned window exactly. When the record itself applied a change is not compared yet.
 - **One server.** One server per record: the link names a change number, not a server.
+- **Work-order drafts.**
+  - Not posted to a live server.
+  - Whether `WOI:WorkOrderInterface_Create` takes `Scheduled End Date` and passes it to the work order is **unconfirmed**: BMC documents the field on the work-order query and update mappings, not on the create mappings. After filing, check the work order's date. opsdir writes no second (update) request.
+  - The create interface's field lengths weren't confirmed, so nothing is cut or checked. Ask the tenant's administrator for the form's limits.
+  - **Sources disagree on the assignee fields.** The work-order create mappings (TrueSight Orchestration 23.x) name `Support Company`, `Support Organization` and `Support Group Name` as the assignee, and the draft uses them. The older SRM 8.0 module mappings (BMC Atrium Orchestrator 2013) list those names as manager-side and `ASCPY`, `ASORG` and `ASGRP` as the assignee. Confirm on the tenant which group a filed work order is assigned to.
+- **Work-order read-back.**
+  - A work order is told from a change by its `WO` prefix. A tenant that changed the Work Order ID prefix links numbers that are read as changes.
+  - The fields are those of `WOI:WorkOrderInterface`'s documented query mappings. Their names on the 26.x base form `WOI:WorkOrder` are unconfirmed, so the base form isn't read. The assignee-side support group isn't read either: its field names there are unconfirmed.
+  - BMC documents `Pending` as reachable from most statuses, but not as a status from any phase (Completed can't go to Pending, for example). Either way it has no neutral state.
 - **Versions.** Current release 26.3.01. The support catalog lists on-premises 25.4.01 to 2027-05-20 and 26.1.01 to 2027-09-06; 26.2 and 26.3 dates aren't published there yet.
 
 Sources (BMC documentation, read by the task 556 research on 2026-10-16): AR System REST access and authentication (Innovation Suite 26.3), entry endpoints, pagination and sort, JSON data types; Change Management web services and form guidance; the TrueSight Orchestration Remedy change module mappings; approval forms (AP:Detail, AP:Signature, AP:Detail-Signature) and the Mobility approval field catalog; Change Management roles; license types; Max-Entries-Per-Query; report exports; the regulated-cloud service list; the ITSM and Innovation Suite 26.3 release pages and the support lifecycle catalog; and the FedRAMP Marketplace.
@@ -141,5 +216,7 @@ Sources (BMC documentation, read by the task 556 research on 2026-10-16): AR Sys
 - which signatures are a change's (Request, Application, duplicates), and incomplete pages.
 - saved answers, errors, duplicates and two servers.
 - the collector: an AR-JWT token, a bearer token, refused schemes, paging and the kept projections.
+- work-order drafts: the create body, priority (derived, given, refused), owned fields, a team without a group or the foundation fields missing (no draft, with the command to run), and the hand-off files.
+- work orders read back as work tickets (state, windows, due date, facts), an unmapped or cancelled status, and the collector's one work-order read with no approvals.
 
 Run them with `env -u PYTHONPATH opsdir/.venv/bin/python -m pytest -q packages/opsdir-adapter-bmc-helix`.
