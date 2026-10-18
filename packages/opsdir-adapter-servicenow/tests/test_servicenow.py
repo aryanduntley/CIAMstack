@@ -99,10 +99,18 @@ def test_a_linked_ticket_is_read_as_evidence_under_ou_tickets():
                            "sys_updated_on 2026-09-22 10:00:00")}
     assert get(after, ticket_dn("servicenow", "CHG0099")) is None
     assert "not linked to a change record: CHG0099 (left out)" in imported.notices
-    assert ("linked but not in the export: CHG0002, CHG0003 (the record keeps what it last read; nothing is removed); "
-            "a work ticket is read from the table servicenow-ticket-table names, and it isn't set") in imported.notices
+    assert ("linked but not in the export: CHG0002, CHG0003 (the record keeps what it last read; nothing is "
+            "removed)") in imported.notices                     # change numbers: no work-ticket hint
     assert not any(within(g[0], CHANGES) for g in imported.groups)       # evidence never lands on a change record
     assert {e.dn: e for e in subtree(after, CHANGES)} == {e.dn: e for e in subtree(d, CHANGES)}
+
+
+def test_a_missing_number_that_isnt_a_change_number_says_where_work_tickets_are_read_from():
+    _, imported, _ = _read(_change_record("CHG0001", "s1", "-2", "approved"),
+                           tree=(*TREE, *_changes(("CHG-4", "TASK0001"))))
+    assert ("linked but not in the export: CHG0002, CHG0003, TASK0001 (the record keeps what it last read; nothing "
+            "is removed); a work ticket is read from the table servicenow-ticket-table names, and it isn't set"
+            ) in imported.notices
 
 
 def test_the_approval_is_the_changes_own_never_inferred_from_approval_records():

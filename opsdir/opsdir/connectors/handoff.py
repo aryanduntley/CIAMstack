@@ -93,12 +93,18 @@ def _readme(p, adapters, requests, drafts, unowned):
 
 
 def _adapter_lines(adapter, drafts):
+    """An add-on's README section: its drafts, what kept each from being complete (a problem every team's draft has,
+    a setting the whole site lacks, said once), how to file one."""
     how = next((t.how for _, _, t in drafts if t.how), ())
+    shared = tuple(p for p in drafts[0][2].problems if all(p in t.problems for _, _, t in drafts[1:])) \
+        if len(drafts) > 1 else ()
     return (f"## {adapter.name}", "",
             *(f"- `{adapter.name}/{_file_name(r.team)}.{t.extension}`: {r.team}, {len(r.items)} finding"
               f"{'s' if len(r.items) != 1 else ''}" + (f", earliest do-by {r.do_by.isoformat()}" if r.do_by else "")
               for _, r, t in drafts if t.body is not None),
-            *(f"- **not complete for {r.team}**: {problem}" for _, r, t in drafts for problem in t.problems),
+            *(f"- **not complete for any team**: {problem}" for problem in shared),
+            *(f"- **not complete for {r.team}**: {problem}" for _, r, t in drafts for problem in t.problems
+              if problem not in shared),
             *(("", "To file a draft:", "", *(f"    {line}" for line in how)) if how else ()), "")
 
 

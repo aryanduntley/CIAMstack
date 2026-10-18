@@ -67,6 +67,8 @@ from opsdir.domains.governance.tickets import (TICKET_CLASS, WORK, adapter_dn, l
                                                ticket_group, ticket_map, ticket_state_map)
 
 SYSTEM = "servicenow"
+# change_request numbers' prefix as the platform ships it: a missing number without it may be a work ticket
+CHANGE_PREFIX = "CHG"
 CHANGE_TABLE, APPROVER_TABLE = "change_request", "sysapproval_approver"
 CHANGE_FIELDS = ("number", "sys_id", "state", "approval", "type", "chg_model", "start_date", "end_date", "work_start",
                  "work_end", "close_code", "short_description", "assignment_group", "cmdb_ci", "requested_by",
@@ -383,8 +385,9 @@ def read_changes(files, d, patterns, at=None):
           "fact)" for v, n in sorted(unmapped.items())),
         *((f"not linked to a change record: {', '.join(unlinked)} (left out)",) if unlinked else ()),
         *((f"linked but not in the export: {', '.join(n for n in wanted if n not in read)} (the record keeps what it "
-           "last read; nothing is removed)" + ("" if maps.work_table else f"; a work ticket is read from the table "
-                                               f"{TICKET_TABLE.name} names, and it isn't set"),)
+           "last read; nothing is removed)"
+           + ("" if maps.work_table or all(n.upper().startswith(CHANGE_PREFIX) for n in wanted if n not in read)
+              else f"; a work ticket is read from the table {TICKET_TABLE.name} names, and it isn't set"),)
           if any(n not in read for n in wanted) else ()),
         *(("no instance folder (<host>/change_request/...): the tickets' addresses aren't recorded"
            + (f", nor is it checked that they are {', '.join(instance_hosts(d))}'s" if instance_hosts(d) else ""),)

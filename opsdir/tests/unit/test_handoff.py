@@ -58,6 +58,14 @@ def test_drafts_and_readme():
     assert "- [action] Secrets: Nobody's reference" in readme
 
 
+def test_a_problem_every_team_has_is_said_once():
+    site = "acme-site isn't set: opsdir setting acme-site <url> --change <id>"
+    unset = ITSM._replace(ticket_draft=lambda d, r: TicketDraft(None, "json", (), (site, f"no queue for {r.team}")))
+    readme = handoff_files(D, PLAN, (unset,))["tickets/README.md"]
+    assert readme.count(site) == 1 and f"- **not complete for any team**: {site}" in readme
+    assert "- **not complete for network**: no queue for network" in readme
+
+
 def test_without_a_drafting_add_on_nothing_is_drafted():
     files = handoff_files(D, PLAN, (READ_ONLY,))
     assert list(files) == ["tickets/README.md"]
