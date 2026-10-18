@@ -7,6 +7,7 @@ from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .client_certificates import trust_notes
 from .checks import (check_client_auth, check_cluster, check_data_stores, check_jdbc_drivers, check_kit_discovery,
                      check_references, check_service_roles, check_smtp_auth, credential_roles)
+from .detections import DETECTIONS
 from .discovery import CHOICES
 from .discovery_import import CLUSTER
 from .importer import BULK
@@ -52,7 +53,7 @@ ADAPTER = Adapter(name="pingfederate", kind="product", applies=applies, required
                   secret_patterns=SECRET_PATTERNS, importers=(BULK, NODE_FILES, CLUSTER), profile_terms=None,
                   access=None, endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, render_targets=TARGETS,
-                  logs=LOGS, version_changes=VERSION_CHANGES,
+                  logs=LOGS, version_changes=VERSION_CHANGES, detections=DETECTIONS,
                   profile=PROFILE, notes=trust_notes,
                   # its bulk importer reads back the Admin API requests (bulk-config/data.json holds the same)
                   reads_back=(ReadBack("bulk", "pingfederate/admin-api/*.json"),
