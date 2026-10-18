@@ -250,11 +250,12 @@ def gateway_plug_of(m, gateway, service, installed=ADAPTERS):
 
 
 def cert_forwarding_of(m, svc, installed=ADAPTERS):
-    """The CertForwarding of the load balancer fronting service name svc in environment m, from the first installed
-    adapter that applies to m and declares one (its cloud's provider adapter), or None (nothing in front verifies client
-    certificates, or no adapter says how it forwards them)."""
-    hook = next((a.cert_forwarding for a in installed if a.cert_forwarding and a.applies and a.applies(m)), None)
-    return hook(m, svc) if hook else None
+    """The CertForwarding of the load balancer fronting service name svc in environment m: the first answer of the
+    installed adapters that apply to m and declare one (a cloud's provider adapter, an on-prem load balancer the stack
+    declares), each asked in turn, so a cloud whose own balancer doesn't front svc leaves it to the next; None when
+    nothing in front verifies client certificates or no adapter says how it forwards them."""
+    hooks = (a.cert_forwarding for a in installed if a.cert_forwarding and a.applies and a.applies(m))
+    return next((f for f in (hook(m, svc) for hook in hooks) if f is not None), None)
 
 
 def secret_delivery_of(scheme, installed=ADAPTERS):
