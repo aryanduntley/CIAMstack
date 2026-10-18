@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-api"
+version = "0.1.0"
+description = "The opsdir HTTP API: the operations layer for people signed in at the estate's identity provider (OIDC bearer tokens mapped to recorded people), every call checked against the record's grants."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "opsdir>=0.1",
+    "fastapi>=0.146.0",
+    "uvicorn>=0.54.0",
+    "joserfc>=1.7.5",
+    "httpx>=0.28.1",
+    "python-multipart>=0.0.32",
+]
+
+[project.scripts]
+opsdir-api = "opsdir_api.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
