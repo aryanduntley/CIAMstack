@@ -16,6 +16,7 @@ Set in the environment. `opsdir-api` doesn't start while any value is missing or
 | `OPSDIR_API_JWKS_URL` | The provider's JWKS URL (optional). When it isn't set, the URL is the `jwks_uri` of `<issuer>/.well-known/openid-configuration`, and that document must name the same issuer |
 | `OPSDIR_API_ALGORITHMS` | Accepted signing algorithms, default `RS256,PS256,ES256`. Only asymmetric algorithms are accepted; `none` and `HS*` are refused |
 | `OPSDIR_API_LEEWAY` | Clock skew allowed for `exp`, `nbf` and `iat`, in seconds (default 60, at most 300) |
+| `OPSDIR_API_GROUPS_CLAIM` | The claim listing the person's identity provider groups (default `groups`; empty: groups aren't used) |
 | `OPSDIR_API_HOST`, `OPSDIR_API_PORT` | Where it listens (default `127.0.0.1:8080`) |
 | `OPSDIR_API_FORWARDED_ALLOW_IPS` | Proxies whose `X-Forwarded-*` headers are trusted (default `127.0.0.1`) |
 
@@ -35,17 +36,19 @@ Otherwise the call gets a 401 with a `WWW-Authenticate: Bearer` challenge.
 
 The token's issuer and subject must belong to a recorded person: their `ciamIdpSubject` is `'<issuer> <subject>'`, set by an administrator with `opsdir person LOGIN --idp-subject ...`. If no person has them, the call gets a 403. Nobody is created automatically. This also means a client-credentials token with no person behind it can't do anything, approval included: every call is a person's.
 
+The token's groups claim (`OPSDIR_API_GROUPS_CLAIM`) decides the members of teams mapped to identity provider groups (`opsdir team NAME --idp-group '<issuer> <group id>'`): each value is taken as `'<iss> <value>'`, so configure the provider to emit immutable group IDs, not display names. When the provider says the list is incomplete (Entra ID's group overage: `_claim_names` names the claim, or `hasgroups` is set), the call gets a 403 rather than a guess: emit only the groups assigned to the application. The API client the token was issued to (`azp`, else `client_id`) is recorded in history beside the person.
+
 ## The API login
 
 The server connects as one database login, the API login, and only the server holds its credentials. The record's `api-login` setting names that login. The store accepts "acting as person X" (`store.postgres.requesting`) only from the login that setting names. For each request the server:
 
 1. opens a connection
 2. finds the person for the token
-3. runs everything inside `requesting(person)`
+3. runs everything inside `requesting(person, groups, client)`
 4. asks `authorize_command` first, with the action the command line would use (`read` for reads; `propose`, `approve` or `apply` for writes) and its area (an edited entry's environment, otherwise the whole record)
 5. closes the connection
 
-Writes are recorded as that person, and the store's own checks apply: an approver is never the change's author while approval separation is on.
+Writes are recorded as that person, with the API client and the mapped teams they held, and the store's own checks apply: an approver is never the change's author while approval separation is on, and grants count the mapped teams the token's groups give.
 
 ## Endpoints
 

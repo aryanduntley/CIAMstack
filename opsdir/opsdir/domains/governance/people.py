@@ -4,16 +4,20 @@ ciamParty under ou=owners). Once people are recorded, only a recorded person app
 it); with none recorded (a single-team install, the showcase) any login may, though never its own change while
 approval-separation is on. A person signing in to the HTTP API is found by how the company's identity provider names
 them (ciamIdpSubject: '<issuer> <subject>', a token's iss and sub claims); the API server, under the login the
-api-login setting names, then acts for their login. Pure."""
+api-login setting names, then acts for their login. A team may stand for identity provider groups (ciamIdpGroup:
+'<issuer> <group id>'); its members are then whoever the request's token says (member_teams), and its recorded
+memberships are ignored, as the store does (migration 0014). Pure."""
 from urllib.parse import urlsplit
 
 from ...core.changeset import new_entry, set_values
 from ...core.directory import children, get, one, values
-from ...core.naming import role_name_problem
+from ...core.naming import rdn_safe, role_name_problem
 from .naming import OWNERS, PEOPLE
 
 PERSON_CLASS = "ciamPerson"
 SUBJECT_ATTR = "ciamIdpSubject"
+TEAM_CLASS = "ciamParty"
+GROUP_ATTR = "ciamIdpGroup"
 
 
 def person_dn(login):
@@ -37,15 +41,41 @@ def teams_of(d, login):
     return tuple(t.split(",", 1)[0].split("=", 1)[1] for t in values(e, "ciamMemberOf")) if e is not None else ()
 
 
+def _named_problem(text, what):
+    parts = (text or "").split(" ")
+    if len(parts) != 2 or not all(parts):
+        return f"identity-provider {what} {text!r} isn't '<issuer> <{what}>' (two parts, one space)"
+    url = urlsplit(parts[0])
+    return None if url.scheme == "https" and url.hostname else \
+        f"identity-provider {what} {text!r}: the issuer {parts[0]!r} isn't an https URL"
+
+
 def subject_problem(text):
     """Why a text can't be an identity-provider subject ('<issuer> <subject>': exactly two space-separated parts, the
     issuer an https URL), or None."""
-    parts = (text or "").split(" ")
-    if len(parts) != 2 or not all(parts):
-        return f"identity-provider subject {text!r} isn't '<issuer> <subject>' (two parts, one space)"
-    url = urlsplit(parts[0])
-    return None if url.scheme == "https" and url.hostname else \
-        f"identity-provider subject {text!r}: the issuer {parts[0]!r} isn't an https URL"
+    return _named_problem(text, "subject")
+
+
+def group_problem(text):
+    """Why a text can't be an identity-provider group ('<issuer> <group>', as a subject), or None."""
+    return _named_problem(text, "group")
+
+
+def idp_teams(d, groups):
+    """The names of the teams standing for one of the identity provider groups ('<issuer> <group id>', compared
+    exactly), in name order."""
+    wanted = set(groups)
+    return tuple(sorted(one(e, "cn") for e in children(d, OWNERS, TEAM_CLASS) if wanted & set(values(e, GROUP_ATTR))))
+
+
+def member_teams(d, login, groups=()):
+    """The teams a person belongs to for permissions and their own area, as the store counts them (migration 0014):
+    their recorded teams that stand for no identity provider group, then the mapped teams the request's groups name
+    (only for a recorded person); () when not recorded."""
+    if get(d, person_dn(login)) is None:
+        return ()
+    recorded = tuple(t for t in teams_of(d, login) if not values(get(d, team_dn(t)), GROUP_ATTR))
+    return tuple(dict.fromkeys((*recorded, *idp_teams(d, groups))))
 
 
 def _holders(d, subject):
@@ -92,3 +122,42 @@ def person_lines(d, login):
     return tuple(f"{label:<6} {value}" for label, value in (
         ("login", login), ("name", one(e, "ciamDisplayName")), ("mail", one(e, "mail")),
         ("teams", ", ".join(teams_of(d, login))), *(("idp", s) for s in values(e, SUBJECT_ATTR))) if value)
+
+
+def team_changes(d, name, display=None, mail=None, groups=None):
+    """The change records recording a team (ciamParty, kind team, under ou=owners) or updating its display name, mail
+    and identity provider groups ('<issuer> <group id>'; None leaves one as it is, () clears the groups); ValueError for
+    a name that isn't a plain RDN value, a malformed group, or a party under that name that isn't a team."""
+    problems = [p for p in (*(group_problem(g) for g in groups or ()),) if p]
+    if not rdn_safe(name):
+        problems.insert(0, f"team name {name!r}: give a plain name (no DN special characters or outer spaces)")
+    e = get(d, team_dn(name)) if name else None
+    if e is not None and one(e, "ciamOwnerKind") != "team":
+        problems.append(f"{name} is a {one(e, 'ciamOwnerKind')} (ou=owners), not a team")
+    if problems:
+        raise ValueError("; ".join(problems))
+    attrs = {"ciamDisplayName": display, "mail": mail, GROUP_ATTR: None if groups is None else tuple(groups)}
+    if e is None:
+        branch = () if get(d, OWNERS) is not None else (new_entry(OWNERS, ("top", "organizationalUnit"),
+                                                                  {"ou": ("owners",)}),)
+        return (*branch, new_entry(team_dn(name), ("top", TEAM_CLASS),
+                                   {"cn": (name,), "ciamOwnerKind": ("team",),
+                                    **{k: (v,) if isinstance(v, str) else v for k, v in attrs.items() if v}}))
+    return tuple(set_values(e, k, (v,) if isinstance(v, str) else v) for k, v in attrs.items()
+                 if v is not None and tuple(values(e, k)) != ((v,) if isinstance(v, str) else tuple(v)))
+
+
+def team_lines(d, name):
+    """A recorded party in lines: name, kind, display name, mail, identity provider groups, recorded members (noted
+    as ignored when the team stands for groups); None when not recorded."""
+    e = get(d, team_dn(name))
+    if e is None:
+        return None
+    members = tuple(one(p, "cn") for p in people(d) if team_dn(name).lower() in {m.lower()
+                                                                               for m in values(p, "ciamMemberOf")})
+    groups = values(e, GROUP_ATTR)
+    listed = ", ".join(members) + (" (recorded; ignored: the identity provider's groups decide)"
+                                   if groups and members else "")
+    return tuple(f"{label:<8} {value}" for label, value in (
+        ("team", name), ("kind", one(e, "ciamOwnerKind")), ("name", one(e, "ciamDisplayName")),
+        ("mail", one(e, "mail")), *(("idp", g) for g in groups), ("members", listed)) if value)

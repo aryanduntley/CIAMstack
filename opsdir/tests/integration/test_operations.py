@@ -53,9 +53,9 @@ def test_reads_return_records_and_rows(conn):
     edit = "dn: cn=CHG-1,ou=changes,dc=ciam-ops\nchangetype: modify\nreplace: ciamTitle\nciamTitle: Renamed\n-\n"
     assert ops.modify(conn, parse(edit), "CHG-1").change_id == "CHG-1"
     history = ops.history(conn)
-    assert history.headers == ("at", "change", "op", "by", "dn")
+    assert history.headers == ("at", "change", "op", "by", "client", "teams", "dn")
     login = conn.execute("select session_user").fetchone()[0]
-    assert [row[1:] for row in history.rows] == [("CHG-1", "update", login, "cn=CHG-1,ou=changes,dc=ciam-ops")]
+    assert [row[1:] for row in history.rows] == [("CHG-1", "update", login, "", "", "cn=CHG-1,ou=changes,dc=ciam-ops")]
     assert ops.check(conn) == ops.StackCheck(ops.check(conn).headers, (), 0)
     assert ops.upgrade(conn).applied == ()
 

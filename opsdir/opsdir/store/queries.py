@@ -19,10 +19,12 @@ def fetch_blast_radius(conn, dn):
 
 
 def fetch_history(conn, dn=None):
-    """Governed changes after the bootstrap load, optionally for one DN: when, under which change, what, the login
-    that wrote it, and on which entry (last, so a table never cuts it short)."""
+    """Governed changes after the bootstrap load, optionally for one DN: when, under which change, what, the person
+    or login that wrote it, the API client it came through and the identity provider-mapped teams the person held
+    (both empty for a direct login), and on which entry (last, so a table never cuts it short)."""
     where = " and lower(dn) = lower(%s)" if dn else ""
-    return fetch_rows(conn, "select at::timestamp(0), change_id, op, db_user, dn from entry_history"
+    return fetch_rows(conn, "select at::timestamp(0), change_id, op, db_user, coalesce(client, ''),"
+                            " array_to_string(coalesce(teams, '{}'), ', '), dn from entry_history"
                             f" where change_id <> 'BOOTSTRAP'{where} order by id", (dn,) if dn else ())
 
 

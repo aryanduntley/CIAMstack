@@ -662,7 +662,7 @@ What the store enforces, whoever connects and however (the CLI, a script, `psql`
 - **Once people are recorded** (`ou=people`), only a recorded person approves. With none recorded (a single-team install, the showcase), any login may approve, but never its own change.
 - **Applied only after approved:** a change goes proposed → approved → applied, or rejected.
 - **The initial load only by the owner:** writes under `BOOTSTRAP` (`opsdir load`) are the schema owner's. Every other login writes under an approved change.
-- **History records the login** that made each write (`opsdir history` shows it as `by`). The history is append-only.
+- **History records the login** that made each write (`opsdir history` shows it as `by`; writes through the HTTP API also show the API `client` and the identity provider-mapped `teams` the person held). The history is append-only.
 
 **Through the HTTP API.** The API server signs in to the database with one login of its own (`opsdir db-roles --api-login opsdir_api`, a member of the runtime login) and acts for many people. It verifies each request's token, finds the person it names, and tells the store who that person is inside each write. The store believes that only from the login the `api-login` setting names (`opsdir setting api-login opsdir_api --change …`, a governed write like any setting), and then applies every rule above to the person: author, approver, approval separation, grants, history. Any other login naming a person is ignored and writes as itself. With no person named, the API login acts as itself: it holds no grants and isn't a person, so it can't approve or apply anything once people and grants are recorded. Only the API server holds the API login's credentials.
 
@@ -670,6 +670,14 @@ A person is found by how the company's identity provider names them (`ciamIdpSub
 
 ```bash
 opsdir person alice --idp-subject "https://login.example.com/tenant 00u1abc" --change CHG-12   # repeat for several
+```
+
+**Teams from the identity provider's groups.** A team can stand for identity provider groups (`ciamIdpGroup`: `<issuer> <group id>`, the token's `iss` and a value of its groups claim; use the group's immutable ID, never its display name). Its members are then whoever the provider puts in the group, request by request: someone removed from the group loses the team's grants with their next token. Recorded memberships of a mapped team (`opsdir person --team`) are ignored, and a login with no token (the command line) holds no mapped team. Teams without a group keep their recorded members. The store decides this itself, trusting the groups only from the API login, as it trusts the person. An approval records the mapped teams its approver held (`ciamApprovedAs`), and the approver's grants are checked with them when the change is applied. Mapping a team to a group needs the `settings` action, like editing people:
+
+```bash
+opsdir team sre --idp-group "https://login.example.com/tenant 7f3c9a10-..." --change CHG-13   # repeat for several
+opsdir team sre                                                                               # show it
+opsdir team sre --no-idp-groups --change CHG-14                                               # back to recorded members
 ```
 
 ### Permissions

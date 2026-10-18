@@ -4,7 +4,7 @@
 
 How CIAMstack stores the platform's record, in two layers: a few PostgreSQL tables (the storage layer), and the entries those tables hold (the record layer), shaped like an LDAP directory. Every entry sits at a DN in one tree under `dc=ciam-ops`, has object classes that say which attributes it must and may have, and every attribute has a value type and a portability class. The published LDAP form of the same definitions is `opsdir/schema/ciam-ops.schema.ldif`; the rules the store enforces are in [`opsdir/SPEC.md`](../opsdir/SPEC.md).
 
-This reference covers the core, its domains and the installed adapter packages that add definitions: 211 object classes and 962 attributes. Fields and record types an operator defines live in the record itself (`ou=custom-schema`, OIDs under `1.3.6.1.4.1.32473.4`), so they differ per record and aren't listed here.
+This reference covers the core, its domains and the installed adapter packages that add definitions: 211 object classes and 964 attributes. Fields and record types an operator defines live in the record itself (`ou=custom-schema`, OIDs under `1.3.6.1.4.1.32473.4`), so they differ per record and aren't listed here.
 
 ## How to read it
 
@@ -54,6 +54,8 @@ erDiagram
         text change_id
         timestamptz at
         text db_user
+        text client
+        text_array teams
     }
     attribute_type {
         text name
@@ -154,7 +156,9 @@ Append-only history: one row per write to an entry, never updated or deleted.
 | `new_classes` | `text[]` | its object classes after |
 | `change_id` | `text` | the approved change it was written under |
 | `at` | `timestamptz` | when |
-| `db_user` | `text` | the login that wrote it (the session's own, whatever role it set) |
+| `db_user` | `text` | who wrote it: the person the HTTP API acts for when written through the API login (the api-login setting), else the session's own login, whatever role it set |
+| `client` | `text` | the API client it came through (the token's azp or client_id); empty for a direct login |
+| `teams` | `text[]` | the teams mapped to identity provider groups the person held through their token; empty for a direct login |
 
 ### attribute_type
 
@@ -409,7 +413,7 @@ flowchart LR
 | [Directory](schema/directory.md) | domain | `1.3.6.1.4.1.32473.1` | 16 | 76 |
 | [Federation](schema/federation.md) | domain | `1.3.6.1.4.1.32473.1` | 6 | 35 |
 | [PKI](schema/pki.md) | domain | `1.3.6.1.4.1.32473.1` | 20 | 118 |
-| [Governance](schema/governance.md) | domain | `1.3.6.1.4.1.32473.1` | 14 | 69 |
+| [Governance](schema/governance.md) | domain | `1.3.6.1.4.1.32473.1` | 14 | 71 |
 | [Configuration](schema/configuration.md) | domain | `1.3.6.1.4.1.32473.1` | 5 | 18 |
 | [Automation](schema/automation.md) | domain | `1.3.6.1.4.1.32473.1` | 2 | 15 |
 | [Compute](schema/compute.md) | domain | `1.3.6.1.4.1.32473.1` | 5 | 42 |

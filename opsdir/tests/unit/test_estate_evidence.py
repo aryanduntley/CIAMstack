@@ -230,8 +230,8 @@ def test_the_targets_boundary_without_a_package_or_with_an_old_one_is_an_action(
 
 
 # ------------------------------------------------------------------ over the store: the package, the operation, the CLI
-HISTORY = [(dt.datetime(2026, 9, 1, 12), "CHG-1", "modify", "alice", BETA),
-           (dt.datetime(2026, 9, 2, 12), "CHG-2", "add", "bob", SSP)]
+HISTORY = [(dt.datetime(2026, 9, 1, 12), "CHG-1", "modify", "alice", "", "", BETA),
+           (dt.datetime(2026, 9, 2, 12), "CHG-2", "add", "bob", "opsdir-console", "platform", SSP)]
 
 
 @pytest.fixture
@@ -241,7 +241,7 @@ def store(monkeypatch, reports):
     monkeypatch.setattr(connector, "run_report",
                         lambda conn, report, dn=None, as_of=None: report.from_directory(state["d"], dn))
     monkeypatch.setattr(connector, "fetch_history",
-                        lambda conn, dn=None: [r for r in HISTORY if dn is None or r[3] == dn])
+                        lambda conn, dn=None: [r for r in HISTORY if dn is None or r[-1] == dn])
     monkeypatch.setattr(ops.db, "load_directory", lambda conn: state["d"])
     monkeypatch.setattr(ops.db, "apply_records",
                         lambda conn, records, change_id, sync: state.setdefault("applied", []).extend(records) or
@@ -260,8 +260,8 @@ def test_the_package_runs_each_query_cut_to_the_boundary(store):
                                                                  ("AU-2", "q-search")) for k in ("csv", "json")]
     assert p.files["nist_AC-2/q-subnets.csv"] == "environment,subnet\nbeta/prod,subnet-ds\nbeta/prod,subnet-web\n"
     assert p.files["nist_AU-2/q-history.csv"].splitlines() == [
-        "at,change,op,by,dn", f'2026-09-01 12:00:00,CHG-1,modify,alice,"{BETA}"',
-        f'2026-09-02 12:00:00,CHG-2,add,bob,"{SSP}"']
+        "at,change,op,by,client,teams,dn", f'2026-09-01 12:00:00,CHG-1,modify,alice,,,"{BETA}"',
+        f'2026-09-02 12:00:00,CHG-2,add,bob,opsdir-console,platform,"{SSP}"']
     assert p.files["nist_AU-2/q-search.csv"] == f'dn,ciamCidr\n"cn=net,ou=bindings,{BETA}",10.1.0.0/16\n'
     assert p.history_point == {"change": "CHG-2", "entry": 2}
     assert json.loads(p.manifest)["history_point"] == p.history_point

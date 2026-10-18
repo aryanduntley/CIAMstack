@@ -73,6 +73,32 @@ def claim_refusal(claims, config, now):
     return next((why for failed, why in checks if failed), None)
 
 
+MAX_GROUPS, MAX_CLIENT = 1000, 256
+OVERAGE = ("the token's group list is incomplete (more groups than the identity provider puts in a token); "
+           "membership can't be decided, so nothing is allowed: emit only the groups assigned to this application, "
+           "or fewer groups")
+Membership = NamedTuple("Membership", [("groups", tuple), ("client", Optional[str]), ("refusal", Optional[str])])
+
+
+def membership_of(claims, claim):
+    """Membership(groups, client, refusal) of accepted claims: the identity provider groups the token lists in its
+    `claim` (none named: none), each as '<issuer> <group id>' so groups of different providers never match; the API
+    client it was issued to (azp, else client_id; None when neither is a short plain string). Refused (fail closed)
+    when the group list is incomplete (Entra ID's overage: _claim_names names the claim, or hasgroups is set) or isn't
+    strings. Pure."""
+    names = claims.get("_claim_names")
+    if claim and ((isinstance(names, dict) and claim in names) or claims.get("hasgroups") is True):
+        return Membership((), None, OVERAGE)
+    listed = claims.get(claim) if claim else None
+    listed = [listed] if isinstance(listed, str) else [] if listed is None else listed
+    if not isinstance(listed, list) or len(listed) > MAX_GROUPS or not all(
+            isinstance(g, str) and g and " " not in g for g in listed):
+        return Membership((), None, f"the token's {claim} claim isn't a list of group IDs")
+    client = next((c for c in (claims.get("azp"), claims.get("client_id"))
+                   if isinstance(c, str) and 0 < len(c) <= MAX_CLIENT and c.isprintable()), None)
+    return Membership(tuple(dict.fromkeys(f"{claims['iss']} {g}" for g in listed)), client, None)
+
+
 def claims_of(token, jwks, config, now):
     """Checked(claims, None) of an accepted token, else Checked(None, why): its algorithm one of config.algorithms
     (never 'none' or HMAC), its signature by the JWKS key its kid names, then claim_refusal at `now` (seconds since the

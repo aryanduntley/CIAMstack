@@ -121,7 +121,7 @@ def my_teams(conn):
     d, who = db.load_directory(conn), db.requester(conn)
     if not any(rdn_value(p).lower() == who.lower() for p in peoplemod.people(d)):
         raise SystemExit(f"--mine: {who} isn't a recorded person (opsdir person {who} --team ... --change ...)")
-    return peoplemod.teams_of(d, who)
+    return peoplemod.member_teams(d, who, db.requester_groups())
 
 
 def report(conn, name, dn=None, as_of=None):
@@ -227,7 +227,7 @@ def authorize_command(conn, action, area, claimed=None):
     d, who = db.load_directory(conn), db.requester(conn)
     if claimed and claimed != who and peoplemod.people(d):
         raise SystemExit(f"--as {claimed}: once people are recorded, the requester is the login ({who})")
-    authorize(grantsmod.policy_for(d), who, action, area)
+    authorize(grantsmod.policy_for(d, db.requester_groups()), who, action, area)
 
 
 def preview_grant(conn, name, actions, grantees, environments=(), owners=()):
@@ -399,6 +399,18 @@ def person_for_subject(conn, issuer, subject):
 def person_lines(conn, login):
     """Effect (reads the record): a recorded person in lines, or None."""
     return peoplemod.person_lines(db.load_directory(conn), login)
+
+
+def preview_team(conn, name, display=None, mail=None, groups=None):
+    """Effect (reads the record): the change records recording a team or updating its display name, mail and identity
+    provider groups ('<issuer> <group id>'; governance.people) (applied with apply_preview under an approved change);
+    ValueError for a bad name, a malformed group or a party that isn't a team."""
+    return Preview(f"team {name}", peoplemod.team_changes(db.load_directory(conn), name, display, mail, groups), ())
+
+
+def team_lines(conn, name):
+    """Effect (reads the record): a recorded party in lines, or None."""
+    return peoplemod.team_lines(db.load_directory(conn), name)
 
 
 def identity(conn):

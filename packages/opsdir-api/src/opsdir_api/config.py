@@ -1,5 +1,6 @@
 """The API's configuration from the environment: the API login's database, the identity provider whose tokens it
-accepts (exact issuer, audience, keys, signing algorithms, clock leeway) and where it listens. Pure."""
+accepts (exact issuer, audience, keys, signing algorithms, clock leeway, the claim listing the person's groups) and
+where it listens. Pure."""
 from typing import NamedTuple, Optional
 from urllib.parse import urlsplit
 
@@ -9,11 +10,13 @@ ASYMMETRIC = frozenset({"RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "E
 DEFAULT_ALGORITHMS = "RS256,PS256,ES256"
 DEFAULT_LEEWAY = 60
 MAX_LEEWAY = 300
+DEFAULT_GROUPS_CLAIM = "groups"   # Entra ID, Okta and PingFederate tokens name it so when configured to carry groups
 DEFAULT_HOST, DEFAULT_PORT = "127.0.0.1", 8080
 LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 Config = NamedTuple("Config", [("dsn", str), ("issuer", str), ("audience", str), ("jwks_url", Optional[str]),
-                               ("algorithms", tuple), ("leeway", int)])
+                               ("algorithms", tuple), ("leeway", int), ("groups_claim", str)])
+Config.__new__.__defaults__ = (DEFAULT_GROUPS_CLAIM,)
 Listen = NamedTuple("Listen", [("host", str), ("port", int)])
 
 
@@ -57,6 +60,7 @@ def config_from(env):
     jwks_url = env.get("OPSDIR_API_JWKS_URL", "").strip() or None
     algorithms, bad_algorithms = algorithms_of(env.get("OPSDIR_API_ALGORITHMS", DEFAULT_ALGORITHMS))
     leeway, bad_leeway = leeway_of(env.get("OPSDIR_API_LEEWAY", str(DEFAULT_LEEWAY)).strip())
+    groups_claim = env.get("OPSDIR_API_GROUPS_CLAIM", DEFAULT_GROUPS_CLAIM).strip()
     problems = (*(f"{k} is not set{why}" for k, v, why in (
                     ("OPSDIR_DSN", dsn, " (the API login's connection string)"),
                     ("OPSDIR_API_ISSUER", issuer, " (the identity provider's exact issuer, iss)"),
@@ -66,7 +70,7 @@ def config_from(env):
                 *((url_problem("OPSDIR_API_JWKS_URL", jwks_url),)
                   if jwks_url and url_problem("OPSDIR_API_JWKS_URL", jwks_url) else ()),
                 *bad_algorithms, *bad_leeway)
-    return (None if problems else Config(dsn, issuer, audience, jwks_url, algorithms, leeway)), problems
+    return (None if problems else Config(dsn, issuer, audience, jwks_url, algorithms, leeway, groups_claim)), problems
 
 
 def listen_from(env):

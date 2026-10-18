@@ -76,7 +76,7 @@ def test_the_api_login_writes_as_the_person_it_names(conn):
         ops.new_change(conn, "CHG-2", "Open the LDAPS port")
         assert db.requester(conn) == "alice"
     assert one(change(conn, "CHG-2"), "ciamAuthor") == "alice"
-    assert ops.history(conn).rows[-1][1:] == ("CHG-2", "insert", "alice", "cn=CHG-2,ou=changes,dc=ciam-ops")
+    assert ops.history(conn).rows[-1][1:] == ("CHG-2", "insert", "alice", "", "", "cn=CHG-2,ou=changes,dc=ciam-ops")
     assert modified_by(conn, "cn=CHG-2,ou=changes,dc=ciam-ops") == "alice"
     ops.new_change(conn, "CHG-3", "Without a person")                  # no requester: the login acts as itself
     assert one(change(conn, "CHG-3"), "ciamAuthor") == login(conn)

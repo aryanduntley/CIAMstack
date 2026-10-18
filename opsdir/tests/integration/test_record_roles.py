@@ -15,6 +15,7 @@ import psycopg
 import pytest
 
 from opsdir import operations as ops
+from opsdir.core.directory import get, values
 from opsdir.core.interchange.ldif import parse
 from opsdir.store import postgres as db
 from opsdir.store.roles import Roles, db_roles_sql
@@ -44,6 +45,7 @@ objectClass: top
 objectClass: organizationalUnit
 ou: owners
 """
+NETOPS = "https://idp.example.com/ 7f3c9a10-netops"       # an identity provider group (issuer, immutable id)
 TEAM = ("dn: cn=team-a,ou=owners,dc=ciam-ops\nchangetype: add\nobjectClass: top\nobjectClass: ciamParty\n"
         "cn: team-a\nciamOwnerKind: team\n")
 
@@ -242,7 +244,7 @@ def test_people_with_their_own_logins_propose_and_approve_each_others_changes(cl
         assert ops.change_lines(bob, "CHG-7") == ("change     CHG-7", "status     approved",
                                                   "title      Rotate the LDAPS certificate", "author     alice",
                                                   "approved   bob")
-        assert [row[3] for row in ops.history(bob).rows if row[4].startswith("cn=CHG-7,")] == ["alice", "bob"]
+        assert [row[3] for row in ops.history(bob).rows if row[-1].startswith("cn=CHG-7,")] == ["alice", "bob"]
 
 
 def test_once_grants_exist_the_store_checks_the_writers_and_approvers_areas(cluster):
@@ -305,7 +307,54 @@ def test_the_grant_check_evaluates_the_person_behind_the_api_login(cluster):
             db.apply_records(api, tuple(parse(touch)), "CHG-10")       # no person named: the login, no grants
         with db.requesting("bob"):
             db.apply_records(api, tuple(parse(touch)), "CHG-10")
-        assert [row[3] for row in ops.history(api).rows if row[4].startswith("cn=svc-a,")][-1] == "bob"
+        assert [row[3] for row in ops.history(api).rows if row[-1].startswith("cn=svc-a,")][-1] == "bob"
     with db.connect(cluster.socket_dsn + "carol") as carol, db.requesting("bob"):
         with pytest.raises(psycopg.errors.RaiseException, match="carol may not apply cn=svc-a"):
             db.apply_records(carol, tuple(parse(touch)), "CHG-10")
+
+
+def test_identity_provider_groups_decide_the_members_of_mapped_teams(cluster):
+    """Runs after the API test above (opsdir_api is the API login; bob holds apply over the network team's areas,
+    alice approve). The netops team stands for an identity provider group and holds apply and approve there: dave,
+    recorded in netops, holds neither without the group in his request and both with it. An approval keeps the mapped
+    teams its approver held, so the approver's grants are checked with them when someone else applies the change.
+    History records the API client and the mapped teams. Mapping a team to a group needs the settings action."""
+    touch = "dn: cn=svc-a,ou=owners,dc=ciam-ops\nchangetype: modify\nreplace: description\ndescription: {}\n-\n"
+    refused = psycopg.errors.RaiseException
+    with db.connect(cluster.socket_dsn + "opsdir_migrate") as owner:
+        owner.execute(f"set role {ROLES.owner}")
+        ops.apply_preview(owner, ops.preview_team(owner, "netops", groups=(NETOPS,)), "CHG-1")
+        ops.apply_preview(owner, ops.preview_person(owner, "dave", "Dave", teams=("netops",)), "CHG-1")
+        ops.apply_preview(owner, ops.preview_grant(owner, "netops-work", ("apply", "approve"), ("netops",), (),
+                                                   ("network",)), "CHG-1")
+    with db.connect(cluster.socket_dsn + "opsdir_api") as api:
+        changed = lambda change_id: get(db.load_directory(api), f"cn={change_id},ou=changes,dc=ciam-ops")  # noqa: E731
+        with db.requesting("bob"):
+            for change_id in ("CHG-11", "CHG-12", "CHG-13"):
+                ops.new_change(api, change_id, "Network work")
+        with db.requesting("alice"):
+            ops.change_status(api, "CHG-11", "approved")
+        with db.requesting("dave"), pytest.raises(refused, match="dave may not apply cn=svc-a"):
+            db.apply_records(api, tuple(parse(touch.format("no group"))), "CHG-11")   # recorded in netops: ignored
+        with db.requesting("dave", ("https://idp.example.com/ another",)), pytest.raises(refused, match="dave may"):
+            db.apply_records(api, tuple(parse(touch.format("another group"))), "CHG-11")
+        with db.requesting("dave", (NETOPS,), "opsdir-console"):
+            db.apply_records(api, tuple(parse(touch.format("netops"))), "CHG-11")
+        written = [row for row in ops.history(api).rows if row[-1].startswith("cn=svc-a,")][-1]
+        assert written[3:6] == ("dave", "opsdir-console", "netops")
+        with db.requesting("dave", (NETOPS,)):
+            ops.change_status(api, "CHG-12", "approved")
+        with db.requesting("dave"):
+            ops.change_status(api, "CHG-13", "approved")
+        assert (values(changed("CHG-12"), "ciamApprovedAs"), values(changed("CHG-13"), "ciamApprovedAs"),
+                values(changed("CHG-11"), "ciamApprovedAs")) == (("netops",), (), ())
+        with db.requesting("bob"):
+            db.apply_records(api, tuple(parse(touch.format("approved through netops"))), "CHG-12")
+            with pytest.raises(refused, match="CHG-13 was approved by dave, who may not approve"):
+                db.apply_records(api, tuple(parse(touch.format("approved without it"))), "CHG-13")
+            with pytest.raises(refused, match="bob may not settings cn=network"):
+                db.apply_records(api, tuple(parse(f"dn: cn=network,ou=owners,dc=ciam-ops\nchangetype: modify\n"
+                                                  f"add: ciamIdpGroup\nciamIdpGroup: {NETOPS}\n-\n")), "CHG-12")
+    with db.connect(cluster.socket_dsn + "carol") as carol, db.requesting("dave", (NETOPS,)):
+        with pytest.raises(refused, match="carol may not apply cn=svc-a"):           # only the API login is trusted
+            db.apply_records(carol, tuple(parse(touch.format("carol"))), "CHG-12")

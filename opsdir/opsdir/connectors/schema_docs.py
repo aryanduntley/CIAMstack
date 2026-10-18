@@ -57,7 +57,11 @@ STORAGE_TABLES = (
         ("new_classes", "text[]", "its object classes after"),
         ("change_id", "text", "the approved change it was written under"),
         ("at", "timestamptz", "when"),
-        ("db_user", "text", "the login that wrote it (the session's own, whatever role it set)"))),
+        ("db_user", "text", "who wrote it: the person the HTTP API acts for when written through the API login "
+                            "(the api-login setting), else the session's own login, whatever role it set"),
+        ("client", "text", "the API client it came through (the token's azp or client_id); empty for a direct login"),
+        ("teams", "text[]", "the teams mapped to identity provider groups the person held through their token; empty "
+                            "for a direct login"))),
     ("attribute_type", "The schema registry's attribute types: the standard LDAP ones the record uses and every "
                        "one this reference lists, synced from the schema fragments on every upgrade.", (
         ("name", "text", "canonical name (primary key)"),

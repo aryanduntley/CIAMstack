@@ -1,8 +1,10 @@
 """The HTTP API (create_app): the operations layer for people signed in at the identity provider. Each call presents
 a bearer token (tokens.claims_of); its issuer and subject name a recorded person (operations.person_for_subject; no
-auto-provisioning); a connection is opened as the API login and everything runs inside store.postgres.requesting(
-person), asked first of operations.authorize_command with the catalog action and Area the command line would use; the
-connection is closed after. Handlers are plain functions; the app and its routes are composed here."""
+auto-provisioning), its groups decide the teams mapped to identity provider groups and its azp/client_id is the API
+client (tokens.membership_of; an incomplete group list is refused); a connection is opened as the API login and
+everything runs inside store.postgres.requesting(person, groups, client), asked first of operations.authorize_command
+with the catalog action and Area the command line would use; the connection is closed after. Handlers are plain
+functions; the app and its routes are composed here."""
 import datetime as dt
 import json
 import time
@@ -21,7 +23,7 @@ from opsdir.store import postgres as db
 
 from .shapes import (CHANGE_STATUS, EDIT_ACTIONS, WHOLE_RECORD, applied_doc, at_of, edit_of, entries_doc, entry_area,
                      files_of, import_doc, keys_of, preview_doc, rows_doc, sources_of, status_of, texts_of)
-from .tokens import UNKNOWN_KEY, claims_of, key_source
+from .tokens import UNKNOWN_KEY, claims_of, key_source, membership_of
 
 API_VERSION = "1"
 NO_PERSON = ("no recorded person for this identity (issuer {issuer}, subject {subject}; an administrator records it: "
@@ -29,7 +31,9 @@ NO_PERSON = ("no recorded person for this identity (issuer {issuer}, subject {su
 SCOPES = ("base", "one", "sub")
 
 Wiring = NamedTuple("Wiring", [("config", object), ("connect", object), ("keys", object), ("clock", object)])
-Caller = NamedTuple("Caller", [("issuer", str), ("subject", str), ("wiring", Wiring)])
+Caller = NamedTuple("Caller", [("issuer", str), ("subject", str), ("wiring", Wiring), ("groups", tuple),
+                               ("client", Optional[str])])
+Caller.__new__.__defaults__ = ((), None)
 ImportAsk = NamedTuple("ImportAsk", [("importer", str), ("files", dict), ("skipped", tuple), ("at", object),
                                      ("change", Optional[str]), ("take", tuple), ("keep", tuple)])
 
@@ -64,14 +68,18 @@ def checked_token(wiring, token):
 
 
 def caller(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(BEARER)):
-    """The dependency every /v1 call has: the accepted bearer token's issuer and subject; 401 otherwise."""
+    """The dependency every /v1 call has: the accepted bearer token's issuer and subject, its identity provider groups
+    and API client; 401 otherwise, 403 when its group list is incomplete (fail closed)."""
     if credentials is None or credentials.scheme.lower() != "bearer" or not credentials.credentials:
         raise unauthorized("a bearer token is required")
     wiring = request.app.state.wiring
     checked = checked_token(wiring, credentials.credentials)
     if checked.claims is None:
         raise unauthorized(checked.refusal, "invalid_token")
-    return Caller(checked.claims["iss"], checked.claims["sub"], wiring)
+    member = membership_of(checked.claims, wiring.config.groups_claim)
+    if member.refusal:
+        raise HTTPException(403, member.refusal)
+    return Caller(checked.claims["iss"], checked.claims["sub"], wiring, member.groups, member.client)
 
 
 # ------------------------------------------------------------------ running an operation as the person
@@ -100,7 +108,7 @@ def _as_person(conn, who, action, area, work):
     person = ops.person_for_subject(conn, who.issuer, who.subject)
     if not person:
         raise HTTPException(403, NO_PERSON.format(issuer=who.issuer, subject=who.subject))
-    with db.requesting(person):
+    with db.requesting(person, who.groups, who.client):
         try:
             ops.authorize_command(conn, action, area)
         except SystemExit as e:
@@ -112,10 +120,10 @@ def _as_person(conn, who, action, area, work):
 
 
 def run(who, action, area, work, as_of=None):
-    """Effect: work(conn) on a new connection as the caller's recorded person (inside requesting(person)), once
-    authorize_command allows the action over the area; dates evaluated as of as_of (today); the connection closed
-    after. Refusals as HTTP errors: 403 (no person, not permitted), 400/404/409 (status_of), the store's
-    (store_refusal)."""
+    """Effect: work(conn) on a new connection as the caller's recorded person (inside requesting(person, groups,
+    client)), once authorize_command allows the action over the area; dates evaluated as of as_of (today); the
+    connection closed after. Refusals as HTTP errors: 403 (no person, not permitted), 400/404/409 (status_of), the
+    store's (store_refusal)."""
     conn = _open(who.wiring)
     try:
         db.set_as_of(conn, as_of or dt.date.today())

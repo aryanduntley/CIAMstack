@@ -214,20 +214,32 @@ ATTRIBUTES = (
                  'How the company\'s identity provider names the person: \'<issuer> <subject>\', the token\'s iss and '
                  'sub claims; how the HTTP API finds who signed in',
                  (("X-PATTERN", "^https://[^ ]+ [^ ]+$"),)),
+    AttributeDef(988, 'ciamIdpGroup', 'string', 'meta', False,
+                 'An identity provider group a team stands for: \'<issuer> <group id>\', the token\'s iss and a value '
+                 'of its groups claim (the group\'s immutable ID, never its display name). Whoever the provider puts '
+                 'in the group is a member of the team for the HTTP API, request by request; recorded memberships of '
+                 'the team are then ignored',
+                 (("X-PATTERN", "^https://[^ ]+ [^ ]+$"),)),
+    AttributeDef(989, 'ciamApprovedAs', 'string', 'meta', False,
+                 'The teams mapped to identity provider groups (ciamIdpGroup) the approver belonged to when approving '
+                 'a change, by name: set by the store with ciamApprovedBy (never by the writer), and what the '
+                 'approver\'s grants are checked with when the change is applied'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
              ('ciamVersion', 'ciamAppliesTo', 'ciamDocUrl'),
              'Work instruction'),
     ClassDef(30, 'ciamChange', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamChangeStatus'),
-             ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords', 'ciamTicketRef', 'ciamAuthor'),
+             ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords', 'ciamTicketRef', 'ciamAuthor',
+              'ciamApprovedAs'),
              'Change record (mirrored from ITSM; a proposed one may carry the records it applies, and names the '
              'ticket it is tracked by)'),
     ClassDef(31, 'ciamIncident', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamOpenedAt'),
              ('ciamSeverity', 'ciamInvolved', 'ciamRootCause'),
              'Incident / postmortem'),
     ClassDef(32, 'ciamParty', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamOwnerKind'),
-             ('mail', 'telephoneNumber', 'ciamContactUrl', 'ciamDisplayName', 'ciamTakesGeneratedInfra'),
+             ('mail', 'telephoneNumber', 'ciamContactUrl', 'ciamDisplayName', 'ciamTakesGeneratedInfra',
+              'ciamIdpGroup'),
              'Team, partner, vendor, or the operator of the platform (how to reach it: mail, telephone, contact '
              'link)'),
     ClassDef(91, 'ciamImportRun', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamImporter', 'ciamImportScope',

@@ -293,6 +293,15 @@ SUBCOMMANDS = (
                                               "claims); repeat for several"}),
                 (("--change",), {}),
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
+    ("team", ((("name",), {"help": "the team's name (cn under ou=owners)"}),
+              (("--name",), {"dest": "display", "help": "how it is named in correspondence"}), (("--mail",), {}),
+              (("--idp-group",), {"action": "append", "metavar": "\"ISSUER GROUP\"",
+                                  "help": "an identity provider group it stands for (the token's iss and a groups "
+                                          "claim value: the group's immutable ID); its members are then whoever the "
+                                          "provider puts in the group; repeat for several"}),
+              (("--no-idp-groups",), {"action": "store_true", "help": "remove every identity provider group"}),
+              (("--change",), {}),
+              (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
     ("identity", ((("--org",), {"help": "the org code of the company this record belongs to (fixed once set)"}),
                   (("--parent",), {"help": "the org code of its group (\"\" removes it)"}),
                   (("--name",), {"help": "the company's name (\"\" removes it)"}), (("--change",), {}),
@@ -902,7 +911,7 @@ FIXED_ACTIONS = MappingProxyType({
     "workspace": "workspace"})
 WHEN_CHANGED = MappingProxyType({**dict.fromkeys(("capture", "bundle", "census", "import", "collect", "evidence"),
                                                  "apply"),
-                                 **dict.fromkeys(("setting", "identity", "person", "grant"), "settings")})
+                                 **dict.fromkeys(("setting", "identity", "person", "team", "grant"), "settings")})
 FIX_ACTIONS = MappingProxyType({"list": "plan", "show": "plan", "propose": "propose", "apply": "apply",
                                 "approved": "apply"})
 CHANGE_ACTIONS = MappingProxyType({"new": "propose", "approve": "approve", "reject": "approve", "show": "read"})
@@ -951,6 +960,23 @@ def _cmd_person(conn, a, as_of):
         return _not_applied(preview.notices, preview.changes, a.dry_run)
     r = ops.apply_preview(conn, preview, a.change)
     return f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else f"{a.login} already holds this"
+
+
+def _cmd_team(conn, a, as_of):
+    if a.idp_group and a.no_idp_groups:
+        raise SystemExit("--idp-group and --no-idp-groups: give one or the other")
+    groups = () if a.no_idp_groups else a.idp_group
+    if a.display is None and a.mail is None and groups is None:
+        found = ops.team_lines(conn, a.name)
+        return "\n".join(found) if found else f"no team {a.name} (ou=owners)"
+    try:
+        preview = ops.preview_team(conn, a.name, a.display, a.mail, groups)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    if a.dry_run or not a.change:
+        return _not_applied(preview.notices, preview.changes, a.dry_run)
+    r = ops.apply_preview(conn, preview, a.change)
+    return f"{a.change}: {len(r.lines)} change(s) applied" if r.lines else f"team {a.name} already holds this"
 
 
 def _cmd_identity(conn, a, as_of):
@@ -1406,7 +1432,8 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "browse": _cmd_browse, "edit": _cmd_edit,
                              "census": _cmd_census,
                              "setting": _cmd_setting, "identity": _cmd_identity, "db-roles": _cmd_db_roles,
-                             "posture": _cmd_posture, "change": _cmd_change, "person": _cmd_person, "grant": _cmd_grant,
+                             "posture": _cmd_posture, "change": _cmd_change, "person": _cmd_person, "team": _cmd_team,
+                             "grant": _cmd_grant,
                              "mine": _cmd_mine,
                              "data-profile": _cmd_data_profile, "workspace": _cmd_workspace})
 NO_DATABASE_ACTIONS = frozenset({("onboard", "setup")})   # asks questions and writes a local file

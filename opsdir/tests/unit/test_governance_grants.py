@@ -111,3 +111,14 @@ def test_every_command_is_an_action_of_the_catalog():
 def test_commands_and_their_areas(argv, action, environment):
     a = cli.parser().parse_args(argv)
     assert (cli.command_action(a), cli.command_area(a).environment) == (action, environment)
+
+
+def test_a_team_mapped_to_a_group_counts_only_with_the_group():
+    group = "https://idp.example.com/ 7f3c9a10"
+    mapped = (PEOPLE + GRANTS).replace("cn: platform\n", f"cn: platform\nciamIdpGroup: {group}\n", 1)
+    area = Area("target/prod")
+    assert policy_for(directory(PEOPLE + GRANTS))("alice", "render", area) is None          # recorded member
+    assert "no grant gives them render" in policy_for(directory(mapped))("alice", "render", area)
+    assert policy_for(directory(mapped), (group,))("alice", "render", area) is None
+    assert policy_for(directory(mapped), (group,))("bob", "render", area) is None            # bob through the group
+    assert "aren't a recorded person" in policy_for(directory(mapped), (group,))("mallory", "render", area)

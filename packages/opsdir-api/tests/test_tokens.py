@@ -14,7 +14,7 @@ from joserfc import jwt
 from joserfc.jwk import RSAKey
 
 from opsdir_api.config import Config, config_from, listen_from
-from opsdir_api.tokens import UNKNOWN_KEY, KeyCache, claims_of, jwks_url, key_source, needs_fetch
+from opsdir_api.tokens import UNKNOWN_KEY, KeyCache, claims_of, jwks_url, key_source, membership_of, needs_fetch
 
 ISSUER, AUDIENCE, NOW = "https://idp.example.com/realms/ops", "opsdir-api", 1_800_000_000
 KEY = RSAKey.generate_key(2048, parameters={"kid": "k1"})
@@ -159,3 +159,31 @@ def test_discovery_needs_the_exact_issuer():
     with pytest.raises(ValueError, match="https jwks_uri"):
         jwks_url(CONFIG, get({"issuer": ISSUER, "jwks_uri": "http://idp.example.com/certs"}))
     assert jwks_url(CONFIG._replace(jwks_url="https://idp.example.com/k"), None) == "https://idp.example.com/k"
+
+
+def test_the_tokens_groups_and_client():
+    claims = {"iss": ISSUER, "sub": "s", "groups": ["7f3c", "9a10", "7f3c"], "azp": "opsdir-console"}
+    assert membership_of(claims, "groups") == ((f"{ISSUER} 7f3c", f"{ISSUER} 9a10"), "opsdir-console", None)
+    assert membership_of({**claims, "groups": "7f3c"}, "groups").groups == (f"{ISSUER} 7f3c",)    # one, as a string
+    assert membership_of({"iss": ISSUER, "client_id": "cli"}, "groups") == ((), "cli", None)       # none listed
+    assert membership_of({**claims, "roles": ["ops"]}, "roles").groups == (f"{ISSUER} ops",)      # another claim
+    assert membership_of(claims, "").groups == ()                                                 # groups not used
+    assert membership_of({**claims, "azp": "x" * 300, "client_id": "short"}, "groups").client == "short"
+
+
+@pytest.mark.parametrize("extra", [{"_claim_names": {"groups": "src1"}, "groups": None}, {"hasgroups": True}])
+def test_an_incomplete_group_list_is_refused(extra):
+    m = membership_of({"iss": ISSUER, "sub": "s", **extra}, "groups")
+    assert m.groups == () and "group list is incomplete" in m.refusal
+
+
+@pytest.mark.parametrize("groups", [[1], ["a b"], [""], {"a": 1}, ["g"] * 1001])
+def test_a_group_list_that_isnt_ids_is_refused(groups):
+    assert "isn't a list of group IDs" in membership_of({"iss": ISSUER, "groups": groups}, "groups").refusal
+
+
+def test_the_groups_claim_is_configured():
+    env = {"OPSDIR_DSN": "x", "OPSDIR_API_ISSUER": ISSUER, "OPSDIR_API_AUDIENCE": AUDIENCE}
+    assert config_from(env)[0].groups_claim == "groups"
+    assert config_from({**env, "OPSDIR_API_GROUPS_CLAIM": " roles "})[0].groups_claim == "roles"
+    assert CONFIG.groups_claim == "groups"

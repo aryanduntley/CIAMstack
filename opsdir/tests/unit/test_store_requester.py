@@ -1,6 +1,6 @@
 """Who asks (store.postgres requester): the person a front end serving many people acts for in a context, else the
 connection's own login; the store is told the person inside each write transaction (migration 0013 decides whether
-to trust it)."""
+to trust it), with the identity provider groups and API client of the request (0014)."""
 import threading
 from types import SimpleNamespace
 
@@ -51,5 +51,12 @@ def test_a_write_transaction_names_the_person_only_when_one_is_set():
     executed.clear()
     with db.requesting("alice"):
         db._begin_change(fake_conn("x", executed), "CHG-1")
-    assert executed == [("select set_config('opsdir.change_id', %s, true)", ("CHG-1",)),
-                        ("select set_config('opsdir.requester', %s, true)", ("alice",))]
+    assert executed[1][1] == ("alice", "[]", "")
+    executed.clear()
+    with db.requesting("alice", ("https://idp/ g1", "https://idp/ g2"), "opsdir-console"):
+        assert db.requester_groups() == ("https://idp/ g1", "https://idp/ g2")
+        db._begin_change(fake_conn("x", executed), "CHG-1")
+    assert db.requester_groups() == ()
+    sql, params = executed[1]
+    assert ("opsdir.requester'" in sql and "opsdir.requester_groups'" in sql and "opsdir.client'" in sql
+            and params == ("alice", '["https://idp/ g1", "https://idp/ g2"]', "opsdir-console"))

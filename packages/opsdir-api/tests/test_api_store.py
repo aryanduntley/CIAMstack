@@ -11,7 +11,7 @@ from joserfc import jwt
 from joserfc.jwk import RSAKey
 
 from opsdir import operations as ops
-from opsdir.core.directory import get, one
+from opsdir.core.directory import get, one, values
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.governance.changes import change_dn
 from opsdir.store import postgres as db
@@ -53,8 +53,8 @@ ciamOwnerKind: team
 """
 
 
-def bearer(sub):
-    body = {"iss": ISSUER, "aud": AUDIENCE, "sub": sub, "iat": NOW, "exp": NOW + 300}
+def bearer(sub, **claims):
+    body = {"iss": ISSUER, "aud": AUDIENCE, "sub": sub, "iat": NOW, "exp": NOW + 300, **claims}
     return {"Authorization": "Bearer " + jwt.encode({"alg": "RS256", "kid": "k1"}, body, KEY, algorithms=["RS256"])}
 
 
@@ -66,6 +66,7 @@ def client():
     ops.load(conn, parse(BASE))
     login = conn.execute("select session_user").fetchone()[0]
     ops.apply_preview(conn, ops.preview_setting(conn, "api-login", login), "CHG-1")      # this login is the API's
+    ops.apply_preview(conn, ops.preview_team(conn, "platform", groups=(f"{ISSUER} 7f3c-platform",)), "CHG-1")
     for person in ("alice", "bob"):
         ops.apply_preview(conn, ops.preview_person(conn, person, subjects=(f"{ISSUER} sub-{person}",)), "CHG-1")
     config = Config(dsn, ISSUER, AUDIENCE, None, ("RS256",), 60)
@@ -99,3 +100,19 @@ def test_an_identity_no_person_records_is_refused_and_writes_nothing(client):
     refused = http.post("/v1/changes", json={"id": "CHG-3", "title": "Anything"}, headers=bearer("sub-mallory"))
     assert refused.status_code == 403 and "no recorded person" in refused.text
     assert change(conn, "CHG-3") is None
+
+
+def test_the_tokens_groups_and_client_reach_the_store(client):
+    http, conn = client
+    console = {"groups": ["7f3c-platform"], "azp": "opsdir-console"}
+    assert http.post("/v1/changes", json={"id": "CHG-4", "title": "Platform work"},
+                     headers=bearer("sub-bob", **console)).status_code == 201
+    assert http.post("/v1/changes/CHG-4/approve", headers=bearer("sub-alice", **console)).status_code == 200
+    assert values(change(conn, "CHG-4"), "ciamApprovedAs") == ("platform",)        # what alice held through the group
+    written = conn.execute("select db_user, client, teams from opsdir.entry_history"
+                           " where dn = 'cn=CHG-4,ou=changes,dc=ciam-ops' order by id").fetchall()
+    assert written == [("bob", "opsdir-console", ["platform"]), ("alice", "opsdir-console", ["platform"])]
+    incomplete = http.post("/v1/changes", json={"id": "CHG-5", "title": "Too many groups"},
+                           headers=bearer("sub-bob", hasgroups=True))
+    assert incomplete.status_code == 403 and "group list is incomplete" in incomplete.text
+    assert change(conn, "CHG-5") is None

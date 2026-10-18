@@ -7,7 +7,8 @@ from opsdir import cli
 from opsdir.core.directory import make_directory
 from opsdir.core.interchange.ldif import parse
 from opsdir.domains.governance.changes import change_lines, new_change, status_change
-from opsdir.domains.governance.people import person_changes, person_for_subject, person_lines, teams_of
+from opsdir.domains.governance.people import (group_problem, idp_teams, member_teams, person_changes,
+                                              person_for_subject, person_lines, team_changes, team_lines, teams_of)
 from opsdir.store.roles import db_roles_sql
 
 BASE = """dn: ou=changes,dc=ciam-ops
@@ -165,3 +166,66 @@ def test_the_person_command_takes_repeatable_subjects():
     a = cli.parser().parse_args(["person", "alice", "--idp-subject", f"{ISSUER} 1", "--idp-subject", f"{ISSUER} 2"])
     assert a.idp_subject == [f"{ISSUER} 1", f"{ISSUER} 2"]
     assert cli.parser().parse_args(["person", "alice"]).idp_subject is None
+
+
+GROUP = f"{ISSUER} 7f3c9a10"                      # an identity provider group: issuer and immutable group id
+MAPPED = BASE + f"""
+dn: cn=sre,ou=owners,dc=ciam-ops
+objectClass: ciamParty
+cn: sre
+ciamOwnerKind: team
+ciamIdpGroup: {GROUP}
+
+dn: cn=acme,ou=owners,dc=ciam-ops
+objectClass: ciamParty
+cn: acme
+ciamOwnerKind: vendor
+
+dn: ou=people,dc=ciam-ops
+objectClass: organizationalUnit
+ou: people
+
+dn: cn=alice,ou=people,dc=ciam-ops
+objectClass: ciamPerson
+cn: alice
+ciamMemberOf: cn=platform,ou=owners,dc=ciam-ops
+ciamMemberOf: cn=sre,ou=owners,dc=ciam-ops
+"""
+
+
+def test_the_groups_of_a_request_decide_the_members_of_mapped_teams():
+    d = directory(MAPPED)
+    assert teams_of(d, "alice") == ("platform", "sre")                       # as recorded
+    assert member_teams(d, "alice") == ("platform",)                         # sre's recorded members are ignored
+    assert member_teams(d, "alice", (GROUP,)) == ("platform", "sre")
+    assert member_teams(d, "alice", (f"{ISSUER} other", "7f3c9a10")) == ("platform",)   # the group exactly
+    assert member_teams(d, "nobody", (GROUP,)) == ()                         # only a recorded person
+    assert idp_teams(d, (GROUP,)) == ("sre",)
+
+
+def test_a_team_is_recorded_with_its_identity_provider_groups():
+    records = team_changes(directory(), "sre", "Site reliability", groups=(GROUP,))
+    assert [(r.dn, r.attrs) for r in records] == [("ou=owners,dc=ciam-ops", {          # no ou=owners yet: added
+        "objectClass": ("top", "organizationalUnit"), "ou": ("owners",)}), ("cn=sre,ou=owners,dc=ciam-ops", {
+        "objectClass": ("top", "ciamParty"), "cn": ("sre",), "ciamOwnerKind": ("team",),
+        "ciamDisplayName": ("Site reliability",), "ciamIdpGroup": (GROUP,)})]
+    d = directory(MAPPED)
+    assert team_changes(d, "sre", groups=())[0].mods == (("replace", "ciamIdpGroup", ()),)
+    assert team_changes(d, "sre", groups=(GROUP,)) == ()
+    assert team_lines(d, "sre") == ("team     sre", "kind     team", f"idp      {GROUP}",
+                                    "members  alice (recorded; ignored: the identity provider's groups decide)")
+    assert team_lines(d, "platform")[-1] == "members  alice" and team_lines(d, "gone") is None
+    with pytest.raises(ValueError, match="acme is a vendor"):
+        team_changes(d, "acme", groups=(GROUP,))
+    with pytest.raises(ValueError, match="identity-provider group '7f3c9a10' isn't '<issuer> <group>'"):
+        team_changes(d, "sre", groups=("7f3c9a10",))
+    with pytest.raises(ValueError, match="team name 'a,b'"):
+        team_changes(d, "a,b")
+    assert group_problem(GROUP) is None
+
+
+def test_the_team_command():
+    a = cli.parser().parse_args(["team", "sre", "--idp-group", GROUP, "--name", "SRE", "--change", "CHG-1"])
+    assert (a.name, a.display, a.idp_group, a.no_idp_groups, cli.command_action(a)) == (
+        "sre", "SRE", [GROUP], False, "settings")
+    assert cli.command_action(cli.parser().parse_args(["team", "sre"])) == "read"

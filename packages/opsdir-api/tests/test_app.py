@@ -50,9 +50,9 @@ def world(monkeypatch):
     calls, state = [], {"as": None, "refuse": None, "opened": 0, "closed": 0}
 
     @contextlib.contextmanager
-    def requesting(login):
+    def requesting(login, groups=(), client=None):
         calls.append(("requesting", (login,), None))
-        state["as"] = login
+        state["as"], state["membership"] = login, (groups, client)
         try:
             yield
         finally:

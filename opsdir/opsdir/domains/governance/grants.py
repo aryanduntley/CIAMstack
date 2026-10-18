@@ -13,7 +13,7 @@ Pure."""
 from ...core.changeset import new_entry, set_values
 from ...core.directory import children, get, one, values
 from .naming import GRANTS
-from .people import person_dn, team_dn, teams_of
+from .people import member_teams, person_dn, team_dn
 from .schema import ACTIONS
 
 GRANT_CLASS = "ciamGrant"
@@ -68,15 +68,17 @@ def _covers(g, area):
             and any(v.lower() in owners for v in area.scope.value))
 
 
-def holds(d, login, action, area):
-    """Whether a recorded person holds a grant of the action covering the area (theirs, or a team of theirs)."""
-    mine = {person_dn(login).lower(), *(team_dn(t).lower() for t in teams_of(d, login))}
+def holds(d, login, action, area, groups=()):
+    """Whether a recorded person holds a grant of the action covering the area (theirs, or a team of theirs:
+    people.member_teams, with the identity provider groups of their request)."""
+    mine = {person_dn(login).lower(), *(team_dn(t).lower() for t in member_teams(d, login, groups))}
     return any(action in values(g, "ciamGrantAction") and mine & {x.lower() for x in values(g, "ciamGrantee")}
                and _covers(g, area) for g in grants(d))
 
 
-def policy_for(d):
-    """The record's policy, (requester, action, area) -> None when allowed, else why not (governance.authorization)."""
+def policy_for(d, groups=()):
+    """The record's policy, (requester, action, area) -> None when allowed, else why not (governance.authorization);
+    groups: the identity provider groups of the requester's request (none for a direct login)."""
     if not grants(d):
         return lambda requester, action, area: None
     def policy(requester, action, area):                                        # noqa: E306
@@ -84,7 +86,7 @@ def policy_for(d):
             return None
         if get(d, person_dn(requester)) is None:
             return "they aren't a recorded person (ou=people)"
-        if action == OPEN or holds(d, requester, action, area):
+        if action == OPEN or holds(d, requester, action, area, groups):
             return None
         return f"no grant gives them {action} there (opsdir report grants)"
     return policy

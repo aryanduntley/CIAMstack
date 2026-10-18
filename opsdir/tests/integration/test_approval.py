@@ -118,7 +118,7 @@ def test_once_people_are_recorded_only_a_recorded_person_approves(conn):
 
 def test_history_records_the_login(conn):
     ops.new_change(conn, "CHG-2", "Open the LDAPS port")
-    assert ops.history(conn).rows[-1][1:] == ("CHG-2", "insert", login(conn), "cn=CHG-2,ou=changes,dc=ciam-ops")
+    assert ops.history(conn).rows[-1][1:] == ("CHG-2", "insert", login(conn), "", "", "cn=CHG-2,ou=changes,dc=ciam-ops")
 
 
 def test_posture_reports_the_waiver(conn):

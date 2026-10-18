@@ -4107,6 +4107,21 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.987 NAME 'ciamIdpSubject' DESC 'How
  EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY
   'meta' X-VALUE-TYPE 'string' X-PATTERN '^https://[^ ]+ [^ ]+$' X-ORIGIN 'o
  psdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.988 NAME 'ciamIdpGroup' DESC 'An ide
+ ntity provider group a team stands for: \27<issuer> <group id>\27, the toke
+ n\27s iss and a value of its groups claim (the group\27s immutable ID, neve
+ r its display name). Whoever the provider puts in the group is a member of 
+ the team for the HTTP API, request by request; recorded memberships of the 
+ team are then ignored' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115
+ .121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '^https://[^
+  ]+ [^ ]+$' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.989 NAME 'ciamApprovedAs' DESC 'The 
+ teams mapped to identity provider groups (ciamIdpGroup) the approver belong
+ ed to when approving a change, by name: set by the store with ciamApprovedB
+ y (never by the writer), and what the approver\27s grants are checked with 
+ when the change is applied' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ 6.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir'
+  )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -4239,7 +4254,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.30 NAME 'ciamChange' DESC 'Change rec
  ord (mirrored from ITSM; a proposed one may carry the records it applies, a
  nd names the ticket it is tracked by)' SUP ciamObject STRUCTURAL MUST ( cn 
  $ ciamTitle $ ciamChangeStatus ) MAY ( ciamApprovedBy $ ciamPlannedAt $ cia
- mChangeRecords $ ciamTicketRef $ ciamAuthor ) X-ORIGIN 'opsdir' )
+ mChangeRecords $ ciamTicketRef $ ciamAuthor $ ciamApprovedAs ) X-ORIGIN 'op
+ sdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.31 NAME 'ciamIncident' DESC 'Incident
   / postmortem' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamOpened
  At ) MAY ( ciamSeverity $ ciamInvolved $ ciamRootCause ) X-ORIGIN 'opsdir' 
@@ -4248,7 +4264,7 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.32 NAME 'ciamParty' DESC 'Team, partn
  er, vendor, or the operator of the platform (how to reach it: mail, telepho
  ne, contact link)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamOwnerKind ) MA
  Y ( mail $ telephoneNumber $ ciamContactUrl $ ciamDisplayName $ ciamTakesGe
- neratedInfra ) X-ORIGIN 'opsdir' )
+ neratedInfra $ ciamIdpGroup ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.33 NAME 'ciamStackComponent' DESC 'On
  e component of an environment stack: the adapter that fills a role, and the
   offering of its product when it has several (ciamOffering)' SUP ciamObject

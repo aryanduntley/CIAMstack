@@ -18,7 +18,7 @@ from .settings import SETTINGS_REPORT
 PORTABILITY = sql_report(("portability", "values"), "select * from v_portability")
 UNOWNED = sql_report(("dn", "kind", "problem"), "select dn, kind, problem from v_unowned order by 1")
 BLAST_RADIUS = fetch_report(("depth", "dependent", "via", "owner"), fetch_blast_radius, needs_dn=True)
-HISTORY_HEADERS = ("at", "change", "op", "by", "dn")
+HISTORY_HEADERS = ("at", "change", "op", "by", "client", "teams", "dn")
 
 
 def catalogue(domains=DOMAINS):
