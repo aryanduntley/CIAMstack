@@ -15,6 +15,8 @@ The record is a PostgreSQL database. Each company keeps its own: a parent organi
    - `opsdir_migrate`, which runs init and upgrade;
    - `opsdir_app`, the day-to-day login, which has rows only.
 
+   With the HTTP API, add `--api-login opsdir_api`: the API server's own login, a member of `opsdir_app` (rows only). The API server acts for the person each verified token names, and the store believes it only once the record's `api-login` setting names that login (step 5). Only the API server holds its credentials.
+
    The script also takes the right to create temporary tables away from PUBLIC (`revoke temporary on database`), and every store function runs with its search path pinned (`opsdir, pg_temp`), so no login can stand a temporary table in for the record inside the store's own rules.
 
    On RDS with IAM authentication, also `GRANT rds_iam TO opsdir_app` (and to `opsdir_migrate`). On Azure with Entra ID, the server's Entra administrator maps the principals with `pgaadauth_create_principal` instead of creating password logins.
@@ -27,6 +29,7 @@ The record is a PostgreSQL database. Each company keeps its own: a parent organi
 5. **Give the record its identity and say it is production**, under approved changes:
    - `opsdir identity --org <code> [--parent <group code>] --name "<company>" --change <change>`. From then on, change records are named `<code>-…`.
    - `opsdir setting deployment production --change <code>-…`.
+   - With the HTTP API: `opsdir setting api-login opsdir_api --change <code>-…`.
 6. **Check it**: run `opsdir posture` as the runtime login. Every check should be `ok`, apart from information rows. A production record fails on:
    - a password in the environment;
    - the development defaults;

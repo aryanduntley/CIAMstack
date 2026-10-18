@@ -279,3 +279,33 @@ def test_once_grants_exist_the_store_checks_the_writers_and_approvers_areas(clus
     with db.connect(cluster.socket_dsn + "opsdir_migrate") as owner:
         owner.execute(f"set role {ROLES.owner}")
         db.apply_records(owner, tuple(parse(touch("cn=network,ou=owners,dc=ciam-ops"))), "CHG-8")  # break-glass
+
+
+def test_the_grant_check_evaluates_the_person_behind_the_api_login(cluster):
+    """Runs after the grants test above (bob holds apply and alice approve over the network team's areas). The API
+    login (opsdir db-roles --api-login), once the api-login setting names it, writes as the person it names; any other
+    login naming a person still writes as itself."""
+    r, port = cluster.root, cluster.port
+    touch = "dn: cn=svc-a,ou=owners,dc=ciam-ops\nchangetype: modify\nreplace: description\ndescription: api\n-\n"
+    script = db_roles_sql(ROLES.owner, "opsdir_migrate", ROLES.runtime, "opsdir", "certificate", api="opsdir_api")
+    with psycopg.connect(f"host={r} port={port} user=admin dbname=opsdir", autocommit=True) as admin:
+        for statement in [s for s in script.splitlines() if "opsdir_api" in s and not s.startswith("--")]:
+            admin.execute(statement)
+    with db.connect(cluster.socket_dsn + "opsdir_migrate") as owner:
+        owner.execute(f"set role {ROLES.owner}")
+        ops.apply_preview(owner, ops.preview_setting(owner, "api-login", "opsdir_api"), "CHG-1")
+    with db.connect(cluster.socket_dsn + "opsdir_api") as api:
+        with db.requesting("bob"):
+            ops.new_change(api, "CHG-10", "Through the API")
+        with db.requesting("alice"):
+            ops.change_status(api, "CHG-10", "approved")
+            with pytest.raises(psycopg.errors.RaiseException, match="alice may not apply cn=svc-a"):
+                db.apply_records(api, tuple(parse(touch)), "CHG-10")
+        with pytest.raises(psycopg.errors.RaiseException, match="opsdir_api may not apply cn=svc-a"):
+            db.apply_records(api, tuple(parse(touch)), "CHG-10")       # no person named: the login, no grants
+        with db.requesting("bob"):
+            db.apply_records(api, tuple(parse(touch)), "CHG-10")
+        assert [row[3] for row in ops.history(api).rows if row[4].startswith("cn=svc-a,")][-1] == "bob"
+    with db.connect(cluster.socket_dsn + "carol") as carol, db.requesting("bob"):
+        with pytest.raises(psycopg.errors.RaiseException, match="carol may not apply cn=svc-a"):
+            db.apply_records(carol, tuple(parse(touch)), "CHG-10")

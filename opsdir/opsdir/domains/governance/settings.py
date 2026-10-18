@@ -1,6 +1,7 @@
 """The estate settings the governance domain declares (core.settings): which kinds of configuration sources `opsdir
-collect` may read, each off until an approved change turns it on (user decision: read them all, given permission), and
-whether the record is a production one (the posture check holds a production record to production rules)."""
+collect` may read, each off until an approved change turns it on (user decision: read them all, given permission);
+whether the record is a production one (the posture check holds a production record to production rules), whether an
+author may approve their own change, and which login the HTTP API server connects as."""
 from ...core.contract import Setting
 
 COLLECT_GIT = Setting("collect-from-git", "bool", False,
@@ -21,4 +22,8 @@ APPROVAL_SEPARATION = Setting("approval-separation", "bool", True,
                               "Whether a change record's approver must be someone other than its author (the store "
                               "enforces it): turn it off only for a one-person install; the posture check warns on a "
                               "development record and fails a production one")
-SETTINGS = (COLLECT_GIT, COLLECT_KUBERNETES, COLLECT_SSH, DEPLOYMENT, APPROVAL_SEPARATION)
+API_LOGIN = Setting("api-login", "string", "",
+                    "The database login the HTTP API server connects as, the only one the store trusts to say which "
+                    "person a write is for (the person its verified token names); empty: no API login is trusted. "
+                    "Changing it is a governed write like any setting")
+SETTINGS = (COLLECT_GIT, COLLECT_KUBERNETES, COLLECT_SSH, DEPLOYMENT, APPROVAL_SEPARATION, API_LOGIN)

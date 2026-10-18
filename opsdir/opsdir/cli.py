@@ -272,7 +272,9 @@ SUBCOMMANDS = (
                   (("--login",), {"default": "password", "choices": list(LOGINS),
                                   "help": "how the logins sign in"}),
                   (("--person",), {"action": "append", "default": [],
-                                   "help": "a person's own login, a member of the runtime login; repeat"}))),
+                                   "help": "a person's own login, a member of the runtime login; repeat"}),
+                  (("--api-login",), {"help": "the HTTP API server's login, a member of the runtime login (the "
+                                              "record's api-login setting names it)"}))),
     ("grant", ((("name",), {}), (("--action",), {"action": "append", "default": [], "help": "an action it gives"}),
                (("--to",), {"action": "append", "default": [], "metavar": "LOGIN|TEAM",
                             "help": "a person (their login) or a team it is for; repeat"}),
@@ -286,6 +288,9 @@ SUBCOMMANDS = (
                 (("--title",), {}), (("--ticket",), {"help": "the ITSM ticket it is tracked by, <adapter>:<number>"}))),
     ("person", ((("login",), {"help": "the person's own database login"}), (("--name",), {}), (("--mail",), {}),
                 (("--team",), {"action": "append", "help": "a team (ou=owners) they belong to; repeat for several"}),
+                (("--idp-subject",), {"action": "append", "metavar": "\"ISSUER SUBJECT\"",
+                                      "help": "how the company's identity provider names them (a token's iss and sub "
+                                              "claims); repeat for several"}),
                 (("--change",), {}),
                 (("--dry-run",), {"action": "store_true", "help": "list the change records; apply nothing"}))),
     ("identity", ((("--org",), {"help": "the org code of the company this record belongs to (fixed once set)"}),
@@ -411,7 +416,8 @@ def _cmd_posture(conn, a, as_of):
 
 def _cmd_db_roles(conn, a, as_of):
     try:
-        return db_roles_sql(a.owner, a.migrator, a.runtime, a.database, a.login, tuple(a.person)).rstrip("\n")
+        return db_roles_sql(a.owner, a.migrator, a.runtime, a.database, a.login, tuple(a.person),
+                            a.api_login).rstrip("\n")
     except ValueError as e:
         raise SystemExit(str(e)) from None
 
@@ -934,11 +940,11 @@ def command_area(a):
 
 
 def _cmd_person(conn, a, as_of):
-    if a.name is None and a.mail is None and a.team is None:
+    if a.name is None and a.mail is None and a.team is None and a.idp_subject is None:
         found = ops.person_lines(conn, a.login)
         return "\n".join(found) if found else f"no person {a.login} (ou=people)"
     try:
-        preview = ops.preview_person(conn, a.login, a.name, a.mail, a.team)
+        preview = ops.preview_person(conn, a.login, a.name, a.mail, a.team, a.idp_subject)
     except ValueError as e:
         raise SystemExit(str(e)) from None
     if a.dry_run or not a.change:

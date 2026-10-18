@@ -4,7 +4,7 @@
 
 How CIAMstack stores the platform's record, in two layers: a few PostgreSQL tables (the storage layer), and the entries those tables hold (the record layer), shaped like an LDAP directory. Every entry sits at a DN in one tree under `dc=ciam-ops`, has object classes that say which attributes it must and may have, and every attribute has a value type and a portability class. The published LDAP form of the same definitions is `opsdir/schema/ciam-ops.schema.ldif`; the rules the store enforces are in [`opsdir/SPEC.md`](../opsdir/SPEC.md).
 
-This reference covers the core, its domains and the installed adapter packages that add definitions: 211 object classes and 961 attributes. Fields and record types an operator defines live in the record itself (`ou=custom-schema`, OIDs under `1.3.6.1.4.1.32473.4`), so they differ per record and aren't listed here.
+This reference covers the core, its domains and the installed adapter packages that add definitions: 211 object classes and 962 attributes. Fields and record types an operator defines live in the record itself (`ou=custom-schema`, OIDs under `1.3.6.1.4.1.32473.4`), so they differ per record and aren't listed here.
 
 ## How to read it
 
@@ -409,7 +409,7 @@ flowchart LR
 | [Directory](schema/directory.md) | domain | `1.3.6.1.4.1.32473.1` | 16 | 76 |
 | [Federation](schema/federation.md) | domain | `1.3.6.1.4.1.32473.1` | 6 | 35 |
 | [PKI](schema/pki.md) | domain | `1.3.6.1.4.1.32473.1` | 20 | 118 |
-| [Governance](schema/governance.md) | domain | `1.3.6.1.4.1.32473.1` | 14 | 68 |
+| [Governance](schema/governance.md) | domain | `1.3.6.1.4.1.32473.1` | 14 | 69 |
 | [Configuration](schema/configuration.md) | domain | `1.3.6.1.4.1.32473.1` | 5 | 18 |
 | [Automation](schema/automation.md) | domain | `1.3.6.1.4.1.32473.1` | 2 | 15 |
 | [Compute](schema/compute.md) | domain | `1.3.6.1.4.1.32473.1` | 5 | 42 |

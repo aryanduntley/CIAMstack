@@ -116,9 +116,9 @@ def search(conn, base, filt, scope="sub"):
 
 
 def my_teams(conn):
-    """Effect (reads the record): the session login's teams ('my area'); SystemExit for a login that isn't a
-    recorded person."""
-    d, who = db.load_directory(conn), db.session_user(conn)
+    """Effect (reads the record): the requester's teams ('my area': the person the context acts for, else the session
+    login; store.postgres.requester); SystemExit for a login that isn't a recorded person."""
+    d, who = db.load_directory(conn), db.requester(conn)
     if not any(rdn_value(p).lower() == who.lower() for p in peoplemod.people(d)):
         raise SystemExit(f"--mine: {who} isn't a recorded person (opsdir person {who} --team ... --change ...)")
     return peoplemod.teams_of(d, who)
@@ -131,7 +131,7 @@ def report(conn, name, dn=None, as_of=None):
 
 
 def my_report(conn, name, dn=None, as_of=None):
-    """Effect (reads the record): a named report narrowed to the session login's teams (governance.focus), and a note
+    """Effect (reads the record): a named report narrowed to the requester's teams (governance.focus), and a note
     when it has no owner or keeper column to narrow by (every row then)."""
     r = report(conn, name, dn, as_of)
     kept, note = focusmod.focus_rows(r.headers, r.rows, my_teams(conn))
@@ -139,9 +139,9 @@ def my_report(conn, name, dn=None, as_of=None):
 
 
 def mine(conn):
-    """Effect (reads the record): the session login's open items (governance.focus.open_items)."""
+    """Effect (reads the record): the requester's open items (governance.focus.open_items)."""
     teams = my_teams(conn)
-    return focusmod.open_items(db.load_directory(conn), db.session_user(conn), teams)
+    return focusmod.open_items(db.load_directory(conn), db.requester(conn), teams)
 
 
 def history(conn, dn=None):
@@ -157,7 +157,7 @@ def _entry_dn(dn):
 def application(conn, dn, as_of, env=None, mine=False):
     """Effect (reads the record): the application view of an entry (connectors.application.ApplicationView; a bare
     name an application's), its roles realized in environment env (CLOUD/ENV) when given, else in every one; with
-    mine, only what the session login's teams own or keep (connectors.application.my_view)."""
+    mine, only what the requester's teams own or keep (connectors.application.my_view)."""
     teams, d = my_teams(conn) if mine else None, db.load_directory(conn)
     v = application_view(d, _entry_dn(dn), as_of, env_model(d, env) if env else None)
     return my_view(d, v, teams) if mine else v
@@ -217,13 +217,14 @@ GOVERNED_CLASSES = ("ciamGrant", "ciamPerson")      # what turns the permissive 
 
 
 def authorize_command(conn, action, area, claimed=None):
-    """Effect (refuses): check the session's login against the record's permissions (governance.grants) for an
-    action over an area, before an operation runs; every front end asks it. claimed: a requester named by the caller
-    (render and migrate --as), refused once people are recorded unless it is the login. With no people or grants
-    recorded, everything is allowed and the record isn't loaded."""
+    """Effect (refuses): check the requester (the person the context acts for, else the session's login;
+    store.postgres.requester) against the record's permissions (governance.grants) for an action over an area, before
+    an operation runs; every front end asks it. claimed: a requester named by the caller (render and migrate --as),
+    refused once people are recorded unless it is the requester. With no people or grants recorded, everything is
+    allowed and the record isn't loaded."""
     if not db.rows_of_classes(conn, GOVERNED_CLASSES):
         return
-    d, who = db.load_directory(conn), db.session_user(conn)
+    d, who = db.load_directory(conn), db.requester(conn)
     if claimed and claimed != who and peoplemod.people(d):
         raise SystemExit(f"--as {claimed}: once people are recorded, the requester is the login ({who})")
     authorize(grantsmod.policy_for(d), who, action, area)
@@ -240,9 +241,10 @@ def preview_grant(conn, name, actions, grantees, environments=(), owners=()):
 def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None, policy=allow_all):
     """Effect (reads the record): an environment's rendered files; targets: {adapter: (render target, ...)} chosen
     (default: every target of every adapter); scope (core.environment.Scope): the whole environment, or a keeper's,
-    an object class's or named bindings' infrastructure (5.7); requester: who asks (default: the database login),
-    authorized by policy (default: everyone) and recorded in the MANIFEST; with the render's notes (NOTES.json)."""
-    who = requester or db.session_user(conn)
+    an object class's or named bindings' infrastructure (5.7); requester: who asks (default: store.postgres.requester,
+    the person the context acts for, else the database login), authorized by policy (default: everyone) and recorded
+    in the MANIFEST; with the render's notes (NOTES.json)."""
+    who = requester or db.requester(conn)
     authorize(policy, who, "render", Area(spec, scope))
     m, files = render_env(db.load_directory(conn), spec, wanted=targets, scope=scope, requester=who)
     return Rendered(m.label, m.dn, m.provider, files, tuple(m.unbound), parsed(files["NOTES.json"]))
@@ -250,7 +252,7 @@ def render(conn, spec, targets=None, scope=ENVIRONMENT, requester=None, policy=a
 
 def plan(conn, src, dst, as_of, mine=False):
     """Effect (reads the record and its history): the plan for moving src to dst, as markdown and external-party
-    request drafts; with mine, only the blockers and actions of the session login's teams (governance.focus)."""
+    request drafts; with mine, only the blockers and actions of the requester's teams (governance.focus)."""
     p = planmod.plan(db.load_directory(conn), src, dst, as_of, writes=reports.change_writes(conn, as_of))
     if mine:
         teams = my_teams(conn)
@@ -262,16 +264,16 @@ def plan(conn, src, dst, as_of, mine=False):
 def tickets(conn, src, dst, as_of, mine=False):
     """Effect (reads the record and its history): the work-ticket drafts handing the plan src->dst's findings to their
     owning teams through the installed ITSM add-ons, with their README ({path under tickets/: text},
-    connectors.handoff); with mine, only the session login's teams' drafts. Nothing is sent to ITSM."""
+    connectors.handoff); with mine, only the requester's teams' drafts. Nothing is sent to ITSM."""
     teams, d = my_teams(conn) if mine else None, db.load_directory(conn)
     p = planmod.plan(d, src, dst, as_of, writes=reports.change_writes(conn, as_of))
     return handoff_files(d, p, ADAPTERS, teams)
 
 
 def migrate(conn, src, dst, as_of, requester=None, policy=allow_all):
-    """Effect (reads the record): check both stacks, plan and render the target; requester: who asks (default: the
-    database login), authorized by policy (default: everyone) and recorded in the target's MANIFEST."""
-    who = requester or db.session_user(conn)
+    """Effect (reads the record): check both stacks, plan and render the target; requester: who asks (default:
+    store.postgres.requester), authorized by policy (default: everyone) and recorded in the target's MANIFEST."""
+    who = requester or db.requester(conn)
     authorize(policy, who, "migrate", Area(dst, ENVIRONMENT, src))
     r = migration.run(db.load_directory(conn), src, dst, as_of, ADAPTERS, ADAPTER_VERSIONS, who,
                       reports.change_writes(conn, as_of))
@@ -282,7 +284,7 @@ def migrate(conn, src, dst, as_of, requester=None, policy=allow_all):
 def fixes(conn, src, dst, as_of, mine=False):
     """Effect (reads the record): the record changes the plan's findings offer (core.findings.Fix), each with its
     change records, the steps outside the record and what it could hide. Against the workspace connection they are the
-    workspace's (reaching the live record at cutover). With mine, only those changing what the session login's teams
+    workspace's (reaching the live record at cutover). With mine, only those changing what the requester's teams
     own or keep (governance.focus.focus_fixes)."""
     teams, d = my_teams(conn) if mine else None, db.load_directory(conn)
     found = planmod.plan(d, src, dst, as_of, writes=reports.change_writes(conn, as_of)).fixes
@@ -380,10 +382,18 @@ def change_lines(conn, change_id):
     return changesmod.change_lines(change)
 
 
-def preview_person(conn, login, name=None, mail=None, teams=None):
-    """Effect (reads the record): the change records recording a person or updating their name, mail and teams
-    (applied with apply_preview under an approved change); ValueError for a bad login or an unknown team."""
-    return Preview(f"person {login}", peoplemod.person_changes(db.load_directory(conn), login, name, mail, teams), ())
+def preview_person(conn, login, name=None, mail=None, teams=None, subjects=None):
+    """Effect (reads the record): the change records recording a person or updating their name, mail, teams and
+    identity-provider subjects ('<issuer> <subject>'; governance.people) (applied with apply_preview under an approved
+    change); ValueError for a bad login, an unknown team or a malformed subject."""
+    return Preview(f"person {login}", peoplemod.person_changes(db.load_directory(conn), login, name, mail, teams,
+                                                               subjects), ())
+
+
+def person_for_subject(conn, issuer, subject):
+    """Effect (reads the record): the login of the person the company's identity provider names (a token's iss and
+    sub claims, exactly), or None (governance.people.person_for_subject)."""
+    return peoplemod.person_for_subject(db.load_directory(conn), issuer, subject)
 
 
 def person_lines(conn, login):

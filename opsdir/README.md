@@ -610,7 +610,7 @@ In production the record runs under three roles, none of them a tier among opera
 | migration login (`opsdir_migrate`) | to run `init` and `upgrade` | becomes the owner for them (`OPSDIR_DB_OWNER=opsdir_owner`), holding none of its rights otherwise |
 | runtime login (`opsdir_app`) | day to day | reads and writes entries under the store's rules; can't create, alter or drop anything, change the secret patterns or the vocabulary, or change the history |
 
-`opsdir db-roles [--owner R] [--migrator R] [--runtime R] [--database D] [--login password|certificate|kerberos]` prints the script an admin reviews and runs once, connected to the record's database. It creates the roles and their database rights, revokes `PUBLIC`'s `CREATE` on schema `public`, and gives the `pg_hba.conf` lines for the login method. CIAMstack itself never needs admin rights.
+`opsdir db-roles [--owner R] [--migrator R] [--runtime R] [--database D] [--login password|certificate|kerberos] [--person LOGIN ...] [--api-login R]` prints the script an admin reviews and runs once, connected to the record's database. It creates the roles and their database rights, revokes `PUBLIC`'s `CREATE` on schema `public`, and gives the `pg_hba.conf` lines for the login method. `--api-login` adds the HTTP API server's own login, with the runtime's rights (see People, change records and approval). CIAMstack itself never needs admin rights.
 
 `init`, `upgrade` and `workspace create` run with `OPSDIR_DB_OWNER` and `OPSDIR_DB_RUNTIME` set. They then build everything as the owner and re-apply the runtime's grants on every object each time, so the grants survive `init` and the views every upgrade re-creates.
 
@@ -663,6 +663,14 @@ What the store enforces, whoever connects and however (the CLI, a script, `psql`
 - **Applied only after approved:** a change goes proposed → approved → applied, or rejected.
 - **The initial load only by the owner:** writes under `BOOTSTRAP` (`opsdir load`) are the schema owner's. Every other login writes under an approved change.
 - **History records the login** that made each write (`opsdir history` shows it as `by`). The history is append-only.
+
+**Through the HTTP API.** The API server signs in to the database with one login of its own (`opsdir db-roles --api-login opsdir_api`, a member of the runtime login) and acts for many people. It verifies each request's token, finds the person it names, and tells the store who that person is inside each write. The store believes that only from the login the `api-login` setting names (`opsdir setting api-login opsdir_api --change …`, a governed write like any setting), and then applies every rule above to the person: author, approver, approval separation, grants, history. Any other login naming a person is ignored and writes as itself. With no person named, the API login acts as itself: it holds no grants and isn't a person, so it can't approve or apply anything once people and grants are recorded. Only the API server holds the API login's credentials.
+
+A person is found by how the company's identity provider names them (`ciamIdpSubject`: `<issuer> <subject>`, the token's `iss` and `sub` claims, compared exactly). The issuer is an https URL, and a subject names one person only:
+
+```bash
+opsdir person alice --idp-subject "https://login.example.com/tenant 00u1abc" --change CHG-12   # repeat for several
+```
 
 ### Permissions
 
