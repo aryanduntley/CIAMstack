@@ -196,7 +196,15 @@ Anything not listed can be added as a package, by your team or anyone else, with
 
 ## Try it
 
-Installing or running CIAMstack needs a written evaluation or commercial license from the author ([License](#license)). With one, the requirements are Python 3.11+ and PostgreSQL. CIAMstack runs on a Linux server (one per company record, or a container); people reach it from their own computers (today a terminal on the server; later the planned web console). Run the CLI directly on Linux, or on macOS (expected to work, not yet tested) or Windows through WSL2. Set up the role and databases once ([Database](opsdir/README.md#database)), then:
+Installing or running CIAMstack needs a written evaluation or commercial license from the author ([License](#license)). With one, the requirements are Python 3.11+ and PostgreSQL.
+
+**Supported platforms:**
+- The server is Linux: one company-wide CIAMstack server per company record (or a container).
+- People on any OS reach it through the API, the console or MCP as they arrive; today, a terminal on the server.
+- The CLI runs directly on Linux, on macOS (POSIX; expected to work, not yet tested) and on Windows through WSL2.
+- Every file CIAMstack reads and writes is UTF-8 with LF line endings, whatever the server's locale.
+
+Set up the role and databases once ([Database](opsdir/README.md#database)), then:
 
 ```bash
 opsdir/scripts/dev-install.sh     # venv (opsdir/.venv) + the core + every package, editable
