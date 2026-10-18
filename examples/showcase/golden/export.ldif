@@ -600,6 +600,10 @@ ciamImportScope: cn=Example Aero Issuing CA 2,ou=certificate-authorities,dc=ci
 ciamImportScope: cn=Example Aero Issuing CA 2,ou=issued-certificates,dc=ciam-o
  ps
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 49268d6150a136129fc3ab36375398e69ad42ab92c3dea4e99d29c17c3f1
+ 5424 ca/Example Aero Issuing CA 2.json
+ciamImportedFile: 6ffc838a51a6cd45f0a4971b0d456e0b481f937bcfd76deec6f44fecaccf
+ f16c templates.ldif
 ciamImporter: adcs/inventory
 
 dn: cn=adcs.inventory.shared.s1-ec43948a9827141f,ou=imports,dc=ciam-ops
@@ -610,6 +614,8 @@ cn: adcs.inventory.shared.s1-ec43948a9827141f
 ciamChangeRef: cn=CHG-2086,ou=changes,dc=ciam-ops
 ciamImportScope: ou=certificate-templates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 3a24aa4a697d9499fd42ac1be8532b36d3f3c7062540e439b175aeb137cd
+ cfcf templates.ldif
 ciamImporter: adcs/inventory
 
 dn: cn=admin-login-failures,ou=alert-rules,dc=ciam-ops
@@ -911,6 +917,18 @@ ciamImportScope: cn=Example Aero Retired Issuing CA,ou=issued-certificates,dc=
 ciamImportScope: cn=Example Aero Retired Issuing CA/EndEntityServerAuthCertifi
  cate/V1,ou=certificate-templates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 1cae6bd58e5ac083900b0ce8ffcd3bd01af249ab2caed5c1824d8598067a
+ 95f8 private-ca/9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b/audit-report.json
+ciamImportedFile: 8da85faa92ce4486a4a5def4b762dfcd960ad9099d8c73c295368b35187c
+ 2968 private-ca/9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b/audit-reports.json
+ciamImportedFile: 2886076e30a11fad1a1dbd44399b523698bd986de1ad81c67d36e7a1028e
+ be79 private-ca/9d8c7b6a-5f4e-4d3c-8b2a-1c0d9e8f7a6b/permissions.json
+ciamImportedFile: b7ee46730a3d1f5c59764fb8576f1beadac736bee80ebf4e724c8f35a0f7
+ c876 private-ca/cas.json
+ciamImportedFile: e1e19b4f764b1c8892f4841c0bd654ff52b841d3e3ce1c9fdfa3900424a5
+ 5888 private-ca/iam.json
+ciamImportedFile: ba72799dda03c2d6748bf4f1c28d85d7c345b7a49a0896324021c0f86b91
+ 190d private-ca/shared-cas.json
 ciamImporter: aws/private-ca
 
 dn: cn=aws.private-ca.shared.s1-a17abcade25d996f,ou=imports,dc=ciam-ops
@@ -934,6 +952,30 @@ ciamImportScope: cn=Example Aero Cloud Issuing CA/EndEntityCertificate/V1,ou=c
 ciamImportScope: cn=Example Aero Cloud Issuing CA/EndEntityClientAuthCertifica
  te_APIPassthrough/V1,ou=certificate-templates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: f0206656f5d40a0d1afcbeaabb00e4ae367a393e58954573b21b9e801601
+ 7c42 private-ca/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/audit-report.json
+ciamImportedFile: fe5a63fe44fd69ea07d70296f523b3418c7c7818c173a3cf2f68cd8549e6
+ a15f private-ca/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/audit-reports.json
+ciamImportedFile: 7d296fc661d2210e95731bf0083e15c658146ce3fdd37a50f4ac8adf8800
+ 3366 private-ca/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/certificate.json
+ciamImportedFile: 096b613e19b12fbef1fd79b0c893ddf8cd65c00bfac4d063be88c4eb032a
+ ccea private-ca/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/permissions.json
+ciamImportedFile: 1b340bc9f4e80d49220582c42e7c6d1e5acc4896306fc227dec97af0918c
+ 6432 private-ca/3f5b9a7c-1d2e-4f30-9a4b-5c6d7e8f9a0b/policy.json
+ciamImportedFile: 5b9068362507a28cdf9dd43fc972e0e30a33c433b4b2f695a79ddf8445df
+ a8e0 private-ca/7c1d0e2a-4b5f-4c6d-8e9f-0a1b2c3d4e5f/audit-report.json
+ciamImportedFile: 34b782d207a7e70286487c92368f22474eef4c46ceb9266360612a0310bb
+ be0e private-ca/7c1d0e2a-4b5f-4c6d-8e9f-0a1b2c3d4e5f/audit-reports.json
+ciamImportedFile: 068f48d55c41f3764c786dc62383794c0c4cc0870346bd974affedcff83a
+ 48b5 private-ca/7c1d0e2a-4b5f-4c6d-8e9f-0a1b2c3d4e5f/certificate.json
+ciamImportedFile: 2886076e30a11fad1a1dbd44399b523698bd986de1ad81c67d36e7a1028e
+ be79 private-ca/7c1d0e2a-4b5f-4c6d-8e9f-0a1b2c3d4e5f/permissions.json
+ciamImportedFile: e0b0b386b8e692fdad06c3bad25be0dd2b196e50917c530a1f0be5bf6c1e
+ 5c3d private-ca/cas.json
+ciamImportedFile: 2022d43f5e3c6169dd69ae88485bbb29941cca0186db853ede3e60c1c062
+ af4c private-ca/iam.json
+ciamImportedFile: ba72799dda03c2d6748bf4f1c28d85d7c345b7a49a0896324021c0f86b91
+ 190d private-ca/shared-cas.json
 ciamImporter: aws/private-ca
 
 dn: cn=aws.quotas.shared.s1-4bed36db6d564cf2,ou=imports,dc=ciam-ops
@@ -944,6 +986,16 @@ cn: aws.quotas.shared.s1-4bed36db6d564cf2
 ciamChangeRef: cn=CHG-2025,ou=changes,dc=ciam-ops
 ciamImportScope: cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 930e2a625a7ff0e263b0ed6d34bcbdbe7f7f284374d4ed0e86a63ac717f5
+ 4863 caller.json
+ciamImportedFile: 11687cd528948b8075607b979caf93f1c3a18d5e87343bd93da0ed7d02d1
+ 2033 us-east-1/ec2-defaults.json
+ciamImportedFile: 7b9547f1ae880b592b7db15c94cef69f6691514669d92d816bf174c32f9a
+ bffc us-east-1/ec2.json
+ciamImportedFile: ccda3ad6d39b57605d1b6c888bd8bc2e6f7505c3c5b7600dc017022479a1
+ 25de us-east-1/rds-defaults.json
+ciamImportedFile: 45da4d828a0eb9ab96e0b6951ba519b38f607e30d60a63ad90735745f5af
+ 60f8 us-east-1/rds.json
 ciamImporter: aws/quotas
 
 dn: cn=aws.regions.shared.s1-5adb217e0a2d5536,ou=imports,dc=ciam-ops
@@ -954,6 +1006,8 @@ cn: aws.regions.shared.s1-5adb217e0a2d5536
 ciamChangeRef: cn=CHG-2020,ou=changes,dc=ciam-ops
 ciamImportScope: cn=aws,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: fe5b9ba2881c5ffaad4687f572bb9cd662a591bde45d8cf5838552b40ec0
+ 29b4 regions.json
 ciamImporter: aws/regions
 
 dn: cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops
@@ -1056,6 +1110,23 @@ cn: azure.external-id.shared.s1-8a3dd9bc18e38d46
 ciamChangeRef: cn=CHG-2090,ou=changes,dc=ciam-ops
 ciamImportScope: cn=partner-portal,ou=integrations,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 650350831d4121d5c955b5ca6009ac4b47ef9972a2726283294ac91db494
+ c640 README.md
+ciamImportedFile: 7625074262b88e982373e219f6c53e34adefbf1a5f656d7c6a6e66357b5a
+ 02b2 target/prod/external-id/applications.json
+ciamImportedFile: b697bbe7a66e722bde410efeccf1249a8d5ff5927afa06bdda8be14b8c36
+ b10b target/prod/external-id/extensions.json
+ciamImportedFile: d402c171359adf30711d213e781ec6142bda6bb8c4deae3a58cd835d9eec
+ e31d target/prod/external-id/flow-9e2a7c45-1b3d-4f6e-8a90-c2d4e6f8a0b1-applic
+ ations.json
+ciamImportedFile: 0c0e6a61c2b172d5aba3a990cc6afe2d09051687508c62429c66d06d24f1
+ 640a target/prod/external-id/identity-providers.json
+ciamImportedFile: f668d8af39f6114b755227ccb92228d0340362c7d7e711140cbeb190ec30
+ 4649 target/prod/external-id/organization.json
+ciamImportedFile: df8c6e22f8c1f1dee4610e89ae460fb3306cc055ed45ca0fd61b9ddff526
+ f2d6 target/prod/external-id/service-principals.json
+ciamImportedFile: a1dd442120eb4b4d53730e0e57d259239f9891305db4f4be0d9b59c8567d
+ 67cc target/prod/external-id/sign-in-flows.json
 ciamImporter: azure/external-id
 
 dn: cn=azure.external-id.target.prod.s1-ecc4e7e660ccc88e,ou=imports,dc=ciam-ops
@@ -1067,6 +1138,23 @@ ciamChangeRef: cn=CHG-2090,ou=changes,dc=ciam-ops
 ciamImportScope: cn=partners-external-id,ou=bindings,env=prod,cloud=target,ou=
  environments,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 650350831d4121d5c955b5ca6009ac4b47ef9972a2726283294ac91db494
+ c640 README.md
+ciamImportedFile: 7625074262b88e982373e219f6c53e34adefbf1a5f656d7c6a6e66357b5a
+ 02b2 target/prod/external-id/applications.json
+ciamImportedFile: b697bbe7a66e722bde410efeccf1249a8d5ff5927afa06bdda8be14b8c36
+ b10b target/prod/external-id/extensions.json
+ciamImportedFile: d402c171359adf30711d213e781ec6142bda6bb8c4deae3a58cd835d9eec
+ e31d target/prod/external-id/flow-9e2a7c45-1b3d-4f6e-8a90-c2d4e6f8a0b1-applic
+ ations.json
+ciamImportedFile: 0c0e6a61c2b172d5aba3a990cc6afe2d09051687508c62429c66d06d24f1
+ 640a target/prod/external-id/identity-providers.json
+ciamImportedFile: f668d8af39f6114b755227ccb92228d0340362c7d7e711140cbeb190ec30
+ 4649 target/prod/external-id/organization.json
+ciamImportedFile: df8c6e22f8c1f1dee4610e89ae460fb3306cc055ed45ca0fd61b9ddff526
+ f2d6 target/prod/external-id/service-principals.json
+ciamImportedFile: a1dd442120eb4b4d53730e0e57d259239f9891305db4f4be0d9b59c8567d
+ 67cc target/prod/external-id/sign-in-flows.json
 ciamImporter: azure/external-id
 
 dn: cn=azure.keyvault-certificates.shared.s1-76d90a8cd2a36974,ou=imports,dc=ciam-ops
@@ -1078,6 +1166,39 @@ ciamChangeRef: cn=CHG-2126,ou=changes,dc=ciam-ops
 ciamImportScope: cn=Example Aero KeyVault ciam-prod,ou=managed-certificates,dc
  =ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 8dd319e00d62b11c6986cba669e0539b40fabc4c9c76d868be60c46f7d4a
+ bb02 keyvault/Example Aero KeyVault ciam-prod/certificates-0.json
+ciamImportedFile: b219a851434c86e5fa6444fd5945a142e18c8b4103fe6abdd3d15e85fe10
+ 5d1a keyvault/Example Aero KeyVault ciam-prod/certificates/apps-tls/871dfdfbd
+ 0b7e95530efe5d4dc825e4b.json
+ciamImportedFile: 18dac44590ac72a7aa9a1985084c85eab04876ce9d27bf06d51b50eb19d4
+ 96cf keyvault/Example Aero KeyVault ciam-prod/certificates/ciam-internal-ca/5
+ 813ca7c27e1b3b6628e0cdc51b5558a.json
+ciamImportedFile: 6c4ed3da52c4823f94981645f2e769356a70e291681da30ca0e4e2516183
+ 5745 keyvault/Example Aero KeyVault ciam-prod/certificates/supplier-portal-sp
+ -signing/a945c22093e1d32038767c4c525b43ea.json
+ciamImportedFile: 6ee64697f5448915f64eae13f841a3033f6ecb4660aa9eb380786639c17d
+ ed6b keyvault/Example Aero KeyVault ciam-prod/certificates/supplier-portal-sp
+ -signing/fe7536e6fca8366e99405584259a9f15.json
+ciamImportedFile: da0716cd8e0ca5dbf63a28acdbc82da8d49d522e00c1a9a9a30ae837e161
+ 609f keyvault/Example Aero KeyVault ciam-prod/contacts.json
+ciamImportedFile: d08c6b44194e5ca31f4c37ed6305df3772dac3760ac836bc204aa0c0ec1e
+ cc51 keyvault/Example Aero KeyVault ciam-prod/issuers.json
+ciamImportedFile: 14ce1a89145418b655bb5e71f87b3f533698e224951d105669535957ef64
+ 19d8 keyvault/Example Aero KeyVault ciam-prod/policies/apps-tls.json
+ciamImportedFile: 6dbaf04e20509b745ea92bfd09d76810189941d3bc7d7f4ba9932571ceb3
+ 2ef1 keyvault/Example Aero KeyVault ciam-prod/policies/ciam-internal-ca.json
+ciamImportedFile: f798ea36bf6c9c3431f0f048ae6eb2fd6605041b56308bb915b9af66b361
+ a9ae keyvault/Example Aero KeyVault ciam-prod/policies/supplier-portal-sp-sig
+ ning.json
+ciamImportedFile: c3e2b0009eeee1167cbe24f272b2bac92be59202a764fd00e9f307e3984b
+ deb2 keyvault/Example Aero KeyVault ciam-prod/versions/apps-tls-0.json
+ciamImportedFile: 100bc8cc4bb1554f68f9b63e1467d647d595702cf931c98a7b8a49cb862a
+ 4a93 keyvault/Example Aero KeyVault ciam-prod/versions/ciam-internal-ca-0.jso
+ n
+ciamImportedFile: 6b919627ad2adf320624ee1436534d81c9eb2d08639a3ae0d8a62dee44e5
+ 3eb1 keyvault/Example Aero KeyVault ciam-prod/versions/supplier-portal-sp-sig
+ ning-0.json
 ciamImporter: azure/keyvault-certificates
 
 dn: cn=azure.quotas.shared.s1-60d2177c2aeb65cb,ou=imports,dc=ciam-ops
@@ -1089,6 +1210,12 @@ ciamChangeRef: cn=CHG-2026,ou=changes,dc=ciam-ops
 ciamImportScope: cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quot
  as,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 007560a95395aadff2de594e03ee2957f2cbffddbb1c33dd33a12cfcb58f
+ f8f2 account.json
+ciamImportedFile: c2f89f1c8f243efc8d321e637d7bb87eda515e1b68290a9c53cf62e0456e
+ 1830 eastus2/compute.json
+ciamImportedFile: 16610b596da9577a89e071ab2b28ad4018f5084827f7b858b2cd067b53a3
+ 9385 eastus2/network.json
 ciamImporter: azure/quotas
 
 dn: cn=azure.regions.shared.s1-eaa7c3c9727dd948,ou=imports,dc=ciam-ops
@@ -1099,6 +1226,8 @@ cn: azure.regions.shared.s1-eaa7c3c9727dd948
 ciamChangeRef: cn=CHG-2021,ou=changes,dc=ciam-ops
 ciamImportScope: cn=azure,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 96b2237a5688c845d2bc32dabaece5eee780883a09c52f1e587bcea8b028
+ 93a2 regions.json
 ciamImporter: azure/regions
 
 dn: cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops
@@ -1132,6 +1261,18 @@ ciamImportScope: cn=CRQ000000001201,ou=bmc-helix,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CRQ000000001202,ou=bmc-helix,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CRQ000000001203,ou=bmc-helix,ou=tickets,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: d40fa08748d5bab7eda073b62b6e1b6f89236754deded6c1fc14f375ccb4
+ 747d helix-restapi.example-aero.test/approval/CRQ000000001201/0.json
+ciamImportedFile: 3bbfb1d4dcb604a53a61110b894bbe8db176aa114e4815f6a0354228146a
+ cf94 helix-restapi.example-aero.test/approval/CRQ000000001202/0.json
+ciamImportedFile: ac6acb37db815495f8b053540b5a1350d5e7fd0d1ebcaee22fbc515b94e4
+ 3b94 helix-restapi.example-aero.test/approval/CRQ000000001203/0.json
+ciamImportedFile: 2b461fed88a504b1b75c9e601c1d301bde12fdfc85f425824e04192ed253
+ 135c helix-restapi.example-aero.test/change/CRQ000000001201.json
+ciamImportedFile: a32edbc9476f85985307cf10449d9eb0f5ad9d0d9b0f52205a36acc6ad43
+ ece5 helix-restapi.example-aero.test/change/CRQ000000001202.json
+ciamImportedFile: 06c60c9e357d99a5b5b3c68752f838669098d3df73e4b48e3bf2b21f289b
+ 3e9b helix-restapi.example-aero.test/change/CRQ000000001203.json
 ciamImporter: bmc-helix/change-requests
 
 dn: cn=break-glass-root,ou=principals,dc=ciam-ops
@@ -2518,6 +2659,12 @@ ciamImportScope: cn=CIAM-Lab,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 ciamImportScope: cn=CIAM-PROD,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 ciamImportScope: cn=CIAM-TARGET,ou=cyberark,ou=secret-inventory,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: fc20fca65cae43bb9f63ee2a70b94a79a3a662177421771e552718deffb5
+ f731 accounts/CIAM-Lab.json
+ciamImportedFile: 3a7e3ff53b21fe8350db147a7889c5c7f020a336bede2bdb5111fe504466
+ 75e9 accounts/CIAM-PROD.json
+ciamImportedFile: aa4fabc698204daf35bc68ae7aacc90d18fdd180ab573de1acecb5b103a9
+ b365 accounts/CIAM-TARGET.json
 ciamImporter: cyberark/accounts
 
 dn: cn=data-classification,ou=tag-policy,dc=ciam-ops
@@ -2846,6 +2993,20 @@ ciamImportScope: cn=Example Aero Cloud Issuing CA G1/ciam-clients,ou=certifica
 ciamImportScope: cn=Example Aero Cloud Issuing CA G1/ciam-ldaps,ou=certificate
  -templates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: b5f29071007c625be9c27e02aa68e3049c8efb4083858e39248f1ad1feb6
+ b264 ejbca/pki-hq/cas.json
+ciamImportedFile: 937d1fee6d51390485b1a91f770746351be530f3a375eb8bd747da191645
+ 00ec ejbca/pki-hq/certificates/-1874511906/page-1.json
+ciamImportedFile: 8fe50658172dc6ab706205955904cc5eb3b32151474893c24c774b3236a3
+ 0eaf ejbca/pki-hq/certificates/482019373/page-1.json
+ciamImportedFile: c745d561f3a8086e2fd7e94b826896a52339f1ecc276fa2c7a896528e8ab
+ 13d9 ejbca/pki-hq/count.json
+ciamImportedFile: 539ce5cb0824bdedc9be6720df0898be5b4975de68120bc1dc9003633b6c
+ 6412 ejbca/pki-hq/profiles/SUBCA.json
+ciamImportedFile: ed6712291ea071d1772f233e349137305b7aab224dab0bf31b2fc85d3d85
+ af14 ejbca/pki-hq/profiles/ciam-clients.json
+ciamImportedFile: e54dcf4e0e2a505d7712fb94d22eb78b2da2ca2f005a67de591e10cde7da
+ b481 ejbca/pki-hq/profiles/ciam-ldaps.json
 ciamImporter: ejbca/inventory
 
 dn: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops
@@ -3658,6 +3819,8 @@ cn: fedramp.cpo.shared.s1-9cb52d59c16997a9
 ciamChangeRef: cn=CHG-2031,ou=changes,dc=ciam-ops
 ciamImportScope: cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: eb7ccdafbd517c212c898459c89298c00aed5ca86cb7732f8591490dc50d
+ 3fbd aws-east-west-cpo.json
 ciamImporter: fedramp/cpo
 
 dn: cn=FR1805751477,ou=authorizations,dc=ciam-ops
@@ -3715,6 +3878,10 @@ cn: gcp.frameworks.shared.s1-1aea003074ed5544
 ciamChangeRef: cn=CHG-2041,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 4314a1356836b2e251ef54f00737f40fccab83eec20289c33fb3ff470d33
+ dfd2 123456789012/cloud-controls.json
+ciamImportedFile: bba9a693307191aa352e61d0c40027a049388cdd46ee2ebc93900a12e996
+ 27a9 123456789012/frameworks.json
 ciamImporter: gcp/frameworks
 
 dn: cn=gcp.private-ca.shared.s1-09c118541ab72f06,ou=imports,dc=ciam-ops
@@ -3753,6 +3920,38 @@ ciamImportScope: cn=Example Aero Mesh CA/ciam-mesh/ciam-client,ou=certificate-
 ciamImportScope: cn=Example Aero Mesh CA/ciam-mesh/ciam-server,ou=certificate-
  templates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 57fc168187ffb9ad3acfb33d52e74da2d1e478cdb0006ed9f1e2562a5699
+ 9172 private-ca/pools.json
+ciamImportedFile: 5f57543682283f046a1e35012662b66240dc7412b2726041aa221c7ea084
+ 9d74 private-ca/project-iam.json
+ciamImportedFile: f04cefb896a5da6fed57473ccb7e3174d12bce7c365dbd7cca5a5b945763
+ 0004 private-ca/us-central1/ciam-issuing/certificates.json
+ciamImportedFile: cf08d112b3d373a5df1094ac6addfddf3becb6da8f2110dc162eff299f4b
+ 6dcd private-ca/us-central1/ciam-issuing/iam.json
+ciamImportedFile: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985
+ b570 private-ca/us-central1/ciam-issuing/roots.json
+ciamImportedFile: 255f1deb41d5e697e3fa80056a46513d05ce744da96a77441b0540791786
+ ab5e private-ca/us-central1/ciam-issuing/subordinates.json
+ciamImportedFile: 7abbab5961c6846c301a1c740c725eda5e400dad9d0c051419a7477249de
+ 8373 private-ca/us-central1/ciam-mesh/iam.json
+ciamImportedFile: b89fd9a9b0270cce092b05b65dd7ba238694437af631f497c8cc663b7b54
+ fc8e private-ca/us-central1/ciam-mesh/roots.json
+ciamImportedFile: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985
+ b570 private-ca/us-central1/ciam-mesh/subordinates.json
+ciamImportedFile: c80550c36af968b21e41dca802e097261ec6adedeea1c5a4d8a46a09d7c6
+ 8c27 private-ca/us-central1/ciam-root/certificates.json
+ciamImportedFile: 8b991f4c4ddf8d9185ce6453bec31be0384395570d9597429a2a757066bb
+ b6e2 private-ca/us-central1/ciam-root/iam.json
+ciamImportedFile: 2805869dc01afde851016b44ad6b88ea11f30d4d50b0e6fce8e163698979
+ a3eb private-ca/us-central1/ciam-root/roots.json
+ciamImportedFile: 37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985
+ b570 private-ca/us-central1/ciam-root/subordinates.json
+ciamImportedFile: 5114612bc5962f9d3d6936549e7bd4f7e0f1544168aba0a81b768a10c4e8
+ 0ad1 private-ca/us-central1/templates.json
+ciamImportedFile: 9bc50cc367361862ceac33ee7e7e33120e0b234f2fb241067101e2772f95
+ 7d09 private-ca/us-central1/templates/ciam-client/iam.json
+ciamImportedFile: 65ce5a41189cc377b1e51543a74980685db65f802442d6af328e3efdd168
+ 740e private-ca/us-central1/templates/ciam-server/iam.json
 ciamImporter: gcp/private-ca
 
 dn: cn=gcp.quotas.shared.s1-514e55d8b1821204,ou=imports,dc=ciam-ops
@@ -3764,6 +3963,10 @@ ciamChangeRef: cn=CHG-2027,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=cia
  m-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 097de0af404d516e96ce745feec5bdd5dc154505d5dbf0f4e651bcf1254e
+ 0642 project.json
+ciamImportedFile: f946a2df2dd1e56585a42380fafa9e2ece28f422ec17242093d16eeb846f
+ e452 us-central1.json
 ciamImporter: gcp/quotas
 
 dn: cn=gcp.regions.shared.s1-9e7d0bf19cce860e,ou=imports,dc=ciam-ops
@@ -3774,6 +3977,8 @@ cn: gcp.regions.shared.s1-9e7d0bf19cce860e
 ciamChangeRef: cn=CHG-2022,ou=changes,dc=ciam-ops
 ciamImportScope: cn=gcp,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: c66356e5d7bf05da8e299361711563e1f0711f733336623aef36b2db2823
+ 60fb regions.json
 ciamImporter: gcp/regions
 
 dn: cn=gcp:123456789012,ou=frameworks,dc=ciam-ops
@@ -3818,6 +4023,10 @@ ciamChangeRef: cn=CHG-2010,ou=changes,dc=ciam-ops
 ciamImportScope: cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-o
  ps
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: 75af6fd101ac65ed86bfcabe0720b7a1ad3fb85392ee6f31d5eedb9a2b90
+ ac40 README.md
+ciamImportedFile: 80312dc034e99a83b1b9f0bdbcac301f8e030232b0eaab9cb6dec04e4b0d
+ 6774 example-aero/ciam-ops/.github/workflows/directory-backup.yml
 ciamImporter: github-actions/workflows
 
 dn: cn=givenName,ou=user-schema,dc=ciam-ops
@@ -3928,6 +4137,56 @@ ciamImportScope: cn=Example Aero CIAM Internal CA/ciam-client,ou=certificate-t
 ciamImportScope: cn=Example Aero CIAM Internal CA/lab-tls,ou=certificate-templ
  ates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 326d76c823ac08a9d0eec31fd247d3c4430e479bcc7ab4bdcec5ae8cb27e
+ a45c pki/pki-internal/certs.json
+ciamImportedFile: 8cb84f93e151524fa7440b1a3a0e555f2cb11636ba6d6ae09708302c68bc
+ 835e pki/pki-internal/certs/44-a4-1c-4c-b2-89-7e-e6-ac-a4-da-14-6a-d5-6c-16-e
+ c-fd-db-7f.json
+ciamImportedFile: 1299bd4b92a3d7fe5c4d4de55354014034f1e646a0ef7e725d9b365b34fc
+ d676 pki/pki-internal/certs/58-c7-45-6b-43-08-8e-1c-2e-3f-50-0c-3b-2d-d6-02-9
+ d-78-9f-be.json
+ciamImportedFile: f022f9dc753cfd05caeab5a2de82c1e15d2e5d35a0447ba8b076d73be87a
+ 9275 pki/pki-internal/certs/5b-34-27-fa-a7-d9-71-ba-16-23-9a-aa-7e-28-dc-c3-4
+ b-3d-1e-e6.json
+ciamImportedFile: 49a0aa79e7a0229513b0144517498a6e85252c692716aa2ec7b7d5fb82c9
+ 2635 pki/pki-internal/certs/5e-f7-4b-e9-02-0a-8b-47-3f-e3-6f-f9-88-32-0c-8b-1
+ 5-6f-9d-45.json
+ciamImportedFile: d4515beff5abe26571c18567cbbf5f5bcb3c389e387d7914be7e9c61009a
+ 6e3c pki/pki-internal/certs/74-51-48-f6-17-0c-cb-c9-df-9b-e4-80-9e-36-4c-aa-1
+ 8-5f-0e-e6.json
+ciamImportedFile: b27fd7a9aefb6eee6d8bfdb0939afffdbbf1abc75ab216526fa0db1b7ce4
+ e7e5 pki/pki-internal/certs/7b-69-8d-f1-df-70-b3-ee-26-0b-52-83-53-a1-50-bd-8
+ 6-86-aa-ac.json
+ciamImportedFile: 6baf5c396e98e13c258ffe2a2b7a25bd9d39566ff1d71fdd3753eba3283c
+ d013 pki/pki-internal/config/auto-tidy.json
+ciamImportedFile: 2bcfb731dea2cec93cf1cfc9eb328511a7d015d2e88c93e71f040e69206c
+ bf30 pki/pki-internal/config/cluster.json
+ciamImportedFile: 7519430b5343b6c871afd18fc5ce1913bce681c4b22ac4dbe5ab6136f0a9
+ 1b42 pki/pki-internal/config/crl.json
+ciamImportedFile: 52f9d8917f44be45c6efcdd9875b53c90c0947ce32973eae9cd5f4aa1d2f
+ cedc pki/pki-internal/config/issuers.json
+ciamImportedFile: 147adbc0082d00a6b3e95b128a72af339365bf88acddb3152fcea12cca96
+ 6bfc pki/pki-internal/config/urls.json
+ciamImportedFile: 6b2be1984c65d4296dc6b8bd2ac5f4a8f0f0f427337ec67e8152162884d8
+ 3c9c pki/pki-internal/issuers.json
+ciamImportedFile: 42ed0656d98f6239e178b371aec325c311620e9df31f2095c96ee6340a4d
+ 2e01 pki/pki-internal/issuers/2f6d3c41-8a5e-4b7c-9d10-6e2a7f5b1c08.json
+ciamImportedFile: f9dccdd6a7a8442b2dede9a0a053cc06e346eb0db968787fa2f5ac9a7c14
+ 1539 pki/pki-internal/policies.json
+ciamImportedFile: 6a9dceedaddb94d636d964faabd6bfd16f0ef9eeb983805dd17d0cdd7dd0
+ 46ca pki/pki-internal/policies/default.json
+ciamImportedFile: 3353ce5a9e9ecf0d2944b450e52ea51504ff3cc0ceffa7c9796b22220384
+ 70df pki/pki-internal/policies/lab-tls-issuers.json
+ciamImportedFile: c556f6a3bdbf466c0b0c6a435401919897b7d725678e6f095c7917eb9f9d
+ 69c8 pki/pki-internal/policies/pki-inventory.json
+ciamImportedFile: d4fc0bc58cc57018b1103c3c6d325d34d9003a9ecacde2952aa5f9ead06f
+ 0395 pki/pki-internal/policies/root.json
+ciamImportedFile: 27745f95a7980857bcb73f0c31fc754c4c6a472176fcca9b3f5ae65a051b
+ a0e9 pki/pki-internal/roles.json
+ciamImportedFile: e982d41e0b837c19ebf1e8b92477edf5d2bcafceb6a0a6262394cf67d077
+ 8b50 pki/pki-internal/roles/ciam-client.json
+ciamImportedFile: 57bc8288b2d513a0e824a7288f384a91d49c3d46c78e036c73a38cc40be6
+ 6d36 pki/pki-internal/roles/lab-tls.json
 ciamImporter: hashicorp-vault/pki
 
 dn: cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
@@ -4270,6 +4529,20 @@ ciamImportScope: cn=ITOPS-41,ou=jira-sm,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=ITOPS-42,ou=jira-sm,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=ITOPS-43,ou=jira-sm,ou=tickets,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 2f5fbd1b2797177bf93af35b29914d45ed67b87662720da99fa831639d0a
+ 8d96 jira.example-aero.test/approval/ITOPS-41/0.json
+ciamImportedFile: 48a83a5dc79cd1ca52aec3378500036351f5080ea5de697795c0afeb88f5
+ d7e2 jira.example-aero.test/approval/ITOPS-42/0.json
+ciamImportedFile: 12561ede93e5a4a149c572492dbda7999fb92052bbcfa5770a174361d7e4
+ 304e jira.example-aero.test/approval/ITOPS-43/0.json
+ciamImportedFile: 32a8d94259aa07153c8bedc76508fd2cf0ac080023526b66b390c477f690
+ ef1f jira.example-aero.test/field.json
+ciamImportedFile: 0f59bcdc4d5fa7ad0ee0e0fa576964dc0fe55397adc5ee7192559c45626a
+ d7ef jira.example-aero.test/issue/ITOPS-41.json
+ciamImportedFile: 92068440a2df8854744277acfed5ab1401797ce6b097770c7fcbf7f30d07
+ f24e jira.example-aero.test/issue/ITOPS-42.json
+ciamImportedFile: b06346f2784af12537c891f3bb3f4713262835f533a8d950c4550c3b3176
+ 8f6e jira.example-aero.test/issue/ITOPS-43.json
 ciamImporter: jira-sm/change-requests
 
 dn: cn=lastLoginTime,ou=user-schema,dc=ciam-ops
@@ -4293,6 +4566,8 @@ cn: ldap.data-profile.shared.s1-549f37b893288643
 ciamChangeRef: cn=CHG-2014,ou=changes,dc=ciam-ops
 ciamImportScope: cn=source-prod,ou=data-profile,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: bb2df7676ba99d6fe34a91215a035725b38865884cade30a36356c86bc46
+ 914a source-prod.json
 ciamImporter: ldap/data-profile
 
 dn: cn=ldaps-passthrough,ou=edge-policies,dc=ciam-ops
@@ -4346,6 +4621,86 @@ ciamChangeRef: cn=CHG-2075,ou=changes,dc=ciam-ops
 ciamImportScope: cn=pa-admin,ou=baselines,dc=ciam-ops
 ciamImportScope: cn=pa-engine,ou=baselines,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 950ab6308474d8861f7ef1c644bba7a188a819bdc86ebb045f2f72e5fce6
+ b85e README.md
+ciamImportedFile: b820facc4026cbc344d4cdf7542b53c77600f8655a9a6beb90aa21e8ef8e
+ ade5 pa-admin-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pa-admin-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pa-admin-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2ca86f4fde7ab2633d1710b200683420a21f5a7b8720a8ab22792b0db8d6
+ 2e3d pa-admin-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pa-admin-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pa-admin-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: c19d9fecad58337d77a0d764e67a04d0a746f923e355668271e25ff0eab1
+ 77ab pa-admin-1.aws.internal.example-aero.test/etc/systemd/system/pingaccess.
+ service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pa-admin-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 pa-admin-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pa-admin-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pa-admin-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pa-admin-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_huge
+ page/enabled
+ciamImportedFile: 66cac7c1944c822d78462a52fabc8b5932b75e614530ca759005b3affa89
+ 32c4 pa-engine-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pa-engine-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pa-engine-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2ca86f4fde7ab2633d1710b200683420a21f5a7b8720a8ab22792b0db8d6
+ 2e3d pa-engine-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pa-engine-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pa-engine-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: c19d9fecad58337d77a0d764e67a04d0a746f923e355668271e25ff0eab1
+ 77ab pa-engine-1.aws.internal.example-aero.test/etc/systemd/system/pingaccess
+ .service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pa-engine-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 pa-engine-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pa-engine-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pa-engine-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pa-engine-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hug
+ epage/enabled
+ciamImportedFile: 44e26825c7733b171142db0ccd5d4ab4219f243b161f78bcbcbddc919430
+ d630 pa-engine-2.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pa-engine-2.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pa-engine-2.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2ca86f4fde7ab2633d1710b200683420a21f5a7b8720a8ab22792b0db8d6
+ 2e3d pa-engine-2.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pa-engine-2.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pa-engine-2.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: c19d9fecad58337d77a0d764e67a04d0a746f923e355668271e25ff0eab1
+ 77ab pa-engine-2.aws.internal.example-aero.test/etc/systemd/system/pingaccess
+ .service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pa-engine-2.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 pa-engine-2.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pa-engine-2.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pa-engine-2.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pa-engine-2.aws.internal.example-aero.test/sys/kernel/mm/transparent_hug
+ epage/enabled
 ciamImporter: linux/baseline
 
 dn: cn=linux.baseline.shared.s1-1d2dbc81da8060e1,ou=imports,dc=ciam-ops
@@ -4361,6 +4716,251 @@ ciamImportScope: cn=ig,ou=baselines,dc=ciam-ops
 ciamImportScope: cn=pf-admin,ou=baselines,dc=ciam-ops
 ciamImportScope: cn=pf-engine,ou=baselines,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: e33b0e51fe558a72ef66b681ffa4142f206c78f4a65b408484afec8b4f9a
+ 072a README.md
+ciamImportedFile: c0ebde3c8f3af26f2be02d61f65205ae48680c33ec2ae19f6251427403d3
+ 326a am-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 am-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 am-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 95812bf3aa08fe2965fb7f7174ffecc75a0d7b00f2307976590878ccf5f9
+ 3e52 am-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 am-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 am-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: c9f4a265475e1b27ae920d984e45e3c7f00bf2d8e620112f70038ee33676
+ 4400 am-1.aws.internal.example-aero.test/etc/systemd/system/pingam.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 am-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 am-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c am-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa am-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd am-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 7441c6a1e9621f001deebfc628d507df471e23647255f466e54edc1d1b6c
+ 4e6b ds-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ds-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ds-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 77eb4407a8426a662bb771c5daad572eec01d9911de63cdd1c3fc26df01b
+ ceeb ds-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ds-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 ds-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d0402a8e92d1e0d90f907a15eec9c1225f42df91808fb8f92f26e4878dc8
+ 9332 ds-1.aws.internal.example-aero.test/etc/systemd/system/pingds.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ds-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ds-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ds-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ds-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ds-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 841b9bd5ab15dce18774d74eccd0b187dc58c1d9e2fee229ca9b071ac856
+ 6bed ds-2.aws.internal.example-aero.test/etc/cron.d/mro-export
+ciamImportedFile: 9eb16bec254e162528f71ed3a15b924013a73e7c6a205346e87d5efbd780
+ f7ac ds-2.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ds-2.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ds-2.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 77eb4407a8426a662bb771c5daad572eec01d9911de63cdd1c3fc26df01b
+ ceeb ds-2.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ds-2.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 ds-2.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d0402a8e92d1e0d90f907a15eec9c1225f42df91808fb8f92f26e4878dc8
+ 9332 ds-2.aws.internal.example-aero.test/etc/systemd/system/pingds.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ds-2.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ds-2.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ds-2.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ds-2.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ds-2.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: fd43e2315015d1aed8a048f822229f31d7826e1897b89c4c090e5c34ba59
+ 4664 ds-3.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ds-3.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ds-3.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 77eb4407a8426a662bb771c5daad572eec01d9911de63cdd1c3fc26df01b
+ ceeb ds-3.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ds-3.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 0c1f64237b2d425f042c4993df2532ec2c05a9d09cd622a4e1ad7b4e178f
+ 30d7 ds-3.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d0402a8e92d1e0d90f907a15eec9c1225f42df91808fb8f92f26e4878dc8
+ 9332 ds-3.aws.internal.example-aero.test/etc/systemd/system/pingds.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ds-3.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ds-3.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ds-3.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ds-3.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ds-3.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 89879f74c3a87128af064ff6c1585c83dcbc3446f89478bfa4c743c4023d
+ 5aca idm-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 idm-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 idm-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: c5e7e21bc874f90800e70dcd787ce7397c8ef11f5899d3d0110574ae5c42
+ b36b idm-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 idm-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 idm-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d97157c6bc14363f756e15e4e6e796955e95da34ac9e740d8ee55d6e8714
+ e6b7 idm-1.aws.internal.example-aero.test/etc/systemd/system/pingidm.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 idm-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 idm-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c idm-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa idm-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd idm-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/
+ enabled
+ciamImportedFile: b99d5628e883cb5866868a2937b1f335f4d3b70c2b2d97a24bc9aab380e4
+ 63a2 ig-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ig-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ig-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 04bb961864ecec0477e15152c7ae283d2bcd3c1312aac0be46843fba17a7
+ dd9c ig-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ig-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 ig-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: accecd99908e09d31d9275e964390000eedcc5290522c4987b22acbb853d
+ 3320 ig-1.aws.internal.example-aero.test/etc/systemd/system/pinggateway.servi
+ ce
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ig-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ig-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ig-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ig-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ig-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 617d36a21204796bff2e86df5dff3404d1a90d78a4aee982f7856972913b
+ 4252 pf-admin-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pf-admin-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pf-admin-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2342d2a3a82515e093bb475b1305e5d3b2bd148063c397400236d8903d8e
+ bff6 pf-admin-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pf-admin-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pf-admin-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: 0bf3aa9e385b9e2d216583571d1a51d253955f4cea9e7ae6977b055a9bc1
+ 345f pf-admin-1.aws.internal.example-aero.test/etc/systemd/system/pingfederat
+ e.service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pf-admin-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 pf-admin-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pf-admin-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pf-admin-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pf-admin-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_huge
+ page/enabled
+ciamImportedFile: d7e67efe1d4513564c66d18348850618c38cae8a2c9dfabf79fc4ac45d83
+ d6c8 pf-engine-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pf-engine-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pf-engine-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2342d2a3a82515e093bb475b1305e5d3b2bd148063c397400236d8903d8e
+ bff6 pf-engine-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pf-engine-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pf-engine-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: 7f6a62d9350425b27d24a96930e150c25bb11b6da03393e9141641c4afdd
+ b038 pf-engine-1.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.service
+ciamImportedFile: 350ccc6ba902a4222fe2b77f407c785c2298ddd5d2224e8ccd3b34b71cc4
+ 8115 pf-engine-1.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.timer
+ciamImportedFile: 0bf3aa9e385b9e2d216583571d1a51d253955f4cea9e7ae6977b055a9bc1
+ 345f pf-engine-1.aws.internal.example-aero.test/etc/systemd/system/pingfedera
+ te.service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pf-engine-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 pf-engine-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pf-engine-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pf-engine-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pf-engine-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hug
+ epage/enabled
+ciamImportedFile: 0849db49efc7ab10d917f579400536b01f3aa5c7f59c1db247bdb20a4af6
+ 2505 pf-engine-2.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pf-engine-2.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pf-engine-2.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2342d2a3a82515e093bb475b1305e5d3b2bd148063c397400236d8903d8e
+ bff6 pf-engine-2.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pf-engine-2.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pf-engine-2.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: 7f6a62d9350425b27d24a96930e150c25bb11b6da03393e9141641c4afdd
+ b038 pf-engine-2.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.service
+ciamImportedFile: 350ccc6ba902a4222fe2b77f407c785c2298ddd5d2224e8ccd3b34b71cc4
+ 8115 pf-engine-2.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.timer
+ciamImportedFile: 0bf3aa9e385b9e2d216583571d1a51d253955f4cea9e7ae6977b055a9bc1
+ 345f pf-engine-2.aws.internal.example-aero.test/etc/systemd/system/pingfedera
+ te.service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pf-engine-2.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 595a2c14ecfbf99ca904de9fe6f5253694bcc08cc728ed4fb75279469a12
+ 67bf pf-engine-2.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pf-engine-2.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pf-engine-2.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pf-engine-2.aws.internal.example-aero.test/sys/kernel/mm/transparent_hug
+ epage/enabled
 ciamImporter: linux/baseline
 
 dn: cn=linux.jobs.shared.s1-0696946eb7e2ab71,ou=imports,dc=ciam-ops
@@ -4372,6 +4972,251 @@ ciamChangeRef: cn=CHG-2010,ou=changes,dc=ciam-ops
 ciamImportScope: cn=ds-nightly-export,ou=jobs,dc=ciam-ops
 ciamImportScope: cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: e33b0e51fe558a72ef66b681ffa4142f206c78f4a65b408484afec8b4f9a
+ 072a README.md
+ciamImportedFile: c0ebde3c8f3af26f2be02d61f65205ae48680c33ec2ae19f6251427403d3
+ 326a am-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 am-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 am-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 95812bf3aa08fe2965fb7f7174ffecc75a0d7b00f2307976590878ccf5f9
+ 3e52 am-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 am-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 am-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: c9f4a265475e1b27ae920d984e45e3c7f00bf2d8e620112f70038ee33676
+ 4400 am-1.aws.internal.example-aero.test/etc/systemd/system/pingam.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 am-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 am-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c am-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa am-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd am-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 7441c6a1e9621f001deebfc628d507df471e23647255f466e54edc1d1b6c
+ 4e6b ds-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ds-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ds-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 77eb4407a8426a662bb771c5daad572eec01d9911de63cdd1c3fc26df01b
+ ceeb ds-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ds-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 ds-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d0402a8e92d1e0d90f907a15eec9c1225f42df91808fb8f92f26e4878dc8
+ 9332 ds-1.aws.internal.example-aero.test/etc/systemd/system/pingds.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ds-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ds-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ds-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ds-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ds-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 841b9bd5ab15dce18774d74eccd0b187dc58c1d9e2fee229ca9b071ac856
+ 6bed ds-2.aws.internal.example-aero.test/etc/cron.d/mro-export
+ciamImportedFile: 9eb16bec254e162528f71ed3a15b924013a73e7c6a205346e87d5efbd780
+ f7ac ds-2.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ds-2.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ds-2.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 77eb4407a8426a662bb771c5daad572eec01d9911de63cdd1c3fc26df01b
+ ceeb ds-2.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ds-2.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 ds-2.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d0402a8e92d1e0d90f907a15eec9c1225f42df91808fb8f92f26e4878dc8
+ 9332 ds-2.aws.internal.example-aero.test/etc/systemd/system/pingds.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ds-2.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ds-2.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ds-2.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ds-2.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ds-2.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: fd43e2315015d1aed8a048f822229f31d7826e1897b89c4c090e5c34ba59
+ 4664 ds-3.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ds-3.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ds-3.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 77eb4407a8426a662bb771c5daad572eec01d9911de63cdd1c3fc26df01b
+ ceeb ds-3.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ds-3.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 0c1f64237b2d425f042c4993df2532ec2c05a9d09cd622a4e1ad7b4e178f
+ 30d7 ds-3.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d0402a8e92d1e0d90f907a15eec9c1225f42df91808fb8f92f26e4878dc8
+ 9332 ds-3.aws.internal.example-aero.test/etc/systemd/system/pingds.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ds-3.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ds-3.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ds-3.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ds-3.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ds-3.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 89879f74c3a87128af064ff6c1585c83dcbc3446f89478bfa4c743c4023d
+ 5aca idm-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 idm-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 idm-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: c5e7e21bc874f90800e70dcd787ce7397c8ef11f5899d3d0110574ae5c42
+ b36b idm-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 idm-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 idm-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: d97157c6bc14363f756e15e4e6e796955e95da34ac9e740d8ee55d6e8714
+ e6b7 idm-1.aws.internal.example-aero.test/etc/systemd/system/pingidm.service
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 idm-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 idm-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c idm-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa idm-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd idm-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/
+ enabled
+ciamImportedFile: b99d5628e883cb5866868a2937b1f335f4d3b70c2b2d97a24bc9aab380e4
+ 63a2 ig-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 ig-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 ig-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 04bb961864ecec0477e15152c7ae283d2bcd3c1312aac0be46843fba17a7
+ dd9c ig-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 ig-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 ig-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: accecd99908e09d31d9275e964390000eedcc5290522c4987b22acbb853d
+ 3320 ig-1.aws.internal.example-aero.test/etc/systemd/system/pinggateway.servi
+ ce
+ciamImportedFile: a6ed7de85a0dc60a0ad16cc3a45f482fa71243eaff942efa369b038b33c3
+ 6f63 ig-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 ig-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c ig-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa ig-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd ig-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hugepage/e
+ nabled
+ciamImportedFile: 617d36a21204796bff2e86df5dff3404d1a90d78a4aee982f7856972913b
+ 4252 pf-admin-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pf-admin-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pf-admin-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2342d2a3a82515e093bb475b1305e5d3b2bd148063c397400236d8903d8e
+ bff6 pf-admin-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pf-admin-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pf-admin-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: 0bf3aa9e385b9e2d216583571d1a51d253955f4cea9e7ae6977b055a9bc1
+ 345f pf-admin-1.aws.internal.example-aero.test/etc/systemd/system/pingfederat
+ e.service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pf-admin-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 pf-admin-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pf-admin-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pf-admin-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pf-admin-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_huge
+ page/enabled
+ciamImportedFile: d7e67efe1d4513564c66d18348850618c38cae8a2c9dfabf79fc4ac45d83
+ d6c8 pf-engine-1.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pf-engine-1.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pf-engine-1.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2342d2a3a82515e093bb475b1305e5d3b2bd148063c397400236d8903d8e
+ bff6 pf-engine-1.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pf-engine-1.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pf-engine-1.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: 7f6a62d9350425b27d24a96930e150c25bb11b6da03393e9141641c4afdd
+ b038 pf-engine-1.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.service
+ciamImportedFile: 350ccc6ba902a4222fe2b77f407c785c2298ddd5d2224e8ccd3b34b71cc4
+ 8115 pf-engine-1.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.timer
+ciamImportedFile: 0bf3aa9e385b9e2d216583571d1a51d253955f4cea9e7ae6977b055a9bc1
+ 345f pf-engine-1.aws.internal.example-aero.test/etc/systemd/system/pingfedera
+ te.service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pf-engine-1.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 86368e62a7cf005156709af9ecf8dcbdfd46ddbf411a334863469cb6b7d4
+ 1f08 pf-engine-1.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pf-engine-1.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pf-engine-1.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pf-engine-1.aws.internal.example-aero.test/sys/kernel/mm/transparent_hug
+ epage/enabled
+ciamImportedFile: 0849db49efc7ab10d917f579400536b01f3aa5c7f59c1db247bdb20a4af6
+ 2505 pf-engine-2.aws.internal.example-aero.test/etc/hosts
+ciamImportedFile: 5e9db197007171f47fb82de1c8a33352393afad04aba9a0ef995f837a9f9
+ 61c4 pf-engine-2.aws.internal.example-aero.test/etc/os-release
+ciamImportedFile: d7ff5b5bd739fbd0ea378e308154a357924259013476d7a92b859698ef38
+ bca6 pf-engine-2.aws.internal.example-aero.test/etc/resolv.conf
+ciamImportedFile: 2342d2a3a82515e093bb475b1305e5d3b2bd148063c397400236d8903d8e
+ bff6 pf-engine-2.aws.internal.example-aero.test/etc/security/limits.conf
+ciamImportedFile: 3da663b72ddd0b2c90e96b827e9120f73d990024bf69d8a52e77a85cec7c
+ a7a3 pf-engine-2.aws.internal.example-aero.test/etc/selinux/config
+ciamImportedFile: 676f2c18295ef54046d583d3e5021708006545e774b9a5224468a93aa0d9
+ 1989 pf-engine-2.aws.internal.example-aero.test/etc/sysctl.d/90-ciam.conf
+ciamImportedFile: 7f6a62d9350425b27d24a96930e150c25bb11b6da03393e9141641c4afdd
+ b038 pf-engine-2.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.service
+ciamImportedFile: 350ccc6ba902a4222fe2b77f407c785c2298ddd5d2224e8ccd3b34b71cc4
+ 8115 pf-engine-2.aws.internal.example-aero.test/etc/systemd/system/pf-audit-s
+ hip.timer
+ciamImportedFile: 0bf3aa9e385b9e2d216583571d1a51d253955f4cea9e7ae6977b055a9bc1
+ 345f pf-engine-2.aws.internal.example-aero.test/etc/systemd/system/pingfedera
+ te.service
+ciamImportedFile: 96b4660d6089b10ec826e681f28693651028a7aaa8f0386fdc8b49d49654
+ 04cd pf-engine-2.aws.internal.example-aero.test/java/cacerts.txt
+ciamImportedFile: 595a2c14ecfbf99ca904de9fe6f5253694bcc08cc728ed4fb75279469a12
+ 67bf pf-engine-2.aws.internal.example-aero.test/java/version.txt
+ciamImportedFile: 1acbe26f73fc36f5a6142a52e0ad0de0764d596cc2bc16ac564bef1abb5d
+ f14c pf-engine-2.aws.internal.example-aero.test/packages.txt
+ciamImportedFile: 9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab
+ 86aa pf-engine-2.aws.internal.example-aero.test/proc/sys/crypto/fips_enabled
+ciamImportedFile: b3412388918c5af64c22b056bd9a1ee6665eb194c201a1385fa2ded3bf64
+ e0bd pf-engine-2.aws.internal.example-aero.test/sys/kernel/mm/transparent_hug
+ epage/enabled
 ciamImporter: linux/jobs
 
 dn: cn=login-failures,ou=alert-rules,dc=ciam-ops
@@ -4533,6 +5378,8 @@ cn: onprem.sites.shared.s1-134abd6ded0ba1e6
 ciamChangeRef: cn=CHG-2035,ou=changes,dc=ciam-ops
 ciamImportScope: cn=onprem,ou=regions,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: d4b516e5c7093fe8e05bd9b35e603f8c413ba4a6797d602346a5b86854af
+ 5e41 sites.json
 ciamImporter: onprem/sites
 
 dn: cn=ops-scripts,ou=bundles,dc=ciam-ops
@@ -4686,6 +5533,30 @@ ciamImportScope: cn=fw-pf-cluster-admin,ou=bindings,env=lab,cloud=hq,ou=enviro
 ciamImportScope: cn=panorama-hq,ou=bindings,env=lab,cloud=hq,ou=environments,d
  c=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/device-group/CIAM-Lab/address-group.xml
+ciamImportedFile: 87dffe0aa44508627b3b3cb689bcd90bff857215fca317d1d68f8b1294e5
+ 9bc8 hq/lab/panorama-hq/api/device-group/CIAM-Lab/address.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/device-group/CIAM-Lab/post-rulebase.xml
+ciamImportedFile: 8642941bb6d5660a3162df0aad48ad06ce3ba9a51618cf717b0e17ba1e56
+ 4755 hq/lab/panorama-hq/api/device-group/CIAM-Lab/pre-rulebase.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/device-group/CIAM-Lab/service-group.xml
+ciamImportedFile: b8c479204d129d74ba6e27188a76ce9f83c8ad9354c3e9bcd94ab8c5326e
+ 3eb5 hq/lab/panorama-hq/api/device-group/CIAM-Lab/service.xml
+ciamImportedFile: c0b24966493d1da0f30f6ff2d9e70027d9876f5861789deef1387edecf98
+ efd0 hq/lab/panorama-hq/api/shared/address-group.xml
+ciamImportedFile: ad6a07bf5a3aee952b1717ee02f7633745b0d92ea76549048a1a4fbc6237
+ 0b7d hq/lab/panorama-hq/api/shared/address.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/post-rulebase.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/pre-rulebase.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/service-group.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/service.xml
 ciamImporter: panos/running-config
 
 dn: cn=panos.running-config.shared.s1-8b75c6e05f1918a7,ou=imports,dc=ciam-ops
@@ -4696,6 +5567,30 @@ cn: panos.running-config.shared.s1-8b75c6e05f1918a7
 ciamChangeRef: cn=CHG-2048,ou=changes,dc=ciam-ops
 ciamImportScope: cn=hq-apps-egress-to-ldaps,ou=external-allowlists,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/device-group/CIAM-Lab/address-group.xml
+ciamImportedFile: 87dffe0aa44508627b3b3cb689bcd90bff857215fca317d1d68f8b1294e5
+ 9bc8 hq/lab/panorama-hq/api/device-group/CIAM-Lab/address.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/device-group/CIAM-Lab/post-rulebase.xml
+ciamImportedFile: 8642941bb6d5660a3162df0aad48ad06ce3ba9a51618cf717b0e17ba1e56
+ 4755 hq/lab/panorama-hq/api/device-group/CIAM-Lab/pre-rulebase.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/device-group/CIAM-Lab/service-group.xml
+ciamImportedFile: b8c479204d129d74ba6e27188a76ce9f83c8ad9354c3e9bcd94ab8c5326e
+ 3eb5 hq/lab/panorama-hq/api/device-group/CIAM-Lab/service.xml
+ciamImportedFile: c0b24966493d1da0f30f6ff2d9e70027d9876f5861789deef1387edecf98
+ efd0 hq/lab/panorama-hq/api/shared/address-group.xml
+ciamImportedFile: ad6a07bf5a3aee952b1717ee02f7633745b0d92ea76549048a1a4fbc6237
+ 0b7d hq/lab/panorama-hq/api/shared/address.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/post-rulebase.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/pre-rulebase.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/service-group.xml
+ciamImportedFile: 583a961c54d654b1b09dd6df27ed65fe6d75998d44ea36e252ddc42fc996
+ c73a hq/lab/panorama-hq/api/shared/service.xml
 ciamImporter: panos/running-config
 
 dn: cn=partner-portal,ou=integrations,dc=ciam-ops
@@ -5125,6 +6020,34 @@ ciamImportScope: cn=techpubs-media,ou=protected-applications,dc=ciam-ops
 ciamImportScope: cn=techpubs-readers,ou=access-rules,ou=protected-applications
  ,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 06a4600ec8ae5448b5e795e58701033806656cd337322bb60bd4b7170470
+ 8568 README.md
+ciamImportedFile: c1f6c65fec17515d9da35fcb24ddfb2b6b8abe9b95d52c8b9d3b23a87230
+ aad6 applications/1/resources/page-1.json
+ciamImportedFile: 66a6cccb7c2d2d4f031c7d8111bcba475a862e1302a0e062529f9b00c884
+ e371 applications/2/resources/page-1.json
+ciamImportedFile: 10213de13626e31f75718dbc2aa6c16fe130fb3f013d26bd43db30af1dfc
+ caf4 applications/page-1.json
+ciamImportedFile: 3bef312777d54f651135062b3f1b43ce764f673e5c5effeab36a588b8f02
+ 9cd4 certificates/page-1.json
+ciamImportedFile: 56efbb588eabc7a47d3585fa7bbba4c89030c91e807b1cf2ba287c84ad0d
+ d2d3 identityMappings/page-1.json
+ciamImportedFile: 77d37f313deecdd73136a2db7a8f5f3f4fe31130891c332f589a26ed9100
+ c24e keyPairs/page-1.json
+ciamImportedFile: cfa378fe2d910ae52bb94f574a995b5d1c26332bf1f9a029f307b0316de9
+ d012 pingfederate/runtime.json
+ciamImportedFile: ad3072424de689dad567980f0416040f8b374f02535c6a97621dc8e34db6
+ a95f rules/page-1.json
+ciamImportedFile: 084d8be5dcd0bae590dbc5b6c79ba0d9bafd0b6dcffc20b9125812ab3263
+ 36df sites/page-1.json
+ciamImportedFile: 025165496ddd528649988dc025ea827829c5423f91d52d8990fd81e3b0fa
+ ab80 trustedCertificateGroups/page-1.json
+ciamImportedFile: ca8ac1ae1b3f436b3e5f9d3a09502b4e85b661f8787d2e48fbed66388791
+ 7acb version.json
+ciamImportedFile: b8013001aee802f39d93bdd71519e51956a2c21839950450e7a4c37db772
+ 8664 virtualhosts/page-1.json
+ciamImportedFile: 6edfc0de287706c4deaaf6df7f10aa5410bab22643a7ff1fc64326d11c4b
+ c600 webSessions/page-1.json
 ciamImporter: pingaccess/admin-api
 
 dn: cn=pingam.amster.shared.s1-69aee79932a0f6f9,ou=imports,dc=ciam-ops
@@ -5140,6 +6063,40 @@ ciamImportScope: cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-
 ciamImportScope: cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json
  ,ou=config-files,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: c7ac6d0fc760b255b0d571980a02447ed1a239121673df0eb2331f293350
+ c241 README.md
+ciamImportedFile: f5983541760116f7ae18d30e9dbe0639cc730dc0dbaf0ea902322f8e583e
+ ba27 global/Realms/partners.json
+ciamImportedFile: 9204d16ccc5fa18a3dd972ab83d8968c074e9e60e492e098c46f7f55f852
+ 19ac realms/root-partners/Applications/partner-apps.json
+ciamImportedFile: 604919b3fd797485e651cfd902bbc53aabd8c85f37695cf9d12c21232112
+ 37a1 realms/root-partners/AuthTree/PartnerLogin.json
+ciamImportedFile: 246379ba4bcc75a8e7d56cd07d4932d958a2a8eea4e5391c9de10cee36b4
+ 97a3 realms/root-partners/DataStoreDecisionNode/5e1d0c9b-0004-4a6b-8c7d-9e0f1
+ a2b3c4d.json
+ciamImportedFile: 04265a39305cfa4c2102d52676ef1efa5a0dca7a1da8f87c615a3621b00c
+ 7d9d realms/root-partners/OAuth2Clients/partner-portal.json
+ciamImportedFile: 1808094cf7dab551ce36b7684a2978599c56c8854e2c698a51f306b1d8db
+ 9fac realms/root-partners/OAuth2Provider/OAuth2Provider.json
+ciamImportedFile: f09443303d8cd4d199a70b89113a717ed9c1f20df20d3cd721820173c1a3
+ 220a realms/root-partners/OneTimePasswordCollectorDecisionNode/5e1d0c9b-0007-
+ 4a6b-8c7d-9e0f1a2b3c4d.json
+ciamImportedFile: afcd836fb9b35c80fb572da1038a17b06802be0824b8aab2a957556ee420
+ 0afe realms/root-partners/OneTimePasswordGeneratorNode/5e1d0c9b-0005-4a6b-8c7
+ d-9e0f1a2b3c4d.json
+ciamImportedFile: d3ef79783a6dc489849e50ff4e3f941a66e4e3da957c120cf91778a41d53
+ 41a9 realms/root-partners/OneTimePasswordSmtpSenderNode/5e1d0c9b-0006-4a6b-8c
+ 7d-9e0f1a2b3c4d.json
+ciamImportedFile: acb156d11607e6cc4baa01d923179c8295f40d4be359366c3647ce99e19e
+ 6d6b realms/root-partners/PageNode/5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d.json
+ciamImportedFile: d8003b6323a9d6bb3cd304934aa5bde617245ef16f8057d1efa863ebb2f8
+ fb57 realms/root-partners/PasswordCollectorNode/5e1d0c9b-0003-4a6b-8c7d-9e0f1
+ a2b3c4d.json
+ciamImportedFile: ca4e30c5a598b4d420dc4cc5f91f6949b8d320da60845b57de37f45c7640
+ e410 realms/root-partners/Policies/partner-portal-access.json
+ciamImportedFile: 84b54c7be51fd51bbdaba8cdc8ae57eecacc82bd2d33c725377d9890d6f9
+ 8ce0 realms/root-partners/UsernameCollectorNode/5e1d0c9b-0002-4a6b-8c7d-9e0f1
+ a2b3c4d.json
 ciamImporter: pingam/amster
 
 dn: cn=pingds,ou=principals,dc=ciam-ops
@@ -5167,6 +6124,12 @@ ciamImportScope: cn=customer-portal-svc,ou=consumers,dc=ciam-ops
 ciamImportScope: cn=legacy-rptuser,ou=consumers,dc=ciam-ops
 ciamImportScope: cn=supplier-portal-svc,ou=consumers,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: 25dabc61cad9a69eb5966960be4b2192848adc55e78c0e0febf2aefa8501
+ 1b88 ds-1.aws.internal.example-aero.test/logs/ldap-access.audit.json
+ciamImportedFile: 759263185df92fb4b7325d4f9474b38e1323ebc17d1ad02c957201234724
+ 58cc ds-2.aws.internal.example-aero.test/logs/ldap-access.audit.json
+ciamImportedFile: fb5dd4ae9d0bb22b2b6a351bfb124b84399992408417ba4a0b3e83c665ca
+ cb00 ds-3.aws.internal.example-aero.test/logs/ldap-access.audit.json
 ciamImporter: pingds/access-log
 
 dn: cn=pingds.config.shared.s1-69128b08d45c6a2a,ou=imports,dc=ciam-ops
@@ -5184,6 +6147,15 @@ ciamImportScope: snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,d
 ciamImportScope: snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,d
  c=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: cc3b01c5d4b5a76bb006fbec43ac073feb4cd9f1b7a88bbe68f98b14c30f
+ 93a0 ds-1.aws.internal.example-aero.test/config.ldif
+ciamImportedFile: 9aa11340b274887b7f61cf06a208f7b9c203605a3fb1328b2038ff71b908
+ 7de1 ds-2.aws.internal.example-aero.test/archived-configs/config-202609122240
+ 00Z
+ciamImportedFile: e9b44193cefee67d2f27bca17b13ea284d7c2fafc8ce79f05373d2391d82
+ 4ce6 ds-2.aws.internal.example-aero.test/config.ldif
+ciamImportedFile: e7c97e9122a34770d5b093ec1bd36a17694b364c8d9ec70733193a8d0a60
+ 3f57 ds-3.aws.internal.example-aero.test/config.ldif
 ciamImporter: pingds/config
 
 dn: cn=pingfederate,ou=principals,dc=ciam-ops
@@ -5218,6 +6190,8 @@ cn: pingfederate.bulk.shared.s1-457adc96c2c2e7e9
 ciamChangeRef: cn=CHG-2065,ou=changes,dc=ciam-ops
 ciamImportScope: cn=aog-parts-exchange,ou=integrations,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 84cd89e7512fdb416b21aafe775f716376960cf7aa4e1499e34f332c1fdc
+ 4ef0 data.json
 ciamImporter: pingfederate/bulk
 
 dn: cn=pingfederate.bulk.shared.s1-bc89833b4efcd403,ou=imports,dc=ciam-ops
@@ -5262,6 +6236,8 @@ ciamImportScope: cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc
 ciamImportScope: cn=noreply@example-aero.test,ou=mail-senders,dc=ciam-ops
 ciamImportScope: cn=captcha-recaptcha,ou=external-services,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: ed1b60b356c460d46b71a7478b78e31ad0d84d22f60938d003f93d43a374
+ 07d5 data.json
 ciamImporter: pingfederate/bulk
 
 dn: cn=pingfederate.node-files.shared.s1-168143bf0b3f0f54,ou=imports,dc=ciam-ops
@@ -5272,6 +6248,29 @@ cn: pingfederate.node-files.shared.s1-168143bf0b3f0f54
 ciamChangeRef: cn=CHG-2008,ou=changes,dc=ciam-ops
 ciamImportScope: cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: 947476aa1308d1e4f3724372ad8547f410aff47d06599e7997ddc65830e2
+ 7742 README.md
+ciamImportedFile: ca4bac86d25c955ed38fffc0e35219809d6c545dd9c3691c7d6d15c179ad
+ 8598 pf-admin-1.aws.internal.example-aero.test/bin/run.properties
+ciamImportedFile: c5ced40ebf5bf3e1b7a9c77397035f47f08e1606b743fc2e3d22e17c6c4e
+ 4c73 pf-admin-1.aws.internal.example-aero.test/server/default/conf/META-INF/h
+ ivemodule.xml
+ciamImportedFile: 948311ef334a4cb094a81055c4023f677e5d05b70ac21efe26b54e799fa5
+ 3729 pf-admin-1.aws.internal.example-aero.test/server/default/conf/tcp.xml
+ciamImportedFile: e0c08fced4e7e1a03ca3854c8d39ad39f0942537320048d48a241f27ed7c
+ 8708 pf-engine-1.aws.internal.example-aero.test/bin/run.properties
+ciamImportedFile: c5ced40ebf5bf3e1b7a9c77397035f47f08e1606b743fc2e3d22e17c6c4e
+ 4c73 pf-engine-1.aws.internal.example-aero.test/server/default/conf/META-INF/
+ hivemodule.xml
+ciamImportedFile: 03059759fd29e25455c4f3280ed624ab7269adf168eb6d852c24a69809a1
+ b0b1 pf-engine-1.aws.internal.example-aero.test/server/default/conf/tcp.xml
+ciamImportedFile: 33f542ebaae0357609d0f7b20c193ad411a7680d0480fa88275b1233c164
+ 4c4b pf-engine-2.aws.internal.example-aero.test/bin/run.properties
+ciamImportedFile: c5ced40ebf5bf3e1b7a9c77397035f47f08e1606b743fc2e3d22e17c6c4e
+ 4c73 pf-engine-2.aws.internal.example-aero.test/server/default/conf/META-INF/
+ hivemodule.xml
+ciamImportedFile: cad97aa20d50b0e8efeff9ccccee776cf431718356432dac649ab3389c8a
+ 6f81 pf-engine-2.aws.internal.example-aero.test/server/default/conf/tcp.xml
 ciamImporter: pingfederate/node-files
 
 dn: cn=pingfederate.node-files.source.prod.s1-2b15de89fb4541e2,ou=imports,dc=ciam-ops
@@ -5287,6 +6286,29 @@ ciamImportScope: cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-
 ciamImportScope: cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-
  ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: 947476aa1308d1e4f3724372ad8547f410aff47d06599e7997ddc65830e2
+ 7742 README.md
+ciamImportedFile: ca4bac86d25c955ed38fffc0e35219809d6c545dd9c3691c7d6d15c179ad
+ 8598 pf-admin-1.aws.internal.example-aero.test/bin/run.properties
+ciamImportedFile: c5ced40ebf5bf3e1b7a9c77397035f47f08e1606b743fc2e3d22e17c6c4e
+ 4c73 pf-admin-1.aws.internal.example-aero.test/server/default/conf/META-INF/h
+ ivemodule.xml
+ciamImportedFile: 948311ef334a4cb094a81055c4023f677e5d05b70ac21efe26b54e799fa5
+ 3729 pf-admin-1.aws.internal.example-aero.test/server/default/conf/tcp.xml
+ciamImportedFile: e0c08fced4e7e1a03ca3854c8d39ad39f0942537320048d48a241f27ed7c
+ 8708 pf-engine-1.aws.internal.example-aero.test/bin/run.properties
+ciamImportedFile: c5ced40ebf5bf3e1b7a9c77397035f47f08e1606b743fc2e3d22e17c6c4e
+ 4c73 pf-engine-1.aws.internal.example-aero.test/server/default/conf/META-INF/
+ hivemodule.xml
+ciamImportedFile: 03059759fd29e25455c4f3280ed624ab7269adf168eb6d852c24a69809a1
+ b0b1 pf-engine-1.aws.internal.example-aero.test/server/default/conf/tcp.xml
+ciamImportedFile: 33f542ebaae0357609d0f7b20c193ad411a7680d0480fa88275b1233c164
+ 4c4b pf-engine-2.aws.internal.example-aero.test/bin/run.properties
+ciamImportedFile: c5ced40ebf5bf3e1b7a9c77397035f47f08e1606b743fc2e3d22e17c6c4e
+ 4c73 pf-engine-2.aws.internal.example-aero.test/server/default/conf/META-INF/
+ hivemodule.xml
+ciamImportedFile: cad97aa20d50b0e8efeff9ccccee776cf431718356432dac649ab3389c8a
+ 6f81 pf-engine-2.aws.internal.example-aero.test/server/default/conf/tcp.xml
 ciamImporter: pingfederate/node-files
 
 dn: cn=pinggateway.config.shared.s1-e5c4434378bd8203,ou=imports,dc=ciam-ops
@@ -5300,6 +6322,14 @@ ciamImportScope: cn=ig.config.admin.json,ou=config-files,dc=ciam-ops
 ciamImportScope: cn=ig.config.config.json,ou=config-files,dc=ciam-ops
 ciamImportScope: cn=partner-portal,ou=protected-applications,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: 912659c2fea79c92f722e73cfe79178bde2c9155e3e399504a42d6aecc68
+ 2c55 README.md
+ciamImportedFile: 416d3e7721a0ff94123158e9744486c99566decd99382d98a1f3f165becf
+ 81e1 config/admin.json
+ciamImportedFile: bf953996c739c80ae2317a6018f25d5746b718e382d38df6ef909fb0b9ab
+ 5a50 config/config.json
+ciamImportedFile: 00e03a4e3c814706f7a25b0c902fbaf026166a5959ab5361382094c5a63e
+ c876 routes/partner-portal.json
 ciamImporter: pinggateway/config
 
 dn: cn=pingidm.project.shared.s1-957fd2a5ac158146,ou=imports,dc=ciam-ops
@@ -5318,6 +6348,22 @@ ciamImportScope: cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops
 ciamImportScope: cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops
 ciamImportScope: cn=idm.conf.audit.json,ou=config-files,dc=ciam-ops
 ciamImportedAt: 20260920030000Z
+ciamImportedFile: 4c6cffe45cd05674739cc459553f7266d7a0c0917abb17298fe580690123
+ 7b3a README.md
+ciamImportedFile: 6946e9fa32350e6dde16047ae678192573d8eca0688961b0a510811e0118
+ 64f0 conf/audit.json
+ciamImportedFile: c48c3f7734c1a03bfe0cd5c9be45ecc9d81ea91c6239b873210e8d6e43ff
+ e461 conf/managed.json
+ciamImportedFile: 856e962d09543ba517a1a1bd32e9e336800669cf9377b33a1933b571d7a4
+ 1223 conf/provisioner.openicf-hrdb.json
+ciamImportedFile: 4fc30e5c0b012b1fb89e49b177dfae7e86b7223354e12981bf4dfe78b47e
+ 5602 conf/provisioner.openicf-ldap.json
+ciamImportedFile: 7310aa6bbabbde131ae5aebfa1261fedc41d1381f4ba8a3f46e1d09dde8e
+ 8ace conf/schedule-reconcile-hr.json
+ciamImportedFile: d7d81e80cab9849a1c5207afb1975377e9f8acc88a8fcfa839d5b2bc729c
+ 32c3 conf/sync.json
+ciamImportedFile: 4191bb8f61ea58daf0a28478614e65561092d54e1fc787ed654565653335
+ 38bd script/onCreate-user.js
 ciamImporter: pingidm/project
 
 dn: cn=platform-admin,ou=permission-sets,dc=ciam-ops
@@ -5568,6 +6614,14 @@ ciamImportScope: cn=CHG0030105,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 304298b0f1df2fb4e4aff152e43610f3acbaa1dcf8dd915ef2cc69d12037
+ 9ea0 itsm.example-aero.test/change_request/0-0.json
+ciamImportedFile: 07270c4e0e52958f84d1e8b4e3ccf4ff7d665febc8794e058dae4267cf36
+ 2078 itsm.example-aero.test/change_request/0-100.json
+ciamImportedFile: c428a3073b6efc2964fba02235c8b460d8c4f56010331d4b622797a0ec33
+ b133 itsm.example-aero.test/sysapproval_approver/0-0.json
+ciamImportedFile: 07270c4e0e52958f84d1e8b4e3ccf4ff7d665febc8794e058dae4267cf36
+ 2078 itsm.example-aero.test/sysapproval_approver/0-100.json
 ciamImporter: servicenow/change-requests
 
 dn: cn=servicenow.change-requests.shared.s1-1aec80b213d4b2a0,ou=imports,dc=ciam-ops
@@ -5585,6 +6639,14 @@ ciamImportScope: cn=CHG0030106,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030108,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportScope: cn=CHG0030117,ou=servicenow,ou=tickets,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 304298b0f1df2fb4e4aff152e43610f3acbaa1dcf8dd915ef2cc69d12037
+ 9ea0 itsm.example-aero.test/change_request/0-0.json
+ciamImportedFile: 07270c4e0e52958f84d1e8b4e3ccf4ff7d665febc8794e058dae4267cf36
+ 2078 itsm.example-aero.test/change_request/0-100.json
+ciamImportedFile: c428a3073b6efc2964fba02235c8b460d8c4f56010331d4b622797a0ec33
+ b133 itsm.example-aero.test/sysapproval_approver/0-0.json
+ciamImportedFile: 07270c4e0e52958f84d1e8b4e3ccf4ff7d665febc8794e058dae4267cf36
+ 2078 itsm.example-aero.test/sysapproval_approver/0-100.json
 ciamImporter: servicenow/change-requests
 
 dn: cn=sign-on-edge,ou=edge-policies,dc=ciam-ops
@@ -5661,6 +6723,12 @@ ciamImportScope: cn=crew-portal-all-crew,ou=access-rules,ou=protected-applicat
 ciamImportScope: cn=crew-portal-roster-admins,ou=access-rules,ou=protected-app
  lications,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 00d8a2a8c1cf0788a63ebdd4b840b358df3fd373fc1ed046f34225550b0d
+ 78ba crew-web-1.aws.internal.example-aero.test/LocalConfig.conf
+ciamImportedFile: af3470a783016a3f272da3180560f06bdb7c7f7b60338fa07eef75432122
+ 57e3 crew-web-1.aws.internal.example-aero.test/SmHost.conf
+ciamImportedFile: 3265a1de95779e9430647aef7010f8a876a3239de420ea4a69623fbe839e
+ 6be9 crew-web-1.aws.internal.example-aero.test/WebAgent.conf
 ciamImporter: siteminder/agent-files
 
 dn: cn=siteminder.xps.shared.s1-08e328ae14587526,ou=imports,dc=ciam-ops
@@ -5693,6 +6761,8 @@ ciamImportScope: cn=crew-portal-all-crew,ou=access-rules,ou=protected-applicat
 ciamImportScope: cn=crew-portal-roster-admins,ou=access-rules,ou=protected-app
  lications,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 15562f45a2eaade70d943431576ff77f8663967f8b2b888a1d7ac26da130
+ db3b policy-store.xml
 ciamImporter: siteminder/xps
 
 dn: cn=skyline-air,ou=owners,dc=ciam-ops
@@ -5853,6 +6923,10 @@ ciamImportScope: cn=siem,ou=bindings,env=prod,cloud=source,ou=environments,dc=
 ciamImportScope: cn=ciam-admin-login-failures,ou=bindings,env=prod,cloud=sourc
  e,ou=environments,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 0ba6801edde8c9b0d615c1f4755a8e449da7d3ca93bd67cd8c1a762acd13
+ ab5d source/prod/indexes.json
+ciamImportedFile: 5b8e76ecafb72655b59fc165814270fcdb610a99a737eba8b9168bab37bf
+ 24ef source/prod/saved-searches.json
 ciamImporter: splunk/rest
 
 dn: cn=sso,ou=identity-services,dc=ciam-ops
@@ -6262,6 +7336,32 @@ cn: venafi.certificates.shared.s1-c0e7a3215724e802
 ciamChangeRef: cn=CHG-2125,ou=changes,dc=ciam-ops
 ciamImportScope: cn=venafi-prod,ou=managed-certificates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: b4f9e59eb5427481563b03eff51da9dce09d392803b0f09feb622799aac1
+ 6edb venafi/venafi-prod/certificates-0.json
+ciamImportedFile: 463eb1c2067446d840d660b00d922439fa88471cd89ae415c956063f544c
+ 4dcf venafi/venafi-prod/details/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21.json
+ciamImportedFile: cb213085704138102dbf31d09973536af9174b561c9aa5b14559bc5f970d
+ 7166 venafi/venafi-prod/details/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a22.json
+ciamImportedFile: 49ec5a9438a95ec3576ca8bdad1c8ae3ff5d2e93f4bb89e377a2e194bf24
+ f50e venafi/venafi-prod/details/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23.json
+ciamImportedFile: 8fc2d97d2d60194ef9e10bc8755445e8a3bb44b446a8a4792304d50ca119
+ 3f18 venafi/venafi-prod/details/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24.json
+ciamImportedFile: 77431d951dd7ec4df150d6ba16813c247900df541ce420f1b647ecd4842c
+ 3a65 venafi/venafi-prod/history/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21.json
+ciamImportedFile: e50de8360795e8378b3e354ff7adc1f129a5520a68ed42e2d69ffb6564c3
+ 7b04 venafi/venafi-prod/history/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a22.json
+ciamImportedFile: e50de8360795e8378b3e354ff7adc1f129a5520a68ed42e2d69ffb6564c3
+ 7b04 venafi/venafi-prod/history/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23.json
+ciamImportedFile: e50de8360795e8378b3e354ff7adc1f129a5520a68ed42e2d69ffb6564c3
+ 7b04 venafi/venafi-prod/history/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24.json
+ciamImportedFile: e793c49850160c638daa1539b17e025a4f5970f1b56765929ce413b50d1a
+ 5db4 venafi/venafi-prod/validation/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a21.json
+ciamImportedFile: 6aa9f623c2d8c8045faf18ed56a8dde8cb49ae9e227562d6a51a29e34052
+ a9f5 venafi/venafi-prod/validation/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a22.json
+ciamImportedFile: 345d12aa5bd534a524e5b1cbe970d5558529ea0d4df74f608d1253e810d0
+ b791 venafi/venafi-prod/validation/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a23.json
+ciamImportedFile: 97a4178fd224b264c52073aa7122706f4522671b062682ad9eb1d853d57b
+ 4df2 venafi/venafi-prod/validation/6f1c2a90-3b4d-4e5f-8a6b-7c8d9e0f1a24.json
 ciamImporter: venafi/certificates
 
 dn: cn=venafi.saas.shared.s1-91295744e42807b2,ou=imports,dc=ciam-ops
@@ -6272,6 +7372,10 @@ cn: venafi.saas.shared.s1-91295744e42807b2
 ciamChangeRef: cn=CHG-2127,ou=changes,dc=ciam-ops
 ciamImportScope: cn=Example Aero SaaS,ou=managed-certificates,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: 23ffd8018ba8142b0f324e2be15a780b148157c2763d0c16a05c02488086
+ 640b venafi-saas/Example Aero SaaS/search-0.json
+ciamImportedFile: 32c4050453777ddf595f080cd15a5275b3add7fbcfdaf97d0695a1041efe
+ ea5e venafi-saas/Example Aero SaaS/search-1.json
 ciamImporter: venafi/saas
 
 dn: cn=WI-CIAM-001,ou=runbooks,dc=ciam-ops
@@ -6376,6 +7480,12 @@ cn: x509.revocation.shared.s1-4c120123a810196a
 ciamChangeRef: cn=CHG-2092,ou=changes,dc=ciam-ops
 ciamImportScope: ou=revocation-observations,dc=ciam-ops
 ciamImportedAt: 20260923090000Z
+ciamImportedFile: ac8e4cb2566c750c2cc3ea1afea1854f1d6609504c1869b30c85e1331068
+ 6587 Example Aero Issuing CA 2/crl-2.json
+ciamImportedFile: db12460c7e9487d6d1541798b2cb51ab9578cc49682ec2c498372d6b309f
+ eaa5 Example Aero Issuing CA 2/delta-crl-1.json
+ciamImportedFile: d2b73cc187ce234f545f09c60f99eb26d5be2742d92637ae74d7c01533be
+ af96 Example Aero Issuing CA 2/ocsp-1.json
 ciamImporter: x509/revocation
 
 dn: cn=xFeatureFlag,ou=custom-schema,dc=ciam-ops
