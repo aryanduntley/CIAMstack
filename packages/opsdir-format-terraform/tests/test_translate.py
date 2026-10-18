@@ -3,9 +3,9 @@ adapter's files, and a root split into what another language writes and the Terr
 import pytest
 
 from opsdir_format_terraform.hcl import Block, TfFile, comment, ref, tf_block, tf_import
-from opsdir_format_terraform.translate import (Raw, TfRef, address, expression_refs, no_native_note, output_variable,
-                                               parse_ref, ref_address, ref_text, root_items, roots, split_root,
-                                               template_parts, value_refs)
+from opsdir_format_terraform.translate import (Raw, TfRef, address, before_note, expression_refs, no_native_note,
+                                               output_variable, parse_ref, ref_address, ref_text, root_items, roots,
+                                               split_root, template_parts, value_refs)
 
 VPC_ID = TfRef("data", "aws_vpc", "main", "id")
 BUCKET_ARN = TfRef("resource", "aws_s3_bucket", "logs", "arn")
@@ -120,3 +120,22 @@ def test_a_native_resource_reading_one_that_stays_terraform_is_unresolved():
     reader = tf_block("resource", ["aws_s3_bucket_policy", "p"], [("bucket", ref("aws_inspector2_enabler.i.id"))])
     split = split_root((*ITEMS, reader), native)
     assert split.unresolved == (("aws_s3_bucket_policy.p", TfRef("resource", "aws_inspector2_enabler", "i", "id")),)
+
+
+def test_a_resource_the_template_reads_may_be_applied_before_it_in_a_root_outputting_what_it_reads():
+    bundle = tf_block("resource", ["aws_s3_object", "bundle"], [("bucket", "b"), ("key", "trust/x.pem")])
+    store = tf_block("resource", ["aws_lb_trust_store", "x"], [("ca_certificates_bundle_s3_key",
+                                                                 ref("aws_s3_object.bundle.key"))])
+    items = (TERRAFORM, PROVIDER, REGION, comment("the bundle"), bundle, store, tf_import("aws_s3_object.bundle", "b"))
+    split = split_root(items, lambda b: b.labels[0] != "aws_s3_object", lambda b: b.labels[0] == "aws_s3_object")
+    key = TfRef("resource", "aws_s3_object", "bundle", "key")
+    assert split.unresolved == () and split.side == () and split.inputs == (key,)
+    assert split.before[:6] == (TERRAFORM, PROVIDER, REGION, comment("the bundle"), bundle,
+                                tf_import("aws_s3_object.bundle", "b"))
+    assert split.before[6:] == (tf_block("output", [output_variable(key)], [("value", "${aws_s3_object.bundle.key}")]),)
+    assert split.native == (TERRAFORM, PROVIDER, REGION, store)
+    assert before_note(split, "AWS CloudFormation", {"aws_s3_object.bundle": "no type"}) == (
+        "# The AWS CloudFormation template reads these resources, which stay Terraform; this root manages them, "
+        "applied BEFORE the template, its outputs the template's parameters:\n#   aws_s3_object.bundle: no type\n")
+    without = split_root(items, lambda b: b.labels[0] != "aws_s3_object")
+    assert without.before == () and without.unresolved == (("aws_lb_trust_store.x", key),)

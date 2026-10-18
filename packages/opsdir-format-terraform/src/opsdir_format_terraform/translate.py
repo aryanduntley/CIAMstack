@@ -1,7 +1,8 @@
 """Terraform data read for translation into another infrastructure-as-code language (a cloud's own templates): a
 rendered root's blocks, the references their values make, the split of a root into what the other language
-writes and what stays Terraform because it has no form there, and the partition of a root among several Terraform
-roots (each keeper's, a scoped slice), each complete with the inputs it reads from the others.
+writes and what stays Terraform because it has no form there (applied after the template, or before it what the
+template reads), and the partition of a root among several Terraform roots (each keeper's, a scoped slice), each
+complete with the inputs it reads from the others.
 A format library: it knows Terraform's references and roots, not any cloud provider or target language. The cloud
 adapters hold the mapping of their resource types and write the target language from what this gives them.
 """
@@ -26,7 +27,12 @@ Raw = NamedTuple("Raw", [("text", str), ("refs", tuple)])
 # each value of a natively written resource they read). outputs: the references to natively written resources the
 # side root reads (the template outputs them; the side root takes each as the variable output_variable names).
 # unresolved: (address, TfRef) for each natively written block reading a resource that stays Terraform.
-Split = NamedTuple("Split", [("native", tuple), ("side", tuple), ("outputs", tuple), ("unresolved", tuple)])
+# before: the items of the Terraform root applied BEFORE the template (resources with no form there that the
+# template reads, see split_root's before; the terraform and provider blocks, their imports, the data and variable
+# blocks they read, the comments above them, and an output for each value the template reads). inputs: the
+# references to those resources the natively written blocks read (the template takes each as a parameter).
+Split = NamedTuple("Split", [("native", tuple), ("side", tuple), ("outputs", tuple), ("unresolved", tuple),
+                             ("before", tuple), ("inputs", tuple)])
 
 _SEGMENT = r"(?:\.[A-Za-z_][\w-]*|\.\d+|\.\*|\[(?:\d+|\"[^\"]*\"|\*)\])"
 _TRAVERSAL = re.compile(r"[A-Za-z_][\w-]*" + _SEGMENT + "+")
@@ -290,41 +296,75 @@ def _checks(b):
     return b.kind == "data" and any(k == "lifecycle" for k, _ in b.body)
 
 
-def split_root(items, has_native):
+def _first(resources, native, before):
+    """The addresses of the resources applied before the template: of those with no native form (native: the
+    addresses that have one) that before(block) takes, the ones a natively written resource reads (a value or its
+    depends_on), each reading no resource but others of them and read by no resource that stays after the template
+    (one that is stays after it too)."""
+    reads = {address(b): {ref_address(r) for r in value_refs(b.body) if r.kind == "resource"} for b in resources}
+    wanted = {a for b in resources if address(b) in native for a in reads[address(b)]}
+
+    def held(found):
+        later = {address(b) for b in resources} - native - found
+        keep = frozenset(a for a in found if reads[a] <= found and not any(a in reads[x] for x in later))
+        return found if keep == found else held(keep)
+    return held(frozenset(address(b) for b in resources
+                          if address(b) not in native and address(b) in wanted and before(b)))
+
+
+def split_root(items, has_native, before=lambda b: False):
     """A root's items split for translation (Split); has_native(resource block): whether the other language has a
-    form for the resource. Data sources, variables and modules go to whichever side reads them (both, when both do;
-    the template's, when neither does); a data source that checks something (lifecycle conditions) is the side
-    root's too, as only Terraform makes the check; both sides keep the provider and terraform blocks."""
+    form for the resource; before(resource block): whether one with no form there may be applied before the
+    template, when the template reads it (see _first; the template takes what it reads as inputs, the root applied
+    first outputs them). Data sources, variables and modules go to whichever side reads them (each that does; the
+    template's, when none does); a data source that checks something (lifecycle conditions) is the side root's too,
+    as only Terraform makes the check; every side keeps the provider and terraform blocks."""
     groups = _groups(items)
     blocks = tuple(b for _, b in groups if b is not None)
     by_address = {address(b): b for b in blocks if address(b)}
-    stays = {address(b) for b in blocks if b.kind == "resource" and not has_native(b)}
+    resources = tuple(b for b in blocks if b.kind == "resource")
+    first = _first(resources, {address(b) for b in resources if has_native(b)}, before)
+    stays = {address(b) for b in resources if not has_native(b)} - first
 
     def on_side(b):
         return (b.kind == "resource" and address(b) in stays) or (b.kind == "import" and _import_target(b) in stays)
 
+    def at_first(b):
+        return (b.kind == "resource" and address(b) in first) or (b.kind == "import" and _import_target(b) in first)
+
     shared = tuple(b for b in blocks if b.kind in ("provider", "terraform"))
     side_blocks = tuple(b for b in blocks if on_side(b))
-    native_blocks = tuple(b for b in blocks if b.kind in ("resource", "import") and not on_side(b))
+    first_blocks = tuple(b for b in blocks if at_first(b))
+    native_blocks = tuple(b for b in blocks if b.kind in ("resource", "import") and not on_side(b) and not at_first(b))
     checking = tuple(b for b in blocks if _checks(b))
     native_reads = _closure((*native_blocks, *shared), by_address)
     side_reads = _closure((*side_blocks, *shared, *checking), by_address) | {address(b) for b in checking}
+    first_reads = _closure((*first_blocks, *shared), by_address)
     written = {address(b) for b in native_blocks if b.kind == "resource"}
     outputs = tuple(dict.fromkeys(r for b in (*side_blocks, *(by_address[a] for a in side_reads)) for r in _reads(b)
                                   if ref_address(r) in written))
-    unresolved = tuple((address(b) or b.kind, r) for b in (*native_blocks, *(by_address[a] for a in native_reads))
-                       for r in _reads(b) if ref_address(r) in stays)
+    native_readers = (*native_blocks, *(by_address[a] for a in native_reads))
+    unresolved = tuple((address(b) or b.kind, r) for b in native_readers for r in _reads(b) if ref_address(r) in stays)
+    inputs = tuple(dict.fromkeys(r for b in native_readers for r in _reads(b) if ref_address(r) in first))
 
     def kept(b, side):
         if b is None or b.kind in ("provider", "terraform"):
             return b is not None or not side
         if b.kind in ("resource", "import"):
-            return on_side(b) == side
-        return address(b) in side_reads if side else address(b) in native_reads or address(b) not in side_reads
+            return on_side(b) == side and not at_first(b)
+        return address(b) in side_reads if side else \
+            address(b) in native_reads or (address(b) not in side_reads and address(b) not in first_reads)
+
+    def kept_first(b):
+        if b is None or b.kind in ("provider", "terraform"):
+            return b is not None
+        return at_first(b) if b.kind in ("resource", "import") else address(b) in first_reads
 
     native = tuple(x for comments, b in groups if kept(b, False) for x in (*comments, *((b,) if b else ())))
     side = tuple(x for comments, b in groups if kept(b, True) for x in (*comments, _side_block(b, written)))
-    return Split(native, (*side, *_output_variables(outputs)) if side_blocks or checking else (), outputs, unresolved)
+    ahead = tuple(x for comments, b in groups if kept_first(b) for x in (*comments, b))
+    return Split(native, (*side, *_output_variables(outputs)) if side_blocks or checking else (), outputs, unresolved,
+                 (*ahead, *_outputs_of(inputs, lambda r: False)) if first_blocks else (), inputs)
 
 
 # A root's items partitioned among Terraform roots (partition). roots: {root: items}, in the order they apply, each
@@ -449,3 +489,14 @@ def no_native_note(split, language, reasons=None):
             f"# {language} has no form for these resources; this Terraform root manages them, applied "
             f"after the template{reads}:\n")
     return "".join((head, *(f"#   {a}{': ' + reasons[a] if a in reasons else ''}\n" for a in kept)))
+
+
+def before_note(split, language, reasons=None):
+    """The heading of the root applied before the template (comment lines): the resources it keeps in Terraform, each
+    by address (with reasons' why), that the template reads them, so this root is applied first, its outputs the
+    template's parameters."""
+    reasons = reasons or {}
+    kept = [address(b) for b in split.before if isinstance(b, TfBlock) and b.kind == "resource"]
+    return "".join((f"# The {language} template reads these resources, which stay Terraform; this root manages them, "
+                    "applied BEFORE the template, its outputs the template's parameters:\n",
+                    *(f"#   {a}{': ' + reasons[a] if a in reasons else ''}\n" for a in kept)))

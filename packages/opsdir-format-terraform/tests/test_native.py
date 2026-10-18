@@ -173,3 +173,27 @@ def test_placements_are_a_document_beside_the_templates_and_read_back(root):
     assert list(doc) == sorted(doc)
     assert placements_of(doc, lambda where: f"out/{where}") == places
     assert placements_of({"x.y": {"in": "t"}, "z": "not an entry"}) == {}
+
+
+def test_what_the_template_reads_of_a_type_applied_before_it_is_a_root_of_its_own_read_through_forms():
+    """Table.before: a resource with no native form that a native one reads (its value or depends_on) stays in the
+    Terraform root applied before the template, which reads it through Forms.before; one nothing native reads stays
+    after the template, and one reading a native resource too (its native readers are then refused)."""
+    table = Table(TYPES, frozenset({"t_legacy", "t_file"}), DATA, before=frozenset({"t_file"}))
+    items = TfFile("", (tf_block("resource", ["t_file", "f"], [("name", "bundle.pem")]),
+                        tf_block("resource", ["t_box", "a"], [("name", ref("t_file.f.name"))]),
+                        tf_block("resource", ["t_file", "unread"], [("name", "x")])))
+    read = read_root("terraform", (("terraform/main.tf", items),), table, "Toy", lambda items: LAYOUT)
+    assert read.before == frozenset({"t_file.f"}) and set(read.placed) == {"t_box.a"}
+    assert read.reasons == {"t_file.f": "no Toy type; the template reads it, so it is applied before the template",
+                            "t_file.unread": "no Toy type"}
+    places = placements(read, {"main": "out/template"}, "out/terraform/main.tf", "out/before/main.tf")
+    assert (places["t_file.f"].where, places["t_file.unread"].where) == ("out/before/main.tf", "out/terraform/main.tf")
+    forms = Forms(lambda nid, form: f"{nid}#{form}", lambda r: "cross", lambda name: name, lambda r, found: found,
+                  lambda r: f"before:{r.name}.{r.attr}")
+    assert resolver(read, "main", table, TOY, forms)(TfRef("resource", "t_file", "f", "name")) == "before:f.name"
+    circular = TfFile("", (tf_block("resource", ["t_box", "a"], [("name", "a")]),
+                           tf_block("resource", ["t_file", "f"], [("name", ref("t_box.a.id"))]),
+                           tf_block("resource", ["t_box", "b"], [("name", ref("t_file.f.name"))])))
+    with pytest.raises(SystemExit, match="t_box.b reads t_file.f.name"):
+        read_root("terraform", (("terraform/main.tf", circular),), table, "Toy", lambda items: LAYOUT)

@@ -20,7 +20,14 @@ NO_NATIVE = frozenset({"aws_inspector2_enabler", "aws_config_retention_configura
                        # a managed directory (flow 76): its CloudFormation stack (already a template, its password a
                        # dynamic reference), and the region and forwarders on it, which have no CloudFormation type
                        "aws_cloudformation_stack", "aws_directory_service_region",
-                       "aws_directory_service_conditional_forwarder"})
+                       "aws_directory_service_conditional_forwarder",
+                       # an object in S3 (an edge trust policy's CA bundle, mtls.py): no AWS::S3::Object type in
+                       # cfn-lint's schemas (us-east-1, us-gov-west-1)
+                       "aws_s3_object"})
+# Of those, the types a template reads (an ALB trust store loads its CA bundle object from S3 when it is created): they
+# stay in the Terraform root applied BEFORE the template (cfn_render.BEFORE_ROOT), the template taking what it reads
+# as parameters (task 591).
+BEFORE = frozenset({"aws_s3_object"})
 # Types whose CloudFormation type AWS's GovCloud resource specification doesn't have (cfn-lint's us-gov-west-1
 # schemas): in a GovCloud template they stay Terraform too.
 NOT_IN_GOVCLOUD = frozenset({"aws_macie2_account", "aws_macie2_custom_data_identifier", "aws_shield_protection",
@@ -432,7 +439,10 @@ def _listener(f, cx):
     return obj(own(f), cx, {"load_balancer_arn": "LoadBalancerArn", "port": "Port", "protocol": "Protocol",
                             "ssl_policy": "SslPolicy", "alpn_policy": Custom(lambda v, c: {"AlpnPolicy": [c.value(v)]}),
                             "certificate_arn": Custom(lambda v, c: {"Certificates": [{"CertificateArn": c.value(v)}]}),
-                            "default_action": Nest("DefaultActions", action, True)})
+                            "default_action": Nest("DefaultActions", action, True),
+                            # client certificates checked at the ALB (mtls.py: mode verify with a trust store)
+                            "mutual_authentication": Nest("MutualAuthentication", {
+                                "mode": "Mode", "trust_store_arn": "TrustStoreArn"})})
 
 
 def _sets(v, cx, inner):
@@ -982,6 +992,12 @@ TYPES = {
     "aws_lb_target_group": Native("AWS::ElasticLoadBalancingV2::TargetGroup", _target_group,
                                   {"arn": "Ref", "id": "Ref", "arn_suffix": "TargetGroupFullName",
                                    "name": "TargetGroupName"}, "TargetGroupArn", "list"),
+    # an edge trust policy's ALB trust store (mtls.py; task 591): its Ref is its ARN (the schema's primaryIdentifier,
+    # TrustStoreArn, also how CloudFormation imports one); the bundle object it loads stays in BEFORE_ROOT
+    "aws_lb_trust_store": Native("AWS::ElasticLoadBalancingV2::TrustStore", {
+        "name": "Name", "ca_certificates_bundle_s3_bucket": "CaCertificatesBundleS3Bucket",
+        "ca_certificates_bundle_s3_key": "CaCertificatesBundleS3Key"},
+        {"arn": "Ref", "id": "Ref"}, "TrustStoreArn", "list"),
     "aws_lb_target_group_attachment": Native(None, merge=Merge("target_group_arn", _append("Targets", {
         "target_group_arn": None, "target_id": "Id", "port": "Port", "availability_zone": "AvailabilityZone"}))),
     # IAM
@@ -1271,10 +1287,10 @@ DATA = {
 def cloudformation_files(m, files, what):
     """{path: TfFile | text} of environment m's CloudFormation from its AWS Terraform render (cfn_render.translated by
     this table)."""
-    return translated(m, files, TYPES, NO_NATIVE, DATA, what, unavailable)
+    return translated(m, files, TYPES, NO_NATIVE, DATA, what, unavailable, BEFORE)
 
 
 def cloudformation_translation(m, files, what):
     """The cfn_render.Translation of environment m's AWS Terraform render by this table (templates, imports, side
     roots, where each Terraform resource went)."""
-    return translation(m, files, TYPES, NO_NATIVE, DATA, what, unavailable)
+    return translation(m, files, TYPES, NO_NATIVE, DATA, what, unavailable, BEFORE)
