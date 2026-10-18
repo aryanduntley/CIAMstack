@@ -537,7 +537,7 @@ def _cmd_modify(conn, a, as_of):
 
 
 def _cmd_capture(conn, a, as_of):
-    preview = ops.preview_capture(conn, pathlib.Path(a.file).read_text(encoding="utf-8"),
+    preview = ops.preview_capture(conn, pathlib.Path(a.file).read_text(encoding="utf-8", newline=""),
                                   a.name or capture_name(a.file), a.repo_path or a.file, a.format, a.role,
                                   a.deploy_path, a.accept_concerns)
     r = ops.apply_preview(conn, preview, a.change)

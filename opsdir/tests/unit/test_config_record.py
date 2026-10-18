@@ -47,6 +47,14 @@ def test_a_captured_file_is_rebuilt_identical_from_the_record_alone(sample, fmt)
     assert rebuilt(d, "sample") == text
 
 
+@pytest.mark.parametrize("sample, fmt", [("run.properties", JAVA_PROPERTIES), ("tcp.xml", XML), ("sync.json", JSON),
+                                         ("sssd.ini", INI), ("config.ldif", LDIF)])
+def test_a_file_with_windows_line_endings_is_rebuilt_with_them(sample, fmt):
+    text = (SAMPLES / sample).read_text().replace("\n", "\r\n")             # as `opsdir capture` reads it (newline='')
+    d, _ = captured(text, fmt, "sample", accept_concerns=(sample == "config.ldif"))
+    assert rebuilt(d, "sample") == text
+
+
 def test_values_that_may_be_secret_are_withheld_and_come_from_a_secret_reference():
     text = "pf.admin.user=admin\npf.admin.pwd=Hunter2Hunter2\n"
     d, notices = captured(text, JAVA_PROPERTIES)
