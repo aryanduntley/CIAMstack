@@ -4,6 +4,8 @@
     "change",
     "op",
     "by",
+    "client",
+    "teams",
     "dn"
   ],
   "rows": [
@@ -12,6 +14,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=pingam,dc=ciam-ops"
     ],
     [
@@ -19,6 +23,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -26,6 +32,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=partner-portal,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -33,6 +41,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -40,6 +50,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=policy-sets,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -47,6 +59,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=1ba5b9f2e1214443,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -54,6 +68,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=21ffbbc6bc37c308,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -61,6 +77,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=2f6c473084e7ea6c,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -68,6 +86,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=353f2ecae4dc5e3f,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -75,6 +95,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=48436b87e3d1660b,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -82,6 +104,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=9d7646b79e865e69,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -89,6 +113,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=b24b629b40d0196b,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -96,6 +122,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=d4684ac3b13198d8,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -103,6 +131,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=db3821249e6b853d,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -110,6 +140,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ddfe10e8d056c21b,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -117,6 +149,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=e6ca05f0ac2fcd95,cn=am.realms.root-partners.OAuth2Provider.OAuth2Provider.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -124,6 +158,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -131,6 +167,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -138,6 +176,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -145,6 +185,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -152,6 +194,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=5e1d0c9b-0001-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -159,6 +203,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=5e1d0c9b-0002-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -166,6 +212,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=5e1d0c9b-0003-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -173,6 +221,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=5e1d0c9b-0004-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -180,6 +230,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=5e1d0c9b-0005-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -187,6 +239,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=5e1d0c9b-0006-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -194,6 +248,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=5e1d0c9b-0007-4a6b-8c7d-9e0f1a2b3c4d,cn=PartnerLogin,ou=partners,ou=journeys,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -201,6 +257,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=partner-portal-access,cn=partner-apps,ou=partners,ou=policy-sets,ou=pingam,dc=ciam-ops"
     ],
     [
@@ -208,6 +266,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=imports,dc=ciam-ops"
     ],
     [
@@ -215,6 +275,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pingam.amster.shared.s1-69aee79932a0f6f9,ou=imports,dc=ciam-ops"
     ],
     [
@@ -222,6 +284,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -229,6 +293,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=idm.conf.audit.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -236,6 +302,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=connectors,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -243,6 +311,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=managed-objects,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -250,6 +320,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=mappings,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -257,6 +329,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=schedules,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -264,6 +338,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=892228336588a555,cn=idm.conf.audit.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -271,6 +347,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=8b0610d7eac42f69,cn=idm.conf.audit.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -278,6 +356,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=hr_managedUser,ou=mappings,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -285,6 +365,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -292,6 +374,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -299,6 +383,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=managedUser_systemLdapAccount,ou=mappings,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -306,6 +392,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=reconcile-hr,ou=schedules,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -313,6 +401,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=role,ou=managed-objects,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -320,6 +410,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=user,ou=managed-objects,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -327,6 +419,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pingidm.project.shared.s1-957fd2a5ac158146,ou=imports,dc=ciam-ops"
     ],
     [
@@ -334,6 +428,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=pinggateway,dc=ciam-ops"
     ],
     [
@@ -341,6 +437,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=protected-applications,dc=ciam-ops"
     ],
     [
@@ -348,6 +446,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ig.config.admin.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -355,6 +455,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ig.config.config.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -362,6 +464,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=partner-portal,ou=protected-applications,dc=ciam-ops"
     ],
     [
@@ -369,6 +473,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=routes,ou=pinggateway,dc=ciam-ops"
     ],
     [
@@ -376,6 +482,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=28d37a64d1f2098a,cn=ig.config.admin.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -383,6 +491,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=887d2ebf8ef77e5d,cn=ig.config.admin.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -390,6 +500,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=888008336f97ff04,cn=ig.config.config.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -397,6 +509,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=a3b1079cf9030063,cn=ig.config.config.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -404,6 +518,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=all,cn=partner-portal,ou=protected-applications,dc=ciam-ops"
     ],
     [
@@ -411,6 +527,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=d82debf6eb335a9d,cn=ig.config.config.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -418,6 +536,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=fbf19b7efd8b212b,cn=ig.config.config.json,ou=config-files,dc=ciam-ops"
     ],
     [
@@ -425,6 +545,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=partner-portal,ou=routes,ou=pinggateway,dc=ciam-ops"
     ],
     [
@@ -432,6 +554,8 @@
       "CHG-2004",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pinggateway.config.shared.s1-e5c4434378bd8203,ou=imports,dc=ciam-ops"
     ],
     [
@@ -439,6 +563,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -446,6 +572,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -453,6 +581,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -460,6 +590,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -467,6 +599,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -474,6 +608,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -481,6 +617,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -488,6 +626,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -495,6 +635,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -502,6 +644,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -509,6 +653,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -516,6 +662,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -523,6 +671,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -530,6 +680,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -537,6 +689,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -544,6 +698,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -551,6 +707,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -558,6 +716,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -565,6 +725,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -572,6 +734,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -579,6 +743,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=customers,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -586,6 +752,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=customers,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -593,6 +761,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=customers,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -600,6 +770,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=customers,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -607,6 +779,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -614,6 +788,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -621,6 +797,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -628,6 +806,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Default Password Policy,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -635,6 +815,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -642,6 +824,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -649,6 +833,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -656,6 +842,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Debug Logger,ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -663,6 +851,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -670,6 +860,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -677,6 +869,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -684,6 +878,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=File-Based Error Logger,ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -691,6 +887,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -698,6 +896,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -705,6 +905,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -712,6 +914,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=HTTPS,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -719,6 +923,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -726,6 +932,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -733,6 +941,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -740,6 +950,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Json File-Based Access Logger,ou=log-publishers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -747,6 +959,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAP,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -754,6 +968,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAP,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -761,6 +977,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAP,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -768,6 +986,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAP,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -775,6 +995,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -782,6 +1004,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -789,6 +1013,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -796,6 +1022,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDAPS,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -803,6 +1031,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDIF,ou=connection-handlers,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -810,6 +1040,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDIF,ou=connection-handlers,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -817,6 +1049,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDIF,ou=connection-handlers,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -824,6 +1058,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=LDIF,ou=connection-handlers,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -831,6 +1067,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -838,6 +1076,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -845,6 +1085,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -852,6 +1094,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Root Password Policy,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -859,6 +1103,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=service-accounts,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -866,6 +1112,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=service-accounts,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -873,6 +1121,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=service-accounts,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -880,6 +1130,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=service-accounts,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -887,6 +1139,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=suppliers,ou=password-policies,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -894,6 +1148,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=suppliers,ou=password-policies,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -901,6 +1157,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=suppliers,ou=password-policies,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -908,6 +1166,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=suppliers,ou=password-policies,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -915,6 +1175,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -922,6 +1184,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -929,6 +1193,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -936,6 +1202,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -943,6 +1211,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -950,6 +1220,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -957,6 +1229,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -964,6 +1238,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=appEntitlement,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -971,6 +1247,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -978,6 +1256,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -985,6 +1265,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -992,6 +1274,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=companyId,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -999,6 +1283,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=description,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1006,6 +1292,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1013,6 +1301,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1020,6 +1310,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1027,6 +1319,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=lastLoginTime,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1034,6 +1328,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=mail,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1041,6 +1337,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=mail,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1048,6 +1346,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=mail,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1055,6 +1355,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1062,6 +1364,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1069,6 +1373,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1076,6 +1382,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=registrationStatus,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1083,6 +1391,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1090,6 +1400,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1097,6 +1409,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1104,6 +1418,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=soldToAccount,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1111,6 +1427,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=uid,cn=userData,ou=backends,snap=source-prod-ds-1-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1118,6 +1436,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260912224000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1125,6 +1445,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=uid,cn=userData,ou=backends,snap=source-prod-ds-2-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1132,6 +1454,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=uid,cn=userData,ou=backends,snap=source-prod-ds-3-20260920030000Z,ou=observed,ou=config,dc=ciam-ops"
     ],
     [
@@ -1139,6 +1463,8 @@
       "CHG-2006",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pingds.config.shared.s1-69128b08d45c6a2a,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1146,6 +1472,8 @@
       "CHG-2007",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=customer-portal-svc,ou=consumers,dc=ciam-ops"
     ],
     [
@@ -1153,6 +1481,8 @@
       "CHG-2007",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=idm-sync,ou=consumers,dc=ciam-ops"
     ],
     [
@@ -1160,6 +1490,8 @@
       "CHG-2007",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=legacy-rptuser,ou=consumers,dc=ciam-ops"
     ],
     [
@@ -1167,6 +1499,8 @@
       "CHG-2007",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=mro-batch-export,ou=consumers,dc=ciam-ops"
     ],
     [
@@ -1174,6 +1508,8 @@
       "CHG-2007",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-ds-svc,ou=consumers,dc=ciam-ops"
     ],
     [
@@ -1181,6 +1517,8 @@
       "CHG-2007",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=supplier-portal-svc,ou=consumers,dc=ciam-ops"
     ],
     [
@@ -1188,6 +1526,8 @@
       "CHG-2007",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pingds.access-log.shared.s1-ed7bbd9124f132c7,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1195,6 +1535,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1202,6 +1544,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=reports-api,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -1209,6 +1553,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=access-token-managers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1216,6 +1562,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=authentication-policies,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1223,6 +1571,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=captcha-providers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1230,6 +1580,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=credential-validators,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1237,6 +1589,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=data-stores,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1244,6 +1598,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=idp-adapters,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1251,6 +1607,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=notification-publishers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1258,6 +1616,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=oidc-policies,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1265,6 +1625,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=policy-contracts,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1272,6 +1634,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=resources,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1279,6 +1643,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=settings,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1286,6 +1652,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1293,6 +1661,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1300,6 +1670,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=default-apc,ou=policy-contracts,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1307,6 +1679,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=default-oidc,ou=oidc-policies,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1314,6 +1688,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=defaultjwt,ou=access-token-managers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1321,6 +1697,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1328,6 +1706,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=htmlform,ou=idp-adapters,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1335,6 +1715,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=oauth-auth-server,ou=settings,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1342,6 +1724,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pcvcustomers,ou=credential-validators,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1349,6 +1733,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1356,6 +1742,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1363,6 +1751,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1370,6 +1760,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1377,6 +1769,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=Customers,cn=default,ou=authentication-policies,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1384,6 +1778,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=settings,ou=serverSettings,ou=resources,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1391,6 +1787,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=captcha-recaptcha,ou=external-services,dc=ciam-ops"
     ],
     [
@@ -1398,6 +1796,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=customer-portal,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -1405,6 +1805,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops"
     ],
     [
@@ -1412,6 +1814,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=harbor-mro-federation,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -1419,6 +1823,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=mobile-ops,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -1426,6 +1832,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=noreply@example-aero.test,ou=mail-senders,dc=ciam-ops"
     ],
     [
@@ -1433,6 +1841,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-signing-2025,ou=certificates,dc=ciam-ops"
     ],
     [
@@ -1440,6 +1850,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=skyline-air-federation,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -1447,6 +1859,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=sso-tls-2026,ou=certificates,dc=ciam-ops"
     ],
     [
@@ -1454,6 +1868,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=supplier-portal,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -1461,6 +1877,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=tech-pubs,ou=integrations,dc=ciam-ops"
     ],
     [
@@ -1468,6 +1886,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pingfederate.bulk.shared.s1-bc89833b4efcd403,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1475,6 +1895,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=storage,ou=settings,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -1482,6 +1904,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin-1,env=prod,cloud=source,ou=environments,dc=ciam-ops"
     ],
     [
@@ -1489,6 +1913,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine-1,env=prod,cloud=source,ou=environments,dc=ciam-ops"
     ],
     [
@@ -1496,6 +1922,8 @@
       "CHG-2008",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine-2,env=prod,cloud=source,ou=environments,dc=ciam-ops"
     ],
     [
@@ -1503,6 +1931,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pingfederate.node-files.source.prod.s1-2b15de89fb4541e2,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1510,6 +1940,8 @@
       "CHG-2008",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pingfederate.node-files.shared.s1-168143bf0b3f0f54,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1517,6 +1949,8 @@
       "CHG-2010",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=jobs,dc=ciam-ops"
     ],
     [
@@ -1524,6 +1958,8 @@
       "CHG-2010",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ds-nightly-export,ou=jobs,dc=ciam-ops"
     ],
     [
@@ -1531,6 +1967,8 @@
       "CHG-2010",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops"
     ],
     [
@@ -1538,6 +1976,8 @@
       "CHG-2010",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=linux.jobs.shared.s1-0696946eb7e2ab71,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1545,6 +1985,8 @@
       "CHG-2010",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops"
     ],
     [
@@ -1552,6 +1994,8 @@
       "CHG-2010",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=github-actions.workflows.shared.s1-c8ae32ff91c391f6,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1559,6 +2003,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=baselines,dc=ciam-ops"
     ],
     [
@@ -1566,6 +2012,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=am,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -1573,6 +2021,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ds,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -1580,6 +2030,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=idm,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -1587,6 +2039,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ig,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -1594,6 +2048,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -1601,6 +2057,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -1608,6 +2066,8 @@
       "CHG-2012",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=linux.baseline.shared.s1-1d2dbc81da8060e1,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1615,6 +2075,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1622,6 +2084,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1629,6 +2093,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1636,6 +2102,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1643,6 +2111,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=appentitlement,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1650,6 +2120,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=challengeanswer,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1657,6 +2129,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=cn,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1664,6 +2138,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=companyid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1671,6 +2147,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=crmcontactid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1678,6 +2156,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=customers.people.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1685,6 +2165,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=dc,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1692,6 +2174,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1699,6 +2183,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=exportscreeningstatus,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1706,6 +2192,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=givenname,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1713,6 +2201,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=groups.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1720,6 +2210,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=lastlogintime,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1727,6 +2219,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=mail,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1734,6 +2228,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=member,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1741,6 +2237,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=objectclass,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1748,6 +2246,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ou,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1755,6 +2255,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1762,6 +2264,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=people.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1769,6 +2273,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=registrationstatus,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1776,6 +2282,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=service-accounts.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1783,6 +2291,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=sn,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1790,6 +2300,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=soldtoaccount,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1797,6 +2309,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=suppliers.people.partners.example-aero.test,ou=branches,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1804,6 +2318,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=telephonenumber,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1811,6 +2327,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=uid,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1818,6 +2336,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=userpassword,ou=attributes,cn=source-prod,ou=data-profile,dc=ciam-ops"
     ],
     [
@@ -1825,6 +2345,8 @@
       "CHG-2014",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ldap.data-profile.shared.s1-549f37b893288643,ou=imports,dc=ciam-ops"
     ],
     [
@@ -1832,6 +2354,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=census,dc=ciam-ops"
     ],
     [
@@ -1839,6 +2363,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=483017ca92ce3ac8,ou=census,dc=ciam-ops"
     ],
     [
@@ -1846,6 +2372,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1853,6 +2381,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -1860,6 +2390,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=0ae6558ff544cfff,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1867,6 +2399,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=0ae6558ff544cfff,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -1874,6 +2408,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=1910dfbfcde4e9ce,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1881,6 +2417,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=1a09cd59493312ee,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1888,6 +2426,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=20ffc8f644594dd0,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1895,6 +2435,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=223ce7924cf183b6,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1902,6 +2444,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=311f8092e3e02109,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1909,6 +2453,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=560abbbd33f5d737,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1916,6 +2462,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=560abbbd33f5d737,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -1923,6 +2471,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=61c9f2288797f75f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1930,6 +2480,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=68dfdaadcf1fcd63,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1937,6 +2489,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=68dfdaadcf1fcd63,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -1944,6 +2498,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=75db0bb73adad0f5,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1951,6 +2507,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=75db0bb73adad0f5,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -1958,6 +2516,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=827b5d26323c2ba0,cn=483017ca92ce3ac8,ou=census,dc=ciam-ops"
     ],
     [
@@ -1965,6 +2525,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=827b5d26323c2ba0,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -1972,6 +2534,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=8c8b33787d781301,cn=483017ca92ce3ac8,ou=census,dc=ciam-ops"
     ],
     [
@@ -1979,6 +2543,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=8c8b33787d781301,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -1986,6 +2552,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=915c5a6d3ba1510a,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -1993,6 +2561,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=992169e5cbadd2a1,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2000,6 +2570,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ad3d342eed225ff6,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -2007,6 +2579,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=b255dcc0522655fe,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2014,6 +2588,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=b889774be35ab26e,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2021,6 +2597,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=c2b0c64ab8450466,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2028,6 +2606,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=c3d7809625b82975,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2035,6 +2615,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=c3d7809625b82975,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -2042,6 +2624,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=d3463ecca0c1772f,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2049,6 +2633,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=d6f31adc7a5d2df2,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2056,6 +2642,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=d6f31adc7a5d2df2,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -2063,6 +2651,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=e0930981c2c28daf,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2070,6 +2660,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=e6f396ca61715013,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2077,6 +2669,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=e6f396ca61715013,cn=fda3b4cba0f0ad02,ou=census,dc=ciam-ops"
     ],
     [
@@ -2084,6 +2678,8 @@
       "CHG-2009",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=f7a86c11c0702ed0,cn=fd1eaf88edae748a,ou=census,dc=ciam-ops"
     ],
     [
@@ -2091,6 +2687,8 @@
       "CHG-2001",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=fw-mro-batch,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2098,6 +2696,8 @@
       "CHG-2003",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=svc-ldaps,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2105,6 +2705,8 @@
       "CHG-2003",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=zone-private,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2112,6 +2714,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=ldap,ou=connectors,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -2119,6 +2723,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=hrdb,ou=connectors,ou=pingidm,dc=ciam-ops"
     ],
     [
@@ -2126,6 +2732,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=user-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -2133,6 +2741,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=grant-store,ou=data-stores,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -2140,6 +2750,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=corp-directory,ou=data-stores,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -2147,6 +2759,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=smtp,ou=notification-publishers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -2154,6 +2768,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=recaptcha,ou=captcha-providers,ou=pingfederate,dc=ciam-ops"
     ],
     [
@@ -2161,6 +2777,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=email-smtp.us-east-1.amazonaws.com,ou=external-services,dc=ciam-ops"
     ],
     [
@@ -2168,6 +2786,8 @@
       "CHG-2005",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=captcha-recaptcha,ou=external-services,dc=ciam-ops"
     ],
     [
@@ -2175,6 +2795,8 @@
       "CHG-2011",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=ds-nightly-export,ou=jobs,dc=ciam-ops"
     ],
     [
@@ -2182,6 +2804,8 @@
       "CHG-2011",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine-pf-audit-ship,ou=jobs,dc=ciam-ops"
     ],
     [
@@ -2189,6 +2813,8 @@
       "CHG-2011",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=github-actions-ciam-ops-directory-backup,ou=jobs,dc=ciam-ops"
     ],
     [
@@ -2196,6 +2822,8 @@
       "CHG-2013",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=example-aero-corp-root-ca,ou=certificates,dc=ciam-ops"
     ],
     [
@@ -2203,6 +2831,8 @@
       "CHG-2013",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2210,6 +2840,8 @@
       "CHG-2013",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2217,6 +2849,8 @@
       "CHG-2015",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2224,6 +2858,8 @@
       "CHG-2016",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=psql-ciam-prod-pf-grants,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2231,6 +2867,8 @@
       "CHG-2017",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=backup,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2238,6 +2876,8 @@
       "CHG-2017",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=identity-ds,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2245,6 +2885,8 @@
       "CHG-2018",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=vol-ds-data,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2252,6 +2894,8 @@
       "CHG-2019",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ciam-backups,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2259,6 +2903,8 @@
       "CHG-2019",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=snapshots-daily,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2266,6 +2912,8 @@
       "CHG-2019",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=vol-ds-data,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2273,6 +2921,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=regions,dc=ciam-ops"
     ],
     [
@@ -2280,6 +2930,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2287,6 +2939,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=af-south-1,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2294,6 +2948,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ca-central-1,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2301,6 +2957,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=eu-central-1,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2308,6 +2966,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=eu-west-1,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2315,6 +2975,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=me-south-1,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2322,6 +2984,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-east-1,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2329,6 +2993,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-east-2,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2336,6 +3002,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-west-1,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2343,6 +3011,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-west-2,cn=aws,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2350,6 +3020,8 @@
       "CHG-2020",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=aws.regions.shared.s1-5adb217e0a2d5536,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2357,6 +3029,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2364,6 +3038,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=canadacentral,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2371,6 +3047,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=centralus,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2378,6 +3056,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=eastus,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2385,6 +3065,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=eastus2,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2392,6 +3074,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=northeurope,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2399,6 +3083,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=uksouth,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2406,6 +3092,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=westeurope,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2413,6 +3101,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=westus2,cn=azure,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2420,6 +3110,8 @@
       "CHG-2021",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=azure.regions.shared.s1-eaa7c3c9727dd948,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2427,6 +3119,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2434,6 +3128,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=europe-west1,cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2441,6 +3137,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=europe-west2,cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2448,6 +3146,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=northamerica-northeast1,cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2455,6 +3155,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-central1,cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2462,6 +3164,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-east1,cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2469,6 +3173,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-east4,cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2476,6 +3182,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us-west1,cn=gcp,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2483,6 +3191,8 @@
       "CHG-2022",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=gcp.regions.shared.s1-9e7d0bf19cce860e,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2490,6 +3200,8 @@
       "CHG-2023",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=residencies,dc=ciam-ops"
     ],
     [
@@ -2497,6 +3209,8 @@
       "CHG-2023",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=us,ou=residencies,dc=ciam-ops"
     ],
     [
@@ -2504,6 +3218,8 @@
       "CHG-2023",
       "update",
       "opsdir",
+      "",
+      "",
       "env=prod,cloud=source,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2511,6 +3227,8 @@
       "CHG-2023",
       "update",
       "opsdir",
+      "",
+      "",
       "env=stage,cloud=source,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2518,6 +3236,8 @@
       "CHG-2023",
       "update",
       "opsdir",
+      "",
+      "",
       "env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2525,6 +3245,8 @@
       "CHG-2023",
       "update",
       "opsdir",
+      "",
+      "",
       "env=prod,cloud=standby,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2532,6 +3254,8 @@
       "CHG-2024",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2539,6 +3263,8 @@
       "CHG-2025",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2546,6 +3272,8 @@
       "CHG-2025",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2553,6 +3281,8 @@
       "CHG-2025",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ec2.L-0263D0A3,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2560,6 +3290,8 @@
       "CHG-2025",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ec2.L-1216C47A,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2567,6 +3299,8 @@
       "CHG-2025",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=rds.L-7B6409FD,cn=aws:111122223333:us-east-1,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2574,6 +3308,8 @@
       "CHG-2025",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=aws.quotas.shared.s1-4bed36db6d564cf2,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2581,6 +3317,8 @@
       "CHG-2026",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2588,6 +3326,8 @@
       "CHG-2026",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=cores,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2595,6 +3335,8 @@
       "CHG-2026",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=PublicIPAddresses,cn=azure:00000000-0000-0000-0000-000000000000:eastus2,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2602,6 +3344,8 @@
       "CHG-2026",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=azure.quotas.shared.s1-60d2177c2aeb65cb,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2609,6 +3353,8 @@
       "CHG-2027",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2616,6 +3362,8 @@
       "CHG-2027",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=CPUS,cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2623,6 +3371,8 @@
       "CHG-2027",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=IN_USE_ADDRESSES,cn=gcp:example-aero-ciam-standby:us-central1,ou=quotas,dc=ciam-ops"
     ],
     [
@@ -2630,6 +3380,8 @@
       "CHG-2027",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=gcp.quotas.shared.s1-514e55d8b1821204,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2637,6 +3389,8 @@
       "CHG-2028",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=monthly-spend,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2644,6 +3398,8 @@
       "CHG-2028",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=quota-vcpus,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2651,6 +3407,8 @@
       "CHG-2029",
       "update",
       "opsdir",
+      "",
+      "",
       "env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2658,6 +3416,8 @@
       "CHG-2029",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=security-incidents,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2665,6 +3425,8 @@
       "CHG-2029",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=defender,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2672,6 +3434,8 @@
       "CHG-2030",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=EXC-2026-02,ou=exceptions,dc=ciam-ops"
     ],
     [
@@ -2679,6 +3443,8 @@
       "CHG-2030",
       "update",
       "opsdir",
+      "",
+      "",
       "cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2686,6 +3452,8 @@
       "CHG-2030",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=EXC-2026-03,ou=exceptions,dc=ciam-ops"
     ],
     [
@@ -2693,6 +3461,8 @@
       "CHG-2030",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=exc-EXC-2026-03,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2700,6 +3470,8 @@
       "CHG-2031",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=AGENCYAMAZONEW,ou=authorizations,dc=ciam-ops"
     ],
     [
@@ -2707,6 +3479,8 @@
       "CHG-2031",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=fedramp.cpo.shared.s1-9cb52d59c16997a9,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2714,6 +3488,8 @@
       "CHG-2032",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=SSP-CIAM-2026,ou=boundaries,dc=ciam-ops"
     ],
     [
@@ -2721,6 +3497,8 @@
       "CHG-2032",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=azure-sc-12,ou=responsibilities,dc=ciam-ops"
     ],
     [
@@ -2728,6 +3506,8 @@
       "CHG-2033",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=fwd-corp-ad,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2735,6 +3515,8 @@
       "CHG-2033",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=EXC-2026-04,ou=exceptions,dc=ciam-ops"
     ],
     [
@@ -2742,6 +3524,8 @@
       "CHG-2034",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=dspm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2749,6 +3533,8 @@
       "CHG-2035",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=onprem,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2756,6 +3542,8 @@
       "CHG-2035",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=hq-dc1,cn=onprem,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2763,6 +3551,8 @@
       "CHG-2035",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=hq-dc2,cn=onprem,ou=regions,dc=ciam-ops"
     ],
     [
@@ -2770,6 +3560,8 @@
       "CHG-2035",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=onprem.sites.shared.s1-134abd6ded0ba1e6,ou=imports,dc=ciam-ops"
     ],
     [
@@ -2777,6 +3569,8 @@
       "CHG-2036",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=am,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2784,6 +3578,8 @@
       "CHG-2036",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=ds,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2791,6 +3587,8 @@
       "CHG-2036",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=idm,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2798,6 +3596,8 @@
       "CHG-2036",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=ig,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2805,6 +3605,8 @@
       "CHG-2036",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2812,6 +3614,8 @@
       "CHG-2036",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2819,6 +3623,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=am-aws,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2826,6 +3632,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ds-aws,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2833,6 +3641,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=idm-aws,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2840,6 +3650,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ig-aws,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2847,6 +3659,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin-aws,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2854,6 +3668,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine-aws,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2861,6 +3677,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=ds-onprem,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2868,6 +3686,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin-onprem,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2875,6 +3695,8 @@
       "CHG-2036",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine-onprem,ou=baselines,dc=ciam-ops"
     ],
     [
@@ -2882,6 +3704,8 @@
       "CHG-2036",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=ds-nightly-export,ou=jobs,dc=ciam-ops"
     ],
     [
@@ -2889,6 +3713,8 @@
       "CHG-2037",
       "update",
       "opsdir",
+      "",
+      "",
       "cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2896,6 +3722,8 @@
       "CHG-2037",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=defender-identity,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2903,6 +3731,8 @@
       "CHG-2038",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=resource-changes,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2910,6 +3740,8 @@
       "CHG-2039",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=compliance,ou=bindings,env=prod,cloud=standby,ou=environments,dc=ciam-ops"
     ],
     [
@@ -2917,6 +3749,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2924,6 +3758,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2931,6 +3767,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2938,6 +3776,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2945,6 +3785,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-security-essentials,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2952,6 +3794,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-soc-2,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2959,6 +3803,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-audit-logging-enabled,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2966,6 +3812,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-audit-logging-enabled,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2973,6 +3821,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-cmek-on-cloud-sql,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2980,6 +3830,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-os-login-enabled,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2987,6 +3839,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-restrict-public-buckets,cn=builtin-cis-gcp-3-0,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -2994,6 +3848,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-restrict-public-buckets,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -3001,6 +3857,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=builtin-restrict-resource-locations,cn=builtin-nist-800-53-r5,cn=gcp:123456789012,ou=frameworks,dc=ciam-ops"
     ],
     [
@@ -3008,6 +3866,8 @@
       "CHG-2041",
       "insert",
       "opsdir",
+      "",
+      "",
       "cn=gcp.frameworks.shared.s1-1aea003074ed5544,ou=imports,dc=ciam-ops"
     ],
     [
@@ -3015,6 +3875,8 @@
       "CHG-2042",
       "update",
       "opsdir",
+      "",
+      "",
       "env=prod,cloud=standby,ou=environments,dc=ciam-ops"
     ],
     [
@@ -3022,6 +3884,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=kit-forgeops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -3029,6 +3893,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=federation,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -3036,6 +3902,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=kit-ping-devops,ou=stack,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -3043,6 +3911,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=idm,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -3050,6 +3920,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -3057,6 +3929,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine,ou=bindings,env=prod,cloud=target,ou=environments,dc=ciam-ops"
     ],
     [
@@ -3064,6 +3938,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=idm,ou=workloads,dc=ciam-ops"
     ],
     [
@@ -3071,6 +3947,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-admin,ou=workloads,dc=ciam-ops"
     ],
     [
@@ -3078,6 +3956,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=pf-engine,ou=workloads,dc=ciam-ops"
     ],
     [
@@ -3085,6 +3965,8 @@
       "CHG-2043",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=am,ou=workloads,dc=ciam-ops"
     ],
     [
@@ -3092,6 +3974,8 @@
       "CHG-2044",
       "update",
       "opsdir",
+      "",
+      "",
       "cn=q-skyline-signing,ou=unknowns,dc=ciam-ops"
     ]
   ]
