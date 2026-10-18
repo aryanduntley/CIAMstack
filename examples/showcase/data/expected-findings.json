@@ -1995,6 +1995,78 @@
       "planted": "the OCSP responder refuses requests for the CA's certificates (unauthorized)",
       "cleared_by": null,
       "raised_by": "CHG-2092"
+    },
+    {
+      "id": "A304",
+      "area": "Alert",
+      "match": "pingam declares detection `brute-force`",
+      "planted": "PingAM's brute force detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A305",
+      "area": "Alert",
+      "match": "pingam declares detection `config-change`",
+      "planted": "PingAM's configuration change detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A306",
+      "area": "Alert",
+      "match": "pingds declares detection `brute-force`",
+      "planted": "PingDS's brute force detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A307",
+      "area": "Alert",
+      "match": "pingds declares detection `password-spray`",
+      "planted": "PingDS's password spray detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A308",
+      "area": "Alert",
+      "match": "pingfederate declares detection `brute-force`",
+      "planted": "PingFederate's brute force detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A309",
+      "area": "Alert",
+      "match": "pingfederate declares detection `password-spray`",
+      "planted": "PingFederate's password spray detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A310",
+      "area": "Alert",
+      "match": "pingidm declares detection `brute-force`",
+      "planted": "PingIDM's brute force detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A311",
+      "area": "Alert",
+      "match": "pingidm declares detection `password-spray`",
+      "planted": "PingIDM's password spray detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
+    },
+    {
+      "id": "A312",
+      "area": "Alert",
+      "match": "pingidm declares detection `config-change`",
+      "planted": "PingIDM's configuration change detection is offered for adoption: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
     }
   ]
 }

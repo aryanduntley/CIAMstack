@@ -48,7 +48,7 @@ Expected findings check (after changes)
            B110 raised by CHG-2110: the corporate identity team asks for an external trust with the engineering lab's domain, and a managed domain keeps forest trusts only → reported
            B111 raised by CHG-2110: the corporate managed domain's service isn't in the target's recorded authorization boundary → reported
            B116 raised by CHG-2128: the SAML artifact resolution certificate Harbor MRO's federation uses comes from a CA deleted in AWS: it publishes no CRL any more and renews nothing → reported
-  actions  planted 204   expected now 171   detected 171   missed 0   unexpected 0
+  actions  planted 213   expected now 180   detected 180   missed 0   unexpected 0
            A19  cleared by CHG-2003: the portal names the LDAPS service, which the target renames (B1) → gone
            A22  cleared by CHG-2011: the MRO nightly export on ds-2's cron nobody owns → gone
            A23  cleared by CHG-2011: the nightly directory backup pipeline nobody owns → gone

@@ -768,6 +768,26 @@ EXPECTED = MappingProxyType({
          "CA 2`", "the delta CRL's location answers HTTP 404", None, "CHG-2092"),
         ("A222", "Certificate", "Revocation endpoint `ocsp-1` of certification authority `Example Aero Issuing CA 2`",
          "the OCSP responder refuses requests for the CA's certificates (unauthorized)", None, "CHG-2092"),
+        # the products the target runs declare their detections (milestone 109, task 596): each is offered for adoption
+        # as an alert rule a person approves (the plan's fix detection:<adapter>:<id>)
+        ("A304", "Alert", "pingam declares detection `brute-force`",
+         "PingAM's brute force detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A305", "Alert", "pingam declares detection `config-change`",
+         "PingAM's configuration change detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A306", "Alert", "pingds declares detection `brute-force`",
+         "PingDS's brute force detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A307", "Alert", "pingds declares detection `password-spray`",
+         "PingDS's password spray detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A308", "Alert", "pingfederate declares detection `brute-force`",
+         "PingFederate's brute force detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A309", "Alert", "pingfederate declares detection `password-spray`",
+         "PingFederate's password spray detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A310", "Alert", "pingidm declares detection `brute-force`",
+         "PingIDM's brute force detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A311", "Alert", "pingidm declares detection `password-spray`",
+         "PingIDM's password spray detection is offered for adoption: no alert rule adopts it yet", None, None),
+        ("A312", "Alert", "pingidm declares detection `config-change`",
+         "PingIDM's configuration change detection is offered for adoption: no alert rule adopts it yet", None, None),
     ],
 })
 
