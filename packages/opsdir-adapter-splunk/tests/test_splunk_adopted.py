@@ -178,3 +178,17 @@ def test_its_own_saved_searches_are_left_out_when_read_back():
     declaring = FAKE._replace(detections=(DETECTION, SPRAY))
     (rt,) = round_trip(m.d, "alpha/prod", installed=(declaring, ADAPTER._replace(logs=SOURCES)))
     assert rt.drift == () and "alpha/prod/savedsearches.conf" in rt.files
+
+
+def test_the_signal_check_counts_a_natively_rendered_rule_as_evaluated():
+    import datetime as dt
+    from opsdir.connectors.observability import signal_check
+    from opsdir.core.contract import PlanContext
+    product = ADAPTER._replace(name="fake-cloud", detections=(DETECTION, SPRAY), siem_indexes=None, signals=())
+
+    def said(m, adapters):
+        ctx = PlanContext(m.d, m, m, None, dt.date(2026, 10, 18), {}, {}, ())
+        return [text for _, text, *_ in signal_check(adapters)(ctx).actions]
+    assert said(_alpha(), (ADAPTER, product)) == []
+    unkept = said(_alpha(), (product,))
+    assert len(unkept) == 2 and all("no SIEM index" in t and "role ds's logs" in t for t in unkept)

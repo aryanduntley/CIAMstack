@@ -44,7 +44,7 @@ from opsdir.domains.observability.logs import log_routes
 from opsdir.domains.observability.retention import INDEFINITE, retention_days
 from opsdir.domains.observability.siem import described, detection_index, detection_mode
 from opsdir.domains.observability.sources import ALL, shipments
-from .adopted import adopted_notes, native_stanzas, rendered_rules
+from .adopted import TRIGGER, adopted_notes, native_stanzas, rendered_rules
 from .conf import write_conf
 from .es import correlation_settings, es_notes, platform_notes
 from .kubernetes import collector_notes, render_collectors
@@ -117,8 +117,7 @@ def search_stanza(m, s):
     return (one(s.alarm, "ciamProviderRef"),
             (("description", described(rdn_value(s.rule))), ("search", search),
              ("is_scheduled", "1"), ("cron_schedule", cron), ("dispatch.earliest_time", f"-{period}s"),
-             ("dispatch.latest_time", "now"), ("alert_type", "number of events"),
-             ("alert_comparator", "greater than"), ("alert_threshold", "0"), ("disabled", "0"),
+             ("dispatch.latest_time", "now"), *TRIGGER, ("disabled", "0"),
              *((("alert.digest_mode", "0"),) if rows else ()),
              *(correlation_settings(s) if enterprise_security(m) else ())))
 

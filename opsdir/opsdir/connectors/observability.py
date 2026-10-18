@@ -27,7 +27,7 @@ from ..core.environment import one_role
 from ..core.findings import findings, responsible
 from ..domains.observability.alerts import alert_rules
 from ..domains.observability.canaries import canary_specs
-from ..domains.observability.detections import check_detections
+from ..domains.observability.detections import check_detections, native_rules, searched
 from ..domains.observability.logs import log_routes
 from ..domains.observability.signals import evaluation
 from ..domains.observability.siem import siem_destinations
@@ -40,16 +40,36 @@ COVERAGE_HEADERS = ("environment", "canary", "flow", "owner", "rendered")
 
 
 def signal_check(dst_adapters):
-    """The planner check for alert rules the target delivers but nothing there evaluates, given its adapters."""
+    """The planner check for alert rules the target delivers but nothing there evaluates, given its adapters. A rule
+    adopting a declared detection is evaluated where a SIEM adapter of the target renders it natively, on an index
+    receiving its server role's logs; otherwise the check says what stops that."""
     signals = tuple(s for a in dst_adapters for s in a.signals)
+    declared = tuple((a.name, det) for a in dst_adapters for det in a.detections)
+
+    def keeps(m, b):
+        return any(a.siem_indexes is not None and a.siem_indexes(m, b) for a in dst_adapters)
+
+    def unevaluated(ctx, e, native):
+        x = native.get(e.rule.dn)
+        if x is None:
+            return (f"{e.missing}. Record the metric the alarm realizing it evaluates there (ciamMetric), or install a "
+                    "product adapter that declares the signal.")
+        if x.why:
+            return f"it adopts {one(e.rule, 'ciamDeclaredDetection')}, which no SIEM can render as recorded: {x.why}."
+        if not searched(ctx.dst, x.det, keeps):
+            return (f"it adopts {one(e.rule, 'ciamDeclaredDetection')}, but no SIEM index a SIEM adapter of "
+                    f"{ctx.dst.label} keeps receives role {x.det.server_role}'s logs. Route them to one (a log route "
+                    "with ciamPublishedBy and ciamLogDestinationRole), or declare the SIEM's adapter.")
+        return None
 
     def check_signals(ctx):
         rules = tuple(r for r in alert_rules(ctx.d) if one_role(ctx.dst, one(r, "ciamAlertRole")) is not None)
-        missing = tuple(e for e in (evaluation(ctx.dst, signals, r) for r in rules) if e.missing)
+        native = {x.rule.dn: x for x in native_rules(ctx.dst, declared)}
+        missing = tuple((e, why) for e in (evaluation(ctx.dst, signals, r) for r in rules) if e.missing
+                        for why in (unevaluated(ctx, e, native),) if why)
         return findings(actions=[
-            ("Alert", f"Alert rule `{rdn_value(e.rule)}` can't be evaluated in {ctx.dst.label}: {e.missing}. Record "
-             "the metric the alarm realizing it evaluates there (ciamMetric), or install a product adapter that "
-             "declares the signal.", responsible(ctx.d, e.rule, ctx.dst.env), None) for e in missing])
+            ("Alert", f"Alert rule `{rdn_value(e.rule)}` can't be evaluated in {ctx.dst.label}: {why}",
+             responsible(ctx.d, e.rule, ctx.dst.env), None) for e, why in missing])
     return check_signals
 
 

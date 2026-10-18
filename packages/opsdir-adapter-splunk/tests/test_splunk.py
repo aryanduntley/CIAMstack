@@ -114,8 +114,8 @@ def test_a_detection_counts_events_per_window_every_window_of_the_period_breachi
         "search": f"{SEARCH} | bin _time span=60s | stats count by _time | where count > 50 | stats count AS "
                   "breaching | where breaching >= 5",
         "is_scheduled": "1", "cron_schedule": "*/5 * * * *", "dispatch.earliest_time": "-300s",
-        "dispatch.latest_time": "now", "alert_type": "number of events", "alert_comparator": "greater than",
-        "alert_threshold": "0", "disabled": "0"}
+        "dispatch.latest_time": "now", "counttype": "number of events", "relation": "greater than",
+        "quantity": "0", "disabled": "0"}
     assert (c.window, c.windows) == (60, 5)
     assert cron_schedule(7200) == ("0 */2 * * *", None) and cron_schedule(420)[0] is None
     assert base_search(detection_search(SEARCH, next(r for r in m.d.entries.values()
@@ -153,7 +153,7 @@ def test_on_enterprise_security_a_detection_is_a_correlation_search_with_its_att
     assert dict(searches["ciam-password-spray"]) == {
         "description": "opsdir: realizes alert rule password-spray", "search": SPRAY, "is_scheduled": "1",
         "cron_schedule": "*/15 * * * *", "dispatch.earliest_time": "-900s", "dispatch.latest_time": "now",
-        "alert_type": "number of events", "alert_comparator": "greater than", "alert_threshold": "0",
+        "counttype": "number of events", "relation": "greater than", "quantity": "0",
         "disabled": "0", "alert.digest_mode": "0",
         "action.correlationsearch.enabled": "1", "action.correlationsearch.label": "password-spray",
         "action.correlationsearch.annotations": '{"mitre_attack":["T1110.003","T1078.004"]}',
