@@ -15,15 +15,18 @@ numbers per query: GET /api/now/table/change_request?sysparm_query=numberIN<numb
 importer reads, raw and display values (sysparm_display_value=all), PAGE records a page, and the page after each
 until one comes back empty (a short page doesn't end it: the API applies its limit before the reader's access rules).
 Then the approval records of the changes found, the same way: sysapproval_approver?sysparm_query=sysapprovalIN
-<sys_ids>^ORDERBYsys_id. Each page is saved as <host>/<table>/<chunk>-<offset>.json with only the requested fields of
-each record (answer_fields). The reader needs read access to those two tables and fields only (README)."""
+<sys_ids>^ORDERBYsys_id. When the operator names the work-ticket table (servicenow-ticket-table), the same numbers are
+read from it too, with the fields a work ticket is read for (WORK_FIELDS): a linked number is a change or a work ticket,
+and only the instance knows which. Each page is saved as <host>/<table>/<chunk>-<offset>.json with only the requested
+fields of each record (answer_fields). The reader needs read access to those tables and fields only (README)."""
 import json
 from urllib.parse import quote, urlsplit
 
 from opsdir.core.contract import Collector, Request
 from opsdir.domains.governance.collection import readable_source, scheme_problems
 from opsdir.domains.governance.tickets import linked_numbers
-from .changes import APPROVER_FIELDS, APPROVER_TABLE, CHANGE_FIELDS, CHANGE_TABLE, SYSTEM, answer_rows
+from .changes import (APPROVER_FIELDS, APPROVER_TABLE, CHANGE_FIELDS, CHANGE_TABLE, SYSTEM, WORK_FIELDS, answer_rows,
+                      work_table)
 
 IMPORTER = "servicenow/change-requests"
 SCHEMES = ("basic", "bearer", "client-certificate")   # a user's password; an OAuth client-credentials access token
@@ -81,20 +84,21 @@ def _value(v):
 
 
 def change_steps(d, m, done, options):
-    """Each chunk of linked tickets' pages; once every chunk is read to an empty page, the approval records of the
-    changes found, paged the same way."""
+    """Each chunk of linked tickets' pages, from change_request and the work-ticket table when one is named; once every
+    change_request chunk is read to an empty page, the approval records of the changes found, paged the same way."""
     s = readable_source(m, IMPORTER, SCHEMES)
     if s is None:
         return ()
     host = urlsplit(s.locations[0]).hostname or "instance"
     numbers = _chunks(linked_numbers(d, SYSTEM))
-    reads = [(i, *_paged(host, CHANGE_TABLE, i, done)) for i in range(len(numbers))]
-    steps = [(page_path(host, CHANGE_TABLE, i, o), _request(s, CHANGE_TABLE, f"numberIN{','.join(numbers[i])}"
-                                                            "^ORDERBYsys_id", CHANGE_FIELDS, o))
-             for i, offsets, _, _ in reads for o in offsets]
-    if not all(finished for *_, finished in reads):
+    work = work_table(d)[0]
+    fields = {CHANGE_TABLE: CHANGE_FIELDS, **({work: WORK_FIELDS} if work else {})}
+    reads = {t: [(i, *_paged(host, t, i, done)) for i in range(len(numbers))] for t in fields}
+    steps = [(page_path(host, t, i, o), _request(s, t, f"numberIN{','.join(numbers[i])}^ORDERBYsys_id", fields[t], o))
+             for t in fields for i, offsets, _, _ in reads[t] for o in offsets]
+    if not all(finished for *_, finished in reads[CHANGE_TABLE]):
         return tuple(steps)
-    ids = _chunks(tuple(dict.fromkeys(_value(r.get("sys_id")) for _, _, rows, _ in reads for r in rows
+    ids = _chunks(tuple(dict.fromkeys(_value(r.get("sys_id")) for _, _, rows, _ in reads[CHANGE_TABLE] for r in rows
                                       if _value(r.get("sys_id")))))
     return (*steps, *((page_path(host, APPROVER_TABLE, i, o), _request(s, APPROVER_TABLE, f"sysapprovalIN"
                                                                       f"{','.join(ids[i])}^ORDERBYsys_id",

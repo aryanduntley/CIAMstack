@@ -4,6 +4,8 @@ opsdir ITSM add-on (adapter kind `itsm`) for ServiceNow change management. It re
 
 A ticket **never approves anything in opsdir**. The importer writes nothing under `ou=changes`. A ticket's approval never becomes a change's `ciamChangeStatus`, and its approvers never become `ciamApprovedBy`. The store's rule still holds: every write needs an approved change record. Mirroring approvals and publishing CMDB configuration items are later work (6.2f f2).
 
+It also **drafts work tickets** that hand a team its findings, as files a person posts (task 612, decisions 3409 and 3415), and reads the filed ones back as evidence: *Work tickets* below.
+
 **Applies to** no environment and renders nothing (`applies=None`, like `opsdir-adapter-fedramp`). Collecting opts in through a collection source (below).
 
 **Depends on** `opsdir` (the governance domain's ticket model: `domains/governance/tickets.py`).
@@ -54,6 +56,44 @@ What the import does with what it finds:
 - A requested field the answers never carry is named in a notice. The API silently ignores fields it doesn't know, and fields the reader can't see are also missing.
 - An error answer (`{"error": ...}`) is named in a notice.
 
+## Work tickets: drafts and read-back
+
+`opsdir tickets <from> <to> -o DIR [--mine]` writes, for each team the plan's findings name as owner, `tickets/servicenow/<team>.json`: the Table API create body of a record in **your site-approved table derived from `task`**, and `tickets/README.md` saying how to post it. opsdir posts nothing and holds no ServiceNow credential. The team, or an admin, posts the draft with their own credentials and links the number it answers on the change that does the work (`ciamTicketRef servicenow:<number>`, next to the change ticket). The next import then reads it back as a **work ticket**.
+
+There is no portable default table. Base `task` and orphan `sc_task`, `change_task` or `problem_task` records aren't a supported fulfiller workflow; `incident` or `problem` fit only when the findings are one. Pick or build the table on the instance, confirm that the posting users' roles can create records in it (table and field ACLs: `itil` alone isn't a guarantee), and find its mandatory fields.
+
+| Setting | Default | What it says |
+|---|---|---|
+| `servicenow-ticket-table` | none | The table work tickets are filed in (for example `u_ciam_remediation`; not `change_request`). Drafts are written for it, and the collector and importer read linked numbers from it |
+| `servicenow-ticket-groups` | none | Each owning team's assignment group, `<team>=<group sys_id>, ...` (the team as its `ciamParty` under `ou=owners` is named, any case). A sys_id, never a name: the draft posts raw values |
+| `servicenow-ticket-fields` | none | Fields every draft also sets, raw values, `<field>=<value>, ...`: for example `impact=3, urgency=3`, or what your table makes mandatory (company, category, CI). Never a drafted field: one named here is left out, with a note |
+| `servicenow-ticket-states` | none | The table's state codes in neutral terms, `<code>=<state>, ...`. Base `task`'s are -5 Pending, 1 Open, 2 Work in Progress, 3 Closed Complete, 4 Closed Incomplete, 7 Closed Skipped (for example `-5=new, 1=new, 2=implement, 3=closed, 4=closed, 7=cancelled`); your table may have its own. A code not mapped keeps its native state only, with a notice |
+
+**The draft** is for `POST /api/now/table/<table>?sysparm_input_display_value=false`:
+
+| Field | Value |
+|---|---|
+| `short_description` | The ticket's title: the team, how many findings, the plan's source and target |
+| `description` | Plain text: each finding with its area and do-by date, the earliest first. Not `work_notes` or `comments`, which are journal fields |
+| `assignment_group` | The team's group sys_id, from `servicenow-ticket-groups` |
+| `due_date` | The earliest do-by date, to the end of that **UTC** day (`YYYY-MM-DD 23:59:59`). Left out when no finding has one. Every finding's own date stays in the description |
+| your defaults | `servicenow-ticket-fields` |
+
+A team the draft can't be written for is named in `tickets/README.md` with the setting to give: the table isn't set (or isn't a usable table name), the team has no group, or its group isn't a sys_id. Setting problems (a malformed part, a team mapped twice) are listed too. The README's curl names placeholders only (`<access token>`, `<instance host>`, filled in from the record's tickets when they were read from one instance), run from the `tickets` folder.
+
+**Read-back.** When `servicenow-ticket-table` is set, the collector reads the record's linked numbers from that table as well as from `change_request`: only the instance knows which a number is. The importer reads `<host>/<table>/<chunk>-<offset>.json` (or any `<table>*.json`). A linked number found there is a work ticket:
+
+| ServiceNow (the work-ticket table) | Record (`ciamTicket`) |
+|---|---|
+| `number`, `sys_id`, `short_description` | `cn`, `ciamProviderRef`, `ciamTitle`; `ciamDocUrl` = `https://<host>/api/now/table/<table>/<sys_id>` |
+| (the table) | `ciamTicketKind` `work`: no approval, no approval records |
+| `state` | `ciamTicketState` through `servicenow-ticket-states`; `ciamTicketNativeState` always |
+| `due_date` | `ciamTicketDue` |
+| `work_start`, `work_end` | `ciamTicketWorkStart`, `ciamTicketWorkEnd` |
+| `assignment_group`, `assigned_to`, `priority`, `impact`, `urgency`, `sys_class_name`, `closed_at`, `sys_updated_on` | `ciamTicketFact` `<field> <raw value>` |
+
+The same rules as change tickets hold: raw values only (a state or time given only as display text is left out), only linked numbers, nothing removed, fields the answers never carry named. A number found in both tables is read as the change ticket, with a notice. While the table isn't set, a linked number not found in `change_request` is reported as not in the export, with a hint that the table isn't set. The planner compares a work ticket's state, windows and read time with the change; it has no approval to compare.
+
 ## Collecting (`opsdir collect`, read-only)
 
 An environment's `ciamCollectionSource` with `ciamImporter: servicenow/change-requests` says where to read: `ciamSourceRef` is the instance's base URL (`https://<instance host>`). Collecting reads the tickets every environment's change records link, so declare one source.
@@ -74,10 +114,11 @@ Calls (GETs only; nothing is ever written to the instance, not even a correlatio
 |---|---|
 | `GET /api/now/table/change_request?sysparm_query=numberIN<up to 50 numbers>^ORDERBYsys_id&sysparm_fields=<the fields above>&sysparm_display_value=all&sysparm_exclude_reference_link=true&sysparm_limit=100&sysparm_offset=<n>` | `<host>/change_request/<chunk>-<offset>.json` |
 | then `GET /api/now/table/sysapproval_approver?sysparm_query=sysapprovalIN<sys_ids found>^ORDERBYsys_id&sysparm_fields=sys_id,sysapproval,approver,state,sys_updated_on&…` | `<host>/sysapproval_approver/<chunk>-<offset>.json` |
+| with `servicenow-ticket-table` set, also `GET /api/now/table/<table>?sysparm_query=numberIN<the same numbers>^ORDERBYsys_id&sysparm_fields=<the work-ticket fields above>&…` | `<host>/<table>/<chunk>-<offset>.json` |
 
 Each chunk is read page after page until a page comes back **empty**. A short page doesn't end it, because the Table API applies its limit before the reader's access rules. A page holds more records than a chunk has tickets, so the second page of a chunk is normally the empty one. Only the requested fields of each record are kept.
 
-**Least privilege.** Give the reader a role of your own that reads only `change_request` and `sysapproval_approver`, through table and field ACLs on the fields above, and review the roles it inherits. ServiceNow ships no such two-table role:
+**Least privilege.** Give the reader a role of your own that reads only `change_request` and `sysapproval_approver` (and the work-ticket table, when set), through table and field ACLs on the fields above, and review the roles it inherits. ServiceNow ships no such two-table role:
 - `itil` is broader than this.
 - `snc_read_only` restricts access a user already has; it grants none.
 - `sysparm_fields` is not an access boundary.
@@ -95,5 +136,6 @@ The Change Management API's GET roles (`change_manager`, `itil`, `sn_change_read
 - **Government instances.** ServiceNow's Government Community Cloud (GCC; FedRAMP High and DoD IL4, as ServiceNow describes it, with instances under `servicenowservices.com`) and National Security Cloud (NSC; DoD IL5, on Microsoft Azure Government) are separate offerings. Their API and authentication parity with the commercial cloud is unverified, and releases are qualified for them separately (ServiceNow lists a new family as being evaluated for GCC). Some features are documented as unavailable there. The collector reads any host, but confirm the contracted host name, installed release and plugins, network access and approved authentication with the customer.
 - **List exports.** XML list exports need `admin`, and they aren't read; use JSON. The legacy JSONv2 processor (`change_request.do?JSONv2`) isn't read either; prefer the Table API.
 - **Address.** The ticket's address is its Table API record URL, not the form URL a person opens.
+- **Work-ticket drafts.** Unconfirmed per site, and not checkable by opsdir: whether the table accepts a record without a parent, which fields it makes mandatory, its choice values for `impact` and `urgency` (1 to 3 is the common ITSM set; `priority` is normally derived from them, so don't set it), its create ACLs, and its state codes. The do-by date is taken as the end of that UTC day; if your teams mean their local day, set `due_date` by hand before posting. ServiceNow limits `short_description` to the field's length on your table; the title is short, but a long team name could exceed it. No government-specific (GCC, NSC) create-body difference is documented, and parity isn't confirmed.
 
 Sources (ServiceNow documentation, read by the 6.2f research on 2026-10-15): the Change Management API (Australia), the change state model mapping (updated 2026-03-12), the Table API (Zurich), query operators, client credentials, the read-only role, and list export (updated 2026-03-12). Task 558's research (2026-10-17): "Update change request states" (Brazil: the legacy codes, values not migrated), change model properties (Zurich), certificate-based authentication (Brazil) and its hardening guidance (Australia), enforcing unique numbering (Brazil), the GCC Teams bot page (Zurich, the GCC domain) and ServiceNow's compliance page (GCC, NSC). The latest generally available family is Australia; Brazil was in early availability (2026-09-24).

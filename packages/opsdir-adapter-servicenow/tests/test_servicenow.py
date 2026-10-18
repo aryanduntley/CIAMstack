@@ -9,13 +9,16 @@ from urllib.parse import parse_qs, urlsplit
 from opsdir.connectors.collecting import collect
 from opsdir.core.directory import get, one, subtree, values, within
 from opsdir.domains.governance.naming import CHANGES
-from opsdir.domains.governance.tickets import IN_STEP, REJECTED, linked, ticket_dn
+from opsdir.core.contract import TicketRequest
+from opsdir.connectors.handoff import request_lines
+from opsdir.domains.governance.tickets import IN_STEP, REJECTED, is_work, linked, ticket_dn
 from opsdir_adapter_servicenow.adapter import ADAPTER
 from opsdir_adapter_servicenow.changes import (APPROVAL_VALUES, APPROVER_FIELDS, CHANGE_FIELDS, CHANGES_IMPORTER,
                                                LEGACY_MODELS, LEGACY_STATES, SETTINGS, STANDARD_MODELS, STATE_MODELS,
-                                               answer_rows, display_only, instance_hosts, instance_maps, model_kind,
-                                               read_changes)
+                                               TICKET_STATES, TICKET_TABLE, WORK_FIELDS, answer_rows, display_only,
+                                               instance_hosts, instance_maps, model_kind, read_changes, work_table)
 from opsdir_adapter_servicenow.collect import CHUNK, COLLECTORS, PAGE, answer_fields, change_steps, source_problems
+from opsdir_adapter_servicenow.drafts import DRAFT_SETTINGS, TICKET_FIELDS, TICKET_GROUPS, ticket_draft
 from network_fixtures import ALPHA, entry, model
 from support import after_import
 
@@ -72,10 +75,13 @@ def _read(*records, tree=TREE, **kw):
 
 
 def test_registered_as_an_itsm_add_on_with_its_importer_collector_and_setting():
-    assert (ADAPTER.kind, ADAPTER.applies, ADAPTER.importers, ADAPTER.collectors, ADAPTER.settings) == (
-        "itsm", None, (CHANGES_IMPORTER,), COLLECTORS, SETTINGS)
-    assert SETTINGS == (STANDARD_MODELS, LEGACY_MODELS, LEGACY_STATES, APPROVAL_VALUES)
+    assert (ADAPTER.kind, ADAPTER.applies, ADAPTER.importers, ADAPTER.collectors, ADAPTER.settings,
+            ADAPTER.ticket_draft) == ("itsm", None, (CHANGES_IMPORTER,), COLLECTORS, (*SETTINGS, *DRAFT_SETTINGS),
+                                      ticket_draft)
+    assert SETTINGS == (STANDARD_MODELS, LEGACY_MODELS, LEGACY_STATES, APPROVAL_VALUES, TICKET_TABLE, TICKET_STATES)
+    assert DRAFT_SETTINGS == (TICKET_GROUPS, TICKET_FIELDS)
     assert STANDARD_MODELS.default is None and LEGACY_MODELS.default is None   # which models: the operator's to say
+    assert {s.default for s in (TICKET_TABLE, TICKET_STATES, *DRAFT_SETTINGS)} == {None}   # site-specific
 
 
 def test_a_linked_ticket_is_read_as_evidence_under_ou_tickets():
@@ -93,8 +99,8 @@ def test_a_linked_ticket_is_read_as_evidence_under_ou_tickets():
                            "sys_updated_on 2026-09-22 10:00:00")}
     assert get(after, ticket_dn("servicenow", "CHG0099")) is None
     assert "not linked to a change record: CHG0099 (left out)" in imported.notices
-    assert "linked but not in the export: CHG0002, CHG0003 (the record keeps what it last read; nothing is removed)" \
-        in imported.notices
+    assert ("linked but not in the export: CHG0002, CHG0003 (the record keeps what it last read; nothing is removed); "
+            "a work ticket is read from the table servicenow-ticket-table names, and it isn't set") in imported.notices
     assert not any(within(g[0], CHANGES) for g in imported.groups)       # evidence never lands on a change record
     assert {e.dn: e for e in subtree(after, CHANGES)} == {e.dn: e for e in subtree(d, CHANGES)}
 
@@ -316,3 +322,125 @@ def test_a_client_certificate_reads_the_instance_with_no_login():
     assert source_problems(alpha.d, alpha, {}) == ()
     assert change_steps(alpha.d, alpha, {}, {})[0][1].credential == ("client-certificate", "fake://kv/itsm-reader",
                                                                      "opsdir.reader")
+
+
+# ------------------------------------------------------------------ work tickets: drafts and read-back
+TABLE = "u_ciam_remediation"
+GROUP = "0123456789abcdef0123456789abcdef"
+WORK_TREE = (*TREE, _setting(TICKET_TABLE.name, TABLE), _setting(TICKET_STATES.name, "1=new, 2=implement, 3=closed, "
+                                                                 "4=closed, 7=cancelled"),
+             _setting(TICKET_GROUPS.name, f"Platform={GROUP}, network=Network Ops"),
+             _setting(TICKET_FIELDS.name, "impact=3, urgency=3, due_date=2030-01-01 00:00:00"),
+             *_changes(("CHG-4", "RMD0001")))
+REQUEST = TicketRequest("platform", "cn=Platform,ou=owners,dc=ciam-ops", "CIAM: 2 findings for platform (a to b)",
+                        (("action", "Certificates", "Renew the signing certificate", dt.date(2026, 11, 1)),
+                         ("blocker", "Network", "Open 636", None)), dt.date(2026, 11, 1), "a", "b",
+                        dt.date(2026, 10, 18))
+
+
+def _work_record(number, sys_id, state, **extra):
+    return {"number": _v(number), "sys_id": _v(sys_id), "state": _v(state, f"label {state}"),
+            "short_description": _v(f"Work {number}"), "due_date": _v("2026-11-01 23:59:59", "11/01/2026 19:59:59"),
+            "work_start": _v("2026-09-20 08:00:00"), "work_end": _v(""), "assignment_group": _v(GROUP, "Platform"),
+            "assigned_to": _v(""), "priority": _v("4", "4 - Low"), "impact": _v("3"), "urgency": _v("3"),
+            "sys_class_name": _v(TABLE), "closed_at": _v(""), "sys_updated_on": _v("2026-09-20 08:00:00"), **extra}
+
+
+def test_a_draft_is_the_table_api_create_body_for_the_teams_group():
+    d = model(tree=WORK_TREE)[0]
+    draft = ticket_draft(d, REQUEST)
+    assert json.loads(draft.body) == {
+        "short_description": REQUEST.title, "description": "\n".join(request_lines(REQUEST)),
+        "assignment_group": GROUP, "due_date": "2026-11-01 23:59:59", "impact": "3", "urgency": "3"}
+    assert draft.extension == "json"
+    assert draft.problems == ("servicenow-ticket-fields: `due_date` is drafted from the findings: its default is left "
+                              "out",)
+    assert draft.how[0] == f"POST https://<instance host>/api/now/table/{TABLE}?sysparm_input_display_value=false"
+    assert "--data-binary @servicenow/<team>.json" in draft.how[1] and "<access token>" in draft.how[1]
+    undated = json.loads(ticket_draft(d, REQUEST._replace(do_by=None)).body)
+    assert "due_date" not in undated                   # neither the findings' nor the operator's default
+
+
+def test_a_draft_names_the_setting_that_keeps_it_from_being_written():
+    d = model(tree=WORK_TREE)[0]
+    network = ticket_draft(d, REQUEST._replace(team="network"))
+    assert network.body is None and network.problems == (
+        "servicenow-ticket-groups: network's group `Network Ops` isn't a sys_id (32 hex characters): drafts post raw "
+        "values, so give the group's sys_id, `opsdir setting servicenow-ticket-groups '<team>=<group sys_id>, ...' "
+        "--change CHG-…`", "servicenow-ticket-fields: `due_date` is drafted from the findings: its default is left out")
+    nobody = ticket_draft(d, REQUEST._replace(team="Identity"))
+    assert nobody.body is None and nobody.problems[0].startswith(
+        "servicenow-ticket-groups names no assignment group for Identity: add `Identity=<group sys_id>` to it")
+    bare = ticket_draft(model(tree=TREE)[0], REQUEST)
+    assert bare.body is None and bare.how == () and bare.problems[0] == (
+        "servicenow-ticket-table isn't set: name the site-approved table derived from task that work tickets are "
+        "filed in, `opsdir setting servicenow-ticket-table '<table>' --change CHG-…`")
+    wrong = ticket_draft(model(tree=(*TREE, _setting(TICKET_TABLE.name, "change_request")))[0], REQUEST)
+    assert wrong.body is None and wrong.problems[0].startswith("servicenow-ticket-table: `change_request` isn't a "
+                                                                "table work tickets can be filed in")
+    assert work_table(model(tree=WORK_TREE)[0]) == (TABLE, ())
+
+
+def test_a_linked_work_ticket_is_read_back_from_the_work_ticket_table():
+    d, _, _ = model(tree=WORK_TREE)
+    files = {**_export(_change_record("CHG0001", "s1", "-2", "approved")),
+             f"{HOST}/{TABLE}/0-0.json": _answer([_work_record("RMD0001", "w1", "2"),
+                                                  _work_record("RMD0099", "w9", "1")])}
+    imported = read_changes(files, d, (), AT)
+    after = after_import(d, imported)
+    t = get(after, ticket_dn("servicenow", "RMD0001"))
+    assert dict(t.attrs) == {
+        "cn": ("RMD0001",), "ciamImportedAt": ("20260923090000Z",), "ciamTitle": ("Work RMD0001",),
+        "ciamProviderRef": ("w1",), "ciamDocUrl": (f"https://{HOST}/api/now/table/{TABLE}/w1",),
+        "ciamTicketKind": ("work",), "ciamTicketState": ("implement",), "ciamTicketNativeState": ("2 label 2",),
+        "ciamTicketDue": ("20261101235959Z",), "ciamTicketWorkStart": ("20260920080000Z",),
+        "ciamTicketFact": (f"assignment_group {GROUP}", "priority 4", "impact 3", "urgency 3",
+                           f"sys_class_name {TABLE}", "sys_updated_on 2026-09-20 08:00:00")}
+    assert is_work(t) and one(get(after, ticket_dn("servicenow", "CHG0001")), "ciamTicketKind") is None
+    assert "not linked to a change record: RMD0099 (left out)" in imported.notices
+    assert "linked but not in the export: CHG0002, CHG0003 (the record keeps what it last read; nothing is " \
+           "removed)" in imported.notices
+    assert [lk.states for lk in linked(after) if lk.number == "RMD0001"] == [(IN_STEP,)]   # no approval to compare
+
+
+def test_work_ticket_states_unmapped_display_only_and_both_tables_are_named():
+    d, _, _ = model(tree=WORK_TREE)
+    files = {**_export(_change_record("CHG0001", "s1", "-2", "approved")),
+             f"{HOST}/{TABLE}/0-0.json": _answer([_work_record("RMD0001", "w1", "-5"),
+                                                  _work_record("CHG0001", "w2", "1")])}
+    imported = read_changes(files, d, (), AT)
+    assert ("work-ticket state `-5` of RMD0001 isn't mapped in servicenow-ticket-states: kept as ServiceNow gives it "
+            "(neutral state unknown)") in imported.notices
+    assert f"CHG0001: in both change_request and {TABLE}: read as the change ticket" in imported.notices
+    after = after_import(d, imported)
+    assert one(get(after, ticket_dn("servicenow", "RMD0001")), "ciamTicketState") is None
+    assert not is_work(get(after, ticket_dn("servicenow", "CHG0001")))
+    shown = _work_record("RMD0001", "w1", "2", due_date={"display_value": "11/01/2026 19:59:59"},
+                         work_start=_v("09/20/2026 04:00:00"))
+    hidden = read_changes({f"{HOST}/{TABLE}/0-0.json": _answer([shown])}, d, (), AT)
+    assert hidden.groups == () and ("RMD0001: work_start given as display text, not raw values (their time zone is "
+                                    "unknown): left out; export raw values (sysparm_display_value=false or all)"
+                                    ) in hidden.notices
+    unread = read_changes({f"{HOST}/{TABLE}/0-0.json": _answer([{"number": "RMD0001", "sys_id": "w1",
+                                                                  "state": "2"}])}, d, (), AT)
+    assert any(n.startswith(f"{TABLE}: the answers never carry short_description") for n in unread.notices)
+
+
+def test_the_collector_also_reads_the_linked_numbers_from_the_work_ticket_table():
+    _, alpha, _ = model(alpha=_source(), tree=WORK_TREE)
+    first = change_steps(alpha.d, alpha, {}, {})
+    assert [p for p, _ in first] == [f"{HOST}/change_request/0-0.json", f"{HOST}/{TABLE}/0-0.json"]
+    q = parse_qs(urlsplit(first[1][1].url).query)
+    assert urlsplit(first[1][1].url).path == f"/api/now/table/{TABLE}"
+    assert q["sysparm_query"] == ["numberINCHG0001,CHG0002,CHG0003,RMD0001^ORDERBYsys_id"]
+    assert q["sysparm_fields"] == [",".join(WORK_FIELDS)]
+    TABLES[TABLE] = [_work_record("RMD0001", "w1", "3")]
+    try:
+        c = collect("servicenow/change-requests", COLLECTORS[0], alpha.d, alpha, _serve)
+    finally:
+        del TABLES[TABLE]
+    assert c.problems == () and f"{HOST}/{TABLE}/0-100.json" in c.files
+    after = after_import(alpha.d, read_changes(c.files, alpha.d, (), AT))
+    assert one(get(after, ticket_dn("servicenow", "RMD0001")), "ciamTicketState") == "closed"
+    approvals = [call for call in c.calls if "sysapproval_approver/0-0" in call.path]
+    assert parse_qs(urlsplit(approvals[0].provenance[4:]).query)["sysparm_query"] == ["sysapprovalINs1^ORDERBYsys_id"]
