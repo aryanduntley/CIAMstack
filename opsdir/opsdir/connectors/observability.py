@@ -12,6 +12,10 @@ none of its kinds: either way nothing ships them.
 A SIEM index the target keeps logs in (a log destination of kind siem-index) that no adapter rendering it keeps
 (Adapter.siem_indexes: its retention, detections and forwarding) is an action: what it holds is kept by hand.
 
+The detections the target's product adapters declare (Adapter.detections) are offered as alert rules, and the rules
+adopting one are held to it (domains/observability.detections: the check is the domain's, the declarations come from
+the adapters).
+
 Which synthetic checks each environment renders (the canary-coverage report): every canary it could run, rendered
 (and, for a service a private CA certified, the CA certificates it is given to trust: CanarySpec.trust), inherited or
 kept by someone else, or not rendered with the render note that says why (connectors.render environment_notes: the
@@ -23,6 +27,7 @@ from ..core.environment import one_role
 from ..core.findings import findings, responsible
 from ..domains.observability.alerts import alert_rules
 from ..domains.observability.canaries import canary_specs
+from ..domains.observability.detections import check_detections
 from ..domains.observability.logs import log_routes
 from ..domains.observability.signals import evaluation
 from ..domains.observability.siem import siem_destinations
@@ -69,6 +74,18 @@ def siem_check(dst_adapters):
                "environment, or name the index in the form only its SIEM's adapter reads.",
                responsible(ctx.d, b, ctx.dst.env), None) for b, names in kept if len(names) > 1)])
     return check_siem_kept
+
+
+def detection_check(dst_adapters, installed=ADAPTERS):
+    """The planner check of declared detections (domains/observability.detections.check_detections), given the
+    target's adapters (what they declare is offered as alert rules) and the installed ones (where an adopted rule's
+    declaration is looked up)."""
+    declarations = tuple((a.name, x) for a in dst_adapters for x in a.detections)
+    every = {a.name: tuple(a.detections) for a in installed}
+
+    def check_declared_detections(ctx):
+        return check_detections(ctx, declarations, every)
+    return check_declared_detections
 
 
 def _sources(adapters):

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "opsdir-format-sigma"
+version = "0.1.0"
+description = "Sigma for opsdir: the alert rules adopting a product's declared detection written as Sigma 2.1.0 rules (a base rule and a correlation rule), in the field names of the product versions an environment runs."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["opsdir>=0.1"]
+
+[project.entry-points."opsdir.adapters"]
+sigma = "opsdir_format_sigma.adapter:ADAPTER"
+
+[tool.setuptools.packages.find]
+where = ["src"]
