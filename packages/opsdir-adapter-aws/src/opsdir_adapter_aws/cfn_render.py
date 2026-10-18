@@ -1,6 +1,7 @@
 """AWS CloudFormation translated from the AWS render's Terraform data (5.6, decision 2565): each Terraform root becomes
 a template (one per provider: a resource on an aliased provider runs in another region or account, so in another
 stack), what CloudFormation has no form for stays in a small Terraform root beside it (format-terraform translate),
+applied after it, or before it (BEFORE_ROOT) what the template reads (task 591: an ALB trust store's bundle object),
 and the lookups Terraform makes become parameters (the record's ids as defaults) or pseudo parameters.
 
 The engine is format-terraform's native one (decision 2592), over a table of Natives (cfn_types holds AWS's); this
@@ -25,7 +26,8 @@ from opsdir_format_terraform.native import (ENGINE_KEYS, Attribute, Computed, Cu
                                             group_refs, leading, obj, one, own, pascal, placements,
                                             placements_document, read_root,
                                             resolver, translated_refs)
-from opsdir_format_terraform.translate import no_native_note, output_variable, ref_address, ref_text, roots
+from opsdir_format_terraform.translate import before_note, no_native_note, output_variable, ref_address, ref_text, \
+    roots, template_parts
 
 # A data table answer only CloudFormation has: a pseudo parameter (its name: AWS::AccountId, AWS::Region, ...).
 Pseudo = namedtuple("Pseudo", ("name",))
@@ -257,6 +259,13 @@ def _cross_id(r):
     return logical_id(output_variable(r))
 
 
+def _literal(b, attr):
+    """A block's attribute when it is set to literal text (the default of the parameter the template reads it
+    through: the value the root applied first outputs), else None."""
+    v = fields(b.body).get(attr)
+    return v if isinstance(v, str) and all(isinstance(p, str) for p in template_parts(v)) else None
+
+
 def _data_id(r, p):
     return logical_id(_short(r.type), r.name) + p.logical_id
 
@@ -274,9 +283,10 @@ def _answer(r, found):
 
 
 # How CloudFormation reads what a reference names: "Ref" or a GetAtt attribute; another stack's value through the
-# parameter carrying its output; a variable's parameter; data answers (_answer).
+# parameter carrying its output; a variable's parameter; data answers (_answer); a value of the Terraform root applied
+# before the template through the parameter carrying its output.
 FORMS = Forms(lambda lid, form: ref(lid) if form == "Ref" else get_att(lid, form), lambda r: ref(_cross_id(r)),
-              lambda name: ref(logical_id(name)), _answer)
+              lambda name: ref(logical_id(name)), _answer, lambda r: ref(_cross_id(r)))
 
 
 def _data_parameters(root, refs, data):
@@ -423,12 +433,17 @@ def _stack_template(m, root, stack, table, what):
         fields(root.by_address[p.address].body), cx))
     variables = tuple(_variable_parameter(logical_id(r.name), root.by_address[ref_address(r)]) for r in refs
                       if r.kind == "var")
-    crossing = tuple(r for r in refs if r.kind == "resource" and root.placed[ref_address(r)].group != stack.alias)
+    crossing = tuple(r for r in refs if r.kind == "resource" and ref_address(r) in root.placed
+                     and root.placed[ref_address(r)].group != stack.alias)
     cross = tuple(Parameter(_cross_id(r), "String", None,
                             f"{ref_text(r)}: an output of template {_template_name(root.placed[ref_address(r)].group)}"
                             " (deployed first)") for r in crossing)
+    first = tuple(Parameter(_cross_id(r), "String", _literal(root.by_address[ref_address(r)], r.attr),
+                            f"{ref_text(r)}: an output of the Terraform root applied before this template "
+                            f"({BEFORE_ROOT}/)")
+                  for r in refs if r.kind == "resource" and ref_address(r) in root.before)
     parameters = tuple({p.logical_id: p for p in (*_data_parameters(root, refs, table.data), *variables, *cross,
-                                                  *deployer)}.values())
+                                                  *first, *deployer)}.values())
     outputs = _outputs(root, stack, members, resolve, table.data)
     notes = {"Notes": list(loose)} if loose and stack.alias is None else {}
     template = Template(f"{what} ({m.label}): the Terraform root {root.directory} as CloudFormation"
@@ -467,9 +482,13 @@ def native_directory(directory):
 
 
 # An environment's translation: templates {path: Template}, imports {path: resource import entries}, side {path:
-# TfFile} (the Terraform roots kept beside templates), placements {root directory: {address: Placement}}, packaged
-# {path: text} (the files a root packages, copied beside its templates).
+# TfFile} (the Terraform roots kept beside templates: terraform/, applied after them, and BEFORE_ROOT/, applied before
+# them), placements {root directory: {address: Placement}}, packaged {path: text} (the files a root packages, copied
+# beside its templates).
 Translation = namedtuple("Translation", ("templates", "imports", "side", "placements", "packaged"))
+# The folder (beside a root's templates) of the Terraform root applied before them: what they read that CloudFormation
+# has no form for (an ALB trust store's CA bundle object in S3)
+BEFORE_ROOT = "terraform-before"
 
 
 def _root_translation(m, root, table, what):
@@ -482,20 +501,25 @@ def _root_translation(m, root, table, what):
     built = tuple((posixpath.join(out_dir, _template_name(s.alias)), *_stack_template(m, root, s, table, what))
                   for s in stacks)
     side_path = posixpath.join(out_dir, "terraform", "main.tf")
+    before_path = posixpath.join(out_dir, BEFORE_ROOT, "main.tf")
     side = {side_path: TfFile(header(m, f"{what}: what CloudFormation has no form for", HCL) +
                               no_native_note(root.split, "AWS CloudFormation", root.reasons), root.split.side)} \
         if root.split.side else {}
+    before = {before_path: TfFile(header(m, f"{what}: what the CloudFormation templates read, applied before them",
+                                         HCL) + before_note(root.split, "AWS CloudFormation", root.reasons),
+                                  root.split.before)} if root.split.before else {}
     by_stack = {s.alias: path for s, (path, _, _) in zip(stacks, built)}
     return ({path: t for path, t, _ in built},
-            {path.replace(".yaml", ".resources-to-import.json"): e for path, _, e in built if e}, side,
-            placements(root, by_stack, side_path))
+            {path.replace(".yaml", ".resources-to-import.json"): e for path, _, e in built if e}, {**side, **before},
+            placements(root, by_stack, side_path, before_path))
 
 
-def translation(m, files, types, no_native, data, what, unavailable=lambda type_, region: False):
+def translation(m, files, types, no_native, data, what, unavailable=lambda type_, region: False, before=frozenset()):
     """The Translation of environment m's Terraform render ({path: TfFile | text}) into CloudFormation by a table of
-    Natives: each Terraform root's templates, resource import entries and side Terraform root under cloudformation/,
-    where each Terraform resource went, and the other files a root packages (scripts) copied beside them."""
-    table = Table(types, no_native, data, unavailable)
+    Natives: each Terraform root's templates, resource import entries and side Terraform roots under cloudformation/
+    (before: the types with no native form applied before the templates that read them), where each Terraform resource
+    went, and the other files a root packages (scripts) copied beside them."""
+    table = Table(types, no_native, data, unavailable, before=before)
     parts = {d: _root_translation(m, read_root(d, rf, table, LANGUAGE, _layout), table, what)
              for d, rf in roots(files).items()}
     packaged = {posixpath.join("cloudformation", p.split("/", 1)[1]): text for p, text in files.items()
@@ -506,11 +530,11 @@ def translation(m, files, types, no_native, data, what, unavailable=lambda type_
                        {d: p for d, (_, _, _, p) in parts.items()}, packaged)
 
 
-def translated(m, files, types, no_native, data, what, unavailable=lambda type_, region: False):
+def translated(m, files, types, no_native, data, what, unavailable=lambda type_, region: False, before=frozenset()):
     """{path: TfFile | text} of environment m's CloudFormation (translation, written): each template as YAML under
     its generated-file header, each import file as JSON, each root's placements.json (where each Terraform resource
     went), the side Terraform roots as TfFiles, the packaged files."""
-    t = translation(m, files, types, no_native, data, what, unavailable)
+    t = translation(m, files, types, no_native, data, what, unavailable, before)
     return {**{path: header(m, f"{what}: CloudFormation ({posixpath.basename(path)})", YAML_FORMAT) + as_yaml(template)
                for path, template in t.templates.items()},
             **{path: json.dumps(list(entries), indent=2) + "\n" for path, entries in t.imports.items()},

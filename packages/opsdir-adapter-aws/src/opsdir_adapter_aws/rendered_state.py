@@ -18,7 +18,8 @@ A CloudFormation render (5.6c, decision 2629) reads back through aws/cloudformat
 folder as the CLI saves one (rendered_stacks): the template, describe-stacks (its parameters' defaults, the stack in
 the cloud's region and account, or the region its provider alias names) and list-stack-resources, each resource's
 physical id what the Terraform read-back assigns the address it came from (placements.json): the provider reference
-of a binding it realizes, else the address; the Terraform root kept beside the templates becomes its state.
+of a binding it realizes, else the address; each Terraform root kept beside the templates (applied after them, or
+before them: what they read) becomes its state.
 """
 import json
 import posixpath
@@ -32,6 +33,7 @@ from opsdir_format_cloudformation.template import logical_id
 from opsdir_format_terraform.native import placements_of, side_inputs
 from opsdir_format_terraform.realized import realized
 from opsdir_format_terraform.state_builder import root_states, synthetic
+from .cfn_render import BEFORE_ROOT
 from .cloudformation import read_document, stack_outputs
 
 # Resource types realizing a binding the record matches by its provider reference -> the binding's object class
@@ -129,7 +131,8 @@ PHYSICAL_ARNS = frozenset({"AWS::ElasticLoadBalancingV2::LoadBalancer", "AWS::El
                            "AWS::ElasticLoadBalancingV2::Listener", "AWS::SecretsManager::Secret",
                            "AWS::IAM::ManagedPolicy", "AWS::SSO::PermissionSet", "AWS::Organizations::Policy",
                            "AWS::WAFv2::WebACL", "AWS::WAFv2::IPSet", "AWS::Shield::Protection",
-                           "AWS::SecurityHub::AutomationRule", "AWS::SecurityHub::Hub"})
+                           "AWS::SecurityHub::AutomationRule", "AWS::SecurityHub::Hub",
+                           "AWS::ElasticLoadBalancingV2::TrustStore"})
 
 
 def _physical_id(m, address, resource, arn_of, made):
@@ -196,8 +199,8 @@ def rendered_stacks(files, d, environment):
     """The CloudFormation ReadBack's prepare: an environment's rendered CloudFormation ({<cloud>/<env>/...: text}) as
     applying it would record: each template a stack folder (template, describe-stacks, list-stack-resources: the
     physical ids from its root's placements.json and the record d; the values a stack takes from another's outputs
-    passed as its parameters), each Terraform root kept beside them its state (its variables the templates' outputs
-    they name)."""
+    passed as its parameters), each Terraform root kept beside them (terraform/ and BEFORE_ROOT/) its state (its
+    variables the templates' outputs they name)."""
     m = env_model(d, env_dn(environment))
     places = {p.rsplit("/", 1)[0]: placements_of(json.loads(t), lambda where, root=p.rsplit("/", 1)[0]:
                                                  posixpath.join(root, where))
@@ -212,7 +215,7 @@ def rendered_stacks(files, d, environment):
         (f"{folder}/stack.json", json.dumps({"Stacks": [_given(stack, doc, outputs)]})),
         (f"{folder}/resources.json", json.dumps({"StackResourceSummaries": resources})))}
     side = {p: t for p, t in files.items() if p.endswith(".tf") and posixpath.basename(posixpath.dirname(p))
-            == "terraform" and posixpath.dirname(posixpath.dirname(p)) in places}
+            in ("terraform", BEFORE_ROOT) and posixpath.dirname(posixpath.dirname(p)) in places}
     return {**stacks, **root_states(side, environment, lambda blocks: aws_assigned(m, blocks),
                                     side_inputs(side, outputs, logical_id))}
 

@@ -3,8 +3,14 @@ back through Terraform state with no change and nothing said; a listener that st
 trust store, or a trust store whose CA certificates differ from the policy's bundle (by SHA-256) is an import notice;
 a CloudFormation stack and the AWS CLI's outputs (describe-listeners' MutualAuthentication, describe-trust-stores) read
 the same, the CLI comparing only the number of CA certificates and saying so; the collector lists the trust stores
-only where the record has an edge trust policy."""
+only where the record has an edge trust policy. A CloudFormation render (task 591) keeps the bundle object in the
+Terraform root applied before the template, passes cfn-lint in us-east-1 and us-gov-west-1, and reads back clean."""
 import json
+import os
+import subprocess
+from pathlib import Path
+
+import pytest
 
 from opsdir.connectors.registry import ADAPTERS
 from opsdir.connectors.roundtrip import read_back
@@ -12,12 +18,12 @@ from opsdir.core.interchange.ldif import LdifRecord
 from opsdir_format_terraform.hcl import written
 from opsdir_adapter_aws.adapter import ADAPTER
 from opsdir_adapter_aws.cli import read_cli_inventory
-from opsdir_adapter_aws.cloudformation import read_cloudformation
+from opsdir_adapter_aws.cloudformation import read_cloudformation, read_document
 from opsdir_adapter_aws.collect import inventory_steps
 from opsdir_adapter_aws.inventory import read_terraform_state
 from opsdir_adapter_aws.mtls_inventory import bundle_fingerprints
-from opsdir_adapter_aws.rendered_state import rendered_states
-from opsdir_adapter_aws.terraform import render_files
+from opsdir_adapter_aws.rendered_state import rendered_stacks, rendered_states
+from opsdir_adapter_aws.terraform import render, render_files
 from network_fixtures import ALPHA, entry, model
 from pki_samples import CA_FINGERPRINT, CA_PEM, edge_trust_records
 
@@ -26,6 +32,7 @@ ACCOUNT = "111122223333"
 LB = f"arn:aws:elasticloadbalancing:us-east-1:{ACCOUNT}:loadbalancer/app/ciam-prod-svc-sso/0a1b"
 STORE = f"arn:aws:elasticloadbalancing:us-east-1:{ACCOUNT}:truststore/ciam-prod-cac-users/0c1d"
 OTHER_PEM = CA_PEM.replace("MIIBtDCC", "MIIBtDCD")
+LINT = Path(__file__).resolve().parents[3] / "tools" / "cfn-lint" / "venv" / "bin" / "cfn-lint"
 TERMINATE = ("dn: ou=edge-policies,dc=ciam-ops\nobjectClass: top\nobjectClass: organizationalUnit\nou: edge-policies\n",
              entry("ou=edge-policies,dc=ciam-ops", "sso-edge", "ciamTrafficPolicy", ciamServiceRole="sso-service",
                    ciamTlsMode="terminate"))
@@ -33,9 +40,9 @@ BUCKET = entry(ALPHA, "trust-bucket", "ciamObjectStore", ciamBindingRole="trust-
                ciamStorageRef="s3://ciam-trust/pki")
 
 
-def _alpha(trust=True):
+def _alpha(trust=True, region="us-east-1"):
     aws = LdifRecord(CLOUD, "modify", {}, (("add", "objectClass", ("ciamCloudAccount",)),
-                                           ("replace", "ciamRegion", ("us-east-1",)),
+                                           ("replace", "ciamRegion", (region,)),
                                            ("replace", "ciamCloudProvider", ("aws",)),
                                            ("replace", "ciamAccountRef", (ACCOUNT,))))
     vpc = LdifRecord(f"cn=net,ou=bindings,{ALPHA}", "modify", {}, (("replace", "ciamProviderRef", ("vpc-0abc",)),))
@@ -142,6 +149,68 @@ def test_a_stack_reads_its_trust_store_and_listener_mutual_tls():
     assert "(mutual TLS passthrough)" in n
     (n,) = _mtls(read_cloudformation(_stack(store_name="ciam-prod-other"), m.d, ()).notices)
     assert "verifies with trust store ciam-prod-other, not trust policy cac-users's" in n
+
+
+# ------------------------------------------------------------------ a CloudFormation render (task 591)
+def _cloudformation(m):
+    return {p: t for p, t in written(render(m, None, ("cloudformation",))).items()}
+
+
+def test_a_cloudformation_render_keeps_the_bundle_in_a_root_applied_before_the_template():
+    files = _cloudformation(_alpha())
+    template = read_document(files["cloudformation/template.yaml"])
+    store = template["Resources"]["LbTrustStoreCacUsers"]
+    assert store["Type"] == "AWS::ElasticLoadBalancingV2::TrustStore"
+    assert store["Properties"] == {"Name": "ciam-prod-cac-users", "CaCertificatesBundleS3Bucket": "ciam-trust",
+                                   "CaCertificatesBundleS3Key": {"Ref": "AwsS3ObjectCacUsersTrustBundleKey"},
+                                   "Tags": [{"Key": "TrustPolicy", "Value": "cac-users"},
+                                            {"Key": "ManagedBy", "Value": "opsdir"}]}
+    key = template["Parameters"]["AwsS3ObjectCacUsersTrustBundleKey"]
+    assert key["Default"] == "pki/trust/cac-users.pem" and "applied before this template" in key["Description"]
+    (listener,) = [r["Properties"] for r in template["Resources"].values()
+                   if r["Type"] == "AWS::ElasticLoadBalancingV2::Listener" and r["Properties"]["Port"] == 443]
+    assert listener["MutualAuthentication"] == {"Mode": "verify", "TrustStoreArn": {"Ref": "LbTrustStoreCacUsers"}}
+    before = files["cloudformation/terraform-before/main.tf"]
+    assert 'resource "aws_s3_object" "cac_users_trust_bundle"' in before and "applied BEFORE the template" in before
+    assert 'output "aws_s3_object_cac_users_trust_bundle_key"' in before
+    assert "aws_s3_object" not in files.get("cloudformation/terraform/main.tf", "")
+    assert json.loads(files["cloudformation/placements.json"])["aws_s3_object.cac_users_trust_bundle"] == {
+        "in": "terraform-before/main.tf",
+        "why": "no CloudFormation type; the template reads it, so it is applied before the template"}
+
+
+def test_a_cloudformation_render_reads_back_with_no_change_and_nothing_said():
+    for region in ("us-east-1", "us-gov-west-1"):
+        m = _alpha(region=region)
+        files = _cloudformation(m)
+        (trip,) = (t for t in read_back(m.d, ADAPTER, files, ADAPTERS, None, "alpha/prod")
+                   if t.importer == "aws/cloudformation")
+        assert trip.drift == () and _mtls(trip.notices) == [], region
+        stacks = rendered_stacks({f"alpha/prod/{p[len('cloudformation/'):]}": t for p, t in files.items()
+                                  if p.startswith("cloudformation/")}, m.d, "alpha/prod")
+        assert "alpha/prod/terraform-before.tfstate" in stacks
+        assert _mtls(read_cloudformation(stacks, m.d, ()).notices) == []
+        swapped = {**stacks, "alpha/prod/terraform-before.tfstate": stacks[
+            "alpha/prod/terraform-before.tfstate"].replace("MIIBtDCC", "MIIBtDCD")}
+        (n,) = _mtls(read_cloudformation(swapped, m.d, ()).notices)
+        assert "holds 1 CA certificate(s) the policy doesn't trust" in n, region
+
+
+@pytest.mark.cloudformation
+@pytest.mark.skipif(not LINT.exists(), reason="no tools/cfn-lint (opsdir/scripts/fetch-tools.sh)")
+def test_the_trust_store_and_mutual_tls_pass_cfn_lint_in_each_partition(tmp_path):
+    """The fixture's servers and certificate are unbound (cfn-lint names those), so only findings about what an edge
+    trust policy renders are checked: none on the trust store, its bundle key's parameter or a listener's
+    MutualAuthentication."""
+    env = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
+    ours = {"LbTrustStoreCacUsers", "AwsS3ObjectCacUsersTrustBundleKey", "MutualAuthentication"}
+    for region in ("us-east-1", "us-gov-west-1"):
+        path = tmp_path / f"{region}.yaml"
+        path.write_text(_cloudformation(_alpha(region=region))["cloudformation/template.yaml"])
+        done = subprocess.run([str(LINT), "--format", "json", "--", str(path)], capture_output=True, text=True,
+                              env=env)
+        found = json.loads(done.stdout or "[]")
+        assert [f for f in found if ours & set(map(str, f["Location"]["Path"]))] == [], region
 
 
 # ------------------------------------------------------------------ the AWS CLI

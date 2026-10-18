@@ -5,7 +5,8 @@ A table says, per Terraform resource type, how the target writes it (Native: its
 attributes, what a reference to it reads, what merges into it or what it expands into), what each data source's
 attributes are natively, and which types have no native form. The engine reads a root (its blocks, comments and
 import blocks), splits it into what is written natively and what stays Terraform beside it (format-terraform
-translate's split_root), with each kept resource's reason, places every native resource in a group (the target's
+translate's split_root: applied after the templates, or before them what they read, Table.before), with each kept
+resource's reason, places every native resource in a group (the target's
 deployment unit: a CloudFormation stack per provider, an ARM template per scope), and translates values: references,
 interpolations, jsonencode() documents, indexed lookups and the few Terraform functions an expression may call (join,
 trimprefix), over the target's value forms (Target) and reference forms (Forms). Anything the table doesn't know is
@@ -80,8 +81,9 @@ ENGINE_KEYS = ("tags", "depends_on", "provider")
 Target = namedtuple("Target", ("language", "concat", "join", "trim_prefix"))
 # How a target reads what a reference names: attribute(native id, form) (a resource's attribute by a refs name),
 # cross(TfRef) (a resource of another group of the root: its value passed in), variable(name) (a Terraform variable),
-# answer(TfRef, found) (a data table answer that isn't Computed).
-Forms = namedtuple("Forms", ("attribute", "cross", "variable", "answer"))
+# answer(TfRef, found) (a data table answer that isn't Computed), before(TfRef) (a resource of the Terraform root
+# applied before the template: its value passed in; None: the target has no such root).
+Forms = namedtuple("Forms", ("attribute", "cross", "variable", "answer", "before"), defaults=(None,))
 # How a target lays out a root: group(TfBlock) -> the key of the group (deployment unit) a resource goes in; region(key)
 # -> that group's region or None; name(Terraform type, name) -> a resource's native id; unplaced(TfBlock) -> None, or
 # why the target can't name a resource's group (it then stays Terraform; None: every resource has one).
@@ -324,13 +326,17 @@ def translate(v, resolve, target, quoted=False):
 # address of the resource it is part of.
 Placed = namedtuple("Placed", ("address", "group", "id", "native", "target"))
 # A root read for translation: its directory, items, split (format-terraform Split), blocks by address, placed
-# resources {address: Placed}, reasons {address: why it stays Terraform}, and its Layout.
-Root = namedtuple("Root", ("directory", "items", "split", "by_address", "placed", "reasons", "layout"))
+# resources {address: Placed}, reasons {address: why it stays Terraform}, its Layout, and before (the addresses of the
+# resources the Terraform root applied before the template manages: Split.before).
+Root = namedtuple("Root", ("directory", "items", "split", "by_address", "placed", "reasons", "layout", "before"),
+                  defaults=(frozenset(),))
 # A table: types {Terraform type: Native}, no_native (the types with no native form), data {data source or ephemeral
 # resource type: (Fields, attribute) -> answer}, unavailable(type, region) (no native form in that region), kept
-# {Terraform type: why it stays Terraform} (types the target leaves to Terraform for a stated reason).
-Table = namedtuple("Table", ("types", "no_native", "data", "unavailable", "kept"),
-                   defaults=(lambda type_, region: False, {}))
+# {Terraform type: why it stays Terraform} (types the target leaves to Terraform for a stated reason), before (of the
+# types with no native form, those applied before the template when it reads them: a file the native resource loads
+# from storage at creation; the template takes what it reads as parameters).
+Table = namedtuple("Table", ("types", "no_native", "data", "unavailable", "kept", "before"),
+                   defaults=(lambda type_, region: False, {}, frozenset()))
 
 
 def _merge_refs(b, merge):
@@ -370,8 +376,9 @@ def read_root(directory, files, table, language, layout_of):
     """A root read and split for translation (Root): a resource stays Terraform when its type has no native form (in
     general or in its group's region), when the layout can't name its group (Layout.unplaced), when it is adopted and
     the target can't import it as Terraform does (or with what it expands into), or when it is part of a resource that
-    stays; each one's reason kept. Refuses resource types the table neither maps nor lists as having no native form,
-    and native resources reading ones that stay.
+    stays; each one's reason kept. One of a type the table applies before the template (Table.before) that the
+    template reads goes in the root applied first (Root.before). Refuses resource types the table neither maps nor
+    lists as having no native form, and native resources reading ones that stay after the template.
     layout_of(items) -> the root's Layout."""
     items = root_items(files)
     layout = layout_of(items)
@@ -408,7 +415,7 @@ def read_root(directory, files, table, language, layout_of):
             return f"adopted (an import block): {unimportable}"
         waits = next((address(by_address[ref_address(r)]) for kv in b.body if kv[0] == "depends_on"
                       for r in value_refs(kv[1]) if r.kind == "resource" and ref_address(r) in by_address
-                      and why(by_address[ref_address(r)]) is not None), None)
+                      and after(by_address[ref_address(r)])), None)
         if waits:
             return f"waits for {waits} (depends_on), which stays Terraform, applied after the template"
         if types[t].merge is not None:
@@ -435,18 +442,26 @@ def read_root(directory, files, table, language, layout_of):
         reads = next((address(by_address[ref_address(r)]) for r in value_refs(tuple(
             kv for kv in b.body if kv[0] not in ("depends_on", "provider")))
             if r.kind == "resource" and ref_address(r) in by_address and by_address[ref_address(r)] is not b
-            and why(by_address[ref_address(r)]) is not None), None)
+            and after(by_address[ref_address(r)])), None)
         return f"reads {reads}, which stays Terraform" if reads else None
-    split = split_root(items, lambda b: why(b) is None)
+
+    def after(b):
+        """Whether a resource stays Terraform after the template (one of a type applied before it, when the template
+        reads it, doesn't: split_root says which are)."""
+        return why(b) is not None and b.labels[0] not in table.before
+    split = split_root(items, lambda b: why(b) is None, lambda b: b.labels[0] in table.before)
     checks = {address(b): f"a check (its lifecycle conditions), which {language} can't make" for b in split.side
               if isinstance(b, TfBlock) and b.kind == "data" and any(k == "lifecycle" for k, _ in b.body)}
-    reasons = {**{address(b): why(b) for b in items if isinstance(b, TfBlock) and b.kind == "resource"
-                  and why(b) is not None}, **checks}
+    first = frozenset(address(b) for b in split.before if isinstance(b, TfBlock) and b.kind == "resource")
+    reasons = {**{address(b): why(b) + ("; the template reads it, so it is applied before the template"
+                                        if address(b) in first else "")
+                  for b in items if isinstance(b, TfBlock) and b.kind == "resource" and why(b) is not None}, **checks}
     if split.unresolved:
         raise SystemExit(f"Terraform root {directory}: resources written in {language} read ones that stay "
                          "Terraform: " + "; ".join(f"{a} reads {ref_text(r)}" for a, r in split.unresolved))
     resources = tuple(x for x in split.native if isinstance(x, TfBlock) and x.kind == "resource")
-    return Root(directory, items, split, by_address, _placed(resources, types, layout, language), reasons, layout)
+    return Root(directory, items, split, by_address, _placed(resources, types, layout, language), reasons, layout,
+                first)
 
 
 def _form(native, attr, nid, where, own_attribute, own_fields, forms, language):
@@ -477,15 +492,17 @@ def data_answer(r, b, data, language):
 
 def resolver(root, group, table, target, forms):
     """resolve(TfRef) -> native value, for resources in the group: references to its own resources by the table's
-    refs forms, to another group's through forms.cross, to data sources as the data table answers (Computed answers
-    built here, others by forms.answer), to variables through forms.variable, path.module as the template's own
-    folder."""
+    refs forms, to another group's through forms.cross, to the root applied first's through forms.before, to data
+    sources as the data table answers (Computed answers built here, others by forms.answer), to variables through
+    forms.variable, path.module as the template's own folder."""
     language = target.language
 
     def resolve(r):
         a = ref_address(r)
         if r.kind == "resource":
             p = root.placed.get(a)
+            if p is None and a in root.before and forms.before is not None:
+                return forms.before(r)
             if p is None:
                 raise SystemExit(f"{ref_text(r)}: not a resource this root writes in {language}")
             if not r.attr:
@@ -568,11 +585,13 @@ def leading(items):
 Placement = namedtuple("Placement", ("kind", "where", "detail"))
 
 
-def placements(root, where, side_path):
-    """{address: Placement} of a root's resources; where: {group: its template's path}."""
+def placements(root, where, side_path, before_path=None):
+    """{address: Placement} of a root's resources; where: {group: its template's path}; side_path, before_path: the
+    Terraform roots applied after and before the templates."""
     return {**{a: (Placement("template", where[p.group], p.id) if p.target is None else
                    Placement("merged", where[p.group], p.target)) for a, p in root.placed.items()},
-            **{a: Placement("terraform", side_path, why) for a, why in root.reasons.items()}}
+            **{a: Placement("terraform", before_path if a in root.before else side_path, why)
+               for a, why in root.reasons.items()}}
 
 
 def side_inputs(files, outputs, output_name):
