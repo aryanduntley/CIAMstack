@@ -17,6 +17,7 @@ from opsdir.connectors.evidence import assemble_package, directory_output
 from opsdir.connectors.reports import HISTORY_HEADERS, catalogue
 from opsdir.core.directory import norm_dn
 from opsdir.domains.estate.evidence import boundary_named, run_records
+from opsdir.domains.governance.imports import file_evidence
 from opsdir.store import postgres as db
 from opsdir.store.postgres import read_ldif_files
 from support import build_directory, schema_for
@@ -167,7 +168,7 @@ def import_records(schema, records):
         change_id, spec, files, at = imported
         d = build_directory(schema, records, done)
         plan = importing.import_plan(d, spec, files, at=import_time(at))
-        return (*done, *importing.import_records(d, plan, change_id))
+        return (*done, *importing.import_records(d, plan, change_id, evidence=file_evidence(files)))
     imported = reduce(step, (*((c, s, export_files(root), at) for c, s, root, at in IMPORTS),
                              (PROFILE[0], "ldap/data-profile", profile_files(), PROFILE[3])), ())
     return (*imported, *census_changes(build_directory(schema, records, imported), export_files(CENSUS[1]))[0])
@@ -176,10 +177,12 @@ def import_records(schema, records):
 def import_exports(conn):
     """Effect: import the product exports (IMPORTS) and the data profile (PROFILE) into a store that holds the loaded
     estate, then take the census (CENSUS), as the demo does."""
-    return [*(ops.apply_import(conn, ops.preview_import(conn, spec, export_files(root), import_time(at)), change_id)
-              for change_id, spec, root, at in IMPORTS),
+    return [*(ops.apply_import(conn, ops.preview_import(conn, spec, files, import_time(at)), change_id,
+                               evidence=file_evidence(files))
+              for change_id, spec, root, at in IMPORTS for files in (export_files(root),)),
             ops.apply_import(conn, ops.preview_import(conn, "ldap/data-profile", profile_files(),
-                                                      import_time(PROFILE[3])), PROFILE[0]),
+                                                      import_time(PROFILE[3])), PROFILE[0],
+                             evidence=file_evidence(profile_files())),
             ops.apply_preview(conn, ops.preview_census(conn, export_files(CENSUS[1])), CENSUS[0])]
 
 
@@ -194,8 +197,10 @@ def _changed(schema, records, done, changes):
         if not isinstance(source, ImportStep):
             return (*so_far, *read_ldif_files([source]))
         d = build_directory(schema, records, so_far)
-        plan = importing.import_plan(d, source.spec, export_files(source.root), at=import_time(source.at))
-        return (*so_far, *importing.import_records(d, plan, change_id, source.take, source.keep))
+        files = export_files(source.root)
+        plan = importing.import_plan(d, source.spec, files, at=import_time(source.at))
+        return (*so_far, *importing.import_records(d, plan, change_id, source.take, source.keep,
+                                                   file_evidence(files)))
     return reduce(step, changes, tuple(done))
 
 
@@ -232,8 +237,9 @@ def apply_approved(conn, changes=APPROVED):
         if isinstance(source, EvidenceStep):
             ops.evidence(conn, source.boundary, AS_OF, change_id=change_id)
         elif isinstance(source, ImportStep):
-            ops.apply_import(conn, ops.preview_import(conn, source.spec, export_files(source.root),
-                                                      import_time(source.at)), change_id, source.take, source.keep)
+            files = export_files(source.root)
+            ops.apply_import(conn, ops.preview_import(conn, source.spec, files, import_time(source.at)), change_id,
+                             source.take, source.keep, file_evidence(files))
         else:
             db.apply_changes(conn, source, change_id)
 

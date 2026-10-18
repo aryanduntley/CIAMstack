@@ -1,10 +1,11 @@
-"""The API against the real store (integration, OPSDIR_TEST_DSN): a token signed by the identity provider becomes a
-recorded person, and the store attributes what the API writes to that person because the record's api-login setting
-names the API's database login: the author of a change is the person who proposed it, its own author can't approve
-it, someone else can, and the history says who."""
+"""The API against the real store (integration: OPSDIR_TEST_DSN, else the local test database): a token signed by the
+identity provider becomes a recorded person, and the store attributes what the API writes to that person because the
+record's api-login setting names the API's database login: the author of a change is the person who proposed it, its
+own author can't approve it, someone else can, and the history says who."""
 import os
 
 import pytest
+import support
 from fastapi.testclient import TestClient
 from joserfc import jwt
 from joserfc.jwk import RSAKey
@@ -59,9 +60,7 @@ def bearer(sub):
 
 @pytest.fixture
 def client():
-    dsn = os.environ.get("OPSDIR_TEST_DSN")
-    if not dsn:
-        pytest.skip("OPSDIR_TEST_DSN not set: the API's store integration needs the test database")
+    dsn = support.reachable(support.integration_dsn(os.environ), "OPSDIR_TEST_DSN", support.CREATE_TEST_DB)
     conn = db.connect(dsn)
     ops.init(conn)
     ops.load(conn, parse(BASE))
