@@ -428,8 +428,8 @@ server-tls):
 
 `opsdir report trust-bundles` (release, imported, verification, signer root, CA count, roots with expiry, problems)
 and `opsdir report trust-policies` (purpose, anchors with expiry, bundles, restrictions, identity, revocation,
-accepting roles, owners). Rendering a policy into its consumers (PingFederate, PingAM, PingGateway, load balancers'
-and gateways' client-certificate trust) is milestone 122. A policy also says where its certificates are checked: `ciamTrustEnforcedAt` is `edge` (the load balancer in front of the accepting roles validates, and passes the certificate on in a header only it may set) or `product` (the default). `ciamTrustStoreRole` names the object store a consumer reads the bundle from, such as an AWS load balancer's S3 trust store. The bundle consumers are given (`trust.policy_bundle`) holds the approved anchors, then the followed bundles' subordinate CAs whose chain reaches one; it is public material. The planner adds an action for an edge policy with no service name in front of an accepting role an environment runs, and for an anchor without a recorded PEM.
+accepting roles, owners). Each policy is rendered into its consumers: PingFederate, PingAM, PingGateway, and load balancers'
+and gateways' client-certificate trust. A policy also says where its certificates are checked: `ciamTrustEnforcedAt` is `edge` (the load balancer in front of the accepting roles validates, and passes the certificate on in a header only it may set) or `product` (the default). `ciamTrustStoreRole` names the object store a consumer reads the bundle from, such as an AWS load balancer's S3 trust store. The bundle consumers are given (`trust.policy_bundle`) holds the approved anchors, then the followed bundles' subordinate CAs whose chain reaches one; it is public material. The planner adds an action for an edge policy with no service name in front of an accepting role an environment runs, and for an anchor without a recorded PEM.
 
 ### Who keeps what, and where it renders
 
@@ -483,8 +483,8 @@ environment and its requester whoever runs `migrate` (`--as`).
 Before a render or a migration runs, the operations layer asks an authorization policy whether the requester may do
 it over that area (environment, scope, and for a migration its source), and stops with a message naming all three if
 not, before the record is loaded (`operations.authorize`, `opsdir.domains.governance.authorization`). Every front end
-goes through it. The default policy allows everyone; people, teams and their grants come with milestone 7.7 as the
-policy it asks.
+goes through it. The policy it asks is the record's people, teams and grants (see [People, change records and
+approval](#people-change-records-and-approval)).
 
 
 ## Collecting from the live system
@@ -554,7 +554,7 @@ can't pose as options. A file kept that isn't regular UTF-8 text (a link, a bina
 
 ## Database
 
-Running the record in production (setup, sign-in, backups, the tested restore, upgrades) is in [`documentation/RECORD-DATABASE.md`](../documentation/RECORD-DATABASE.md); this section is the reference.
+Running the record in production (setup, sign-in, backups, the tested restore, upgrades) is in [`documentation/RECORD-DATABASE.md`](../documentation/RECORD-DATABASE.md); this section is the reference. What the database holds, table by table and field by field, is the schema reference, [`documentation/SCHEMA.md`](../documentation/SCHEMA.md).
 
 One PostgreSQL server and one role, `opsdir`. For local development and tests there are four databases:
 
@@ -878,7 +878,8 @@ opsdir/                      the package (names no platform, product, vendor or 
                              credentials resolved in memory
   cli.py                     thin orchestrator
 schema/ciam-ops.schema.ldif  the published RFC 4512 schema of the core and its domains (scripts/gen-schema.py)
-scripts/                     dev-install.sh, dev-env.sh (local defaults), gen-schema.py, test.sh, fetch-tools.sh,
+scripts/                     dev-install.sh, dev-env.sh (local defaults), gen-schema.py, gen-schema-docs.py (the
+                             schema reference in documentation/), test.sh, fetch-tools.sh,
                              validate-terraform.sh, validate-kubernetes.sh
 tests/                       core tests: unit (no database) and integration; mini_estate.py = a two-environment
                              estate and a fake provider adapter, so the core is tested without any real adapter
@@ -899,7 +900,7 @@ An adapter is one cloud provider, product or secret store. It lives in its own i
    ```
 3. Tests in the package's `tests/` (the repository-root `pytest.ini` collects them).
 4. The format of every file it renders, `formats=(("ds/*.ldif", "ldif"), ...)`, and the product versions it supports, `products=(("SomeProduct", ">=7,<9"),)`, with what changes between them, `version_changes=(VersionChange(">=8.0", "what changed", "what it affects", "blocker", "the fix", touches),)` (the planner names the ones a move's upgrade crosses that apply to the record). When one of its importers reads what it renders, it says which files: `reads_back=(ReadBack("importer", "prefix/*", "prefix/"),)` (`place="{environment}/"` for an importer reading an environment's files from its `<cloud>/<env>/` folder, `opsdir.core.environment.environment_at`; `optional=True` for files rendered only for some environments; `prepare=` when the importer reads something built from the render, a cloud's Terraform state; `intent=True` when the render is the record's intent, so the guarantee is no copies and a fixed point, `roundtrip.fixed_point`), and its tests check with `opsdir.connectors.roundtrip.read_back` that reading its own render back changes nothing. An importer whose data no render writes by design (a provider's region or quota catalogue, access logs, observed snapshots, a certificate or secret manager's inventory, ITSM evidence, compliance documents) says so, `Importer(..., reference=True)`, so onboarding verification reports it as not rendered by design instead of a gap. A format the core doesn't register (a product's own syntax, HCL, ...) is registered by the package that brings it, as a `Format` (`opsdir.core.contract`) under `[project.entry-points."opsdir.formats"]`. For workloads on Kubernetes, a provider adapter says how a service account assumes its cloud's identity (`workload_identity(m, identity binding) -> K8sIdentity`) and an adapter owning a reference scheme how the External Secrets Operator and the Secrets Store CSI driver read it (`secret_delivery={scheme: SecretDelivery}`); renderers reach them, and the products' listeners, through `Services`.
-5. Optionally, schema definitions of its own: `schema=fragment(attributes, classes, arc, origin)` (`opsdir.core.standard`), numbered under an OID arc the package owns, so packages written independently never collide. The store composes them on `upgrade`; the core's published schema file holds only the core and its domains.
+5. Optionally, schema definitions of its own: `schema=fragment(attributes, classes, arc, origin)` (`opsdir.core.standard`), numbered under an OID arc the package owns, so packages written independently never collide. The store composes them on `upgrade`; the core's published schema file holds only the core and its domains. The schema reference ([`documentation/SCHEMA.md`](../documentation/SCHEMA.md)) gives the package its own page: run `scripts/gen-schema-docs.py` after any schema change and commit the pages (a unit test fails until they match).
 6. Shared helpers instead of its own copies. Before writing a helper, look for it in the core:
 
    | Need | Use |

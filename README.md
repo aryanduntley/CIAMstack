@@ -237,6 +237,7 @@ Rendered AWS and Azure Terraform passes `terraform validate` against the provide
 
 - [`opsdir/README.md`](opsdir/README.md): install, CLI, database, workspaces, architecture, writing adapters.
 - [`opsdir/SPEC.md`](opsdir/SPEC.md): the standard: LDAP schema with portability classes, rules R1–R10, the adapter contract.
+- [`documentation/SCHEMA.md`](documentation/SCHEMA.md): the schema reference: how the database stores the record (its PostgreSQL tables, column by column), the directory tree, and every object class and field, with types and descriptions, for the core, each domain and each adapter package that adds its own.
 - [`documentation/REPORTS.md`](documentation/REPORTS.md): every report and what the planner does with it.
 - [`documentation/RECORD-DATABASE.md`](documentation/RECORD-DATABASE.md): running the record's own database in production: setup, sign-in, backups, restore, upgrades.
 - [`documentation/ops-directory-model.md`](documentation/ops-directory-model.md): design rationale: why a directory-shaped record, what differs between environments, where moves get hard, prior art.
@@ -248,7 +249,7 @@ Rendered AWS and Azure Terraform passes `terraform validate` against the provide
 opsdir/                   the core: an installable Python package on PostgreSQL
 packages/                 adapter, base and format packages (listed above)
 examples/showcase/        a runnable fictional estate: data, product exports, demo, golden outputs
-documentation/            reports, design rationale and stack inventory
+documentation/            schema reference, reports, production database runbook, design rationale, stack inventory
 pytest.ini                one test configuration for the core, the packages and the showcase
 LICENSE                   copyright and terms: all rights reserved
 .aimfp-project/           development tracking (roadmap, tracked files and functions)
