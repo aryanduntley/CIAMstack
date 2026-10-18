@@ -7,6 +7,7 @@ from opsdir_base_ds.importers import READS_BACK, importers
 from opsdir_base_ds.listeners import ds_listeners
 from opsdir_base_ds.profile import TERMS
 from opsdir_base_ds.product import runs
+from .detections import DETECTIONS
 from .logs import LOGS
 from .render import PINGDS, PROFILE, render_neutral, render_notes, setup_scripts
 from .replication import check_replication
@@ -32,6 +33,6 @@ ADAPTER = Adapter(name="pingds", kind="product", applies=applies, required_roles
                   roles=(("server", (DIRECTORY_SERVER_ROLE,)), ("service", (SERVICE_ROLE,))),
                   secret_patterns=(), importers=importers(PINGDS), profile_terms=TERMS, access=None,
                   listeners=ds_listeners, collectors=config_collectors("pingds", PINGDS_FLAGS),
-                  signals=SIGNALS, logs=LOGS,
+                  signals=SIGNALS, logs=LOGS, detections=DETECTIONS,
                   version_changes=VERSION_CHANGES, reads_back=READS_BACK, profile=PROFILE,
                   notes=render_notes)

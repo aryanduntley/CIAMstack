@@ -2,6 +2,7 @@
 from opsdir.core.contract import Adapter, ReadBack, SecretPattern
 from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
+from .detections import DETECTIONS
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .amster import AMSTER
@@ -38,6 +39,6 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   secret_patterns=SECRET_PATTERNS, importers=(AMSTER,), profile_terms=None, access=None,
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
-                  logs=LOGS, version_changes=VERSION_CHANGES,
+                  logs=LOGS, version_changes=VERSION_CHANGES, detections=DETECTIONS,
                   profile=PROFILE, notes=certificate_notes,
                   reads_back=(ReadBack("amster", "am/*", "am/", prepare=amster_read_back),))
