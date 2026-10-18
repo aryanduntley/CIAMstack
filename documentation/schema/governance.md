@@ -1,6 +1,6 @@
 # Governance
 
-*Domain · OID arc `1.3.6.1.4.1.32473.1` · 14 object classes · 68 attributes. Generated from the schema fragments by `opsdir/scripts/gen-schema-docs.py`: don't edit by hand. How to read it: [SCHEMA.md](../SCHEMA.md).*
+*Domain · OID arc `1.3.6.1.4.1.32473.1` · 14 object classes · 69 attributes. Generated from the schema fragments by `opsdir/scripts/gen-schema-docs.py`: don't edit by hand. How to read it: [SCHEMA.md](../SCHEMA.md).*
 
 **Branches:** `ou=applications,dc=ciam-ops`, `ou=changes,dc=ciam-ops`, `ou=grants,dc=ciam-ops`, `ou=imports,dc=ciam-ops`, `ou=incidents,dc=ciam-ops`, `ou=owners,dc=ciam-ops`, `ou=people,dc=ciam-ops`, `ou=runbooks,dc=ciam-ops`, `ou=source-objects,dc=ciam-ops`, `ou=tickets,dc=ciam-ops`, `ou=unknowns,dc=ciam-ops`
 
@@ -155,6 +155,7 @@ OID `1.3.6.1.4.1.32473.1.2.207` · structural · inherits [`ciamObject`](core.md
 | [`ciamDisplayName`](#a-ciamdisplayname) |  | `string` | single | Name used in correspondence (the organization operating the platform, a team) |
 | [`mail`](../SCHEMA.md#standard-mail) |  | `string` |  | Contact email |
 | [`ciamMemberOf`](#a-ciammemberof) |  | `dn` | multi | The teams (ciamParty) a person belongs to |
+| [`ciamIdpSubject`](#a-ciamidpsubject) |  | `string` | multi | How the company's identity provider names the person: '<issuer> <subject>', the token's iss and sub claims; how the HTTP API finds who signed in |
 | [`description`](../SCHEMA.md#standard-description) |  | `string` |  | Free text |
 
 <a id="c-ciamrecordidentity"></a>
@@ -287,6 +288,7 @@ OID `1.3.6.1.4.1.32473.1.2.137` · structural · inherits [`ciamObject`](core.md
 | <a id="a-ciamgrantowner"></a>`ciamGrantOwner` | `1.3.6.1.4.1.32473.1.1.983` | `dn` | meta | multi |  | A team (ciamParty) whose areas a grant is limited to: what it owns or keeps; none: every area |
 | <a id="a-ciamhandling"></a>`ciamHandling` | `1.3.6.1.4.1.32473.1.1.762` | enum: `rebuild`, `re-provision`, `re-register`, `replace`, `retire`, `review` | meta | single |  | What a source object needs when its product is retired: rebuilt in the target's products, its secrets re-provisioned, its hosts re-registered, replaced by what the target already does, retired (nothing in the target needs it) or reviewed (what it does isn't known yet) |
 | <a id="a-ciamhow"></a>`ciamHow` | `1.3.6.1.4.1.32473.1.1.763` | `string` | meta | single |  | How a source object is handled, in words: what the target needs instead and where |
+| <a id="a-ciamidpsubject"></a>`ciamIdpSubject` | `1.3.6.1.4.1.32473.1.1.987` | `string` | meta | multi | X-PATTERN `^https://[^ ]+ [^ ]+$` | How the company's identity provider names the person: '<issuer> <subject>', the token's iss and sub claims; how the HTTP API finds who signed in |
 | <a id="a-ciamimportedat"></a>`ciamImportedAt` | `1.3.6.1.4.1.32473.1.1.424` | `time` | meta | single |  | When the export an import run read was taken (the live system as of then) |
 | <a id="a-ciamimportedfile"></a>`ciamImportedFile` | `1.3.6.1.4.1.32473.1.1.986` | `string` | meta | multi |  | A file an import run's export was read from when opsdir didn't collect it (an export read off disk, or provider commands' output): the SHA-256 of its text and its path in the export, never its content; what `opsdir onboard verify` checks the originals it is given against |
 | <a id="a-ciamimporter"></a>`ciamImporter` | `1.3.6.1.4.1.32473.1.1.422` | `string` | meta | single |  | The importer an import run used (or a collection source feeds), as adapter/importer |

@@ -58,18 +58,22 @@ def runtime_grants(roles, schema="opsdir"):
             f"grant execute on all functions in schema {s} to {r}")
 
 
-def db_roles_sql(owner, migrator, runtime, database, login="password", persons=()):
+def db_roles_sql(owner, migrator, runtime, database, login="password", persons=(), api=None):
     """The script an admin reviews and runs once (as a role with CREATEROLE on the record's server): the owner (no
     login), the migration login (a member able to become the owner, not inheriting its rights), the runtime login,
     their database rights, PUBLIC's CREATE on schema public revoked, each person's own login (a member of the
-    runtime login, so it has the runtime's rights and the store knows who wrote and approved), and the pg_hba.conf
-    lines for the login method (peer: the person's operating-system account on the CIAMstack server, reached over SSH
-    with their key, signs in as the login of the same name over the local socket). ValueError for an invalid name or
-    an unknown login method."""
+    runtime login, so it has the runtime's rights and the store knows who wrote and approved), the HTTP API server's
+    login when named (a member of the runtime login; the store trusts it to say which person a write is for once the
+    record's api-login setting names it), and the pg_hba.conf lines for the login method (peer: the person's
+    operating-system account on the CIAMstack server, reached over SSH with their key, signs in as the login of the
+    same name over the local socket). ValueError for an invalid name or an unknown login method."""
     problems = [p for p in (name_problem(owner), name_problem(migrator), name_problem(runtime),
-                            name_problem(database, "database"), *(name_problem(p, "person") for p in persons)) if p]
+                            name_problem(database, "database"), *(name_problem(p, "person") for p in persons),
+                            api is not None and name_problem(api, "API login")) if p]
     if len({owner, migrator, runtime}) < 3:
         problems.append("the owner, migration and runtime roles must be three different roles")
+    if api is not None and api in {owner, migrator, runtime, *persons}:
+        problems.append(f"the API login {api!r} must be a role of its own")
     if login not in LOGINS:
         problems.append(f"login method {login!r} isn't one of {', '.join(LOGINS)}")
     if problems:
@@ -93,9 +97,21 @@ def db_roles_sql(owner, migrator, runtime, database, login="password", persons=(
         f"revoke temporary on database {database} from public;",   # no temporary tables to shadow the store's
         *(line for p in persons for line in (f"-- {p}: a person, signing in as themselves with the runtime's rights",
                                              f"create role {p} login in role {runtime};")),
+        *_api(api, runtime, database),
         *_login_notes(login, migrator, runtime),
-        *_hba(login, database, (migrator, runtime, *persons), method),
+        *_hba(login, database, (migrator, runtime, *persons, *((api,) if api else ())), method),
     )) + "\n"
+
+
+def _api(api, runtime, database):
+    if not api:
+        return ()
+    return ("-- The HTTP API server's login: the runtime's rights (rows only), acting for the person each verified",
+            "-- token names. The store trusts that only once the record's api-login setting names it:",
+            f"--   opsdir setting api-login {api} --change CHG-...",
+            "-- Only the API server holds its credentials.",
+            f"create role {api} login in role {runtime};",
+            f"grant connect on database {database} to {api};")
 
 
 def _hba(login, database, roles, method):

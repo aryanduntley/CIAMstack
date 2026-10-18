@@ -4101,6 +4101,12 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.986 NAME 'ciamImportedFile' DESC 'A
  d verify` checks the originals it is given against' EQUALITY caseIgnoreMatc
  h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 's
  tring' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.987 NAME 'ciamIdpSubject' DESC 'How 
+ the company\27s identity provider names the person: \27<issuer> <subject>\2
+ 7, the token\27s iss and sub claims; how the HTTP API finds who signed in' 
+ EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY
+  'meta' X-VALUE-TYPE 'string' X-PATTERN '^https://[^ ]+ [^ ]+$' X-ORIGIN 'o
+ psdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
  ry operations-directory entry' SUP top ABSTRACT MAY ( description $ ciamOwn
  er $ ciamLastChanged $ ciamChangeRef $ ciamVerifyPending ) X-ORIGIN 'opsdir
@@ -5152,7 +5158,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.207 NAME 'ciamPerson' DESC 'A person
  who works on the record (under ou=people), named by their own database logi
  n (cn), and the teams they belong to; once people are recorded, only a reco
  rded person approves a change' SUP ciamObject STRUCTURAL MUST cn MAY ( ciam
- DisplayName $ mail $ ciamMemberOf $ description ) X-ORIGIN 'opsdir' )
+ DisplayName $ mail $ ciamMemberOf $ ciamIdpSubject $ description ) X-ORIGIN
+  'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.208 NAME 'ciamGrant' DESC 'A permissi
  on (under ou=grants): the actions it gives, to which people or teams, limit
  ed to which environments and to what which teams own or keep; once any gran

@@ -4,6 +4,8 @@
 Pure functions prepare everything (schema rows, entry rows, modified entries); the few functions
 that take a connection only execute what was prepared. Nothing here knows any product or cloud.
 """
+import contextlib
+import contextvars
 import json
 import os
 import pathlib
@@ -26,6 +28,11 @@ ROWS_OF_CLASSES_SQL = "select dn, object_classes, attrs from entry where object_
 # re-syncs the schema registry with `sync(conn)` (the caller composes the schema), and every stored entry is checked
 # again against it, in the same transaction.
 SchemaSync = NamedTuple("SchemaSync", [("branch", str), ("sync", Callable)])
+
+# The person a front end serving many people (the HTTP API, under its one dedicated login) acts for in this context:
+# their login, or None (the connection's own login acts). Every write transaction tells the store (opsdir.requester),
+# which trusts it only from the login the record's api-login setting names (migration 0013).
+REQUESTER = contextvars.ContextVar("opsdir_requester", default=None)
 
 
 def connect(dsn=None, password=None):
@@ -219,8 +226,25 @@ def entries_after(canon, current, records):
 
 # ------------------------------------------------------------------ effects: execute prepared work
 def session_user(conn):
-    """The database login the connection runs as (who a render is requested by, until people are identified: 7.7)."""
+    """The database login the connection runs as."""
     return conn.execute("select session_user").fetchone()[0]
+
+
+@contextlib.contextmanager
+def requesting(login):
+    """Effect (context): within the block, act for the person whose login this is (REQUESTER): every write
+    transaction names them to the store and requester(conn) returns them; the previous one is restored after."""
+    token = REQUESTER.set(login)
+    try:
+        yield login
+    finally:
+        REQUESTER.reset(token)
+
+
+def requester(conn):
+    """Who asks: the person the context acts for (requesting), else the connection's own login. (The store
+    attributes writes the same way, trusting the person only from the API login: migration 0013.)"""
+    return REQUESTER.get() or session_user(conn)
 
 
 def registry_counts(conn):
@@ -239,6 +263,8 @@ def _canon(conn):
 
 def _begin_change(conn, change_id):
     conn.execute("select set_config('opsdir.change_id', %s, true)", (change_id,))
+    if REQUESTER.get():
+        conn.execute("select set_config('opsdir.requester', %s, true)", (REQUESTER.get(),))
 
 
 def _insert(conn, change_id, row):

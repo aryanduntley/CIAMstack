@@ -210,6 +210,10 @@ ATTRIBUTES = (
                  (("X-PATTERN", "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$"),)),
     AttributeDef(983, 'ciamGrantOwner', 'dn', 'meta', False,
                  'A team (ciamParty) whose areas a grant is limited to: what it owns or keeps; none: every area'),
+    AttributeDef(987, 'ciamIdpSubject', 'string', 'meta', False,
+                 'How the company\'s identity provider names the person: \'<issuer> <subject>\', the token\'s iss and '
+                 'sub claims; how the HTTP API finds who signed in',
+                 (("X-PATTERN", "^https://[^ ]+ [^ ]+$"),)),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -281,7 +285,7 @@ CLASSES = (
              'its identifier and its group; carried in exports and evidence so two companies\' records can be '
              'combined after a merger'),
     ClassDef(207, 'ciamPerson', 'ciamObject', 'STRUCTURAL', ('cn',), ('ciamDisplayName', 'mail', 'ciamMemberOf',
-                                                                     'description'),
+                                                                     'ciamIdpSubject', 'description'),
              'A person who works on the record (under ou=people), named by their own database login (cn), and the '
              'teams they belong to; once people are recorded, only a recorded person approves a change'),
     ClassDef(208, 'ciamGrant', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamGrantAction', 'ciamGrantee'),
