@@ -159,3 +159,13 @@ def test_a_stack_typed_on_one_line_reads_back():
     assert stack_text(stack_line(stack_text(typed))) == stack_text(typed)
     with pytest.raises(ValueError, match="role=adapter"):
         stack_text("pingds")
+
+
+def test_a_team_or_role_given_twice_is_named_and_odd_text_writes_back_exactly():
+    twice = _answers(DOCUMENT.replace('[[environment]]', '[[team]]\nname = "ciam-platform"\n\n[[environment]]', 1))
+    assert "team ciam-platform is given twice" in answers_problems(twice, INSTALLED)
+    with pytest.raises(ValueError, match="role directory given twice"):
+        stack_text("directory=pingds; directory=other")
+    odd = _answers(DOCUMENT.replace('name = "Example Aero"', 'name = "Example\\u007fAero \\"x\\""')
+                   .replace("approval-separation = false", 'approval-separation = false\nsome-code = "007"'))
+    assert parse_answers(answers_toml(odd)) == (odd, ())

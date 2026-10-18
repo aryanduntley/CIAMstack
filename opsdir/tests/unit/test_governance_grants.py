@@ -93,7 +93,7 @@ def test_grant_records_and_report():
 
 
 def test_every_command_is_an_action_of_the_catalog():
-    mapped = {*cli.FIXED_ACTIONS, *cli.WHEN_CHANGED, "fix", "change", "onboard"}
+    mapped = {*cli.FIXED_ACTIONS, *cli.WHEN_CHANGED, "fix", "change", "onboard", "edit"}
     assert set(cli.COMMANDS) - cli.NO_DATABASE <= mapped, set(cli.COMMANDS) - cli.NO_DATABASE - mapped
     assert {*cli.FIXED_ACTIONS.values(), *cli.WHEN_CHANGED.values(), *cli.FIX_ACTIONS.values(),
             *cli.CHANGE_ACTIONS.values(), *cli.ONBOARD_ACTIONS.values()} <= set(ACTIONS)

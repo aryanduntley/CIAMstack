@@ -358,5 +358,15 @@ def fetch_directory_rows(conn):
             conn.execute("select dn, object_classes, attrs from entry order by id").fetchall())
 
 
+def registry_rows(conn):
+    """Effect: the schema registry as rows: attribute types (name, oid, value_type, portability, single_value,
+    description, rules, origin) and object classes (name, oid, sup, kind, must, may, description, origin), the
+    record's own custom definitions included."""
+    return (conn.execute("select name, oid, value_type, portability, single_value, description, rules, origin "
+                         "from attribute_type order by name").fetchall(),
+            conn.execute("select name, oid, sup, kind, must, may, description, origin from object_class "
+                         "order by name").fetchall())
+
+
 def load_directory(conn):
     return make_directory(*fetch_directory_rows(conn))

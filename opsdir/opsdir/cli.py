@@ -39,6 +39,14 @@
                                        record code, scripts, templates or a package (a file or a directory under the
                                        repo checkout R) by repo path and SHA-256; its content is not stored
   opsdir verify [--root R]             bundles and captured files against a repo checkout (exit 1 if anything differs)
+  opsdir browse [AREA [KIND] | DN] [--json]
+                                       the record by its schema: the areas (core, domains, packages, custom) with entry
+                                       counts; an area's kinds; a kind's entries; an entry's fields (value, type,
+                                       portability, required, what it holds) and the optional ones still empty
+  opsdir edit DN [--set A=V ...] [--add A=V ...] [--remove A[=V] ...] [--propose CHG-… --title T | --change CHG-…]
+             [--dry-run]               edit one entry's fields: checked by the store's rules and previewed; --propose
+                                       records it as a proposed change someone else approves (then `opsdir fix approved
+                                       --change CHG-…` applies it); --change applies it under an approved change
   opsdir onboard setup [-o FILE]       guided onboarding: asks about the record's identity, teams, settings, each
                                        environment's cloud and stack, whether you will be migrating (the target's stack
                                        starts as the source's: change only what moves) and the original exports, then
@@ -123,7 +131,7 @@ from types import MappingProxyType
 
 from . import live, operations as ops
 from .connectors import answers as answersmod, collecting, fixes as fixmod, importing, migration, onboarding
-from .connectors import registry, workspace
+from .connectors import browse as browsemod, registry, workspace
 from .connectors.application import HEADERS as VIEW_HEADERS, view_document
 from .connectors.graph import graph_document, graph_dot, graph_lines
 from .connectors.prerequisites import command_line
@@ -131,17 +139,17 @@ from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, COLLECT_OPTIONS, op
 from .connectors.stack import STATUS_HEADERS
 from .core.changeset import describe
 from .core import search as ldap_search
-from .core.directory import gtime_at, values
+from .core.directory import gtime_at, norm_dn, values
 from .core.environment import ENVIRONMENT, Scope
 from .domains.governance.authorization import Area
 from .domains.governance.naming import OWNERS
 from .core.findings import fix_inputs
 from .core.interchange import ldif
 from .core.interchange.export import export_text  # noqa: F401  (callers import it from here)
-from .core.naming import SUFFIX
+from .core.naming import SUFFIX, env_label
 from .core.notes import summary
 from .domains.governance.collection import declared_adapters
-from .domains.governance.imports import file_evidence
+from .domains.governance.imports import environment_of_scope, file_evidence
 from .store import postgres as db
 from .store.policy import db_target
 from .store.roles import DEFAULTS as ROLE_DEFAULTS, LOGINS, db_roles, db_roles_sql
@@ -197,6 +205,18 @@ SUBCOMMANDS = (
                                                              "other"]}),
                 (("--version",), {}), (("--format",), {}), (("--role",), {}), (("--deploy-path",), {}))),
     ("verify", ((("--root",), {}),)),
+    ("browse", ((("target",), {"nargs": "*", "help": "AREA [KIND], or an entry's DN"}),
+                (("--json",), {"action": "store_true", "help": "the rows as JSON"}))),
+    ("edit", ((("dn",), {}),
+              (("--set",), {"action": "append", "default": [], "metavar": "ATTR=VALUE",
+                            "help": "replace an attribute's values (repeat it for several values)"}),
+              (("--add",), {"action": "append", "default": [], "metavar": "ATTR=VALUE", "help": "add a value"}),
+              (("--remove",), {"action": "append", "default": [], "metavar": "ATTR[=VALUE]",
+                               "help": "remove a value, or the whole attribute"}),
+              (("--change",), {"help": "apply under this approved change"}),
+              (("--propose",), {"metavar": "CHG", "help": "record the edit as this proposed change"}),
+              (("--title",), {"help": "--propose: what the approver reads"}),
+              (("--dry-run",), {"action": "store_true", "help": "check and list the change; apply nothing"}))),
     ("onboard", ((("action",), {"choices": ["setup", "apply", "import", "verify"]}),
                  (("file",), {"nargs": "?", "help": "apply, import: the answers file"}),
                  (("-o", "--out"), {"default": "onboarding.toml", "help": "setup: the answers file to write"}),
@@ -871,7 +891,7 @@ def _cmd_grant(conn, a, as_of):
 FIXED_ACTIONS = MappingProxyType({
     **dict.fromkeys(("init", "upgrade", "load"), "admin"),
     **dict.fromkeys(("check", "search", "report", "export", "history", "application", "graph", "summary",
-                     "prerequisites", "verify", "file", "posture", "mine"), "read"),
+                     "prerequisites", "verify", "file", "posture", "mine", "browse"), "read"),
     "render": "render", "plan": "plan", "tickets": "plan", "migrate": "migrate", "modify": "apply",
     "workspace": "workspace"})
 WHEN_CHANGED = MappingProxyType({**dict.fromkeys(("capture", "bundle", "census", "import", "collect", "evidence"),
@@ -895,6 +915,8 @@ def command_action(a):
         return CHANGE_ACTIONS[a.action]
     if a.cmd == "onboard":
         return ONBOARD_ACTIONS[a.action] if a.change and not a.dry_run else "read"
+    if a.cmd == "edit":
+        return "read" if a.dry_run else "apply" if a.change else "propose" if a.propose else "read"
     return WHEN_CHANGED[a.cmd] if getattr(a, "change", None) and not getattr(a, "dry_run", False) else "read"
 
 
@@ -905,6 +927,9 @@ def command_area(a):
         return Area(a.env, render_scope(a.keeper, a.kind, a.binding))
     if getattr(a, "dst", None):
         return Area(a.dst, ENVIRONMENT, getattr(a, "src", None))
+    if a.cmd == "edit":
+        env = environment_of_scope(norm_dn(a.dn))
+        return Area(env_label(env) if env else "")
     return Area(getattr(a, "env", None) or "")
 
 
@@ -1197,6 +1222,57 @@ def _cmd_onboard(conn, a, as_of):
     return text, (1 if v.status == "fail" else 0)
 
 
+def _browse_cell(value):
+    """A browse cell on one line: a multi-line value (a PEM) folded, an enum type shown as enum (--json keeps both)."""
+    text = "" if value is None else str(value)
+    return "enum" if text.startswith("enum:") else " ⏎ ".join(text.splitlines()) if "\n" in text else text
+
+
+def browse_text(rows, empty=None):
+    """Browse rows as a table, each cell on one line; an entry's empty optional fields after it."""
+    return "\n".join((format_table([tuple(_browse_cell(c) for c in r) for r in rows.rows], rows.headers),
+                      *(("", "empty, optional: " + ", ".join(empty)) if empty else ())))
+
+
+def _cmd_browse(conn, a, as_of):
+    target = a.target
+    try:
+        if target and browsemod.is_dn(target[0]):
+            rows, empty = ops.browse_entry(conn, " ".join(target))
+            return _json({"fields": [dict(zip(rows.headers, r)) for r in rows.rows], "empty": list(empty)}) \
+                if a.json else browse_text(rows, empty)
+        if len(target) > 2:
+            raise SystemExit("usage: opsdir browse [AREA [KIND] | DN]")
+        r = ops.browse_areas(conn) if not target else ops.browse_kinds(conn, target[0]) if len(target) == 1 else \
+            ops.browse_entries(conn, *target)
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    return _json([dict(zip(r.headers, row)) for row in r.rows]) if a.json else browse_text(r)
+
+
+def _cmd_edit(conn, a, as_of):
+    if a.change and a.propose:
+        raise SystemExit("give --change (apply under an approved change) or --propose (record it for approval), "
+                         "not both")
+    if a.propose and not a.title:
+        raise SystemExit("--propose needs --title: what the approver reads")
+    try:
+        preview = ops.preview_edit(conn, a.dn, browsemod.parsed_edits(a.set, "set"),
+                                   browsemod.parsed_edits(a.add, "add"), browsemod.parsed_edits(a.remove, "remove"))
+        if a.dry_run or not (a.change or a.propose):
+            return "\n".join((*(line for r in preview.changes for line in describe(r)),
+                              "not applied" + ("" if a.dry_run else ": give --propose CHG-… --title … to record it "
+                                               "for approval, or --change CHG-… to apply it under an approved change")))
+        if a.propose:
+            ops.propose_edit(conn, preview, a.propose, a.title)
+            return (f"{a.propose}: proposed; someone other than you approves it (opsdir change approve {a.propose}), "
+                    f"then `opsdir fix approved --change {a.propose}` applies it")
+    except ValueError as e:
+        raise SystemExit(str(e)) from None
+    r = ops.apply_preview(conn, preview, a.change)
+    return f"{a.change}: {len(r.lines)} change(s) applied"
+
+
 def _cmd_verify(conn, a, as_of):
     root = pathlib.Path(a.root or ".")
     r = ops.verify(conn, {path: read_content(root / path) for path in ops.verify_paths(conn)})
@@ -1321,6 +1397,7 @@ COMMANDS = MappingProxyType({"init": _cmd_init, "upgrade": _cmd_upgrade, "load":
                              "import": _cmd_import, "collect": _cmd_collect, "file": _cmd_file,
                              "prerequisites": _cmd_prerequisites,
                              "bundle": _cmd_bundle, "verify": _cmd_verify, "onboard": _cmd_onboard,
+                             "browse": _cmd_browse, "edit": _cmd_edit,
                              "census": _cmd_census,
                              "setting": _cmd_setting, "identity": _cmd_identity, "db-roles": _cmd_db_roles,
                              "posture": _cmd_posture, "change": _cmd_change, "person": _cmd_person, "grant": _cmd_grant,
@@ -1375,7 +1452,9 @@ def main(argv=None):
         db.connect(dsn, db_password(dsn))
     if conn is not None:
         db.set_as_of(conn, as_of)
-        ops.authorize_command(conn, command_action(a), command_area(a), getattr(a, "requester", None))
+        area = ops.proposal_area(conn, a.change) if (a.cmd, getattr(a, "action", None)) == ("fix", "approved") \
+            else command_area(a)
+        ops.authorize_command(conn, command_action(a), area, getattr(a, "requester", None))
     result = COMMANDS[a.cmd](conn, a, as_of)          # text, or (text, exit status)
     text, status = result if isinstance(result, tuple) else (result, 0)
     if text:

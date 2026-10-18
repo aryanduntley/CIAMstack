@@ -11,7 +11,7 @@ import uuid
 from typing import NamedTuple
 
 from .connectors import capture as capturemod, importing, migration, onboarding, plan as planmod, profiling, reports
-from .connectors import answers as answersmod, workspace
+from .connectors import answers as answersmod, browse as browsemod, schema_docs, workspace
 from .connectors import posture as posturemod
 from .connectors import evidence as evidencemod, fixes as fixmod, prerequisites as prereqmod, settings as settingsmod
 from .connectors.registry import ADAPTER_VERSIONS, ADAPTERS, environment_specs, host_files_of, schema_sync, store_parts
@@ -22,13 +22,14 @@ from .connectors.graph import dependency_graph
 from .connectors.stack import STATUS_HEADERS, note_rows, stack_rows
 from .connectors.summary import estate_counts, plan_counts
 from .core import search as ldap_search
-from .core.directory import get, make_directory, rdn_value
+from .core.directory import get, make_directory, norm_dn, rdn_value
 from .core.environment import ENVIRONMENT, env_model
-from .core.naming import SUFFIX
+from .core.naming import SUFFIX, env_label
 from .core.notes import parsed
 from .core.interchange.export import export_text
 from .domains.estate.evidence import boundary_named, run_records
 from .domains.governance.attempts import attempt_records
+from .domains.governance.imports import environment_of_scope
 from .domains.governance import changes as changesmod, focus as focusmod, grants as grantsmod, people as peoplemod
 from .domains.governance.identity import change_name_problem, identity_changes, identity_line, record_identity
 from .domains.governance.authorization import Area, allow_all, refusal
@@ -320,6 +321,18 @@ def apply_fix(conn, src, dst, as_of, key, change_id, option=None, inputs=None):
     return modify(conn, fix.records, change_id)
 
 
+def proposal_area(conn, change_id):
+    """Effect (reads the record): the Area a proposed change's records touch, what applying it is authorized over:
+    their one environment when they all lie in it, else the whole record ("": also when the change holds no records
+    or isn't approved, which applying then refuses)."""
+    try:
+        records, _ = fixmod.proposed_records(db.load_directory(conn), change_id)
+    except ValueError:
+        return Area("")
+    envs = {environment_of_scope(norm_dn(r.dn)) for r in records}
+    return Area(env_label(envs.pop())) if len(envs) == 1 and None not in envs else Area("")
+
+
 def apply_proposed(conn, change_id):
     """Effect: apply the records a proposed change holds once a person approved it, and mark it applied."""
     records, applied = fixmod.proposed_records(db.load_directory(conn), change_id)
@@ -466,6 +479,77 @@ def verify(conn, contents):
     path: {relative path: bytes} ({"": bytes} for one file), or None when the checkout has nothing there}."""
     headers, rows = capturemod.verification(db.load_directory(conn), contents)
     return Rows(tuple(headers), tuple(rows))
+
+
+def _browsing(conn):
+    """Effect (reads the record and the registry): (Directory, Registry, schema parts) for browsing."""
+    return (db.load_directory(conn), browsemod.registry_from_rows(*db.registry_rows(conn)),
+            schema_docs.documented_parts())
+
+
+def _area(parts, registry, name):
+    found = browsemod.area_named(parts, registry, name)
+    if found is None:
+        raise ValueError(f"no area {name}: `opsdir browse` lists them")
+    return found
+
+
+def browse_areas(conn):
+    """Effect (reads the record): the areas of the record's schema (connectors.browse.area_rows) as Rows."""
+    d, registry, parts = _browsing(conn)
+    return Rows(browsemod.AREA_HEADERS, tuple(browsemod.area_rows(d, parts, registry)))
+
+
+def browse_kinds(conn, area):
+    """Effect (reads the record): the kinds (object classes) of an area with their entry counts, as Rows; ValueError
+    for an area nothing defines."""
+    d, registry, parts = _browsing(conn)
+    return Rows(browsemod.KIND_HEADERS, tuple(browsemod.kind_rows(d, registry, _area(parts, registry, area)[3])))
+
+
+def browse_entries(conn, area, kind):
+    """Effect (reads the record): the entries holding one kind of an area, as Rows; ValueError for an area or kind it
+    doesn't define."""
+    d, registry, parts = _browsing(conn)
+    classes = _area(parts, registry, area)[3]
+    found = next((c for c in classes if c.lower() == kind.lower()), None)
+    if found is None:
+        raise ValueError(f"no kind {kind} in {area}: `opsdir browse {area}` lists them")
+    return Rows(browsemod.ENTRY_HEADERS, tuple(browsemod.entry_rows(d, found)))
+
+
+def browse_entry(conn, dn):
+    """Effect (reads the record): (Rows of the fields an entry holds, the optional fields it may hold that are empty);
+    ValueError when there is no such entry."""
+    d, registry, _ = _browsing(conn)
+    entry = get(d, dn)
+    if entry is None:
+        raise ValueError(f"no entry {dn}")
+    rows, empty = browsemod.field_rows(registry, entry)
+    return Rows(browsemod.FIELD_HEADERS, tuple(rows)), empty
+
+
+def preview_edit(conn, dn, sets=(), adds=(), removes=()):
+    """Effect (reads the record): the modify record of an edit to one entry (connectors.browse.edit_record: ATTR=VALUE
+    pairs to set, add or remove), as a Preview applied with apply_preview under an approved change or proposed with
+    propose_edit; ValueError for an edit that changes nothing or that the store would refuse (its own checks: the
+    classes' attributes, types, rules, vocabulary, single values, required attributes, secret material)."""
+    d, registry, _ = _browsing(conn)
+    record = browsemod.edit_record(d, registry, dn, sets, adds, removes)
+    problems = db.record_problems(conn, (record,))
+    if problems:
+        raise ValueError("the store would refuse this edit: " + "; ".join(problems))
+    return Preview(f"edit {record.dn}", (record,), ())
+
+
+def propose_edit(conn, preview, change_id, title):
+    """Effect: record an edit (preview_edit) as change change_id with status proposed, holding its records, for someone
+    else to approve (then apply_proposed applies them); ValueError when change_id isn't named with the record's org
+    code."""
+    named = change_name_problem(record_identity(db.load_directory(conn)), change_id)
+    if named:
+        raise ValueError(named)
+    return modify(conn, (changesmod.proposal_record(change_id, title, preview.changes),), change_id)
 
 
 def preview_setup(conn, answers):

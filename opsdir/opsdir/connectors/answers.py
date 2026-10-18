@@ -239,6 +239,8 @@ def answers_problems(answers, installed=ADAPTERS):
         answers.identity and code_problem(answers.identity.org),
         answers.identity and answers.identity.parent and code_problem(answers.identity.parent, "parent org code"),
         *(_name_problem(t.name, "team") for t in answers.teams),
+        *(f"team {n} is given twice" for n in sorted({t.name for t in answers.teams})
+          if sum(t.name == n for t in answers.teams) > 1),
         None if sum(t.operator for t in answers.teams) <= 1 else "only one team operates the platform",
         *(f"environment {s} is declared twice" for s in sorted(set(specs)) if specs.count(s) > 1),
         *(p for e in answers.environments
@@ -288,16 +290,18 @@ def _value(v):
         return "true" if v else "false"
     if isinstance(v, int):
         return str(v)
-    return json.dumps(v, ensure_ascii=False)
+    return json.dumps(v, ensure_ascii=False).replace("\x7f", "\\u007f")      # TOML refuses a raw DEL
 
 
 def _setting_value(text):
-    """A setting's text as the TOML value it was most likely written as: true/false, a whole number, else text."""
-    return {"TRUE": True, "FALSE": False}.get(text, int(text) if text.lstrip("-").isdigit() else text)
+    """A setting's text as the TOML value it was most likely written as: true/false, a whole number written as it
+    reads back (no leading zeros), else text."""
+    number = text.lstrip("-").isdigit() and str(int(text)) == text
+    return {"TRUE": True, "FALSE": False}.get(text, int(text) if number else text)
 
 
 def _key(k):
-    return k if re.match(r"^[A-Za-z0-9_-]+$", k) else json.dumps(k, ensure_ascii=False)
+    return k if re.match(r"^[A-Za-z0-9_-]+$", k) else _value(k)
 
 
 def _pairs(pairs):
@@ -390,7 +394,11 @@ def stack_text(text):
             raise ValueError(f"{part.strip()!r}: give role=adapter[@versions]")
         adapter, _, versions = rest.partition("@")
         return Component(role.strip(), adapter.strip(), versions.strip() or None)
-    return tuple(one(p) for p in text.split(";") if p.strip())
+    found = tuple(one(p) for p in text.split(";") if p.strip())
+    twice = sorted({c.role for c in found if sum(x.role == c.role for x in found) > 1})
+    if twice:
+        raise ValueError(f"role {', '.join(twice)} given twice")
+    return found
 
 
 def stack_line(stack):

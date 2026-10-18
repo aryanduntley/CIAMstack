@@ -13,7 +13,8 @@ from ..core.directory import get, gtime_at, one, values, within
 from ..core.findings import filled_records, fix_inputs
 from ..domains.governance.imports import runs_covering
 from ..core.interchange.ldif import LdifRecord, parse, write_records
-from ..domains.governance.changes import APPLIED, APPROVED, PROPOSED, change_dn  # noqa: F401  (re-exported)
+from ..domains.governance.changes import (APPLIED, APPROVED, PROPOSED, change_dn,  # noqa: F401  (re-exported)
+                                          proposal_record)
 
 
 
@@ -104,9 +105,7 @@ def proposal(fix, change_id, title=None):
     if not fix.records:
         raise ValueError(f"fix {fix.key} changes nothing in the record (its steps are manual: "
                          + " ".join(fix.manual) + ")")
-    return LdifRecord(change_dn(change_id), "add", {
-        "objectClass": ("top", "ciamChange"), "cn": (change_id,), "ciamTitle": (title or fix.title,),
-        "ciamChangeStatus": (PROPOSED,), "ciamChangeRecords": (write_records(fix.records),)}, ())
+    return proposal_record(change_id, title or fix.title, fix.records)
 
 
 def proposed_records(d, change_id):

@@ -858,6 +858,21 @@ The command exits 1 when anything fails. The report gives a table per export, th
 
 Known limits: an importer that keeps attributes it doesn't own from the record (most do) can't show a render losing them, because both sides copy them; and an environment that can't be rendered is named in the notices, its scopes read back by the others or left uncovered.
 
+## Browse and edit
+
+The record by its schema, for people who don't write LDAP filters: area, then kind, then entries, then one entry's fields. The views are generated from the store's registry, so an installed adapter's kinds, and the record's own custom record types, appear without anything else to set up.
+
+```bash
+opsdir browse                                   # areas: the core, each domain and package, custom, standard (entry counts)
+opsdir browse pki                               # an area's kinds (object classes) with entry counts
+opsdir browse pki ciamCertificate               # a kind's entries
+opsdir browse cn=ciam-internal-ca,ou=certificates,dc=ciam-ops   # one entry: each field's value, type, portability,
+                                                # whether it is required and what it holds; then the optional fields still empty
+opsdir browse … --json                          # any level as JSON (the console and the MCP tools read the same)
+```
+
+`opsdir edit DN --set ATTR=VALUE --add ATTR=VALUE --remove ATTR[=VALUE]` changes one entry's fields (repeat `--set` for several values; `--remove ATTR` alone removes the whole attribute). The edit is checked by the store's own rules before anything is written: the entry's classes must allow the field, the value must fit its type, rules and vocabulary, a single-valued field takes one value, a required one can't be removed, and secret material is refused. Without a flag it only shows the change. `--propose CHG-… --title …` records it as a proposed change for someone else to approve (`opsdir change approve`, then `opsdir fix approved --change CHG-…` applies it, as for fixes); `--change CHG-…` applies it under a change that is already approved. Object classes aren't edited here (`opsdir modify` takes LDIF for that).
+
 ## Assisted fixes
 
 When a planner check knows the exact record change that resolves a finding, the finding offers it as a fix: the LDIF change records, the steps outside the record that go with it (a deploy, a live change, a party's confirmation) and what applying it could hide. `PLAN.md` lists the fixes offered; nothing is applied without a change.

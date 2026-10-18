@@ -6,6 +6,7 @@ isn't a recorded person once people are recorded, and applied from anything but 
 create a change and move it along that lifecycle. Pure."""
 from ...core.changeset import new_entry, set_values
 from ...core.directory import get, one
+from ...core.interchange.ldif import LdifRecord, write_records
 from .naming import CHANGES
 
 PROPOSED, APPROVED, APPLIED, REJECTED = "proposed", "approved", "applied", "rejected"
@@ -32,6 +33,16 @@ def new_change(d, change_id, title, ticket=None):
     return (new_entry(change_dn(change_id), ("top", "ciamChange"),
                       {"cn": (change_id,), "ciamTitle": (title,), "ciamChangeStatus": (PROPOSED,),
                        **({"ciamTicketRef": (ticket,)} if ticket else {})}),)
+
+
+def proposal_record(change_id, title, records):
+    """The record of a proposed change holding the LDIF change records it applies once a person approves it
+    (ciamChangeRecords): what a fix, an edit or an AI proposes. ValueError when there is nothing to apply."""
+    if not records:
+        raise ValueError(f"{change_id} would change nothing in the record")
+    return LdifRecord(change_dn(change_id), "add", {
+        "objectClass": ("top", "ciamChange"), "cn": (change_id,), "ciamTitle": (title,),
+        "ciamChangeStatus": (PROPOSED,), "ciamChangeRecords": (write_records(records),)}, ())
 
 
 def status_change(d, change_id, status):

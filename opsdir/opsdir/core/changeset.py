@@ -55,9 +55,10 @@ def entry_mods(old, new):
 
 
 def merge_record(held, desired):
-    """The record making entry held (None: absent) hold what entry desired says, never removing anything: an add when
-    it is absent, else a modify adding the object classes it lacks and replacing each attribute desired gives whose
-    values differ; None when held already says it all."""
+    """The record making entry held (None: absent) hold what entry desired says, leaving the rest as it is: an add when
+    it is absent, else a modify adding the object classes it lacks and setting each attribute desired gives to exactly
+    its values where they differ (attributes desired doesn't give, and classes it doesn't name, stay); None when held
+    already says it all."""
     if held is None:
         return _add(desired)
     classes = tuple(dict.fromkeys((*held.classes, *desired.classes)))
