@@ -2,14 +2,16 @@
 under SELinux allowed to bind and connect to any port (haproxy_connect_any: service names' ports aren't the http
 ports the policy labels), the TLS bundle of each terminating frontend (the certificate's recorded PEM, then its key
 read at run time from the environment's binding of the certificate's key role: never written in a file opsdir
-renders), haproxy.cfg checked by `haproxy -c` before it replaces the running one, and HAProxy enabled and reloaded. A
-bundle the record can't complete stops the play, naming what to record. Pure."""
+renders), the client CA bundles of the edge trust policies its frontends check (public certificates, rendered beside
+haproxy.cfg), haproxy.cfg checked by `haproxy -c` before it replaces the running one, and HAProxy enabled and
+reloaded. A bundle the record can't complete stops the play, naming what to record. Pure."""
 from opsdir.core.directory import get, one, rdn_value
 from opsdir.core.environment import of_class, one_role
 from opsdir.domains.edge.resolve import service_edge
 from opsdir.domains.pki.pem import certificate_pem
 from opsdir_adapter_ansible.names import ansible_name
 from opsdir_adapter_ansible.output import secret_lookup, unsafe
+from .client_certificates import TRUST, trust_files
 from .config import CERTS
 
 HOSTS = "load-balancer"          # the server role HAProxy runs on (and the stack role it fills)
@@ -33,9 +35,17 @@ def play(m, services):
     """The HAProxy playbook (a list of one play) for environment m."""
     found = [_bundle(m, services, svc) for svc in of_class(m, "ciamServiceName")
              if (spec := service_edge(m, svc, services.endpoints)) is not None and spec.layer7]
+    trust = list(trust_files(m, services.endpoints))
+    client_cas = [
+        {"name": "Client CA bundle folder", "ansible.builtin.file": {"path": TRUST, "state": "directory",
+                                                                     "mode": "0755"}},
+        {"name": "Client CA bundles of the trust policies checked here (public certificates)", "ansible.builtin.copy":
+         {"src": "trust/{{ item }}", "dest": f"{TRUST}/{{{{ item }}}}", "mode": "0644"},
+         "loop": "{{ ciam_haproxy_trust }}", "notify": "Reload HAProxy"}] if trust else []
     return [{"name": "HAProxy in front of the service names (opsdir)", "hosts": ansible_name(HOSTS), "become": True,
              "vars": {"ciam_haproxy_bundles": [b for b, _ in found if b],
-                      "ciam_haproxy_missing": unsafe([why for _, why in found if why])},
+                      "ciam_haproxy_missing": unsafe([why for _, why in found if why]),
+                      **({"ciam_haproxy_trust": trust} if trust else {})},
              "tasks": [
                  {"name": "HAProxy installed", "ansible.builtin.package": {"name": "haproxy", "state": "present"}},
                  {"name": "SELinux lets HAProxy bind and connect to the service names' ports",
@@ -51,6 +61,7 @@ def play(m, services):
                    "mode": "0600"},
                   "loop": "{{ ciam_haproxy_bundles }}", "loop_control": {"label": "{{ item.name }}"},
                   "no_log": True, "notify": "Reload HAProxy"},
+                 *client_cas,
                  {"name": "HAProxy configuration, checked before it replaces the running one", "ansible.builtin.copy":
                   {"src": "haproxy.cfg", "dest": "/etc/haproxy/haproxy.cfg", "mode": "0644",
                    "validate": "haproxy -c -f %s"}, "notify": "Reload HAProxy"},

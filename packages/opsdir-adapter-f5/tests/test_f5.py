@@ -135,3 +135,64 @@ def test_the_play_and_declaration_pass_ansible_and_the_as3_schema(tmp_path):
     done = subprocess.run([str(ROOT / "opsdir" / "scripts" / "validate-ansible.sh"), str(tmp_path)],
                           capture_output=True, text=True)
     assert done.returncode == 0 and "as3-CIAM_Prod.json (AS3 schema)" in done.stdout, done.stdout + done.stderr
+
+
+# ------------------------------------------------------------------ client certificates (edge trust policies)
+def _mtls(*extra, mode="terminate", **kw):
+    """The alpha model whose service name sso (TLS mode as given) is under the edge trust policy cac-users (anchor
+    CA_PEM), with extra records."""
+    from opsdir.core.interchange.ldif import parse
+    from edge_samples import TERMINATE, TLS
+    from pki_samples import CA_PEM, ca_records, edge_trust_records
+    policy = (TERMINATE[0], TERMINATE[1].replace("ciamTlsMode: terminate", f"ciamTlsMode: {mode}"))
+    _, alpha, _ = model(alpha=(KEY, *extra), tree=(*ca_records(), *policy,
+                                                   *edge_trust_records(CA_PEM, store=None, **kw)),
+                        changes=tuple(r for t in TLS for r in parse(t)))
+    return alpha
+
+
+def _sso(m):
+    return next(b for b in m.bindings if b.dn.startswith("cn=svc-sso,"))
+
+
+def test_an_edge_trust_policy_requires_client_certificates_and_forwards_the_verified_one():
+    from pki_samples import CA_PEM
+    app = _app(_mtls(*BIGIP))
+    assert app["tls_server"]["authenticationMode"] == "require"
+    assert app["tls_server"]["authenticationTrustCA"] == "client_ca" and app["tls_server"]["retainCertificateEnabled"]
+    assert app["client_ca"] == {"class": "CA_Bundle", "bundle": CA_PEM.strip() + "\n"}       # public certificates
+    assert app["vs_443"]["iRules"] == ["forward_client_cert"]
+    assert app["forward_client_cert"] == {"class": "iRule", "iRule": (
+        "when HTTP_REQUEST {\n    HTTP::header remove X-SSL-Client-Cert\n"          # the client's copy removed first
+        "    HTTP::header insert X-SSL-Client-Cert [b64encode [SSL::cert 0]]\n}\n")}
+
+
+def test_without_an_edge_policy_no_client_certificate_is_asked_for():
+    app = _app(alpha_with_policy(KEY, *BIGIP))
+    assert "authenticationMode" not in app["tls_server"] and "client_ca" not in app and "iRules" not in app["vs_443"]
+
+
+def test_f5_declares_how_it_forwards_the_certificate_where_a_stack_declares_it():
+    from opsdir.connectors.registry import cert_forwarding_of
+    from opsdir_adapter_f5.adapter import ADAPTER
+    source = entry(ALPHA, "bigip-2", "ciamAppliance", ciamBindingRole="lb-bigip-2", ciamStackRole="load-balancer",
+                   ciamManagementAddress="bigip-2.mgmt.example.test", ciamApplianceSource=("10.80.9.0/28",
+                                                                                          "10.80.9.64/28"))
+    alpha = _mtls(*BIGIP, source)
+    declared = alpha._replace(stack=(*alpha.stack, StackComponent("load-balancer", "f5-bigip", None, None)))
+    f = cert_forwarding_of(declared, _sso(alpha), installed=(ADAPTER,))
+    assert (f.header, f.encoding, f.holds, f.sources) == ("X-SSL-Client-Cert", "der-base64", "leaf",
+                                                          ("10.80.9.0/28", "10.80.9.64/28"))
+    assert not ADAPTER.applies(alpha) and cert_forwarding_of(alpha, _sso(alpha), installed=(ADAPTER,)) is None
+    assert ADAPTER.cert_forwarding(_mtls(mode="passthrough"), _sso(alpha)) is None     # Service_TCP: none verifies
+
+
+def test_what_the_bigips_leave_to_people_and_products():
+    from opsdir_adapter_f5.adapter import ADAPTER
+    revocation, chain, der = ADAPTER.notes(_mtls(extra="ciamRevocationMode: ocsp\n"), services())
+    assert revocation.severity == "action" and "SSL OCSP authentication profile" in revocation.text
+    assert chain.severity == "note" and "X-SSL-Client-Cert" in chain.text
+    assert der.severity == "action" and "openssl x509 -inform der" in der.how[0]
+    (blocker,) = ADAPTER.notes(_mtls(mode="passthrough"), services())
+    assert blocker.severity == "blocker" and "TLS terminated at the BIG-IPs for sso.example.test" in blocker.text
+    assert "authenticationMode" not in json.dumps(declaration(_mtls(anchors=False), (), None))

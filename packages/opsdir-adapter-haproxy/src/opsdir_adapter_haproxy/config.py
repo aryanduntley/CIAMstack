@@ -6,14 +6,19 @@ X-Forwarded-For) and re-encrypted to the servers when the policy says so (their 
 system trust store, where the host config adds the record's CAs, unless the policy says none); the health check (on
 the product's own health port when it declares one, an admin port, else the service's), the minimum TLS version,
 stickiness (a cookie where HTTP is spoken; source-ip as balance source) and the idle timeout. A terminating frontend
-presents the bundle the playbook writes to /etc/haproxy/certs/<service name>.pem.
+presents the bundle the playbook writes to /etc/haproxy/certs/<service name>.pem, and under an edge trust policy checks
+client certificates against the policy's bundle and passes the verified one on (client_certificates.py; a policy it
+can't check is a NOTE comment above the frontend).
 
 Two frontends can't share an address and port (HAProxy would split connections between unrelated backends): the
 later is left out, commented, and the planner check (checks.py) names it. A server with no address or host name
 recorded is commented, UNBOUND:<server>-address. Pure."""
 from opsdir.core.directory import one, rdn_value, values
 from opsdir.core.environment import UNBOUND, of_class, servers_with_role
+from opsdir.core.notes import note_comment
 from opsdir.domains.edge.resolve import service_edge
+from opsdir.domains.pki.trust import edge_policy_for
+from .client_certificates import bind_options, blocked_note, forwarding_lines
 
 CERTS = "/etc/haproxy/certs"
 GLOBAL = ("global", "    log /dev/log local0", "    maxconn 20000", "    ssl-default-bind-options ssl-min-ver TLSv1.2",
@@ -72,18 +77,22 @@ def _service(m, svc, endpoints, skipped):
     address = one(svc, "ciamFrontendIp") or "*"
     servers = servers_with_role(m, one(svc, "ciamTargetRole"))
     idle = spec.idle_timeout if spec is not None and spec.idle_timeout else None
+    policy = edge_policy_for(m, svc)
+    blocked = blocked_note(m, policy) if policy is not None else None
     for port in values(svc, "ciamPort"):
         n = _name(svc, port)
         if port in skipped:
             yield from (f"# frontend fe_{n} not rendered: {address}:{port} is {skipped[port]}'s", "")
             continue
-        tls = f" ssl crt {CERTS}/{rdn_value(svc)}.pem ssl-min-ver TLSv{spec.tls_min}" if layer7 else ""
+        tls = (f" ssl crt {CERTS}/{rdn_value(svc)}.pem ssl-min-ver TLSv{spec.tls_min}{bind_options(m, svc, spec)}"
+               if layer7 else "")
         health = spec.health if spec is not None else None
         check = (f"    option httpchk GET {health.path}",) if health is not None and health.protocol != "tcp" else ()
         sticky = ("    cookie SERVERID insert indirect nocache",) if _sticky(spec, "cookie") else ()
         balance = "source" if _sticky(spec, "source-ip") else "roundrobin"
-        yield from (f"frontend fe_{n}", f"    bind {address}:{port}{tls}", f"    mode {mode}",
-                    *(("    option forwardfor",) if layer7 else ()),
+        yield from (*((f"# {note_comment(blocked)}",) if blocked is not None else ()),
+                    f"frontend fe_{n}", f"    bind {address}:{port}{tls}", f"    mode {mode}",
+                    *(("    option forwardfor",) if layer7 else ()), *forwarding_lines(m, svc, spec),
                     *((f"    timeout client {idle}s",) if idle else ()), f"    default_backend be_{n}", "",
                     f"backend be_{n}", f"    mode {mode}", f"    balance {balance}", *check, *sticky,
                     *((f"    timeout server {idle}s",) if idle else ()),
