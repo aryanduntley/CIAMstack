@@ -126,3 +126,40 @@ def test_posture_reports_the_waiver(conn):
     assert checks["approval separation"] == "ok"
     waive(conn)
     assert {c: s for c, s, _ in ops.posture(conn)[0].rows}["approval separation"] == "warn"
+
+
+SHADOW = ("create temp table entry as select * from opsdir.entry where dn_norm in ('ou=owners,dc=ciam-ops', "
+          "'dc=ciam-ops')",
+          "insert into pg_temp.entry (id, dn, dn_norm, rdn, object_classes, attrs, change_id) values (-1, "
+          "'cn=fake-1,ou=changes,dc=ciam-ops', 'cn=fake-1,ou=changes,dc=ciam-ops', 'cn=fake-1', '{top,ciamChange}', "
+          "'{\"ciamChangeStatus\": [\"approved\"]}', 'x')",
+          "set local opsdir.change_id = 'FAKE-1'")
+
+
+def test_a_temporary_table_cant_stand_in_for_the_record_inside_the_stores_rules(conn):
+    """A login allowed to create temporary tables can't shadow entry with a fake approved change: the store's own
+    functions run with their search path pinned, the temporary schema last."""
+    with pytest.raises(psycopg.errors.RaiseException, match="FAKE-1 is not an approved change record"):
+        with conn.transaction():
+            for statement in SHADOW:
+                conn.execute(statement)
+            conn.execute("update opsdir.entry set attrs = attrs || '{\"description\": [\"shadowed\"]}'::jsonb "
+                         "where dn_norm = 'cn=platform,ou=owners,dc=ciam-ops'")
+    assert conn.execute("select count(*) from opsdir.entry_history where change_id = 'FAKE-1'").fetchone() == (0,)
+
+
+def test_an_approval_covers_the_change_as_it_was_approved(conn):
+    """The records an approved change proposes can't change afterwards, whoever writes: an approval can't be reused
+    for other records (its title stays writable: change records are mirrored from ITSM)."""
+    waive(conn)
+    ops.propose_edit(conn, ops.preview_edit(conn, "cn=platform,ou=owners,dc=ciam-ops", sets=(("mail", "a@x.test"),)),
+                     "CHG-2", "Platform's mail")
+    ops.change_status(conn, "CHG-2", "approved")
+    swapped = ("dn: cn=CHG-2,ou=changes,dc=ciam-ops\nchangetype: modify\nreplace: ciamChangeRecords\n"
+               "ciamChangeRecords: dn: cn=platform,ou=owners,dc=ciam-ops\n-\n")
+    with pytest.raises(psycopg.errors.RaiseException, match="CHG-2 was approved as it stood"):
+        ops.modify(conn, parse(swapped), "CHG-1")
+    retitled = "dn: cn=CHG-2,ou=changes,dc=ciam-ops\nchangetype: modify\nreplace: ciamTitle\nciamTitle: Renamed\n-\n"
+    ops.modify(conn, parse(retitled), "CHG-1")
+    ops.apply_proposed(conn, "CHG-2")                                       # the approved records still apply
+    assert one(get(db.load_directory(conn), "cn=platform,ou=owners,dc=ciam-ops"), "mail") == "a@x.test"

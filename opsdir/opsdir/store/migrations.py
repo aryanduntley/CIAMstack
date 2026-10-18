@@ -42,6 +42,17 @@ BOOKKEEPING_SQL = ("create schema if not exists opsdir;"
                    " version int primary key, name text not null, checksum text not null,"
                    " applied_at timestamptz not null default now())")
 APPLIED_SQL = "select version, name, checksum from opsdir.schema_migration order by version"
+# Every function in the opsdir schema that may read a table runs with its search path pinned, temporary schema last:
+# PostgreSQL otherwise searches a session's temporary schema first, so a login allowed to create temporary tables
+# could shadow entry, entry_history or suffix inside the store's own rules (a fake approved change). Immutable SQL
+# helpers touch no table and stay inlinable. Re-applied on every upgrade, so functions added later are covered.
+PIN_SEARCH_PATH_SQL = ("do $$ declare f record; begin"
+                       " for f in select p.oid::regprocedure as sig from pg_proc p"
+                       " join pg_namespace n on n.oid = p.pronamespace join pg_language l on l.oid = p.prolang"
+                       " where n.nspname = 'opsdir' and p.prokind in ('f', 'p')"
+                       " and not (l.lanname = 'sql' and p.provolatile = 'i')"
+                       " loop execute format('alter routine %s set search_path = opsdir, pg_temp', f.sig); end loop;"
+                       " end $$")
 RECORD_SQL = "insert into opsdir.schema_migration (version, name, checksum) values (%s, %s, %s)"
 DROP_VIEWS_SQL = ("do $$ declare v record; begin"
                   " for v in select viewname from pg_views where schemaname = 'opsdir' loop"
@@ -205,6 +216,7 @@ def upgrade(conn, migrations, definition_files, schema, ref_schemes, vocabulary,
             conn.execute(RECORD_SQL, (m.version, m.name, m.checksum))
         conn.execute("set search_path = opsdir")
         _apply_definitions(conn, definition_files)
+        conn.execute(PIN_SEARCH_PATH_SQL)
         schema_text = schema(conn)
         sync_registry(conn, schema_text)
         _sync_names(conn, ref_schemes)

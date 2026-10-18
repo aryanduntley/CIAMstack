@@ -15,6 +15,8 @@ The record is a PostgreSQL database. Each company keeps its own: a parent organi
    - `opsdir_migrate`, which runs init and upgrade;
    - `opsdir_app`, the day-to-day login, which has rows only.
 
+   The script also takes the right to create temporary tables away from PUBLIC (`revoke temporary on database`), and every store function runs with its search path pinned (`opsdir, pg_temp`), so no login can stand a temporary table in for the record inside the store's own rules.
+
    On RDS with IAM authentication, also `GRANT rds_iam TO opsdir_app` (and to `opsdir_migrate`). On Azure with Entra ID, the server's Entra administrator maps the principals with `pgaadauth_create_principal` instead of creating password logins.
 2. **Allow the logins in `pg_hba.conf`** (self-managed servers) with the `hostssl` lines the script prints, narrowed to the CIAMstack server's address. Managed services set this through their own settings: TLS required, IAM or Entra authentication on.
 3. **Configure the CIAMstack server**:
@@ -69,6 +71,8 @@ The dump holds the whole record: owners, configuration, history. It holds no sec
 2. Install the new CIAMstack release on the server.
 3. Run `opsdir upgrade` as the migration login, with `OPSDIR_DB_OWNER` and `OPSDIR_DB_RUNTIME` set. Pending migrations, definitions, the schema registry and the runtime's grants are applied in one transaction, one upgrade at a time. If anything fails, nothing changes, and the stored entries are re-checked against the new schema before it commits.
 4. Run `opsdir posture`.
+
+A database set up before 2026-10-18: also have the DBA run `revoke temporary on database <db> from public;` (the current `opsdir db-roles` script includes it); `opsdir upgrade` pins the store functions' search path itself.
 
 `opsdir init` is never part of an upgrade: it drops the schema and its history.
 

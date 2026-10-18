@@ -90,6 +90,7 @@ def db_roles_sql(owner, migrator, runtime, database, login="password", persons=(
         f"grant connect on database {database} to {migrator}, {runtime};",
         f"grant create on database {database} to {owner};",
         f"revoke create on schema public from public;",
+        f"revoke temporary on database {database} from public;",   # no temporary tables to shadow the store's
         *(line for p in persons for line in (f"-- {p}: a person, signing in as themselves with the runtime's rights",
                                              f"create role {p} login in role {runtime};")),
         *_login_notes(login, migrator, runtime),
