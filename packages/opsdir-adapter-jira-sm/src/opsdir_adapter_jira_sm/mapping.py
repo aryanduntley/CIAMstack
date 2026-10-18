@@ -1,6 +1,8 @@
 """The operator's mapping of one Jira site's change tickets, as estate settings without defaults (the user's decision,
 task 551): which neutral state each workflow status means (jira-sm-status-states) and which of the site's fields hold
-the change's planned and actual windows and the other facts worth keeping (jira-sm-change-fields). Jira has no fixed
+the change's planned and actual windows and the other facts worth keeping (jira-sm-change-fields); and which issue type
+the work tickets are (jira-sm-ticket-issue-type, task 612: drafts.py creates them as it, the importer reads a linked
+issue of it as a work ticket). Jira has no fixed
 answer to either: a change workflow's statuses are the site's own (their ids differ between sites, and status
 categories say only new, in progress or done), and the change fields are custom fields whose ids differ between sites
 (their types are generic, so neither a name nor a type says what a field means). Pure.
@@ -9,12 +11,15 @@ A setting's text is comma-separated '<name>=<value>' pairs:
   jira-sm-status-states   '<status id or exact name>=<neutral state>, ...': 10010=assess, Implementing=implement
   jira-sm-change-fields   '<role>=<field id or exact name>, ...': planned-start=customfield_10070, planned-end=Planned
                           end, work-start=..., work-end=..., and any fact worth keeping (change-type=..., risk=...)
+  jira-sm-ticket-issue-type  one issue type id for every project (10002), or '<project key>=<issue type id>, ...'
+                          where projects differ (a team-managed project has its own issue types)
 A name is resolved through the site's field list (GET /rest/api/{3|2}/field, which the collector saves): an exact name
 two fields share is refused (map it by id). A status's id is matched before its name."""
 import re
 
 from opsdir.core.contract import Setting
-from opsdir.core.settings import setting_mapping, setting_pairs  # noqa: F401  (setting_pairs re-exported)
+from opsdir.core.settings import (setting_mapping, setting_pairs,  # noqa: F401  (setting_pairs re-exported)
+                                  setting_value)
 from opsdir.domains.governance.schema import TICKET_STATES
 from opsdir.domains.governance.tickets import ticket_state_map
 
@@ -27,10 +32,18 @@ CHANGE_FIELDS = Setting("jira-sm-change-fields", "string", None,
                         "comma-separated <role>=<field id or exact name> (planned-start, planned-end, work-start, "
                         "work-end; any other role is kept as a fact, change-type, risk): the field ids are the site's "
                         "own (GET /rest/api/3/field)")
+ISSUE_TYPE = Setting("jira-sm-ticket-issue-type", "string", None,
+                     "Which issue type the work tickets handing findings to a team are (the project's Task type), by "
+                     "id: one id for every project, or comma-separated <project key>=<issue type id> where projects "
+                     "differ (GET /rest/api/3/issue/createmeta/<project key>/issuetypes): drafts are created as it, "
+                     "and a linked issue of it is read as a work ticket")
 WINDOW = (("planned-start", "ciamTicketPlannedStart"), ("planned-end", "ciamTicketPlannedEnd"),
           ("work-start", "ciamTicketWorkStart"), ("work-end", "ciamTicketWorkEnd"))
 ROLE = re.compile(r"[a-z][a-z0-9-]*")
 CUSTOM_ID = re.compile(r"customfield_\d+")
+PROJECT_KEY = re.compile(r"[A-Z][A-Z0-9_]*")
+TYPE_ID = re.compile(r"\d+")
+EVERY_PROJECT = "*"
 # The names Atlassian documents for the change window fields (default form fields for change requests; Data Center's
 # change start and completion dates), only to point the operator at candidates: never mapped without them.
 WINDOW_NAMES = ("planned start", "planned start date", "planned end", "planned end date", "actual start",
@@ -83,3 +96,31 @@ def window_candidates(fields):
     """'<name> (<id>)' of the site's fields named like the documented change window fields."""
     return tuple(sorted(f"{f.get('name')} ({f.get('id')})" for f in fields or ()
                         if str(f.get("name") or "").strip().lower() in WINDOW_NAMES))
+
+
+def issue_types(d):
+    """({project key, or '*' for every project: issue type id}, problems) of jira-sm-ticket-issue-type."""
+    text = setting_value(d, ISSUE_TYPE)
+    if text is not None and "=" not in text:
+        return (({EVERY_PROJECT: text.strip()}, ()) if TYPE_ID.fullmatch(text.strip()) else
+                ({}, (f"{ISSUE_TYPE.name}: `{text.strip()}` isn't an issue type id, or <project key>=<issue type "
+                      "id>, ...",)))
+    pairs, problems = setting_mapping(d, ISSUE_TYPE)
+    ok = tuple((k, v) for k, v in pairs if PROJECT_KEY.fullmatch(k) and TYPE_ID.fullmatch(v))
+    bad = tuple(f"{ISSUE_TYPE.name}: `{k}={v}` isn't <project key>=<issue type id>" for k, v in pairs
+                if (k, v) not in ok)
+    return {k: v for k, v in reversed(ok)}, (*problems, *bad)
+
+
+def issue_type_for(types, project):
+    """The work tickets' issue type id in a project (its own, else the one for every project), or None."""
+    return types.get(project) or types.get(EVERY_PROJECT)
+
+
+def is_work_issue(issue, types):
+    """Whether an issue answer is a work ticket: its issue type is the one jira-sm-ticket-issue-type maps for its
+    project (its key's prefix)."""
+    f = issue.get("fields") if isinstance(issue, dict) and isinstance(issue.get("fields"), dict) else {}
+    kind = f.get("issuetype") if isinstance(f.get("issuetype"), dict) else {}
+    wanted = issue_type_for(types, str(issue.get("key") or "").rpartition("-")[0] if isinstance(issue, dict) else "")
+    return wanted is not None and str(kind.get("id") or "") == wanted

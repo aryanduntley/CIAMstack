@@ -16,7 +16,8 @@ then each issue the record's change records name (jira-sm:<KEY>), one GET each (
 with the system fields and the mapped ones: one per linked ticket avoids search's lag and Data Center refusing a whole
 query for one key it doesn't have; a 404 is a ticket not read, never a failure); then each issue's approval steps (GET
 /rest/servicedeskapi/request/<KEY>/approval), page after page until one says it is the last (a 404, an issue that
-isn't a request, has none). Each answer is saved with only what the importer reads (people as their ids: never a
+isn't a request, has none; never for a work ticket, an issue of jira-sm-ticket-issue-type, which has no approval to
+compare). Each answer is saved with only what the importer reads (people as their ids: never a
 display name or an email address)."""
 import json
 from urllib.parse import quote, urlsplit
@@ -26,7 +27,7 @@ from opsdir.core.sources import json_document
 from opsdir.domains.governance.collection import readable_source, scheme_problems
 from opsdir.domains.governance.tickets import linked_numbers
 from .changes import ISSUE_FIELDS, KEY, SYSTEM, field_list, jira_error
-from .mapping import field_refs, resolve_fields
+from .mapping import field_refs, is_work_issue, issue_types, resolve_fields
 
 IMPORTER = "jira-sm/change-requests"
 SCHEMES = ("basic", "bearer")
@@ -121,13 +122,16 @@ def change_steps(d, m, done, options):
     mapped, _ = resolve_fields(field_refs(d)[0], field_list(done[fields_path]))
     wanted = (*ISSUE_FIELDS, *sorted(set(mapped.values()) - set(ISSUE_FIELDS)))
     keys = tuple(k for k in linked_numbers(d, SYSTEM) if KEY.fullmatch(k))
+    types = issue_types(d)[0]
     issues = tuple((f"{host}/issue/{k}.json", Request(f"{api}/issue/{quote(k)}?fields={','.join(wanted)}", HEADERS,
                                                       cred, s.ca, absent=(404,), keep=projected(issue_view(wanted))))
                    for k in keys)
     approvals = tuple((f"{host}/approval/{k}/{start}.json",
                        Request(f"{base}/rest/servicedeskapi/request/{quote(k)}/approval?start={start}&limit={PAGE}",
                                HEADERS, cred, s.ca, absent=(404,), keep=projected(approval_view)))
-                      for k in keys if f"{host}/issue/{k}.json" in done for start in _approval_starts(host, k, done))
+                      for k in keys if f"{host}/issue/{k}.json" in done
+                      and not is_work_issue(json_document(done[f"{host}/issue/{k}.json"]), types)
+                      for start in _approval_starts(host, k, done))
     return (*first, *issues, *approvals)
 
 
