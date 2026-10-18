@@ -64,6 +64,8 @@ OpenAPI: `/openapi.json`, interactive docs at `/docs`.
 | `GET /v1/search?base=&filter=&scope=` | read | Entries an LDAP filter matches (`scope` is base, one or sub; default sub) |
 | `GET /v1/reports/{name}?dn=&as_of=` | read | A named report's rows (`as_of` YYYY-MM-DD) |
 | `GET /v1/history?dn=` | read | Change history, of one entry or of all |
+| `GET /v1/render/{cloud}/{env}?target=&keeper=&kind=&binding=&archive=` | render | A preview of an environment's rendered files (nothing deployed or recorded): `{environment, dn, provider, unbound, notes, files: {path: text}}`. `target=ADAPTER=TARGET[,TARGET]` (repeat) picks targets; one of `keeper` (a party's cn or DN), `kind` (repeat) or `binding` (repeat) scopes it, as `opsdir render`. The manifest names the person who asked. `archive=true` returns the files as a zip (`<cloud>-<env>/...`) |
+| `GET /v1/plan/{cloud}/{env}?to=CLOUD/ENV&as_of=&mine=` | plan | A preview of the plan for moving the environment to `to`: `{source, target, as_of, cutover, blockers, actions, accepted, markdown, requests}`, findings as `{area, text, owner}`, the request drafts to external parties as `{path: text}`. `mine=true`: only the caller's teams' blockers and actions |
 | `POST /v1/edits` | read / propose / apply | `{dn, set: {attr: [values]}, add: {...}, remove: {attr: [values] or []}, mode, change?, title?}`. `preview` returns `{"changes": [LDIF], "notices": [...]}`; `propose` records the edit as change `change` (needs `title`); `apply` applies it under an approved `change` |
 | `POST /v1/changes` | propose | `{id, title, ticket?}`: a new proposed change (201) |
 | `POST /v1/changes/{id}/approve` | approve | Approves a change |

@@ -1,7 +1,11 @@
 """What the API reads from requests and writes in responses: an edit's pairs and the catalog action of its mode, the
-Area an entry lies in, uploaded files as text, and the JSON documents of the operations' results (rows, previews,
-import plans, applied changes); the HTTP status of an operation's refusal. Pure."""
+Area an entry lies in, an environment named in a path, uploaded files as text, and the JSON documents of the
+operations' results (rows, previews, import plans, applied changes, renders and plans, a render as a zip archive); the
+HTTP status of an operation's refusal. Pure."""
 import gzip
+import io
+import re
+import zipfile
 from typing import NamedTuple
 
 from opsdir.core.directory import gtime_at, norm_dn
@@ -13,7 +17,9 @@ from opsdir.domains.governance.imports import environment_of_scope
 WHOLE_RECORD = Area("")
 EDIT_ACTIONS = {"preview": "read", "propose": "propose", "apply": "apply"}
 CHANGE_STATUS = {"approve": "approved", "reject": "rejected"}
-NOT_FOUND = ("no entry ", "no area ", "no kind ", "no change ", "no system boundary ", "unknown report ")
+NOT_FOUND = ("no entry ", "no area ", "no kind ", "no change ", "no system boundary ", "unknown report ",
+             "no such environment")
+ENV_PART = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")      # a cloud's or an environment's name, as in a grant
 CONFLICTING = ("already exists", "undecided", "can't become", "not approved", "is no proposed change")
 
 Edit = NamedTuple("Edit", [("dn", str), ("sets", tuple), ("adds", tuple), ("removes", tuple), ("mode", str),
@@ -62,6 +68,13 @@ def edit_of(body):
         raise ValueError("mode propose needs title: what the approver reads")
     return Edit(body["dn"].strip(), pairs_of("set", body.get("set")), pairs_of("add", body.get("add")),
                 pairs_of("remove", body.get("remove"), empty_allowed=True), mode, change, title)
+
+
+def environment_of(cloud, env):
+    """The environment spec 'cloud/env' of a path's two parts; ValueError when either isn't a plain name."""
+    if not (ENV_PART.match(cloud or "") and ENV_PART.match(env or "")):
+        raise ValueError(f"environment {cloud}/{env}: give a cloud and an environment name (letters, digits, . _ -)")
+    return f"{cloud}/{env}"
 
 
 def entry_area(dn):
@@ -161,3 +174,36 @@ def import_doc(plan, skipped=()):
     return {"importer": plan.importer, "changes": changes_doc(plan.changes), "notices": list(plan.notices),
             "conflicts": [conflict_doc(c) for c in plan.conflicts], "scopes": list(plan.scopes),
             "skipped": list(skipped)}
+
+
+def findings_doc(items):
+    """A plan's blockers or actions ((area, text, owner, ...), ...) as [{"area", "text", "owner"}, ...]."""
+    return [{"area": i[0], "text": i[1], "owner": i[2]} for i in items]
+
+
+def rendered_doc(r):
+    """A render (operations.Rendered) as {"environment", "dn", "provider", "unbound", "notes", "files"}: notes as
+    objects (core.notes.RenderNote fields), files as {relative path: text}."""
+    return {"environment": r.label, "dn": r.dn, "provider": r.provider, "unbound": list(r.unbound),
+            "notes": [n._asdict() for n in r.notes], "files": dict(sorted(r.files.items()))}
+
+
+def planned_doc(planned):
+    """A plan (operations.Planned) as {"source", "target", "as_of", "cutover", "blockers", "actions", "accepted",
+    "markdown", "requests"}: findings as objects, the request drafts to external parties as {path: text}."""
+    p = planned.plan
+    return {"source": p.src.label, "target": p.dst.label, "as_of": p.as_of.isoformat(),
+            "cutover": p.cutover.isoformat() if p.cutover else None, "blockers": findings_doc(p.blockers),
+            "actions": findings_doc(p.actions), "accepted": len(p.accepted), "markdown": planned.markdown,
+            "requests": dict(sorted(planned.drafts.items()))}
+
+
+def archive_of(files, folder):
+    """The bytes of a zip archive holding files ({relative path: text}, UTF-8) under folder/, in path order, with
+    fixed timestamps so the same render gives the same bytes."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as z:
+        for path, text in sorted(files.items()):
+            z.writestr(zipfile.ZipInfo(f"{folder}/{path}", (1980, 1, 1, 0, 0, 0)), text.encode("utf-8"),
+                       zipfile.ZIP_DEFLATED)
+    return buffer.getvalue()

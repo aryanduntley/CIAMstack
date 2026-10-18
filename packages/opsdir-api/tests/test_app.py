@@ -5,6 +5,8 @@ the operations' results to JSON (rows, LDIF previews, import plans, the verifica
 400/404/409."""
 import contextlib
 import datetime as dt
+import io
+import zipfile
 from types import SimpleNamespace
 from typing import NamedTuple
 
@@ -33,6 +35,25 @@ Applied = NamedTuple("Applied", [("change_id", str), ("lines", tuple)])
 Conflict = NamedTuple("Conflict", [("key", str), ("dn", str), ("attr", str), ("held", tuple), ("live", tuple)])
 Plan = NamedTuple("Plan", [("importer", str), ("changes", tuple), ("notices", tuple), ("conflicts", tuple),
                            ("scopes", tuple), ("at", object)])
+Rendered = NamedTuple("Rendered", [("label", str), ("dn", str), ("provider", str), ("files", dict),
+                                   ("unbound", tuple), ("notes", tuple)])
+Note = NamedTuple("Note", [("severity", str), ("subject", str), ("text", str)])
+Planned = NamedTuple("Planned", [("plan", object), ("markdown", str), ("drafts", dict)])
+
+
+def rendered(spec, targets, scope):
+    if spec.startswith("nowhere/"):
+        raise SystemExit("no such environment: env=prod,cloud=nowhere,ou=environments,dc=ciam-ops")
+    return Rendered(spec, f"env=prod,cloud={spec.split('/')[0]}", "azure",
+                    {"terraform/main.tf": "resource {}\n", "MANIFEST.json": "{}"}, ("acl-ds",),
+                    (Note("blocker", "acl-ds", "unbound"),))
+
+
+def planned(src, dst, as_of, mine):
+    p = SimpleNamespace(src=SimpleNamespace(label=src), dst=SimpleNamespace(label=dst), as_of=as_of,
+                        cutover=dt.date(2027, 1, 15), blockers=(("Binding", "acl-ds unbound", "platform"),),
+                        actions=(("Identity", "give the partner its secret", "partners", "fix-1"),), accepted=())
+    return Planned(p, "# Plan\n", {"requests/partners.md": "Dear partners"})
 
 
 def token(sub="sub-alice", **claims):
@@ -107,6 +128,8 @@ def world(monkeypatch):
         preview_import=recorded("preview_import", lambda spec, files, at: Plan(
             spec, (RECORD,), ("withheld: secret",), conflicts if "conflict.json" in files else (), ("cn=pf",), at)),
         apply_import=apply_import,
+        render=recorded("render", rendered),
+        plan=recorded("plan", planned),
         onboard_verify=recorded("onboard_verify", lambda sources, at: SimpleNamespace(status="pass", n=len(sources))))
     fake_db = SimpleNamespace(requesting=requesting, set_as_of=lambda conn, day: calls.append(("set_as_of", (day,),
                                                                                                 None)))
@@ -353,3 +376,59 @@ def test_the_openapi_document_lists_the_endpoints(world):
     assert {"/v1/browse", "/v1/entries/{dn}", "/v1/edits", "/v1/changes/{change_id}/approve", "/v1/imports",
             "/v1/onboard/verify"} <= set(paths)
     assert "multipart/form-data" in paths["/v1/imports"]["post"]["requestBody"]["content"]
+
+
+def test_a_render_preview_as_json_or_a_zip(world):
+    client, calls, state = world.client, world.calls, world.state
+    r = client.get("/v1/render/target/prod", params={"target": "azure=terraform", "keeper": "platform"},
+                   headers=bearer())
+    assert r.status_code == 200, r.text
+    doc = r.json()
+    assert (doc["environment"], doc["unbound"], sorted(doc["files"]), doc["notes"][0]["severity"]) == (
+        "target/prod", ["acl-ds"], ["MANIFEST.json", "terraform/main.tf"], "blocker")
+    authorized = next(c for c in calls if c[0] == "authorize_command")
+    assert authorized[1][0] == "render" and authorized[1][1].environment == "target/prod" and authorized[2] == "alice"
+    args = next(c for c in calls if c[0] == "render")[1]
+    assert args[0] == "target/prod" and args[1] == {"azure": ("terraform",)} and args[2].kind == "keeper"
+    z = client.get("/v1/render/target/prod", params={"archive": "true"}, headers=bearer())
+    assert z.headers["content-type"] == "application/zip" and 'filename="target-prod.zip"' in z.headers[
+        "content-disposition"]
+    with zipfile.ZipFile(io.BytesIO(z.content)) as archive:
+        assert archive.namelist() == ["target-prod/MANIFEST.json", "target-prod/terraform/main.tf"]
+    assert client.get("/v1/render/target/prod", params={"archive": "true"}, headers=bearer()).content == z.content
+
+
+@pytest.mark.parametrize("path, params, status, message", [
+    ("/v1/render/nowhere/prod", {}, 404, "no such environment"),
+    ("/v1/render/tar get/prod", {}, 400, "give a cloud and an environment name"),
+    ("/v1/render/target/prod", {"keeper": "platform", "kind": "ciamNetwork"}, 400, "render takes one of keeper"),
+    ("/v1/render/target/prod", {"target": "azure"}, 400, "target takes ADAPTER=TARGET"),
+    ("/v1/plan/source/prod", {"to": "target"}, 400, "give a cloud and an environment name"),
+    ("/v1/plan/source/prod", {"to": "target/prod", "as_of": "tomorrow"}, 400, "give YYYY-MM-DD")])
+def test_render_and_plan_refusals(world, path, params, status, message):
+    client, calls, state = world.client, world.calls, world.state
+    r = client.get(path, params=params, headers=bearer())
+    assert r.status_code == status and message in r.text
+
+
+def test_a_plan_preview(world):
+    client, calls, state = world.client, world.calls, world.state
+    r = client.get("/v1/plan/source/prod", params={"to": "target/prod", "as_of": "2026-09-23", "mine": "true"},
+                   headers=bearer())
+    assert r.status_code == 200, r.text
+    assert r.json() == {"source": "source/prod", "target": "target/prod", "as_of": "2026-09-23",
+                        "cutover": "2027-01-15", "accepted": 0, "markdown": "# Plan\n",
+                        "blockers": [{"area": "Binding", "text": "acl-ds unbound", "owner": "platform"}],
+                        "actions": [{"area": "Identity", "text": "give the partner its secret", "owner": "partners"}],
+                        "requests": {"requests/partners.md": "Dear partners"}}
+    authorized = next(c for c in calls if c[0] == "authorize_command")[1]
+    assert authorized[0] == "plan" and (authorized[1].environment, authorized[1].source) == ("target/prod",
+                                                                                             "source/prod")
+    assert next(c for c in calls if c[0] == "plan")[1] == ("source/prod", "target/prod", dt.date(2026, 9, 23), True)
+
+
+def test_render_and_plan_need_their_permission(world):
+    client, calls, state = world.client, world.calls, world.state
+    state["refuse"] = "alice may not render target/prod: no grant gives them render there"
+    assert client.get("/v1/render/target/prod", headers=bearer()).status_code == 403
+    assert client.get("/v1/plan/source/prod", params={"to": "target/prod"}, headers=bearer()).status_code == 403

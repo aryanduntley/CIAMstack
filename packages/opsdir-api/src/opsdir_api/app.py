@@ -12,17 +12,21 @@ from collections.abc import Mapping
 from typing import NamedTuple, Optional
 
 import psycopg
-from fastapi import Body, Depends, FastAPI, HTTPException, Request
+from fastapi import Body, Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.concurrency import run_in_threadpool
 
 from opsdir import operations as ops
+from opsdir.cli import render_scope, render_targets
 from opsdir.connectors.onboarding import report_document
+from opsdir.core.environment import ENVIRONMENT
+from opsdir.domains.governance.authorization import Area
 from opsdir.domains.governance.imports import file_evidence
 from opsdir.store import postgres as db
 
-from .shapes import (CHANGE_STATUS, EDIT_ACTIONS, WHOLE_RECORD, applied_doc, at_of, edit_of, entries_doc, entry_area,
-                     files_of, import_doc, keys_of, preview_doc, rows_doc, sources_of, status_of, texts_of)
+from .shapes import (CHANGE_STATUS, EDIT_ACTIONS, WHOLE_RECORD, applied_doc, archive_of, at_of, edit_of, entries_doc,
+                     entry_area, environment_of, files_of, import_doc, keys_of, planned_doc, preview_doc,
+                     rendered_doc, rows_doc, sources_of, status_of, texts_of)
 from .tokens import UNKNOWN_KEY, claims_of, key_source, membership_of
 
 API_VERSION = "1"
@@ -200,6 +204,45 @@ def history(dn: Optional[str] = None, who: Caller = Depends(caller)):
     return run(who, "read", WHOLE_RECORD, lambda c: rows_doc(ops.history(c, dn)))
 
 
+def _render_options(targets, keeper, kinds, bindings):
+    try:
+        return render_targets(targets) or None, render_scope(keeper, kinds, bindings)
+    except SystemExit as e:                         # the command line's refusals of the same options
+        raise ValueError(str(e).replace("--", "")) from None
+
+
+def render(cloud: str, env: str, target: list[str] = Query([], description="ADAPTER=TARGET[,TARGET]; repeat"),
+           keeper: Optional[str] = Query(None, description="only what a party keeps (its cn or DN)"),
+           kind: list[str] = Query([], description="only infrastructure of an object class; repeat"),
+           binding: list[str] = Query([], description="only named bindings; repeat"),
+           archive: bool = Query(False, description="a zip archive of the files instead of JSON"),
+           who: Caller = Depends(caller)):
+    """A preview of an environment's rendered files (nothing is deployed or written to the record): every target of
+    every adapter, or the targets named; the whole environment, or one keeper's, object class's or bindings'
+    infrastructure (one of keeper, kind, binding). The render's manifest names the person who asked. JSON with the
+    files as {path: text}, its notes and unbound roles; archive=true: the files as a zip."""
+    spec = parsed(environment_of, cloud, env)
+    targets, scope = parsed(_render_options, target, keeper, kind, binding)
+    r = run(who, "render", Area(spec, scope), lambda c: ops.render(c, spec, targets, scope))
+    if not archive:
+        return rendered_doc(r)
+    folder = r.label.replace("/", "-")
+    return Response(archive_of(r.files, folder), media_type="application/zip",
+                    headers={"Content-Disposition": f'attachment; filename="{folder}.zip"'})
+
+
+def plan(cloud: str, env: str, to: str = Query(..., description="the target environment, CLOUD/ENV"),
+         as_of: Optional[str] = None, mine: bool = False, who: Caller = Depends(caller)):
+    """A preview of the plan for moving an environment to another (nothing is changed): blockers and actions with
+    their owning teams, the plan as markdown and the request drafts to external parties; dates as of as_of
+    (YYYY-MM-DD; today); mine: only the blockers and actions of the caller's teams."""
+    src = parsed(environment_of, cloud, env)
+    dst = parsed(environment_of, *(to.split("/", 1) if "/" in to else (to, "")))
+    day = parsed(_date, as_of) or dt.date.today()
+    return run(who, "plan", Area(dst, ENVIRONMENT, src), lambda c: planned_doc(ops.plan(c, src, dst, day, mine)),
+               day)
+
+
 EDIT_EXAMPLE = {"dn": "cn=portal,ou=applications,dc=ciam-ops", "set": {"description": ["Customer portal"]},
                 "add": {}, "remove": {"seeAlso": []}, "mode": "propose", "change": "CHG-ACME-0042",
                 "title": "Describe the portal"}
@@ -351,6 +394,8 @@ ROUTES = (("GET", "/v1/browse", browse, {}),
           ("GET", "/v1/search", search, {}),
           ("GET", "/v1/reports/{name}", report, {}),
           ("GET", "/v1/history", history, {}),
+          ("GET", "/v1/render/{cloud}/{env}", render, {"responses": {200: {"content": {"application/zip": {}}}}}),
+          ("GET", "/v1/plan/{cloud}/{env}", plan, {}),
           ("POST", "/v1/edits", edit, {}),
           ("POST", "/v1/changes", new_change, {"status_code": 201}),
           ("POST", "/v1/changes/{change_id}/approve", approve, {}),
