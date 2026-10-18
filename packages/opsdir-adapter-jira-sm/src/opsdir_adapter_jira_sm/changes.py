@@ -31,6 +31,10 @@ What a ticket says:
                           (risk, impact, ...) as "<role> <value>" (people as their ids)
   ciamProviderRef         the issue's id (its key changes when it moves); ciamDocUrl its self URL; ciamTitle its summary
 
+A work ticket (an issue of the type jira-sm-ticket-issue-type maps for its project: a team's findings handed over, task
+612) is read the same way except: ciamTicketKind work, ciamTicketDue its duedate (a day, kept as its 00:00 UTC), and no
+approval, approval steps, approvers or change type (a work ticket has no approval to compare).
+
 Only issues the record links are read; others in the export are named in a notice. A linked issue missing from the
 export is never removed (the record keeps what it last read, and the planner says it wasn't read)."""
 import re
@@ -41,15 +45,16 @@ from opsdir.core.naming import rdn_safe
 from opsdir.core.sources import json_document
 from opsdir.domains.governance.naming import TICKETS
 from opsdir.domains.governance.schema import TICKET_CHANGE_TYPES
-from opsdir.domains.governance.tickets import (adapter_dn, approval_step, derived_approval, linked_numbers,
+from opsdir.domains.governance.tickets import (WORK, adapter_dn, approval_step, derived_approval, linked_numbers,
                                                ticket_entry, ticket_group)
-from .mapping import (CHANGE_FIELDS, STATUS_STATES, WINDOW, field_refs, neutral_state, resolve_fields,
-                      status_states, window_candidates)
+from .mapping import (CHANGE_FIELDS, STATUS_STATES, WINDOW, field_refs, is_work_issue, issue_types, neutral_state,
+                      resolve_fields, status_states, window_candidates)
 
 SYSTEM = "jira-sm"
-ISSUE_FIELDS = ("summary", "status", "resolution", "issuetype", "created", "updated")
+ISSUE_FIELDS = ("summary", "status", "resolution", "issuetype", "created", "updated", "duedate")
 CHANGE_TYPE = "change-type"
 KEY = re.compile(r"[A-Z][A-Z0-9_]*-\d+")
+DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 def jira_error(doc):
@@ -154,39 +159,52 @@ def approver_rows(steps):
                         for s in steps for a in s.get("approvers") or () if isinstance(a, dict)))
 
 
+def due_time(v):
+    """(GeneralizedTime of a duedate 'YYYY-MM-DD', its 00:00 UTC, or None when absent; why not)."""
+    if v in (None, ""):
+        return None, None
+    when = gtime_of_iso(v) if DAY.fullmatch(str(v)) else None
+    return when, (None if when else f"duedate `{v}` isn't a day (YYYY-MM-DD)")
+
+
 def overall_approval(steps, state):
     """The overall approval from the steps' own decisions (none: unknown), never from a single approver's."""
     return derived_approval((s.get("finalDecision") for s in steps or ()), state)
 
 
-def ticket_facts(issue, steps, states, fields):
-    """({ticket attribute: value}, problems) of one issue and its steps through the operator's mapping."""
+def ticket_facts(issue, steps, states, fields, work=False):
+    """({ticket attribute: value}, problems) of one issue and its steps through the operator's mapping; work: a work
+    ticket's (its kind and due day; no approval, steps, approvers or change type)."""
     f = issue["fields"]
     status = f.get("status") if isinstance(f.get("status"), dict) else {}
     state = neutral_state(status, states)
     times = {attr: jira_time(f.get(fields[role])) if f.get(fields.get(role, "")) not in (None, "") else (None, None)
              for role, attr in WINDOW}
     windows = {role: times[attr] for role, attr in WINDOW}
-    kind = field_text(f.get(fields.get(CHANGE_TYPE, ""))).strip()
+    kind = "" if work else field_text(f.get(fields.get(CHANGE_TYPE, ""))).strip()
     neutral_kind = kind.lower() if kind.lower() in TICKET_CHANGE_TYPES else None
+    due, due_why = due_time(f.get("duedate")) if work else (None, None)
     category = status.get("statusCategory") if isinstance(status.get("statusCategory"), dict) else {}
     facts = (("issuetype", field_text(f.get("issuetype"))), ("status-category", str(category.get("key") or "")),
              ("resolution", field_text(f.get("resolution"))), ("created", str(f.get("created") or "")),
              ("updated", str(f.get("updated") or "")),
              *((role, field_text(f.get(fid))) for role, fid in sorted(fields.items())
-               if role not in dict(WINDOW) and not (role == CHANGE_TYPE and neutral_kind)))
+               if role not in dict(WINDOW) and not (role == CHANGE_TYPE and (neutral_kind or work))))
     return ({"ciamTitle": str(f.get("summary") or "") or None,
              "ciamProviderRef": str(issue.get("id") or "") or None,
              "ciamDocUrl": str(issue.get("self") or "") or None,
              "ciamTicketState": state,
-             "ciamTicketApproval": overall_approval(steps, state),
+             "ciamTicketApproval": None if work else overall_approval(steps, state),
              "ciamTicketNativeState": f"{status.get('id') or '?'} {status.get('name') or ''}".strip(),
              "ciamTicketChangeType": neutral_kind,
              **{attr: times[attr][0] for _, attr in WINDOW},
-             "ciamTicketApprovalStep": step_rows(steps or ()) or None,
-             "ciamTicketApprover": approver_rows(steps or ()) or None,
+             "ciamTicketApprovalStep": None if work else step_rows(steps or ()) or None,
+             "ciamTicketApprover": None if work else approver_rows(steps or ()) or None,
+             "ciamTicketKind": WORK if work else None,
+             "ciamTicketDue": due,
              "ciamTicketFact": tuple(f"{k} {v}" for k, v in facts if v) or None},
             (*(f"{issue['key']}: {role} ({fields[role]}): {why}" for role, (_, why) in windows.items() if why),
+             *((f"{issue['key']}: {due_why}",) if due_why else ()),
              *((f"{issue['key']}: {CHANGE_TYPE} `{kind}` isn't standard, normal or emergency: kept as a fact",)
                if kind and not neutral_kind else ())))
 
@@ -217,27 +235,30 @@ def read_changes(files, d, patterns, at=None):
     states, state_problems = status_states(d)
     refs, ref_problems = field_refs(d)
     fields, field_problems = resolve_fields(refs, fields_read)
+    types, type_problems = issue_types(d)
     wanted = linked_numbers(d, SYSTEM)
-    groups, unmapped, no_steps = [], {}, []
+    groups, unmapped, no_steps, work = [], {}, [], set()
     for key in sorted(k for k in issues if k in wanted):
         issue = issues[key]
         if not issue.get("id") or not rdn_safe(key):
             notices.append(f"{key}: no issue id, or a key the record can't name: left out")
             continue
-        steps = _steps(approvals.get(key))
-        facts, problems = ticket_facts(issue, steps, states, fields)
+        steps, is_work = _steps(approvals.get(key)), is_work_issue(issue, types)
+        facts, problems = ticket_facts(issue, steps, states, fields, is_work)
         notices.extend(problems)
         if facts["ciamTicketState"] is None:
             unmapped.setdefault(facts["ciamTicketNativeState"], []).append(key)
-        if steps is None:
+        if is_work:
+            work.add(key)
+        elif steps is None:
             no_steps.append(key)
         groups.append(ticket_group(ticket_entry(d, SYSTEM, key, gtime(at), facts)))
     read = {g[1][0].attrs["cn"][0] for g in groups}
     unlinked = sorted(set(issues) - set(wanted))
     notices.extend((
-        *state_problems, *ref_problems, *field_problems,
-        *(_unmapped(fields, fields_read) if groups else ()),
-        *_missing_fields([issues[k] for k in read], fields),
+        *state_problems, *ref_problems, *field_problems, *type_problems,
+        *(_unmapped(fields, fields_read) if read - work else ()),
+        *_missing_fields([issues[k] for k in sorted(read - work)], fields),
         *(f"status {s} isn't mapped in {STATUS_STATES.name}: the state of {', '.join(n)} is kept as Jira gives it "
           "(neutral state unknown)" for s, n in sorted(unmapped.items())),
         *((f"approvals not in the export, or not to their last page, for: {', '.join(no_steps)} (overall approval "
@@ -245,7 +266,8 @@ def read_changes(files, d, patterns, at=None):
         *((f"not linked to a change record: {', '.join(unlinked)} (left out)",) if unlinked else ()),
         *((f"linked but not in the export: {', '.join(n for n in wanted if n not in read)} (the record keeps what it "
            "last read; nothing is removed)",) if any(n not in read for n in wanted) else ()),
-        f"{len(groups)} ticket(s) read" + (f" from {sites[0]}" if sites else "")))
+        f"{len(groups)} ticket(s) read" + (f" ({len(work)} work)" if work else "") +
+        (f" from {sites[0]}" if sites else "")))
     return Imported(containers=(ou_entry(TICKETS), ou_entry(adapter_dn(SYSTEM))), groups=tuple(groups),
                     notices=tuple(notices))
 

@@ -8,6 +8,8 @@ import json
 from urllib.parse import parse_qs, urlsplit
 
 from opsdir.connectors.collecting import collect
+from opsdir.connectors.handoff import handoff_files
+from opsdir.core.contract import TicketRequest
 from opsdir.core.directory import get, one, subtree, values, within
 from opsdir.domains.governance.naming import CHANGES
 from opsdir.domains.governance.tickets import IN_STEP, REJECTED, UNAPPROVED, linked, ticket_dn, ticket_rows
@@ -16,8 +18,11 @@ from opsdir_adapter_jira_sm.changes import (CHANGES_IMPORTER, approval_key, fiel
                                             overall_approval, read_changes)
 from opsdir_adapter_jira_sm.collect import (COLLECTORS, approval_view, change_steps, is_cloud, issue_view,
                                             source_problems)
-from opsdir_adapter_jira_sm.mapping import (CHANGE_FIELDS, STATUS_STATES, field_refs, resolve_fields, setting_pairs,
-                                            status_states)
+from opsdir_adapter_jira_sm.drafts import (FIELDS as TICKET_FIELDS, PROJECTS, SETTINGS as DRAFT_SETTINGS,
+                                           SITE as TICKET_SITE,
+                                           TEAM_FIELD, adf_description, field_value, ticket_draft, wiki_description)
+from opsdir_adapter_jira_sm.mapping import (CHANGE_FIELDS, ISSUE_TYPE, STATUS_STATES, field_refs, resolve_fields,
+                                            setting_pairs, status_states)
 from network_fixtures import ALPHA, entry, model
 from support import after_import
 
@@ -97,9 +102,10 @@ def _read(*issues, tree=TREE, approvals=None, files=None):
 
 
 def test_registered_as_an_itsm_add_on_with_its_importer_collector_and_mapping_settings():
-    assert (ADAPTER.name, ADAPTER.kind, ADAPTER.applies, ADAPTER.importers, ADAPTER.collectors, ADAPTER.settings) == (
-        "jira-sm", "itsm", None, (CHANGES_IMPORTER,), COLLECTORS, (STATUS_STATES, CHANGE_FIELDS))
-    assert STATUS_STATES.default is None and CHANGE_FIELDS.default is None     # the operator's to say
+    assert (ADAPTER.name, ADAPTER.kind, ADAPTER.applies, ADAPTER.importers, ADAPTER.collectors, ADAPTER.settings,
+            ADAPTER.ticket_draft) == ("jira-sm", "itsm", None, (CHANGES_IMPORTER,), COLLECTORS,
+                                      (STATUS_STATES, CHANGE_FIELDS, ISSUE_TYPE, *DRAFT_SETTINGS), ticket_draft)
+    assert all(s.default is None for s in ADAPTER.settings)                     # the operator's to say
 
 
 def test_a_linked_issue_is_read_as_evidence_through_the_mapping():
@@ -292,7 +298,7 @@ def test_the_collector_reads_the_field_list_then_each_linked_issue_then_its_appr
     second = change_steps(alpha.d, alpha, {f"{SITE}/field.json": json.dumps(FIELDS)}, {})
     issue = dict(second)[f"{SITE}/issue/ITOPS-2.json"]
     assert issue.url == (f"https://{SITE}/rest/api/3/issue/ITOPS-2?fields=summary,status,resolution,issuetype,created,"
-                         "updated,customfield_10005,customfield_10006,customfield_10070,customfield_10071,"
+                         "updated,duedate,customfield_10005,customfield_10006,customfield_10070,customfield_10071,"
                          "customfield_10072,customfield_10073")
     assert issue.absent == (404,)
     c = collect("jira-sm/change-requests", COLLECTORS[0], alpha.d, alpha, _serve)
@@ -343,3 +349,181 @@ def test_a_scheme_the_site_isnt_read_with_here_is_refused_with_why():
         "token, or a Data Center user's password) or bearer (a Data Center personal access token, or an OAuth or "
         "scoped token minted outside opsdir)",)
     assert change_steps(alpha.d, alpha, {}, {}) == ()
+
+
+# ------------------------------------------------------------------ work-ticket drafts and their read-back (task 612)
+AS_OF = dt.date(2026, 10, 18)
+ITEMS = (("blocker", "Network", "Open 636 to the directory", None),
+         ("action", "Certificates", "Renew the [signing] certificate *now*", dt.date(2026, 11, 1)),
+         ("action", "Allowlist", "Ask the partner to add 10.0.0.0/24", dt.date(2026, 10, 25)))
+REQUEST = TicketRequest("Platform", "cn=Platform,ou=owners,dc=ciam-ops",
+                        "CIAM: 3 findings for Platform (aws/prod to azure/prod)", ITEMS, dt.date(2026, 10, 25),
+                        "aws/prod", "azure/prod", AS_OF)
+DRAFTING = {TICKET_SITE.name: f"https://{SITE}/", PROJECTS.name: "platform=CIAM/value:Identity, network=NET",
+            TEAM_FIELD.name: "customfield_10100", ISSUE_TYPE.name: "10002",
+            TICKET_FIELDS.name: "priority=id:3, labels=list:ciam|remediation"}
+
+
+def _drafting(**settings):
+    given = {**DRAFTING, **settings}
+    return model(tree=(*TREE, *(_setting(k, v) for k, v in given.items() if v is not None)))[0]
+
+
+def test_a_cloud_draft_is_a_task_issue_with_an_adf_description():
+    t = ticket_draft(_drafting(), REQUEST)
+    assert t.problems == () and t.extension == "json"
+    fields = json.loads(t.body)["fields"]
+    assert {k: v for k, v in fields.items() if k != "description"} == {
+        "project": {"key": "CIAM"}, "issuetype": {"id": "10002"}, "customfield_10100": {"value": "Identity"},
+        "summary": "CIAM: 3 findings for Platform (aws/prod to azure/prod)", "duedate": "2026-10-25",
+        "priority": {"id": "3"}, "labels": ["ciam", "remediation"]}
+    doc = fields["description"]
+    assert (doc["type"], doc["version"]) == ("doc", 1)
+    assert [b["type"] for b in doc["content"]] == ["paragraph", "heading", "bulletList", "paragraph"]
+    items = [i["content"][0]["content"][0]["text"] for i in doc["content"][2]["content"]]
+    assert items == ["[action] Allowlist: Ask the partner to add 10.0.0.0/24 (do by 2026-10-25)",
+                     "[action] Certificates: Renew the [signing] certificate *now* (do by 2026-11-01)",
+                     "[blocker] Network: Open 636 to the directory"]
+    assert t.how[0] == f"POST https://{SITE}/rest/api/3/issue (Jira Cloud, REST v3: the description is ADF)"
+    assert t.how[1] == (f"curl --request POST 'https://{SITE}/rest/api/3/issue' --user '<email>:<api-token>' "
+                        "--header 'Accept: application/json' --header 'Content-Type: application/json' "
+                        "--data-binary @jira-sm/<team>.json")
+    assert "Bearer" not in t.body and "token" not in t.body                 # never a credential in a draft
+
+
+def test_a_data_center_draft_has_a_wiki_description_and_a_pat_curl():
+    d = _drafting(**{TICKET_SITE.name: "https://jira.example-aero.test/jira", ISSUE_TYPE.name: "CIAM=10105, NET=10002",
+                     TEAM_FIELD.name: "components", PROJECTS.name: "Platform=CIAM/names:IAM|Directory"})
+    t = ticket_draft(d, REQUEST)
+    fields = json.loads(t.body)["fields"]
+    assert (fields["issuetype"], fields["components"]) == ({"id": "10105"}, [{"name": "IAM"}, {"name": "Directory"}])
+    assert fields["description"].split("\n\n")[1].splitlines() == [
+        "h2. Findings",
+        "* \\[action\\] Allowlist: Ask the partner to add 10.0.0.0/24 (do by 2026-10-25)",
+        "* \\[action\\] Certificates: Renew the \\[signing\\] certificate \\*now\\* (do by 2026-11-01)",
+        "* \\[blocker\\] Network: Open 636 to the directory"]
+    assert t.how[0].startswith("POST https://jira.example-aero.test/jira/rest/api/2/issue (Jira Data Center")
+    assert "--header 'Authorization: Bearer <personal-access-token>'" in t.how[1]
+
+
+def test_the_gateway_and_government_cloud_say_how_they_are_reached():
+    gateway = ticket_draft(_drafting(**{TICKET_SITE.name: "https://api.atlassian.com/ex/jira/1234-abcd"}), REQUEST)
+    assert "--header 'Authorization: Bearer <access-token>'" in gateway.how[1]
+    assert "description" in json.loads(gateway.body)["fields"]
+    gov = ticket_draft(_drafting(**{TICKET_SITE.name: "https://ops.atlassian-us-gov-mod.net"}), REQUEST)
+    assert isinstance(json.loads(gov.body)["fields"]["description"], dict)          # Cloud: ADF
+    assert any("api.atlassian-us-gov-mod.com/ex/jira/<cloudId>" in h and "unconfirmed" in h for h in gov.how)
+
+
+def test_what_keeps_a_draft_from_being_written_names_the_setting_to_give():
+    none = ticket_draft(_drafting(**{k: None for k in DRAFTING}), REQUEST)
+    assert none.body is None and none.how == ()
+    assert none.problems == (
+        "no jira-sm-ticket-site: the base URL of the Jira site the tickets are filed on (`opsdir setting "
+        "jira-sm-ticket-site https://<site>.atlassian.net --change <id>`)",
+        "jira-sm-ticket-projects names no project for Platform (`opsdir setting jira-sm-ticket-projects '<team>="
+        "<project key>[/<team field value>], ...' --change <id>`, every team in one value)")
+    no_type = ticket_draft(_drafting(**{ISSUE_TYPE.name: "NET=10002"}), REQUEST)
+    assert no_type.body is None and no_type.how and no_type.problems[0].startswith(
+        "jira-sm-ticket-issue-type names no issue type for project CIAM (its Task type's id, from GET "
+        "/rest/api/3/issue/createmeta/CIAM/issuetypes")
+    no_field = ticket_draft(_drafting(**{TEAM_FIELD.name: None}), REQUEST)
+    assert no_field.body is None and no_field.problems == (
+        "Platform's value in jira-sm-ticket-projects needs its field: `opsdir setting jira-sm-ticket-team-field "
+        "customfield_<n> --change <id>`",)
+    bad = ticket_draft(_drafting(**{TICKET_SITE.name: "atlassian.net", PROJECTS.name: "Platform=ciam"}), REQUEST)
+    assert bad.body is None and "jira-sm-ticket-site: `atlassian.net` isn't a site's base URL" in bad.problems[0]
+    assert "jira-sm-ticket-projects: `Platform=ciam`: ciam isn't a project key" in bad.problems
+
+
+def test_defaults_the_draft_sets_itself_or_cant_read_are_named_and_left_out():
+    t = ticket_draft(_drafting(**{TICKET_FIELDS.name: "summary=x, Story Points=3, customfield_7=number:x, "
+                                                      "customfield_8=number:5, environment=text:id:9"}), REQUEST)
+    fields = json.loads(t.body)["fields"]
+    assert (fields["summary"], fields["customfield_8"], fields["environment"]) == (REQUEST.title, 5, "id:9")
+    assert "customfield_7" not in fields
+    assert t.problems == ("jira-sm-ticket-fields: `Story Points` isn't a field id (customfield_N, or a system field's "
+                          "id)", "jira-sm-ticket-fields: `summary` is set by the draft itself (left out)",
+                          "jira-sm-ticket-fields: customfield_7: `number:x`: `x` isn't a number")
+    assert "duedate" not in json.loads(ticket_draft(_drafting(), REQUEST._replace(do_by=None)).body)["fields"]
+
+
+def test_field_values_take_their_shape_and_text_stays_text():
+    assert [field_value(v)[0] for v in ("High", "id:3", "values:a|b", "list:x| y", "number:2.5", "https://x",
+                                        "accountId:5b10")] == [
+        "High", {"id": "3"}, [{"value": "a"}, {"value": "b"}], ["x", "y"], 2.5, "https://x", {"accountId": "5b10"}]
+    lines = ("Intro", "", "- one", "- two", "", "Closing")
+    assert [b["type"] for b in adf_description(lines)["content"]] == ["paragraph", "heading", "bulletList",
+                                                                      "paragraph"]
+    assert wiki_description(lines) == "Intro\n\nh2. Findings\n* one\n* two\n\nClosing"
+
+
+def test_handed_off_drafts_are_written_per_team_with_how_to_file_them():
+    d = _drafting()
+    plan = type("Plan", (), {})()
+    plan.src, plan.dst = type("S", (), {"label": "aws/prod"})(), type("S", (), {"label": "azure/prod"})()
+    plan.as_of, plan.blockers = AS_OF, (("Network", "Open 636 to the directory", "network"),)
+    plan.actions = (("Certificates", "Renew the signing certificate", "Platform", dt.date(2026, 11, 1)),
+                    ("Docs", "Write the runbook", "ops", None))
+    files = handoff_files(d, plan, (ADAPTER,))
+    assert sorted(files) == ["tickets/README.md", "tickets/jira-sm/Platform.json", "tickets/jira-sm/network.json"]
+    assert json.loads(files["tickets/jira-sm/network.json"])["fields"]["project"] == {"key": "NET"}
+    readme = files["tickets/README.md"]
+    assert "- **not complete for ops**: jira-sm-ticket-projects names no project for ops" in readme
+    assert f"    POST https://{SITE}/rest/api/3/issue (Jira Cloud, REST v3: the description is ADF)" in readme
+
+
+WORK_TREE = (*TREE, _setting(ISSUE_TYPE.name, "10003"),
+             _setting(STATUS_STATES.name, f"{STATES}, To Do=new, In Progress=implement, Done=closed"),
+             *_changes(("CHG-4", "CIAM-7")))
+
+
+def _task(key, number, status_name, duedate="2026-10-25"):
+    return {"id": str(number), "key": key, "self": f"https://{SITE}/rest/api/3/issue/{number}",
+            "fields": {"summary": f"CIAM: findings {key}", "issuetype": {"id": "10003", "name": "Task"},
+                       "status": {"id": "3", "name": status_name, "statusCategory": {"key": "indeterminate"}},
+                       "resolution": None, "created": "2026-10-18T08:00:00.000+0000",
+                       "updated": "2026-10-19T08:00:00.000+0000", "duedate": duedate}}
+
+
+def test_a_linked_task_issue_is_read_back_as_a_work_ticket_without_approval():
+    d, imported, after = _read(_task("CIAM-7", 20007, "In Progress"),
+                               _issue("ITOPS-1", 10001, "10012", "Awaiting implementation"),
+                               tree=WORK_TREE, approvals={"ITOPS-1": APPROVED})
+    t = get(after, ticket_dn("jira-sm", "CIAM-7"))
+    assert dict(t.attrs) == {
+        "cn": ("CIAM-7",), "ciamImportedAt": ("20260923090000Z",), "ciamTitle": ("CIAM: findings CIAM-7",),
+        "ciamProviderRef": ("20007",), "ciamDocUrl": (f"https://{SITE}/rest/api/3/issue/20007",),
+        "ciamTicketState": ("implement",), "ciamTicketNativeState": ("3 In Progress",),
+        "ciamTicketKind": ("work",), "ciamTicketDue": ("20261025000000Z",),
+        "ciamTicketFact": ("issuetype Task", "status-category indeterminate", "created 2026-10-18T08:00:00.000+0000",
+                           "updated 2026-10-19T08:00:00.000+0000")}
+    change = get(after, ticket_dn("jira-sm", "ITOPS-1"))
+    assert one(change, "ciamTicketApproval") == "approved" and one(change, "ciamTicketKind") is None
+    assert f"2 ticket(s) read (1 work) from https://{SITE}" in imported.notices
+    assert not any("CIAM-7" in n and "approvals" in n for n in imported.notices)    # a work ticket has none to read
+
+
+def test_a_work_tickets_due_day_must_be_a_day():
+    _, imported, after = _read(_task("CIAM-7", 20007, "To Do", duedate="25/10/2026"), tree=WORK_TREE)
+    assert one(get(after, ticket_dn("jira-sm", "CIAM-7")), "ciamTicketDue") is None
+    assert "CIAM-7: duedate `25/10/2026` isn't a day (YYYY-MM-DD)" in imported.notices
+
+
+def test_the_collector_asks_no_approvals_of_a_work_ticket():
+    _, alpha, _ = model(alpha=_source(), tree=WORK_TREE)
+    done = {f"{SITE}/field.json": json.dumps(FIELDS), f"{SITE}/issue/ITOPS-1.json": json.dumps(ISSUES["ITOPS-1"]),
+            f"{SITE}/issue/CIAM-7.json": json.dumps(_task("CIAM-7", 7, "To Do"))}
+    paths = [p for p, _ in change_steps(alpha.d, alpha, done, {})]
+    assert f"{SITE}/approval/ITOPS-1/0.json" in paths and not any("approval/CIAM-7" in p for p in paths)
+
+
+def test_the_work_issue_type_is_one_id_or_one_per_project():
+    from opsdir_adapter_jira_sm.mapping import issue_types
+    assert issue_types(_drafting(**{ISSUE_TYPE.name: "10002"})) == ({"*": "10002"}, ())
+    assert issue_types(_drafting(**{ISSUE_TYPE.name: "CIAM=10105, net=1, OPS=x"})) == (
+        {"CIAM": "10105"}, ("jira-sm-ticket-issue-type: `net=1` isn't <project key>=<issue type id>",
+                            "jira-sm-ticket-issue-type: `OPS=x` isn't <project key>=<issue type id>"))
+    assert issue_types(_drafting(**{ISSUE_TYPE.name: "Task"}))[1] == (
+        "jira-sm-ticket-issue-type: `Task` isn't an issue type id, or <project key>=<issue type id>, ...",)
+

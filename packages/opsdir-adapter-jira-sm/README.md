@@ -2,6 +2,8 @@
 
 opsdir ITSM add-on (adapter kind `itsm`) for Jira Service Management change management, Cloud and Data Center. It is the second ITSM add-on after `opsdir-adapter-servicenow`, with the same contract. It reads the change tickets that the record's change records are tracked by and records them as **evidence**, read-only (milestone 6.2f follow-ups, task 551). The governance domain then compares each ticket with the record: `opsdir report tickets` and the planner's `Change tickets` check (`opsdir/README.md`, *ITSM tickets*).
 
+It also drafts the **work tickets** that hand a team its findings (task 612, below): files a person posts, never a write opsdir makes. Once linked, a work ticket is read back like a change ticket, without an approval to compare.
+
 A ticket **never approves anything in opsdir**. The importer writes nothing under `ou=changes`. A ticket's approval never becomes a change's `ciamChangeStatus`, and its approvers never become `ciamApprovedBy`. The store's rule still holds: every write needs an approved change record.
 
 **Applies to** no environment and renders nothing (`applies=None`). Collecting opts in through a collection source (below).
@@ -44,6 +46,11 @@ How the mapping is applied:
 | the `change-type` field | `ciamTicketChangeType` when its value is `standard`, `normal` or `emergency` (any case); any other value is kept as a fact, with a notice |
 | the `planned-start`, `planned-end`, `work-start`, `work-end` fields | `ciamTicketPlannedStart`, `ciamTicketPlannedEnd`, `ciamTicketWorkStart`, `ciamTicketWorkEnd` |
 | `issuetype`, status category, `resolution`, `created`, `updated`, other mapped fields | `ciamTicketFact` `<name> <value>` (an option as its value, a person as their id) |
+
+**Work tickets.** A linked issue of the type `jira-sm-ticket-issue-type` maps for its project (the key's prefix) is a work ticket: a team's findings handed over (below). It is read the same way, except:
+- `ciamTicketKind` is `work`, and `ciamTicketDue` is its `duedate` (a day, kept as its 00:00 UTC). A `duedate` that isn't `YYYY-MM-DD` is left out, with a notice.
+- It has no `ciamTicketApproval`, approval steps, approvers or change type, and the collector asks for no approval pages for it. The governance domain compares no approval for a work ticket.
+- Its statuses are mapped in the same `jira-sm-status-states` (`To Do=new, In Progress=implement, Done=closed`, by id or name). A Task workflow's statuses are usually not the change workflow's, so map both.
 
 **The overall approval is derived.** Jira Service Management has no request-wide approval. It approves by workflow steps, each with its own final decision (`approved`, `declined`, `pending`). The user's rule (task 551) is:
 1. Any step declined: `rejected`.
@@ -91,8 +98,8 @@ Calls (GETs only: nothing is ever written to the site, and no approval is ever a
 | Call | Saved as |
 |---|---|
 | `GET /rest/api/{3,2}/field` | `<host>/field.json` (each field's id, name, custom, schema) |
-| then, per linked ticket, `GET /rest/api/{3,2}/issue/<key>?fields=summary,status,resolution,issuetype,created,updated,<the mapped field ids>` | `<host>/issue/<key>.json` (a 404 is a ticket not read) |
-| then, per ticket read, `GET /rest/servicedeskapi/request/<key>/approval?start=<n>&limit=50`, page after page until one says `isLastPage` | `<host>/approval/<key>/<start>.json` (a 404, an issue that isn't a request, has none) |
+| then, per linked ticket, `GET /rest/api/{3,2}/issue/<key>?fields=summary,status,resolution,issuetype,created,updated,duedate,<the mapped field ids>` | `<host>/issue/<key>.json` (a 404 is a ticket not read) |
+| then, per ticket read that isn't a work ticket, `GET /rest/servicedeskapi/request/<key>/approval?start=<n>&limit=50`, page after page until one says `isLastPage` | `<host>/approval/<key>/<start>.json` (a 404, an issue that isn't a request, has none) |
 
 There is one GET per linked ticket rather than a search. Searches on Cloud may lag ("recent updates might not be immediately visible"), and Data Center refuses a whole `key in (...)` query (400) when one key doesn't exist. Only what the importer reads is kept: people as their ids, never a display name or an email address.
 
@@ -103,6 +110,56 @@ There is one GET per linked ticket rather than a search. Searches on Cloud may l
 
 Scopes don't grant project access: permissions still decide what the reader sees.
 
+## Work-ticket drafts (`opsdir tickets`)
+
+For each team a plan's findings name as owner, the core's hand-off (`opsdir tickets <from> <to> -o DIR [--mine]`) asks this add-on for a draft. It writes `tickets/jira-sm/<team>.json` and a section of `tickets/README.md` saying how to file it, or what kept it from being drafted. **opsdir files nothing and holds no Jira credential.** The team, or an admin, posts the draft with their own credentials, then links the issue it creates on the opsdir change that does the work (`ciamTicketRef jira-sm:<key>`). The next import reads its state back as a work ticket.
+
+The draft is a plain issue of the project's **Task** type, not a customer request: no service desk or request type is involved. It is the body of:
+- **Cloud**: `POST /rest/api/3/issue`, with the description in Atlassian Document Format: the line saying where the findings come from, a *Findings* heading, a bullet list (earliest do-by first, those without one last) and the link-back line.
+- **Data Center**: `POST /rest/api/2/issue`, with the same description as a wiki-markup string (`h2. Findings`, `*` items). Wiki markup's special characters in the text (`[ ] { } | * _ + ^ ~ ! \`) are escaped, so they show as they are.
+
+Which one is used depends on `jira-sm-ticket-site`, told apart the way the collector tells sites apart (above).
+
+The body's fields:
+- `project` `{key}` and the team's routing field.
+- `issuetype` `{id}`.
+- `summary`: the request's title, cut to 255 characters.
+- `description`.
+- `duedate`: the earliest do-by, `YYYY-MM-DD`. Left out when no finding has one.
+- The operator's defaults.
+
+All of these come from estate settings without defaults, because they are the site's own ids:
+
+| Setting | Holds | Example |
+|---|---|---|
+| `jira-sm-ticket-site` | the base URL of the site the tickets are filed on | `https://example-aero.atlassian.net`, `https://jira.example-aero.test/jira` |
+| `jira-sm-ticket-projects` | `<team>=<project key>[/<team field value>]` (a team by name, any case) | `Platform=CIAM/value:Identity, network=NET` |
+| `jira-sm-ticket-team-field` | the field a team's value goes in, by id, for a site that routes by a team, component or select field | `customfield_10100`, `components` |
+| `jira-sm-ticket-issue-type` | the work tickets' issue type id: one for every project, or `<project key>=<id>` where projects differ (a team-managed project has its own). From `GET /rest/api/3/issue/createmeta/<project key>/issuetypes` (`/rest/api/2/...` on Data Center) | `10002`, `CIAM=10105, NET=10002` |
+| `jira-sm-ticket-fields` | `<field id>=<value>` every work ticket is created with | `priority=id:3, labels=list:ciam\|remediation` |
+
+A field value is text as it is, or `<shape>:<value>`:
+- `id:3`, `value:High`, `name:IAM`, `key:...` and `accountId:...` give an object with that key.
+- `ids:`, `values:`, `names:` and `keys:a|b` give a list of such objects (`components=names:IAM|Directory`).
+- `list:a|b` gives a list of text (labels), `number:5` a number, and `text:<value>` text that would otherwise read as a shape.
+
+`project`, `issuetype`, `summary`, `description` and `duedate` are the draft's own: a default naming one is left out, with a problem.
+
+What keeps a team's draft from being written is listed under the team in the README, with the setting to give (`opsdir setting <name> <value> --change <id>`):
+- no site, or a site that isn't a base URL;
+- no project for the team;
+- no issue type for its project;
+- a team value without `jira-sm-ticket-team-field`.
+
+A malformed default is named too, and left out, but the draft is still written.
+
+How to file, as the README says:
+- **Cloud**: `curl --request POST 'https://<site>.atlassian.net/rest/api/3/issue' --user '<email>:<api-token>' --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary @jira-sm/<team>.json`. Through the gateway (`.../ex/jira/<cloudId>`), use `--header 'Authorization: Bearer <access-token>'` instead.
+- **Data Center**: the same request to `/rest/api/2/issue` with `--header 'Authorization: Bearer <personal-access-token>'`.
+- **Government Cloud**: OAuth 2.0 apps call the gateway `https://api.atlassian-us-gov-mod.com/ex/jira/<cloudId>` with a bearer token.
+
+The poster needs **Browse Projects** and **Create Issues** in the project, plus **Schedule Issues** and `duedate` on the create screen for the due date.
+
 ## Known limits
 
 - **CSV and XML exports aren't read** (deferred). A CSV export's times are in the exporting user's format and time zone, with no offset. Its column names for custom fields, the XML export's shape and whether either carries approval decisions weren't confirmed by the research. No export carries the approval steps, so save the REST answers (or collect).
@@ -112,6 +169,13 @@ Scopes don't grant project access: permissions still decide what the reader sees
 - **Comparisons.** As for ServiceNow: the record's `ciamPlannedAt` is compared by UTC day with the planned window, and ITSM's own work times with its planned window exactly. When the record itself applied a change is not compared yet.
 - **One site.** One site per record: the link names a key, not a site.
 - **Government Cloud.** Jira Service Management is available on Atlassian Government Cloud (FedRAMP Moderate). Its OAuth 2.0 (3LO) endpoints are documented, but full REST parity (search, approvals) and scoped tokens there are unverified: confirm with the customer.
+- **Work-ticket drafts.** Unconfirmed, so check them on the site before filing:
+  - Whether every operation and body is the same on Government Cloud (the research found no documented difference, but no stated parity either), and whether an API token is taken on a Government Cloud site itself.
+  - Whether a Data Center description field uses the wiki renderer (with the default text renderer, the escapes show).
+  - Which value shape a site's team field takes: the Atlassian Team field, a select list's `{"value"}` or components' `{"name"}`.
+  - What else a project's create screen requires: read its create metadata.
+
+  A JSM customer request (`POST /rest/servicedeskapi/request`) isn't drafted. Assignment to a person isn't drafted either, and is left to the project's routing.
 - **Data Center** 11.3 (the current LTS, supported to 2027-12-03) and 10.3 are documented alike. Atlassian ends Data Center on 2029-03-28.
 
 Sources (Atlassian documentation, read by the task 551 research on 2026-10-16): Jira Cloud platform REST v3 issue search, issues and issue fields; Jira Service Management Cloud REST request approvals; Jira Data Center REST 11 search and Jira Service Management Data Center REST approval; default form fields for change requests; the change management workflow; export search results; API tokens, service accounts and Government Cloud 3LO; Data Center release notes and end-of-support policy.
