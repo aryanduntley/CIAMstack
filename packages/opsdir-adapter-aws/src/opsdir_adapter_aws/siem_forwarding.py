@@ -23,14 +23,17 @@ A Splunk index's Firehose endpoint isn't always its HEC (splunk_firehose_endpoin
 AWS takes Firehose at https://http-inputs-firehose-<stack>.splunkcloud.com:443 while its HEC is
 http-inputs-<stack>.splunkcloud.com, so that endpoint is derived from the intake URL (one that already names a
 Firehose host is used as it is); Splunk documents none for its other stacks (Google Cloud, Azure, FedRAMP on AWS
-GovCloud: http-inputs.<stack>, trials), and the record holds one intake URL per index, so those are a blocker; any
-other host is Splunk Enterprise's, sent to as the intake URL names it, Firehose taking the URL without a path.
+GovCloud: http-inputs.<stack>, trials), so for those the stack's Firehose endpoint must be recorded as the index's
+ciamStreamIntakeUrl (where it takes a delivery stream's logs when that isn't its intake URL), else a blocker; any other
+host is Splunk Enterprise's, sent to as the intake URL names it, Firehose taking the URL without a path. An index that
+records ciamStreamIntakeUrl is sent to there as recorded (a note names it), whatever its intake URL, Elastic's too.
 
 What a person does is a render note: the SIEM team puts the credential in the secret (and, for Splunk, turns on
 indexer acknowledgment for the HEC token Firehose uses); for Splunk Enterprise, the load balancer Firehose needs in
 front of the HEC. A forwarding the render can't express (no intake URL, no credential or backup location, a
 credential that isn't an aws-sm:// reference, an index no adapter here keeps as Splunk or Elastic, a Splunk Cloud
-stack with no documented Firehose endpoint, a log group someone else keeps) is a blocker note instead.
+stack with no documented Firehose endpoint and none recorded, a log group someone else keeps) is a blocker note
+instead.
 """
 import json
 import re
@@ -57,6 +60,7 @@ SPLUNK_CLOUD = ("splunkcloud.com", "splunkcloudgc.com")
 _HEC_HOST = re.compile(r"^http-inputs-(?P<stack>[a-z0-9][a-z0-9-]*)\.splunkcloud\.com$")
 FIREHOSE_HOST, FIREHOSE_PORT = "http-inputs-firehose-{}.splunkcloud.com", 443
 DERIVED, AS_RECORDED, ENTERPRISE, UNDOCUMENTED = "derived", "as-recorded", "enterprise", "undocumented"
+STREAM_INTAKE = "stream-intake"         # the index's ciamStreamIntakeUrl, as recorded
 
 
 def _policy(statements):
@@ -87,11 +91,26 @@ def _secret(m, to):
     return s if s is not None and (one(s, "ciamRefUri") or "").startswith("aws-sm://") else None
 
 
-def splunk_firehose_endpoint(intake):
-    """(the URL Firehose sends a Splunk index's events to, how it was found) from its https intake URL
-    (ciamIntakeUrl): DERIVED for Splunk Cloud Platform on AWS's HEC host (its Firehose host, port 443), AS_RECORDED
-    for a host naming firehose, UNDOCUMENTED (None) for Splunk Cloud's other stacks, ENTERPRISE for any other host
-    (the URL's scheme, host and port: Firehose takes no path); (None, None) for no https URL."""
+def _splunk_cloud(url):
+    host = (urlsplit(url or "").hostname or "").lower()
+    return any(host == d or host.endswith(f".{d}") for d in SPLUNK_CLOUD)
+
+
+def stream_intake(to):
+    """The https URL a SIEM index takes a delivery stream's logs at when it records one (ciamStreamIntakeUrl), or
+    None."""
+    url = one(to, "ciamStreamIntakeUrl") or ""
+    return url if url.startswith("https://") else None
+
+
+def splunk_firehose_endpoint(intake, stream=None):
+    """(the URL Firehose sends a Splunk index's events to, how it was found) from its https stream intake URL
+    (ciamStreamIntakeUrl: STREAM_INTAKE, as recorded) or else its intake URL (ciamIntakeUrl): DERIVED for Splunk
+    Cloud Platform on AWS's HEC host (its Firehose host, port 443), AS_RECORDED for a host naming firehose,
+    UNDOCUMENTED (None) for Splunk Cloud's other stacks, ENTERPRISE for any other host (the URL's scheme, host and
+    port: Firehose takes no path); (None, None) for no https URL."""
+    if (stream or "").startswith("https://"):
+        return stream, STREAM_INTAKE
     parts = urlsplit(intake or "")
     host = (parts.hostname or "").lower()
     if parts.scheme != "https" or not host:
@@ -100,9 +119,18 @@ def splunk_firehose_endpoint(intake):
     found = _HEC_HOST.match(host)
     if found and not found["stack"].startswith("firehose-"):
         return f"https://{FIREHOSE_HOST.format(found['stack'])}:{FIREHOSE_PORT}", DERIVED
-    if any(host == d or host.endswith(f".{d}") for d in SPLUNK_CLOUD):
+    if _splunk_cloud(intake):
         return (origin, AS_RECORDED) if "firehose" in host.split(".", 1)[0] else (None, UNDOCUMENTED)
     return origin, ENTERPRISE
+
+
+def _splunk_endpoint(to):
+    return splunk_firehose_endpoint(one(to, "ciamIntakeUrl"), stream_intake(to))
+
+
+def _intake(to):
+    """Where Firehose sends an Elastic index's logs: its stream intake URL, else its intake URL."""
+    return stream_intake(to) or one(to, "ciamIntakeUrl")
 
 
 def lacking(m, b, to, keeper):
@@ -112,12 +140,12 @@ def lacking(m, b, to, keeper):
          keeper_of(m, b) is not None or group_name(b) is None),
         (f"an index this environment's Splunk or Elastic adapter keeps (it's {keeper or 'kept by none'})",
          keeper not in SECRET_KEYS),
-        (f"an intake URL on {rdn_value(to)} (ciamIntakeUrl, https)", not (one(to, "ciamIntakeUrl") or "")
-         .startswith("https://")),
-        (f"a Firehose endpoint for {rdn_value(to)}: Splunk documents one only for Splunk Cloud Platform on AWS "
-         f"(http-inputs-firehose-<stack>.splunkcloud.com), not for this stack's {_host(to)}, and the record holds one "
-         "intake URL per index (its HEC)",
-         keeper == SPLUNK and splunk_firehose_endpoint(one(to, "ciamIntakeUrl"))[1] == UNDOCUMENTED),
+        (f"an intake URL on {rdn_value(to)} (ciamIntakeUrl, or ciamStreamIntakeUrl for the stream; https)",
+         not (_intake(to) or "").startswith("https://")),
+        (f"the stack's Firehose endpoint recorded as ciamStreamIntakeUrl on {rdn_value(to)}: Splunk documents one "
+         f"only for Splunk Cloud Platform on AWS (http-inputs-firehose-<stack>.splunkcloud.com), not for this stack's "
+         f"{_host(to)} (its HEC), so ask Splunk for the stack's Firehose endpoint",
+         keeper == SPLUNK and _splunk_endpoint(to)[1] == UNDOCUMENTED),
         (f"a credential on {rdn_value(to)} (ciamCredentialRole naming an aws-sm:// secret reference)",
          _secret(m, to) is None),
         (f"where undeliverable events go (ciamStorageRef s3://bucket[/prefix] on {rdn_value(b)})",
@@ -139,13 +167,13 @@ def _destination(m, to, keeper, role, backup, secret):
         ("role_arn", ref(f"aws_iam_role.{role}.arn")))))
     if keeper == SPLUNK:
         return ("splunk_configuration", Block((
-            ("hec_endpoint", splunk_firehose_endpoint(one(to, "ciamIntakeUrl"))[0]), ("hec_endpoint_type", "Raw"),
+            ("hec_endpoint", _splunk_endpoint(to)[0]), ("hec_endpoint_type", "Raw"),
             ("s3_backup_mode", "FailedEventsOnly"), s3, secrets,
             ("processing_configuration", Block((("enabled", True), ("processors", Block((
                 ("type", "Decompression"), ("parameters", Block((("parameter_name", "CompressionFormat"),
                                                                  ("parameter_value", "GZIP")))))))))))))
     return ("http_endpoint_configuration", Block((
-        ("url", one(to, "ciamIntakeUrl")), ("name", "Elastic"), ("role_arn", ref(f"aws_iam_role.{role}.arn")),
+        ("url", _intake(to)), ("name", "Elastic"), ("role_arn", ref(f"aws_iam_role.{role}.arn")),
         ("s3_backup_mode", "FailedDataOnly"), s3, secrets,
         ("request_configuration", Block((("content_encoding", "GZIP"),))))))
 
@@ -213,29 +241,42 @@ def _blocked(m, b, to, keeper):
 
 
 def _endpoint_notes(m, b, to, keeper):
-    """A rendered Splunk forwarding's endpoint notes: where a derived Firehose endpoint departs from the intake URL (a
-    note), what Firehose needs of a Splunk Enterprise intake (an action)."""
+    """A rendered forwarding's endpoint notes: a recorded stream intake URL it sends to (a note; to a Splunk host
+    outside Splunk Cloud, what Firehose needs of Splunk Enterprise too), where a derived Firehose endpoint departs
+    from the intake URL (a note), what Firehose needs of a Splunk Enterprise intake (an action)."""
+    stream = stream_intake(to)
+    recorded = (note(AREA, "note", f"log destination {rdn_value(b)} forwarding",
+                     f"Firehose sends to {stream}, the delivery-stream intake {rdn_value(to)} records "
+                     "(ciamStreamIntakeUrl), as recorded", (), b.dn, m.label),) if stream else ()
     if keeper != SPLUNK:
-        return ()
-    url, how = splunk_firehose_endpoint(one(to, "ciamIntakeUrl"))
+        return recorded
+    url, how = _splunk_endpoint(to)
+    if how == STREAM_INTAKE:
+        return (*recorded, *(() if _splunk_cloud(url) else (_enterprise(m, b, to, url, "stream intake URL"),)))
     if how == DERIVED:
         return (note(AREA, "note", f"log destination {rdn_value(b)} forwarding",
                      f"Firehose sends to {url}, Splunk Cloud Platform's Firehose endpoint for the stack whose HEC "
                      f"{rdn_value(to)}'s intake URL names ({_host(to)})", (), b.dn, m.label),)
     if how == ENTERPRISE:
-        return (note(AREA, "action", f"log destination {rdn_value(b)} forwarding",
-                     f"Firehose sends to {url} ({rdn_value(to)}'s intake URL) as Splunk Enterprise's HEC: Firehose "
-                     "needs it behind a Classic or Application Load Balancer, over HTTPS with a certificate a trusted "
-                     "CA signed for that host (self-signed isn't accepted), with duration-based sticky sessions",
-                     ("Ask the Splunk team to put the HEC behind such a load balancer (Classic: cookie expiration "
-                      "disabled; Application: stickiness duration 7 days) and record its URL as the intake URL, or "
-                      "confirm the intake URL already names it",), b.dn, m.label),)
+        return (_enterprise(m, b, to, url, "intake URL"),)
     return ()
+
+
+def _enterprise(m, b, to, url, which):
+    """The action naming what Firehose needs of a Splunk Enterprise HEC it sends to at url (the index's `which`)."""
+    return note(AREA, "action", f"log destination {rdn_value(b)} forwarding",
+                f"Firehose sends to {url} ({rdn_value(to)}'s {which}) as Splunk Enterprise's HEC: Firehose needs it "
+                "behind a Classic or Application Load Balancer, over HTTPS with a certificate a trusted CA signed for "
+                "that host (self-signed isn't accepted), with duration-based sticky sessions",
+                ("Ask the Splunk team to put the HEC behind such a load balancer (Classic: cookie expiration disabled; "
+                 f"Application: stickiness duration 7 days) and record its URL as {rdn_value(to)}'s "
+                 "ciamStreamIntakeUrl (collectors keep sending to the HEC at ciamIntakeUrl), or confirm the "
+                 f"{which} already names it",), b.dn, m.label)
 
 
 def siem_forwarding_notes(m, services):
     """The render notes of environment m's forwardings: a blocker for each the render can't express; for each
-    rendered, the credential the SIEM team puts in the secret, a Splunk index's endpoint notes (_endpoint_notes), and
+    rendered, the credential the SIEM team puts in the secret, the index's endpoint notes (_endpoint_notes), and
     in GovCloud, that the FIPS endpoint Firehose itself uses for the secret and the intake isn't established."""
     return tuple(n for b, to, keeper in _ours(m, services) for n in (
         (_blocked(m, b, to, keeper),) if lacking(m, b, to, keeper) else (

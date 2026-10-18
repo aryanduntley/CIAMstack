@@ -14,13 +14,15 @@ GROUP_ARN = "arn:aws:logs:us-east-1:111122223333:log-group:/ciam/security"
 SECRET = "aws-sm://arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/hec-AbCdEf"
 
 
-def _records(keeper_index="ciam_security", storage="s3://ciam-siem-failed/firehose", intake="https://hec.example.test"):
+def _records(keeper_index="ciam_security", storage="s3://ciam-siem-failed/firehose", intake="https://hec.example.test",
+             stream=None):
     return (entry(ALPHA, "security-logs", "ciamLogDestination", ciamBindingRole="security-logs",
                   ciamDestinationKind="log-group", ciamProviderRef=GROUP_ARN, ciamRetentionDays="30",
                   ciamForwardsToRole="siem", **({"ciamStorageRef": storage} if storage else {})),
             entry(ALPHA, "siem", "ciamLogDestination", ciamBindingRole="siem", ciamDestinationKind="siem-index",
                   ciamProviderRef=keeper_index, ciamRetentionDays="90", ciamCredentialRole="siem-intake",
-                  **({"ciamIntakeUrl": intake} if intake else {})),
+                  **({"ciamIntakeUrl": intake} if intake else {}),
+                  **({"ciamStreamIntakeUrl": stream} if stream else {})),
             entry(ALPHA, "siem-intake", "ciamSecretRef", ciamBindingRole="siem-intake", ciamRefUri=SECRET))
 
 
@@ -121,6 +123,34 @@ def test_a_splunk_cloud_stack_with_no_documented_firehose_endpoint_is_a_blocker(
         text, m = _render(intake=intake)
         assert "aws_kinesis_firehose_delivery_stream" not in text, intake
         (blocker,) = siem_forwarding_notes(m, _services("splunk"))
-        assert blocker.severity == "blocker" and "a Firehose endpoint" in blocker.text, intake
+        assert blocker.severity == "blocker" and "recorded as ciamStreamIntakeUrl on siem" in blocker.text, intake
     text, _ = _render("elastic", intake="https://http-inputs.acme.splunkcloudgc.com:443")
     assert "aws_kinesis_firehose_delivery_stream" in text
+
+
+def test_a_recorded_stream_intake_url_is_where_firehose_sends_as_recorded():
+    firehose = "https://firehose.acme.splunkcloudgc.com:443"
+    text, m = _render(intake="https://http-inputs.acme.splunkcloudgc.com:443", stream=firehose)
+    assert f'hec_endpoint      = "{firehose}"' in text
+    action, recorded = siem_forwarding_notes(m, _services("splunk"))
+    assert action.severity == "action" and recorded.severity == "note"
+    assert firehose in recorded.text and "ciamStreamIntakeUrl" in recorded.text
+    text, m = _render(intake=None, stream=firehose)
+    assert f'hec_endpoint      = "{firehose}"' in text
+
+
+def test_a_stream_intake_on_splunk_enterprise_is_its_load_balancer_and_the_collectors_keep_the_hec():
+    text, m = _render(intake="https://hec.example.test:8088", stream="https://firehose-lb.example.test")
+    assert 'hec_endpoint      = "https://firehose-lb.example.test"' in text
+    _, recorded, action = siem_forwarding_notes(m, _services("splunk"))
+    assert recorded.severity == "note" and action.severity == "action"
+    assert "stream intake URL" in action.text and "Classic or Application Load Balancer" in action.text
+    _, action = siem_forwarding_notes(_render(intake="https://hec.example.test:8088")[1], _services("splunk"))
+    assert any("ciamStreamIntakeUrl" in s for s in action.how)
+
+
+def test_an_elastic_index_recording_a_stream_intake_url_is_sent_to_there():
+    text, m = _render("elastic", stream="https://acme.es.example.test/firehose")
+    assert 'url            = "https://acme.es.example.test/firehose"' in text
+    _, recorded = siem_forwarding_notes(m, _services("elastic"))
+    assert recorded.severity == "note" and "https://acme.es.example.test/firehose" in recorded.text

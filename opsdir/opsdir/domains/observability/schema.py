@@ -5,8 +5,8 @@ group, a paging service), what keeps logs (a log group, a workspace, a SIEM inde
 Activity Log's diagnostic setting, Cloud Audit Logs' sinks) are bindings each environment gives a role."""
 from ...core.standard import AttributeDef, ClassDef, enum_type, fragment
 from .naming import (ATTACK_TACTICS, AUDIT_EVENTS, AUDIT_SCOPES, CANARY_FLOWS, CHANNEL_KINDS, COMPARISONS,
-                     DECLARED_DETECTION, DESTINATION_KINDS, DETECTION_FIELDS, DURATION, ENTITY_MAPPING, LOG_KINDS,
-                     SELECTOR_TERM, WINDOW_KINDS)
+                     DECLARED_DETECTION, DESTINATION_KINDS, DETECTION_FIELDS, DURATION, ENTITY_MAPPING, HTTPS_URL,
+                     LOG_KINDS, SELECTOR_TERM, WINDOW_KINDS)
 
 PERIOD = (("X-PATTERN", DURATION),)
 
@@ -117,6 +117,10 @@ ATTRIBUTES = (
     AttributeDef(963, 'ciamIntakeUrl', 'string', 'binding', True,
                  "Where a SIEM index takes logs pushed to it (a Splunk HTTP Event Collector, an Elastic intake "
                  "endpoint): https URL; its credential is the secret reference its ciamCredentialRole names"),
+    AttributeDef(974, 'ciamStreamIntakeUrl', 'string', 'binding', True,
+                 "Where a SIEM index takes the logs a cloud's delivery stream pushes to it, when that differs from its "
+                 "ciamIntakeUrl (a host of its own for the stream): https URL, used as recorded; the credential is "
+                 "the same", (("X-PATTERN", HTTPS_URL),)),
     AttributeDef(842, 'ciamSearchLanguage', 'vocab', 'binding', True,
                  "The language a SIEM detection's search (its ciamMetric) is written in, from the vocabulary the SIEM "
                  "adapters declare (spl, kusto, esql, kuery, ...). Not recorded: the native language of the SIEM "
@@ -160,13 +164,14 @@ CLASSES = (
              'What delivers alerts of a role in an environment (a topic, an action group, a paging service)'),
     ClassDef(66, 'ciamLogDestination', 'ciamBinding', 'STRUCTURAL', ('ciamDestinationKind',),
              ('ciamProviderRef', 'ciamRetentionDays', 'ciamTotalRetentionDays', 'ciamManagedBy', 'ciamArchiveRef',
-              'ciamForwardsToRole', 'ciamIntakeUrl', 'ciamCredentialRole', 'ciamStreamRole', 'ciamStorageRef'),
+              'ciamForwardsToRole', 'ciamIntakeUrl', 'ciamCredentialRole', 'ciamStreamRole', 'ciamStorageRef',
+              'ciamStreamIntakeUrl'),
              'What keeps logs of a role in an environment, and for how many days (0: kept indefinitely): searchable '
              '(ciamRetentionDays), and in all when it archives them (ciamTotalRetentionDays), the archive kept where '
              'ciamArchiveRef says; a cloud log destination may forward its logs on to a SIEM index '
              '(ciamForwardsToRole: through the event stream ciamStreamRole names, events it can\'t deliver kept '
              'where ciamStorageRef says), and a SIEM index takes pushed logs at ciamIntakeUrl with the credential '
-             'ciamCredentialRole references'),
+             'ciamCredentialRole references (a cloud delivery stream\'s at ciamStreamIntakeUrl, when it differs)'),
     ClassDef(67, 'ciamAlarmBinding', 'ciamBinding', 'STRUCTURAL', ('ciamProviderRef',),
              ('ciamRealizes', 'ciamNotifies', 'ciamMetric', 'ciamManagedBy', 'ciamLogDestinationRole',
               'ciamSearchLanguage', 'ciamDetectionMode', 'ciamEntityMapping'),

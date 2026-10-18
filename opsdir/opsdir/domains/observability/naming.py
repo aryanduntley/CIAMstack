@@ -35,6 +35,7 @@ VALIDATIONS = ("documented", "lab-verified", "live-verified")
 # A canonical selector value: <field>=<value>[|<value>...] (every field of a rule's selector matches one of its values)
 SELECTOR_TERM = (r"^(" + "|".join(DETECTION_FIELDS) + r")=[A-Za-z0-9_.:@/-]+(\|[A-Za-z0-9_.:@/-]+)*$")
 DECLARED_DETECTION = r"^[a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9.-]*$"     # <adapter>:<detection id>
+HTTPS_URL = r"^https://[^\s/?#]+(/[^\s]*)?$"       # https://<host>[:<port>][/<path>]
 SEVERITIES = ("sev1", "sev2", "sev3", "sev4")   # ciamSeverity's values (governance), most severe first
 AUDIT_SCOPES = ("account", "organization")     # one account (subscription, project), or every account of the
                                                # organization
