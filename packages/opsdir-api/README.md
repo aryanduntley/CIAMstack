@@ -38,6 +38,8 @@ The token's issuer and subject must belong to a recorded person: their `ciamIdpS
 
 The token's groups claim (`OPSDIR_API_GROUPS_CLAIM`) decides the members of teams mapped to identity provider groups (`opsdir team NAME --idp-group '<issuer> <group id>'`): each value is taken as `'<iss> <value>'`, so configure the provider to emit immutable group IDs, not display names. When the provider says the list is incomplete (Entra ID's group overage: `_claim_names` names the claim, or `hasgroups` is set), the call gets a 403 rather than a guess: emit only the groups assigned to the application. The API client the token was issued to (`azp`, else `client_id`) is recorded in history beside the person.
 
+Running it in a company deployment (database login, identity provider registration, TLS proxy, service unit, checks): [`documentation/API-DEPLOYMENT.md`](../../documentation/API-DEPLOYMENT.md).
+
 ## The API login
 
 The server connects as one database login, the API login, and only the server holds its credentials. The record's `api-login` setting names that login. The store accepts "acting as person X" (`store.postgres.requesting`) only from the login that setting names. For each request the server:

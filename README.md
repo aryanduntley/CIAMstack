@@ -32,7 +32,7 @@ In short, CIAMstack makes an identity estate **known, governed and reproducible*
 
 The command-line tool and Python package are called `opsdir` (operations directory). The core names no vendor: each product, cloud and tool is a separate installable **adapter** package. Today's adapters cover the ForgeRock/Ping stack (PingDS, OpenDJ, PingFederate, PingAM, PingIDM, PingGateway, PingAccess) and SiteMinder as a product to retire, on AWS (including GovCloud), Azure (commercial and Government), Google Cloud and on-premises, with secret stores, PKI, ITSM, SIEM and network tooling around them. New adapters can be written without touching the core.
 
-**Status:** pre-production. The core and adapters are built and tested offline (about 4,400 automated tests). They haven't yet been validated against real product instances or cloud accounts, and everything is driven from the command line today ([Where it stands](#where-it-stands)).
+**Status:** pre-production. The core and adapters are built and tested offline (about 4,700 automated tests). They haven't yet been validated against real product instances or cloud accounts. People work through the HTTP API or, on the server, the command line; the web console is next ([Where it stands](#where-it-stands)).
 
 ## Bringing it into an organization
 
@@ -200,7 +200,7 @@ Installing or running CIAMstack needs a written evaluation or commercial license
 
 **Supported platforms:**
 - The server is Linux: one company-wide CIAMstack server per company record (or a container).
-- People on any OS reach it through the API, the console or MCP as they arrive; today, a terminal on the server.
+- People on any OS reach it through the HTTP API (single sign-on with the company's identity provider); the console and MCP will be clients of the same API. Administrators use the CLI on the server.
 - The CLI runs directly on Linux, on macOS (POSIX; expected to work, not yet tested) and on Windows through WSL2.
 - Every file CIAMstack reads and writes is UTF-8 with LF line endings, whatever the server's locale.
 
@@ -217,7 +217,7 @@ The [showcase](examples/showcase/README.md) walks through all of the above on a 
 
 ## Where it stands
 
-**Built and tested offline** (about 4,400 automated tests: unit tests, integration tests against PostgreSQL, and golden-output comparisons of the full fictional estate):
+**Built and tested offline** (about 4,700 automated tests: unit tests, integration tests against PostgreSQL, and golden-output comparisons of the full fictional estate):
 - the governed store, with versioned schema upgrades and full history;
 - every report, search, guardrail and planner check above, with offered fixes;
 - importers and renderers for every adapter listed, and round trips: each render reads back through the adapter's own importer with no drift;
@@ -231,15 +231,17 @@ The [showcase](examples/showcase/README.md) walks through all of the above on a 
   - each person signs in as themselves;
   - the database records who wrote and who approved every change, and refuses an approval by the change's own author;
   - per-person and per-team grants by action, environment and owning team are checked before every command and again by the database on every write;
-  - 'my area' views.
+  - 'my area' views;
+- the HTTP API (`opsdir-api`): OIDC bearer tokens from the company's identity provider, each call a recorded person's with the same permission checks, teams that follow the provider's groups, and browse, edit, propose, approve, import, render and plan previews ([running it](documentation/API-DEPLOYMENT.md));
+- guided onboarding (`opsdir onboard`: an answers file or questions, then imports and a verification that every original is reproduced) and schema-driven `opsdir browse` / `opsdir edit`.
 
 Rendered AWS and Azure Terraform passes `terraform validate` against the provider schemas, Kubernetes output is checked by kustomize, helm and kubeconform, and PingFederate requests are checked against Ping's Admin API spec.
 
 **Not yet verified:** rendered product configuration against real product instances, `terraform plan` against real cloud accounts, Kubernetes output deployed to a real cluster, the read-only collectors against live systems (their tests replay recorded output), and the Google Cloud Terraform with `terraform validate`. See [what's verified](examples/showcase/README.md#whats-verified-and-what-isnt).
 
-**Not built yet:** an HTTP API with company single sign-on, a web console, guided onboarding, and combining two companies' records after a merger. Everything today is driven from the command line.
+**Not built yet:** a web console, the MCP tool interface, and combining two companies' records after a merger (planned).
 
-**Next:** validation against real products and accounts in a sandbox, then the API and the console. What each part of an identity platform carries and how much of it is modeled today: [`documentation/STACK.md`](documentation/STACK.md).
+**Next:** validation against real products and accounts in a sandbox, then the console and MCP on top of the API. What each part of an identity platform carries and how much of it is modeled today: [`documentation/STACK.md`](documentation/STACK.md).
 
 ## Documentation
 
@@ -248,6 +250,7 @@ Rendered AWS and Azure Terraform passes `terraform validate` against the provide
 - [`documentation/SCHEMA.md`](documentation/SCHEMA.md): the schema reference: how the database stores the record (its PostgreSQL tables, column by column), the directory tree, and every object class and field, with types and descriptions, for the core, each domain and each adapter package that adds its own.
 - [`documentation/REPORTS.md`](documentation/REPORTS.md): every report and what the planner does with it.
 - [`documentation/RECORD-DATABASE.md`](documentation/RECORD-DATABASE.md): running the record's own database in production: setup, sign-in, backups, restore, upgrades.
+- [`documentation/API-DEPLOYMENT.md`](documentation/API-DEPLOYMENT.md): running the HTTP API: its database login, registering it at the identity provider, people and teams, TLS in front of it, the service, checks.
 - [`documentation/ops-directory-model.md`](documentation/ops-directory-model.md): design rationale: why a directory-shaped record, what differs between environments, where moves get hard, prior art.
 - [`documentation/STACK.md`](documentation/STACK.md): the full inventory of what an identity platform carries and how much of it is modeled today.
 

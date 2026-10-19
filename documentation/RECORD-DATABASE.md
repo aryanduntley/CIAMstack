@@ -29,7 +29,7 @@ The record is a PostgreSQL database. Each company keeps its own: a parent organi
 5. **Give the record its identity and say it is production**, under approved changes:
    - `opsdir identity --org <code> [--parent <group code>] --name "<company>" --change <change>`. From then on, change records are named `<code>-…`.
    - `opsdir setting deployment production --change <code>-…`.
-   - With the HTTP API: `opsdir setting api-login opsdir_api --change <code>-…`.
+   - With the HTTP API: `opsdir setting api-login opsdir_api --change <code>-…`. The rest of the API's setup is in [Running the HTTP API](API-DEPLOYMENT.md).
 6. **Check it**: run `opsdir posture` as the runtime login. Every check should be `ok`, apart from information rows. A production record fails on:
    - a password in the environment;
    - the development defaults;
