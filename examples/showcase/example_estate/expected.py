@@ -788,6 +788,11 @@ EXPECTED = MappingProxyType({
          "PingIDM's password spray detection is offered for adoption: no alert rule adopts it yet", None, None),
         ("A312", "Alert", "pingidm declares detection `config-change`",
          "PingIDM's configuration change detection is offered for adoption: no alert rule adopts it yet", None, None),
+        # PingAM's MFA detections derived from the record (milestone 129, task 633): the partners realm holds an MFA
+        # journey with no route around it, so only its configuration-change detection is offered (unverified)
+        ("A313", "Alert", "pingam declares detection `mfa-config.partners`",
+         "PingAM's configuration change detection for the MFA realm /partners is offered for adoption, marked "
+         "unverified: no alert rule adopts it yet", None, None),
     ],
 })
 

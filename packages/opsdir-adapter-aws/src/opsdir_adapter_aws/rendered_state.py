@@ -63,7 +63,10 @@ ASSIGNS = MappingProxyType({
                + str(configured.get("url", name)).removeprefix("https://")},
     # a Firehose stream's ARN names it (what a role's grant on it reads, as the CloudFormation read-back makes it)
     "aws_kinesis_firehose_delivery_stream": lambda name, configured, partition, region, account: {
-        "arn": f"arn:{partition}:firehose:{region}:{account}:deliverystream/{configured.get('name', name)}"}})
+        "arn": f"arn:{partition}:firehose:{region}:{account}:deliverystream/{configured.get('name', name)}"},
+    # an SQS queue's ARN names it (what the pull's reader role is granted on, as the CloudFormation read-back makes it)
+    "aws_sqs_queue": lambda name, configured, partition, region, account: {
+        "arn": f"arn:{partition}:sqs:{region}:{account}:{configured.get('name', name)}"}})
 
 
 def _unquote(k):
@@ -120,7 +123,8 @@ PHYSICAL_NAMES = MappingProxyType({
     "AWS::RDS::DBClusterParameterGroup": "DBClusterParameterGroupName", "AWS::Logs::LogGroup": "LogGroupName",
     "AWS::Backup::BackupVault": "BackupVaultName", "AWS::CloudWatch::Alarm": "AlarmName",
     "AWS::Synthetics::Canary": "Name", "AWS::Config::ConfigurationRecorder": "Name",
-    "AWS::Config::DeliveryChannel": "Name", "AWS::KinesisFirehose::DeliveryStream": "DeliveryStreamName"})
+    "AWS::Config::DeliveryChannel": "Name", "AWS::KinesisFirehose::DeliveryStream": "DeliveryStreamName",
+    "AWS::SQS::Queue": "QueueName"})     # a real queue's physical id is its URL; the reader takes its last segment
 # Physical ids made from the template's properties (an OIDC provider's ARN names its issuer), as aws_assigned makes
 # the ARN of the Terraform type it came from: (properties, partition, account) -> the physical id
 PHYSICAL_MADE = MappingProxyType({

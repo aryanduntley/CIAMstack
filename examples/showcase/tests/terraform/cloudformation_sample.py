@@ -202,6 +202,23 @@ SIEM = (entry(ALPHA, "security-logs", "ciamLogDestination", ciamBindingRole="sec
               ciamRefUri=f"aws-sm://arn:aws:secretsmanager:us-east-1:{ACCOUNT}:secret:ciam/hec-AbCdEf"))
 
 
+# the same log group pulled into Splunk from S3 through SQS instead (milestone 129, siem_pull.py): the estate settings
+# choosing the pull and naming the Splunk team's principal, and the bucket (kept by the stack) its logs land in
+PULL = (entry(ALPHA, "security-logs", "ciamLogDestination", ciamBindingRole="security-logs",
+              ciamDestinationKind="log-group", ciamRetentionDays="30", ciamForwardsToRole="siem",
+              ciamProviderRef=f"arn:aws:logs:us-east-1:{ACCOUNT}:log-group:/ciam/security",
+              ciamStorageRef="s3://ciam-siem-logs/cloudwatch"),
+        entry(ALPHA, "siem", "ciamLogDestination", ciamBindingRole="siem", ciamDestinationKind="siem-index",
+              ciamProviderRef="ciam_security", ciamRetentionDays="90"),
+        entry(ALPHA, "siem-logs", "ciamObjectStore", ciamBindingRole="siem-logs",
+              ciamStorageRef="s3://ciam-siem-logs", ciamStorageVersioning="TRUE"))
+PULL_SETTINGS = tuple(f"dn: cn={name},ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamEstateSetting\n"
+                      f"cn: {name}\nciamEstateValue: {value}\n"
+                      for name, value in (("aws-siem-delivery", "siem=s3-sqs"),
+                                          ("aws-siem-pull-principal",
+                                           "siem=arn:aws:iam::444455556666:role/splunk-addon")))
+
+
 # client certificates checked at the ALB under an edge trust policy (task 591): its bundle's bucket, and the edge
 # policy terminating TLS at the load balancer
 TRUST_BUCKET = entry(ALPHA, "trust-bucket", "ciamObjectStore", ciamBindingRole="trust-store",
@@ -226,6 +243,8 @@ def environments(region):
              found._replace(logs=lambda m: (AM,))),
             # the index kept by the Splunk adapter, as a stack declaring it would
             ("siem", model(alpha=SIEM, changes=(*placed(region), *bound(region)))[1],
+             found._replace(siem_keeper=lambda m, b: "splunk")),
+            ("pull", model(alpha=PULL, tree=PULL_SETTINGS, changes=(*placed(region), *bound(region)))[1],
              found._replace(siem_keeper=lambda m, b: "splunk")),
             ("mtls", model(alpha=(TRUST_BUCKET,), tree=(*edge_trust_records(CA_PEM), *TERMINATE),
                            changes=(*placed(region), *bound(region)))[1], found))
