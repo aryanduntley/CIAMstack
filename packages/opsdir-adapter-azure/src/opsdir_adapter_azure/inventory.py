@@ -43,9 +43,10 @@ state_names.reader_names), managed resources and data sources:
                                                  retention in days
   azurerm_sentinel_log_analytics_workspace_  -> the workspace it names is a SIEM index (ciamDestinationKind
     onboarding                                   siem-index): Microsoft Sentinel on it (sentinel.py)
-  azurerm_sentinel_alert_rule_scheduled       -> detection (kind alarm, ciamAlarmBinding): the rule its description
-                                                 names, its query without the render's condition, the workspace it
-                                                 runs in as the SIEM index it searches (sentinel.py)
+  azurerm_sentinel_alert_rule_scheduled,      -> detection (kind alarm, ciamAlarmBinding): the rule its description
+    azurerm_sentinel_alert_rule_nrt              names, its query without the render's condition, the workspace it
+                                                 runs in as the SIEM index it searches, its Sentinel choices (an NRT
+                                                 rule, alert details, suppression: sentinel.py)
   azurerm_monitor_metric_alert,               -> alarm (kind alarm, ciamAlarmBinding): what it evaluates (namespace and
     azurerm_monitor_scheduled_query_rules_       metric, or a log query), the action groups it notifies, the alert rule
     alert_v2                                     it realizes (tag Realizes)
@@ -103,7 +104,7 @@ from .audit import trail_resources
 from .budgets import budget_resources
 from .discovery import discovery_resources
 from .security import is_incident_alert, security_notices, security_resources
-from .sentinel import onboarded, sentinel_resources
+from .sentinel import onboarded, sentinel_resources, with_sentinel_choices
 from .suppressions import suppression_resources
 from .mtls_inventory import with_mtls_notices
 from .check_jobs import cron_seconds
@@ -629,11 +630,12 @@ def _states_pairs(texts):
 def read_terraform_state(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the Azure Terraform states under <cloud>/<env>/,
     read together (one root's resources link to another's), with what its edge runs of the record's edge trust
-    policies checked against them (mtls_inventory)."""
-    return with_mtls_notices(layout_import(files, d, PROVIDER, "Azure", read_together(state_pairs, pairs_resources),
-                                           ".tfstate", "Terraform state", "terraform.tfstate",
-                                           summarize=("identity",)),   # groups, users, service agents: counted
-                             files, d, (".tfstate",), _states_pairs)
+    policies checked against them (mtls_inventory), and each Sentinel analytics rule's choices exactly its source's
+    (sentinel.with_sentinel_choices)."""
+    return with_sentinel_choices(with_mtls_notices(layout_import(
+        files, d, PROVIDER, "Azure", read_together(state_pairs, pairs_resources), ".tfstate", "Terraform state",
+        "terraform.tfstate", summarize=("identity",)),   # groups, users, service agents: counted
+        files, d, (".tfstate",), _states_pairs), files, (".tfstate",), _states_pairs)
 
 
 TERRAFORM_STATE = Importer("terraform-state", "Azure Terraform state (terraform.tfstate) under <cloud>/<env>/, as "

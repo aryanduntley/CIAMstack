@@ -45,6 +45,7 @@ from opsdir.core.sources import json_document
 from .cli import items_pairs, kind_of
 from .inventory import PROVIDER, pairs_resources, state_pairs
 from .mtls_inventory import with_mtls_notices
+from .sentinel import with_sentinel_choices
 from .cli_backup import READ as BACKUP_TYPES
 from .cli_database import READ as DATABASE_TYPES
 from .cli_compute import READ as COMPUTE_TYPES
@@ -468,10 +469,13 @@ def arm_resources(texts):
 
 def read_arm(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from its ARM/Bicep deployments under <cloud>/<env>/<name>/,
-    with what its edge runs of the record's edge trust policies checked against them (mtls_inventory)."""
-    return with_mtls_notices(layout_import(files, d, PROVIDER, "Azure", arm_resources, (".json", ".tfstate"),
-                                           "ARM deployment", "network/azuredeploy.json", summarize=ACCOUNT_WIDE),
-                             files, d, (".json", ".tfstate"), lambda texts: arm_pairs(texts)[0])
+    with what its edge runs of the record's edge trust policies checked against them (mtls_inventory), and each
+    Sentinel analytics rule's choices exactly its source's (sentinel.with_sentinel_choices)."""
+    pairs = lambda texts: arm_pairs(texts)[0]  # noqa: E731
+    return with_sentinel_choices(with_mtls_notices(layout_import(
+        files, d, PROVIDER, "Azure", arm_resources, (".json", ".tfstate"), "ARM deployment",
+        "network/azuredeploy.json", summarize=ACCOUNT_WIDE), files, d, (".json", ".tfstate"), pairs),
+        files, (".json", ".tfstate"), pairs)
 
 
 ARM = Importer("arm", "ARM templates and Bicep (compiled to ARM JSON) with their deployments, one folder per "

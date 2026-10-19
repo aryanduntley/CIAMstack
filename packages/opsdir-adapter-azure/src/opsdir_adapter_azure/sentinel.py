@@ -59,18 +59,37 @@ runs' repeats into one incident (Sentinel's suppression would stop the whole rul
 written (a window outside 5 minutes to 14 days, a sliding one with no shorter step, the role's log files in no table of
 the workspace: container output isn't searched, a missing mapping or field) is a blocker (detections.native_notes).
 
+Sentinel's own choices for a detection (milestone 129, decision 3538; the adapter's auxiliary class azSentinelRule on
+its alarm binding, schema.py: the core's detections stay vendor-neutral): a rows detection may run as a near-real-time
+rule (azSentinelRuleKind nrt: azurerm_sentinel_alert_rule_nrt, every minute over what arrived since its last run, so no
+query frequency, period or trigger; its evaluation period still sets how long its incidents group alerts, 5 minutes at
+least); its alerts' details may come from its results (alert_details_override: the name and description formats with
+{{Column}} placeholders, the severity and tactics columns, alert properties set by columns) and Sentinel may stop
+running it for a while after an alert (suppression_enabled, suppression_duration: 5 minutes to 24 hours, azurerm
+5.10.0's range). What a rule can't do is a blocker (_choice_why): a count detection as an NRT rule (its windows over a
+period can't be counted without a lookback) or naming result columns (its results are the breaching count), a column
+its search's last stage doesn't return, a suppression outside the range or not in whole minutes. Sentinel takes 50
+enabled NRT rules per workspace, 100 in all with disabled ones (its service limits; its NRT overview says 50 per
+customer: research m109c), so the planner counts the NRT rules a render puts in each workspace (check_nrt_quota). Both
+forms render the choices; NRT rules stay in Terraform beside a Bicep/ARM render (arm_types.KEPT: the Bicep type index's
+stable alertRules versions have no NRT kind).
+
 Read back (sentinel_resources, with the inventory): a workspace is a SIEM index when the source holds its Sentinel
-onboarding; a scheduled analytics rule is a detection realizing the rule its description names (role alarm-<rule>),
-searching the workspace it runs in, holding its query without the condition the render wrapped around it. Its
-incident configuration and custom details (read by the CLI and ARM readers in azurerm's shape, as state holds them)
-follow from the detection, so they read back as nothing the record holds: a round trip shows no drift. A rule named
-opsdir-<rule> realizing its rule (detections.is_native) is left out: the record holds no search for it.
+onboarding; a scheduled or NRT analytics rule is a detection realizing the rule its description names (role
+alarm-<rule>), searching the workspace it runs in, holding its query without the condition the render wrapped around
+it, and the choices it holds (rule_choices: its kind, alert details override, suppression), which an import makes
+exactly the source's (with_sentinel_choices: a choice the source no longer holds is dropped, the class added where one
+is held), so a choice changed in the portal is drift. Its incident configuration and custom details (read by the CLI
+and ARM readers in azurerm's shape, as state holds them) follow from the detection, so they read back as nothing the
+record holds: a round trip shows no drift. A rule named opsdir-<rule> realizing its rule (detections.is_native) is left
+out: the record holds no search for it.
 """
 import re
 from itertools import accumulate
 
-from opsdir.core.directory import one, rdn_value, values
-from opsdir.core.inventory import duration_seconds, of_types, realization_roles, resource
+from opsdir.core.directory import make_entry, one, rdn_value, values
+from opsdir.core.findings import findings, responsible
+from opsdir.core.inventory import duration_seconds, duration_text, of_types, realization_roles, resource
 from opsdir.core.notes import note, note_comment
 from opsdir.domains.observability.alarms import alarm_note, detection_condition, detection_specs
 from opsdir.domains.observability.detections import (ENTITIES, is_native, native_name, native_notes, native_rules,
@@ -82,10 +101,13 @@ from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_bloc
 from .account import unstated_note
 from .kql import literal
 from .log_collection import host_shipments, table_name
-from .observability import iso_duration, workspace_id, workspace_name
+from .observability import iso_duration, iso_seconds, workspace_id, workspace_name
+from .schema import CHOICES, SENTINEL_RULE
 
 ONBOARDING = "azurerm_sentinel_log_analytics_workspace_onboarding"
 RULE = "azurerm_sentinel_alert_rule_scheduled"
+NRT = "azurerm_sentinel_alert_rule_nrt"
+RULES = (RULE, NRT)
 MIN_PERIOD = 300                        # Sentinel runs a scheduled rule every 5 minutes at the most often
 MAX_PERIOD = 14 * 86400                 # ... and looks back 14 days at the most (query frequency and period)
 EVENT = "ciamEvent"                     # the column an adopting rule's query parses a log line's JSON into
@@ -107,6 +129,16 @@ MAX_IDENTIFIERS = 3                    # identifiers per entity mapping (Sentine
 # Sentinel's limits (service limits; custom details, alert grouping: research on task 592): custom details per rule,
 # the characters of a custom detail's key, an incident grouping's lookback at the longest (5 minutes to 7 days)
 MAX_CUSTOM_DETAILS, MAX_KEY, MAX_LOOKBACK = 20, 20, 7 * 86400
+# A rule's suppression, shortest and longest (azurerm 5.10.0's terraform validate: 5 minutes to 24 hours)
+MIN_SUPPRESSION, MAX_SUPPRESSION = 300, 86400
+# Near-real-time rules per workspace: enabled ones, and all of them, disabled ones included (Sentinel's service limits,
+# research m109c; its NRT overview says 50 NRT rules per customer instead)
+MAX_NRT_ENABLED, MAX_NRT_TOTAL = 50, 100
+NRT_AREA = "Monitoring"
+# The alert details override's fields (azurerm) and the choice each holds
+OVERRIDES = (("display_name_format", "azSentinelAlertName"), ("description_format", "azSentinelAlertDescription"),
+             ("severity_column_name", "azSentinelSeverityColumn"), ("tactics_column_name", "azSentinelTacticsColumn"))
+_PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z_]\w*)\s*\}\}")
 # KQL stages after the one naming a search's result columns that keep them (they filter or order rows)
 _KEEPS_COLUMNS = frozenset({"where", "filter", "take", "limit", "sort", "order", "top"})
 _NAMED = re.compile(r"^(?P<name>[A-Za-z_]\w*)\s*=(?!=)")
@@ -200,12 +232,12 @@ def _details(alarm):
 def incident_grouping(s):
     """How detection spec s's alerts become incidents: None for a count detection (Sentinel's default: an incident
     per alert, no grouping), else (lookback seconds, matching method, entity types): a rows detection's alerts
-    grouped within its evaluation period (MAX_LOOKBACK at the longest) by the entities it maps (Selected), or, mapping
-    none, all of them (AnyAlert)."""
+    grouped within its evaluation period (5 minutes at the shortest, for an NRT rule's; MAX_LOOKBACK at the longest)
+    by the entities it maps (Selected), or, mapping none, all of them (AnyAlert)."""
     if detection_mode(s.alarm) != "rows":
         return None
     types = tuple(ENTITY_TYPES[e] for e in dict.fromkeys(e for e, _, _ in entity_mappings(s.alarm)))
-    return min(_period(s), MAX_LOOKBACK), "Selected" if types else "AnyAlert", types
+    return min(max(_period(s), MIN_PERIOD), MAX_LOOKBACK), "Selected" if types else "AnyAlert", types
 
 
 def _incident(s):
@@ -238,9 +270,62 @@ def _period(s):
     return duration_seconds(one(s.rule, "ciamEvaluationPeriod")) or MIN_PERIOD
 
 
+def rule_kind(alarm):
+    """How Sentinel runs detection alarm's analytics rule: nrt (near-real-time) when its azSentinelRuleKind says so,
+    else scheduled."""
+    return one(alarm, "azSentinelRuleKind") or "scheduled"
+
+
+def alert_properties(alarm):
+    """((alert property, result column), ...) detection alarm's results set (azSentinelAlertProperty), in order."""
+    return tuple(tuple(v.split("=", 1)) for v in values(alarm, "azSentinelAlertProperty") if "=" in v)
+
+
+def override_columns(alarm):
+    """The result columns detection alarm's alert details name, in order, each once: the {{Column}} placeholders of
+    its name and description formats, its severity and tactics columns, the columns setting its alert properties."""
+    formats = (one(alarm, "azSentinelAlertName") or "", one(alarm, "azSentinelAlertDescription") or "")
+    return tuple(dict.fromkeys((*(c for f in formats for c in _PLACEHOLDER.findall(f)),
+                                *(one(alarm, a) for a in ("azSentinelSeverityColumn", "azSentinelTacticsColumn")
+                                  if one(alarm, a)),
+                                *(c for _, c in alert_properties(alarm)))))
+
+
+def suppression_seconds(alarm):
+    """How long Sentinel stops running detection alarm's analytics rule after an alert (azSentinelSuppression) in
+    seconds; None when it isn't suppressed."""
+    return duration_seconds(one(alarm, "azSentinelSuppression"))
+
+
+def _choice_why(s):
+    """Why detection spec s's Sentinel choices (azSentinelRule) can't be rendered, or None: an NRT rule of a count
+    detection, a suppression outside Sentinel's range or not in whole minutes, alert details naming result columns
+    of a count detection or columns a rows detection's search doesn't return."""
+    rows = detection_mode(s.alarm) == "rows"
+    if rule_kind(s.alarm) == "nrt" and not rows:
+        return ("it asks for a near-real-time analytics rule (azSentinelRuleKind nrt), which runs every minute over "
+                "what arrived since its last run, with no lookback: a count detection's windows over its evaluation "
+                "period can't be counted there (make it a rows detection, its threshold in its search)")
+    seconds = suppression_seconds(s.alarm)
+    if one(s.alarm, "azSentinelSuppression") and not (
+            seconds and MIN_SUPPRESSION <= seconds <= MAX_SUPPRESSION and seconds % 60 == 0):
+        return (f"its suppression ({one(s.alarm, 'azSentinelSuppression')}) isn't one Sentinel takes (5 minutes to "
+                "24 hours, in whole minutes)")
+    named = override_columns(s.alarm)
+    if named and not rows:
+        return (f"its alert details name result columns ({', '.join(named)}), and a count detection's results are "
+                "only its count of breaching windows (make it a rows detection)")
+    columns = result_columns(one(s.alarm, "ciamMetric"))
+    missing = tuple(c for c in named if columns is not None and c not in columns)
+    return (f"its alert details name result columns its search doesn't return ({', '.join(missing)}; it returns "
+            f"{', '.join(columns)})") if missing else None
+
+
 def _why(s):
     if s.why:
         return s.why
+    if _choice_why(s):
+        return _choice_why(s)
     if detection_mode(s.alarm) == "rows":
         crowded = sorted({e for e, _, _ in entity_mappings(s.alarm)
                           if sum(1 for x, _, _ in entity_mappings(s.alarm) if x == e) > MAX_IDENTIFIERS})
@@ -248,7 +333,8 @@ def _why(s):
         return (f"it maps {', '.join(crowded)} by more than {MAX_IDENTIFIERS} identifiers (Sentinel's limit)"
                 if crowded else f"Sentinel has no identifier for {', '.join(unknown)}" if unknown else
                 f"its evaluation period ({_period(s)}s) is shorter than Sentinel runs a scheduled rule (every 5 "
-                "minutes at the most often)" if _period(s) < MIN_PERIOD else None)
+                "minutes at the most often)" if _period(s) < MIN_PERIOD and rule_kind(s.alarm) == "scheduled"
+                else None)
     c, why = detection_condition(s.rule)
     if why:
         return why
@@ -292,6 +378,20 @@ def _attack(rule):
     return (*((("tactics", tactics),) if tactics else ()), *((("techniques", techniques),) if techniques else ()))
 
 
+def _suppression(alarm):
+    """A rule's suppression attributes: on, for its azSentinelSuppression, when it has one; none (azurerm's default,
+    off) otherwise."""
+    seconds = suppression_seconds(alarm)
+    return (("suppression_enabled", True), ("suppression_duration", iso_duration(seconds))) if seconds else ()
+
+
+def _override(alarm):
+    """A rule's alert_details_override block, from its azSentinelRule choices: none when it has none."""
+    fields = tuple((k, one(alarm, a)) for k, a in OVERRIDES if one(alarm, a))
+    props = tuple(("dynamic_property", Block((("name", p), ("value", c)))) for p, c in alert_properties(alarm))
+    return (("alert_details_override", Block((*fields, *props))),) if fields or props else ()
+
+
 def _rule(m, s):
     rule = rdn_value(s.rule)
     rows = detection_mode(s.alarm) == "rows"
@@ -302,16 +402,18 @@ def _rule(m, s):
         c, _ = detection_condition(s.rule)
         period = iso_duration(c.window * c.windows)
         query = detection_query(one(s.alarm, "ciamMetric"), s.rule, c)
-    return tf_block("resource", [RULE, tf_name(rdn_value(s.alarm))], [
+    nrt = rule_kind(s.alarm) == "nrt"            # every minute, over what arrived since: no schedule, no trigger
+    timing = () if nrt else (("query_frequency", period), ("query_period", period),
+                             ("trigger_operator", "GreaterThan"), ("trigger_threshold", 0))
+    return tf_block("resource", [NRT if nrt else RULE, tf_name(rdn_value(s.alarm))], [
         ("name", _rule_id(s)), ("log_analytics_workspace_id", _workspace_of(m, detection_index(m, s.alarm))),
         ("display_name", rule), ("description", described(rule)),
         ("severity", SEVERITIES.get(one(s.rule, "ciamSeverity") or "", "Medium")),
-        ("query", query), ("query_frequency", period), ("query_period", period),
-        ("trigger_operator", "GreaterThan"), ("trigger_threshold", 0), ("enabled", True), *_attack(s.rule),
+        ("query", query), *timing, ("enabled", True), *_suppression(s.alarm), *_attack(s.rule),
         *((("event_grouping", Block((("aggregation_method", "AlertPerResult"),))), *_entity_blocks(s.alarm))
           if rows else ()),
         *((("custom_details", {c: c for c in _details(s.alarm)[0]}),) if _details(s.alarm)[0] else ()),
-        *_incident(s), *_after(m, detection_index(m, s.alarm))])
+        *_override(s.alarm), *_incident(s), *_after(m, detection_index(m, s.alarm))])
 
 
 def render_sentinel(m, services=None):
@@ -372,6 +474,47 @@ def sentinel_notes(m, services=None):
                    b.dn, m.label)
               for b in kept if one(b, "ciamTotalRetentionDays") is not None),
             *((gov,) if gov is not None else ()), *(adopted_notes(m, services) if services else ()))
+
+
+def nrt_rules(m):
+    """((Sentinel workspace, (detection spec, ...)), ...): the near-real-time analytics rules environment m's render
+    puts in each workspace (enabled, all of them), in the order the workspaces first appear."""
+    found = tuple((detection_index(m, s.alarm), s) for s in sentinel_detections(m)
+                  if _why(s) is None and rule_kind(s.alarm) == "nrt")
+    workspaces = {b.dn: b for b, _ in found}
+    return tuple((b, tuple(s for w, s in found if w.dn == dn)) for dn, b in workspaces.items())
+
+
+def check_nrt_quota(ctx):
+    """The near-real-time rules the target's render puts in each Sentinel workspace against Sentinel's limits: a
+    blocker where they are more than the workspace takes (MAX_NRT_ENABLED enabled, MAX_NRT_TOTAL in all: service
+    limits; opsdir's rules are all enabled); an action where the workspaces fit but hold more than MAX_NRT_ENABLED
+    together (the NRT overview's 50 per customer); an OK line otherwise. Rules made outside opsdir count too: the
+    lines say so."""
+    m = ctx.dst
+    found = nrt_rules(m)
+    if not found:
+        return findings()
+    owner = responsible(ctx.d, m.env)
+    # every rule opsdir renders is enabled: the enabled limit binds before the total one
+    over = tuple((b, rules) for b, rules in found if len(rules) > MAX_NRT_ENABLED)
+    total = sum(len(rules) for _, rules in found)
+    blockers = tuple((NRT_AREA, f"{m.label}'s render puts {len(rules)} near-real-time analytics rules in Sentinel "
+                                f"workspace {rdn_value(b)}: Sentinel takes {MAX_NRT_ENABLED} enabled NRT rules per "
+                                f"workspace ({MAX_NRT_TOTAL} in all, disabled ones included: its service limits). Run "
+                                "the others as scheduled rules (azSentinelRuleKind scheduled) or spread them over "
+                                "workspaces.", owner) for b, rules in over)
+    actions = () if over or total <= MAX_NRT_ENABLED else (
+        (NRT_AREA, f"{m.label}'s render puts {total} near-real-time analytics rules in its Sentinel workspaces "
+                   f"together ({', '.join(f'{rdn_value(b)} {len(rules)}' for b, rules in found)}): Sentinel's "
+                   f"service limits allow {MAX_NRT_ENABLED} enabled per workspace, but its NRT overview says "
+                   f"{MAX_NRT_ENABLED} NRT rules per customer. Confirm the limit with Microsoft before applying.",
+         owner, ctx.cutover),)
+    ok = () if over or actions else tuple(
+        f"{m.label}'s Sentinel workspace {rdn_value(b)} gets {len(rules)} near-real-time analytics rules, within "
+        f"Sentinel's {MAX_NRT_ENABLED} enabled per workspace (rules made outside opsdir count too)."
+        for b, rules in found)
+    return findings(blockers=blockers, actions=actions, ok=ok)
 
 
 def _subtechnique_note(m, rule, found, dn):
@@ -512,10 +655,33 @@ def onboarded(found):
                      if a.get("workspace_id"))
 
 
+def rule_choices(type_, a):
+    """The azSentinelRule choices an analytics rule of Terraform type type_ holds, in azurerm's shape (state, or the
+    CLI and ARM readers'): {attribute: values} of those it sets: nrt for an NRT rule, its alert details override, its
+    suppression when on (as the record writes a duration)."""
+    over = (a.get("alert_details_override") or [{}])[0] or {}
+    seconds = iso_seconds(a.get("suppression_duration")) if a.get("suppression_enabled") else None
+    found = {"azSentinelRuleKind": ("nrt",) if type_ == NRT else (),
+             **{attr: (over.get(k),) for k, attr in OVERRIDES},
+             "azSentinelAlertProperty": tuple(f"{p.get('name')}={p.get('value')}"
+                                              for p in over.get("dynamic_property") or ()
+                                              if p.get("name") and p.get("value")),
+             "azSentinelSuppression": (duration_text(seconds),)}
+    return {k: v for k, v in found.items() if any(v)}
+
+
+def sentinel_rules_read(found):
+    """((Terraform type, attributes), ...) of a source's scheduled and NRT analytics rules opsdir reads (those with an
+    ID, not an adopting rule's opsdir-<rule>)."""
+    return tuple((t, a) for t, a in found if t in RULES and a.get("id")
+                 and not is_native(a.get("name"), a.get("description")))
+
+
 def sentinel_resources(found):
-    """Scheduled analytics rules as detections (kind alarm): the rule each realizes (its description), its query
-    without the render's condition, the workspace it runs in as the log destination it searches."""
-    def detection(a):
+    """Scheduled and NRT analytics rules as detections (kind alarm): the rule each realizes (its description), its
+    query without the render's condition, the workspace it runs in as the log destination it searches, and its
+    choices (rule_choices)."""
+    def detection(t, a):
         rule = realized_in(a.get("description"))
         role, realizes = realization_roles({"Realizes": rule} if rule else {}, "alarm")
         mapped = tuple(f"{CORE_ENTITY[e.get('entity_type')]} {CORE_IDENTIFIER[key]}={f.get('column_name')}"
@@ -526,8 +692,34 @@ def sentinel_resources(found):
         return resource("alarm", a.get("id"), {"ciamRealizes": realizes,
                                                "ciamMetric": base_query(a.get("query")) or None,
                                                "ciamDetectionMode": "rows" if rows else None,
-                                               "ciamEntityMapping": mapped or None},
+                                               "ciamEntityMapping": mapped or None, **rule_choices(t, a)},
                         {"ciamLogDestinationRole": a.get("log_analytics_workspace_id")}, name=a.get("name"),
                         role=role)
-    return tuple(detection(a) for a in of_types(found, RULE)
-                 if a.get("id") and not is_native(a.get("name"), a.get("description")))
+    return tuple(detection(t, a) for t, a in sentinel_rules_read(found))
+
+
+def _with_choices(e, held):
+    """Entry e (a detection an import placed) with its choices exactly those held (rule_choices), none it doesn't hold,
+    and the auxiliary class azSentinelRule when it holds one."""
+    attrs = {**{k: v for k, v in e.attrs.items() if k not in CHOICES}, **held}
+    classes = (*e.classes, SENTINEL_RULE) if held and SENTINEL_RULE not in e.classes else e.classes
+    return make_entry(e.dn, classes, attrs)
+
+
+def with_sentinel_choices(imported, files, suffixes, read_pairs):
+    """An import (core Imported) with each analytics rule's detection holding exactly the choices its source holds
+    (rule_choices: a choice the source no longer sets is dropped, so a change made in the portal is drift; the
+    auxiliary class added where one is held): the rules read_pairs({path within the folder: text}) gives of each
+    <cloud>/<env>/ folder's files ending in one of suffixes, matched to the detections by ID (case aside)."""
+    specs = sorted({"/".join(p.split("/")[:2]) for p in files if p.count("/") >= 2})
+    held = {(a.get("id") or "").lower(): rule_choices(t, a) for s in specs
+            for t, a in sentinel_rules_read(read_pairs({p[len(s) + 1:]: text for p, text in files.items()
+                                                        if p.startswith(f"{s}/") and p.endswith(suffixes)}))}
+    if not held:
+        return imported
+
+    def chosen(e):
+        key = (one(e, "ciamProviderRef") or "").lower()
+        return _with_choices(e, held[key]) if key in held else e
+    return imported._replace(groups=tuple((dn, (chosen(es[0]), *es[1:])) if es else (dn, es)
+                                          for dn, es in imported.groups))

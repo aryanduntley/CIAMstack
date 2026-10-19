@@ -50,7 +50,7 @@ REALIZES = MappingProxyType({
     "azurerm_application_insights_standard_web_test": "ciamCanaryBinding",
     "azurerm_container_app_job": "ciamCanaryBinding",
     "azurerm_linux_virtual_machine_scale_set": "ciamComputeGroup",
-    "azurerm_sentinel_alert_rule_scheduled": "ciamAlarmBinding"})
+    "azurerm_sentinel_alert_rule_scheduled": "ciamAlarmBinding", "azurerm_sentinel_alert_rule_nrt": "ciamAlarmBinding"})
 # The ARM resource type of an azurerm type in its resource provider (resource_providers.namespace_of)
 ARM_TYPES = MappingProxyType({
     "azurerm_kubernetes_cluster": "managedClusters", "azurerm_key_vault": "vaults",

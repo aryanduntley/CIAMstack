@@ -74,6 +74,7 @@ from .audit import audit_items
 from .arm_ids import arm_segment
 from .inventory import PROVIDER, pairs_resources
 from .mtls_inventory import with_mtls_notices
+from .sentinel import with_sentinel_choices
 
 ACCOUNT_WIDE = ("secret", "key", "storage", "job", "identity")
 VAULT_HOSTS = (".vault.azure.net", ".vault.usgovcloudapi.net")
@@ -410,10 +411,12 @@ def cli_pairs(texts):
 
 def read_cli_inventory(files, d, patterns, at=None):
     """Imported: each environment's servers and bindings from the Azure CLI outputs under <cloud>/<env>/, with what
-    its edge runs of the record's edge trust policies checked against them (mtls_inventory)."""
-    return with_mtls_notices(layout_import(files, d, PROVIDER, "Azure", cli_resources, ".json", "Azure CLI output",
-                                           "vnets.json", summarize=ACCOUNT_WIDE),
-                             files, d, (".json",), cli_pairs)
+    its edge runs of the record's edge trust policies checked against them (mtls_inventory), and each Sentinel
+    analytics rule's choices exactly its source's (sentinel.with_sentinel_choices)."""
+    return with_sentinel_choices(with_mtls_notices(layout_import(files, d, PROVIDER, "Azure", cli_resources, ".json",
+                                                                 "Azure CLI output", "vnets.json",
+                                                                 summarize=ACCOUNT_WIDE),
+                                                   files, d, (".json",), cli_pairs), files, (".json",), cli_pairs)
 
 
 CLI_INVENTORY = Importer("cli-inventory", "Azure CLI outputs (az … -o json) under <cloud>/<env>/, as the "
