@@ -2,11 +2,13 @@
 environment keeps them, certificates as public facts, and who uses them; the certification authorities they come
 from, the templates those issue from (and the risk of what they let requesters do), what each CA's inventory
 says it issued, what its revocation endpoints answered when observed, and what certificate managers hold; the trust
-bundles outside PKIs publish and the trust policies the platform accepts certificates under."""
+bundles outside PKIs publish, the trust policies the platform accepts certificates under and the cross-certificates
+joining PKIs (facts of the graph, never trust)."""
 from pathlib import Path
 
 from ...core.contract import Domain, ImportKind, directory_report, sql_report
 from .checks import check_certificates, check_credentials
+from .cross import CROSS_HEADERS, check_cross_certificates, cross_rows
 from .issued import AUTHORITY_HEADERS, ISSUED_HEADERS, authority_rows, check_issued_certificates, issued_rows
 from .managed import MANAGED_HEADERS, check_managed_certificates, managed_rows
 from .pem import check_certificate_pems
@@ -31,9 +33,11 @@ DOMAIN = Domain(name="pki", schema=FRAGMENT, required_roles=(), sql=(Path(__file
                          "revocation-endpoints": directory_report(REVOCATION_HEADERS, revocation_rows, dated=True),
                          "managed-certificates": directory_report(MANAGED_HEADERS, managed_rows, dated=True),
                          "trust-bundles": directory_report(BUNDLE_HEADERS, bundle_rows),
-                         "trust-policies": directory_report(POLICY_HEADERS, policy_rows)},
+                         "trust-policies": directory_report(POLICY_HEADERS, policy_rows),
+                         "cross-certificates": directory_report(CROSS_HEADERS, cross_rows)},
                 checks=(check_certificates, check_certificate_pems, check_credentials, check_issued_certificates,
-                        check_template_risk, check_revocation_endpoints, check_managed_certificates, check_trust),
+                        check_template_risk, check_revocation_endpoints, check_managed_certificates, check_trust,
+                        check_cross_certificates),
                 order=40,
                 vocabulary={},
                 import_kinds=(ImportKind("secret", "ciamSecretRef", ("ciamRefUri",), match="ciamRefUri"),

@@ -7,12 +7,19 @@ import base64
 import hashlib
 import re
 
-from ...core.directory import children, one, rdn_value
+from ...core.directory import children, make_entry, merged_attrs, one, rdn_value, values
 from ...core.findings import findings, owner_label
 from ...core.secrets import certificates_only
 from .naming import CERTIFICATES
 
 _FIRST = re.compile(r"-----BEGIN CERTIFICATE-----([A-Za-z0-9+/=\s]+?)-----END CERTIFICATE-----")
+# What a certificate says of itself, as a reader of its PEM (opsdir-adapter-x509) writes it on its record entry: its
+# policies, key usages, typed alternative names (and identifiers derived from them), key identifiers and basic
+# constraints. Facts it doesn't carry are removed: the certificate is the source.
+PEM_FACTS = ("ciamCertPolicyOid", "ciamExtendedKeyUsage", "ciamSanUpn", "ciamSanEmail", "ciamSanUri",
+             "ciamSubjectIdentifier", "ciamSubjectKeyId", "ciamAuthorityKeyId", "ciamIsCa", "ciamPathLength")
+# facts a reader fills in only where the record holds none (an operator's value is kept)
+PEM_BASICS = ("ciamSubject", "ciamIssuer", "ciamNotBefore", "ciamSerialNumber")
 
 
 def certificate_pem(c):
@@ -37,6 +44,14 @@ def pem_thumbprint(pem):
     """The SHA-1 thumbprint of a PEM's first certificate, as colon-separated upper-case hex (ciamThumbprint's form):
     what a certificate manager that gives no SHA-256 is matched by."""
     return _digest(pem, "sha1")
+
+
+def with_pem_facts(c, facts):
+    """Certificate entry c with what its PEM says of itself: facts {attribute: tuple of values} replace its PEM_FACTS
+    (one the certificate doesn't carry removed) and fill the PEM_BASICS it holds none of; everything else kept."""
+    owned = {**{k: tuple(facts.get(k) or ()) for k in PEM_FACTS},
+             **{k: tuple(facts[k]) for k in PEM_BASICS if facts.get(k) and not values(c, k)}}
+    return make_entry(c.dn, c.classes, merged_attrs(c, owned, tuple(owned)))
 
 
 def _same(a, b):

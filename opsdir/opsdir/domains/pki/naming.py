@@ -11,6 +11,7 @@ OBSERVATIONS = branch("revocation-observations")  # what each CA's revocation en
 MANAGED = branch("managed-certificates")         # certificate managers' inventories, metadata only
 TRUST_BUNDLES = branch("trust-bundles")          # outside PKIs' published CA sets as last imported
 TRUST_POLICIES = branch("trust-policies")        # which certificates the platform accepts, and from whom
+CROSS_CERTIFICATES = branch("cross-certificates")  # CAs certifying other PKIs' CAs, as facts of the graph
 
 
 def credential_dn(name):
@@ -55,3 +56,8 @@ def managed_inventory_dn(name):
 def trust_bundle_dn(name):
     """A trust bundle, by its name (the publisher's group: dod, eca)."""
     return f"cn={name},{TRUST_BUNDLES}"
+
+
+def cross_certificate_dn(name):
+    """A cross-certificate, by its name."""
+    return f"cn={name},{CROSS_CERTIFICATES}"
