@@ -18,6 +18,8 @@ from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, secretsmanager_command, secretsmanager_lookup
 from .terraform import TARGETS, render, render_notes
 from .canaries import RUNTIME
+from .siem_forwarding import DELIVERY
+from .siem_pull import PRINCIPAL
 from .cognito import MANAGED, SERVICE as COGNITO
 from .dbauth import SCHEME as DB_TOKEN, rds_token_command
 from .directory import EDITIONS, MANAGED as MANAGED_DIRECTORY, SERVICE as MANAGED_AD
@@ -56,7 +58,7 @@ ADAPTER = Adapter(name="aws", kind="provider", applies=applies, required_roles=(
                   collectors=COLLECTORS, render_targets=TARGETS,
                   workload_identity=workload_identity, secret_delivery=SECRET_DELIVERY,
                   gateway_plug=gateway_plug, ansible_lookup={"aws-sm": secretsmanager_lookup},
-                  settings=(RUNTIME,), host_files=host_files,
+                  settings=(RUNTIME, DELIVERY, PRINCIPAL), host_files=host_files,
                   reads_back=(ReadBack("terraform-state", "terraform/*.tf", "terraform/", "{environment}/", False,
                                        rendered_states, intent=True),
                               ReadBack("cloudformation", "cloudformation/*", "cloudformation/", "{environment}/", True,

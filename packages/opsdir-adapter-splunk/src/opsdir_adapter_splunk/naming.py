@@ -31,7 +31,6 @@ _INDEX = re.compile(r"^[a-z0-9][a-z0-9_-]*$")    # Splunk's rule; and no "kvstor
 FORWARDER_HOME = Setting("splunk-forwarder-home", "string", "/opt/splunkforwarder",
                          "Where the Splunk Universal Forwarder is installed on the servers ($SPLUNK_HOME): the "
                          f"forwarder reads the inputs opsdir renders from etc/apps/{APP}/local/inputs.conf under it")
-SETTINGS = (FORWARDER_HOME,)
 
 
 def index_name(b):

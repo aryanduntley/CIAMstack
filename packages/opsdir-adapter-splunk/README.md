@@ -4,7 +4,7 @@ opsdir SIEM add-on (milestone 6.2e, decision 3046): the Splunk indexes an enviro
 
 **Applies to** environments whose stack declares it (`ciamStackRole: siem`, `ciamAdapter: splunk`). It keeps the log destinations of kind `siem-index` whose `ciamProviderRef` is a Splunk index name (lowercase letters, digits, `_` and `-`, not starting with `_` or `-`): `Adapter.siem_indexes`. The provider adapters (AWS, Azure, Google Cloud) leave those destinations to it (`Services.siem_keeper`), so a route to a Splunk index is not one of their blockers. On servers it works beside `opsdir-adapter-ansible`, which places its forwarder inputs (`HostFile`s).
 
-**Depends on** `opsdir` only: the observability domain's log routes, sources, alarms and SIEM helpers (`opsdir.domains.observability`), estate settings, render notes, the inventory placement (`core.inventory.layout_import`). At run time, Splunk Enterprise or Splunk Cloud Platform and a Universal Forwarder on each server that ships logs. No HTTP Event Collector token is used or rendered.
+**Depends on** `opsdir` only: the observability domain's log routes, sources, alarms and SIEM helpers (`opsdir.domains.observability`), estate settings, render notes, the inventory placement (`core.inventory.layout_import`). At run time, Splunk Enterprise or Splunk Cloud Platform and a Universal Forwarder on each server that ships logs. Where CloudWatch Logs are pulled from S3 (below), the Splunk Add-on for AWS is needed too. No HTTP Event Collector token is used or rendered.
 
 ## The record
 
@@ -28,6 +28,24 @@ Per environment, nothing environment-neutral:
 | `<forwarder home>/etc/apps/opsdir_ciam/local/inputs.conf` on the servers (a `HostFile`, placed by Ansible; the forwarder restarted when it changes) | servers of a role ship a file to a Splunk index | Per server role and install root, a `[monitor://<file>]` per log file a route ships to a Splunk index, with `index`, `sourcetype` (`_json` for JSON lines, else `ciam:<role>:<file>`) and `disabled = false` |
 
 The forwarder home is the estate setting `splunk-forwarder-home` (default `/opt/splunkforwarder`).
+
+**CloudWatch Logs pulled by the Splunk Add-on for AWS** (task 129d, `aws_pull.py`). This applies to a log group in an AWS environment that forwards to a Splunk index this add-on keeps, under two of the AWS adapter's estate settings. `aws-siem-delivery` maps the forwarding to `s3-sqs`, the alternative to Firehose push, chosen where replay matters. `aws-siem-pull-principal` names who the add-on runs as. Under those, the AWS adapter renders the S3, SQS and read-only role side. This adapter renders `splunk/apps/opsdir_ciam_aws/default/inputs.conf`, an app of its own for where the add-on runs its inputs (a heavy forwarder), not for the indexers and search heads. It holds a stanza per forwarding, `[aws_sqs_based_s3://<queue>]`, with these fields:
+
+| Field | Value |
+|---|---|
+| `aws_account` | The add-on's account entry, from the estate setting `splunk-aws-addon-account`. Left out when the setting is unset; an action names it |
+| `aws_iam_role` | The add-on's IAM role entry, named as the AWS adapter names the reader role (`<queue>-reader`) |
+| `sqs_queue_url` | `https://sqs.<region>.amazonaws.com/<account>/<queue>` |
+| `sqs_queue_region` | The queue's region |
+| `s3_file_decoder` | `CustomLogs` |
+| `sourcetype` | `ciam:aws:cloudwatchlogs` |
+| `sqs_batch_size` | `10` |
+| `interval` | `300` |
+| `using_dlq` | `1` |
+| `index` | The forwarding's index |
+| `disabled` | `0` |
+
+The stanza name and fields are the ones the add-on's SQS-based S3 documentation gives for `inputs.conf`. The input assumes **Splunk Add-on for AWS 8.3.0**, the version that documentation covers (read 2026-10-18, from the page research m109b section 1 cites). The decoder is `CustomLogs` because the documentation lists no CloudWatch Logs decoder for such objects. Each line of an object is one CloudWatch Logs envelope (JSON), with the events in `logEvents`. The settings and names are the AWS adapter's, read here by name, so this package doesn't depend on the AWS one.
 
 A detection's condition comes from its alert rule as the core reads it for a SIEM (`alarms.detection_condition`): a rate threshold (`50 /min`) is a count of matching events per window (60 s at least), compared greater than (`gt`) or greater or equal (`ge`), and every window of the rule's evaluation period must breach. The search is the detection's own, then `| bin _time span=<window>s | stats count by _time | where count > <n> | stats count AS breaching | where breaching >= <windows>`; it runs every period (`*/5 * * * *` for 5 minutes) over the period.
 
@@ -67,6 +85,10 @@ The reader leaves `opsdir-<rule>` searches realizing their rule out: the record 
 | Records spanning lines: joined where Splunk parses the data (`props.conf`), the Splunk team's | note |
 | Container output to a Splunk index: not shipped by this add-on | blocker |
 | A file two routes send to different indexes: monitored once, for the first route | blocker |
+| Install the Splunk Add-on for AWS (8.3.0 or later) and the `opsdir_ciam_aws` app where it runs inputs, or create the inputs in its UI (Splunk Cloud: Inputs Data Manager). Bind each input's IAM role entry as the AWS adapter's note says | action |
+| The add-on's account entry, when `splunk-aws-addon-account` isn't set: the inputs name no `aws_account` | action |
+| How sourcetype `ciam:aws:cloudwatchlogs` is read (`props.conf` `KV_MODE = json`, or splitting `logEvents` into events): `CustomLogs` doesn't parse | action |
+| A pulled forwarding whose cloud records no account or region: no queue URL, so no input | blocker |
 
 ## What it reads
 
@@ -81,6 +103,14 @@ An index reads as days searchable from `frozenTimePeriodInSecs` (whole days; a r
 
 ## Known limits
 
+- **The Splunk Add-on for AWS inputs (`aws_pull.py`) haven't run on a live add-on.** Their field names come from the add-on's 8.3.0 SQS-based S3 documentation. Not established:
+  - whether the add-on's modular input runs from a stanza in an app other than its own (`opsdir_ciam_aws`). If not, the Splunk team creates the inputs in the add-on's UI with the same values, as the action says;
+  - whether `aws_iam_role` takes the add-on's IAM role entry name, which is how it is rendered;
+  - how `CustomLogs` reads the newline-delimited envelopes Firehose writes.
+
+  In GovCloud, Splunk documents adding the GovCloud S3 endpoint in the input's S3 Host Name field (the AWS adapter's action). Whether the add-on reaches SQS, S3 and STS through FIPS endpoints isn't established.
+
+  The queue and role names must match the AWS adapter's. They are read by name, not imported, and a test pins the two packages together.
 - Retention days are a ceiling, not a guarantee: a bucket freezes only when all its events are older, and a size limit (`maxTotalDataSizeMB`, set on every index by default) can freeze it sooner. The `splunk/rest` importer names the size limit of each index the record holds; the record doesn't model it.
 - Splunk Cloud Platform: `archiver.*` (Dynamic Data Active Archive) is read where the management API exposes it, which isn't verified on every stack; a self-storage archive (DDSS) keeps data in the customer's bucket, whose retention the record holds on that bucket, not here. The Admin Config Service is not used (listing indexes there needs `indexes_edit`).
 - Detections are rendered from the search each environment records; nothing translates one SIEM's search into another's, and the products don't declare detections yet (a follow-up). Splunk ES correlation searches are rendered with the settings ES documents (ES 7 and 8 documentation, Splunk's security content); the serialization ES 8.7 writes when a detection is saved (findings, intermediate findings, risk modifiers) isn't documented, and the rendered settings haven't run on a live ES (the action note). The Terraform provider `splunk/splunk` 1.5.4 has no ES arguments, so the app's `.conf` files remain the form rendered.

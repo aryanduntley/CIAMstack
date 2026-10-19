@@ -182,9 +182,10 @@ def _firehose_secret(b, c):
 
 def _firehose_processing(b, c):
     return {"Enabled": c.value(b.get("enabled", True)), "Processors": [
-        {"Type": c.value(p["type"]), "Parameters": [{"ParameterName": c.value(x["parameter_name"]),
-                                                     "ParameterValue": c.value(x["parameter_value"])}
-                                                    for x in p.get("parameters", [])]}
+        {"Type": c.value(p["type"]),
+         **({"Parameters": [{"ParameterName": c.value(x["parameter_name"]),
+                             "ParameterValue": c.value(x["parameter_value"])} for x in p["parameters"]]}
+            if p.get("parameters") else {})}
         for p in b.get("processors", [])]}
 
 
@@ -209,6 +210,35 @@ def _http_destination(v, c):
         "SecretsManagerConfiguration": _firehose_secret(b["secrets_manager_configuration"][0], c),
         **({"RequestConfiguration": {"ContentEncoding": c.value(b["request_configuration"][0]["content_encoding"])}}
            if "request_configuration" in b else {})}}
+
+
+def _extended_s3_destination(v, c):
+    """A Firehose stream's extended_s3_configuration as ExtendedS3DestinationConfiguration (siem_pull: the objects
+    the Splunk Add-on for AWS pulls), its key as KMSEncryptionConfig."""
+    b = v[0]
+    return {"ExtendedS3DestinationConfiguration": {
+        **_firehose_s3(b, c),
+        **({"ErrorOutputPrefix": c.value(b["error_output_prefix"])} if "error_output_prefix" in b else {}),
+        **({"EncryptionConfiguration": {"KMSEncryptionConfig": {"AWSKMSKeyARN": c.value(b["kms_key_arn"])}}}
+           if "kms_key_arn" in b else {}),
+        **({"ProcessingConfiguration": _firehose_processing(b["processing_configuration"][0], c)}
+           if "processing_configuration" in b else {})}}
+
+
+def _queue_notification(props, f, cx):
+    """Merge.into for a bucket's notification (siem_pull): each queue block as a QueueConfiguration per event, its
+    prefix as the S3Key filter rule."""
+    found = own(f)
+    queues = [{"Event": cx.value(e), "Queue": cx.value(q["queue_arn"]),
+               **({"Filter": {"S3Key": {"Rules": [{"Name": "prefix", "Value": cx.value(q["filter_prefix"])}]}}}
+                  if "filter_prefix" in q else {})}
+              for q in found.get("queue", []) for e in cx.value(q["events"])]
+    unknown = sorted(k for k in found if k not in ("bucket", "queue"))
+    if unknown:
+        raise SystemExit(f"{cx.where}: no CloudFormation form for {', '.join(unknown)}")
+    notification = props.get("NotificationConfiguration", {})
+    return {**props, "NotificationConfiguration": {
+        **notification, "QueueConfigurations": [*notification.get("QueueConfigurations", []), *queues]}}
 
 
 def _role_policy(props, f, cx):
@@ -726,8 +756,19 @@ TYPES = {
     "aws_kinesis_firehose_delivery_stream": Native("AWS::KinesisFirehose::DeliveryStream", {
         "name": "DeliveryStreamName", "destination": Custom(lambda v, c: {"DeliveryStreamType": "DirectPut"}),
         "splunk_configuration": Custom(_splunk_destination),
-        "http_endpoint_configuration": Custom(_http_destination)},
+        "http_endpoint_configuration": Custom(_http_destination),
+        "extended_s3_configuration": Custom(_extended_s3_destination)},
         {"id": "Ref", "name": "Ref", "arn": "Arn"}, "DeliveryStreamName", "list"),
+    # a forwarding pulled from S3 through SQS (siem_pull.py): the queues, the policy letting S3 send, the bucket's
+    # notification (part of the bucket natively: a bucket the template doesn't hold keeps it in Terraform)
+    "aws_sqs_queue": Native("AWS::SQS::Queue", {
+        "name": "QueueName", "visibility_timeout_seconds": "VisibilityTimeout",
+        "message_retention_seconds": "MessageRetentionPeriod", "sqs_managed_sse_enabled": "SqsManagedSseEnabled",
+        "redrive_policy": "RedrivePolicy"},
+        {"id": "Ref", "url": "Ref", "arn": "Arn", "name": "QueueName"}, "QueueUrl", "list"),
+    "aws_sqs_queue_policy": Native("AWS::SQS::QueuePolicy", {
+        "queue_url": Custom(lambda v, c: {"Queues": [c.value(v)]}), "policy": "PolicyDocument"}, {"id": "Ref"}),
+    "aws_s3_bucket_notification": Native(None, merge=Merge("bucket", _queue_notification, S3_BUCKET_REFS)),
     "aws_cloudwatch_metric_alarm": Native("AWS::CloudWatch::Alarm", {
         "alarm_name": "AlarmName", "alarm_description": "AlarmDescription", "namespace": "Namespace",
         "metric_name": "MetricName", "statistic": "Statistic", "extended_statistic": "ExtendedStatistic",

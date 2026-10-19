@@ -28,6 +28,7 @@ from .log_agent import log_notes
 from .observability import alert_notes, log_group_notes, render_alarms, render_log_groups
 from .mtls import mtls_notes, render_trust_stores
 from .siem_forwarding import render_siem_forwarding, siem_forwarding_notes
+from .siem_pull import render_siem_pull, siem_pull_notes
 from .canaries import canary_notes, render_canaries
 from .discovery import discovery_notes, render_discovery
 from .security import every_region, region_alias, render_security, security_notes
@@ -193,6 +194,7 @@ def render_files(m, services):
            *chain.from_iterable(_service(m, svc, endpoints) for svc in of_class(m, "ciamServiceName")),
            *render_network(m, endpoints), *render_databases(m), *render_object_stores(m), *records(m.d, m),
            *resolver_rules(m), *render_trails(m), *render_log_groups(m), *render_siem_forwarding(m, services),
+           *render_siem_pull(m, services),
            *render_trust_stores(m),
            *(comment(note_comment(n)) for n in (log_notes(m, services) if services else ())), *shipping,
            *(comment(note_comment(n)) for n in (fluent_bit_notes(m, services) if services else ())),
@@ -263,5 +265,6 @@ def render_notes(m, services):
             *edge_notes(m, services.endpoints if services else ()),
             *network_notes(m, services.endpoints if services else ()), *plumbing_notes(m),
             *((govcloud_note(m),) if govcloud(m) and _fronted(m, services.endpoints if services else ()) else ()),
-            *((*log_notes(m, services), *fluent_bit_notes(m, services), *siem_forwarding_notes(m, services))
+            *((*log_notes(m, services), *fluent_bit_notes(m, services), *siem_forwarding_notes(m, services),
+               *siem_pull_notes(m, services))
               if services else ()), *mtls_notes(m))
