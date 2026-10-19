@@ -177,8 +177,9 @@ SecretDelivery = NamedTuple("SecretDelivery", [("store_key", Callable), ("eso_pr
 # its detections and, where it ships logs to it itself, their forwarding: Adapter.siem_indexes), or None; a provider
 # adapter leaves a destination another adapter keeps to it; cert_forwarding(m, service name): the CertForwarding of
 # the load balancer fronting a service name, from the provider adapter that applies to m, or None; detections(m):
-# ((adapter name, ProductDetection), ...) the adapters rendering environment m declare (what an alert rule's
-# ciamDeclaredDetection <adapter>:<id> names: domains/observability.detections.declared)
+# ((adapter name, ProductDetection), ...) the adapters rendering environment m declare, fixed and derived from the
+# record (declared_detections): what an alert rule's ciamDeclaredDetection <adapter>:<id> names
+# (domains/observability.detections.declared)
 Services = NamedTuple("Services", [("secret_command", Callable), ("endpoints", tuple), ("listeners", Callable),
                                    ("workload_identity", Callable), ("secret_delivery", Callable),
                                    ("routes", Callable), ("gateway_plug", Callable), ("ansible_lookup", Callable),
@@ -293,7 +294,8 @@ LogSource = namedtuple("LogSource", ("server_role", "on", "path", "format", "kin
 # How a product's log names what a detection selects on, for some of its versions (ProductDetection.mappings):
 # product (as the adapter's products name it), versions the product versions it holds for (a PEP 440 range,
 # versions.holds; None: every version), fields ((canonical field, the product's field path), ...): where each canonical
-# field (domains/observability naming.DETECTION_FIELDS) is in an event (principal, client.ip, response.statusCode),
+# field (domains/observability naming.DETECTION_FIELDS) is in an event (principal, client.ip, response.statusCode;
+# `[]` after a key marks a list whose elements are searched, as the product's documentation writes it: entries[].info),
 # values ((canonical field, canonical value, (product value, ...)), ...): what a canonical value (an outcome, an action)
 # is in the product's own words (outcome failure -> FAILED); a value it doesn't name is matched as it is.
 DetectionMapping = NamedTuple("DetectionMapping", [("product", str), ("versions", Optional[str]), ("fields", tuple),
@@ -313,8 +315,11 @@ DetectionMapping = NamedTuple("DetectionMapping", [("product", str), ("versions"
 # None without a threshold): a SIEM that can't honour it refuses it; tactics, techniques: MITRE ATT&CK (Enterprise,
 # the core's version) short names and IDs; severity: sev1 (most severe) to sev4, as ciamSeverity; prerequisites: what
 # must be configured or logged for it to see anything, in words; evidence: the URLs of the vendor documentation it
-# rests on; validation: documented (the vendor's documentation only), lab-verified (events captured from a lab of the
-# product's version) or live-verified (seen firing on a live system). Adapters declare only what documentation states.
+# rests on; validation: unverified (it rests partly on what the documentation doesn't establish: a field's values, how
+# an event names a deployment's own objects; an adapter deriving a deployment's own detections from the record says so
+# until they are checked), documented (the vendor's documentation only), lab-verified (events captured from a lab of
+# the product's version) or live-verified (seen firing on a live system). Adapters declare only what documentation
+# states, or say unverified.
 ProductDetection = NamedTuple("ProductDetection", [
     ("id", str), ("title", str), ("description", str), ("products", tuple), ("server_role", str),
     ("log_source", str), ("mappings", tuple), ("selector", tuple), ("group_by", tuple), ("distinct", Optional[str]),
@@ -521,10 +526,20 @@ Adapter = namedtuple("Adapter", (
                             # rules (domains/observability.detections)
     "db_tokens",            # {scheme: (DbTarget) -> argv}: the command printing a token that signs in to the record's
                             # own database for the target (a cloud's database token, OPSDIR_DB_AUTH=<scheme>), or None
-    "ticket_draft"),        # (Directory, TicketRequest) -> TicketDraft: an ITSM add-on's work-ticket draft handing a
+    "ticket_draft",         # (Directory, TicketRequest) -> TicketDraft: an ITSM add-on's work-ticket draft handing a
                             # team its findings, in the system's own create-request form, or None (it drafts none)
+    "record_detections"),   # (Directory) -> ProductDetections: the detections it derives from what the record holds
+                            # of its products' deployment (its sign-in flows, policies, MFA objects), beside its fixed
+                            # ones (detections); None: it derives none (declared_detections)
     defaults=((), None, None, (), (), (), None, None, None, None, (), None, (), (), None, False, (), (), None, None,
-              None, False, None, None, (), None, None, None, (), (), (), None, (), None, None))
+              None, False, None, None, (), None, None, None, (), (), (), None, (), None, None, None))
+
+
+def declared_detections(adapter, d):
+    """The ProductDetections an adapter declares for record d: its fixed ones (Adapter.detections), then those it
+    derives from what d holds of its products' deployment (Adapter.record_detections), in order."""
+    return (*adapter.detections, *(adapter.record_detections(d) if adapter.record_detections is not None else ()))
+
 
 # A team's findings to hand over through ITSM (connectors.handoff): the team (its name and DN), the ticket's title, the
 # findings ((kind 'blocker'|'action', area, text, do_by date or None), ...), the earliest do-by date (None: none has

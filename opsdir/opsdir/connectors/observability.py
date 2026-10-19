@@ -12,16 +12,16 @@ none of its kinds: either way nothing ships them.
 A SIEM index the target keeps logs in (a log destination of kind siem-index) that no adapter rendering it keeps
 (Adapter.siem_indexes: its retention, detections and forwarding) is an action: what it holds is kept by hand.
 
-The detections the target's product adapters declare (Adapter.detections) are offered as alert rules, and the rules
-adopting one are held to it (domains/observability.detections: the check is the domain's, the declarations come from
-the adapters).
+The detections the target's product adapters declare (Adapter.detections, and those they derive from the record:
+Adapter.record_detections) are offered as alert rules, and the rules adopting one are held to it (domains/
+observability.detections: the check is the domain's, the declarations come from the adapters).
 
 Which synthetic checks each environment renders (the canary-coverage report): every canary it could run, rendered
 (and, for a service a private CA certified, the CA certificates it is given to trust: CanarySpec.trust), inherited or
 kept by someone else, or not rendered with the render note that says why (connectors.render environment_notes: the
 adapters' and the core's own).
 """
-from ..core.contract import directory_report
+from ..core.contract import declared_detections, directory_report
 from ..core.directory import one, rdn_value, values
 from ..core.environment import one_role
 from ..core.findings import findings, responsible
@@ -44,7 +44,6 @@ def signal_check(dst_adapters):
     adopting a declared detection is evaluated where a SIEM adapter of the target renders it natively, on an index
     receiving its server role's logs; otherwise the check says what stops that."""
     signals = tuple(s for a in dst_adapters for s in a.signals)
-    declared = tuple((a.name, det) for a in dst_adapters for det in a.detections)
 
     def keeps(m, b):
         return any(a.siem_indexes is not None and a.siem_indexes(m, b) for a in dst_adapters)
@@ -64,6 +63,7 @@ def signal_check(dst_adapters):
 
     def check_signals(ctx):
         rules = tuple(r for r in alert_rules(ctx.d) if one_role(ctx.dst, one(r, "ciamAlertRole")) is not None)
+        declared = tuple((a.name, det) for a in dst_adapters for det in declared_detections(a, ctx.d))
         native = {x.rule.dn: x for x in native_rules(ctx.dst, declared)}
         missing = tuple((e, why) for e in (evaluation(ctx.dst, signals, r) for r in rules) if e.missing
                         for why in (unevaluated(ctx, e, native),) if why)
@@ -99,11 +99,10 @@ def siem_check(dst_adapters):
 def detection_check(dst_adapters, installed=ADAPTERS):
     """The planner check of declared detections (domains/observability.detections.check_detections), given the
     target's adapters (what they declare is offered as alert rules) and the installed ones (where an adopted rule's
-    declaration is looked up)."""
-    declarations = tuple((a.name, x) for a in dst_adapters for x in a.detections)
-    every = {a.name: tuple(a.detections) for a in installed}
-
+    declaration is looked up); each declares its fixed detections and those it derives from the plan's record."""
     def check_declared_detections(ctx):
+        declarations = tuple((a.name, x) for a in dst_adapters for x in declared_detections(a, ctx.d))
+        every = {a.name: declared_detections(a, ctx.d) for a in installed}
         return check_detections(ctx, declarations, every)
     return check_declared_detections
 

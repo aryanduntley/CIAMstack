@@ -2,12 +2,12 @@
 from opsdir.core.contract import Adapter, ReadBack, SecretPattern
 from opsdir.domains.compute.workloads import runs_product
 from .collect import COLLECTORS
-from .detections import DETECTIONS
+from .detections import DETECTIONS, record_detections
 from opsdir_base_oidc.render import FORMATS as OIDC_FORMATS
 from opsdir_base_saml.render import FORMATS as SAML_FORMATS
 from .amster import AMSTER
 from .certificates import amster_read_back, certificate_notes, render_certificate_journeys
-from .checks import check_journeys
+from .checks import check_journeys, check_mfa_routes
 from .listeners import listeners
 from .logs import LOGS
 from .proxy import proxy_settings
@@ -30,7 +30,7 @@ def applies(m):
 
 ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles=REQUIRED_ROLES,
                   render_neutral=render_neutral, render_env=render_certificate_journeys,
-                  checks=(check_journeys,), ref_schemes=(),
+                  checks=(check_journeys, check_mfa_routes), ref_schemes=(),
                   secret_schemes={}, renders=None, neutral_label="PingAM",
                   vocabulary={"ciamServerRole": SERVER_ROLES, "ciamTargetRole": SERVER_ROLES}, schema=FRAGMENT,
                   formats=(*FORMATS, *SAML_FORMATS, *OIDC_FORMATS),
@@ -40,5 +40,6 @@ ADAPTER = Adapter(name="pingam", kind="product", applies=applies, required_roles
                   endpoints=ENDPOINTS, listeners=listeners,
                   proxy_settings=proxy_settings, collectors=COLLECTORS, signals=SIGNALS,
                   logs=LOGS, version_changes=VERSION_CHANGES, detections=DETECTIONS,
+                  record_detections=record_detections,
                   profile=PROFILE, notes=certificate_notes,
                   reads_back=(ReadBack("amster", "am/*", "am/", prepare=amster_read_back),))
