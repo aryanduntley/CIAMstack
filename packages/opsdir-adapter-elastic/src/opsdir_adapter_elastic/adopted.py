@@ -26,13 +26,19 @@ The rule is named opsdir-<rule> (detections.native_name), which the readers leav
 it. A rule the render can't write is a blocker (detections.native_notes): its condition isn't a count reached, no
 mapping holds for the product version the environment runs, a field the mapping doesn't name, or a sliding window too
 short to search again within it.
+
+A product field inside a list (detections.LIST, `entries[].info.nodeId`) is the multi-valued field Elasticsearch
+flattens it into (`entries.info.nodeId`); ES|QL compares only single values, so the query expands each such field it
+uses first (`| MV_EXPAND entries.info.nodeId`), one row per value. Two expanded fields pair every value of one with
+every value of the other, so an event with several list elements could match one element's value with another's, and a
+rule without a threshold alerts once per row (not yet checked live).
 """
 import re
 
 from opsdir.core.directory import rdn_value, values
 from opsdir.core.inventory import duration_text
 from opsdir.core.notes import note
-from opsdir.domains.observability.detections import (native_name, native_notes, native_rules, overlap_step,
+from opsdir.domains.observability.detections import (LIST, native_name, native_notes, native_rules, overlap_step,
                                                      product_field, product_values, searched)
 from opsdir.domains.observability.siem import described
 from .attack import threat
@@ -49,6 +55,15 @@ def esql_field(name):
     return name if _PLAIN.match(name) else "`" + name.replace("`", "``") + "`"
 
 
+def flat_field(path):
+    """A product field path as Elasticsearch flattens it: a list's elements ([]) are the field's values."""
+    return path.replace(LIST, "")
+
+
+def _field(mapping, f):
+    return flat_field(product_field(mapping, f))
+
+
 def esql_string(text):
     """An ES|QL string literal."""
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
@@ -61,7 +76,7 @@ def _term(field, found):
 
 def grouped(det, mapping):
     """The product's fields a declaration as a rule has it (det) groups by, in order."""
-    return tuple(product_field(mapping, f) for f in det.group_by)
+    return tuple(_field(mapping, f) for f in det.group_by)
 
 
 def esql_search(det, mapping, streams):
@@ -69,19 +84,21 @@ def esql_search(det, mapping, streams):
     data streams: its matching events with the fields it counts by, counted per group (or their distinct values of its
     distinct field) and kept where they reach its threshold; the events themselves (with their metadata) when it has
     none."""
-    counted = (*grouped(det, mapping), *((product_field(mapping, det.distinct),) if det.distinct else ())) \
+    counted = (*grouped(det, mapping), *((_field(mapping, det.distinct),) if det.distinct else ())) \
         if det.threshold is not None else ()
-    terms = (*(_term(product_field(mapping, f), tuple(dict.fromkeys(v for c in vals
-                                                                    for v in product_values(mapping, f, c))))
+    terms = (*(_term(_field(mapping, f), tuple(dict.fromkeys(v for c in vals for v in product_values(mapping, f, c))))
                for f, vals in det.selector),
              *(f"{esql_field(p)} IS NOT NULL" for p in dict.fromkeys(counted)))
+    used = (*(f for f, _ in det.selector), *(det.group_by if det.threshold is not None else ()),
+            *((det.distinct,) if det.distinct and det.threshold is not None else ()))
+    expanded = tuple(dict.fromkeys(_field(mapping, f) for f in used if LIST in (product_field(mapping, f) or "")))
     head = f"FROM {', '.join(streams)}" + (" METADATA _id, _index, _version" if det.threshold is None else "")
-    query = f"{head} | WHERE {' AND '.join(terms)}"
+    query = "".join((head, *(f" | MV_EXPAND {esql_field(f)}" for f in expanded), f" | WHERE {' AND '.join(terms)}"))
     if det.threshold is None:
         return query
     by = f" BY {', '.join(map(esql_field, grouped(det, mapping)))}" if det.group_by else ""
     if det.distinct:
-        return (f"{query} | STATS value_count = COUNT_DISTINCT({esql_field(product_field(mapping, det.distinct))})"
+        return (f"{query} | STATS value_count = COUNT_DISTINCT({esql_field(_field(mapping, det.distinct))})"
                 f"{by} | WHERE value_count >= {det.threshold}")
     return f"{query} | STATS events = COUNT(*){by} | WHERE events >= {det.threshold}"
 
@@ -115,7 +132,7 @@ def _why(x):
 def elastic_rules(m, services):
     """((NativeRule, the Elastic data streams it searches), ...) of environment m's adopting rules whose server role's
     logs reach an Elastic data stream it keeps (the rest are another SIEM's, or none's)."""
-    return tuple((x, found) for x in native_rules(m, services.detections(m))
+    return tuple((x, found) for x in native_rules(m, services.detections(m), lists=True)
                  for found in (searched(m, x.det, keeps),) if found)
 
 

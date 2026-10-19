@@ -4,16 +4,17 @@ per group (or distinct values) to its threshold; a fixed window searched back to
 every step over the whole window with its alerts suppressed per group; in the API documents and the Terraform alike;
 the rules it can't write named as blockers; and its own rules left out when read back."""
 import json
+from types import SimpleNamespace
 
+from network_fixtures import ALPHA, entry, model
 from opsdir.connectors.registry import services
 from opsdir.core.contract import DetectionMapping, LogSource, ProductDetection
 from opsdir.core.notes import note_comment
 from opsdir.domains.observability.naming import ALERT_RULES, LOG_ROUTES
 from opsdir_adapter_elastic.adapter import ADAPTER
-from opsdir_adapter_elastic.adopted import elastic_rules, esql_field, esql_search, suppression_duration
+from opsdir_adapter_elastic.adopted import elastic_rules, esql_field, esql_search, flat_field, suppression_duration
 from opsdir_adapter_elastic.read import parse_kibana
 from opsdir_adapter_elastic.render import render_env, render_notes
-from network_fixtures import ALPHA, entry, model
 
 STREAM = "logs-ciam.security-prod"
 OU = "dn: {}\nobjectClass: top\nobjectClass: organizationalUnit\nou: {}\n"
@@ -136,9 +137,22 @@ def test_its_own_rules_are_left_out_when_read_back():
     resources, _ = parse_kibana({"detection-rules.ndjson": render_env(m, SERVICES, ("api",))[
         f"{API}detection-rules.ndjson"]})
     assert resources == ()
-    from opsdir.connectors.roundtrip import round_trip
     from mini_estate import FAKE
+    from opsdir.connectors.roundtrip import round_trip
     trips = round_trip(m.d, "alpha/prod", installed=(FAKE._replace(detections=(DETECTION, SPRAY)),
                                                       ADAPTER._replace(logs=SOURCES)))
     kibana = next(rt for rt in trips if rt.importer == "elastic/kibana")
     assert all(rt.drift == () for rt in trips) and "alpha/prod/detection-rules.ndjson" in kibana.files
+
+
+def test_a_field_inside_a_list_is_expanded_before_it_is_compared():
+    mapping = DetectionMapping("am", None, (("action", "topic"), ("step", "entries[].info.nodeId"),
+                                            ("step-outcome", "entries[].info.nodeOutcome")),
+                               (("action", "login-step", ("AM-NODE-LOGIN-COMPLETED",)),))
+    det = SimpleNamespace(selector=(("action", ("login-step",)), ("step", ("n1",)), ("step-outcome", ("skip",))),
+                          group_by=(), distinct=None, threshold=None, window_seconds=None, window_kind=None)
+    assert flat_field("entries[].info.nodeId") == "entries.info.nodeId"
+    assert esql_search(det, mapping, ("logs-am",)) == (
+        "FROM logs-am METADATA _id, _index, _version | MV_EXPAND entries.info.nodeId"
+        " | MV_EXPAND entries.info.nodeOutcome | WHERE topic == \"AM-NODE-LOGIN-COMPLETED\""
+        " AND entries.info.nodeId == \"n1\" AND entries.info.nodeOutcome == \"skip\"")

@@ -4,19 +4,21 @@ canonical selector in the product's fields and values over the indexes its role'
 sliding one searched again every step over the whole window with its groups suppressed; on Splunk ES a correlation
 search with its group-by as risk and threat objects; the rules it can't write named as blockers; and its own saved
 searches left out when read back."""
+from types import SimpleNamespace
+
+from network_fixtures import ALPHA, entry, model
 from opsdir.connectors.registry import services
 from opsdir.core.contract import DetectionMapping, LogSource, ProductDetection
 from opsdir.core.notes import note_comment
 from opsdir.domains.observability.detections import overlap_step
 from opsdir.domains.observability.naming import ALERT_RULES, LOG_ROUTES
 from opsdir_adapter_splunk.adapter import ADAPTER
-from opsdir_adapter_splunk.adopted import spl_search, splunk_rules, timing
+from opsdir_adapter_splunk.adopted import _why, spl_field, spl_search, splunk_rules, timing
 from opsdir_adapter_splunk.conf import read_conf
 from opsdir_adapter_splunk.naming import SAVED_SEARCHES
 from opsdir_adapter_splunk.read import parse_conf
 from opsdir_adapter_splunk.render import render, render_notes
 from opsdir_adapter_splunk.schedule import aligned_window
-from network_fixtures import ALPHA, entry, model
 
 OU = "dn: {}\nobjectClass: top\nobjectClass: organizationalUnit\nou: {}\n"
 FIELDS = (("subject", "principal"), ("realm", "realm"), ("outcome", "result"), ("action", "eventName"),
@@ -173,8 +175,8 @@ def test_its_own_saved_searches_are_left_out_when_read_back():
     text = render(m, SERVICES)[SAVED_SEARCHES]
     resources, _ = parse_conf({"savedsearches.conf": text})
     assert resources == ()
-    from opsdir.connectors.roundtrip import round_trip
     from mini_estate import FAKE
+    from opsdir.connectors.roundtrip import round_trip
     declaring = FAKE._replace(detections=(DETECTION, SPRAY))
     (rt,) = round_trip(m.d, "alpha/prod", installed=(declaring, ADAPTER._replace(logs=SOURCES)))
     assert rt.drift == () and "alpha/prod/savedsearches.conf" in rt.files
@@ -182,6 +184,7 @@ def test_its_own_saved_searches_are_left_out_when_read_back():
 
 def test_the_signal_check_counts_a_natively_rendered_rule_as_evaluated():
     import datetime as dt
+
     from opsdir.connectors.observability import signal_check
     from opsdir.core.contract import PlanContext
     product = ADAPTER._replace(name="fake-cloud", detections=(DETECTION, SPRAY), siem_indexes=None, signals=())
@@ -192,3 +195,15 @@ def test_the_signal_check_counts_a_natively_rendered_rule_as_evaluated():
     assert said(_alpha(), (ADAPTER, product)) == []
     unkept = said(_alpha(), (product,))
     assert len(unkept) == 2 and all("no SIEM index" in t and "role ds's logs" in t for t in unkept)
+
+
+def test_a_field_inside_a_list_is_searched_as_splunk_names_it():
+    mapping = DetectionMapping("am", None, (("action", "topic"), ("step", "entries[].info.nodeId"),
+                                            ("step-outcome", "entries[].info.nodeOutcome")),
+                               (("action", "login-step", ("AM-NODE-LOGIN-COMPLETED",)),))
+    det = SimpleNamespace(selector=(("action", ("login-step",)), ("step", ("n1",)), ("step-outcome", ("skip",))),
+                          group_by=(), distinct=None, threshold=None, window_seconds=None, window_kind=None)
+    assert spl_field("entries[].info.nodeId") == "entries{}.info.nodeId"
+    assert spl_search(det, mapping, ("ciam",)) == ('index=ciam topic="AM-NODE-LOGIN-COMPLETED" '
+                                                   'entries{}.info.nodeId="n1" entries{}.info.nodeOutcome="skip"')
+    assert _why(SimpleNamespace(why=None, det=det, mapping=mapping)) is None        # a field SPL can name

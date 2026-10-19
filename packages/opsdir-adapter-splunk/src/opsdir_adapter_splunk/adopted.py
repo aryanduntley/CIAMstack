@@ -29,13 +29,16 @@ search for it. A rule the render can't write is a blocker (detections.native_not
 reached, no mapping holds for the product version the environment runs, a field the mapping doesn't name or SPL can't
 name in a search (letters, digits, underscores and dots), a fixed window cron can't keep, or a sliding window too short
 to search again within it.
+
+A product field inside a list (detections.LIST, `entries[].info.nodeId`) is searched as Splunk's JSON field extraction
+names it (`entries{}.info.nodeId`, multi-valued: a term matches when any element has the value; not yet checked live).
 """
 import re
 
 from opsdir.core.directory import rdn_value
 from opsdir.core.notes import note
-from opsdir.domains.observability.detections import (ENTITIES, native_name, native_notes, native_rules, overlap_step,
-                                                     product_field, product_values, searched)
+from opsdir.domains.observability.detections import (ENTITIES, LIST, native_name, native_notes, native_rules,
+                                                     overlap_step, product_field, product_values, searched)
 from opsdir.domains.observability.siem import described
 from .es import risk_entries, search_settings
 from .naming import enterprise_security, index_name, keeps
@@ -44,7 +47,12 @@ from .schedule import aligned_window, cron_schedule
 EVERY = 300                         # how often a rule without a threshold searches (each matching event an alert)
 MIN_STEP = 60                       # cron's finest step: a sliding window's search runs again each minute at most
 TRIGGER = (("counttype", "number of events"), ("relation", "greater than"), ("quantity", "0"))
-_FIELD = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*$")
+_FIELD = re.compile(r"^[A-Za-z_][A-Za-z0-9_.]*(\{\}[A-Za-z0-9_.]*)*$")
+
+
+def spl_field(path):
+    """A product field path as Splunk's JSON extraction names it: a list's elements ([]) as {}."""
+    return path.replace(LIST, "{}")
 
 
 def spl_string(text):
@@ -63,7 +71,7 @@ def _selected(mapping, field, canonical):
 
 def grouped(det, mapping):
     """The product's fields a declaration as a rule has it (det) groups by, in order."""
-    return tuple(product_field(mapping, f) for f in det.group_by)
+    return tuple(spl_field(product_field(mapping, f)) for f in det.group_by)
 
 
 def spl_search(det, mapping, names):
@@ -72,12 +80,13 @@ def spl_search(det, mapping, names):
     kept where they reach its threshold; the events themselves when it has none."""
     where = " OR ".join(f"index={n}" for n in names)
     head = " ".join((f"({where})" if len(names) > 1 else where,
-                     *(_term(product_field(mapping, f), _selected(mapping, f, vals)) for f, vals in det.selector)))
+                     *(_term(spl_field(product_field(mapping, f)), _selected(mapping, f, vals))
+                       for f, vals in det.selector)))
     if det.threshold is None:
         return head
     by = f" by {', '.join(grouped(det, mapping))}" if det.group_by else ""
     if det.distinct:
-        return (f"{head} | stats dc({product_field(mapping, det.distinct)}) AS value_count{by} "
+        return (f"{head} | stats dc({spl_field(product_field(mapping, det.distinct))}) AS value_count{by} "
                 f"| where value_count >= {det.threshold}")
     return f"{head} | stats count{by} | where count >= {det.threshold}"
 
@@ -107,7 +116,7 @@ def timing(det, fields):
 
 
 def _named(det, mapping):
-    return tuple(dict.fromkeys(product_field(mapping, f) for f in (
+    return tuple(dict.fromkeys(spl_field(product_field(mapping, f)) for f in (
         *(f for f, _ in det.selector), *det.group_by, *((det.distinct,) if det.distinct else ()))))
 
 
@@ -124,7 +133,7 @@ def _why(x):
 def splunk_rules(m, services):
     """((NativeRule, the Splunk indexes it searches), ...) of environment m's adopting rules whose server role's logs
     reach a Splunk index it keeps (the rest are another SIEM's, or none's)."""
-    return tuple((x, found) for x in native_rules(m, services.detections(m))
+    return tuple((x, found) for x in native_rules(m, services.detections(m), lists=True)
                  for found in (searched(m, x.det, keeps),) if found)
 
 
@@ -135,7 +144,7 @@ def native_stanza(m, x, indexes):
         return None
     rule, fields = rdn_value(x.rule), grouped(x.det, x.mapping)
     settings, _ = timing(x.det, fields)
-    mapped = tuple((*ENTITIES[f], product_field(x.mapping, f)) for f in x.det.group_by if f in ENTITIES)
+    mapped = tuple((*ENTITIES[f], spl_field(product_field(x.mapping, f))) for f in x.det.group_by if f in ENTITIES)
     search = spl_search(x.det, x.mapping, tuple(map(index_name, indexes)))
     return (native_name(rule),
             (("description", described(rule)), ("search", search), ("is_scheduled", "1"), *settings, *TRIGGER,

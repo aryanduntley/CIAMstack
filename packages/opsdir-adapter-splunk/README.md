@@ -103,6 +103,7 @@ An index reads as days searchable from `frozenTimePeriodInSecs` (whole days; a r
 
 ## Known limits
 
+- **Fields inside a list** (a product field marked `[]`, such as PingAM's `entries[].info.nodeId` the MFA route detections search) are searched as Splunk's JSON extraction names them (`entries{}.info.nodeId`, multi-valued: a term matches when any element has the value). Not yet checked against real PingAM events in Splunk.
 - **The Splunk Add-on for AWS inputs (`aws_pull.py`) haven't run on a live add-on.** Their field names come from the add-on's 8.3.0 SQS-based S3 documentation. Not established:
   - whether the add-on's modular input runs from a stanza in an app other than its own (`opsdir_ciam_aws`). If not, the Splunk team creates the inputs in the add-on's UI with the same values, as the action says;
   - whether `aws_iam_role` takes the add-on's IAM role entry name, which is how it is rendered;
