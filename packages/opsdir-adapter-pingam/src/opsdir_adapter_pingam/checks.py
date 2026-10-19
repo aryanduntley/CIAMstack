@@ -1,7 +1,9 @@
 """PingAM planner checks: every journey of a realm the target serves can run (it starts at a node it has, and every
-outcome leads to one of its nodes or ends the journey)."""
+outcome leads to one of its nodes or ends the journey); an MFA journey's route around its MFA check that no declared
+detection sees is an action (mfa.py)."""
 from opsdir.core.directory import children, one, rdn_value, values
 from opsdir.core.findings import findings, merge_findings, responsible
+from .mfa import mfa_journeys, node_label
 from .naming import JOURNEYS, realm_container
 from .realms import STATIC_NODES, realm_path, realms
 
@@ -33,3 +35,15 @@ def check_journeys(ctx):
     counted = "The AM journey is" if len(js) == 1 else f"All {len(js)} AM journeys are"
     return found if found.blockers or not js else findings(ok=[f"{counted} complete (every node leads to one of "
                                                                 "its own, or ends the journey)."])
+
+
+def check_mfa_routes(ctx):
+    """Actions: MFA journeys of the realms AM serves with a route around their MFA check that no declared detection
+    sees (mfa.bypass_edges: one looping back past a pass, which a single node event can't tell)."""
+    return findings(actions=[
+        ("Journey", f"Journey `{rdn_value(x.journey)}` of realm {realm_path(x.service)} can reach success without "
+         "passing its MFA check along a route that leaves through no single node outcome (it loops back past a "
+         f"node checking the factor: {', '.join(node_label(x, v) for v in x.verifiers)}), so none of PingAM's MFA "
+         "detections sees it. Restructure the journey so a route around MFA leaves through its own node outcome, or "
+         "watch its sign-ins by other means.", responsible(ctx.d, x.journey, x.service), None)
+        for x in mfa_journeys(ctx.d) if x.uncaught])

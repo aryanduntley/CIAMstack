@@ -1,4 +1,5 @@
-"""Detections product adapters declare (core.contract.ProductDetection: Adapter.detections) and the alert rules that
+"""Detections product adapters declare (core.contract.ProductDetection: Adapter.detections, and those they derive from
+the record's deployment, Adapter.record_detections: core.contract.declared_detections) and the alert rules that
 adopt them: what a declaration means as record values, what the record's rule means as a declaration again (for every
 SIEM adapter, and the Sigma export, to render), and the planner's check. Pure.
 
@@ -60,6 +61,8 @@ DECLARED_ATTRS = ("ciamSignal", "ciamTargetRole", "ciamDetectionSelector", "ciam
 _UNITS = (("d", 86400), ("h", 3600), ("m", 60), ("s", 1))
 _ID = re.compile(r"[a-z0-9][a-z0-9.-]*")
 NOTE_AREA = "Monitoring"            # the area of a SIEM adapter's render notes on what it renders natively
+LIST = "[]"                         # what follows a key of a product field path that is a list (entries[].info.nodeId)
+UNCHECKED = ("unverified", "documented")    # validations whose events nobody has yet checked (fixes and notes say so)
 NATIVE_PREFIX = "opsdir-"          # what the name of a natively rendered detection starts with (native_name)
 # the steps a sliding window's search is run again at (overlap_step): minutes dividing an hour, hours dividing a day
 OVERLAP_STEPS = (60, 120, 180, 240, 300, 360, 600, 720, 900, 1200, 1800, 3600, 7200, 10800, 14400, 21600, 28800,
@@ -71,8 +74,14 @@ NativeRule = namedtuple("NativeRule", ("rule", "det", "mapping", "why"))
 # What a SIEM's alert on a rule grouping by a canonical field is about: the field as an entity and its identifier
 # (naming.ENTITY_IDENTIFIERS): the account a credential was tried for or that changed something, the client's address
 ENTITIES = {"subject": ("account", "name"), "actor": ("account", "name"), "source-ip": ("ip", "address")}
-_SAID = {"documented": "documented only: not yet seen firing in a lab or on a live system",
+_SAID = {"unverified": "unverified: it rests partly on what the product's documentation doesn't establish, and "
+                      "hasn't been seen firing in a lab or on a live system",
+         "documented": "documented only: not yet seen firing in a lab or on a live system",
          "lab-verified": "verified against a lab's events", "live-verified": "seen firing on a live system"}
+# what a render note says of a declaration nobody has checked yet (native_notes)
+_NOTED = {"documented": "documented only (not yet seen firing in a lab or on a live system)",
+          "unverified": "that is unverified (it rests partly on what the product's documentation doesn't establish, "
+                        "and hasn't been seen firing in a lab or on a live system)"}
 
 
 def declared_ref(adapter, det):
@@ -279,7 +288,7 @@ def _adopt(ctx, adapter, det):
                    f"({det.title})", (*container, adopt_record(adapter, det, roles, values(ctx.dst.env, "ciamOwner"))),
                    tuple(f"Make sure: {p}" for p in det.prerequisites),
                    (f"The detection is {_SAID[det.validation]}: it may miss or over-count until its events are "
-                    "checked against the product's",) if det.validation == "documented" else ())])
+                    "checked against the product's",) if det.validation in UNCHECKED else ())])
 
 
 def _update(ctx, rule, adapter, det):
@@ -353,7 +362,7 @@ def check_detections(ctx, declarations, installed):
                    f"rules adopting one ({len(rules)}) hold what their declarations say now."))
 
 
-def _native(m, rule, det):
+def _native(m, rule, det, lists):
     taken, why = recorded(rule, det)
     if why:
         return NativeRule(rule, det, None, why)
@@ -363,15 +372,21 @@ def _native(m, rule, det):
             f"{one(rule, 'ciamDeclaredDetection')} maps no version of its product {m.label} records for role "
             f"{taken.server_role} ({', '.join(x.versions or 'every version' for x in taken.mappings)})"))
     missing = tuple(f for f in _used_fields(taken) if product_field(mapping, f) is None)
+    listed = () if lists else tuple(p for p in (product_field(mapping, f) for f in _used_fields(taken))
+                                    if p and LIST in p)
     return NativeRule(rule, taken, mapping,
-                      f"the product's mapping names no field for {', '.join(missing)}" if missing else None)
+                      f"the product's mapping names no field for {', '.join(missing)}" if missing else
+                      f"the product's fields {', '.join(listed)} sit inside a list ({LIST}), which this SIEM's render "
+                      "doesn't search inside yet" if listed else None)
 
 
-def native_rules(m, pairs):
+def native_rules(m, pairs, lists=False):
     """NativeRules of environment m's alert rules adopting a declaration an adapter rendering m declares (pairs:
     Services.detections(m)) that m delivers (its alert role bound) and no alarm binding of m realizes (one recording
-    its search is rendered as any detection), in record order."""
-    return tuple(_native(m, r, det) for r in adopting(m.d)
+    its search is rendered as any detection), in record order. lists: whether the SIEM's render searches inside a list
+    field (a product field marked []); where it doesn't, a rule on one is refused (its why) rather than rendered as a
+    search that never matches."""
+    return tuple(_native(m, r, det, lists) for r in adopting(m.d)
                  if one_role(m, one(r, "ciamAlertRole")) is not None and alarm_for(m, r) is None
                  for det in (declared(pairs, one(r, "ciamDeclaredDetection")),) if det is not None)
 
@@ -398,7 +413,8 @@ def overlap_step(window, minimum):
 def native_notes(m, rendered, refused, siem):
     """The render notes of the adopting rules a SIEM (its name, siem) renders natively in environment m: per rule it
     doesn't (refused: ((NativeRule, why), ...)) a blocker (nothing there watches for it), with how to get it rendered;
-    per one it does (rendered: NativeRules) whose declaration is documented only, a note to replay its events."""
+    per one it does (rendered: NativeRules) whose declaration is unverified or documented only, a note to replay its
+    events."""
     return (*(note(NOTE_AREA, "blocker", f"alert rule {rdn_value(x.rule)}", f"not rendered in {siem}: {why}",
                    (f"Correct alert rule {rdn_value(x.rule)} under an approved change: its canonical fields "
                     "(ciamDetectionSelector, ciamGroupBy, ciamDistinctField), condition or window "
@@ -407,10 +423,9 @@ def native_notes(m, rendered, refused, siem):
                     f"{one(x.rule, 'ciamDeclaredDetection').split(':')[0]}'s maintainers for its mapping"),
                    x.rule.dn, m.label) for x, why in refused),
             *(note(NOTE_AREA, "note", f"alert rule {rdn_value(x.rule)}", f"rendered in {siem} from a declaration "
-                   "documented only (not yet seen firing in a lab or on a live system): it may miss or over-count "
-                   "until its events are checked",
+                   f"{_NOTED[x.det.validation]}: it may miss or over-count until its events are checked",
                    ("Replay the product's events against it before relying on it",), x.rule.dn, m.label)
-              for x in rendered if x.det.validation == "documented"))
+              for x in rendered if x.det.validation in UNCHECKED))
 
 
 def native_name(rule):

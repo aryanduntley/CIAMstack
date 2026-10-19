@@ -23,15 +23,18 @@ DURATION = "^[0-9]+(s|m|h|d)$"                  # 30s, 5m, 1h, 7d
 # detection selects, groups and counts on, whatever a product's log calls them (each declaration maps them per product
 # version): subject (the account a credential was tried for), source-ip (the client's address), realm (the realm,
 # tenant or instance), outcome (success | failure), action (what was done), actor (who changed something), object
-# (what was changed)
-DETECTION_FIELDS = ("subject", "source-ip", "realm", "outcome", "action", "actor", "object")
+# (what was changed), step (a step of a sign-in: a journey's node, a policy's authentication source), step-outcome (the
+# outcome a step left by, in the flow's own words: the route a sign-in took from it)
+DETECTION_FIELDS = ("subject", "source-ip", "realm", "outcome", "action", "actor", "object", "step", "step-outcome")
 DETECTION_OUTCOMES = ("success", "failure")
 # login: an end user's sign-in (a credential checked: a journey, an adapter, an LDAP bind); admin-login: an
 # administrator's; config-change: a configuration change; key-change: a change to signing or encryption keys or
-# certificates
-DETECTION_ACTIONS = ("login", "admin-login", "config-change", "key-change")
+# certificates; login-step: one step of an end user's sign-in completed (a journey's node)
+DETECTION_ACTIONS = ("login", "admin-login", "config-change", "key-change", "login-step")
 WINDOW_KINDS = ("sliding", "fixed")             # any span of the window's length | clock-aligned buckets
-VALIDATIONS = ("documented", "lab-verified", "live-verified")
+# How far a declared detection is validated (ProductDetection.validation): unverified (it rests partly on what the
+# vendor's documentation doesn't establish), documented, lab-verified, live-verified
+VALIDATIONS = ("unverified", "documented", "lab-verified", "live-verified")
 # A canonical selector value: <field>=<value>[|<value>...] (every field of a rule's selector matches one of its values)
 SELECTOR_TERM = (r"^(" + "|".join(DETECTION_FIELDS) + r")=[A-Za-z0-9_.:@/-]+(\|[A-Za-z0-9_.:@/-]+)*$")
 DECLARED_DETECTION = r"^[a-z0-9][a-z0-9-]*:[a-z0-9][a-z0-9.-]*$"     # <adapter>:<detection id>

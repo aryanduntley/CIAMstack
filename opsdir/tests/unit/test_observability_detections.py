@@ -1,14 +1,15 @@
 """Detections product adapters declare (ProductDetection) and the alert rules adopting them: a declaration as record
 values and back, what keeps one from being offered, the planner's offer of a rule a person approves, a changed
 declaration taken or kept by choice, a gone one removed, the record's rule as renderers render it with the mapping for
-the versions an environment runs, and the declarations reaching the check and the render services."""
+the versions an environment runs, and the declarations (fixed, and derived from the record) reaching the check and
+the render services."""
 import datetime as dt
 import re
 
 from opsdir.connectors.fixes import chosen
 from opsdir.connectors.observability import detection_check
 from opsdir.connectors.registry import detections_of, services
-from opsdir.core.contract import Adapter, DetectionMapping, PlanContext, ProductDetection
+from opsdir.core.contract import Adapter, DetectionMapping, PlanContext, ProductDetection, declared_detections
 from opsdir.core.directory import one
 from opsdir.core.environment import env_model
 from opsdir.core.findings import Input, findings
@@ -102,8 +103,8 @@ def test_a_declaration_that_does_not_hold_together_says_why():
                      distinct="source-ip", window_kind="rolling", tactics=("defense-evasion",),
                      techniques=("T9999",), severity="high", validation="guessed", evidence=("http://x.test",),
                      mappings=(DetectionMapping("other", None, (("subject", "user"),), ()),))
-    canonical = ("(subject, source-ip, realm, outcome, action, actor, object; outcome success|failure; action "
-                 "login|admin-login|config-change|key-change)")
+    canonical = ("(subject, source-ip, realm, outcome, action, actor, object, step, step-outcome; outcome "
+                 "success|failure; action login|admin-login|config-change|key-change|login-step)")
     assert x.detection_problems("idp-adapter", bad) == (
         "reference `idp-adapter:Brute Force` isn't <adapter>:<id> in lower case",
         f"selector value `outcome=lost` isn't canonical {canonical}",
@@ -114,7 +115,7 @@ def test_a_declaration_that_does_not_hold_together_says_why():
         "mapping of other names no field for `source-ip`", "mapping of other doesn't say what `outcome=lost` is",
         "ATT&CK tactic `defense-evasion` isn't one of the current ATT&CK's",
         "ATT&CK technique `T9999` isn't in the current ATT&CK", "severity 'high', not one of sev1, sev2, sev3, sev4",
-        "validation 'guessed', not one of documented, lab-verified, live-verified",
+        "validation 'guessed', not one of unverified, documented, lab-verified, live-verified",
         "no https evidence (the documentation it rests on)")
     assert x.detection_problems("a", _detection(threshold=None, distinct="subject")) == (
         "no threshold but a window", "no threshold but a window kind", "no threshold but a grouping",
@@ -226,3 +227,61 @@ def test_the_target_adapters_declarations_reach_the_check_and_the_renderers():
     unstacked = env_model(d, "alpha/prod")._replace(stack=())
     assert detections_of(unstacked, (idp, other)) == (("idp-adapter", _detection()),)
     assert services((idp, other)).detections(unstacked) == (("idp-adapter", _detection()),)
+
+
+def test_an_unverified_declaration_says_so_in_its_offer_and_its_render_note():
+    det = _detection(validation="unverified")
+    assert x.detection_problems("idp-adapter", det) == ()
+    f = _plan(_record(), _declared(det))
+    said = ("unverified: it rests partly on what the product's documentation doesn't establish, and hasn't been seen "
+            "firing in a lab or on a live system")
+    assert said in f.actions[0][1] and f.fixes[0].risks == (
+        f"The detection is {said}: it may miss or over-count until its events are checked against the product's",)
+    adopted = _adopted()
+    m = env_model(adopted, "beta/prod")
+    note, = x.native_notes(m, (x.NativeRule(_rule(adopted), det, det.mappings[1], None),), (), "SIEM")
+    assert note.severity == "note" and "declaration that is unverified (it rests partly" in note.text
+
+
+def test_detections_an_adapter_derives_from_the_record_reach_the_check_and_the_renderers():
+    derived = _detection(id="mfa-bypass.login", selector=(("action", ("login-step",)), ("step", ("n1",)),
+                                                          ("step-outcome", ("skip",))),
+                         group_by=(), threshold=None, window_seconds=None, window_kind=None, validation="unverified",
+                         mappings=(DetectionMapping("idp", None, (("step", "entries[].info.nodeId"),
+                                                                  ("step-outcome", "entries[].info.nodeOutcome"),
+                                                                  ("action", "eventName")),
+                                                    (("action", "login-step", ("NODE-COMPLETED",)),)),))
+    idp = Adapter(name="idp-adapter", kind="product", applies=lambda m: True, required_roles=(), render_neutral=None,
+                  render_env=None, checks=(), ref_schemes=(), secret_schemes={}, renders=None, neutral_label=None,
+                  vocabulary={}, schema=None, formats=(), products=(), secret_patterns=(), importers=(),
+                  profile_terms=None, access=None, detections=(_detection(),),
+                  record_detections=lambda d: (derived,))
+    assert Adapter(*idp[:19]).record_detections is None and declared_detections(Adapter(*idp[:19]), _record()) == ()
+    assert x.detection_problems("idp-adapter", derived) == ()
+    d = _record()
+    assert declared_detections(idp, d) == (_detection(), derived)
+    assert [f.key for f in _plan(d, detection_check((idp,), (idp,))).fixes] == [
+        "detection:idp-adapter:brute-force", "detection:idp-adapter:mfa-bypass.login"]
+    unstacked = env_model(d, "alpha/prod")._replace(stack=())
+    assert detections_of(unstacked, (idp,)) == (("idp-adapter", _detection()), ("idp-adapter", derived))
+    assert services((idp,)).detections(unstacked) == detections_of(unstacked, (idp,))
+    # a rule adopting a derived declaration the record no longer gives is offered for removal
+    adopted = _with(d, *chosen(_plan(d, detection_check((idp,), (idp,))).fixes[1], None,
+                               {"ciamAlertRole": ("alerts-page",), "ciamOwner": (OPS,)}).records)
+    gone = idp._replace(record_detections=lambda d: ())
+    assert "detection-remove:idp-adapter-mfa-bypass.login" in [
+        f.key for f in _plan(adopted, detection_check((gone,), (gone,))).fixes]
+
+
+def test_a_rule_on_a_field_inside_a_list_is_refused_where_the_siem_doesnt_search_lists():
+    listed = _detection(mappings=(DetectionMapping("idp", None, (("subject", "principal[]"), *FIELDS[1:]), SAID),))
+    channel = (f"dn: cn=page,ou=bindings,{BETA}\nobjectClass: top\nobjectClass: ciamAlertChannel\ncn: page\n"
+               "ciamBindingRole: alerts-page\nciamChannelKind: email\nciamProviderRef: soc@example.test\n")
+    d = _with(_record(channel), *chosen(_plan(_record(channel), _declared(listed)).fixes[0], None,
+                                        {"ciamAlertRole": ("alerts-page",), "ciamOwner": (OPS,)}).records)
+    m = env_model(d, "beta/prod")
+    (refused,) = x.native_rules(m, (("idp-adapter", listed),))
+    assert refused.why == ("the product's fields principal[] sit inside a list ([]), which this SIEM's render doesn't "
+                           "search inside yet")
+    (taken,) = x.native_rules(m, (("idp-adapter", listed),), lists=True)
+    assert taken.why is None and x.product_field(taken.mapping, "subject") == "principal[]"

@@ -12,7 +12,7 @@ from functools import partial
 from importlib.metadata import entry_points
 from pathlib import Path
 
-from ..core.contract import Adapter, Domain, Format, SecretPattern, Services
+from ..core.contract import Adapter, Domain, Format, SecretPattern, Services, declared_detections
 from ..core.directory import get, rdn_value, subtree
 from ..core.environment import (env_model, product_roles, with_cluster_discovery, with_product_roles,
                                 with_required_roles)
@@ -319,8 +319,9 @@ def signals_of(m, installed=ADAPTERS):
 
 
 def detections_of(m, installed=ADAPTERS):
-    """((adapter name, ProductDetection), ...) the adapters rendering environment m (its declared stack's) declare."""
-    return tuple((a.name, x) for a in declared_adapters(m, installed) for x in a.detections)
+    """((adapter name, ProductDetection), ...) the adapters rendering environment m (its declared stack's) declare:
+    their fixed detections and those they derive from m's record (contract.declared_detections)."""
+    return tuple((a.name, x) for a in declared_adapters(m, installed) for x in declared_detections(a, m.d))
 
 
 def logs_of(m, installed=ADAPTERS):

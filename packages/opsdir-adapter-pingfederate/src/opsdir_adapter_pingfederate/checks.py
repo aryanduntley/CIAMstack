@@ -7,7 +7,9 @@ notification publishers sign in to with OAuth. From 13.1.3 a JDBC store outside 
 schemes is an action (the Admin API restricts them). An SMTP relay or CAPTCHA service whose credential role
 isn't the role of the plugin instance it stands for is an action, fixed by setting it (as a re-import would). Where a
 deployment kit deploys PingFederate, a cluster discovery the record doesn't bind as the DNS name the kit's chart answers
-is an action, with the fix binding it (check_kit_discovery)."""
+is an action, with the fix binding it (check_kit_discovery). Where the record's authentication policies run MFA, what
+no declared detection watches is an action (check_mfa_watch: changes to the MFA adapters and trees, routes around MFA
+no exit adapter watches)."""
 
 from opsdir.core.contract import RoleUse
 from opsdir.core.directory import children, one, rdn_value, values
@@ -19,6 +21,7 @@ from opsdir.domains.infrastructure.external import external_hosts_fix, unnamed
 from opsdir.domains.pki.credentials import credential_role_fix
 from .connections import MULTI_AUTH
 from .messaging import SMTP_OAUTH, is_smtp, relay_of, served_service, service_role_records
+from .mfa import policy_mfa, route_text
 from .datastores import JDBC_VALIDATED, jdbc_driver_problem, store_hosts
 from .discovery import CHOICES, RENDERED, binding_protocol, clustered, discovery_fix, discovery_gap, lacks, where
 from .generic import held_resources, resource_label
@@ -261,3 +264,23 @@ def credential_roles(m):
              *((r, resource_label(r)) for r in held_resources(m.d)))
     return tuple(RoleUse(r, what[:1].lower() + what[1:]) for e, what in found
                  for r in values(e, "pingfedCredentialRole"))
+
+
+def check_mfa_watch(ctx):
+    """An action when the record's authentication policies run MFA (mfa.policy_mfa): changes to its MFA adapters and
+    the trees running them aren't watched (admin-api.log's field names aren't published, so no detection is declared),
+    nor are the routes around MFA no exit adapter watches (each named)."""
+    found = policy_mfa(ctx.d)
+    if not found.trees:
+        return findings()
+    unwatched = tuple(route_text(r) for r in found.routes if not r.exits)
+    routes = (f" Nor do any of PingFederate's detections see these routes around MFA, which pass no adapter whose "
+              f"successes lead only past MFA (its audit log names the adapter, not the policy's path): "
+              f"{'; '.join(unwatched)}. Give each route an adapter instance of its own, or watch it by other means."
+              if unwatched else "")
+    return findings(actions=[(
+        "PingFederate", f"The authentication policies run MFA (adapters {', '.join(found.adapters)}; trees "
+        f"{', '.join(rdn_value(t) for t in found.trees)}), but no detection watches changes to them: admin-api.log "
+        "records the Admin API's changes, and its field names aren't published, so none is declared. Watch "
+        f"admin-api.log for changes to these adapters and trees by other means until one is.{routes}",
+        responsible(ctx.d, *found.trees, ctx.dst.env), None)])
