@@ -48,6 +48,7 @@ stray-rule:fw-pf-cluster                            Ports                       
 stray-rule:fw-pf-cluster-admin                      Ports                       1             1             Close rule `fw-pf-cluster-admin` in target/prod
 detection:pingam:brute-force                        Alert                       1 (1 input)   2             Record alert rule `pingam-brute-force` adopting pingam's detection `brute-force` (PingAM brute force)
 detection:pingam:config-change                      Alert                       1 (1 input)   2             Record alert rule `pingam-config-change` adopting pingam's detection `config-change` (PingAM configuration change)
+detection:pingam:mfa-config.partners                Alert                       1 (1 input)   5             Record alert rule `pingam-mfa-config.partners` adopting pingam's detection `mfa-config.partners` (PingAM configuration change in MFA realm /partners)
 detection:pingds:brute-force                        Alert                       1 (1 input)   1             Record alert rule `pingds-brute-force` adopting pingds's detection `brute-force` (PingDS brute force)
 detection:pingds:password-spray                     Alert                       1 (1 input)   2             Record alert rule `pingds-password-spray` adopting pingds's detection `password-spray` (PingDS password spray)
 detection:pingfederate:brute-force                  Alert                       1 (1 input)   2             Record alert rule `pingfederate-brute-force` adopting pingfederate's detection `brute-force` (PingFederate brute force)
@@ -56,5 +57,5 @@ detection:pingidm:brute-force                       Alert                       
 detection:pingidm:password-spray                    Alert                       1 (1 input)   2             Record alert rule `pingidm-password-spray` adopting pingidm's detection `password-spray` (PingIDM password spray)
 detection:pingidm:config-change                     Alert                       1 (1 input)   1             Record alert rule `pingidm-config-change` adopting pingidm's detection `config-change` (PingIDM configuration change)
 egress-proxy:pf-engine:bin/run.properties           Egress proxy                6             1             Link `http.proxyHost`, `http.proxyPort`, `https.proxyHost`, `https.proxyPort`, `http.nonProxyHosts` in `pf-engine`'s bin/run.properties (run.properties) to `egress-proxy`'s proxy
-(56 rows)
+(57 rows)
 exit 0

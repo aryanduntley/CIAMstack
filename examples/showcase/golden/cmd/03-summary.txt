@@ -8,7 +8,7 @@ pending changes                       87     CHG-2001, CHG-2002, CHG-2003, CHG-2
 incidents                             2      INC-2231, INC-2240
 awaiting import                       0
 blockers                              42     opsdir plan source/prod target/prod
-actions                               142    opsdir plan source/prod target/prod
+actions                               143    opsdir plan source/prod target/prod
 ok                                    75     opsdir plan source/prod target/prod
 (10 rows)
 exit 0
