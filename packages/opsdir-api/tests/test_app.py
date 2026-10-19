@@ -432,3 +432,44 @@ def test_render_and_plan_need_their_permission(world):
     state["refuse"] = "alice may not render target/prod: no grant gives them render there"
     assert client.get("/v1/render/target/prod", headers=bearer()).status_code == 403
     assert client.get("/v1/plan/source/prod", params={"to": "target/prod"}, headers=bearer()).status_code == 403
+
+
+def test_a_request_over_the_upload_limit_is_refused(monkeypatch):
+    small = CONFIG._replace(max_upload=1000, max_files=2)
+    client = TestClient(api.create_app(small, connect=lambda: None, jwks=JWKS, clock=lambda: NOW))
+    big = client.post("/v1/imports", headers=bearer(), files=[("files", ("a.json", b"x" * 2000))],
+                      data={"importer": "pingfederate"})
+    assert big.status_code == 413 and "OPSDIR_API_MAX_UPLOAD_MB" in big.text
+    edits = client.post("/v1/edits", headers=bearer(), json={"dn": "cn=x", "set": {"description": ["y" * 2000]}})
+    assert edits.status_code == 413
+    many = client.post("/v1/imports", headers=bearer(), data={"importer": "pingfederate"},
+                       files=[("files", (f"{i}.json", b"{}")) for i in range(3)])
+    assert many.status_code == 400 and "Too many files" in many.text
+    assert client.get("/health").status_code == 200
+
+
+def test_a_chunked_body_is_cut_off_at_the_limit():
+    import asyncio
+
+    async def app(scope, receive, send):
+        while (await receive()).get("more_body"):
+            pass
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"read"})
+
+    def call(chunks):
+        sent, queue = [], [{"type": "http.request", "body": c, "more_body": i < len(chunks) - 1}
+                           for i, c in enumerate(chunks)]
+
+        async def receive():
+            return queue.pop(0)
+
+        async def send(message):
+            sent.append(message)
+        try:
+            asyncio.run(api.body_limit(app, 10)({"type": "http", "headers": []}, receive, send))
+        except api.HTTPException as e:
+            return e.status_code
+        return sent[0]["status"]
+    assert call([b"12345", b"12345"]) == 200
+    assert call([b"12345", b"123456"]) == 413

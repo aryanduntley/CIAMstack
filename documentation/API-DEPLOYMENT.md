@@ -62,6 +62,7 @@ OPSDIR_DSN="host=db.example.internal dbname=opsdir user=opsdir_api sslmode=verif
 OPSDIR_API_ISSUER="https://login.example.com/<tenant>/v2.0"
 OPSDIR_API_AUDIENCE="<the API's audience>"
 OPSDIR_API_GROUPS_CLAIM="groups"
+OPSDIR_API_MAX_UPLOAD_MB="100"
 OPSDIR_API_HOST="127.0.0.1"
 OPSDIR_API_PORT="8080"
 OPSDIR_API_FORWARDED_ALLOW_IPS="127.0.0.1"
@@ -74,7 +75,7 @@ The client key (or the password file) is readable by the API's service user only
 Put a reverse proxy on the same host (nginx, HAProxy, or a cloud load balancer reaching the host privately) and keep the API on `127.0.0.1`.
 
 - **Forwarded headers**: the API trusts `X-Forwarded-For` and `X-Forwarded-Proto` only from `OPSDIR_API_FORWARDED_ALLOW_IPS` (default `127.0.0.1`, the local proxy). Don't widen it to addresses clients can reach directly.
-- **Request size**: the API doesn't cap uploads itself. Set a body limit at the proxy that fits the largest export people upload (`POST /v1/imports`, `POST /v1/onboard/verify`), and no larger.
+- **Request size**: the API refuses a request body over `OPSDIR_API_MAX_UPLOAD_MB` (default 100) with a 413, and a multipart upload of more than `OPSDIR_API_MAX_FILES` files (default 10000). Set both to fit the largest export people upload (`POST /v1/imports`, `POST /v1/onboard/verify`), and set the same body limit at the proxy so oversized requests stop there.
 - **Timeouts**: a full render or plan of a large estate takes seconds. Allow a few minutes for reads from the API.
 - **TLS**: TLS 1.2 or later, a certificate the company's clients trust, and HSTS. Where the deployment's authorization requires FIPS-validated cryptography, terminate TLS with the platform's validated module.
 
@@ -88,7 +89,7 @@ server {
     ssl_certificate_key /etc/ssl/ciamstack/privkey.pem;
     ssl_protocols TLSv1.2 TLSv1.3;
     add_header Strict-Transport-Security "max-age=31536000" always;
-    client_max_body_size 50m;          # the largest upload you expect
+    client_max_body_size 100m;         # the same as OPSDIR_API_MAX_UPLOAD_MB
     proxy_read_timeout 300s;
 
     location / {
@@ -147,6 +148,6 @@ Upgrade the API together with the rest of CIAMstack, as in [Upgrading](RECORD-DA
 - [ ] The API registered at the identity provider with signed JWT access tokens; issuer and audience copied from a real token
 - [ ] Groups emitted as immutable IDs, if teams follow the provider's groups
 - [ ] People recorded with `--idp-subject`; teams recorded or mapped; grants given
-- [ ] The API on `127.0.0.1`, the proxy terminating TLS with a body limit and HSTS, forwarded headers trusted from the proxy only
+- [ ] The API on `127.0.0.1`, the proxy terminating TLS with HSTS and the same body limit as `OPSDIR_API_MAX_UPLOAD_MB`, forwarded headers trusted from the proxy only
 - [ ] Running as its own user under the service manager, configuration without secrets
 - [ ] Health, a real token call, an approval round trip and `opsdir posture` checked

@@ -323,7 +323,8 @@ def import_ask(importer, files, skipped, at, change, take, keep):
 
 async def _import_fields(request):
     if request.headers.get("content-type", "").startswith("multipart/form-data"):
-        form = await request.form()
+        config = request.app.state.wiring.config
+        form = await request.form(max_files=config.max_files, max_fields=config.max_files + 16)
         uploads = tuple([(f.filename or "", await f.read()) for f in form.getlist("files") if hasattr(f, "read")])
         files, skipped = texts_of(uploads)
         return (form.get("importer"), files, skipped, form.get("at"), form.get("change") or None,
@@ -405,6 +406,37 @@ ROUTES = (("GET", "/v1/browse", browse, {}),
           ("POST", "/v1/onboard/verify", verify_onboarding, {}))
 
 
+TOO_LARGE = "the request is larger than this API accepts ({limit} bytes: OPSDIR_API_MAX_UPLOAD_MB)"
+
+
+def body_limit(app, limit):
+    """ASGI middleware (effect at the edge): a request whose body is over limit bytes gets a 413, refused by its
+    Content-Length before anything is read, else as soon as the bytes received pass the limit (a chunked upload)."""
+    async def refuse(send):
+        body = json.dumps({"detail": TOO_LARGE.format(limit=limit)}).encode()
+        await send({"type": "http.response.start", "status": 413,
+                    "headers": [(b"content-type", b"application/json"), (b"content-length", str(len(body)).encode())]})
+        await send({"type": "http.response.body", "body": body})
+
+    async def guarded(scope, receive, send):
+        if scope["type"] != "http":
+            return await app(scope, receive, send)
+        declared = dict(scope.get("headers") or ()).get(b"content-length", b"")
+        if declared.isdigit() and int(declared) > limit:
+            return await refuse(send)
+        seen = [0]
+
+        async def counted():
+            message = await receive()
+            if message["type"] == "http.request":
+                seen[0] += len(message.get("body", b""))
+                if seen[0] > limit:
+                    raise HTTPException(413, TOO_LARGE.format(limit=limit))
+            return message
+        return await app(scope, counted, send)
+    return guarded
+
+
 def database_connection(config):
     """Effect: a connection to the record as the API login (OPSDIR_DSN), signing in with a cloud database token when
     OPSDIR_DB_AUTH names one, as the command line does."""
@@ -429,6 +461,7 @@ def create_app(config, connect=None, jwks=None, clock=time.time):
                               "recorded person's, checked against the record's grants.")
     app.state.wiring = Wiring(config, connect or (lambda: database_connection(config)), _key_source(config, jwks),
                               clock)
+    app.add_middleware(body_limit, limit=config.max_upload)
     app.add_api_route("/health", health, methods=["GET"])
     for method, path, handler, extra in ROUTES:
         app.add_api_route(path, handler, methods=[method], **extra)

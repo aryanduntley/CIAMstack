@@ -17,6 +17,8 @@ Set in the environment. `opsdir-api` doesn't start while any value is missing or
 | `OPSDIR_API_ALGORITHMS` | Accepted signing algorithms, default `RS256,PS256,ES256`. Only asymmetric algorithms are accepted; `none` and `HS*` are refused |
 | `OPSDIR_API_LEEWAY` | Clock skew allowed for `exp`, `nbf` and `iat`, in seconds (default 60, at most 300) |
 | `OPSDIR_API_GROUPS_CLAIM` | The claim listing the person's identity provider groups (default `groups`; empty: groups aren't used) |
+| `OPSDIR_API_MAX_UPLOAD_MB` | The largest request body accepted, uploads included, in megabytes (default 100, at most 4096). A larger one gets a 413: by its `Content-Length` before anything is read, else as soon as the bytes received pass the limit |
+| `OPSDIR_API_MAX_FILES` | The most files one multipart upload may carry (default 10000) |
 | `OPSDIR_API_HOST`, `OPSDIR_API_PORT` | Where it listens (default `127.0.0.1:8080`) |
 | `OPSDIR_API_FORWARDED_ALLOW_IPS` | Proxies whose `X-Forwarded-*` headers are trusted (default `127.0.0.1`) |
 

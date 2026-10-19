@@ -187,3 +187,13 @@ def test_the_groups_claim_is_configured():
     assert config_from(env)[0].groups_claim == "groups"
     assert config_from({**env, "OPSDIR_API_GROUPS_CLAIM": " roles "})[0].groups_claim == "roles"
     assert CONFIG.groups_claim == "groups"
+
+
+def test_the_upload_limits_are_configured():
+    env = {"OPSDIR_DSN": "x", "OPSDIR_API_ISSUER": ISSUER, "OPSDIR_API_AUDIENCE": AUDIENCE}
+    config = config_from(env)[0]
+    assert (config.max_upload, config.max_files) == (100 * 1024 * 1024, 10000)
+    config = config_from({**env, "OPSDIR_API_MAX_UPLOAD_MB": "500", "OPSDIR_API_MAX_FILES": "50000"})[0]
+    assert (config.max_upload, config.max_files) == (500 * 1024 * 1024, 50000)
+    assert config_from({**env, "OPSDIR_API_MAX_UPLOAD_MB": "0"})[1] == ("OPSDIR_API_MAX_UPLOAD_MB 0: give 1 to 4096",)
+    assert config_from({**env, "OPSDIR_API_MAX_FILES": "lots"})[1] == ("OPSDIR_API_MAX_FILES lots: give 1 to 1000000",)

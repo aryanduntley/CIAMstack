@@ -1,6 +1,6 @@
 """The API's configuration from the environment: the API login's database, the identity provider whose tokens it
-accepts (exact issuer, audience, keys, signing algorithms, clock leeway, the claim listing the person's groups) and
-where it listens. Pure."""
+accepts (exact issuer, audience, keys, signing algorithms, clock leeway, the claim listing the person's groups), the
+largest request and the most files an upload may carry, and where it listens. Pure."""
 from typing import NamedTuple, Optional
 from urllib.parse import urlsplit
 
@@ -11,12 +11,15 @@ DEFAULT_ALGORITHMS = "RS256,PS256,ES256"
 DEFAULT_LEEWAY = 60
 MAX_LEEWAY = 300
 DEFAULT_GROUPS_CLAIM = "groups"   # Entra ID, Okta and PingFederate tokens name it so when configured to carry groups
+DEFAULT_MAX_UPLOAD_MB, MAX_UPLOAD_MB = 100, 4096     # a request's body, uploads included
+DEFAULT_MAX_FILES, MAX_FILES = 10000, 1000000       # files in one multipart upload (an export can hold thousands)
 DEFAULT_HOST, DEFAULT_PORT = "127.0.0.1", 8080
 LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 Config = NamedTuple("Config", [("dsn", str), ("issuer", str), ("audience", str), ("jwks_url", Optional[str]),
-                               ("algorithms", tuple), ("leeway", int), ("groups_claim", str)])
-Config.__new__.__defaults__ = (DEFAULT_GROUPS_CLAIM,)
+                               ("algorithms", tuple), ("leeway", int), ("groups_claim", str), ("max_upload", int),
+                               ("max_files", int)])
+Config.__new__.__defaults__ = (DEFAULT_GROUPS_CLAIM, DEFAULT_MAX_UPLOAD_MB * 1024 * 1024, DEFAULT_MAX_FILES)
 Listen = NamedTuple("Listen", [("host", str), ("port", int)])
 
 
@@ -54,6 +57,14 @@ def leeway_of(text):
     return seconds, ()
 
 
+def bounded_of(name, text, default, most):
+    """(whole number, problems) of a setting from 1 to most; default when not set."""
+    if not text.strip():
+        return default, ()
+    value = int(text) if text.strip().isdigit() else 0
+    return (value, ()) if 0 < value <= most else (default, (f"{name} {text.strip()}: give 1 to {most}",))
+
+
 def config_from(env):
     """(Config, problems) of an environment mapping; the Config is None while there are problems."""
     dsn, issuer, audience = (env.get(k, "").strip() for k in ("OPSDIR_DSN", "OPSDIR_API_ISSUER", "OPSDIR_API_AUDIENCE"))
@@ -61,6 +72,10 @@ def config_from(env):
     algorithms, bad_algorithms = algorithms_of(env.get("OPSDIR_API_ALGORITHMS", DEFAULT_ALGORITHMS))
     leeway, bad_leeway = leeway_of(env.get("OPSDIR_API_LEEWAY", str(DEFAULT_LEEWAY)).strip())
     groups_claim = env.get("OPSDIR_API_GROUPS_CLAIM", DEFAULT_GROUPS_CLAIM).strip()
+    upload_mb, bad_upload = bounded_of("OPSDIR_API_MAX_UPLOAD_MB", env.get("OPSDIR_API_MAX_UPLOAD_MB", ""),
+                                       DEFAULT_MAX_UPLOAD_MB, MAX_UPLOAD_MB)
+    max_files, bad_files = bounded_of("OPSDIR_API_MAX_FILES", env.get("OPSDIR_API_MAX_FILES", ""), DEFAULT_MAX_FILES,
+                                      MAX_FILES)
     problems = (*(f"{k} is not set{why}" for k, v, why in (
                     ("OPSDIR_DSN", dsn, " (the API login's connection string)"),
                     ("OPSDIR_API_ISSUER", issuer, " (the identity provider's exact issuer, iss)"),
@@ -69,8 +84,9 @@ def config_from(env):
                   else ()),
                 *((url_problem("OPSDIR_API_JWKS_URL", jwks_url),)
                   if jwks_url and url_problem("OPSDIR_API_JWKS_URL", jwks_url) else ()),
-                *bad_algorithms, *bad_leeway)
-    return (None if problems else Config(dsn, issuer, audience, jwks_url, algorithms, leeway, groups_claim)), problems
+                *bad_algorithms, *bad_leeway, *bad_upload, *bad_files)
+    return (None if problems else Config(dsn, issuer, audience, jwks_url, algorithms, leeway, groups_claim,
+                                         upload_mb * 1024 * 1024, max_files)), problems
 
 
 def listen_from(env):
