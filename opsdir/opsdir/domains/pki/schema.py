@@ -32,7 +32,11 @@ Trust bundles (ou=trust-bundles) are outside PKIs' published sets of CA certific
 last imported, with how their integrity was established; trust policies (ou=trust-policies) are what the platform
 accepts certificates under: anchors a person approved (record CA certificates, never a bundle's members by being
 there), the bundles they follow, restrictions, identity mapping and revocation, and who accepts them: server roles
-and, by name, the identity services signing certificates in (trust.py).
+and, by name, the identity services signing certificates in (trust.py). Cross-certificates (ou=cross-certificates) are
+one CA certifying another PKI's CA, recorded as facts of the graph (what each joins, its policy mappings, its
+validity), never as trust: what they make reachable from the approved anchors is reported and watched (cross.py).
+A certificate's own facts (its typed alternative names, key identifiers, basic constraints, policies and key usages)
+are what it says of itself, read from it where its PEM is known.
 """
 from ...core.standard import AttributeDef, ClassDef, fragment
 
@@ -373,6 +377,40 @@ ATTRIBUTES = (
     AttributeDef(947, 'ciamDeclinedAnchor', 'string', 'intent', False,
                  "SHA-256 fingerprint of a root in a bundle a trust policy follows that a person decided the policy "
                  "doesn't accept (a decommissioned root, a test hierarchy): no longer proposed as an anchor"),
+    # ------------------------------------------------------------------ what a certificate says of itself
+    AttributeDef(990, 'ciamSanUpn', 'string', 'observed', False,
+                 "A user principal name the certificate's subject alternative name carries (the UPN otherName, "
+                 "1.3.6.1.4.1.311.20.2.3), exactly as written: what a relying party mapping certificates by UPN "
+                 "(ciamIdentityMapping san-upn) finds the account by"),
+    AttributeDef(991, 'ciamSanEmail', 'string', 'observed', False,
+                 "An email address the certificate's subject alternative name carries (rfc822Name), as written"),
+    AttributeDef(992, 'ciamSanUri', 'string', 'observed', False,
+                 "A URI the certificate's subject alternative name carries (uniformResourceIdentifier), as written"),
+    AttributeDef(993, 'ciamSubjectIdentifier', 'string', 'observed', False,
+                 "An identifier the certificate's names carry by a recognised convention, as <form>:<value> (edipi: "
+                 "the 10-digit DoD EDIPI a CAC's UPN of digits at mil begins with); derived from the names recorded "
+                 "(ciamSanUpn), never assumed: a certificate whose names follow no known convention (an ECA "
+                 "subscriber's) has none"),
+    AttributeDef(994, 'ciamSubjectKeyId', 'string', 'observed', True,
+                 "The certificate's subject key identifier (RFC 5280 4.2.1.2), as lowercase hex"),
+    AttributeDef(995, 'ciamAuthorityKeyId', 'string', 'observed', True,
+                 "The key identifier of the CA key that signed the certificate (its authority key identifier, RFC "
+                 "5280 4.2.1.1), as lowercase hex: the issuer certificate's ciamSubjectKeyId"),
+    AttributeDef(996, 'ciamIsCa', 'bool', 'observed', True,
+                 "Whether the certificate's basic constraints make it a CA certificate (cA); absent when it has no "
+                 "basic constraints extension"),
+    AttributeDef(997, 'ciamPathLength', 'int', 'observed', True,
+                 "The most CA certificates that may follow a CA certificate in a path (its basic constraints' "
+                 "pathLenConstraint); absent: no limit", (("X-MIN", "0"),)),
+    # ------------------------------------------------------------------ cross-certificates (cross.py)
+    AttributeDef(998, 'ciamCrossRole', 'enum:peer|bridge-to-member|member-to-bridge', 'meta', True,
+                 "What a cross-certificate joins: two PKIs certifying each other directly (peer), a bridge CA "
+                 "certifying a member PKI's CA (bridge-to-member), or a member PKI's CA certifying the bridge "
+                 "(member-to-bridge)"),
+    AttributeDef(999, 'ciamPolicyMapping', 'string', 'observed', False,
+                 "A policy mapping a cross-certificate carries (RFC 5280 4.2.1.5), as <issuerDomainPolicy>="
+                 "<subjectDomainPolicy>: the issuer's policy OID a relying party under the issuer reads the subject's "
+                 "policy OID as"),
 )
 KEY_SERVICE = ('ciamProtectionLevel', 'ciamAutoRotate', 'ciamRotationFunction', 'ciamReplicaRegion', 'ciamKeyUser',
                'ciamKeyAdmin', 'ciamLastRotated', 'ciamCopyRef', 'ciamMaterialFrom')
@@ -390,8 +428,11 @@ CLASSES = (
     ClassDef(28, 'ciamCertificate', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamFingerprint', 'ciamNotAfter', 'ciamCertPurpose'),
              ('ciamSubject', 'ciamIssuer', 'ciamNotBefore', 'ciamSubjectAltName', 'ciamKeyRole', 'ciamPartnerContact',
-              'ciamRotationRunbook', 'ciamCertificatePem', 'ciamIssuedBy', 'ciamSerialNumber', 'ciamCertPolicyOid'),
-             'Certificate (public facts only)'),
+              'ciamRotationRunbook', 'ciamCertificatePem', 'ciamIssuedBy', 'ciamSerialNumber', 'ciamCertPolicyOid',
+              'ciamExtendedKeyUsage', 'ciamSanUpn', 'ciamSanEmail', 'ciamSanUri', 'ciamSubjectIdentifier',
+              'ciamSubjectKeyId', 'ciamAuthorityKeyId', 'ciamIsCa', 'ciamPathLength'),
+             'Certificate (public facts only): what it is for, and what it says of itself (names, policies, key '
+             'usages, key identifiers, basic constraints) as read from it'),
     ClassDef(42, 'ciamCredential', 'ciamObject', 'STRUCTURAL',
              ('cn', 'ciamBindingRole', 'ciamCredentialType', 'ciamContinuity'),
              ('ciamKeyAlgorithm', 'ciamKeySize', 'ciamKeyUsage', 'ciamMaterialFormat', 'ciamPasswordRole',
@@ -488,6 +529,14 @@ CLASSES = (
              "anchors, the bundles it follows, the certificate policies and key usages it requires, how an accepted "
              "certificate maps to an account, how revocation is checked and what happens when it can't be, and the "
              "server roles and identity services that accept them"),
+    ClassDef(209, 'ciamCrossCertificate', 'ciamObject', 'STRUCTURAL',
+             ('cn', 'ciamIssuer', 'ciamSubject', 'ciamNotAfter'),
+             ('ciamCrossRole', 'ciamPolicyMapping', 'ciamFingerprint', 'ciamSerialNumber', 'ciamNotBefore',
+              'ciamCertificatePem', 'ciamCertPolicyOid', 'ciamSubjectKeyId', 'ciamAuthorityKeyId', 'ciamPathLength'),
+             "A cross-certificate (under ou=cross-certificates): one CA (ciamIssuer) certifying another PKI's CA "
+             "(ciamSubject), what it joins, the policy mappings it carries, its validity and, when observed, its "
+             "fingerprint, serial and PEM. Recorded as a fact of the graph, never trusted by being here: a trust "
+             "policy accepts its approved anchors only (cross.py reports what the cross-certificates make reachable)"),
 )
 
 FRAGMENT = fragment(ATTRIBUTES, CLASSES)

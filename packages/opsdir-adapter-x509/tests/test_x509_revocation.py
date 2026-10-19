@@ -115,7 +115,7 @@ def _cas(cert=CA_CERT, d=None):
 def test_registered_as_a_declaration_only_pki_adapter_with_an_estate_collector():
     found = next(a for a in ADAPTERS if a.name == "x509")
     assert found is ADAPTER and ADAPTER.kind == "pki" and ADAPTER.applies is None and ADAPTER.render_env is None
-    assert [i.name for i in ADAPTER.importers] == ["revocation"]
+    assert [i.name for i in ADAPTER.importers] == ["revocation", "certificates"]
     assert [(c.importer, c.scope) for c in ADAPTER.collectors] == [("revocation", "estate")]
 
 

@@ -431,6 +431,52 @@ and `opsdir report trust-policies` (purpose, anchors with expiry, bundles, restr
 accepting roles, owners). Each policy is rendered into its consumers: PingFederate, PingAM, PingGateway, and load balancers'
 and gateways' client-certificate trust. A policy also says where its certificates are checked: `ciamTrustEnforcedAt` is `edge` (the load balancer in front of the accepting roles validates, and passes the certificate on in a header only it may set) or `product` (the default). `ciamTrustStoreRole` names the object store a consumer reads the bundle from, such as an AWS load balancer's S3 trust store. The bundle consumers are given (`trust.policy_bundle`) holds the approved anchors, then the followed bundles' subordinate CAs whose chain reaches one; it is public material. The planner adds an action for an edge policy with no service name in front of an accepting role an environment runs, and for an anchor without a recorded PEM.
 
+**What a certificate says of itself.** A record certificate (`ciamCertificate`) holds, besides what it is for, the
+facts a relying party checks, as read from the certificate (observed): its typed alternative names (`ciamSanUpn`, the
+UPN otherName exactly as written; `ciamSanEmail`; `ciamSanUri`; DNS names stay `ciamSubjectAltName`), identifiers
+recognised in them by a known convention only (`ciamSubjectIdentifier`, `<form>:<value>`: `edipi:1234567890` from a
+CAC's UPN of digits at `mil`; never assumed, an ECA subscriber has none), `ciamSubjectKeyId` and `ciamAuthorityKeyId`
+(lowercase hex), basic constraints (`ciamIsCa`, `ciamPathLength`), `ciamCertPolicyOid` and `ciamExtendedKeyUsage`.
+`opsdir import x509/certificates DIR` (opsdir-adapter-x509) writes them from each certificate's recorded PEM, or from
+a PEM file in DIR with its fingerprint (DIR may be empty), entry by entry, nothing else changed
+(`pem.with_pem_facts`: facts the certificate doesn't carry are removed; subject, issuer, validity start and serial are
+filled only where the record holds none).
+
+**Cross-certificates** (`ciamCrossCertificate` under `ou=cross-certificates`, `domains/pki/cross.py`): one CA
+certifying another PKI's CA, recorded as a fact of the graph, never as trust. Each names its issuer and subject CA by
+DN (`ciamIssuer`, `ciamSubject`), its validity (`ciamNotAfter`, `ciamNotBefore`), what it joins (`ciamCrossRole`:
+`peer`, `bridge-to-member`, `member-to-bridge`), the policy mappings it carries (`ciamPolicyMapping`,
+`<issuerDomainPolicy>=<subjectDomainPolicy>`) and, when observed, its fingerprint, serial, PEM, policies and key
+identifiers. `x509/certificates` records one it recognises: a CA certificate (in DIR, or held under `ou=certificates`,
+then named for removal) whose issuer is another CA and whose subject is a root the record holds (a self-issued CA
+certificate under `ou=certificates`, or a root a trust bundle holds); a bridge's cross-certificate to an intermediate
+it can't recognise is recorded by hand:
+
+```
+dn: cn=Partner Root CA by Example Bridge CA,ou=cross-certificates,dc=ciam-ops
+objectClass: top
+objectClass: ciamObject
+objectClass: ciamCrossCertificate
+cn: Partner Root CA by Example Bridge CA
+ciamIssuer: CN=Example Bridge CA,O=Bridge
+ciamSubject: CN=Partner Root CA,O=Partner
+ciamNotAfter: 20281231000000Z
+ciamCrossRole: bridge-to-member
+ciamPolicyMapping: 2.16.840.1.101.3.2.1.3.13=2.16.840.1.101.2.1.11.39
+```
+
+(The `ou=cross-certificates` branch is created by the first import that records one, or added by hand.) What is
+trusted stays each trust policy's approved anchors: nothing builds or validates a path, and a cross-certificate is
+never given to a policy's consumers. The graph is read by name, issuer to subject. `opsdir report cross-certificates`
+lists, per policy anchor, each CA its cross-certificates reach (the way through, hops, the earliest expiry along it,
+the policy mappings carried, the policies accepting the anchor, and whether the CA reached is itself one of their
+anchors), then each cross-certificate no anchor reaches through. `opsdir plan` (check_cross_certificates, area
+`Trust`; silent while the record holds no cross-certificate) gives actions, never blockers: a CA a policy's anchors
+reach only through cross-certificates (approve it as an anchor, or keep the cross-certificates from the policy's
+consumers and restrict its policy OIDs; record certificates issued under it are named); a cross-certificate expired
+or expiring within `certificate-expiry-margin-days` of cutover (or today), dated by its expiry; one also held as a
+record certificate (chains followed by name could run through it).
+
 ### Who keeps what, and where it renders
 
 Infrastructure the stack doesn't keep itself names its keeper: a binding's `ciamManagedBy` (a `ciamParty`), and for what
