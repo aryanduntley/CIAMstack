@@ -108,7 +108,7 @@ def test_the_tokens_groups_and_client_reach_the_store(client):
     assert http.post("/v1/changes", json={"id": "CHG-4", "title": "Platform work"},
                      headers=bearer("sub-bob", **console)).status_code == 201
     assert http.post("/v1/changes/CHG-4/approve", headers=bearer("sub-alice", **console)).status_code == 200
-    assert values(change(conn, "CHG-4"), "ciamApprovedAs") == ("platform",)        # what alice held through the group
+    assert values(change(conn, "CHG-4"), "ciamApprovedAs") == ("alice platform",)  # what alice held through the group
     written = conn.execute("select db_user, client, teams from opsdir.entry_history"
                            " where dn = 'cn=CHG-4,ou=changes,dc=ciam-ops' order by id").fetchall()
     assert written == [("bob", "opsdir-console", ["platform"]), ("alice", "opsdir-console", ["platform"])]

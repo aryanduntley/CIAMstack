@@ -2,6 +2,8 @@
 governed entries under ou=settings (one ciamEstateSetting each, named as declared, its value in ciamEstateValue) and
 read with the declared default wherever the record holds none, or one that isn't valid for the setting. A value is
 changed like any other entry: under an approved change, kept in history. Technology-neutral and pure."""
+import re
+
 from .changeset import new_entry, set_values
 from .directory import get, one
 from .naming import branch
@@ -37,6 +39,8 @@ def parse_setting(setting, text):
             (None, f"{text!r} isn't TRUE or FALSE")
     if not text.strip():
         return None, "it is empty"
+    if setting.pattern is not None and not re.fullmatch(setting.pattern, text):
+        return None, f"{text!r} isn't in the form the setting takes (opsdir report settings describes it)"
     return (text, None) if setting.choices is None or text in setting.choices else \
         (None, f"{text!r} isn't one of {', '.join(setting.choices)}")
 

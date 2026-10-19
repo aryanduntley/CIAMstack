@@ -6,7 +6,8 @@ schema, no record identity. Pure: the connection's facts come from store.postgre
 directory snapshot."""
 from ..core.settings import setting_value
 from ..domains.governance.identity import record_identity
-from ..domains.governance.settings import APPROVAL_SEPARATION, DEPLOYMENT
+from ..domains.governance.settings import (APPROVAL_SEPARATION, APPROVALS_REQUIRED, DEPLOYMENT, RECOVERY_RPO,
+                                           RECOVERY_RTO)
 from ..store.policy import MIN_SERVER_VERSION, is_local, tls_problem
 from .registry import environment_specs
 
@@ -109,6 +110,34 @@ def _public_rights(f, production):
             "store's functions are pinned against temporary tables, but nothing needs these rights")
 
 
+OBJECT_TYPES = {"r": "tables", "S": "sequences", "f": "functions", "T": "types", "n": "schemas", "L": "large objects"}
+SYSTEM_ROOTS_LIBPQ = 160000            # sslrootcert=system needs libpq 16 or later
+
+
+def _default_acls(f, production):
+    if not f.default_acls:
+        return ("default privileges", OK, "none hand future objects to PUBLIC or within the opsdir schema")
+    listed = "; ".join(f"{priv} on new {OBJECT_TYPES.get(kind, kind)} in {schema} to {grantee}"
+                       for schema, kind, grantee, priv in f.default_acls)
+    return ("default privileges", WARN if production else INFO,
+            f"{listed}: future objects get these rights without a grant anyone reviews; remove them "
+            "(alter default privileges ... revoke ...); opsdir db-roles grants what each login needs explicitly")
+
+
+def _client_library(f):
+    if not f.libpq_version:
+        return ("client library", INFO, "the libpq version isn't known here")
+    version = f"libpq {f.libpq_version // 10000}.{f.libpq_version % 10000} ({f.psycopg_impl or 'psycopg'})"
+    if f.libpq_version < SYSTEM_ROOTS_LIBPQ and f.sslrootcert == "system":
+        return ("client library", FAIL, f"{version}: sslrootcert=system needs libpq 16 or later; upgrade libpq or "
+                                        "name the CA file")
+    if f.psycopg_impl == "binary":
+        return ("client library", INFO, f"{version}: psycopg's binary package bundles its own libpq and OpenSSL; "
+                                        "where the deployment needs the operating system's validated cryptography, "
+                                        "install psycopg against the system libpq (documentation/RECORD-DATABASE.md)")
+    return ("client library", OK, version)
+
+
 def _migrations(f, known):
     if not f.schema_owner:
         return ("schema", FAIL, "no opsdir schema in this database: run opsdir init")
@@ -138,6 +167,23 @@ def _separation(d, production):
             "off: an author may approve their own change (approval-separation FALSE, for a one-person install)")
 
 
+def _approval_tiers(d):
+    tiers = setting_value(d, APPROVALS_REQUIRED)
+    return ("approval tiers", INFO if not tiers else OK, f"approvals-required {tiers}" if tiers else
+            "one approver for every change (approvals-required unset)")
+
+
+def _recovery(d, production):
+    rpo, rto = setting_value(d, RECOVERY_RPO), setting_value(d, RECOVERY_RTO)
+    if rpo and rto:
+        return ("recovery targets", OK, f"RPO {rpo}, RTO {rto}: show them met by a restore drill "
+                                        "(documentation/RECORD-DATABASE.md)")
+    missing = " and ".join(n for n, v in (("recovery-rpo", rpo), ("recovery-rto", rto)) if not v)
+    return ("recovery targets", WARN if production else INFO,
+            f"no {missing}: agree the record database's recovery targets and set them (opsdir setting "
+            "recovery-rpo 15m --change ...), then choose backups and replicas that meet them")
+
+
 def _cloud_names(d, identity):
     if identity is None:
         return ()
@@ -159,8 +205,9 @@ def posture_rows(facts, d, known_migrations, allowed=None, token=None):
     return (("deployment", INFO, deployment), _version(facts), _tls(facts, allowed), _sign_in(facts, production, token),
             _dev_defaults(facts, production), _privileges(facts, production), _tls_minimum(facts, production),
             _password_hashing(facts, production), _login_flags(facts, production), _public_rights(facts, production),
-            _migrations(facts, known_migrations),
-            _identity(identity, production), _separation(d, production), *_cloud_names(d, identity))
+            _default_acls(facts, production), _client_library(facts), _migrations(facts, known_migrations),
+            _identity(identity, production), _separation(d, production), _approval_tiers(d), _recovery(d, production),
+            *_cloud_names(d, identity))
 
 
 def failed(rows):

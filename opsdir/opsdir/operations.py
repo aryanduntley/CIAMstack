@@ -22,7 +22,7 @@ from .connectors.graph import dependency_graph
 from .connectors.stack import STATUS_HEADERS, note_rows, stack_rows
 from .connectors.summary import estate_counts, plan_counts
 from .core import search as ldap_search
-from .core.directory import get, make_directory, norm_dn, rdn_value
+from .core.directory import get, make_directory, norm_dn, one, rdn_value
 from .core.environment import ENVIRONMENT, env_model
 from .core.naming import SUFFIX, env_label
 from .core.notes import parsed
@@ -375,11 +375,27 @@ def change_status(conn, change_id, status):
 
 
 def change_lines(conn, change_id):
-    """Effect (reads the record): a change record in lines; ValueError when there is none."""
-    change = changesmod.change_record(db.load_directory(conn), change_id)
+    """Effect (reads the record): a change record in lines, with its approvals when it needs more than one;
+    ValueError when there is none."""
+    d = db.load_directory(conn)
+    change = changesmod.change_record(d, change_id)
     if change is None:
         raise ValueError(f"no change {change_id}")
-    return changesmod.change_lines(change)
+    return changesmod.change_lines(change, changesmod.approvals_needed(d, change))
+
+
+ChangeState = NamedTuple("ChangeState", [("status", str), ("approvers", tuple), ("needed", int)])
+
+
+def change_state(conn, change_id):
+    """Effect (reads the record): a change's status, who approved it so far and how many approvals it needs
+    (approvals-required); ValueError when there is none."""
+    d = db.load_directory(conn)
+    change = changesmod.change_record(d, change_id)
+    if change is None:
+        raise ValueError(f"no change {change_id}")
+    return ChangeState(one(change, "ciamChangeStatus"), changesmod.approvers(change),
+                       changesmod.approvals_needed(d, change))
 
 
 def preview_person(conn, login, name=None, mail=None, teams=None, subjects=None):

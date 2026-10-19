@@ -594,8 +594,17 @@ sudo -u postgres createdb -O opsdir -T template0 opsdir_test_workspace
 | sign-in | Kerberos, a client certificate, a password file, a cloud token | a password in the connection string or the environment |
 | development defaults | none | the development password, or the development database and login on this host |
 | login privileges | rows only | superuser, owns the schema, or can create in it (the right login for `init`/`upgrade`, not for daily use) |
+| tls minimum | TLSv1.2 or later | an older minimum |
+| password hashing | scram-sha-256 | anything else |
+| login attributes | no createrole, createdb or bypassrls | any of them |
+| public rights | PUBLIC can't create or make temporary tables in the database | never fails: warns on a production record |
+| default privileges | none hand future objects to PUBLIC or within the opsdir schema | never fails: warns on a production record |
+| client library | libpq 16 or later, psycopg on the system's libpq | `sslrootcert=system` with libpq older than 16 (any record); psycopg's bundled libpq and OpenSSL are noted (see FIPS in documentation/RECORD-DATABASE.md) |
 | schema | every migration applied | pending or unknown migrations (any record) |
 | record identity | set | none |
+| approval separation | on | off |
+| approval tiers | `approvals-required` set | never fails: reported as information |
+| recovery targets | `recovery-rpo` and `recovery-rto` set | never fails: warns on a production record |
 | cloud names | all start with the org code | never fails: reported as information |
 
 A development record (the default, and the showcase) only notes what a production one fails on.
@@ -660,6 +669,7 @@ What the store enforces, whoever connects and however (the CLI, a script, `psql`
 - It records **who wrote a change record** (`ciamAuthor`, the login that created it) and **who approved it** (`ciamApprovedBy`, the login that approved it). Neither can be set or changed by a write.
 - **The approver is never the author** while the `approval-separation` setting is TRUE, the default. Only a one-person install turns it off (`opsdir setting approval-separation FALSE --change …`). `opsdir posture` warns about that on a development record and fails a production one.
 - **Once people are recorded** (`ou=people`), only a recorded person approves. With none recorded (a single-team install, the showcase), any login may approve, but never its own change.
+- **Risk-tiered approval:** the `approvals-required` setting says how many distinct people approve a change, per environment: `opsdir setting approvals-required "*=1, collins-aws/prod=2" --change …` (`*` for every environment not listed; unset: one). Each approval is recorded once per person (`ciamApprovals`), never the author's. A change stays proposed until the environments of the records it proposes have their approvals (`opsdir change approve` says how many are still needed), and its approvals start over if what it proposes changes before then. Every write under a change also needs its own environment's number, and, once grants exist, that many of the approvers must hold `approve` there. The schema owner stays the break-glass.
 - **Applied only after approved:** a change goes proposed → approved → applied, or rejected.
 - **The initial load only by the owner:** writes under `BOOTSTRAP` (`opsdir load`) are the schema owner's. Every other login writes under an approved change.
 - **History records the login** that made each write (`opsdir history` shows it as `by`; writes through the HTTP API also show the API `client` and the identity provider-mapped `teams` the person held). The history is append-only.

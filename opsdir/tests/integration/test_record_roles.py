@@ -347,7 +347,7 @@ def test_identity_provider_groups_decide_the_members_of_mapped_teams(cluster):
         with db.requesting("dave"):
             ops.change_status(api, "CHG-13", "approved")
         assert (values(changed("CHG-12"), "ciamApprovedAs"), values(changed("CHG-13"), "ciamApprovedAs"),
-                values(changed("CHG-11"), "ciamApprovedAs")) == (("netops",), (), ())
+                values(changed("CHG-11"), "ciamApprovedAs")) == (("dave netops",), (), ())
         with db.requesting("bob"):
             db.apply_records(api, tuple(parse(touch.format("approved through netops"))), "CHG-12")
             with pytest.raises(refused, match="CHG-13 was approved by dave, who may not approve"):
@@ -358,3 +358,37 @@ def test_identity_provider_groups_decide_the_members_of_mapped_teams(cluster):
     with db.connect(cluster.socket_dsn + "carol") as carol, db.requesting("dave", (NETOPS,)):
         with pytest.raises(refused, match="carol may not apply cn=svc-a"):           # only the API login is trusted
             db.apply_records(carol, tuple(parse(touch.format("carol"))), "CHG-12")
+
+
+def test_writes_need_the_approvals_their_environment_needs(cluster):
+    """Runs after the groups test above (CHG-12 was approved by dave alone; bob holds apply over the network team's
+    areas, alice approve, netops apply and approve through its group). With approvals-required *=2, a write under a
+    change one person approved is refused; two approvers who may approve there let it through, and an approver
+    without approve there doesn't count."""
+    touch = "dn: cn=svc-a,ou=owners,dc=ciam-ops\nchangetype: modify\nreplace: description\ndescription: {}\n-\n"
+    refused = psycopg.errors.RaiseException
+    with db.connect(cluster.socket_dsn + "opsdir_migrate") as owner:
+        owner.execute(f"set role {ROLES.owner}")
+        ops.apply_preview(owner, ops.preview_setting(owner, "approvals-required", "*=2"), "CHG-1")
+    with db.connect(cluster.socket_dsn + "opsdir_api") as api:
+        with db.requesting("bob"), pytest.raises(refused, match="CHG-12 has 1 of the 2 approvals the record needs"):
+            db.apply_records(api, tuple(parse(touch.format("one approval"))), "CHG-12")
+        with db.requesting("bob"):
+            for change_id in ("CHG-14", "CHG-15"):
+                ops.new_change(api, change_id, "Two approvals")
+        with db.requesting("alice"):
+            ops.change_status(api, "CHG-14", "approved")
+            ops.change_status(api, "CHG-15", "approved")
+        assert ops.change_state(api, "CHG-14") == ("proposed", ("alice",), 2)
+        with db.requesting("dave", (NETOPS,)):
+            ops.change_status(api, "CHG-14", "approved")                    # dave may approve there through netops
+        with db.requesting("dave"):
+            ops.change_status(api, "CHG-15", "approved")                    # without the group: no grant there
+        with db.requesting("bob"):
+            db.apply_records(api, tuple(parse(touch.format("two approvals"))), "CHG-14")
+            with pytest.raises(refused, match="CHG-15 has 1 approver.s. who may approve .* and 2 need to"):
+                db.apply_records(api, tuple(parse(touch.format("one who may"))), "CHG-15")
+    with db.connect(cluster.socket_dsn + "opsdir_migrate") as owner:
+        owner.execute(f"set role {ROLES.owner}")
+        db.apply_records(owner, tuple(parse(touch.format("break-glass"))), "CHG-12")   # the owner isn't held to it
+        ops.apply_preview(owner, ops.preview_setting(owner, "approvals-required", "*=1"), "CHG-1")

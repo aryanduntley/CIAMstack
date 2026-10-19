@@ -6,7 +6,9 @@ import pytest
 from opsdir import cli
 from opsdir.core.directory import make_directory
 from opsdir.core.interchange.ldif import parse
-from opsdir.domains.governance.changes import change_lines, new_change, status_change
+from opsdir.core.interchange.ldif import LdifRecord
+from opsdir.domains.governance.changes import (approvals_needed, approvers, change_lines, new_change, proposal_record,
+                                               required_approvals, status_change)
 from opsdir.domains.governance.people import (group_problem, idp_teams, member_teams, person_changes,
                                               person_for_subject, person_lines, team_changes, team_lines, teams_of)
 from opsdir.store.roles import db_roles_sql
@@ -229,3 +231,23 @@ def test_the_team_command():
     assert (a.name, a.display, a.idp_group, a.no_idp_groups, cli.command_action(a)) == (
         "sre", "SRE", [GROUP], False, "settings")
     assert cli.command_action(cli.parser().parse_args(["team", "sre"])) == "read"
+
+
+
+def test_how_many_approvals_a_change_needs():
+    tiers = ("\ndn: cn=approvals-required,ou=settings,dc=ciam-ops\nobjectClass: ciamEstateSetting\n"
+             "cn: approvals-required\nciamEstateValue: *=1, collins-aws/prod=2, collins-aws/dr=3\n")
+    d = directory(BASE + tiers)
+    assert [required_approvals(d, e) for e in ("collins-aws/prod", "COLLINS-AWS/PROD", "other/dev", "")] == [2, 2, 1, 1]
+    assert required_approvals(directory(), "collins-aws/prod") == 1
+    records = tuple(LdifRecord(f"cn=svc,ou=bindings,env={env},cloud=collins-aws,ou=environments,dc=ciam-ops", "modify",
+                               {}, (("replace", "description", ("x",)),)) for env in ("prod", "dr"))
+    proposal = proposal_record("CHG-9", "Two environments", records)
+    attrs = {k: tuple(v) for k, v in proposal.attrs.items() if k != "objectClass"}
+    change = make_directory((), {}, [(proposal.dn, ("top", "ciamChange"), attrs)]).entries[
+        "cn=chg-9,ou=changes,dc=ciam-ops"]
+    assert approvals_needed(d, change) == 3                                  # the most any record's environment needs
+    approved = d.entries["cn=chg-1,ou=changes,dc=ciam-ops"]
+    assert approvals_needed(d, approved) == 1 and approvers(approved) == ()
+    assert change_lines(change, 3)[-1] == "approvals  none yet (0 of 3)"
+    assert "approvals" not in " ".join(change_lines(approved))              # one approver needed: nothing extra

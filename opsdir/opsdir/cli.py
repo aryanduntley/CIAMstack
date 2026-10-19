@@ -885,7 +885,12 @@ def _cmd_change(conn, a, as_of):
             return f"{a.id}: proposed; someone other than you approves it (opsdir change approve {a.id})"
         status = {"approve": "approved", "reject": "rejected"}[a.action]
         ops.change_status(conn, a.id, status)
-        return f"{a.id}: {status}"
+        held = ops.change_state(conn, a.id)
+        if status == "approved" and held.status != "approved":
+            return (f"{a.id}: approval recorded ({len(held.approvers)} of {held.needed}: "
+                    f"{', '.join(held.approvers)}); still {held.status} until {held.needed - len(held.approvers)} more "
+                    "person(s) approve it (approvals-required)")
+        return f"{a.id}: {held.status}"
     except ValueError as e:
         raise SystemExit(str(e)) from None
 

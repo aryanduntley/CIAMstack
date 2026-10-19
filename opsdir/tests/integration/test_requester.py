@@ -2,13 +2,15 @@
 api-login setting names the login, the person a context acts for (store.postgres.requesting) is who the store
 attributes writes to: a change's author and approver, history and modified_by, the approval rules; a login the setting
 doesn't name acts as itself whatever it says. (The grant check, which the schema owner skips: test_record_roles.py.)"""
+import base64
+
 import psycopg
 import pytest
 
 from opsdir import operations as ops
 from opsdir.core.directory import get, one
 from opsdir.core.interchange.ldif import parse
-from opsdir.domains.governance.changes import change_dn
+from opsdir.domains.governance.changes import change_dn, proposal_record
 from opsdir.store import postgres as db
 
 pytestmark = pytest.mark.integration
@@ -135,3 +137,54 @@ def test_a_requester_that_isnt_a_login_name_is_refused(conn):
     with db.requesting("Alice,ou=people"):
         with pytest.raises(psycopg.errors.RaiseException, match="requester Alice,ou=people isn't a login name"):
             ops.new_change(conn, "CHG-2", "Open the LDAPS port")
+
+
+PROD_EDIT = ("dn: cn=svc,ou=bindings,env=prod,cloud=aws,ou=environments,dc=ciam-ops\nchangetype: modify\n"
+             "replace: description\ndescription: {}\n-\n")
+
+
+def propose(conn, change_id, text):
+    db.apply_records(conn, (proposal_record(change_id, "Tiered", tuple(parse(text))),), "CHG-1")
+
+
+def test_risk_tiered_approval_waits_for_enough_distinct_people(conn):
+    trust(conn, login(conn))
+    for person in ("alice", "bob", "carol"):
+        ops.apply_preview(conn, ops.preview_person(conn, person), "CHG-1")
+    ops.apply_preview(conn, ops.preview_setting(conn, "approvals-required", "*=1, aws/prod=2"), "CHG-1")
+    with db.requesting("alice"):
+        propose(conn, "CHG-5", PROD_EDIT.format("tiered"))
+        propose(conn, "CHG-6", PROD_EDIT.format("changed later"))
+        propose(conn, "CHG-7", "dn: cn=platform,ou=owners,dc=ciam-ops\nchangetype: modify\nreplace: description\n"
+                               "description: outside environments\n-\n")
+    with db.requesting("bob"):
+        ops.change_status(conn, "CHG-5", "approved")
+        assert ops.change_state(conn, "CHG-5") == ("proposed", ("bob",), 2)        # waits for a second person
+        with pytest.raises(psycopg.errors.RaiseException, match="bob already approved change CHG-5"):
+            ops.change_status(conn, "CHG-5", "approved")
+    with db.requesting("alice"), pytest.raises(psycopg.errors.RaiseException, match="alice wrote change CHG-5"):
+        ops.change_status(conn, "CHG-5", "approved")
+    with db.requesting("carol"):
+        ops.change_status(conn, "CHG-5", "approved")
+    assert ops.change_state(conn, "CHG-5") == ("approved", ("bob", "carol"), 2)
+    assert one(change(conn, "CHG-5"), "ciamApprovedBy") == "carol"
+    assert ops.change_lines(conn, "CHG-5")[-1] == "approvals  bob, carol (2 of 2)"
+    by = [w for (w,) in conn.execute("select db_user from opsdir.entry_history where dn = 'cn=CHG-5,ou=changes,"
+                                     "dc=ciam-ops' order by id").fetchall()]
+    assert by == ["alice", "bob", "carol"]                                      # history keeps each approval
+    with db.requesting("bob"):
+        ops.change_status(conn, "CHG-6", "approved")
+        ops.change_status(conn, "CHG-7", "approved")                            # outside environments: '*' = 1
+    assert ops.change_state(conn, "CHG-7").status == "approved"
+    replaced = parse("dn: cn=CHG-6,ou=changes,dc=ciam-ops\nchangetype: modify\nreplace: description\n"
+                     "description: retitled\n-\n")
+    with db.requesting("alice"):
+        db.apply_records(conn, tuple(replaced), "CHG-1")                        # the records it proposes unchanged
+    assert ops.change_state(conn, "CHG-6").approvers == ("bob",)
+    other = proposal_record("CHG-6", "Tiered", tuple(parse(PROD_EDIT.format("something else"))))
+    with db.requesting("alice"):
+        db.apply_records(conn, tuple(parse(
+            "dn: cn=CHG-6,ou=changes,dc=ciam-ops\nchangetype: modify\nreplace: ciamChangeRecords\n"
+            + "".join(f"ciamChangeRecords:: {base64.b64encode(v.encode()).decode()}\n"
+                      for v in other.attrs["ciamChangeRecords"]) + "-\n")), "CHG-1")
+    assert ops.change_state(conn, "CHG-6") == ("proposed", (), 2)               # what bob approved changed: start over

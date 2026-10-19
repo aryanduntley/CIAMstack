@@ -221,9 +221,13 @@ ATTRIBUTES = (
                  'the team are then ignored',
                  (("X-PATTERN", "^https://[^ ]+ [^ ]+$"),)),
     AttributeDef(989, 'ciamApprovedAs', 'string', 'meta', False,
-                 'The teams mapped to identity provider groups (ciamIdpGroup) the approver belonged to when approving '
-                 'a change, by name: set by the store with ciamApprovedBy (never by the writer), and what the '
-                 'approver\'s grants are checked with when the change is applied'),
+                 'The teams mapped to identity provider groups (ciamIdpGroup) each approver belonged to when approving '
+                 'a change, as \'<login> <team>\': set by the store with ciamApprovals (never by the writer), and what '
+                 'the approvers\' grants are checked with when the change is applied'),
+    AttributeDef(1010, 'ciamApprovals', 'string', 'meta', False,
+                 'The people who approved a change, each once and never its author while approval-separation is on: '
+                 'set by the store (never by the writer). The approvals-required setting says how many a change '
+                 'needs for its environments; it stays proposed until it has them'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -231,7 +235,7 @@ CLASSES = (
              'Work instruction'),
     ClassDef(30, 'ciamChange', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamChangeStatus'),
              ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords', 'ciamTicketRef', 'ciamAuthor',
-              'ciamApprovedAs'),
+              'ciamApprovedAs', 'ciamApprovals'),
              'Change record (mirrored from ITSM; a proposed one may carry the records it applies, and names the '
              'ticket it is tracked by)'),
     ClassDef(31, 'ciamIncident', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamOpenedAt'),

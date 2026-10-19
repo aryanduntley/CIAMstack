@@ -104,6 +104,7 @@ def world(monkeypatch):
 
     def change_status(conn, change_id, status):
         calls.append(("change_status", (change_id, status), state["as"]))
+        state["moved"] = status
         if change_id == "CHG-ACME-9999":
             raise ValueError(f"no change {change_id}")
         return Applied(change_id, (f"modify cn={change_id}",))
@@ -124,6 +125,8 @@ def world(monkeypatch):
         apply_preview=recorded("apply_preview", lambda preview, change: Applied(change, ("modify cn=portal",))),
         new_change=recorded("new_change", Applied("CHG-ACME-0042", ())),
         change_status=change_status,
+        change_state=lambda conn, change_id: SimpleNamespace(
+            status=state.get("moved", "approved"), approvers=("bob",), needed=state.get("needed", 1)),
         apply_proposed=recorded("apply_proposed", lambda change: Applied(change, ("modify cn=portal",))),
         preview_import=recorded("preview_import", lambda spec, files, at: Plan(
             spec, (RECORD,), ("withheld: secret",), conflicts if "conflict.json" in files else (), ("cn=pf",), at)),
@@ -294,7 +297,7 @@ def test_changes_new_approve_reject_apply(world):
     assert r.status_code == 201 and r.json() == {"change": "CHG-ACME-0042", "status": "proposed"}
     assert named(world.calls, "new_change")[0] == ("new_change", ("CHG-ACME-0042", "Rotate", None), "alice")
     r = world.client.post("/v1/changes/CHG-ACME-0042/approve", headers=bearer("sub-bob"))
-    assert r.json() == {"change": "CHG-ACME-0042", "status": "approved"}
+    assert r.json() == {"change": "CHG-ACME-0042", "status": "approved", "approvals": ["bob"], "needed": 1}
     assert named(world.calls, "change_status")[0] == ("change_status", ("CHG-ACME-0042", "approved"), "bob")
     assert world.client.post("/v1/changes/CHG-ACME-0043/reject", headers=bearer("sub-bob")).json()["status"] == \
         "rejected"

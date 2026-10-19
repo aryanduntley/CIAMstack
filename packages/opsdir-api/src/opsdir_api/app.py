@@ -290,7 +290,8 @@ def _moved(change_id, verb, who):
 
     def work(c):
         ops.change_status(c, change_id, status)
-        return {"change": change_id, "status": status}
+        held = ops.change_state(c, change_id)
+        return {"change": change_id, "status": held.status, "approvals": list(held.approvers), "needed": held.needed}
     return run(who, "approve", WHOLE_RECORD, work)
 
 

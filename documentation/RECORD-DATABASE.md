@@ -52,6 +52,34 @@ Whatever the placement:
 - **Test a restore.** The record's `restore-test-interval-days` setting (90 by default) is how often the data domain expects one.
 - **Record the database itself, if you want its checks.** The record can describe its own database as a `ciamDatabase` binding of the CIAMstack server's environment, with its engine, version, high availability, retention, point-in-time restore and deletion protection. The data domain's checks and the `databases` report then cover it like any other managed database.
 
+## Recovery targets and losing a region
+
+Agree two numbers for the record's database with the company's continuity owners, and record them:
+
+```bash
+opsdir setting recovery-rpo 15m --change <code>-…   # the most recent writes you accept losing (m, h or d)
+opsdir setting recovery-rto 4h --change <code>-…    # how long the record may be unavailable
+```
+
+`opsdir posture` reports them, and asks for them on a production record. Then choose the placement's protection so it meets them. High availability within a region (above) covers losing a server or a zone. Losing a whole region needs a copy outside it:
+
+| Placement | What survives a region loss | What it costs you |
+|---|---|---|
+| Self-managed | A WAL archive in another region's storage (pgBackRest or Barman repository), optionally a streaming standby there | RPO: the archive interval or replication lag. RTO: restoring or promoting, then repointing the CIAMstack server |
+| Amazon RDS / Aurora | Not established here for each partition: check AWS's current documentation for cross-region automated backup replication and cross-region replicas. GovCloud documentation excludes Aurora PostgreSQL cross-region read replicas | Depends on the option your partition offers; GovCloud's regional CA bundles differ per region |
+| Azure Flexible Server | Geo-redundant backup, which must be chosen when the server is created. It replicates asynchronously and restores the latest available copy (no point-in-time choice in the other region) | Microsoft documents an RPO that can reach one hour. In Azure Government, only US Gov Virginia lists geo-redundant backup |
+
+**When a region is lost:**
+
+1. Stop writes: stop the HTTP API and pause scheduled jobs on the CIAMstack server, so nothing writes to a half-available record.
+2. Bring the database up in the surviving region: promote the standby, restore from the WAL archive to the latest point, or geo-restore (Azure).
+3. Point the CIAMstack server at it: `OPSDIR_DSN` (or the service file) with that region's host and CA file. On a managed service, the cloud token's audience or region changes with the host.
+4. Check it before letting anyone back in: `opsdir posture` (every row as before), `opsdir check`, and `opsdir history` to see the last change that survived. Compare it with the last change the company knows was applied: the difference is the data lost.
+5. Restart the API and the jobs, then record the incident, with the measured data loss and downtime against `recovery-rpo` and `recovery-rto`.
+6. Re-establish protection: a new standby or archive outside the new primary's region.
+
+A restore drill (`restore-test-interval-days`) should include this procedure at least once a year, timed, in the regions you would really use. Showing the targets met on real infrastructure is part of validation against real accounts (milestone 7.2).
+
 ## Logical backup and restore
 
 The migration login takes and restores the backup acting as the owner, so everything keeps its owner and the runtime keeps its grants:

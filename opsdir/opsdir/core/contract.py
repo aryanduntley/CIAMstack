@@ -55,9 +55,10 @@ ImportKind = namedtuple("ImportKind", ("kind", "object_class", "required", "matc
 # An estate setting a domain declares: a value the platform's managers may change for the whole estate (a governed
 # entry under ou=settings, read by core.settings). kind: "int", "bool" or "string"; default: the value when the record
 # holds none (or one that isn't valid); minimum, maximum: the bounds of an int; choices: the values a string may take
-# (None: any non-empty text). Domains and installed adapters declare them.
-Setting = namedtuple("Setting", ("name", "kind", "default", "description", "minimum", "maximum", "choices"),
-                     defaults=(None, None, None))
+# (None: any non-empty text); pattern: a regular expression a string's whole text must match (None: any). Domains and
+# installed adapters declare them.
+Setting = namedtuple("Setting", ("name", "kind", "default", "description", "minimum", "maximum", "choices", "pattern"),
+                     defaults=(None, None, None, None))
 
 # One use of a binding role by a record entry an environment runs (Domain and Adapter roles_used): the role and what
 # uses it in words (connector `hrdb`), for the keys report.

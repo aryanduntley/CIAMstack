@@ -104,3 +104,33 @@ def test_the_servers_tls_minimum_password_hashing_login_attributes_and_public_ri
     assert "opsdir_app can create databases, bypass row security" in detail["login attributes"]
     assert "revoke temporary on database record from public" in detail["public rights"]
     assert status(posture_rows(PROD, directory(), KNOWN), "tls minimum") == INFO        # unreadable: noted only
+
+
+def settings(**values):
+    return "".join(f"dn: cn={name},ou=settings,dc=ciam-ops\nobjectClass: top\nobjectClass: ciamEstateSetting\n"
+                   f"cn: {name}\nciamEstateValue: {value}\n\n" for name, value in values.items())
+
+
+def with_settings(base, text):
+    rows = [(r.dn, tuple(r.attrs.get("objectClass", ())), {k: v for k, v in r.attrs.items() if k != "objectClass"})
+            for r in parse(text)]
+    return make_directory((), {}, [*((e.dn, e.classes, e.attrs) for e in base.entries.values()), *rows])
+
+
+def test_default_privileges_the_client_library_tiers_and_recovery_targets():
+    rows = posture_rows(PROD, directory(production=True), KNOWN)
+    assert status(rows, "default privileges") == OK and status(rows, "client library") == INFO
+    assert status(rows, "approval tiers") == INFO and status(rows, "recovery targets") == WARN
+    granted = PROD._replace(default_acls=(("opsdir", "r", "PUBLIC", "SELECT"),), libpq_version=150004,
+                            psycopg_impl="c", sslrootcert="system")
+    rows = posture_rows(granted, directory(production=True), KNOWN)
+    detail = dict((c, d) for c, _, d in rows)
+    assert status(rows, "default privileges") == WARN and "SELECT on new tables in opsdir to PUBLIC" in detail[
+        "default privileges"]
+    assert status(rows, "client library") == FAIL and "needs libpq 16" in detail["client library"]
+    assert status(posture_rows(granted._replace(libpq_version=170002), directory(), KNOWN), "client library") == OK
+    d = with_settings(directory(production=True), settings(**{"approvals-required": "*=1, collins-aws/prod=2",
+                                                              "recovery-rpo": "15m", "recovery-rto": "4h"}))
+    rows = posture_rows(PROD, d, KNOWN)
+    assert status(rows, "approval tiers") == OK and status(rows, "recovery targets") == OK
+    assert dict((c, x) for c, _, x in rows)["recovery targets"].startswith("RPO 15m, RTO 4h")
