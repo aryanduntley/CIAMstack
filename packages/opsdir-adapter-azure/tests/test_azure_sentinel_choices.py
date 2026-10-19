@@ -6,18 +6,60 @@ a choice changed in the portal shows as drift."""
 import json
 from types import SimpleNamespace
 
+from network_fixtures import BETA, entry, model
+from opsdir.connectors.registry import core_fragments
+from opsdir.core.contract import DetectionMapping
 from opsdir.core.directory import one
 from opsdir.core.notes import note_comment
 from opsdir.core.standard import registry_ldif
-from opsdir.connectors.registry import core_fragments
 from opsdir.domains.observability.naming import ALERT_RULES
-from opsdir_format_terraform.hcl import Block, TfFile, as_text, ref, tf_block
 from opsdir_adapter_azure.schema import CHOICES, FRAGMENT, SENTINEL_RULE
-from opsdir_adapter_azure.sentinel import (MAX_NRT_ENABLED, MIN_SUPPRESSION, check_nrt_quota, render_sentinel,
-                                           rule_choices, sentinel_notes)
-from network_fixtures import BETA, entry, model
+from opsdir_adapter_azure.sentinel import (
+    MAX_NRT_ENABLED,
+    MIN_SUPPRESSION,
+    adopted_query,
+    check_nrt_quota,
+    kql_field,
+    list_prefix,
+    render_sentinel,
+    rule_choices,
+    sentinel_notes,
+)
+from opsdir_format_terraform.hcl import Block, TfFile, as_text, ref, tf_block
 from support import SUPERS, imported_directory
-from test_azure_sentinel import BINDINGS, SPRAY, TREE, WS
+
+# the Sentinel estate of test_azure_sentinel.py (its workspace, rules and bindings), repeated here: test modules aren't
+# importable from one another (pytest's importlib mode)
+WS = ("/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-ciam/providers/"
+      "Microsoft.OperationalInsights/workspaces/law-ciam-sentinel")
+QUERY = 'CiamSecurity_CL | where RawData has "FAILURE"'
+
+
+def _rule(cn, **attrs):
+    return (f"dn: cn={cn},{ALERT_RULES}\nobjectClass: top\nobjectClass: ciamObject\nobjectClass: ciamAlertRule\n"
+            f"cn: {cn}\n" + "".join(f"{k}: {v}\n" for k, v in attrs.items()))
+
+
+TREE = (f"dn: {ALERT_RULES}\nobjectClass: top\nobjectClass: organizationalUnit\nou: alert-rules\n",
+        _rule("login-failures", ciamSignal="login-failures", ciamComparison="gt", ciamThreshold="50 /min",
+              ciamEvaluationPeriod="5m", ciamSeverity="sev1", ciamAlertRole="alerts-page"),
+        _rule("too-fast", ciamSignal="logins", ciamComparison="gt", ciamThreshold="5 /min",
+              ciamEvaluationPeriod="1m", ciamAlertRole="alerts-page"))
+BINDINGS = (entry(BETA, "siem", "ciamLogDestination", ciamBindingRole="siem", ciamDestinationKind="siem-index",
+                  ciamProviderRef=WS, ciamRetentionDays="90", ciamTotalRetentionDays="365"),
+            entry(BETA, "page", "ciamAlertChannel", ciamBindingRole="alerts-page", ciamChannelKind="action-group",
+                  ciamProviderRef="/subscriptions/0/resourceGroups/rg/providers/Microsoft.Insights/actionGroups/ag"),
+            entry(BETA, "det-login", "ciamAlarmBinding", ciamBindingRole="alarm-login-failures",
+                  ciamProviderRef=f"{WS}/providers/Microsoft.SecurityInsights/alertRules/ciam-login-failures",
+                  ciamRealizes="login-failures", ciamMetric=QUERY, ciamLogDestinationRole="siem"),
+            entry(BETA, "det-fast", "ciamAlarmBinding", ciamBindingRole="alarm-too-fast",
+                  ciamProviderRef=f"{WS}/providers/Microsoft.SecurityInsights/alertRules/ciam-too-fast",
+                  ciamRealizes="too-fast", ciamMetric=QUERY, ciamLogDestinationRole="siem"))
+SPRAY = (f"dn: cn=password-spray,{ALERT_RULES}\nobjectClass: top\nobjectClass: ciamObject\n"
+         "objectClass: ciamAlertRule\ncn: password-spray\nciamSignal: login-failures\nciamEvaluationPeriod: 15m\n"
+         "ciamSeverity: sev1\n"
+         "ciamAlertRole: alerts-page\nciamAttackTactic: credential-access\nciamAttackTechnique: T1110.003\n"
+         "ciamAttackTechnique: T1078.004\n")
 
 ROWS_QUERY = ("CiamSecurity_CL | where RawData has 'FAILURE' | summarize n = count() by UserPrincipalName, IPAddress, "
               "Sev, Url")
@@ -374,3 +416,18 @@ def test_a_choice_dropped_in_the_portal_is_drift_and_one_kept_changes_nothing():
     held = next(e for e in _record(SENTINEL_RULE, **CHOICES_READ).entries.values() if e.dn.startswith("cn=det-spray,"))
     assert {k: set(v) for k, v in same.attrs.items()} == {k: set(v) for k, v in held.attrs.items()}
     assert same.classes.count(SENTINEL_RULE) == 1 and one(same, "azSentinelRuleKind") == "nrt"
+
+
+def test_a_field_inside_a_list_is_read_from_each_element_of_its_list():
+    mapping = DetectionMapping("am", None, (("action", "topic"), ("step", "entries[].info.nodeId"),
+                                            ("step-outcome", "entries[].info.nodeOutcome")),
+                               (("action", "login-step", ("AM-NODE-LOGIN-COMPLETED",)),))
+    det = SimpleNamespace(selector=(("action", ("login-step",)), ("step", ("n1",)), ("step-outcome", ("skip",))),
+                          group_by=(), distinct=None, threshold=None)
+    assert list_prefix("entries[].info.nodeId") == "entries" and list_prefix("topic") is None
+    assert kql_field("entries[].info.nodeId", ("entries",)) == 'tostring(item0["info"]["nodeId"])'
+    query = adopted_query(det, mapping, ("CiamAm_CL",))
+    assert query.count("mv-expand") == 1                       # one expansion: both fields read from one element
+    assert query.startswith('CiamAm_CL | extend ciamEvent = parse_json(RawData)'
+                            ' | mv-expand item0 = ciamEvent["entries"] | where')
+    assert 'tostring(item0["info"]["nodeId"]) == "n1" and tostring(item0["info"]["nodeOutcome"]) == "skip"' in query

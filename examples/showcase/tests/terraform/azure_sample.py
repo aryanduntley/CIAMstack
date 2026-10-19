@@ -14,7 +14,7 @@ from opsdir.connectors.registry import services
 from opsdir.core.contract import Endpoint, LogSource
 from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import LdifRecord, parse
-from opsdir.domains.observability.naming import CANARIES, LOG_ROUTES
+from opsdir.domains.observability.naming import ALERT_RULES, CANARIES, LOG_ROUTES
 from opsdir_adapter_azure.terraform import render_files
 from opsdir_format_terraform.hcl import written
 import edge_fixtures
@@ -215,6 +215,26 @@ ROUTES = (OU.format(LOG_ROUTES, "log-routes"),
 ACCESS_LOG = (LogSource("ds", "servers", "logs/access", "text", "access"),)
 
 
+# a near-real-time Sentinel analytics rule (milestone 129, task 631): a rows detection on a Sentinel workspace whose
+# alarm binding chooses NRT (the Azure adapter's azSentinelRule class)
+SENTINEL_WS = f"{RESOURCES}/rg-ciam/providers/Microsoft.OperationalInsights/workspaces/law-ciam-sentinel"
+NRT = (entry(ALPHA, "sentinel", "ciamLogDestination", ciamBindingRole="sentinel", ciamDestinationKind="siem-index",
+             ciamProviderRef=SENTINEL_WS, ciamRetentionDays="90", ciamTotalRetentionDays="365"),
+       entry(ALPHA, "page", "ciamAlertChannel", ciamBindingRole="alerts-page", ciamChannelKind="action-group",
+             ciamProviderRef=f"{RESOURCES}/rg-ciam/providers/Microsoft.Insights/actionGroups/ag-ciam"),
+       entry(ALPHA, "det-spray", "ciamAlarmBinding", ciamBindingRole="alarm-password-spray",
+             ciamProviderRef=f"{SENTINEL_WS}/providers/Microsoft.SecurityInsights/alertRules/ciam-password-spray",
+             ciamRealizes="password-spray", ciamLogDestinationRole="sentinel", ciamDetectionMode="rows",
+             ciamMetric="CiamSecurity_CL | where RawData has 'FAILURE' | project UserPrincipalName, IPAddress",
+             ciamEntityMapping=("account name=UserPrincipalName", "ip address=IPAddress"),
+             azSentinelRuleKind="nrt").replace("objectClass: ciamAlarmBinding\n",
+                                               "objectClass: ciamAlarmBinding\nobjectClass: azSentinelRule\n"))
+NRT_RULES = (OU.format(ALERT_RULES, "alert-rules"),
+             f"dn: cn=password-spray,{ALERT_RULES}\nobjectClass: top\nobjectClass: ciamObject\n"
+             "objectClass: ciamAlertRule\ncn: password-spray\nciamSignal: login-failures\nciamEvaluationPeriod: 15m\n"
+             "ciamSeverity: sev1\nciamAlertRole: alerts-page\nciamAttackTactic: credential-access\n")
+
+
 def _siem(region):
     root = LdifRecord(f"cn=ds-1,{ALPHA}", "modify", {}, (("add", "ciamInstallRoot", ("/opt/ds",)),))
     return model(alpha=SIEM, tree=ROUTES, changes=(*placed(region), *bound(), root))[1]
@@ -233,7 +253,8 @@ def environments(region):
                                       *GROUP, *SECURITY, *EXTERNAL_ID, *DIRECTORY),
                                tree=(*EXCEPTIONS, *CANARY, *APPS), changes=(*placed(region), *bound()))[1],
              found._replace(endpoints=(*found.endpoints, *ENDPOINTS))),
-            ("siem", _siem(region), found._replace(logs=lambda m: ACCESS_LOG)))
+            ("siem", _siem(region), found._replace(logs=lambda m: ACCESS_LOG)),
+            ("sentinel", model(alpha=NRT, tree=NRT_RULES, changes=(*placed(region), *bound()))[1], found))
 
 
 def renders(region):

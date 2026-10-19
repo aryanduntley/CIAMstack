@@ -64,7 +64,7 @@ def signal_check(dst_adapters):
     def check_signals(ctx):
         rules = tuple(r for r in alert_rules(ctx.d) if one_role(ctx.dst, one(r, "ciamAlertRole")) is not None)
         declared = tuple((a.name, det) for a in dst_adapters for det in declared_detections(a, ctx.d))
-        native = {x.rule.dn: x for x in native_rules(ctx.dst, declared)}
+        native = {x.rule.dn: x for x in native_rules(ctx.dst, declared, lists=True)}   # every SIEM render reads lists
         missing = tuple((e, why) for e in (evaluation(ctx.dst, signals, r) for r in rules) if e.missing
                         for why in (unevaluated(ctx, e, native),) if why)
         return findings(actions=[

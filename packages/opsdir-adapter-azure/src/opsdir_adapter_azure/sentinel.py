@@ -92,8 +92,9 @@ from opsdir.core.findings import findings, responsible
 from opsdir.core.inventory import duration_seconds, duration_text, of_types, realization_roles, resource
 from opsdir.core.notes import note, note_comment
 from opsdir.domains.observability.alarms import alarm_note, detection_condition, detection_specs
-from opsdir.domains.observability.detections import (ENTITIES, is_native, native_name, native_notes, native_rules,
-                                                     overlap_step, product_field, product_values, searched)
+from opsdir.domains.observability.detections import (ENTITIES, LIST, is_native, native_name, native_notes,
+                                                     native_rules, overlap_step, product_field, product_values,
+                                                     searched)
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.siem import (described, detection_index, detection_mode, entity_mappings, is_siem,
                                                realized_in, siem_destinations)
@@ -547,14 +548,47 @@ def kql_path(path):
     return f"tostring({EVENT}" + "".join(f"[{literal(k)}]" for k in path.split(".")) + ")"
 
 
+def list_prefix(path):
+    """The key path of the list a product field sits in (what comes before LIST: 'entries' of
+    'entries[].info.nodeId'), or None outside a list."""
+    return path.split(LIST, 1)[0] if LIST in path else None
+
+
+def _item(prefixes, prefix):
+    return f"item{prefixes.index(prefix)}"
+
+
+def kql_field(path, prefixes=()):
+    """A product field's path as the KQL reading it, as a string: from the event (kql_path), or for a field inside a
+    list from the list's element mv-expand gives (mv_expansions over prefixes), so fields of one list are read from the
+    same element."""
+    prefix = list_prefix(path)
+    if prefix is None:
+        return kql_path(path)
+    rest = path.split(LIST, 1)[1].strip(".")
+    return f"tostring({_item(prefixes, prefix)}" + "".join(f"[{literal(k)}]" for k in rest.split(".") if k) + ")"
+
+
+def mv_expansions(prefixes):
+    """The KQL expanding each list (by its key path) into one row per element, before the fields are read."""
+    return "".join(f" | mv-expand {_item(prefixes, x)} = {EVENT}" + "".join(f"[{literal(k)}]" for k in x.split("."))
+                   for x in prefixes)
+
+
+def _paths(det, mapping):
+    used = (*(f for f, _ in det.selector), *((*det.group_by, *((det.distinct,) if det.distinct else ()))
+                                              if det.threshold is not None else ()))
+    return tuple(dict.fromkeys(product_field(mapping, f) for f in used))
+
+
 def column(field):
     """The result column a canonical field is counted by (source-ip -> source_ip)."""
     return field.replace("-", "_")
 
 
-def _match(mapping, field, canonical):
+def _match(mapping, field, canonical, prefixes=()):
     found = tuple(dict.fromkeys(v for c in canonical for v in product_values(mapping, field, c)))
-    path = kql_path(product_field(mapping, field))
+    path = kql_field(product_field(mapping, field), prefixes)
     return f"{path} == {literal(found[0])}" if len(found) == 1 else f"{path} in ({', '.join(map(literal, found))})"
 
 
@@ -562,13 +596,17 @@ def adopted_query(det, mapping, tables):
     """The KQL of a declaration as an alert rule has it (det) in the product's fields and values (mapping), over the
     custom tables its routes fill: its matching events, the fields it counts by as columns named after the canonical
     fields, counted per group (or their distinct values of its distinct field, dcount) and kept where they reach its
-    threshold; the events themselves when it has none."""
+    threshold; the events themselves when it has none. A field inside a list is read from each element of its list
+    (mv_expansions), one row per element."""
+    prefixes = tuple(dict.fromkeys(x for x in map(list_prefix, _paths(det, mapping)) if x))
     head = (f"{tables[0] if len(tables) == 1 else 'union ' + ', '.join(tables)} | extend {EVENT} = "
-            f"parse_json(RawData) | where " + " and ".join(_match(mapping, f, vals) for f, vals in det.selector))
+            f"parse_json(RawData){mv_expansions(prefixes)} | where "
+            + " and ".join(_match(mapping, f, vals, prefixes) for f, vals in det.selector))
     if det.threshold is None:
         return head
     counted = tuple(dict.fromkeys((*det.group_by, *((det.distinct,) if det.distinct else ()))))
-    named = (f" | extend {', '.join(f'{column(f)} = {kql_path(product_field(mapping, f))}' for f in counted)} "
+    read = ", ".join(f"{column(f)} = {kql_field(product_field(mapping, f), prefixes)}" for f in counted)
+    named = (f" | extend {read} "
              f"| where {' and '.join(f'isnotempty({column(f)})' for f in counted)}") if counted else ""
     by = f" by {', '.join(map(column, det.group_by))}" if det.group_by else ""
     total, value = (("value_count", f"dcount({column(det.distinct)})") if det.distinct else ("events", "count()"))
@@ -594,6 +632,9 @@ def adopted_timing(det):
 
 
 def _adopted_why(x, tables):
+    nested = tuple(p for p in _paths(x.det, x.mapping) if p and p.count(LIST) > 1)
+    if not x.why and nested:
+        return f"the product's fields {', '.join(nested)} sit in a list within a list, which this render doesn't read"
     return x.why or (None if tables else (
         f"no table of the workspace holds role {x.det.server_role}'s log files (the Ciam<route>_CL tables of its "
         "routes); container output (ContainerLogV2) isn't searched")) or adopted_timing(x.det)[1]
@@ -606,7 +647,7 @@ def sentinel_rules(m, services):
     files = host_shipments(m, services)
     return tuple((x, b, tuple(dict.fromkeys(table_name(s.route) for s in files
                                             if s.role == x.det.server_role and s.destination.dn == b.dn)))
-                 for x in native_rules(m, services.detections(m)) for b in searched(m, x.det, keeps))
+                 for x in native_rules(m, services.detections(m), lists=True) for b in searched(m, x.det, keeps))
 
 
 def _entities(det):
