@@ -19,6 +19,7 @@ name (PerGB2018) keeping logs as many days as recorded within what a workspace's
 raised to 30, more, or indefinitely, kept 730 with a comment: a table's total retention keeps them longer, up to 4383
 days: log_collection.total_retention).
 """
+import re
 from decimal import Decimal
 
 from opsdir.core.directory import one, rdn_value
@@ -47,6 +48,19 @@ def iso_duration(seconds):
     if seconds % 86400 == 0:
         return f"P{seconds // 86400}D"
     return f"PT{seconds // 3600}H" if seconds % 3600 == 0 else f"PT{seconds // 60}M"
+
+
+_ISO = re.compile(r"^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$")
+
+
+def iso_seconds(text):
+    """An ISO 8601 duration of days, hours, minutes and seconds (PT5M, PT1H30M, P1D) in seconds; None when it isn't
+    one (or is empty)."""
+    found = _ISO.match(text or "")
+    if not found or not any(found.groups()):
+        return None
+    days, hours, minutes, seconds = (int(x or 0) for x in found.groups())
+    return days * 86400 + hours * 3600 + minutes * 60 + seconds
 
 
 def _number(text):

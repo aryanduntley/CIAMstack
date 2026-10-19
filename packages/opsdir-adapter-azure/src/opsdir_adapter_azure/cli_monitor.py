@@ -13,8 +13,8 @@ incident routes). Pure.
   az security alerts-suppression-rule list      Microsoft.Security/alertsSuppressionRules (as the azapi resource the
                                                 render writes: azurerm has none)
   az rest .../Microsoft.SecurityInsights/onboardingStates, alertRules (per workspace, API 2025-09-01): Sentinel turned
-                                                on for the workspace, and its scheduled analytics rules (other kinds
-                                                aren't the render's)
+                                                on for the workspace, and its scheduled and NRT analytics rules (other
+                                                kinds aren't the render's)
 Fields are read in any case: an ARM template says a web test's Frequency, the CLI its frequency.
 """
 import json
@@ -35,6 +35,8 @@ ANALYTICS_RULES = "microsoft.securityinsights/alertrules"
 READ = (METRIC_ALERTS, QUERY_ALERTS, ACTION_GROUPS, WORKSPACES, WEB_TESTS, JOBS, EXEMPTIONS, SUPPRESSION_RULES,
         ONBOARDING, ANALYTICS_RULES)
 _SECURITY_INSIGHTS = "/providers/microsoft.securityinsights/"
+# The analytics rule kinds the render writes, as the azurerm types the readers take (others are Microsoft's built-ins)
+RULE_KINDS = {"scheduled": "azurerm_sentinel_alert_rule_scheduled", "nrt": "azurerm_sentinel_alert_rule_nrt"}
 _RULE_FIELDS = ("alertType", "state", "reason", "comment", "expirationDateUtc", "suppressionAlertsScope")
 
 
@@ -133,9 +135,21 @@ def _incident(config):
         if config else []
 
 
+def _override(found):
+    """A rule's alertDetailsOverride as azurerm's alert_details_override block (none when the rule has none)."""
+    return [{"display_name_format": arm_field(found, "alertDisplayNameFormat"),
+             "description_format": arm_field(found, "alertDescriptionFormat"),
+             "severity_column_name": arm_field(found, "alertSeverityColumnName"),
+             "tactics_column_name": arm_field(found, "alertTacticsColumnName"),
+             "dynamic_property": [{"name": arm_field(p, "alertProperty"), "value": arm_field(p, "value")}
+                                  for p in arm_field(found, "alertDynamicProperties") or [] if isinstance(p, dict)]}] \
+        if found else []
+
+
 def _analytics_rule(r):
-    """A scheduled analytics rule as az rest returns it (properties nested) or flattened: what the render sets (its
-    ATT&CK mapping, event grouping, entity mappings, custom details and incident configuration too: task 592)."""
+    """A scheduled or NRT analytics rule as az rest returns it (properties nested) or flattened: what the render sets
+    (its ATT&CK mapping, event grouping, entity mappings, custom details and incident configuration too: task 592; its
+    alert details override and suppression: milestone 129)."""
     props = arm_field(r, "properties") or {}
     field = lambda name: arm_field(props, name) if arm_field(props, name) is not None else arm_field(r, name)  # noqa: E731
     grouping = field("eventGroupingSettings") or {}
@@ -151,7 +165,9 @@ def _analytics_rule(r):
                                                   for f in arm_field(e, "fieldMappings") or []]}
                                for e in field("entityMappings") or []],
             "custom_details": dict(field("customDetails") or {}),
-            "incident": _incident(field("incidentConfiguration") or {})}
+            "incident": _incident(field("incidentConfiguration") or {}),
+            "alert_details_override": _override(field("alertDetailsOverride") or {}),
+            "suppression_enabled": field("suppressionEnabled"), "suppression_duration": field("suppressionDuration")}
 
 
 def monitor_items(items):
@@ -172,5 +188,5 @@ def monitor_items(items):
             *(("azurerm_sentinel_log_analytics_workspace_onboarding", {"id": o.get("id"),
                                                                        "workspace_id": _workspace_of(o.get("id"))})
               for o in _of(items, ONBOARDING) if _workspace_of(o.get("id"))),
-            *(("azurerm_sentinel_alert_rule_scheduled", _analytics_rule(r)) for r in _of(items, ANALYTICS_RULES)
-              if str(r.get("kind") or "").lower() == "scheduled")]
+            *((RULE_KINDS[str(r.get("kind") or "").lower()], _analytics_rule(r)) for r in _of(items, ANALYTICS_RULES)
+              if str(r.get("kind") or "").lower() in RULE_KINDS)]

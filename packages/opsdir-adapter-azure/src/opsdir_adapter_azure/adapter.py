@@ -22,7 +22,8 @@ from .kubernetes import SECRET_DELIVERY, workload_identity
 from .quotas import PREREQUISITE as QUOTA_PREREQUISITE, QUOTAS
 from .regions import PREREQUISITE, REGIONS
 from .secrets import SECRET_PATTERNS, keyvault_command, keyvault_lookup
-from .sentinel import SEARCH_LANGUAGE, keeps as sentinel_keeps
+from .schema import FRAGMENT
+from .sentinel import SEARCH_LANGUAGE, check_nrt_quota, keeps as sentinel_keeps
 from .terraform import PRIORITIES, TARGETS, cert_forwarding, render, render_notes
 from .rendered_state import rendered_deployments, rendered_states
 
@@ -37,7 +38,7 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                   render_neutral=None, render_env=render,
                   checks=(priority_check(*PRIORITIES), check_boundary, check_regulated_placement, check_server_inputs,
                           check_identity_protection,
-                          check_discovery_cadence),
+                          check_discovery_cadence, check_nrt_quota),
                   ref_schemes=("azkv", "azkv-key", "azkv-cert", "azblob"),
                   secret_schemes={"azkv": keyvault_command}, db_tokens={DB_TOKEN: entra_token_command},
                   renders="Terraform for the target cloud",
@@ -47,7 +48,7 @@ ADAPTER = Adapter(name="azure", kind="provider", applies=applies, required_roles
                               "ciamManagedService": (EXTERNAL_ID, DOMAIN_SERVICES),
                               "ciamDataGeography": tuple(GEOGRAPHIES), "ciamDirectoryEdition": EDITIONS,
                               "ciamSearchLanguage": (SEARCH_LANGUAGE,)},
-                  schema=None,
+                  schema=FRAGMENT,
                   formats=(("terraform/*.tf", "hcl"), ("terraform/checks/check.py", "python"),
                            ("bicep/*/checks/check.py", "python"), ("arm/*/checks/check.py", "python"),
                            ("images/*/Dockerfile", "dockerfile"), ("images/*/check.py", "python"),

@@ -66,6 +66,12 @@ KEPT = {
     "azurerm_storage_object_replication": (
         "ARM sets object replication on the destination account first, in that account's resource group, and the "
         "source's policy takes the id it returns; the destination is an input the record holds no group for"),
+    # Sentinel's near-real-time rules (milestone 129): Bicep 0.48.1's type index gives every stable alertRules version
+    # (2025-09-01 down) the kinds Fusion, MicrosoftSecurityIncidentCreation and Scheduled only; NRT is in its previews
+    # (2025-10-01-preview), though research m109c reads Microsoft's API overview as listing NRT at 2025-09-01
+    "azurerm_sentinel_alert_rule_nrt": (
+        "a near-real-time analytics rule: the stable alertRules API versions in the Bicep type index have no NRT kind "
+        "(only the previews do), so it stays with azurerm until Microsoft's stable types carry it"),
 }
 # Built-in role definitions by name -> their GUIDs: Microsoft's built-in roles page; "built-in roles have the same role
 # ID across clouds" (Azure role definitions page). Research 2612.
@@ -996,10 +1002,27 @@ def _diagnostic(f, cx):
                                                     "enabled": c.value(x.get("enabled", True))} for x in v]})})
 
 
+_OVERRIDE = (("display_name_format", "alertDisplayNameFormat"), ("description_format", "alertDescriptionFormat"),
+             ("severity_column_name", "alertSeverityColumnName"), ("tactics_column_name", "alertTacticsColumnName"))
+
+
+def _alert_details(v, cx):
+    """A rule's alert_details_override block as ARM's alertDetailsOverride: its formats, columns and dynamic
+    properties (alertDynamicProperties: alertProperty, value)."""
+    found = v[0]
+    return {"alertDetailsOverride": {
+        **{arm: cx.value(found[k]) for k, arm in _OVERRIDE if k in found},
+        **({"alertDynamicProperties": [{"alertProperty": cx.value(p["name"]), "value": cx.value(p["value"])}
+                                       for p in found["dynamic_property"]]} if found.get("dynamic_property") else {})}}
+
+
 def _scheduled_rule(f, cx):
     """A Sentinel scheduled analytics rule: kind Scheduled, what azurerm sets (its custom details and incident
-    configuration too: task 592), and the suppression ARM requires (off, the provider's PT5H)."""
+    configuration too: task 592; its alert details override and suppression: milestone 129), and the suppression ARM
+    requires when the rule sets none (off, the provider's PT5H)."""
     return {"kind": "Scheduled", "suppressionEnabled": False, "suppressionDuration": "PT5H", **obj(own(f), cx, {
+        "suppression_enabled": "suppressionEnabled", "suppression_duration": "suppressionDuration",
+        "alert_details_override": Custom(_alert_details),
         "name": None, "log_analytics_workspace_id": None, "display_name": "displayName", "description": "description",
         "severity": "severity", "query": "query", "query_frequency": "queryFrequency", "query_period": "queryPeriod",
         "trigger_operator": "triggerOperator",
