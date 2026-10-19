@@ -45,6 +45,7 @@ from opsdir.domains.observability.retention import INDEFINITE, retention_days
 from opsdir.domains.observability.siem import described, detection_index, detection_mode
 from opsdir.domains.observability.sources import ALL, shipments
 from .adopted import TRIGGER, adopted_notes, native_stanzas, rendered_rules
+from .aws_pull import ADDON, AWS_APP, AWS_INPUTS, aws_pull_notes, input_stanzas
 from .conf import write_conf
 from .es import correlation_settings, es_notes, platform_notes
 from .kubernetes import collector_notes, render_collectors
@@ -210,7 +211,7 @@ def render_notes(m, services):
     rendered = bool(kept_indexes(m) or splunk_detections(m))
     return (*_team_notes(m, found, rendered, rendered_rules(m, services)), *_retention_notes(m),
             *detection_notes(m), *adopted_notes(m, services), *mapping_notes(m, services),
-            *_route_notes(m, found, services))
+            *_route_notes(m, found, services), *aws_pull_notes(m))
 
 
 def _comments(notes):
@@ -220,17 +221,21 @@ def _comments(notes):
 def render(m, services):
     """Adapter render_env: environment m's opsdir_ciam app when it keeps logs in a Splunk index or runs a detection on
     one: indexes.conf, the render notes as comments at its top, and savedsearches.conf when a detection (or an
-    adopting rule: adopted) renders."""
+    adopting rule: adopted) renders; the Splunk Add-on for AWS's inputs.conf (app opsdir_ciam_aws) when a forwarding is
+    pulled from S3 through SQS (aws_pull)."""
     indexes, searches = kept_indexes(m), splunk_detections(m)
     if not indexes and not searches:
         return {}
     collectors = render_collectors(m, splunk_shipments(m, services), services)
     notes = render_notes(m, services)
     stanzas = (*(x for x in (search_stanza(m, s) for s in searches) if x is not None), *native_stanzas(m, services))
+    pulls = input_stanzas(m)
     return {INDEXES: write_conf(header(m, f"Splunk indexes (app {APP})", INI) + _comments(notes),
                                 tuple(index_stanza(b) for b in indexes)),
             **({SAVED_SEARCHES: write_conf(header(m, f"Splunk saved searches: the detections (app {APP})", INI),
                                            stanzas)} if stanzas else {}),
+            **({AWS_INPUTS: write_conf(header(m, f"{ADDON} inputs: CloudWatch Logs pulled from S3 through SQS (app "
+                                              f"{AWS_APP})", INI), pulls)} if pulls else {}),
             **collectors}
 
 

@@ -32,16 +32,22 @@ What a person does is a render note: the SIEM team puts the credential in the se
 indexer acknowledgment for the HEC token Firehose uses); for Splunk Enterprise, the load balancer Firehose needs in
 front of the HEC. A forwarding the render can't express (no intake URL, no credential or backup location, a
 credential that isn't an aws-sm:// reference, an index no adapter here keeps as Splunk or Elastic, a Splunk Cloud
-stack with no documented Firehose endpoint and none recorded, a log group someone else keeps) is a blocker note
-instead.
+stack with no documented Firehose endpoint and none recorded, a log group someone else keeps, a delivery the estate
+setting names that isn't one) is a blocker note instead.
+
+That push is the default delivery. The estate setting aws-siem-delivery (DELIVERY) chooses per log destination or
+SIEM index, and per environment, the other: s3-sqs, pulled by the Splunk Add-on for AWS from S3 through an SQS queue
+(siem_pull renders it; this module leaves those forwardings to it).
 """
 import json
 import re
 from urllib.parse import urlsplit
 
+from opsdir.core.contract import Setting
 from opsdir.core.directory import one, rdn_value
 from opsdir.core.environment import one_role
 from opsdir.core.notes import note, note_comment
+from opsdir.core.settings import setting_mapping
 from opsdir.domains.observability.realized import keeper_of
 from opsdir.domains.observability.siem import forwardings, is_siem
 from opsdir_format_terraform.hcl import Block, comment, from_entry, ref, tf_block, tf_name
@@ -61,23 +67,37 @@ _HEC_HOST = re.compile(r"^http-inputs-(?P<stack>[a-z0-9][a-z0-9-]*)\.splunkcloud
 FIREHOSE_HOST, FIREHOSE_PORT = "http-inputs-firehose-{}.splunkcloud.com", 443
 DERIVED, AS_RECORDED, ENTERPRISE, UNDOCUMENTED = "derived", "as-recorded", "enterprise", "undocumented"
 STREAM_INTAKE = "stream-intake"         # the index's ciamStreamIntakeUrl, as recorded
+# How a forwarding is delivered (user decision 2026-10-19, note 3538; decision 3301 keeps Firehose push the default):
+# pushed by Firehose to the index's intake, or pulled by the Splunk Add-on for AWS from S3 through an SQS queue
+# (siem_pull: where replay matters, research m109b section 1)
+FIREHOSE, PULL = "firehose", "s3-sqs"
+DELIVERIES = (FIREHOSE, PULL)
+DELIVERY = Setting("aws-siem-delivery", "string", None,
+                   "How CloudWatch log groups forwarded on to a SIEM index get there, where not by Firehose pushing "
+                   f"to the index's intake (the default): comma-separated <role>=<{'|'.join(DELIVERIES)}>, the role "
+                   "a log destination's or a SIEM index's binding role (the log destination's first); "
+                   "<cloud>/<environment>:<role> for one environment (before the estate's). s3-sqs: Firehose "
+                   "delivers to S3, whose object notifications feed an SQS queue the Splunk Add-on for AWS pulls "
+                   "from (replay; no intake credential)")
 
 
-def _policy(statements):
+def iam_policy(statements):
+    """An IAM policy document of statements, as compact JSON text."""
     return json.dumps({"Version": "2012-10-17", "Statement": statements}, separators=(",", ":"))
 
 
-def _trust(service, condition=None):
-    return _policy([{"Effect": "Allow", "Principal": {"Service": service}, "Action": "sts:AssumeRole",
-                     **({"Condition": condition} if condition else {})}])
+def service_trust(service, condition=None):
+    """The trust policy letting an AWS service assume a role (under a condition when given)."""
+    return iam_policy([{"Effect": "Allow", "Principal": {"Service": service}, "Action": "sts:AssumeRole",
+                        **({"Condition": condition} if condition else {})}])
 
 
-def _name(m, b):
+def stream_name(m, b):
     """The stream's name: ciam-<env>-<destination>-siem in Firehose's characters, at most 64."""
     return re.sub(r"[^A-Za-z0-9_.-]", "-", f"ciam-{rdn_value(m.env)}-{rdn_value(b)}-siem")[:64]
 
 
-def _bucket(location):
+def s3_location(location):
     """(bucket, prefix) of an s3:// location, or None."""
     if not (location or "").startswith("s3://") or len(location) <= 5:
         return None
@@ -135,7 +155,10 @@ def _intake(to):
 
 def lacking(m, b, to, keeper):
     """What a forwarding of log destination b to index to (kept by adapter keeper) lacks to be rendered, in words."""
+    chosen = delivery(m, b, to)
     return tuple(why for why, missing in (
+        (f"a delivery aws-siem-delivery knows ({' or '.join(DELIVERIES)}; it says `{chosen}`)",
+         chosen not in DELIVERIES),
         ("its log group isn't rendered here (someone else keeps it, or its ciamProviderRef isn't a log group ARN)",
          keeper_of(m, b) is not None or group_name(b) is None),
         (f"an index this environment's Splunk or Elastic adapter keeps (it's {keeper or 'kept by none'})",
@@ -149,7 +172,7 @@ def lacking(m, b, to, keeper):
         (f"a credential on {rdn_value(to)} (ciamCredentialRole naming an aws-sm:// secret reference)",
          _secret(m, to) is None),
         (f"where undeliverable events go (ciamStorageRef s3://bucket[/prefix] on {rdn_value(b)})",
-         _bucket(one(b, "ciamStorageRef")) is None)) if missing)
+         s3_location(one(b, "ciamStorageRef")) is None)) if missing)
 
 
 def _host(to):
@@ -178,51 +201,96 @@ def _destination(m, to, keeper, role, backup, secret):
         ("request_configuration", Block((("content_encoding", "GZIP"),))))))
 
 
-def _forward(m, b, to, keeper):
+def bucket_statement(m, bucket, sid):
+    """The IAM statement letting Firehose write to an S3 bucket (AWS's Firehose S3 permissions: research m109b)."""
+    return {"Sid": sid, "Effect": "Allow",
+            "Action": ["s3:AbortMultipartUpload", "s3:GetBucketLocation", "s3:GetObject", "s3:ListBucket",
+                       "s3:ListBucketMultipartUploads", "s3:PutObject"],
+            "Resource": [f"arn:{partition(m)}:s3:::{bucket}", f"arn:{partition(m)}:s3:::{bucket}/*"]}
+
+
+def subscription(m, b):
+    """HCL subscribing log destination b's log group to the delivery stream rendered for it (every event: an empty
+    pattern), through a role CloudWatch Logs assumes: firehose:PutRecord and PutRecordBatch on the stream, its trust
+    limited to this account's log groups when the cloud records its account and region."""
     n, group = tf_name(rdn_value(b)), f"{LOG_GROUP}.{tf_name(rdn_value(b))}"
-    secret_binding = _secret(m, to)
-    secret_role = one(secret_binding, "ciamBindingRole")
-    bucket, prefix = _bucket(one(b, "ciamStorageRef"))
-    key = one_role(m, one(secret_binding, "ciamEncryptedByRole") or "")
-    key_arn = (one(key, "ciamRefUri") or "").split("://", 1)[-1] if key is not None else None
     region, account = one(m.cloud, "ciamRegion"), account_id(m)
     source = ({"ArnLike": {"aws:SourceArn": f"arn:{partition(m)}:logs:{region}:{account}:*"}}
               if region and account else None)
-    stream_arn = f"${{{STREAM}.{n}.arn}}"
-    firehose = [
-        {"Sid": "ReadIntakeCredential", "Effect": "Allow", "Action": ["secretsmanager:GetSecretValue"],
-         "Resource": [f"${{data.aws_secretsmanager_secret.{tf_name(secret_role)}.arn}}"]},
-        *([{"Sid": "DecryptIntakeCredential", "Effect": "Allow", "Action": ["kms:Decrypt"], "Resource": [key_arn]}]
-          if key_arn else []),
-        {"Sid": "KeepUndelivered", "Effect": "Allow",
-         "Action": ["s3:AbortMultipartUpload", "s3:GetBucketLocation", "s3:GetObject", "s3:ListBucket",
-                    "s3:ListBucketMultipartUploads", "s3:PutObject"],
-         "Resource": [f"arn:{partition(m)}:s3:::{bucket}", f"arn:{partition(m)}:s3:::{bucket}/*"]}]
     return (
-        tf_block("resource", ["aws_iam_role", f"{n}_firehose"], [
-            ("name", f"{_name(m, b)}-firehose"[:64]), ("assume_role_policy", _trust("firehose.amazonaws.com"))]),
-        tf_block("resource", ["aws_iam_role_policy", f"{n}_firehose"], [
-            ("name", "siem-delivery"), ("role", ref(f"aws_iam_role.{n}_firehose.id")), ("policy", _policy(firehose))]),
-        tf_block("resource", [STREAM, n], [
-            ("name", _name(m, b)), ("destination", "splunk" if keeper == SPLUNK else "http_endpoint"),
-            _destination(m, to, keeper, f"{n}_firehose", (bucket, prefix), secret_role),
-            ("tags", {"BindingRole": one(b, "ciamBindingRole"), "ForwardsTo": one(b, "ciamForwardsToRole")})]),
         tf_block("resource", ["aws_iam_role", f"{n}_to_firehose"], [
-            ("name", f"{_name(m, b)}-logs"[:64]), ("assume_role_policy", _trust("logs.amazonaws.com", source))]),
+            ("name", f"{stream_name(m, b)}-logs"[:64]),
+            ("assume_role_policy", service_trust("logs.amazonaws.com", source))]),
         tf_block("resource", ["aws_iam_role_policy", f"{n}_to_firehose"], [
             ("name", "siem-subscription"), ("role", ref(f"aws_iam_role.{n}_to_firehose.id")),
-            ("policy", _policy([{"Effect": "Allow", "Action": ["firehose:PutRecord", "firehose:PutRecordBatch"],
-                                 "Resource": [stream_arn]}]))]),
+            ("policy", iam_policy([{"Effect": "Allow", "Action": ["firehose:PutRecord", "firehose:PutRecordBatch"],
+                                    "Resource": [f"${{{STREAM}.{n}.arn}}"]}]))]),
         tf_block("resource", [FILTER, n], [
             ("name", f"to-{one(b, 'ciamForwardsToRole')}"), ("log_group_name", ref(f"{group}.name")),
             ("filter_pattern", ""), ("destination_arn", ref(f"{STREAM}.{n}.arn")),
             ("role_arn", ref(f"aws_iam_role.{n}_to_firehose.arn"))]))
 
 
-def _ours(m, services):
-    """(log destination, SIEM index, keeper) of environment m's forwardings to a SIEM index."""
+def _forward(m, b, to, keeper):
+    n = tf_name(rdn_value(b))
+    secret_binding = _secret(m, to)
+    secret_role = one(secret_binding, "ciamBindingRole")
+    bucket, prefix = s3_location(one(b, "ciamStorageRef"))
+    key = one_role(m, one(secret_binding, "ciamEncryptedByRole") or "")
+    key_arn = (one(key, "ciamRefUri") or "").split("://", 1)[-1] if key is not None else None
+    firehose = [
+        {"Sid": "ReadIntakeCredential", "Effect": "Allow", "Action": ["secretsmanager:GetSecretValue"],
+         "Resource": [f"${{data.aws_secretsmanager_secret.{tf_name(secret_role)}.arn}}"]},
+        *([{"Sid": "DecryptIntakeCredential", "Effect": "Allow", "Action": ["kms:Decrypt"], "Resource": [key_arn]}]
+          if key_arn else []),
+        bucket_statement(m, bucket, "KeepUndelivered")]
+    return (
+        tf_block("resource", ["aws_iam_role", f"{n}_firehose"], [
+            ("name", f"{stream_name(m, b)}-firehose"[:64]),
+            ("assume_role_policy", service_trust("firehose.amazonaws.com"))]),
+        tf_block("resource", ["aws_iam_role_policy", f"{n}_firehose"], [
+            ("name", "siem-delivery"), ("role", ref(f"aws_iam_role.{n}_firehose.id")),
+            ("policy", iam_policy(firehose))]),
+        tf_block("resource", [STREAM, n], [
+            ("name", stream_name(m, b)), ("destination", "splunk" if keeper == SPLUNK else "http_endpoint"),
+            _destination(m, to, keeper, f"{n}_firehose", (bucket, prefix), secret_role),
+            ("tags", stream_tags(b))]),
+        *subscription(m, b))
+
+
+def stream_tags(b):
+    """The tags of what a forwarding renders: its log destination's binding role and the index's role."""
+    return {"BindingRole": one(b, "ciamBindingRole"), "ForwardsTo": one(b, "ciamForwardsToRole")}
+
+
+def chosen_for(m, setting, b, to):
+    """What a mapping setting (<role>=<value>, ...) gives the forwarding of log destination b to index to: the value
+    of the first of <environment label>:<b's role>, <environment label>:<to's role>, b's role, to's role it maps
+    (an environment's own entry before the estate's), or None."""
+    pairs, _ = setting_mapping(m.d, setting)
+    found = {k: v for k, v in reversed(pairs)}      # the first a role is mapped to, as setting_mapping reads them
+    roles = (one(b, "ciamBindingRole"), one(to, "ciamBindingRole"))
+    keys = (*(f"{m.label}:{r}" for r in roles if r), *(r for r in roles if r))
+    return next((found[k] for k in keys if k in found), None)
+
+
+def delivery(m, b, to):
+    """How the forwarding of log destination b to index to is delivered: what aws-siem-delivery maps it to (FIREHOSE,
+    PULL, or the unknown text it says), FIREHOSE when it maps nothing."""
+    return chosen_for(m, DELIVERY, b, to) or FIREHOSE
+
+
+def forwarded(m, services):
+    """(log destination, SIEM index, keeper) of environment m's forwardings to a SIEM index, whatever their
+    delivery."""
     return tuple((b, to, services.siem_keeper(m, to) if services else None) for b, to in forwardings(m)
                  if to is not None and is_siem(to) and one(b, "ciamDestinationKind") == "log-group")
+
+
+def _ours(m, services):
+    """(log destination, SIEM index, keeper) of environment m's forwardings this module renders: all but those
+    pulled from S3 (siem_pull)."""
+    return tuple(x for x in forwarded(m, services) if delivery(m, x[0], x[1]) != PULL)
 
 
 def render_siem_forwarding(m, services):
@@ -291,3 +359,13 @@ def siem_forwarding_notes(m, services):
                     "established (AWS documents Firehose there with no differences)",
                     ("Confirm with AWS if the intake must be reached over FIPS-validated endpoints",), b.dn, m.label),)
               if govcloud(m) else ()))))
+
+
+def setting_notes(m, services, settings):
+    """A note per malformed part of the estate settings (mapping Settings) that choose how environment m's
+    forwardings are delivered, when it forwards any: the part isn't read."""
+    if not forwarded(m, services):
+        return ()
+    return tuple(note(AREA, "note", f"setting {s.name}", f"{problem}: that part isn't read",
+                      (f"Correct the estate setting {s.name} (comma-separated <role>=<value>)",), None, m.label)
+                 for s in settings for problem in setting_mapping(m.d, s)[1])

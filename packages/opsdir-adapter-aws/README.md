@@ -268,6 +268,34 @@ An index that records `ciamStreamIntakeUrl` (task 595: where it takes a delivery
 | Any other host (Splunk Enterprise) | The intake URL without its path. An action lists what Firehose needs in front of the HEC: a Classic or Application Load Balancer, HTTPS with a trusted CA-signed certificate for that host, and duration-based sticky sessions; the load balancer's URL is recorded as `ciamStreamIntakeUrl`, so collectors keep sending to the HEC at `ciamIntakeUrl` |
 
 A recorded `ciamStreamIntakeUrl` on a host outside Splunk Cloud gets the same Splunk Enterprise action (confirm it names such a load balancer). No credential value is in the render or the Terraform state. A render note asks the SIEM team to put it in the secret (for Splunk, a HEC token with indexer acknowledgment on). A forwarding that lacks an intake URL, a credential, a backup location, a Splunk Cloud Firehose endpoint (documented or recorded), or an index kept by Splunk or Elastic is a blocker note naming what is missing. CloudFormation deploys the stream (`AWS::KinesisFirehose::DeliveryStream`, no `HECToken`) and the subscription natively. Checked with `terraform validate` (hashicorp/aws 6.69.1) and cfn-lint 1.57.2 (us-east-1, us-gov-west-1). In GovCloud, AWS documents Firehose with no differences; whether Firehose itself reaches the secret and the intake through FIPS endpoints isn't established, and a note says so.
+
+#### Pulled from S3 through SQS instead (task 129d, `siem_pull.py`)
+
+Firehose pushing to the index stays the default (decision 3301). Where replay matters (research m109b section 1: "S3/SQS where replay and role-based collection dominate"; user decision 2026-10-19, note 3538), the estate setting `aws-siem-delivery` chooses the other delivery, `s3-sqs`: Firehose writes the log group's events to S3, the bucket's object notifications feed an SQS queue, and the Splunk Add-on for AWS pulls from the queue as a read-only role. No intake URL or credential is needed. The setting is comma-separated `<role>=firehose|s3-sqs`. The role is a log destination's or a SIEM index's binding role; the log destination's entry wins. `<cloud>/<environment>:<role>` applies to one environment and wins over the estate's entry. The estate setting `aws-siem-pull-principal` (`<role>=<IAM principal ARN>`, same keys) names who the add-on runs as: its EC2 instance role, or the role or user the Splunk team configures in it. The reader role trusts only that principal.
+
+| Rendered | What it is |
+|---|---|
+| `aws_cloudwatch_log_subscription_filter` + role | As for the push |
+| `aws_kinesis_firehose_delivery_stream` | `extended_s3` to the log destination's `ciamStorageRef` bucket, under `<prefix>/<role>/`. Failures go under `<prefix>/<role>-failed/`, outside what the queue hears of. The envelope is decompressed as for the push, written one per line (`AppendDelimiterToRecord`), and encrypted with the bucket's key when the record names one. The research says CloudWatch Logs needs this S3 hop: notifications alone don't export logs |
+| `aws_iam_role` + policy (Firehose) | The bucket (AWS's Firehose S3 actions), plus `kms:Decrypt`/`kms:GenerateDataKey` on the bucket's key |
+| `aws_sqs_queue` ×2 | The queue and its dead-letter queue. Both are standard queues (the add-on takes no FIFO queue), with SQS-managed encryption and 14 days' retention. The queue's visibility timeout is 300 s (the add-on asks for 5 minutes or more), and its redrive policy moves a message received 5 times to the dead-letter queue (the add-on asks for one) |
+| `aws_sqs_queue_policy` | `s3.amazonaws.com` may `sqs:SendMessage`, for this bucket (`aws:SourceArn`) and account (`aws:SourceAccount`, when recorded) only |
+| `aws_s3_bucket_notification` | One per bucket: `s3:ObjectCreated:*` under each pulled forwarding's prefix, one queue block each |
+| `aws_iam_role` + policy (reader) | `<queue>-reader`: receive, delete and change visibility of the queue's messages; `GetQueueAttributes`/`GetQueueUrl` on both queues (the add-on checks the dead-letter queue); `s3:GetObject`/`GetObjectVersion` under the prefix; `kms:Decrypt` on the bucket's key when the record names one |
+
+The bucket is the one the record names. If it is an object store the stack keeps (a `ciamObjectStore` whose `ciamStorageRef` names it, rendered with its encryption above), the notification refers to that resource and CloudFormation writes it into the bucket's `NotificationConfiguration`. Any other bucket is referred to by name. Its notification then stays Terraform beside the template, because CloudFormation can only write notifications on a bucket its template holds. An action warns that the resource is the bucket's whole notification configuration. The key comes from the object store's `ciamEncryptedByRole`; without one, a note says the bucket's default encryption applies and no KMS permission is rendered.
+
+The permissions follow the add-on's SQS-based S3 documentation (Splunk Add-on for AWS 8.3.0, read 2026-10-18), with least privilege. The add-on's sample policy also lists `sqs:SendMessage` and `sqs:ListQueues` on every resource; these aren't granted.
+
+Actions for the owners:
+- **The Splunk team:** install the add-on, add an IAM role entry named `<queue>-reader` with the role's ARN, use it from an account entry that authenticates as the principal, and create the SQS-based S3 input. The Splunk adapter renders that input.
+- **The bucket's keeper:** keep the bucket's other notifications when the stack doesn't keep the bucket.
+- **In GovCloud:** the add-on's S3 Host Name field takes the GovCloud S3 endpoint, as Splunk documents.
+
+Notes cover the dead-letter queue (objects stay in S3 for replay) and malformed setting parts. A pulled forwarding that lacks a log group rendered here, an index the Splunk adapter keeps, a `ciamStorageRef` bucket, or a principal is a blocker. A delivery value other than `firehose` or `s3-sqs` is a blocker on the push side.
+
+The render was checked with `terraform validate` (hashicorp/aws 6.69.1) and cfn-lint 1.57.2 (us-east-1, us-gov-west-1), for both a kept bucket and a named one, on 2026-10-18.
+
 ## Reading an environment back from Terraform state
 
 ```bash
@@ -1051,12 +1079,26 @@ Configuration management (`opsdir-adapter-ansible`) reads `aws-sm://` references
 
 Values of `ciamCloudProvider` (`aws`), `ciamCloudEnvironment` (`public`), `ciamManagedService` (`cognito-user-pool`, `aws-managed-ad`) and `ciamDirectoryEdition` (`standard`, `enterprise`) are validated against this adapter. The store refuses AWS credential forms anywhere in the record: access key IDs (`AKIA…`, `ASIA…`) and secret access keys (`aws_secret_access_key = …`).
 
-It adds no required roles or schema of its own (its planner checks are listed above); the environment's product adapters say which roles it must bind.
+It adds no required roles or schema of its own (its planner checks are listed above); the environment's product adapters say which roles it must bind. It declares three estate settings:
+- `aws-canary-runtime`: the canaries' runtime.
+- `aws-siem-delivery`: Firehose push or the S3/SQS pull, per log destination or SIEM index.
+- `aws-siem-pull-principal`: who the Splunk Add-on for AWS runs as.
 
 ## Known limits
 
 - **Private-CA trust in canaries is verified locally, not live.** The probes' CA trust ran against openssl-made root and intermediate-only private CAs over HTTPS and LDAPS on Python 3.12 and 3.14 (task 540); a canary on a live CloudWatch Synthetics runtime trusting a recorded CA stays with 7.2. A CA the record holds is always given to the check (a public root recorded there is harmless to add); the record says nothing of a CA it doesn't hold, so such a service's certificate is left to the runtime's own trust store.
 - **Not yet run against a live account.** The Terraform and the importers follow the `hashicorp/aws` 6.x schema (the showcase's renders pass `terraform validate` against 6.69) and the AWS CLI's output shapes; `terraform plan` and an import from a real account are part of the testing plan (milestone 7.2, which starts on AWS).
+- **The S3/SQS pull for a SIEM (`siem_pull.py`) is unproven live.** It passes `terraform validate` and cfn-lint only. Not yet run on a live account:
+  - S3 accepting the notification to an SSE-SQS queue
+  - Firehose's `AppendDelimiterToRecord` on decompressed CloudWatch envelopes
+  - the add-on reading the objects (CustomLogs; see the Splunk adapter)
+  - duplicate handling and replay.
+
+  Other limits:
+  - The research doesn't establish whether the add-on, or Firehose writing to S3, uses FIPS endpoints in GovCloud. Splunk documents only the GovCloud S3 host-name override.
+  - The principal setting is per role name across the estate unless an environment's own `<cloud>/<environment>:<role>` entry is given.
+  - The objects' retention is the bucket keeper's: no lifecycle rule is rendered for the prefix.
+  - The queue URL and role ARN the Splunk adapter writes follow the names here. A test pins both packages to the same names.
 - **No China partition.** China regions (`cn-*`, partition `aws-cn`) aren't recognized: their ARNs would be written with `aws`. GovCloud (US) is recognized by its region (above).
 - **Port ranges** aren't recorded (`ciamPort` holds single ports): the importers name them; the renderer writes single ports only.
 - **Services without an edge policy are TCP network load balancers.** With one, the renderer writes an application load balancer, its web ACL and Shield protection (see Edge); reading their listeners, TLS policies, certificates, web ACLs and Shield back comes with milestone 4.8's importers. An ALB's addresses are AWS's: a recorded frontend address isn't kept.
