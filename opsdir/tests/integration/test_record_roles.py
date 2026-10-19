@@ -142,7 +142,8 @@ def test_the_runtime_writes_governed_entries(cluster):
     "update opsdir.schema_migration set name = name",
     "update opsdir.entry_history set dn = dn",
     "delete from opsdir.entry_history",
-    "truncate opsdir.entry_history"])
+    "truncate opsdir.entry_history",
+    "insert into opsdir.entry_history (dn, op, change_id) values ('dc=ciam-ops', 'update', 'CHG-1')"])
 def test_the_runtime_cant_change_the_schema_the_patterns_or_the_history(cluster, statement):
     with db.connect(cluster.socket_dsn + ROLES.runtime) as c:
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
@@ -156,6 +157,8 @@ def test_nobody_can_change_the_history(cluster):
             c.execute("update opsdir.entry_history set dn = dn")
         with pytest.raises(psycopg.errors.RaiseException, match="the history is append-only"):
             c.execute("delete from opsdir.entry_history")
+        with pytest.raises(psycopg.errors.RaiseException, match="history rows are written only by the store"):
+            c.execute("insert into opsdir.entry_history (dn, op, change_id) values ('dc=ciam-ops', 'add', 'CHG-1')")
 
 
 def test_upgrade_keeps_the_runtimes_grants(cluster):

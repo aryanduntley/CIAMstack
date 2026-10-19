@@ -4,9 +4,9 @@
 # Secrets are resolved at run time from references; no secret value is stored in this file.
 # The TLS keystore (binding role ds-tls-keystore) is materialized by the secrets agent before this runs.
 set -euo pipefail
-DEPLOYMENT_ID="$(az keyvault secret show --vault-name 'kv-ciam-prod' --name 'ds-deployment-id' --query value -o tsv)"
-DEPLOYMENT_ID_PASSWORD="$(az keyvault secret show --vault-name 'kv-ciam-prod' --name 'ds-deployment-password' --query value -o tsv)"
-ROOT_PASSWORD="$(az keyvault secret show --vault-name 'kv-ciam-prod' --name 'ds-root-password' --query value -o tsv)"
+DEPLOYMENT_ID="$(az keyvault secret show --vault-name kv-ciam-prod --name ds-deployment-id --query value -o tsv)"
+DEPLOYMENT_ID_PASSWORD="$(az keyvault secret show --vault-name kv-ciam-prod --name ds-deployment-password --query value -o tsv)"
+ROOT_PASSWORD="$(az keyvault secret show --vault-name kv-ciam-prod --name ds-root-password --query value -o tsv)"
 
 ./setup \
   --serverId ds-1 \

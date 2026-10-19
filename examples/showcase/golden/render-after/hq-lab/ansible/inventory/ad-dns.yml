@@ -14,4 +14,4 @@ all:
           ansible_psrp_cert_validation: validate
           ansible_user: svc-opsdir
           ansible_password: >-
-            {{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID='ciam-lab' -p Query='Safe=CIAM-Lab;Object=dc-hq' -o Password") }}
+            {{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID=ciam-lab -p 'Query=Safe=CIAM-Lab;Object=dc-hq' -o Password") }}

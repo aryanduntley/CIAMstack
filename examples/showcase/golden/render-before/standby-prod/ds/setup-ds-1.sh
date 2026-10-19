@@ -4,9 +4,9 @@
 # Secrets are resolved at run time from references; no secret value is stored in this file.
 # The TLS keystore (binding role ds-tls-keystore) is materialized by the secrets agent before this runs.
 set -euo pipefail
-DEPLOYMENT_ID="$(gcloud secrets versions access latest --secret='ds-deployment-id' --project='example-aero-ciam-standby')"
-DEPLOYMENT_ID_PASSWORD="$(gcloud secrets versions access latest --secret='ds-deployment-password' --project='example-aero-ciam-standby')"
-ROOT_PASSWORD="$(gcloud secrets versions access latest --secret='ds-root-password' --project='example-aero-ciam-standby')"
+DEPLOYMENT_ID="$(gcloud secrets versions access latest --secret=ds-deployment-id --project=example-aero-ciam-standby)"
+DEPLOYMENT_ID_PASSWORD="$(gcloud secrets versions access latest --secret=ds-deployment-password --project=example-aero-ciam-standby)"
+ROOT_PASSWORD="$(gcloud secrets versions access latest --secret=ds-root-password --project=example-aero-ciam-standby)"
 
 ./setup \
   --serverId ds-1 \

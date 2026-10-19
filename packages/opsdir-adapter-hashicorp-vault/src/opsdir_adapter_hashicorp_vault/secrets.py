@@ -3,6 +3,7 @@ refuses."""
 from opsdir.core.contract import SecretPattern
 from opsdir.core.directory import one
 from opsdir.core.interchange import jinja
+from opsdir.core.shell import command
 
 # Vault token forms the store refuses (SPEC R4): service, batch and recovery tokens
 SECRET_PATTERNS = (
@@ -12,7 +13,8 @@ SECRET_PATTERNS = (
 
 
 def kv_command(rest):
-    return f"vault kv get -field=value '{rest}'"
+    """The shell command printing a vault:// secret's `value` field, the reference one argument whatever it holds."""
+    return command("vault", "kv", "get", "-field=value", rest)
 
 
 def kv_lookup(m, store, rest):

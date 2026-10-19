@@ -669,7 +669,7 @@ In production the record runs under three roles, none of them a tier among opera
 
 `init`, `upgrade` and `workspace create` run with `OPSDIR_DB_OWNER` and `OPSDIR_DB_RUNTIME` set. They then build everything as the owner and re-apply the runtime's grants on every object each time, so the grants survive `init` and the views every upgrade re-creates.
 
-The history is append-only for everyone: the store refuses changing or removing a history row, whoever connects. Only `init`, which rebuilds the record, drops it.
+The history is append-only for everyone: the store refuses changing or removing a history row, whoever connects, and only the store adds rows, when an entry is written (setting who and when itself): a row added any other way is refused. Only `init`, which rebuilds the record, drops it.
 
 Client certificates and Kerberos are plain libpq settings on a self-managed server (`sslcert`/`sslkey`; a Kerberos ticket). RDS supports Kerberos through AWS Managed Microsoft AD. Neither managed service documents client-certificate sign-in.
 
@@ -717,6 +717,7 @@ What the store enforces, whoever connects and however (the CLI, a script, `psql`
 - **Once people are recorded** (`ou=people`), only a recorded person approves. With none recorded (a single-team install, the showcase), any login may approve, but never its own change.
 - **Risk-tiered approval:** the `approvals-required` setting says how many distinct people approve a change, per environment: `opsdir setting approvals-required "*=1, collins-aws/prod=2" --change …` (`*` for every environment not listed; unset: one). Each approval is recorded once per person (`ciamApprovals`), never the author's. A change stays proposed until the environments of the records it proposes have their approvals (`opsdir change approve` says how many are still needed), and its approvals start over if what it proposes changes before then. Every write under a change also needs its own environment's number, and, once grants exist, that many of the approvers must hold `approve` there. The schema owner stays the break-glass.
 - **Applied only after approved:** a change goes proposed → approved → applied, or rejected.
+- **Applied only to what was approved:** a proposed change's records apply only to the entries as they were when proposed. The store notes each touched entry's last history row on the change (`ciamChangeBase`, never set by the writer), and refuses applying the records to an entry another change wrote since: propose them again.
 - **The initial load only by the owner:** writes under `BOOTSTRAP` (`opsdir load`) are the schema owner's. Every other login writes under an approved change.
 - **History records the login** that made each write (`opsdir history` shows it as `by`; writes through the HTTP API also show the API `client` and the identity provider-mapped `teams` the person held). The history is append-only.
 

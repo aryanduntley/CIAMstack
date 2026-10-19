@@ -7,6 +7,7 @@ gcp-sm://projects/<project>/locations/<location>/secrets/<name> (a regional one)
 import re
 
 from opsdir.core.contract import SecretPattern
+from opsdir.core.shell import command
 
 # Google Cloud credential forms the store refuses (SPEC R4)
 SECRET_PATTERNS = (
@@ -19,6 +20,8 @@ _NAME = re.compile(r"^projects/([^/]+)/(?:locations/([^/]+)/)?secrets/([^/]+)$")
 
 
 def secret_manager_command(rest):
+    """The shell command printing a gcp-sm:// secret's latest version, each option (with its part of the reference)
+    one argument whatever it holds."""
     project, location, name = _NAME.match(rest).groups()
-    where = f" --location='{location}'" if location else ""
-    return f"gcloud secrets versions access latest --secret='{name}' --project='{project}'{where}"
+    return command("gcloud", "secrets", "versions", "access", "latest", f"--secret={name}", f"--project={project}",
+                   *((f"--location={location}",) if location else ()))

@@ -16,7 +16,7 @@ OWNER_ENV, RUNTIME_ENV = "OPSDIR_DB_OWNER", "OPSDIR_DB_RUNTIME"
 # Tables the runtime only reads: written by upgrade alone (the migrations applied, the secret patterns the store
 # refuses, the vocabulary and the reference schemes the installed parts declare)
 READ_ONLY = ("schema_migration", "secret_pattern", "vocabulary", "ref_scheme")
-HISTORY = "entry_history"            # the runtime adds to it (through the write trigger) and reads it; never changes it
+HISTORY = "entry_history"            # the runtime only reads it: the write trigger adds rows with the owner's rights
 HBA = {"password": "scram-sha-256", "certificate": "cert", "kerberos": "gss include_realm=0", "peer": "peer"}
 
 
@@ -45,15 +45,16 @@ def owner_sql(roles):
 
 def runtime_grants(roles, schema="opsdir"):
     """The statements giving the runtime login its rights on the schema's objects (none without one): use of the
-    schema, rows of every table, only reading the tables upgrade alone writes, only adding to and reading the
-    history, its sequences and its functions. Idempotent: run at the end of every init and upgrade."""
+    schema, rows of every table, only reading the tables upgrade alone writes and the history (the store's write
+    trigger adds history rows with the owner's rights: migration 0016), its sequences and its functions. Idempotent:
+    run at the end of every init and upgrade."""
     if not roles or not roles.runtime:
         return ()
     r, s = roles.runtime, schema
     return (f"grant usage on schema {s} to {r}",
             f"grant select, insert, update, delete on all tables in schema {s} to {r}",
             f"revoke insert, update, delete on {', '.join(f'{s}.{t}' for t in READ_ONLY)} from {r}",
-            f"revoke update, delete, truncate on {s}.{HISTORY} from {r}",
+            f"revoke insert, update, delete, truncate on {s}.{HISTORY} from {r}",
             f"grant usage, select on all sequences in schema {s} to {r}",
             f"grant execute on all functions in schema {s} to {r}")
 

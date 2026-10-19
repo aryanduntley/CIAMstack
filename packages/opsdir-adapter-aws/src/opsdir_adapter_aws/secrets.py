@@ -2,6 +2,7 @@
 credential forms the store refuses."""
 from opsdir.core.contract import SecretPattern
 from opsdir.core.interchange import jinja
+from opsdir.core.shell import command
 
 # AWS credential forms the store refuses (SPEC R4)
 SECRET_PATTERNS = (
@@ -13,7 +14,9 @@ SECRET_PATTERNS = (
 
 
 def secretsmanager_command(rest):
-    return f"aws secretsmanager get-secret-value --secret-id '{rest}' --query SecretString --output text"
+    """The shell command printing an aws-sm:// secret's string, the reference one argument whatever it holds."""
+    return command("aws", "secretsmanager", "get-secret-value", "--secret-id", rest, "--query", "SecretString",
+                   "--output", "text")
 
 
 def secretsmanager_lookup(m, store, rest):

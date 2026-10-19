@@ -105,11 +105,6 @@ def evaluation_script(m, model, cloud):
         'OUT="${1:?usage: evaluate.sh <export folder for the environment>}"', *lines)) + "\n"
 
 
-def quoted(*words):
-    """A shell command from its words, each quoted where it needs to be."""
-    return " ".join(shlex.quote(str(w)) for w in words)
-
-
 
 def evaluation_files(m, model, cloud):
     """{access/evaluate.sh: script} for a renderer's output, or {} when there is nothing to ask."""

@@ -109,6 +109,52 @@ Then point `OPSDIR_DSN` at the new database and run `opsdir posture`. The restor
 
 The dump holds the whole record: owners, configuration, history. It holds no secret values, because the record never does, but treat it as the company's configuration data: keep it encrypted and access-controlled.
 
+## Who can reach the backups
+
+- **Encrypt every copy**: the managed service's snapshots with a customer-managed key, dumps and WAL archives with the storage's encryption and a key the backup team controls.
+- **Keep backup access separate from the record's users.** Only the DBA or a backup role reads and restores backups. People who use CIAMstack don't need access to them, and the API server and the runtime login never do.
+- **Keep at least one copy in another account, subscription or site**, so the loss or compromise of the record's own account doesn't take the backups with it. Lock it against deletion for its retention period (object lock, immutable storage) where the placement offers it.
+- **Restoring needs the migration login** acting as the owner, so restores are an administrator's act and show up in the database's own logs.
+
+## If the database is lost: what can and can't be rebuilt
+
+Backups are the recovery path. The record is the system of record, and much of what it holds exists nowhere else.
+
+**Can be read back from the managed estate** (re-import or `opsdir collect`), because the live systems hold it:
+
+- product configuration: directory servers' configuration, PingFederate's bulk export, PingAM's Amster export, PingIDM projects, gateway routes, access-gateway configuration, SiteMinder's policy store;
+- cloud resources: Terraform state, cloud CLI inventories, CloudFormation and ARM deployments, firewall managers' running configuration;
+- inventories: certificates from CAs and certificate managers, secret-store contents (metadata only), Kubernetes workloads, Linux baselines and jobs, CI pipelines;
+- observed facts: directory consumers from access logs, data profiles, ITSM tickets;
+- the setup itself, if the onboarding answers file was kept: the record's identity, settings, teams, environments, stacks and migration target.
+
+**Can't be rebuilt from the estate**, because it is the record's own knowledge:
+
+- the history: every change, who wrote and approved it, and when;
+- change records, approvals and their ITSM links;
+- people, grants and team mappings beyond the answers file;
+- owners, keepers and criticality recorded by people, consumers' review and migration status, partners' allowlist request status;
+- decisions: conflicts kept or taken, risk exceptions, source objects' handling, overrides and why;
+- the unknowns register, custom field and record type definitions, evidence runs;
+- intent not yet deployed, and every workspace.
+
+A record rebuilt from the estate alone would describe what runs today, with nobody's decisions or approvals. That can be a starting point after a total loss, through the [onboarding](../opsdir/README.md#onboarding) steps, but it isn't a recovery.
+
+**An extra copy without history:** `opsdir export` writes every entry as LDIF. Committing it regularly to a protected repository gives a reviewable copy of the current record, and a fallback that keeps people's decisions (owners, grants, exceptions, unknowns) though not the history.
+
+## Checking a restored record
+
+After any restore, before letting people back in:
+
+1. `opsdir posture` as the runtime login: every row as before the loss.
+2. `opsdir upgrade` as the migration login finds nothing to apply (the schema and migration state came back whole).
+3. `opsdir history` shows the last change that survived. Compare it with the last change the company knows was applied (its ITSM tickets, the last export committed): the difference is the data lost.
+4. `opsdir summary` and `opsdir report imports` against the last figures known.
+5. `opsdir collect` (or re-import) for each environment, as a dry run: the live systems and the restored record should agree, and every difference is a conflict to decide.
+6. `opsdir onboard verify` for the original exports, where they were kept.
+
+The history has no cryptographic chain yet, so a restore can't prove on its own that no row was altered before the backup was taken. Keep the database's own audit log and the backups where the record's users can't change them. A tamper-evident history is planned.
+
 ## Upgrading
 
 1. Take a logical backup (above).

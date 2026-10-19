@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 from opsdir.core.contract import SecretPattern
 from opsdir.core.directory import one
 from opsdir.core.interchange import jinja
+from opsdir.core.shell import command
 
 # Azure credential forms the store refuses (SPEC R4)
 SECRET_PATTERNS = (
@@ -15,8 +16,11 @@ SECRET_PATTERNS = (
 
 
 def keyvault_command(rest):
+    """The shell command printing an azkv://<vault>/<name> secret's value, the vault and the name one argument each
+    whatever they hold."""
     vault, name = rest.split("/", 1)
-    return f"az keyvault secret show --vault-name '{vault}' --name '{name}' --query value -o tsv"
+    return command("az", "keyvault", "secret", "show", "--vault-name", vault, "--name", name, "--query", "value",
+                   "-o", "tsv")
 
 
 def keyvault_lookup(m, store, rest):

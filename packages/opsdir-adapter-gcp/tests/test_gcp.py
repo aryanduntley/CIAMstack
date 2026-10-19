@@ -3,6 +3,7 @@ the credential forms the store refuses), and the Terraform it renders for a Goog
 zone's network as data, firewall rules by network tag with pinned priorities, instances with CMEK boot disks,
 passthrough load balancers with Cloud DNS records, and Secret Manager secrets named, never read."""
 import re
+import shlex
 from types import SimpleNamespace
 
 from opsdir.connectors.registry import ADAPTERS, secret_patterns
@@ -10,6 +11,9 @@ from opsdir.core.environment import env_model
 from opsdir.core.interchange.ldif import parse
 from opsdir_adapter_gcp.adapter import ADAPTER
 from opsdir_adapter_gcp.secrets import SECRET_PATTERNS, secret_manager_command
+
+# A reference holding every character a shell treats specially (no slash: each split part takes it whole)
+HOSTILE = "it's \"x\" $(touch made) `touch made` ${HOME}; touch made | cat & echo"
 from support import REGISTRY, build_directory
 
 ENV = "env=prod,cloud=gcp,ou=environments,dc=ciam-ops"
@@ -79,9 +83,15 @@ def test_registered_and_chosen_by_provider():
 
 def test_secret_references_resolve_with_gcloud():
     assert secret_manager_command("projects/ciam-prod/secrets/ds-root") == (
-        "gcloud secrets versions access latest --secret='ds-root' --project='ciam-prod'")
+        "gcloud secrets versions access latest --secret=ds-root --project=ciam-prod")
     assert secret_manager_command("projects/ciam-prod/locations/europe-west1/secrets/tls") == (
-        "gcloud secrets versions access latest --secret='tls' --project='ciam-prod' --location='europe-west1'")
+        "gcloud secrets versions access latest --secret=tls --project=ciam-prod --location=europe-west1")
+
+
+def test_each_part_of_a_reference_is_inside_one_argument_whatever_it_holds():
+    assert shlex.split(secret_manager_command(f"projects/{HOSTILE}/locations/{HOSTILE}/secrets/{HOSTILE}")) == [
+        "gcloud", "secrets", "versions", "access", "latest", f"--secret={HOSTILE}", f"--project={HOSTILE}",
+        f"--location={HOSTILE}"]
 
 
 def test_the_store_refuses_google_cloud_credentials():

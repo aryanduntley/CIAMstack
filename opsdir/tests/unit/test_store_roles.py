@@ -36,7 +36,7 @@ def test_the_runtime_gets_rows_never_the_schema_the_patterns_or_the_history():
     assert "grant select, insert, update, delete on all tables in schema opsdir to opsdir_app" in grants
     assert ("revoke insert, update, delete on opsdir.schema_migration, opsdir.secret_pattern, opsdir.vocabulary, "
             "opsdir.ref_scheme from opsdir_app") in grants
-    assert "revoke update, delete, truncate on opsdir.entry_history from opsdir_app" in grants
+    assert "revoke insert, update, delete, truncate on opsdir.entry_history from opsdir_app" in grants
     assert not any("create" in g or "owner" in g for g in grants)
     assert runtime_grants(None) == () and runtime_grants(Roles("o", None)) == ()
 

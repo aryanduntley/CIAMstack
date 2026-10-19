@@ -251,7 +251,7 @@
     "ds/setup-ds-s1.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "7bf22a3cdd88b38281288cd8ca3e472560e88d652f368b2bbdf073cce8984eac"
+      "sha256": "aa985ad778c26ae15a492d739cccfefb0eac112de46ef925e26d21babd071520"
     },
     "files/am/realms/root-partners/OAuth2Provider/OAuth2Provider.json": {
       "scope": "environment-neutral",

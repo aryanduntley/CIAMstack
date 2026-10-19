@@ -3,6 +3,6 @@ pf.operational.mode=CLUSTERED_ENGINE
 pf.engine.hostname=sso.lab.example-aero.test
 pf.https.port=9031
 pf.admin.https.port=9999
-pf.admin.pwd={% endraw %}{{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID='ciam-lab' -p Query='Safe=CIAM-Lab;Object=pf-admin-password' -o Password") }}{% raw %}
+pf.admin.pwd={% endraw %}{{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID=ciam-lab -p 'Query=Safe=CIAM-Lab;Object=pf-admin-password' -o Password") }}{% raw %}
 pf.log.eventdetail=false
 {% endraw %}

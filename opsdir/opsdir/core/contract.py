@@ -450,7 +450,8 @@ Adapter = namedtuple("Adapter", (
     "render_env",           # (EnvModel, Services) -> {path: text}; (EnvModel, Services, targets) with render_targets
     "checks",               # planner checks: (PlanContext) -> Findings
     "ref_schemes",          # ref-uri schemes it owns (secrets, keys, storage)
-    "secret_schemes",       # ref-uri scheme -> (rest of uri) -> shell command
+    "secret_schemes",       # ref-uri scheme -> (rest of uri) -> shell command, built with core.shell.command so
+                            # each word taken from the reference stays one argument
     "renders",              # what its environment-specific output is, in words
     "neutral_label",        # short name of its environment-neutral config
     "vocabulary",           # {vocab attribute: values it defines}

@@ -56,9 +56,9 @@ def test_registry_composition():
 
 
 @pytest.mark.parametrize("uri, command", [
-    ("aws-sm://prod/ds/root", "aws secretsmanager get-secret-value --secret-id 'prod/ds/root'"),
-    ("azkv://kv-prod/ds-root", "az keyvault secret show --vault-name 'kv-prod' --name 'ds-root'"),
-    ("vault://secret/ds/root", "vault kv get -field=value 'secret/ds/root'")])
+    ("aws-sm://prod/ds/root", "aws secretsmanager get-secret-value --secret-id prod/ds/root"),
+    ("azkv://kv-prod/ds-root", "az keyvault secret show --vault-name kv-prod --name ds-root"),
+    ("vault://secret/ds/root", "vault kv get -field=value secret/ds/root")])
 def test_secret_references_resolve_through_the_owning_adapter(uri, command):
     assert secret_command(uri).startswith(command)
 

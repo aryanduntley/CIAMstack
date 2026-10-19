@@ -84,10 +84,11 @@ def test_otherwise_a_pipe_to_the_schemes_resolver_command():
     m = _with_stores()
     assert services().ansible_lookup(m, "azkv://kv-prod/pf-admin") is None       # the core never names the pipe
     assert secret_lookup(m, services(), "azkv://kv-prod/pf-admin") == (
-        '{{ lookup("ansible.builtin.pipe", "az keyvault secret show --vault-name \'kv-prod\' --name \'pf-admin\' '
+        '{{ lookup("ansible.builtin.pipe", "az keyvault secret show --vault-name kv-prod --name pf-admin '
         '--query value -o tsv") }}')
     assert secret_lookup(m, services(), "cyberark://ciam/Ping/pf-admin").startswith(
-        '{{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID=\'ciam\'')
+        '{{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID=ciam -p '
+        '\'Query=Safe=Ping;Object=pf-admin\'')
 
 
 def test_a_reference_nothing_reads_has_no_lookup():

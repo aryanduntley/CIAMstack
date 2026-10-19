@@ -47,7 +47,8 @@ STORAGE_TABLES = (
         ("from_id", "bigint", "the entry holding the reference"),
         ("attr", "text", "the attribute holding it"),
         ("to_id", "bigint", "the entry it points at"))),
-    ("entry_history", "Append-only history: one row per write to an entry, never updated or deleted.", (
+    ("entry_history", "Append-only history: one row per write to an entry, added only by the store's write trigger "
+                      "(which sets who and when), never updated or deleted.", (
         ("id", "bigserial", "primary key"),
         ("dn", "text", "the entry written"),
         ("op", "text", "add, modify or delete"),

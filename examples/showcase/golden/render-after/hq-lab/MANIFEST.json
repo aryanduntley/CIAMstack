@@ -63,12 +63,12 @@
     "ansible/inventory/ad-dns.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "3dcef6741e5bf872dc1b32123d775a67f6999fc532c5633ec738d78e11b89f67"
+      "sha256": "87af0b200011a14cf7171fe8ea5fb10581a83439512179bad92fcaba144aee53"
     },
     "ansible/inventory/f5-bigip.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "580786fbe399e59da2d69f67517662489e1453d352ffd72a0de5c455a5a0b959"
+      "sha256": "f44162c16f9685d4e4180ff6e2c96665f0d3bfd3f0f7625547b5316ca118b8bd"
     },
     "ansible/inventory/group_vars/all.yml": {
       "scope": "environment-specific",
@@ -128,7 +128,7 @@
     "ansible/inventory/panos.yml": {
       "scope": "environment-specific",
       "format": "yaml",
-      "sha256": "8740a694b105ed40912108919d68403819ec09c7f76267c2229a50f63dad98fd"
+      "sha256": "7b7aec07e53f076794fbc797620f7f563b8a7e8c67d511d754c1f2898b87210e"
     },
     "ansible/panos.yml": {
       "scope": "environment-specific",
@@ -163,7 +163,7 @@
     "ansible/templates/pingfederate/bin/run.properties.j2": {
       "scope": "environment-specific",
       "format": "text",
-      "sha256": "171b92b60fdc3fadbbaaccd71bddcd74fa301c61113693a61ca886833cd391bf"
+      "sha256": "6931adaa9e5d71b6f56efc8ef25c9974afaa87a853228d4e240c23edcb236b0c"
     },
     "ds/acis.ldif": {
       "scope": "environment-neutral",
@@ -178,12 +178,12 @@
     "ds/setup-ds-1.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "6b9c1ce9c31b8bda4e74cd22b6921ce7a10ad8ce50f6f817b67b97bdac13b82b"
+      "sha256": "6358f462ec9039249b88d5157cac5414f858b985b2c758beef5731d415cf9c92"
     },
     "ds/setup-ds-2.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "8e3c4befe3e69b42840ad7668193ddc8e1815d124b4d5b09591434defab23cfd"
+      "sha256": "5d07a3c790dc2c707a614001c63045fd8b59b2cd6f2c327575a850ba46ff6064"
     },
     "files/pingfederate/bin/run.properties": {
       "scope": "environment-specific",

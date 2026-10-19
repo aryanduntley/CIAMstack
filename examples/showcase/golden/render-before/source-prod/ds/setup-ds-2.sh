@@ -4,9 +4,9 @@
 # Secrets are resolved at run time from references; no secret value is stored in this file.
 # The TLS keystore (binding role ds-tls-keystore) is materialized by the secrets agent before this runs.
 set -euo pipefail
-DEPLOYMENT_ID="$(aws secretsmanager get-secret-value --secret-id 'arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-deployment-id' --query SecretString --output text)"
-DEPLOYMENT_ID_PASSWORD="$(aws secretsmanager get-secret-value --secret-id 'arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-deployment-password' --query SecretString --output text)"
-ROOT_PASSWORD="$(aws secretsmanager get-secret-value --secret-id 'arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-root-password' --query SecretString --output text)"
+DEPLOYMENT_ID="$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-deployment-id --query SecretString --output text)"
+DEPLOYMENT_ID_PASSWORD="$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-deployment-password --query SecretString --output text)"
+ROOT_PASSWORD="$(aws secretsmanager get-secret-value --secret-id arn:aws:secretsmanager:us-east-1:111122223333:secret:ciam/prod/ds-root-password --query SecretString --output text)"
 
 ./setup \
   --serverId ds-2 \

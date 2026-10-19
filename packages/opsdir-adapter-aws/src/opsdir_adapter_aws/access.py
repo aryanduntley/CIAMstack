@@ -17,7 +17,7 @@ import re
 from opsdir.core.contract import AccessModel, Permission
 from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of, one_role
-from opsdir.domains.access.evaluations import quoted
+from opsdir.core.shell import command
 from opsdir.domains.access.grants import ALLOWED, DENIED, UNKNOWN, covered
 
 SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamObjectStore", "ciamStreamBinding",
@@ -98,8 +98,8 @@ def _askable(names):
 
 
 def _simulation(ref, actions, names):
-    return quoted("aws", "iam", "simulate-principal-policy", "--policy-source-arn", ref, "--action-names", *actions,
-                  "--resource-arns", *names, "--output", "json")
+    return command("aws", "iam", "simulate-principal-policy", "--policy-source-arn", ref, "--action-names", *actions,
+                   "--resource-arns", *names, "--output", "json")
 
 
 def evaluator(m, identity, binding, row):

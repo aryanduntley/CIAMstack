@@ -4,9 +4,9 @@
 # Secrets are resolved at run time from references; no secret value is stored in this file.
 # The TLS keystore (binding role ds-tls-keystore) is materialized by the secrets agent before this runs.
 set -euo pipefail
-DEPLOYMENT_ID="$(clipasswordsdk GetPassword -p AppDescs.AppID='ciam-lab' -p Query='Safe=CIAM-Lab;Object=ds-deployment-id' -o Password)"
-DEPLOYMENT_ID_PASSWORD="$(clipasswordsdk GetPassword -p AppDescs.AppID='ciam-lab' -p Query='Safe=CIAM-Lab;Object=ds-deployment-password' -o Password)"
-ROOT_PASSWORD="$(clipasswordsdk GetPassword -p AppDescs.AppID='ciam-lab' -p Query='Safe=CIAM-Lab;Object=ds-root-password' -o Password)"
+DEPLOYMENT_ID="$(clipasswordsdk GetPassword -p AppDescs.AppID=ciam-lab -p 'Query=Safe=CIAM-Lab;Object=ds-deployment-id' -o Password)"
+DEPLOYMENT_ID_PASSWORD="$(clipasswordsdk GetPassword -p AppDescs.AppID=ciam-lab -p 'Query=Safe=CIAM-Lab;Object=ds-deployment-password' -o Password)"
+ROOT_PASSWORD="$(clipasswordsdk GetPassword -p AppDescs.AppID=ciam-lab -p 'Query=Safe=CIAM-Lab;Object=ds-root-password' -o Password)"
 
 ./setup \
   --serverId ds-2 \

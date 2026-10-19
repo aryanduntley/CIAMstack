@@ -7,6 +7,7 @@ and put the same service name in front of the identity service's `web` servers.
 from opsdir.core.contract import Adapter, Imported, Importer
 from opsdir.core.directory import get, make_entry
 from opsdir.core.secrets import scan
+from opsdir.core.shell import command
 from opsdir.core.findings import findings
 from opsdir.core.standard import AttributeDef, ClassDef, fragment
 from opsdir.core.interchange.ldif import parse
@@ -149,7 +150,7 @@ def _check(ctx):
 
 
 def _resolve(rest):
-    return f"fake-cli get {rest}"
+    return command("fake-cli", "get", rest)
 
 
 def _service(d, base, name, url):

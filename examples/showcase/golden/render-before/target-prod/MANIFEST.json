@@ -98,17 +98,17 @@
     "ds/setup-ds-1.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "b7c0a691ee5eb70313c7d954dcf70a1db2dc057a8ae5197d6eca7adc43d2792a"
+      "sha256": "e9163e6605898b55ffa294e0623199ea07f9de2f55cd8ef26654228f31fff9dc"
     },
     "ds/setup-ds-2.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "3d849cc8af05cf7e681336f89fe205b88b32b1c74ae5df58b57261557e240d36"
+      "sha256": "e8754e3ae274a854e30b0e375decf0eda86e5783d298edae814d2390e9c36b76"
     },
     "ds/setup-ds-3.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "eb6b85d14ade64b3114328f71d879ccbdc0e16d0b71338a46e0f021a3c8b1318"
+      "sha256": "99677f824c4668fd7be0248928b4acbad7b1360d658ca5ab2b76c593183d1658"
     },
     "files/am/realms/root-partners/OAuth2Provider/OAuth2Provider.json": {
       "scope": "environment-neutral",

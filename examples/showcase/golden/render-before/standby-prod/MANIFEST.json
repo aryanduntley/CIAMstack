@@ -96,12 +96,12 @@
     "ds/setup-ds-1.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "cbdafe47fba5e9a418a22dbc48bd5fce3c981b83d05da097edaf2c85f7d778ab"
+      "sha256": "0f2a3b5c30a19b911d3fe16688c7af572a68eedcdf32a61fb6e537c1b034edd2"
     },
     "ds/setup-ds-2.sh": {
       "scope": "environment-specific",
       "format": "shell",
-      "sha256": "e0bf432fd30a860ebece2c7789a807b2d44800f3379a26515e5027800338ed26"
+      "sha256": "3580f77d2d7996bd32a2ad7e04a795071bb0b09248b16b2458bc2605fbd46df8"
     },
     "elastic/api/component-templates.json": {
       "scope": "environment-specific",

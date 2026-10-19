@@ -26,11 +26,11 @@ What it aims to give a team (to be measured in a pilot, not claimed):
 - **Fewer migration surprises:** missing configuration, dependencies and blockers are found before cutover, not during it.
 - **Repeatable changes:** consistent, reviewable output for every environment instead of manual procedures.
 
-Migrations are declarative and automated, with people in control: approvals, blockers, open questions and verification are explicit steps, and nothing is cut over unattended.
+Migrations are declarative and automated, with people in control: approvals, blockers, open questions and verification are explicit steps, and nothing is cut over unattended. Engineers make the decisions in the record, adapters translate them into each product and cloud, and the record reports whatever won't fit ([how work is divided](documentation/PEOPLE-IN-CONTROL.md)).
 
 In short, CIAMstack makes an identity estate **known, governed and reproducible**: known because it is recorded and read back from the live systems, governed because every change is approved and kept, reproducible because every environment is generated from the same record.
 
-The command-line tool and Python package are called `opsdir` (operations directory). The core names no vendor: each product, cloud and tool is a separate installable **adapter** package. Today's adapters cover the ForgeRock/Ping stack (PingDS, OpenDJ, PingFederate, PingAM, PingIDM, PingGateway, PingAccess) and SiteMinder as a product to retire, on AWS (including GovCloud), Azure (commercial and Government), Google Cloud and on-premises, with secret stores, PKI, ITSM, SIEM and network tooling around them. New adapters can be written without touching the core.
+The command-line tool and Python package are called `opsdir` (operations directory). The core names no vendor: each product, cloud and tool is a separate installable **adapter** package. Today's adapters cover the ForgeRock/Ping stack (PingDS, OpenDJ, PingFederate, PingAM, PingIDM, PingGateway, PingAccess) and SiteMinder as a product to retire, on AWS (including GovCloud), Azure (commercial and Government), Google Cloud and on-premises, with secret stores, PKI, ITSM, SIEM and network tooling around them. New adapters can be written without touching the core, so each organization assembles the stack it actually runs ([assembling your own stack](documentation/MODULAR-STACKS.md)).
 
 **Status:** pre-production. The core and adapters are built and tested offline (about 4,700 automated tests). They haven't yet been validated against real product instances or cloud accounts. People work through the HTTP API or, on the server, the command line; the web console is next ([Where it stands](#where-it-stands)).
 
@@ -38,7 +38,7 @@ The command-line tool and Python package are called `opsdir` (operations directo
 
 Onboarding is **read-only first**: nothing in production changes until the record has been checked against reality, and every phase is useful on its own.
 
-1. **Stand up the record.** A PostgreSQL database wherever the organization chooses (on-premises or managed in any cloud), one per company: a parent organization and each subsidiary keep their own record, so each stays inside its own compliance boundary and is run by its own teams. Install the core and the adapters for the products in use; define the environments, clouds and accounts, regions, data residency, teams and owners.
+1. **Stand up the record.** A PostgreSQL database wherever the organization chooses (on-premises or managed in any cloud), one per company: a parent organization and each subsidiary keep their own record, so each stays inside its own compliance boundary and is run by its own teams, while every record follows the same standard ([organizations with several businesses](documentation/ORGANIZATIONS.md)). Install the core and the adapters for the products in use; define the environments, clouds and accounts, regions, data residency, teams and owners.
 2. **Declare the stack.** For each environment, which product or service fills each role (directory, federation, access management, gateway, cloud, secret store, DNS, load balancer, firewall, SIEM, ITSM, PKI) and its version range. `opsdir check` confirms the adapters are installed.
 3. **Read each service in,** in any order: product exports, Terraform state, cloud inventories, logs and config files, or read-only collection. The first inventory, dependency graph and findings list come out of this step.
 4. **Verify the record against reality.** Render each environment and compare it with what was imported; each disagreement is a conflict a person decides. `opsdir plan` on the current environment gives the first findings: expiring certificates, unowned items, drift, weak audit trails, missing backups.
@@ -119,7 +119,7 @@ Each question below is one command. [`documentation/REPORTS.md`](documentation/R
 
 ### Prepare and run a platform move
 
-Moving to another cloud, account, region or product uses everything above:
+Moving to another cloud, account, region or product uses everything above. [`documentation/MIGRATIONS.md`](documentation/MIGRATIONS.md) explains how a move works through the record, the kinds of move it covers, and what still needs engineering outside it.
 
 - **Plan against the live record.** `opsdir plan <from> <to>` compares the target with production and returns a verdict listing every blocker and action with its owner, and a do-by date for each action from its lead time: changed contracts (service names, SAML entity IDs, OIDC issuers), missing firewall rules and backups, certificates expiring before cutover, keys the target would keep wrongly (not in an HSM, regenerated instead of carried over), services the target cloud or its authorization doesn't offer, and **other parties' allowlists that still pin your old addresses**, with a drafted request to each party.
 - **Work in a copy.** `opsdir workspace create` copies the live record; declare the target's stack and bindings there, plan, render and review, while the platform keeps being operated from the live record. `opsdir workspace cutover` applies the result as one approved change (a three-way merge that refuses conflicting edits).
@@ -200,7 +200,7 @@ Installing or running CIAMstack needs a written evaluation or commercial license
 
 **Supported platforms:**
 - The server is Linux: one company-wide CIAMstack server per company record (or a container).
-- People on any OS reach it through the HTTP API (single sign-on with the company's identity provider); the console and MCP will be clients of the same API. Administrators use the CLI on the server.
+- People on any OS reach it through the HTTP API (single sign-on with the company's identity provider); the console and MCP will be clients of the same API. Administrators use the CLI on the server. Who may do what, and what the database enforces whoever connects: [`documentation/SECURITY.md`](documentation/SECURITY.md).
 - The CLI runs directly on Linux, on macOS (POSIX; expected to work, not yet tested) and on Windows through WSL2.
 - Every file CIAMstack reads and writes is UTF-8 with LF line endings, whatever the server's locale.
 
@@ -247,9 +247,17 @@ Rendered AWS and Azure Terraform passes `terraform validate` against the provide
 
 - [`opsdir/README.md`](opsdir/README.md): install, CLI, database, workspaces, architecture, writing adapters.
 - [`opsdir/SPEC.md`](opsdir/SPEC.md): the standard: LDAP schema with portability classes, rules R1–R10, the adapter contract.
+- [`documentation/SECURITY.md`](documentation/SECURITY.md): security of CIAMstack itself and of what it handles: who reaches it and how (the API with company sign-on, the CLI on the server), identities, grants and approval, what the database enforces whoever connects, the record's database logins and TLS, secrets never stored, the credentials used to read other systems, the audit trail, and what isn't verified yet.
+- [`documentation/THREAT-MODEL.md`](documentation/THREAT-MODEL.md): what is worth protecting, the trust boundaries, and each threat (compromised operator, server, database account, adapter or secret store; tampered imports or renders; supply chain; escalation; cross-company exposure; stale data; credential theft; hostile input) with what limits it and the risk that remains.
+- [`documentation/CHANGES-AND-DEPLOYMENT.md`](documentation/CHANGES-AND-DEPLOYMENT.md): CIAMstack never deploys; a change's states from proposed to verified; what happens when a multi-system change fails halfway; how teams working in parallel are kept from colliding.
+- [`documentation/ADAPTER-TESTING.md`](documentation/ADAPTER-TESTING.md): the testing contract every adapter is held to, the vendor specifications and tools its output is checked against, and offline-tested vs vendor-validated vs production-certified.
+- [`documentation/MODULAR-STACKS.md`](documentation/MODULAR-STACKS.md): assembling your own stack: the vendor-neutral core, the layers, how adapters join and are declared per environment, writing one for a product that has none, and what happens when a product can't express something.
+- [`documentation/ORGANIZATIONS.md`](documentation/ORGANIZATIONS.md): groups whose businesses run different stacks: one standard, a separate record per business, shared services and keepers, teams, group-wide moves, mergers, and what isn't built yet.
+- [`documentation/MIGRATIONS.md`](documentation/MIGRATIONS.md): moving a platform through one vendor-neutral model: the kinds of move, what travels and what is rebuilt, step by step, and what a move needs beyond configuration.
+- [`documentation/PEOPLE-IN-CONTROL.md`](documentation/PEOPLE-IN-CONTROL.md): people decide, adapters translate, the record checks: what is automated, how decisions reach the owning team, and the checks at each stage.
 - [`documentation/SCHEMA.md`](documentation/SCHEMA.md): the schema reference: how the database stores the record (its PostgreSQL tables, column by column), the directory tree, and every object class and field, with types and descriptions, for the core, each domain and each adapter package that adds its own.
 - [`documentation/REPORTS.md`](documentation/REPORTS.md): every report and what the planner does with it.
-- [`documentation/RECORD-DATABASE.md`](documentation/RECORD-DATABASE.md): running the record's own database in production: setup, sign-in, backups, restore, upgrades.
+- [`documentation/RECORD-DATABASE.md`](documentation/RECORD-DATABASE.md): running the record's own database in production: setup, sign-in, backups and who can reach them, recovery targets and losing a region, what can and can't be rebuilt if the database is lost, checking a restore, upgrades.
 - [`documentation/API-DEPLOYMENT.md`](documentation/API-DEPLOYMENT.md): running the HTTP API: its database login, registering it at the identity provider, people and teams, TLS in front of it, the service, checks.
 - [`documentation/ops-directory-model.md`](documentation/ops-directory-model.md): design rationale: why a directory-shaped record, what differs between environments, where moves get hard, prior art.
 - [`documentation/STACK.md`](documentation/STACK.md): the full inventory of what an identity platform carries and how much of it is modeled today.
@@ -260,7 +268,9 @@ Rendered AWS and Azure Terraform passes `terraform validate` against the provide
 opsdir/                   the core: an installable Python package on PostgreSQL
 packages/                 adapter, base and format packages (listed above)
 examples/showcase/        a runnable fictional estate: data, product exports, demo, golden outputs
-documentation/            schema reference, reports, production database runbook, design rationale, stack inventory
+documentation/            security, threat model, changes and deployment, adapter testing, stacks, organizations,
+                          migrations, people in control, schema reference, reports,
+                          production database and API runbooks, design rationale, stack inventory
 pytest.ini                one test configuration for the core, the packages and the showcase
 LICENSE                   copyright and terms: all rights reserved
 .aimfp-project/           development tracking (roadmap, tracked files and functions)

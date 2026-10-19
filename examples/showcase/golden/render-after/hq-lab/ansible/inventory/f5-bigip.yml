@@ -16,5 +16,5 @@ all:
               ansible_httpapi_port: 443
               ansible_user: svc-opsdir
               ansible_httpapi_password: >-
-                {{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID='ciam-lab' -p Query='Safe=CIAM-Lab;Object=bigip-hq' -o
-                Password") }}
+                {{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID=ciam-lab -p 'Query=Safe=CIAM-Lab;Object=bigip-hq' -o Password")
+                }}

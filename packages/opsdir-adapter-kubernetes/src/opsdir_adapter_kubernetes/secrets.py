@@ -1,14 +1,16 @@
 """Kubernetes secrets: k8s-secret://<namespace>/<secret>/<key> references resolved at run time with kubectl."""
 from opsdir.core.interchange import jinja
+from opsdir.core.shell import command
 
 
 
 def secret_command(rest):
     """The shell command printing one key of a Kubernetes secret (its data is base64; dots in a key are escaped for
-    JSONPath)."""
+    JSONPath), the namespace, the name and the JSONPath one argument each whatever they hold."""
     namespace, name, key = rest.split("/", 2)
     path = key.replace(".", "\\.")
-    return f"kubectl get secret -n '{namespace}' '{name}' -o jsonpath='{{.data.{path}}}' | base64 -d"
+    return command("kubectl", "get", "secret", "-n", namespace, name, "-o", f"jsonpath={{.data.{path}}}") + (
+        " | base64 -d")
 
 
 def secret_lookup(m, store, rest):

@@ -20,7 +20,7 @@ import re
 from opsdir.core.contract import AccessModel, Permission
 from opsdir.core.directory import is_a, one, rdn_of, rdn_value
 from opsdir.core.environment import environment_of
-from opsdir.domains.access.evaluations import quoted
+from opsdir.core.shell import command
 from opsdir.domains.access.grants import ALLOWED, DENIED, UNKNOWN, covered
 
 SECRET, KEY, STORAGE, STREAM, LOGS = ("ciamSecretRef", "ciamKeyRef", "ciamObjectStore", "ciamStreamBinding",
@@ -112,8 +112,8 @@ def evaluator(m, identity, binding, row):
     if resource is None or one(identity, "ciamIdentityKind") == "group":
         return ()
     permissions = [next((a for a in reversed(alts) if not a.startswith("roles/")), None) for alts in row.needs]
-    return tuple(quoted("gcloud", "policy-intelligence", "troubleshoot-policy", "iam", resource,
-                        f"--principal-email={one(identity, 'ciamProviderRef')}", f"--permission={p}", "--format=json")
+    return tuple(command("gcloud", "policy-intelligence", "troubleshoot-policy", "iam", resource,
+                         f"--principal-email={one(identity, 'ciamProviderRef')}", f"--permission={p}", "--format=json")
                  for p in permissions if p)
 
 

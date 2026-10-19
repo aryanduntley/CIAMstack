@@ -13,5 +13,5 @@ all:
             ip_address: panorama.mgmt.hq.example-aero.internal
             username: svc-opsdir
             password: >-
-              {{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID='ciam-lab' -p Query='Safe=CIAM-Lab;Object=panorama-hq' -o
-              Password") }}
+              {{ lookup("ansible.builtin.pipe", "clipasswordsdk GetPassword -p AppDescs.AppID=ciam-lab -p 'Query=Safe=CIAM-Lab;Object=panorama-hq' -o Password")
+              }}

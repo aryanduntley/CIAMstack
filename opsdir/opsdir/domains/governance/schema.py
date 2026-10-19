@@ -228,6 +228,11 @@ ATTRIBUTES = (
                  'The people who approved a change, each once and never its author while approval-separation is on: '
                  'set by the store (never by the writer). The approvals-required setting says how many a change '
                  'needs for its environments; it stays proposed until it has them'),
+    AttributeDef(1011, 'ciamChangeBase', 'string', 'meta', False,
+                 'What a proposed change was proposed against: for each entry its records touch, \'<normalized DN> '
+                 '<last history id>\' (0: the entry didn\'t exist yet), set by the store whenever the proposed '
+                 'records are written or change (never by the writer). Applying the records is refused for an entry '
+                 'another change wrote since: they are proposed again'),
 )
 CLASSES = (
     ClassDef(29, 'ciamRunbook', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamLastValidated'),
@@ -235,7 +240,7 @@ CLASSES = (
              'Work instruction'),
     ClassDef(30, 'ciamChange', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamChangeStatus'),
              ('ciamApprovedBy', 'ciamPlannedAt', 'ciamChangeRecords', 'ciamTicketRef', 'ciamAuthor',
-              'ciamApprovedAs', 'ciamApprovals'),
+              'ciamApprovedAs', 'ciamApprovals', 'ciamChangeBase'),
              'Change record (mirrored from ITSM; a proposed one may carry the records it applies, and names the '
              'ticket it is tracked by)'),
     ClassDef(31, 'ciamIncident', 'ciamObject', 'STRUCTURAL', ('cn', 'ciamTitle', 'ciamOpenedAt'),
