@@ -2067,6 +2067,14 @@
       "planted": "PingIDM's configuration change detection is offered for adoption: no alert rule adopts it yet",
       "cleared_by": null,
       "raised_by": null
+    },
+    {
+      "id": "A313",
+      "area": "Alert",
+      "match": "pingam declares detection `mfa-config.partners`",
+      "planted": "PingAM's configuration change detection for the MFA realm /partners is offered for adoption, marked unverified: no alert rule adopts it yet",
+      "cleared_by": null,
+      "raised_by": null
     }
   ]
 }
