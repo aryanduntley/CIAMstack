@@ -3998,19 +3998,21 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.968 NAME 'ciamDetectionSelector' DES
  dapter renders it in the product\27s own field names and values, from the d
  eclaration the rule adopts (ciamDeclaredDetection)' EQUALITY caseIgnoreMatc
  h SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 
- 'string' X-PATTERN '^(subject|source-ip|realm|outcome|action|actor|object)=
- [A-Za-z0-9_.:@/-]+(\5C|[A-Za-z0-9_.:@/-]+)*$' X-ORIGIN 'opsdir' )
+ 'string' X-PATTERN '^(subject|source-ip|realm|outcome|action|actor|object|s
+ tep|step-outcome)=[A-Za-z0-9_.:@/-]+(\5C|[A-Za-z0-9_.:@/-]+)*$' X-ORIGIN 'o
+ psdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.969 NAME 'ciamGroupBy' DESC 'The can
  onical fields an alert rule counts per (subject, source-ip, realm, ...): a 
  finding is about one value of each' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1
  .4.1.1466.115.121.1.15 X-PORTABILITY 'intent' X-VALUE-TYPE 'enum:subject|so
- urce-ip|realm|outcome|action|actor|object' X-ORIGIN 'opsdir' )
+ urce-ip|realm|outcome|action|actor|object|step|step-outcome' X-ORIGIN 'opsd
+ ir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.970 NAME 'ciamDistinctField' DESC 'A
   canonical field whose distinct values an alert rule counts instead of its 
  events (the subjects one source address tried: a password spray)' EQUALITY 
  caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABI
  LITY 'intent' X-VALUE-TYPE 'enum:subject|source-ip|realm|outcome|action|act
- or|object' X-ORIGIN 'opsdir' )
+ or|object|step|step-outcome' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.971 NAME 'ciamWindowKind' DESC 'How 
  an alert rule\27s window (its ciamEvaluationPeriod) is counted over: slidin
  g (any span of that length) or fixed (clock-aligned buckets, which can miss
@@ -4116,10 +4118,71 @@ attributeTypes: ( 1.3.6.1.4.1.32473.1.1.988 NAME 'ciamIdpGroup' DESC 'An ide
  .121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-PATTERN '^https://[^
   ]+ [^ ]+$' X-ORIGIN 'opsdir' )
 attributeTypes: ( 1.3.6.1.4.1.32473.1.1.989 NAME 'ciamApprovedAs' DESC 'The 
- teams mapped to identity provider groups (ciamIdpGroup) the approver belong
- ed to when approving a change, by name: set by the store with ciamApprovedB
- y (never by the writer), and what the approver\27s grants are checked with 
- when the change is applied' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
+ teams mapped to identity provider groups (ciamIdpGroup) each approver belon
+ ged to when approving a change, as \27<login> <team>\27: set by the store w
+ ith ciamApprovals (never by the writer), and what the approvers\27 grants a
+ re checked with when the change is applied' EQUALITY caseIgnoreMatch SYNTAX
+  1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X
+ -ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.990 NAME 'ciamSanUpn' DESC 'A user p
+ rincipal name the certificate\27s subject alternative name carries (the UPN
+  otherName, 1.3.6.1.4.1.311.20.2.3), exactly as written: what a relying par
+ ty mapping certificates by UPN (ciamIdentityMapping san-upn) finds the acco
+ unt by' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-POR
+ TABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.991 NAME 'ciamSanEmail' DESC 'An ema
+ il address the certificate\27s subject alternative name carries (rfc822Name
+ ), as written' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.1
+ 5 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.992 NAME 'ciamSanUri' DESC 'A URI th
+ e certificate\27s subject alternative name carries (uniformResourceIdentifi
+ er), as written' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1
+ .15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.993 NAME 'ciamSubjectIdentifier' DES
+ C 'An identifier the certificate\27s names carry by a recognised convention
+ , as <form>:<value> (edipi: the 10-digit DoD EDIPI a CAC\27s UPN of digits 
+ at mil begins with); derived from the names recorded (ciamSanUpn), never as
+ sumed: a certificate whose names follow no known convention (an ECA subscri
+ ber\27s) has none' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121
+ .1.15 X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.994 NAME 'ciamSubjectKeyId' DESC 'Th
+ e certificate\27s subject key identifier (RFC 5280 4.2.1.2), as lowercase h
+ ex' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VA
+ LUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.995 NAME 'ciamAuthorityKeyId' DESC '
+ The key identifier of the CA key that signed the certificate (its authority
+  key identifier, RFC 5280 4.2.1.1), as lowercase hex: the issuer certificat
+ e\27s ciamSubjectKeyId' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.1466.11
+ 5.121.1.15 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYPE 'string' X-OR
+ IGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.996 NAME 'ciamIsCa' DESC 'Whether th
+ e certificate\27s basic constraints make it a CA certificate (cA); absent w
+ hen it has no basic constraints extension' EQUALITY booleanMatch SYNTAX 1.3
+ .6.1.4.1.1466.115.121.1.7 SINGLE-VALUE X-PORTABILITY 'observed' X-VALUE-TYP
+ E 'bool' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.997 NAME 'ciamPathLength' DESC 'The 
+ most CA certificates that may follow a CA certificate in a path (its basic 
+ constraints\27 pathLenConstraint); absent: no limit' EQUALITY integerMatch 
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE X-PORTABILITY 'observed' 
+ X-VALUE-TYPE 'int' X-MIN '0' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.998 NAME 'ciamCrossRole' DESC 'What 
+ a cross-certificate joins: two PKIs certifying each other directly (peer), 
+ a bridge CA certifying a member PKI\27s CA (bridge-to-member), or a member 
+ PKI\27s CA certifying the bridge (member-to-bridge)' EQUALITY caseIgnoreMat
+ ch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE X-PORTABILITY 'meta' X
+ -VALUE-TYPE 'enum:peer|bridge-to-member|member-to-bridge' X-ORIGIN 'opsdir'
+  )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.999 NAME 'ciamPolicyMapping' DESC 'A
+  policy mapping a cross-certificate carries (RFC 5280 4.2.1.5), as <issuerD
+ omainPolicy>=<subjectDomainPolicy>: the issuer\27s policy OID a relying par
+ ty under the issuer reads the subject\27s policy OID as' EQUALITY caseIgnor
+ eMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 X-PORTABILITY 'observed' X-VALU
+ E-TYPE 'string' X-ORIGIN 'opsdir' )
+attributeTypes: ( 1.3.6.1.4.1.32473.1.1.1010 NAME 'ciamApprovals' DESC 'The 
+ people who approved a change, each once and never its author while approval
+ -separation is on: set by the store (never by the writer). The approvals-re
+ quired setting says how many a change needs for its environments; it stays 
+ proposed until it has them' EQUALITY caseIgnoreMatch SYNTAX 1.3.6.1.4.1.146
  6.115.121.1.15 X-PORTABILITY 'meta' X-VALUE-TYPE 'string' X-ORIGIN 'opsdir'
   )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.1 NAME 'ciamObject' DESC 'Base of eve
@@ -4242,11 +4305,15 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.27 NAME 'ciamClaimMap' DESC 'One clai
  m / SAML attribute mapping' SUP ciamObject STRUCTURAL MUST ( cn $ ciamClaim
  Name $ ciamSourceAttribute ) MAY ciamTransform X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.28 NAME 'ciamCertificate' DESC 'Certi
- ficate (public facts only)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamFinge
- rprint $ ciamNotAfter $ ciamCertPurpose ) MAY ( ciamSubject $ ciamIssuer $ 
- ciamNotBefore $ ciamSubjectAltName $ ciamKeyRole $ ciamPartnerContact $ cia
- mRotationRunbook $ ciamCertificatePem $ ciamIssuedBy $ ciamSerialNumber $ c
- iamCertPolicyOid ) X-ORIGIN 'opsdir' )
+ ficate (public facts only): what it is for, and what it says of itself (nam
+ es, policies, key usages, key identifiers, basic constraints) as read from 
+ it' SUP ciamObject STRUCTURAL MUST ( cn $ ciamFingerprint $ ciamNotAfter $ 
+ ciamCertPurpose ) MAY ( ciamSubject $ ciamIssuer $ ciamNotBefore $ ciamSubj
+ ectAltName $ ciamKeyRole $ ciamPartnerContact $ ciamRotationRunbook $ ciamC
+ ertificatePem $ ciamIssuedBy $ ciamSerialNumber $ ciamCertPolicyOid $ ciamE
+ xtendedKeyUsage $ ciamSanUpn $ ciamSanEmail $ ciamSanUri $ ciamSubjectIdent
+ ifier $ ciamSubjectKeyId $ ciamAuthorityKeyId $ ciamIsCa $ ciamPathLength )
+  X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.29 NAME 'ciamRunbook' DESC 'Work inst
  ruction' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamLastValidate
  d ) MAY ( ciamVersion $ ciamAppliesTo $ ciamDocUrl ) X-ORIGIN 'opsdir' )
@@ -4254,8 +4321,8 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.30 NAME 'ciamChange' DESC 'Change rec
  ord (mirrored from ITSM; a proposed one may carry the records it applies, a
  nd names the ticket it is tracked by)' SUP ciamObject STRUCTURAL MUST ( cn 
  $ ciamTitle $ ciamChangeStatus ) MAY ( ciamApprovedBy $ ciamPlannedAt $ cia
- mChangeRecords $ ciamTicketRef $ ciamAuthor $ ciamApprovedAs ) X-ORIGIN 'op
- sdir' )
+ mChangeRecords $ ciamTicketRef $ ciamAuthor $ ciamApprovedAs $ ciamApproval
+ s ) X-ORIGIN 'opsdir' )
 objectClasses: ( 1.3.6.1.4.1.32473.1.2.31 NAME 'ciamIncident' DESC 'Incident
   / postmortem' SUP ciamObject STRUCTURAL MUST ( cn $ ciamTitle $ ciamOpened
  At ) MAY ( ciamSeverity $ ciamInvolved $ ciamRootCause ) X-ORIGIN 'opsdir' 
@@ -5182,3 +5249,14 @@ objectClasses: ( 1.3.6.1.4.1.32473.1.2.208 NAME 'ciamGrant' DESC 'A permissi
  t is recorded, every action but reading and administration needs one' SUP c
  iamObject STRUCTURAL MUST ( cn $ ciamGrantAction $ ciamGrantee ) MAY ( ciam
  GrantEnvironment $ ciamGrantOwner $ description ) X-ORIGIN 'opsdir' )
+objectClasses: ( 1.3.6.1.4.1.32473.1.2.209 NAME 'ciamCrossCertificate' DESC 
+ 'A cross-certificate (under ou=cross-certificates): one CA (ciamIssuer) cer
+ tifying another PKI\27s CA (ciamSubject), what it joins, the policy mapping
+ s it carries, its validity and, when observed, its fingerprint, serial and 
+ PEM. Recorded as a fact of the graph, never trusted by being here: a trust 
+ policy accepts its approved anchors only (cross.py reports what the cross-c
+ ertificates make reachable)' SUP ciamObject STRUCTURAL MUST ( cn $ ciamIssu
+ er $ ciamSubject $ ciamNotAfter ) MAY ( ciamCrossRole $ ciamPolicyMapping $
+  ciamFingerprint $ ciamSerialNumber $ ciamNotBefore $ ciamCertificatePem $ 
+ ciamCertPolicyOid $ ciamSubjectKeyId $ ciamAuthorityKeyId $ ciamPathLength 
+ ) X-ORIGIN 'opsdir' )

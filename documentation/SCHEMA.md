@@ -4,7 +4,7 @@
 
 How CIAMstack stores the platform's record, in two layers: a few PostgreSQL tables (the storage layer), and the entries those tables hold (the record layer), shaped like an LDAP directory. Every entry sits at a DN in one tree under `dc=ciam-ops`, has object classes that say which attributes it must and may have, and every attribute has a value type and a portability class. The published LDAP form of the same definitions is `opsdir/schema/ciam-ops.schema.ldif`; the rules the store enforces are in [`opsdir/SPEC.md`](../opsdir/SPEC.md).
 
-This reference covers the core, its domains and the installed adapter packages that add definitions: 211 object classes and 964 attributes. Fields and record types an operator defines live in the record itself (`ou=custom-schema`, OIDs under `1.3.6.1.4.1.32473.4`), so they differ per record and aren't listed here.
+This reference covers the core, its domains and the installed adapter packages that add definitions: 213 object classes and 982 attributes. Fields and record types an operator defines live in the record itself (`ou=custom-schema`, OIDs under `1.3.6.1.4.1.32473.4`), so they differ per record and aren't listed here.
 
 ## How to read it
 
@@ -281,6 +281,7 @@ flowchart LR
     dc_ciam_ops --> ou_config_files_dc_ciam_ops["ou=config-files"]
     dc_ciam_ops --> ou_consumers_dc_ciam_ops["ou=consumers"]
     dc_ciam_ops --> ou_credentials_dc_ciam_ops["ou=credentials"]
+    dc_ciam_ops --> ou_cross_certificates_dc_ciam_ops["ou=cross-certificates"]
     dc_ciam_ops --> ou_custom_schema_dc_ciam_ops["ou=custom-schema"]
     dc_ciam_ops --> ou_data_profile_dc_ciam_ops["ou=data-profile"]
     dc_ciam_ops --> ou_edge_policies_dc_ciam_ops["ou=edge-policies"]
@@ -350,6 +351,7 @@ flowchart LR
 | `ou=certificate-templates,dc=ciam-ops` | [PKI](schema/pki.md) |
 | `ou=certificates,dc=ciam-ops` | [PKI](schema/pki.md) |
 | `ou=credentials,dc=ciam-ops` | [PKI](schema/pki.md) |
+| `ou=cross-certificates,dc=ciam-ops` | [PKI](schema/pki.md) |
 | `ou=issued-certificates,dc=ciam-ops` | [PKI](schema/pki.md) |
 | `ou=managed-certificates,dc=ciam-ops` | [PKI](schema/pki.md) |
 | `ou=revocation-observations,dc=ciam-ops` | [PKI](schema/pki.md) |
@@ -412,8 +414,8 @@ flowchart LR
 | [Infrastructure](schema/infrastructure.md) | domain | `1.3.6.1.4.1.32473.1` | 20 | 76 |
 | [Directory](schema/directory.md) | domain | `1.3.6.1.4.1.32473.1` | 16 | 76 |
 | [Federation](schema/federation.md) | domain | `1.3.6.1.4.1.32473.1` | 6 | 35 |
-| [PKI](schema/pki.md) | domain | `1.3.6.1.4.1.32473.1` | 20 | 118 |
-| [Governance](schema/governance.md) | domain | `1.3.6.1.4.1.32473.1` | 14 | 71 |
+| [PKI](schema/pki.md) | domain | `1.3.6.1.4.1.32473.1` | 21 | 128 |
+| [Governance](schema/governance.md) | domain | `1.3.6.1.4.1.32473.1` | 14 | 72 |
 | [Configuration](schema/configuration.md) | domain | `1.3.6.1.4.1.32473.1` | 5 | 18 |
 | [Automation](schema/automation.md) | domain | `1.3.6.1.4.1.32473.1` | 2 | 15 |
 | [Compute](schema/compute.md) | domain | `1.3.6.1.4.1.32473.1` | 5 | 42 |
@@ -427,6 +429,7 @@ flowchart LR
 | [Data](schema/data.md) | domain | `1.3.6.1.4.1.32473.1` | 6 | 43 |
 | [Recovery](schema/recovery.md) | domain | `1.3.6.1.4.1.32473.1` | 3 | 11 |
 | [Estate](schema/estate.md) | domain | `1.3.6.1.4.1.32473.1` | 29 | 132 |
+| [azure (opsdir-adapter-azure)](schema/azure.md) | package | `1.3.6.1.4.1.32473.3.7` | 1 | 7 |
 | [PingAccess (opsdir-adapter-pingaccess)](schema/pingaccess.md) | package | `1.3.6.1.4.1.32473.3.5` | 8 | 15 |
 | [PingAM (opsdir-adapter-pingam)](schema/pingam.md) | package | `1.3.6.1.4.1.32473.3.1` | 5 | 14 |
 | [PingFederate (opsdir-adapter-pingfederate)](schema/pingfederate.md) | package | `1.3.6.1.4.1.32473.3.4` | 14 | 24 |

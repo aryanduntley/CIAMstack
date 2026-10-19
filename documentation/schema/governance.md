@@ -1,6 +1,6 @@
 # Governance
 
-*Domain · OID arc `1.3.6.1.4.1.32473.1` · 14 object classes · 71 attributes. Generated from the schema fragments by `opsdir/scripts/gen-schema-docs.py`: don't edit by hand. How to read it: [SCHEMA.md](../SCHEMA.md).*
+*Domain · OID arc `1.3.6.1.4.1.32473.1` · 14 object classes · 72 attributes. Generated from the schema fragments by `opsdir/scripts/gen-schema-docs.py`: don't edit by hand. How to read it: [SCHEMA.md](../SCHEMA.md).*
 
 **Branches:** `ou=applications,dc=ciam-ops`, `ou=changes,dc=ciam-ops`, `ou=grants,dc=ciam-ops`, `ou=imports,dc=ciam-ops`, `ou=incidents,dc=ciam-ops`, `ou=owners,dc=ciam-ops`, `ou=people,dc=ciam-ops`, `ou=runbooks,dc=ciam-ops`, `ou=source-objects,dc=ciam-ops`, `ou=tickets,dc=ciam-ops`, `ou=unknowns,dc=ciam-ops`
 
@@ -37,7 +37,8 @@ OID `1.3.6.1.4.1.32473.1.2.30` · structural · inherits [`ciamObject`](core.md#
 | [`ciamChangeRecords`](#a-ciamchangerecords) |  | `string` | single | The LDIF change records a proposed change applies once approved (an assisted fix, from an operator or an AI): what the approver reviews and what is applied, unchanged |
 | [`ciamTicketRef`](#a-ciamticketref) |  | `string` | multi | An ITSM ticket a change record is tracked by, as <adapter>:<number> (servicenow:CHG0030101): the operator's link (its change ticket, and the work ticket a team was handed its findings by); what the ticket says is read into its own entry under ou=tickets, never here |
 | [`ciamAuthor`](#a-ciamauthor) |  | `string` | single | Who wrote a change record: the database login that created it, set by the store (never by the writer) and kept; the approver is someone else unless approval-separation is off |
-| [`ciamApprovedAs`](#a-ciamapprovedas) |  | `string` | multi | The teams mapped to identity provider groups (ciamIdpGroup) the approver belonged to when approving a change, by name: set by the store with ciamApprovedBy (never by the writer), and what the approver's grants are checked with when the change is applied |
+| [`ciamApprovedAs`](#a-ciamapprovedas) |  | `string` | multi | The teams mapped to identity provider groups (ciamIdpGroup) each approver belonged to when approving a change, as '<login> <team>': set by the store with ciamApprovals (never by the writer), and what the approvers' grants are checked with when the change is applied |
+| [`ciamApprovals`](#a-ciamapprovals) |  | `string` | multi | The people who approved a change, each once and never its author while approval-separation is on: set by the store (never by the writer). The approvals-required setting says how many a change needs for its environments; it stays proposed until it has them |
 
 <a id="c-ciamcollectionattempt"></a>
 ### ciamCollectionAttempt
@@ -265,7 +266,8 @@ OID `1.3.6.1.4.1.32473.1.2.137` · structural · inherits [`ciamObject`](core.md
 | <a id="a-ciamansweredat"></a>`ciamAnsweredAt` | `1.3.6.1.4.1.32473.1.1.667` | `time` | meta | single |  | When the question was answered |
 | <a id="a-ciamapplicationpart"></a>`ciamApplicationPart` | `1.3.6.1.4.1.32473.1.1.670` | `dn` | meta | multi |  | An entry that is part of the application (an integration, a directory consumer, an external service, a canary, a job): the views and dependency graph of the application start from its parts |
 | <a id="a-ciamappliesto"></a>`ciamAppliesTo` | `1.3.6.1.4.1.32473.1.1.112` | `dn` | meta | multi |  | Entries this work instruction depends on |
-| <a id="a-ciamapprovedas"></a>`ciamApprovedAs` | `1.3.6.1.4.1.32473.1.1.989` | `string` | meta | multi |  | The teams mapped to identity provider groups (ciamIdpGroup) the approver belonged to when approving a change, by name: set by the store with ciamApprovedBy (never by the writer), and what the approver's grants are checked with when the change is applied |
+| <a id="a-ciamapprovals"></a>`ciamApprovals` | `1.3.6.1.4.1.32473.1.1.1010` | `string` | meta | multi |  | The people who approved a change, each once and never its author while approval-separation is on: set by the store (never by the writer). The approvals-required setting says how many a change needs for its environments; it stays proposed until it has them |
+| <a id="a-ciamapprovedas"></a>`ciamApprovedAs` | `1.3.6.1.4.1.32473.1.1.989` | `string` | meta | multi |  | The teams mapped to identity provider groups (ciamIdpGroup) each approver belonged to when approving a change, as '<login> <team>': set by the store with ciamApprovals (never by the writer), and what the approvers' grants are checked with when the change is applied |
 | <a id="a-ciamapprovedby"></a>`ciamApprovedBy` | `1.3.6.1.4.1.32473.1.1.116` | `string` | meta | single |  | Approver (CAB) |
 | <a id="a-ciamauthor"></a>`ciamAuthor` | `1.3.6.1.4.1.32473.1.1.978` | `string` | meta | single |  | Who wrote a change record: the database login that created it, set by the store (never by the writer) and kept; the approver is someone else unless approval-separation is off |
 | <a id="a-ciamblocking"></a>`ciamBlocking` | `1.3.6.1.4.1.32473.1.1.662` | `bool` | meta | single |  | Whether a move may not proceed without the answer: TRUE, the planner blocks while it is open; absent or FALSE, an open question is an action |
