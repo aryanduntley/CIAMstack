@@ -134,3 +134,24 @@ def test_default_privileges_the_client_library_tiers_and_recovery_targets():
     rows = posture_rows(PROD, d, KNOWN)
     assert status(rows, "approval tiers") == OK and status(rows, "recovery targets") == OK
     assert dict((c, x) for c, _, x in rows)["recovery targets"].startswith("RPO 15m, RTO 4h")
+
+
+def test_fips_evidence_is_reported_never_passed(tmp_path):
+    from opsdir.store.postgres import loaded_crypto
+    maps, flag = tmp_path / "maps", tmp_path / "fips"
+    maps.write_text("7f00-7f01 r-xp 00000000 08:01 1 /usr/lib64/libssl.so.3\n"
+                    "7f01-7f02 r-xp 00000000 08:01 2 /usr/lib64/ossl-modules/fips.so\n"
+                    "7f02-7f03 r-xp 00000000 08:01 3 /usr/lib64/libssl.so.3\n7f03-7f04 rw-p 00000000 00:00 0\n"
+                    "7f04-7f05 r-xp 00000000 08:01 4 /usr/lib64/libpython3.14.so\n")
+    flag.write_text("1\n")
+    assert loaded_crypto(maps, flag) == ("1", ("/usr/lib64/libssl.so.3", "/usr/lib64/ossl-modules/fips.so"))
+    assert loaded_crypto(tmp_path / "none", tmp_path / "none") == ("", ())
+    on = PROD._replace(fips_kernel="1", crypto_libraries=("/usr/lib64/libssl.so.3",), psycopg_impl="c",
+                       tls_version="TLSv1.3", tls_cipher="TLS_AES_256_GCM_SHA384", libpq_version=170002)
+    rows = posture_rows(on, directory(production=True), KNOWN)
+    detail = dict((c, d) for c, _, d in rows)
+    assert status(rows, "fips") == INFO and detail["fips"].startswith("kernel FIPS mode on; loaded: libssl.so.3; TLS")
+    assert "Evidence only, not validation" in detail["fips"]
+    bundled = on._replace(psycopg_impl="binary")
+    assert status(posture_rows(bundled, directory(production=True), KNOWN), "fips") == WARN
+    assert status(posture_rows(bundled, directory(), KNOWN), "fips") == INFO

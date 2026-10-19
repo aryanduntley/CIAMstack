@@ -132,10 +132,24 @@ def _client_library(f):
         return ("client library", FAIL, f"{version}: sslrootcert=system needs libpq 16 or later; upgrade libpq or "
                                         "name the CA file")
     if f.psycopg_impl == "binary":
-        return ("client library", INFO, f"{version}: psycopg's binary package bundles its own libpq and OpenSSL; "
+        return ("client library", INFO, f"{version}: psycopg's binary build bundles its own libpq and OpenSSL; "
                                         "where the deployment needs the operating system's validated cryptography, "
-                                        "install psycopg against the system libpq (documentation/RECORD-DATABASE.md)")
+                                        "install opsdir[c] against the system libpq (documentation/RECORD-DATABASE.md, "
+                                        "FIPS)")
     return ("client library", OK, version)
+
+
+def _fips(f, production):
+    kernel = {"1": "on", "0": "off"}.get(f.fips_kernel, "unknown")
+    tls = f"; TLS {f.tls_version} {f.tls_cipher}" if f.tls_version else ""
+    libraries = ", ".join(p.rsplit("/", 1)[-1] for p in f.crypto_libraries) or "not visible"
+    detail = (f"kernel FIPS mode {kernel}; loaded: {libraries}{tls}. Evidence only, not validation: the operator "
+              "keeps the module's certificate and approved-mode records (documentation/RECORD-DATABASE.md, FIPS)")
+    if kernel == "on" and f.psycopg_impl == "binary":
+        return ("fips", WARN if production else INFO,
+                "kernel FIPS mode on, but psycopg's binary build brings its own libpq and OpenSSL: install opsdir[c] "
+                f"against the system libpq (PSYCOPG_IMPL=c); loaded: {libraries}{tls}")
+    return ("fips", INFO, detail)
 
 
 def _migrations(f, known):
@@ -205,7 +219,8 @@ def posture_rows(facts, d, known_migrations, allowed=None, token=None):
     return (("deployment", INFO, deployment), _version(facts), _tls(facts, allowed), _sign_in(facts, production, token),
             _dev_defaults(facts, production), _privileges(facts, production), _tls_minimum(facts, production),
             _password_hashing(facts, production), _login_flags(facts, production), _public_rights(facts, production),
-            _default_acls(facts, production), _client_library(facts), _migrations(facts, known_migrations),
+            _default_acls(facts, production), _client_library(facts), _fips(facts, production),
+            _migrations(facts, known_migrations),
             _identity(identity, production), _separation(d, production), _approval_tiers(d), _recovery(d, production),
             *_cloud_names(d, identity))
 

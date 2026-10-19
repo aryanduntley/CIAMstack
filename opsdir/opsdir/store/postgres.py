@@ -68,21 +68,41 @@ def effective_options(conn):
 # bypassrls) and what PUBLIC may do in the database (TEMPORARY, CREATE). Then the default privileges that would hand
 # future objects to someone ((schema or '*', object type, grantee, privilege): any to PUBLIC, any in the opsdir
 # schema), and the client library psycopg loaded (libpq's version as libpq reports it, e.g. 170002, and psycopg's
-# implementation: binary bundles its own libpq and OpenSSL, c and python use the system's).
+# implementation: binary bundles its own libpq and OpenSSL, c and python use the system's). Then FIPS evidence the
+# process can see (never proof of validation): the kernel's FIPS flag ("1", "0", "" when unknown), the libpq, libssl,
+# libcrypto and FIPS provider files this process has loaded, and the TLS version and cipher the connection uses.
 PostureFacts = NamedTuple("PostureFacts", [
     ("server_version", int), ("host", str), ("sslmode", str), ("sslrootcert", str), ("ssl_in_use", bool),
     ("used_password", bool), ("used_gssapi", bool), ("client_certificate", bool), ("password_given", bool),
     ("dev_password", bool), ("dbname", str), ("user", str), ("superuser", bool), ("schema_owner", str),
     ("owns_schema", bool), ("can_create", bool), ("applied", tuple), ("ssl_min_version", str),
     ("password_encryption", str), ("role_flags", tuple), ("public_rights", tuple), ("default_acls", tuple),
-    ("libpq_version", int), ("psycopg_impl", str)])
-PostureFacts.__new__.__defaults__ = ("", "", (), (), (), 0, "")
+    ("libpq_version", int), ("psycopg_impl", str), ("fips_kernel", str), ("crypto_libraries", tuple),
+    ("tls_version", str), ("tls_cipher", str)])
+PostureFacts.__new__.__defaults__ = ("", "", (), (), (), 0, "", "", (), "", "")
 DEV_PASSWORD = "testpass"           # scripts/dev-env.sh's local development password
 LOGIN_SQL = ("select current_user, r.rolsuper, n.nspowner::regrole::text,"
              " pg_has_role(current_user, n.nspowner, 'USAGE'), has_schema_privilege(n.oid, 'CREATE')"
              " from pg_roles r, pg_namespace n where r.rolname = current_user and n.nspname = 'opsdir'")
 APPLIED_VERSIONS_SQL = "select version, name from opsdir.schema_migration order by version"
-CLIENT_DN_SQL = "select client_dn from pg_stat_ssl where pid = pg_backend_pid()"   # set when a certificate signed in
+CLIENT_DN_SQL = ("select client_dn, coalesce(version, ''), coalesce(cipher, '') from pg_stat_ssl"
+                 " where pid = pg_backend_pid()")                  # client_dn: set when a certificate signed in
+FIPS_FLAG = pathlib.Path("/proc/sys/crypto/fips_enabled")
+PROCESS_MAPS = pathlib.Path("/proc/self/maps")
+CRYPTO_NAMES = ("libpq", "libssl", "libcrypto", "fips.so")
+
+
+def loaded_crypto(maps=PROCESS_MAPS, flag=FIPS_FLAG):
+    """Effect (reads /proc): (the kernel's FIPS flag, or "" when unknown; the paths of the libpq, libssl, libcrypto
+    and FIPS provider files this process has mapped, each once, in order), () where /proc isn't there."""
+    def read(path):
+        try:
+            return path.read_text()
+        except OSError:
+            return ""
+    paths = (line.split(maxsplit=5)[-1] for line in read(maps).splitlines() if len(line.split(maxsplit=5)) == 6)
+    return read(flag).strip(), tuple(dict.fromkeys(p for p in paths
+                                                   if any(n in p.rsplit("/", 1)[-1] for n in CRYPTO_NAMES)))
 # pg_settings leaves out what the login may not read (ssl_min_protocol_version needs pg_read_all_settings): ''
 SERVER_SETTINGS_SQL = ("select coalesce((select setting from pg_settings where name = 'ssl_min_protocol_version'), ''),"
                        " coalesce((select setting from pg_settings where name = 'password_encryption'), '')")
@@ -103,7 +123,8 @@ def posture_facts(conn):
     login = conn.execute(LOGIN_SQL).fetchone()
     user, superuser, owner, owns, create = login or (conn.info.user, False, None, False, False)
     applied = tuple(conn.execute(APPLIED_VERSIONS_SQL).fetchall()) if owner else ()
-    client_dn = (conn.execute(CLIENT_DN_SQL).fetchone() or (None,))[0]
+    client_dn, tls_version, tls_cipher = conn.execute(CLIENT_DN_SQL).fetchone() or (None, "", "")
+    fips, libraries = loaded_crypto()
     ssl_min, hashing = conn.execute(SERVER_SETTINGS_SQL).fetchone()
     flags = conn.execute(ROLE_FLAGS_SQL).fetchone() or (False, False, False)
     rights = conn.execute(PUBLIC_RIGHTS_SQL).fetchone()
@@ -115,7 +136,7 @@ def posture_facts(conn):
                         bool(superuser), owner or "", bool(owns), bool(create), applied, ssl_min, hashing,
                         tuple(n for n, held in zip(("createrole", "createdb", "bypassrls"), flags) if held),
                         tuple(n for n, held in zip(("TEMPORARY", "CREATE"), rights) if held), acls,
-                        psycopg.pq.version(), psycopg.pq.__impl__)
+                        psycopg.pq.version(), psycopg.pq.__impl__, fips, libraries, tls_version, tls_cipher)
 
 
 def connection_problem(conn, allowed=None):

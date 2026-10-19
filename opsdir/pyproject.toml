@@ -8,9 +8,13 @@ version = "0.1.0"
 description = "Database-first management of an identity platform: governed, typed, cross-referenced directory entries; adapters render and import the working configuration."
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["psycopg[binary]>=3.1", "packaging>=23"]
+# psycopg 3.3 (current) on the system libpq by default; extras pick its build: binary (bundled libpq and OpenSSL, for
+# development and the showcase) or c (built against the system libpq, for FIPS hosts: documentation/RECORD-DATABASE.md)
+dependencies = ["psycopg>=3.3", "packaging>=23"]
 
 [project.optional-dependencies]
+binary = ["psycopg[binary]>=3.3"]
+c = ["psycopg[c]>=3.3"]
 test = [
     "pytest>=8",
     "ruff==0.15.13",        # the line-length check (ruff.toml at the repository root)
