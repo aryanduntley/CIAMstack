@@ -97,7 +97,7 @@ def loaded_crypto(maps=PROCESS_MAPS, flag=FIPS_FLAG):
     and FIPS provider files this process has mapped, each once, in order), () where /proc isn't there."""
     def read(path):
         try:
-            return path.read_text()
+            return path.read_text(encoding="utf-8", errors="replace")
         except OSError:
             return ""
     paths = (line.split(maxsplit=5)[-1] for line in read(maps).splitlines() if len(line.split(maxsplit=5)) == 6)
